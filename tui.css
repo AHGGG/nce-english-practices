@@ -5,28 +5,56 @@ Screen {
 
 #app-shell {
     layout: vertical;
-    padding: 1 2;
+    padding: 1;
     height: 1fr;
+    width: 100%;
 }
 
 #theme-bar {
     layout: horizontal;
     height: 3;
     width: 100%;
+    align: center middle;
 }
 
 #topic-input {
-    width: 20;
+    width: 1fr;
+    min-width: 15;
 }
 
 #theme-bar Button {
     margin-left: 1;
-    min-width: 6;
+}
+
+#status-bar, #order-info {
+    width: 100%;
+    padding: 0 1;
 }
 
 #workspace {
-    height: 1fr;
+    height: auto;
+    min-height: 40;
+    width: 100%;
     padding-top: 1;
+}
+
+#controls {
+    width: 100%;
+    height: auto;
+}
+
+#tense-selector {
+    width: 1fr;
+    min-width: 20;
+}
+
+#form-selector {
+    width: 1fr;
+    min-width: 20;
+}
+
+#tense-list {
+    height: 20;
 }
 
 Horizontal > * {
@@ -37,30 +65,33 @@ Vertical > * {
     margin-bottom: 1;
 }
 
-#slots-panel, #matrix-panel {
+#matrix-panel {
     border: solid #333333;
     padding: 1;
-}
-
-#slots-panel {
-    width: 40%;
-}
-
-#matrix-panel {
-    width: 60%;
+    width: 100%;
+    height: auto;
+    min-height: 30;
 }
 
 #matrix-output {
-    height: 1fr;
+    height: auto;
+    min-height: 10;
     overflow: auto;
+    width: 100%;
+}
+
+#matrix-title {
+    width: 100%;
 }
 
 #answer-input {
     border: round #555555;
+    width: 100%;
 }
 
 #feedback {
     border: solid #444444;
     padding: 1;
     min-height: 3;
+    width: 100%;
 }

@@ -117,21 +117,47 @@ Response JSON schema:
   ]
 }
 
-Generate ONLY ONE word/phrase for each slot (not arrays).
-Choose ONE appropriate verb for this topic.
-Keep words concise and appropriate for CEFR B1 learners.
+CRITICAL REQUIREMENTS:
+1. MUST use the topic word in at least ONE slot (subject, object, manner, place, or time)
+2. The topic word should appear naturally in the sentence
+3. Generate ONLY ONE word/phrase for each slot (not arrays)
+4. Choose ONE appropriate verb related to this topic
+5. Keep words concise and appropriate for CEFR B1 learners
+
+Examples:
+- Topic "muse" → object: "the muse" or "my muse"
+- Topic "travel" → object: "travel plans" or verb: "travel"
+- Topic "coffee" → object: "coffee" or place: "at the coffee shop"
 """
 
 
-def generate_theme(topic: str, client=None) -> ThemeVocabulary:
+def generate_theme(topic: str, client=None, previous_vocab: Optional[ThemeVocabulary] = None) -> ThemeVocabulary:
     if not client:
         raise RuntimeError("LLM client unavailable for theme generation")
+
+    # Build prompt with previous words to avoid
+    user_prompt = f"{THEME_PROMPT}\nTopic: {topic}"
+
+    if previous_vocab:
+        avoid_list = []
+        for slot_name, values in previous_vocab.slots.items():
+            if values:
+                avoid_list.append(f"{slot_name}: {', '.join(values)}")
+        if previous_vocab.verbs:
+            verb_bases = [v.base for v in previous_vocab.verbs]
+            avoid_list.append(f"verbs: {', '.join(verb_bases)}")
+
+        if avoid_list:
+            user_prompt += f"\n\nIMPORTANT: Generate NEW words. Avoid repeating these previously used words:\n" + "\n".join(avoid_list)
+
+    user_prompt += "\n\nRespond with JSON only."
+
     messages = [
         {"role": "system", "content": "You craft vocabulary slots for sentence practice."},
-        {"role": "user", "content": f"{THEME_PROMPT}\nTopic: {topic}\nRespond with JSON only."},
+        {"role": "user", "content": user_prompt},
     ]
     try:
-        rsp = client.chat.completions.create(model=MODEL_NAME, messages=messages, temperature=0.2)
+        rsp = client.chat.completions.create(model=MODEL_NAME, messages=messages, temperature=0.7)
         content = rsp.choices[0].message.content.strip()
         data = json.loads(content)
         if "topic" not in data:
@@ -144,12 +170,12 @@ def generate_theme(topic: str, client=None) -> ThemeVocabulary:
         raise RuntimeError(f"Failed to generate theme for '{topic}': {exc}") from exc
 
 
-def ensure_theme(topic: str, client=None, refresh: bool = False) -> ThemeVocabulary:
+def ensure_theme(topic: str, client=None, refresh: bool = False, previous_vocab: Optional[ThemeVocabulary] = None) -> ThemeVocabulary:
     cached = load_theme(topic) if not refresh else None
     if cached:
         return cached
     if not client:
         raise RuntimeError("No cached vocabulary and model unavailable.")
-    vocab = generate_theme(topic, client=client)
+    vocab = generate_theme(topic, client=client, previous_vocab=previous_vocab)
     save_theme(vocab)
     return vocab

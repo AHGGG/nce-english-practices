@@ -28,7 +28,7 @@ SENTENCE_GENERATION_PROMPT = """You are an English grammar expert. Generate prac
 
 Given a topic and base sentence components, generate ALL sentence variations for the {time_layer} time layer.
 
-Base components:
+Base components (MUST USE THESE EXACT WORDS):
 - Subject: {subject}
 - Verb: {verb_base} (past: {verb_past}, participle: {verb_participle})
 - Object: {object}
@@ -62,11 +62,19 @@ Return JSON format:
   "perfect_progressive": {{ ... same structure ... }}
 }}
 
-IMPORTANT:
-- Use correct grammar for {time_layer} tenses
-- Keep the sentence components (subject, object, etc.) in the sentences
-- For special questions, use appropriate wh-word at the beginning
-- Return ONLY valid JSON, no markdown or explanation
+CRITICAL RULES:
+1. MUST use the EXACT subject provided: "{subject}"
+2. MUST use the EXACT verb provided (conjugate correctly for tense): "{verb_base}"
+3. MUST use the EXACT object provided: "{object}"
+4. MUST include manner, place, time when provided
+5. Use correct grammar for {time_layer} tenses
+6. For special questions, use appropriate wh-word at the beginning
+7. Return ONLY valid JSON, no markdown or explanation
+
+Example for "I / study / English / carefully / at home / every day":
+- Affirmative: "I study English carefully at home every day"
+- Negative: "I do not study English carefully at home every day"
+- Question: "Do I study English carefully at home every day?"
 """
 
 

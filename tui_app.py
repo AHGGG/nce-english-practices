@@ -173,8 +173,17 @@ class PracticeApp(App):
         self.notify(f"Generating new words for '{topic}'...", severity="information")
 
         try:
-            # Regenerate vocabulary from LLM (refresh=True)
-            vocab = await asyncio.to_thread(self._ensure_theme, topic, self._client, refresh=True)
+            # Build previous vocab from current state to avoid duplicates
+            from theme_vocab import ThemeVocabulary
+            previous_vocab = ThemeVocabulary(
+                topic=topic,
+                generated_at="",
+                slots=self.state.slots,
+                verbs=self.state.verbs
+            )
+
+            # Regenerate vocabulary from LLM (refresh=True) with previous words
+            vocab = await asyncio.to_thread(self._ensure_theme, topic, self._client, True, previous_vocab)
             self.state = selection_from_vocab(vocab)
 
             # Clear all cached sentences
@@ -237,8 +246,8 @@ class PracticeApp(App):
 
     def render_matrix_table(self) -> Table:
         # Show only the current tense column with all forms
-        table = Table(show_header=True, header_style="bold cyan", title="Current Practice")
-        table.add_column("Sentence Type", style="bold", width=20)
+        table = Table(show_header=True, header_style="bold cyan", title="Current Practice", expand=True)
+        table.add_column("Sentence Type", style="bold", ratio=1)
 
         # Get current tense label and aspect
         current_col = next((col for col in TENSE_COLUMNS if col["key"] == self.active_tense), None)
@@ -247,7 +256,7 @@ class PracticeApp(App):
 
         tense_label = current_col["label"]
         aspect = current_col["aspect"]  # simple, perfect, progressive, perfect_progressive
-        table.add_column(tense_label, overflow="fold", width=60)
+        table.add_column(tense_label, overflow="fold", ratio=3)
 
         # Get sentences from cache
         time_layer_data = self.sentence_cache.get(self.current_time_layer, {})
