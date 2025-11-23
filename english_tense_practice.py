@@ -7,8 +7,9 @@ from typing import Dict
 from rich.console import Console
 from rich.table import Table
 
+from config import check_model_availability
 from models import SelectionState
-from practice_core import TENSE_GENERATORS, build_matrix, export_matrix_csv
+from practice_core import TENSE_COLUMNS, build_matrix, export_matrix_csv
 from practice_core import client as llm_client
 from theme_vocab import ThemeVocabulary, ensure_theme
 from tui_app import PracticeApp
@@ -25,26 +26,34 @@ def selection_from_vocab(vocab: ThemeVocabulary) -> SelectionState:
 def print_matrix(matrix: Dict[str, Dict[str, str]]) -> None:
     table = Table(title="Sentence Matrix", header_style="bold cyan")
     table.add_column("Form \\ Tense", style="bold", no_wrap=True)
-    for tense in TENSE_GENERATORS.keys():
-        table.add_column(tense.replace("_", " ").title(), overflow="fold")
+    for column in TENSE_COLUMNS:
+        table.add_column(column["label"], overflow="fold")
 
     for form in ["affirmative", "negative", "question"]:
         row = [form.title()]
-        for tense in TENSE_GENERATORS.keys():
-            row.append(matrix.get(tense, {}).get(form, ""))
+        for column in TENSE_COLUMNS:
+            row.append(matrix.get(column["key"], {}).get(form, ""))
         table.add_row(*row)
     console.print(table)
 
 
 def matrix_demo(topic: str, refresh: bool = False) -> None:
-    vocab = ensure_theme(topic, client=llm_client, refresh=refresh)
+    try:
+        vocab = ensure_theme(topic, client=llm_client, refresh=refresh)
+    except RuntimeError as exc:
+        console.print(f"[red]Error:[/red] {exc}")
+        return
     state = selection_from_vocab(vocab)
     matrix = build_matrix(state.build_sentence())
     print_matrix(matrix)
 
 
 def export_topic(topic: str, refresh: bool = False) -> None:
-    vocab = ensure_theme(topic, client=llm_client, refresh=refresh)
+    try:
+        vocab = ensure_theme(topic, client=llm_client, refresh=refresh)
+    except RuntimeError as exc:
+        console.print(f"[red]Error:[/red] {exc}")
+        return
     state = selection_from_vocab(vocab)
     matrix = build_matrix(state.build_sentence())
     path = export_matrix_csv(matrix)
@@ -52,7 +61,11 @@ def export_topic(topic: str, refresh: bool = False) -> None:
 
 
 def launch_app() -> None:
-    app = PracticeApp(ensure_theme=ensure_theme, client=llm_client)
+    app = PracticeApp(
+        ensure_theme=ensure_theme,
+        client=llm_client,
+        check_model=lambda: check_model_availability(llm_client),
+    )
     app.run()
 
 

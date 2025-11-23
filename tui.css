@@ -10,11 +10,18 @@ Screen {
 }
 
 #theme-bar {
+    layout: horizontal;
     height: 3;
+    width: 100%;
 }
-#theme-bar Input,
+
+#topic-input {
+    width: 20;
+}
+
 #theme-bar Button {
-    margin-right: 1;
+    margin-left: 1;
+    min-width: 6;
 }
 
 #workspace {

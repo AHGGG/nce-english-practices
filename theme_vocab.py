@@ -5,9 +5,9 @@ import re
 from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, List
+from typing import Dict, List, Optional
 
-from config import HOME_DIR, THEMES_DIR
+from config import HOME_DIR, MODEL_NAME, THEMES_DIR
 from models import VerbEntry
 
 DEFAULT_SLOTS: Dict[str, List[str]] = {
@@ -48,14 +48,25 @@ class ThemeVocabulary:
 
     @classmethod
     def from_payload(cls, payload: Dict) -> "ThemeVocabulary":
-        slots = {key: [w.strip() for w in words if isinstance(w, str) and w.strip()] for key, words in payload.get("slots", {}).items()} if "slots" in payload else {}
+        slots = {}
+        if "slots" in payload:
+            for key, value in payload.get("slots", {}).items():
+                # Handle both string and list formats
+                if isinstance(value, str):
+                    slots[key] = [value.strip()] if value.strip() else []
+                elif isinstance(value, list):
+                    slots[key] = [w.strip() for w in value if isinstance(w, str) and w.strip()]
+                else:
+                    slots[key] = []
 
         if not slots:
             # Accept flattened structure (subject, object, manner, ...)
-            slots = {
-                key: [w.strip() for w in payload.get(key, []) if isinstance(w, str) and w.strip()]
-                for key in DEFAULT_SLOTS.keys()
-            }
+            for key in DEFAULT_SLOTS.keys():
+                value = payload.get(key, [])
+                if isinstance(value, str):
+                    slots[key] = [value.strip()] if value.strip() else []
+                elif isinstance(value, list):
+                    slots[key] = [w.strip() for w in value if isinstance(w, str) and w.strip()]
 
         verbs_raw = payload.get("verbs") or payload.get("verb") or DEFAULT_VERBS
         verbs = [VerbEntry.from_raw(v) for v in verbs_raw if isinstance(v, dict)]
@@ -89,39 +100,38 @@ def save_theme(vocab: ThemeVocabulary) -> None:
 
 
 THEME_PROMPT = """You are an English tutor for New Concept English learners.
-Given a topic, provide JSON with six slots (subject, object, manner, place, time) and verb options.
+Given a topic, provide JSON with ONE set of words for sentence practice.
 
 Response JSON schema:
 {
   "topic": "<topic>",
   "slots": {
-     "subject": ["..."],
-     "object": ["..."],
-     "manner": ["..."],
-     "place": ["..."],
-     "time": ["..."]
+     "subject": "I",
+     "object": "new vocabulary",
+     "manner": "carefully",
+     "place": "at home",
+     "time": "every day"
   },
   "verbs": [
-    {"base":"travel","past":"traveled","participle":"traveled","note":"to go on journeys"}
+    {"base":"study","past":"studied","participle":"studied","note":"to learn"}
   ]
 }
 
+Generate ONLY ONE word/phrase for each slot (not arrays).
+Choose ONE appropriate verb for this topic.
 Keep words concise and appropriate for CEFR B1 learners.
 """
 
 
 def generate_theme(topic: str, client=None) -> ThemeVocabulary:
     if not client:
-        vocab = ThemeVocabulary(topic=topic, generated_at=datetime.utcnow().isoformat())
-        vocab.ensure_defaults()
-        return vocab
-
+        raise RuntimeError("LLM client unavailable for theme generation")
     messages = [
         {"role": "system", "content": "You craft vocabulary slots for sentence practice."},
         {"role": "user", "content": f"{THEME_PROMPT}\nTopic: {topic}\nRespond with JSON only."},
     ]
     try:
-        rsp = client.chat.completions.create(model="gpt-4o-mini", messages=messages, temperature=0.2)
+        rsp = client.chat.completions.create(model=MODEL_NAME, messages=messages, temperature=0.2)
         content = rsp.choices[0].message.content.strip()
         data = json.loads(content)
         if "topic" not in data:
@@ -130,17 +140,16 @@ def generate_theme(topic: str, client=None) -> ThemeVocabulary:
         vocab = ThemeVocabulary.from_payload(data)
         vocab.ensure_defaults()
         return vocab
-    except Exception:
-        fallback = ThemeVocabulary(topic=topic, generated_at=datetime.utcnow().isoformat())
-        fallback.ensure_defaults()
-        return fallback
+    except Exception as exc:
+        raise RuntimeError(f"Failed to generate theme for '{topic}': {exc}") from exc
 
 
 def ensure_theme(topic: str, client=None, refresh: bool = False) -> ThemeVocabulary:
-    if not refresh:
-        cached = load_theme(topic)
-        if cached:
-            return cached
+    cached = load_theme(topic) if not refresh else None
+    if cached:
+        return cached
+    if not client:
+        raise RuntimeError("No cached vocabulary and model unavailable.")
     vocab = generate_theme(topic, client=client)
     save_theme(vocab)
     return vocab

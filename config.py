@@ -24,3 +24,16 @@ EXPORT_FILE = HOME_DIR / "exported_practice.csv"
 load_dotenv()
 OPENAI_API_KEY = os.getenv("DEEPSEEK_API_KEY", "")
 OPENAI_BASE_URL = os.getenv("DEEPSEEK_BASE_URL", "https://api.deepseek.com/v1")
+MODEL_NAME = os.getenv("MODEL_NAME", "deepseek-chat")
+
+
+def check_model_availability(client):
+    """Probe the LLM API to confirm connectivity and return (ok, message)."""
+    if client is None:
+        return False, "DEEPSEEK_API_KEY missing"
+    try:
+        data = client.models.list()
+        count = len(getattr(data, "data", []))
+        return True, f"{count} models reachable"
+    except Exception as exc:
+        return False, str(exc)
