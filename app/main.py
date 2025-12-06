@@ -5,6 +5,8 @@ from fastapi.responses import JSONResponse
 from contextlib import asynccontextmanager
 from pydantic import BaseModel
 from typing import Optional, List, Dict, Any
+import asyncio
+
 
 from app.generators.theme import ensure_theme, ThemeVocabulary
 from app.generators.sentence import ensure_sentences
@@ -17,14 +19,15 @@ from app.models import SelectionSnapshot, Story, QuizItem, ScenarioPrompt, Scena
 
 # [DB] Import new DB functions
 from app.database import log_session, log_story, log_attempt, get_user_stats
+from app.config import MODEL_NAME
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Load dictionary on startup
-    print("Startup: Loading dictionaries...")
-    # This might take time but ensures it's ready
-    # Since load_dictionaries is sync, calling it here blocks the loop briefly, which is fine for startup
-    dict_manager.load_dictionaries()
+    # Load dictionary on startup (Background)
+    print("Startup: Initiating dictionary loading in background...")
+    # Run synchronous load_dictionaries in a thread to avoid blocking the event loop
+    asyncio.create_task(asyncio.to_thread(dict_manager.load_dictionaries))
     yield
     # Cleanup if needed
 
@@ -120,6 +123,11 @@ async def api_dict_lookup(payload: DictionaryLookupRequest):
 @app.post("/api/dictionary/context")
 async def api_dict_context(payload: DictionaryContextRequest):
     try:
+        from fastapi.concurrency import run_in_threadpool
+        
+        if not client:
+            return {"explanation": "AI client is not configured (API Key missing)."}
+
         # AI Explanation
         prompt = f"""
         Explain the meaning of the word "{payload.word}" in the context of this sentence:
@@ -127,8 +135,15 @@ async def api_dict_context(payload: DictionaryContextRequest):
         
         Keep it brief (max 2 sentences). Explain the nuance or usage.
         """
-        response = client.generate_content(prompt)
-        explanation = response.text.strip() if response.text else "Could not generate explanation."
+        
+        response = await run_in_threadpool(
+            lambda: client.chat.completions.create(
+                model=MODEL_NAME,
+                messages=[{"role": "user", "content": prompt}],
+                temperature=0.3
+            )
+        )
+        explanation = response.choices[0].message.content.strip() if response.choices else "Could not generate explanation."
         
         return {"explanation": explanation}
     except Exception as e:
