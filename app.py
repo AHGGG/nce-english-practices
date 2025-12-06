@@ -9,8 +9,9 @@ from theme_vocab import ensure_theme, ThemeVocabulary
 from sentence_generator import ensure_sentences
 from story_generator import ensure_story
 from quiz_generator import generate_quiz
+from scenario_generator import generate_scenario, grade_scenario_response
 from practice_core import client, grade_sentence, log_matrix_attempt
-from models import SelectionSnapshot, Story, QuizItem
+from models import SelectionSnapshot, Story, QuizItem, ScenarioPrompt, ScenarioResponse
 
 app = FastAPI(title="NCE English Practice")
 
@@ -32,6 +33,17 @@ class QuizRequest(BaseModel):
     tense: str
     aspect: str
     correct_sentence: str
+
+class ScenarioRequest(BaseModel):
+    topic: str
+    tense: str
+    aspect: str
+
+class ScenarioGradeRequest(BaseModel):
+    situation: str
+    goal: str
+    user_input: str
+    tense: str
 
 class SentenceRequest(BaseModel):
     topic: str
@@ -69,22 +81,17 @@ async def read_root(request: Request):
 @app.post("/api/theme")
 async def api_generate_theme(payload: ThemeRequest):
     try:
-        # If previous_vocab is passed, we might need to reconstruct it into a ThemeVocabulary object
-        # but ensure_theme handles raw logic. Let's look at signature.
-        # ensure_theme takes (topic, client, refresh, previous_vocab)
-        # previous_vocab is expected to be ThemeVocabulary object.
-        
         prev_vocab_obj = None
         if payload.previous_vocab:
             try:
                 prev_vocab_obj = ThemeVocabulary.from_payload(payload.previous_vocab)
             except Exception:
-                pass # Ignore malformed previous vocab
+                pass 
 
         vocab = ensure_theme(
             topic=payload.topic, 
             client=client, 
-            refresh=True if prev_vocab_obj else False, # If shuffling (providing prev vocab), we force refresh
+            refresh=True if prev_vocab_obj else False,
             previous_vocab=prev_vocab_obj
         )
         return vocab.serialize()
@@ -114,6 +121,33 @@ async def api_generate_quiz(payload: QuizRequest):
             correct_sentence=payload.correct_sentence
         )
         return quiz
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/scenario")
+async def api_generate_scenario(payload: ScenarioRequest):
+    try:
+        scenario = generate_scenario(
+            client=client,
+            topic=payload.topic,
+            tense=payload.tense,
+            aspect=payload.aspect
+        )
+        return scenario
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/scenario/grade")
+async def api_grade_scenario(payload: ScenarioGradeRequest):
+    try:
+        result = grade_scenario_response(
+            client=client,
+            situation=payload.situation,
+            goal=payload.goal,
+            user_input=payload.user_input,
+            tense=payload.tense
+        )
+        return result
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -148,7 +182,6 @@ async def api_grade(payload: GradeRequest):
 @app.post("/api/log")
 async def api_log(payload: LogRequest):
     try:
-        # Reconstruct SelectionSnapshot
         snapshot = SelectionSnapshot(
             topic=payload.topic,
             words=payload.words,
@@ -165,7 +198,6 @@ async def api_log(payload: LogRequest):
         )
         return {"status": "ok"}
     except Exception as e:
-        # Logging failure shouldn't crash the app, but good to know
         print(f"Logging error: {e}")
         return {"status": "error", "message": str(e)}
 

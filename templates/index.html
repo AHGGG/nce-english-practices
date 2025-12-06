@@ -60,15 +60,39 @@
                     <button class="tab-btn" data-layer="past_future">Past Future</button>
                 </div>
 
-                <!-- Story Section (Context) -->
+                <!-- Story & Scenario Container -->
                 <div id="storyContainer" class="story-container hidden">
+
+                    <!-- Context Story Card -->
                     <div class="story-card">
-                        <h3 id="storyTitle">Story Title</h3>
-                        <div id="storyContent" class="story-content">
-                            <!-- Story text injected here -->
+                        <h3 class="story-title" id="storyTitle">Context Story</h3>
+                        <div class="story-content" id="storyContent">
+                            Loading story...
                         </div>
-                        <div id="storyNotes" class="story-notes hidden">
-                            <!-- Grammar notes -->
+                        <div class="story-notes hidden" id="storyNotes">
+                            <!-- Grammar notes injected here -->
+                        </div>
+                    </div>
+
+                    <!-- Scenario Challenge Card -->
+                    <div class="scenario-card hidden" id="scenarioCard">
+                        <div class="scenario-header">
+                            <h3>Real-life Challenge</h3>
+                            <span class="badge-scenario">Apply</span>
+                        </div>
+                        <div class="scenario-body">
+                            <p class="scenario-situation" id="scenarioSituation">Loading situation...</p>
+                            <div class="scenario-goal">
+                                <strong>Goal:</strong> <span id="scenarioGoal">...</span>
+                            </div>
+                            <div class="scenario-input-group">
+                                <input type="text" id="scenarioInput" placeholder="Type your response here..."
+                                    autocomplete="off">
+                                <button id="scenarioSubmitBtn" class="btn-action">Submit</button>
+                            </div>
+                            <div class="scenario-feedback hidden" id="scenarioFeedback">
+                                <!-- Feedback injected here -->
+                            </div>
                         </div>
                     </div>
                 </div>

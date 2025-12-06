@@ -5,6 +5,8 @@ const state = {
     currentLayer: 'present',
     sentences: {}, // cache by time_layer
     stories: {},   // cache by topic_tense
+    scenarios: {}, // cache by topic_tense
+    currentScenario: null
 };
 
 const elements = {
@@ -29,7 +31,14 @@ const elements = {
     quizTitle: document.getElementById('quizTitle'),
     quizQuestion: document.getElementById('quizQuestion'),
     quizOptions: document.getElementById('quizOptions'),
-    quizFeedback: document.getElementById('quizFeedback')
+    quizFeedback: document.getElementById('quizFeedback'),
+    // Scenario Elements
+    scenarioCard: document.getElementById('scenarioCard'),
+    scenarioSituation: document.getElementById('scenarioSituation'),
+    scenarioGoal: document.getElementById('scenarioGoal'),
+    scenarioInput: document.getElementById('scenarioInput'),
+    scenarioSubmitBtn: document.getElementById('scenarioSubmitBtn'),
+    scenarioFeedback: document.getElementById('scenarioFeedback')
 };
 
 // --- Event Listeners ---
@@ -47,7 +56,8 @@ elements.tabs.forEach(tab => {
         tab.classList.add('active');
         state.currentLayer = tab.dataset.layer;
         renderMatrix();
-        renderStory(); 
+        renderStory();
+        renderScenario();
     });
 });
 
@@ -58,6 +68,12 @@ elements.closeQuizBtn.addEventListener('click', () => {
 elements.quizModal.addEventListener('click', (e) => {
     if (e.target === elements.quizModal) elements.quizModal.classList.add('hidden');
 });
+
+elements.scenarioSubmitBtn.addEventListener('click', submitScenarioResponse);
+elements.scenarioInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') submitScenarioResponse();
+});
+
 
 // --- Actions ---
 
@@ -85,6 +101,7 @@ async function loadTheme(shuffle) {
         state.topic = topic;
         state.sentences = {}; // Clear sentence cache
         state.stories = {};   // Clear story cache
+        state.scenarios = {}; // Clear scenario cache
 
         renderVocab();
         elements.vocabSection.classList.remove('hidden');
@@ -92,6 +109,7 @@ async function loadTheme(shuffle) {
         
         await renderMatrix();
         await renderStory();
+        await renderScenario();
 
     } catch (err) {
         showToast(err.message, 'error');
@@ -108,10 +126,7 @@ function renderVocab() {
     const slots = state.vocab.slots;
     const verbs = state.vocab.verbs || [];
 
-    // Order: Subject, Verb, Object, Manner, Place, Time
     const order = ['subject', 'verb', 'object', 'manner', 'place', 'time'];
-    
-    // For verbs, we pick the first one and show base/past/participle
     let verbDisplay = "—";
     if (verbs.length > 0) {
         const v = verbs[0];
@@ -138,6 +153,8 @@ function renderVocab() {
     });
 }
 
+// --- Story ---
+
 async function renderStory() {
     const topic = state.topic;
     const layer = state.currentLayer;
@@ -145,13 +162,11 @@ async function renderStory() {
 
     elements.storyContainer.classList.remove('hidden');
     
-    // Check cache
     if (state.stories[cacheKey]) {
         displayStory(state.stories[cacheKey]);
         return;
     }
 
-    // Show loading state in story card
     elements.storyTitle.textContent = "Writing Story...";
     elements.storyContent.textContent = "The AI is crafting a context story for this tense...";
     elements.storyNotes.classList.add('hidden');
@@ -176,22 +191,15 @@ async function renderStory() {
 
 function displayStory(story) {
     elements.storyTitle.textContent = story.title || `${story.target_tense} Story`;
-    
     let content = story.content;
-    // Apply highlights
     if (story.highlights && story.highlights.length > 0) {
         story.highlights.forEach(phrase => {
-            // Simple string replace, might need regex for case insensitivity or multiple occurences
-            // Using global regex with escape
             const escaped = phrase.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
             const regex = new RegExp(`(${escaped})`, 'gi');
             content = content.replace(regex, '<span class="story-highlight" title="Target Tense">$1</span>');
         });
     }
-    
     elements.storyContent.innerHTML = content;
-
-    // Show notes
     if (story.grammar_notes && story.grammar_notes.length > 0) {
         elements.storyNotes.classList.remove('hidden');
         elements.storyNotes.innerHTML = `
@@ -205,14 +213,170 @@ function displayStory(story) {
     }
 }
 
+// --- Scenario ---
+
+async function renderScenario() {
+    const topic = state.topic;
+    const layer = state.currentLayer;
+    
+    elements.scenarioCard.classList.remove('hidden');
+    elements.scenarioSituation.innerHTML = '<span style="color:#94a3b8">Finding a situation...</span>';
+    elements.scenarioGoal.textContent = '...';
+    elements.scenarioFeedback.classList.add('hidden');
+    elements.scenarioInput.value = '';
+    elements.scenarioInput.disabled = false;
+    elements.scenarioSubmitBtn.disabled = false;
+
+    if (!state.scenarios) state.scenarios = {};
+    const cacheKey = `${topic}_${layer}`;
+
+    if (state.scenarios[cacheKey]) {
+        displayScenario(state.scenarios[cacheKey]);
+        return;
+    }
+
+    try {
+        const res = await fetch('/api/scenario', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ topic: topic, tense: layer, aspect: 'simple' }) 
+        });
+        
+        if (!res.ok) throw new Error((await res.json()).detail);
+        
+        const scenario = await res.json();
+        state.scenarios[cacheKey] = scenario;
+        displayScenario(scenario);
+
+    } catch (err) {
+        elements.scenarioSituation.textContent = "Could not load scenario.";
+    }
+}
+
+function displayScenario(scenario) {
+    elements.scenarioSituation.textContent = scenario.situation;
+    elements.scenarioGoal.textContent = scenario.goal;
+    state.currentScenario = scenario;
+}
+
+async function submitScenarioResponse() {
+    const input = elements.scenarioInput.value.trim();
+    if (!input) return;
+    if (!state.currentScenario) return;
+
+    elements.scenarioInput.disabled = true;
+    elements.scenarioSubmitBtn.disabled = true;
+    elements.scenarioFeedback.classList.remove('hidden');
+    elements.scenarioFeedback.innerHTML = '<div class="spinner" style="width:20px;height:20px;border-width:2px;display:inline-block"></div> Grading...';
+    elements.scenarioFeedback.className = 'scenario-feedback';
+
+    try {
+        const payload = {
+            situation: state.currentScenario.situation,
+            goal: state.currentScenario.goal,
+            user_input: input,
+            tense: state.currentLayer
+        };
+
+        const res = await fetch('/api/scenario/grade', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+
+        if (!res.ok) throw new Error((await res.json()).detail);
+        const result = await res.json();
+        
+        const cls = result.is_pass ? 'pass' : 'fail';
+        elements.scenarioFeedback.className = `scenario-feedback ${cls}`;
+        elements.scenarioFeedback.innerHTML = `
+            <strong>${result.is_pass ? 'Passed!' : 'Needs Improvement'}</strong><br>
+            ${result.feedback}
+            ${result.improved_version ? `<span class="improved-version">💡 Better: "${result.improved_version}"</span>` : ''}
+        `;
+
+        if (!result.is_pass) {
+             elements.scenarioInput.disabled = false;
+             elements.scenarioSubmitBtn.disabled = false;
+        }
+
+    } catch (err) {
+        elements.scenarioFeedback.innerHTML = `<span style="color:red">Error: ${err.message}</span>`;
+        elements.scenarioInput.disabled = false;
+        elements.scenarioSubmitBtn.disabled = false;
+    }
+}
+
+// --- Matrix & Quiz ---
+
+async function openQuiz(tenseLabel, aspectLabel, sentence) {
+    if (!sentence || sentence === '—') return;
+    
+    elements.quizModal.classList.remove('hidden');
+    elements.quizQuestion.innerHTML = '<div class="spinner" style="width:30px;height:30px;border-width:2px"></div><div style="text-align:center;font-size:0.9rem;color:#94a3b8">Generating Drill...</div>';
+    elements.quizOptions.innerHTML = '';
+    elements.quizFeedback.classList.add('hidden');
+    elements.quizTitle.textContent = `${tenseLabel} · ${aspectLabel}`;
+
+    try {
+        const payload = {
+            topic: state.topic,
+            tense: state.currentLayer,
+            aspect: aspectLabel.toLowerCase(),
+            correct_sentence: sentence
+        };
+
+        const res = await fetch('/api/quiz', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+
+        if (!res.ok) throw new Error((await res.json()).detail);
+        const quiz = await res.json();
+        displayQuiz(quiz);
+
+    } catch (err) {
+        elements.quizQuestion.innerHTML = `<span style="color:red">Error: ${err.message}</span>`;
+    }
+}
+
+function displayQuiz(quiz) {
+    elements.quizQuestion.textContent = quiz.question_context;
+    elements.quizOptions.innerHTML = '';
+    
+    quiz.options.forEach(opt => {
+        const btn = document.createElement('div');
+        btn.className = 'quiz-option';
+        btn.innerHTML = `<span class="option-marker">${opt.id}</span> <span>${opt.text}</span>`;
+        
+        btn.onclick = () => {
+            if (btn.classList.contains('disabled')) return;
+            const allOpts = document.querySelectorAll('.quiz-option');
+            allOpts.forEach(o => o.classList.add('disabled'));
+            
+            if (opt.is_correct) {
+                btn.classList.add('correct');
+                elements.quizFeedback.innerHTML = `<strong>Correct!</strong> <br> ${opt.explanation}`;
+                elements.quizFeedback.className = 'quiz-feedback';
+            } else {
+                btn.classList.add('incorrect');
+                const correctBtn = Array.from(allOpts).find(o => o.querySelector('.option-marker').textContent === quiz.options.find(q => q.is_correct).id);
+                if (correctBtn) correctBtn.classList.add('correct');
+                elements.quizFeedback.innerHTML = `<strong>Incorrect.</strong> <br> ${opt.explanation || "Better luck next time!"}`;
+                elements.quizFeedback.className = 'quiz-feedback';
+            }
+        };
+        elements.quizOptions.appendChild(btn);
+    });
+}
+
 async function renderMatrix() {
     const layer = state.currentLayer;
     elements.matrixRows.innerHTML = '<div style="padding:2rem; text-align:center; color:#94a3b8">Generating sentences...</div>';
 
     if (!state.sentences[layer]) {
-        // ... (fetch logic same as before, no changes needed inside fetch block) ...
         try {
-           // ... same payload ...
            const v = state.vocab.verbs[0];
             const payload = {
                 topic: state.topic,
@@ -250,7 +414,6 @@ async function renderMatrix() {
     forms.forEach(form => {
         const row = document.createElement('div');
         row.className = 'matrix-row';
-        
         let label = form.charAt(0).toUpperCase() + form.slice(1);
         if (form === 'when') label = 'When?';
 
@@ -263,26 +426,20 @@ async function renderMatrix() {
             cell.dataset.label = aspect.replace('_', ' ');
             cell.textContent = text || '—';
             
-            // New Click Handler
             cell.onclick = (e) => {
                 if(e.shiftKey) {
                     navigator.clipboard.writeText(text);
                     showToast('Copied!');
                 } else {
-                    // Open Quiz
                     openQuiz(layer, aspect, text);
                 }
             };
             cell.title = "Click to Practice, Shift+Click to Copy";
-            
             row.appendChild(cell);
         });
-
         elements.matrixRows.appendChild(row);
     });
 }
-
-// --- Utilities ---
 
 function setLoading(isLoading) {
     if (isLoading) {
