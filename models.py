@@ -2,7 +2,9 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from typing import Dict, List, Optional
+from pydantic import BaseModel, Field
 
+# --- Existing Dataclasses (Kept for backward compatibility with TUI/Legacy) ---
 
 @dataclass
 class VerbEntry:
@@ -97,3 +99,53 @@ class SelectionState:
                 "participle": self.current_verb().participle,
             },
         )
+
+# --- New Pydantic Models for Active Trainer (API Centric) ---
+
+class Story(BaseModel):
+    """Stage 1: Context Mode"""
+    topic: str
+    target_tense: str
+    title: str
+    content: str
+    highlights: List[str] = Field(default_factory=list, description="List of substrings to highlight")
+    grammar_notes: List[str] = Field(default_factory=list, description="Explanations for tense usage")
+
+class QuizOption(BaseModel):
+    """Option for Multiple Choice Questions"""
+    id: str  # A, B, C, D
+    text: str
+    is_correct: bool
+    explanation: Optional[str] = None
+
+class QuizItem(BaseModel):
+    """Stage 2: Drill Mode"""
+    question_context: str
+    options: List[QuizOption]
+    tense_category: str
+    aspect: str
+
+class ScenarioPrompt(BaseModel):
+    """Stage 3: Apply Mode (Input)"""
+    situation: str
+    goal: str
+
+class ScenarioResponse(BaseModel):
+    """Stage 3: Apply Mode (Output)"""
+    user_input: str
+    is_pass: bool
+    feedback: str
+    improved_version: str
+
+class Mission(BaseModel):
+    """Stage 4: Speak Mode"""
+    id: str
+    title: str
+    description: str
+    required_grammar: List[str]
+
+class ChatState(BaseModel):
+    """State for Roleplay"""
+    mission_id: str
+    history: List[Dict[str, str]]
+    goals_met: List[bool]

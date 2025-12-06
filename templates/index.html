@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -9,6 +10,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/static/css/style.css">
 </head>
+
 <body>
 
     <div class="app-container">
@@ -18,9 +20,10 @@
                 <h1>NCE Practice</h1>
                 <span class="badge">AI Tutor</span>
             </div>
-            
+
             <div class="topic-input-group">
-                <input type="text" id="topicInput" placeholder="Enter a topic (e.g., travel, coding)..." autocomplete="off">
+                <input type="text" id="topicInput" placeholder="Enter a topic (e.g., travel, coding)..."
+                    autocomplete="off">
                 <button id="loadBtn" class="btn-primary">
                     <span class="icon">✨</span> Generate
                 </button>
@@ -42,7 +45,7 @@
                         <span class="icon">🎲</span> Shuffle
                     </button>
                 </div>
-                
+
                 <div class="vocab-grid" id="vocabGrid">
                     <!-- Vocab cards injected here -->
                 </div>
@@ -57,6 +60,19 @@
                     <button class="tab-btn" data-layer="past_future">Past Future</button>
                 </div>
 
+                <!-- Story Section (Context) -->
+                <div id="storyContainer" class="story-container hidden">
+                    <div class="story-card">
+                        <h3 id="storyTitle">Story Title</h3>
+                        <div id="storyContent" class="story-content">
+                            <!-- Story text injected here -->
+                        </div>
+                        <div id="storyNotes" class="story-notes hidden">
+                            <!-- Grammar notes -->
+                        </div>
+                    </div>
+                </div>
+
                 <div class="matrix-container">
                     <div class="matrix-header">
                         <div class="col-header">Form</div>
@@ -65,7 +81,7 @@
                         <div class="col-header">Progressive</div>
                         <div class="col-header">Perfect Prog.</div>
                     </div>
-                    
+
                     <!-- Matrix Rows -->
                     <div id="matrixRows" class="matrix-rows">
                         <!-- Rows injected via JS -->
@@ -75,9 +91,27 @@
         </main>
     </div>
 
+    <!-- MCQ Modal -->
+    <div id="quizModal" class="modal hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="quizTitle">Practice Drill</h3>
+                <button id="closeQuizBtn" class="close-btn">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p id="quizQuestion" class="quiz-question">Loading question...</p>
+                <div id="quizOptions" class="quiz-options">
+                    <!-- Options injected here -->
+                </div>
+                <div id="quizFeedback" class="quiz-feedback hidden"></div>
+            </div>
+        </div>
+    </div>
+
     <!-- Notification Toast -->
     <div id="toast" class="toast hidden"></div>
 
     <script type="module" src="/static/js/main.js"></script>
 </body>
+
 </html>

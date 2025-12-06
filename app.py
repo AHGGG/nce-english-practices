@@ -7,8 +7,10 @@ from typing import Optional, List, Dict, Any
 
 from theme_vocab import ensure_theme, ThemeVocabulary
 from sentence_generator import ensure_sentences
+from story_generator import ensure_story
+from quiz_generator import generate_quiz
 from practice_core import client, grade_sentence, log_matrix_attempt
-from models import SelectionSnapshot
+from models import SelectionSnapshot, Story, QuizItem
 
 app = FastAPI(title="NCE English Practice")
 
@@ -20,6 +22,16 @@ templates = Jinja2Templates(directory="templates")
 class ThemeRequest(BaseModel):
     topic: str
     previous_vocab: Optional[Dict[str, Any]] = None
+
+class StoryRequest(BaseModel):
+    topic: str
+    target_tense: str
+
+class QuizRequest(BaseModel):
+    topic: str
+    tense: str
+    aspect: str
+    correct_sentence: str
 
 class SentenceRequest(BaseModel):
     topic: str
@@ -77,6 +89,32 @@ async def api_generate_theme(payload: ThemeRequest):
         )
         return vocab.serialize()
     except RuntimeError as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/story")
+async def api_generate_story(payload: StoryRequest):
+    try:
+        story = ensure_story(
+            topic=payload.topic,
+            tense=payload.target_tense,
+            client=client
+        )
+        return story
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/quiz")
+async def api_generate_quiz(payload: QuizRequest):
+    try:
+        quiz = generate_quiz(
+            client=client,
+            topic=payload.topic,
+            tense=payload.tense,
+            aspect=payload.aspect,
+            correct_sentence=payload.correct_sentence
+        )
+        return quiz
+    except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/api/sentences")

@@ -4,6 +4,7 @@ const state = {
     vocab: null,
     currentLayer: 'present',
     sentences: {}, // cache by time_layer
+    stories: {},   // cache by topic_tense
 };
 
 const elements = {
@@ -16,7 +17,19 @@ const elements = {
     matrixSection: document.getElementById('matrixSection'),
     matrixRows: document.getElementById('matrixRows'),
     tabs: document.querySelectorAll('.tab-btn'),
-    toast: document.getElementById('toast')
+    toast: document.getElementById('toast'),
+    // Story Elements
+    storyContainer: document.getElementById('storyContainer'),
+    storyTitle: document.getElementById('storyTitle'),
+    storyContent: document.getElementById('storyContent'),
+    storyNotes: document.getElementById('storyNotes'),
+    // Quiz Elements
+    quizModal: document.getElementById('quizModal'),
+    closeQuizBtn: document.getElementById('closeQuizBtn'),
+    quizTitle: document.getElementById('quizTitle'),
+    quizQuestion: document.getElementById('quizQuestion'),
+    quizOptions: document.getElementById('quizOptions'),
+    quizFeedback: document.getElementById('quizFeedback')
 };
 
 // --- Event Listeners ---
@@ -34,7 +47,16 @@ elements.tabs.forEach(tab => {
         tab.classList.add('active');
         state.currentLayer = tab.dataset.layer;
         renderMatrix();
+        renderStory(); 
     });
+});
+
+elements.closeQuizBtn.addEventListener('click', () => {
+    elements.quizModal.classList.add('hidden');
+});
+
+elements.quizModal.addEventListener('click', (e) => {
+    if (e.target === elements.quizModal) elements.quizModal.classList.add('hidden');
 });
 
 // --- Actions ---
@@ -61,14 +83,15 @@ async function loadTheme(shuffle) {
 
         state.vocab = await res.json();
         state.topic = topic;
-        state.sentences = {}; // Clear sentence cache on new theme/shuffle
+        state.sentences = {}; // Clear sentence cache
+        state.stories = {};   // Clear story cache
 
         renderVocab();
         elements.vocabSection.classList.remove('hidden');
         elements.matrixSection.classList.remove('hidden');
         
-        // Trigger sentence generation for current layer
         await renderMatrix();
+        await renderStory();
 
     } catch (err) {
         showToast(err.message, 'error');
@@ -79,6 +102,8 @@ async function loadTheme(shuffle) {
 
 function renderVocab() {
     elements.vocabGrid.innerHTML = '';
+    
+    if (!state.vocab) return;
     
     const slots = state.vocab.slots;
     const verbs = state.vocab.verbs || [];
@@ -113,15 +138,82 @@ function renderVocab() {
     });
 }
 
+async function renderStory() {
+    const topic = state.topic;
+    const layer = state.currentLayer;
+    const cacheKey = `${topic}_${layer}`;
+
+    elements.storyContainer.classList.remove('hidden');
+    
+    // Check cache
+    if (state.stories[cacheKey]) {
+        displayStory(state.stories[cacheKey]);
+        return;
+    }
+
+    // Show loading state in story card
+    elements.storyTitle.textContent = "Writing Story...";
+    elements.storyContent.textContent = "The AI is crafting a context story for this tense...";
+    elements.storyNotes.classList.add('hidden');
+
+    try {
+        const res = await fetch('/api/story', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ topic: topic, target_tense: layer })
+        });
+        
+        if (!res.ok) throw new Error((await res.json()).detail);
+        
+        const story = await res.json();
+        state.stories[cacheKey] = story;
+        displayStory(story);
+
+    } catch (err) {
+        elements.storyContent.innerHTML = `<span style="color:#ef4444">Failed to load story: ${err.message}</span>`;
+    }
+}
+
+function displayStory(story) {
+    elements.storyTitle.textContent = story.title || `${story.target_tense} Story`;
+    
+    let content = story.content;
+    // Apply highlights
+    if (story.highlights && story.highlights.length > 0) {
+        story.highlights.forEach(phrase => {
+            // Simple string replace, might need regex for case insensitivity or multiple occurences
+            // Using global regex with escape
+            const escaped = phrase.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            const regex = new RegExp(`(${escaped})`, 'gi');
+            content = content.replace(regex, '<span class="story-highlight" title="Target Tense">$1</span>');
+        });
+    }
+    
+    elements.storyContent.innerHTML = content;
+
+    // Show notes
+    if (story.grammar_notes && story.grammar_notes.length > 0) {
+        elements.storyNotes.classList.remove('hidden');
+        elements.storyNotes.innerHTML = `
+            <h4>Grammar Notes</h4>
+            <ul>
+                ${story.grammar_notes.map(note => `<li>${note}</li>`).join('')}
+            </ul>
+        `;
+    } else {
+        elements.storyNotes.classList.add('hidden');
+    }
+}
+
 async function renderMatrix() {
     const layer = state.currentLayer;
     elements.matrixRows.innerHTML = '<div style="padding:2rem; text-align:center; color:#94a3b8">Generating sentences...</div>';
 
-    // Check cache
     if (!state.sentences[layer]) {
+        // ... (fetch logic same as before, no changes needed inside fetch block) ...
         try {
-            // Prepare payload for sentence generation
-            const v = state.vocab.verbs[0];
+           // ... same payload ...
+           const v = state.vocab.verbs[0];
             const payload = {
                 topic: state.topic,
                 time_layer: layer,
@@ -151,7 +243,7 @@ async function renderMatrix() {
 
     const data = state.sentences[layer];
     const aspects = ['simple', 'perfect', 'progressive', 'perfect_progressive'];
-    const forms = ['affirmative', 'negative', 'question', 'when']; // displaying 'when' as special question example
+    const forms = ['affirmative', 'negative', 'question', 'when']; 
 
     elements.matrixRows.innerHTML = '';
 
@@ -170,10 +262,19 @@ async function renderMatrix() {
             cell.className = 'sentence-cell';
             cell.dataset.label = aspect.replace('_', ' ');
             cell.textContent = text || '—';
-            cell.onclick = () => {
-                navigator.clipboard.writeText(text);
-                showToast('Copied!');
+            
+            // New Click Handler
+            cell.onclick = (e) => {
+                if(e.shiftKey) {
+                    navigator.clipboard.writeText(text);
+                    showToast('Copied!');
+                } else {
+                    // Open Quiz
+                    openQuiz(layer, aspect, text);
+                }
             };
+            cell.title = "Click to Practice, Shift+Click to Copy";
+            
             row.appendChild(cell);
         });
 
