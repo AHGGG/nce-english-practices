@@ -993,10 +993,33 @@ h2::before {
 
 /* --- Dictionary Modal --- */
 .dict-content {
-    max-width: 600px;
-    max-height: 80vh;
+    max-width: 900px;
+    width: 90vw;
+    height: 90vh;
+    max-height: 90vh;
     display: flex;
     flex-direction: column;
+}
+
+.dict-content .modal-body {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    min-height: 0;
+}
+
+.dict-content .dict-section:first-child {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    min-height: 0;
+    margin-bottom: 1rem;
+}
+
+.dict-content .dict-section h4 {
+    flex-shrink: 0;
 }
 
 /* Force light mode for dictionary content to avoid style conflicts */
@@ -1031,7 +1054,7 @@ h2::before {
     font-size: 0.95rem;
     line-height: 1.6;
     overflow-y: auto;
-    max-height: 300px;
+    flex: 1;
 }
 
 .dict-definition b, .dict-definition strong { color: var(--color-primary); }
