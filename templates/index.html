@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NCE English Practice</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+
+    <div class="app-container">
+        <!-- Header / Topic Section -->
+        <header class="app-header">
+            <div class="logo">
+                <h1>NCE Practice</h1>
+                <span class="badge">AI Tutor</span>
+            </div>
+            
+            <div class="topic-input-group">
+                <input type="text" id="topicInput" placeholder="Enter a topic (e.g., travel, coding)..." autocomplete="off">
+                <button id="loadBtn" class="btn-primary">
+                    <span class="icon">✨</span> Generate
+                </button>
+            </div>
+        </header>
+
+        <main>
+            <!-- Loading Overlay -->
+            <div id="loadingOverlay" class="loading-overlay hidden">
+                <div class="spinner"></div>
+                <p id="loadingText">Consulting the AI...</p>
+            </div>
+
+            <!-- Vocabulary Section -->
+            <section id="vocabSection" class="vocab-section hidden">
+                <div class="section-header">
+                    <h2>Vocabulary</h2>
+                    <button id="shuffleBtn" class="btn-secondary" title="Shuffle Words">
+                        <span class="icon">🎲</span> Shuffle
+                    </button>
+                </div>
+                
+                <div class="vocab-grid" id="vocabGrid">
+                    <!-- Vocab cards injected here -->
+                </div>
+            </section>
+
+            <!-- Tense Matrix Section -->
+            <section id="matrixSection" class="matrix-section hidden">
+                <div class="tabs">
+                    <button class="tab-btn active" data-layer="present">Present</button>
+                    <button class="tab-btn" data-layer="past">Past</button>
+                    <button class="tab-btn" data-layer="future">Future</button>
+                    <button class="tab-btn" data-layer="past_future">Past Future</button>
+                </div>
+
+                <div class="matrix-container">
+                    <div class="matrix-header">
+                        <div class="col-header">Form</div>
+                        <div class="col-header">Simple</div>
+                        <div class="col-header">Perfect</div>
+                        <div class="col-header">Progressive</div>
+                        <div class="col-header">Perfect Prog.</div>
+                    </div>
+                    
+                    <!-- Matrix Rows -->
+                    <div id="matrixRows" class="matrix-rows">
+                        <!-- Rows injected via JS -->
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Notification Toast -->
+    <div id="toast" class="toast hidden"></div>
+
+    <script type="module" src="/static/js/main.js"></script>
+</body>
+</html>
