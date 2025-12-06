@@ -1,5 +1,7 @@
 
 console.log("Main.js loaded!");
+
+// --- State ---
 const state = {
     topic: '',
     vocab: null,
@@ -13,37 +15,52 @@ const state = {
     selectedContext: null
 };
 
+// --- Elements ---
 const elements = {
+    // Navigation & Layout
+    navItems: document.querySelectorAll('.nav-item'),
+    viewPanels: document.querySelectorAll('.view-panel'),
+    views: {
+        learn: document.getElementById('viewLearn'),
+        drill: document.getElementById('viewDrill'),
+        apply: document.getElementById('viewApply')
+    },
+
+    // Global Inputs
     topicInput: document.getElementById('topicInput'),
     loadBtn: document.getElementById('loadBtn'),
-    shuffleBtn: document.getElementById('shuffleBtn'),
     loadingOverlay: document.getElementById('loadingOverlay'),
+    toast: document.getElementById('toast'),
+    
+    // View 1: Learn
     vocabSection: document.getElementById('vocabSection'),
     vocabGrid: document.getElementById('vocabGrid'),
-    matrixSection: document.getElementById('matrixSection'),
-    matrixRows: document.getElementById('matrixRows'),
-    tabs: document.querySelectorAll('.tab-btn'),
-    toast: document.getElementById('toast'),
-    // Story Elements
     storyContainer: document.getElementById('storyContainer'),
     storyTitle: document.getElementById('storyTitle'),
     storyContent: document.getElementById('storyContent'),
     storyNotes: document.getElementById('storyNotes'),
-    // Quiz Elements
+    shuffleBtn: document.getElementById('shuffleBtn'),
+
+    // View 2: Drill
+    matrixSection: document.getElementById('matrixSection'), // logic ref
+    matrixRows: document.getElementById('matrixRows'),
+    tabs: document.querySelectorAll('.tab-btn'),
+    // Quiz Modals
     quizModal: document.getElementById('quizModal'),
     closeQuizBtn: document.getElementById('closeQuizBtn'),
     quizTitle: document.getElementById('quizTitle'),
     quizQuestion: document.getElementById('quizQuestion'),
     quizOptions: document.getElementById('quizOptions'),
     quizFeedback: document.getElementById('quizFeedback'),
-    // Scenario Elements
+
+    // View 3: Apply
     scenarioCard: document.getElementById('scenarioCard'),
     scenarioSituation: document.getElementById('scenarioSituation'),
     scenarioGoal: document.getElementById('scenarioGoal'),
     scenarioInput: document.getElementById('scenarioInput'),
     scenarioSubmitBtn: document.getElementById('scenarioSubmitBtn'),
     scenarioFeedback: document.getElementById('scenarioFeedback'),
-    // Chat Elements
+    // Chat
     chatCard: document.getElementById('chatCard'),
     missionTitle: document.getElementById('missionTitle'),
     missionDesc: document.getElementById('missionDesc'),
@@ -51,7 +68,16 @@ const elements = {
     chatWindow: document.getElementById('chatWindow'),
     chatInput: document.getElementById('chatInput'),
     chatSendBtn: document.getElementById('chatSendBtn'),
-    // Dictionary Elements
+
+    // Stats (Modal)
+    statsBtn: document.getElementById('statsNavBtn'),
+    statsModal: document.getElementById('statsModal'),
+    closeStatsBtn: document.getElementById('closeStatsBtn'),
+    totalXp: document.getElementById('totalXp'),
+    activityStats: document.getElementById('activityStats'),
+    recentHistory: document.getElementById('recentHistory'),
+
+    // Dictionary (Modal)
     dictModal: document.getElementById('dictModal'),
     closeDictBtn: document.getElementById('closeDictBtn'),
     dictWord: document.getElementById('dictWord'),
@@ -61,272 +87,94 @@ const elements = {
     aiExplanation: document.getElementById('aiExplanation')
 };
 
-// --- Event Listeners ---
+// --- Navigation Logic ---
 
-// ... existing listeners ...
+function switchView(viewId) {
+    if (!viewId) return;
 
-if (elements.closeDictBtn) elements.closeDictBtn.addEventListener('click', () => {
-    elements.dictModal.classList.add('hidden');
-});
-if (elements.dictModal) elements.dictModal.addEventListener('click', (e) => {
-    if (e.target === elements.dictModal) elements.dictModal.classList.add('hidden');
-});
-if (elements.askAiBtn) elements.askAiBtn.addEventListener('click', askAiContext);
+    // Update Nav
+    elements.navItems.forEach(btn => {
+        if (btn.dataset.view === viewId) btn.classList.add('active');
+        else if (btn.dataset.view) btn.classList.remove('active'); 
+    });
 
-// ... existing code ...
-
-
-
-// ...
-
-// --- Dictionary Logic ---
-
-async function openDictionary(word, contextSentence) {
-    state.selectedWord = word;
-    state.selectedContext = contextSentence;
-    
-    elements.dictModal.classList.remove('hidden');
-    elements.dictWord.textContent = word;
-    elements.dictDefinition.innerHTML = '<div class="spinner" style="width:20px;height:20px;border-width:2px;display:inline-block"></div> Searching...';
-    elements.aiExplanation.classList.add('hidden');
-    elements.aiExplanation.textContent = '';
-    
-    try {
-        const res = await fetch('/api/dictionary/lookup', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ word: word })
-        });
-        const data = await res.json();
-        
-        if (data.results && data.results.length > 0) {
-            // Use an iframe to isolate dictionary scripts and styles
-            // This prevents script re-execution issues and global scope pollution
-            
-            // Clear previous content
-            elements.dictDefinition.innerHTML = '';
-            
-            const iframe = document.createElement('iframe');
-            iframe.style.width = '100%';
-            iframe.style.height = '100%';
-            iframe.style.border = 'none';
-            iframe.style.backgroundColor = '#ffffff'; // Force white background on iframe itself
-            
-            elements.dictDefinition.appendChild(iframe);
-            
-            const doc = iframe.contentWindow.document;
-            doc.open();
-            
-            // Re-construct the HTML with full structure to ensure scripts run
-            const definitionsHTML = data.results.map(r => `
-                <div class="dict-entry">
-                    <small style="color:#64748b; font-family: sans-serif;">${r.dictionary}</small>
-                    <div>${r.definition}</div>
-                </div>
-            `).join('<hr style="border-color:#e2e8f0; margin:1rem 0">');
-            
-            // Inject styles for the iframe content
-            const style = `
-                <style>
-                    body { 
-                        font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-                        color: #1e293b; 
-                        padding: 1.5rem; 
-                        margin: 0;
-                        background-color: #ffffff;
-                    }
-                    * { max-width: 100%; }
-                    /* Ensure dictionary images don't overflow */
-                    img { height: auto; }
-                </style>
-            `;
-            
-            doc.write(`
-                <!DOCTYPE html>
-                <html>
-                <head>
-                    ${style}
-                </head>
-                <body>${definitionsHTML}</body>
-                <script>
-                    document.addEventListener('click', function(e) {
-                        // Find if the click is on or inside an element with a sound link
-                        const target = e.target.closest('[href^="sound://"], [src^="sound://"]');
-                        if (target) {
-                            e.preventDefault();
-                            // Fallback to browser TTS
-                            // We use the selected word from the parent scope or text content
-                            // Since we are in an iframe, let's try to get the word from the context
-                            // The easiest is to speak the "dict-entry" text or just the word the user clicked originally.
-                            // But we don't have the word variable here. 
-                            // We can use the parent's generic TTS function if we expose it, or just use synthesis here.
-                            
-                            // Let's try to find the word in the DOM. Usually defined in a generic way.
-                            // Or better, let's inject the word into a global variable in this iframe.
-                            const word = window.currentWord || "";
-                            
-                            if (word) {
-                                const u = new SpeechSynthesisUtterance(word);
-                                u.lang = 'en-US';
-                                window.speechSynthesis.speak(u);
-                            } else {
-                                console.warn("No word found to speak");
-                            }
-                        }
-                    }, true);
-                </script>
-                </html>
-            `);
-            
-            // Inject the current word into the iframe window object for the script to use
-            iframe.contentWindow.currentWord = state.selectedWord;
-            
-            doc.close();
-
+    // Update Panels - MUST remove 'hidden' class because it has !important
+    elements.viewPanels.forEach(panel => {
+        if (panel.id === viewId) {
+            panel.classList.remove('hidden');
+            panel.classList.add('active');
         } else {
-            elements.dictDefinition.innerHTML = '<span style="color:#94a3b8">No local definition found. Try asking AI.</span>';
+            panel.classList.add('hidden');
+            panel.classList.remove('active');
         }
-    } catch (e) {
-        console.error(e);
-        elements.dictDefinition.textContent = 'Error loading definition: ' + e.message;
+    });
+
+    // Trigger specific renders to ensure visibility (handle 'hidden' classes on children)
+    if (viewId === 'viewDrill') {
+        renderMatrix();
+        console.log("Switched to Drill. Matrix Rows children:", elements.matrixRows.childElementCount);
+    } else if (viewId === 'viewApply') {
+        renderScenario();
+        renderChat();
+        console.log("Switched to Apply. Scenario hidden?", elements.scenarioCard.classList.contains('hidden'));
     }
 }
-
-async function askAiContext() {
-    if (!state.selectedWord || !state.selectedContext) return;
-    
-    elements.askAiBtn.disabled = true;
-    elements.askAiBtn.textContent = 'Thinking...';
-    elements.aiExplanation.classList.remove('hidden');
-    elements.aiExplanation.textContent = '...';
-    
-    try {
-        const res = await fetch('/api/dictionary/context', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ word: state.selectedWord, sentence: state.selectedContext })
-        });
-        const data = await res.json();
-        elements.aiExplanation.textContent = data.explanation;
-    } catch (e) {
-        elements.aiExplanation.textContent = 'Failed to get explanation.';
-    } finally {
-        elements.askAiBtn.disabled = false;
-        elements.askAiBtn.textContent = 'Ask AI to explain in context';
-    }
-}
-
-// Update displayStory to wrap words
-function displayStory(story) {
-    elements.storyTitle.textContent = story.title || `${story.target_tense} Story`;
-    let content = story.content;
-    
-    // First, preserve HTML tags (highlights) by splitting? 
-    // Actually, simple word wrapping might break existing spans.
-    // Enhanced approach: Process text content only? 
-    // For simplicity, let's just allow clicking ANY text.
-    // Or we tokenize by space and wrap.
-    
-    // Simplest working solution: Wrap EVERYTHING in a container that delegates clicks?
-    // But we need to identify the word.
-    
-    // Regex replace to wrap words not inside tags? Hard.
-    // Let's rely on event delegation on the `storyContent` div!
-    
-    // If existing highlights exist:
-    if (story.highlights && story.highlights.length > 0) {
-        story.highlights.forEach(phrase => {
-            const escaped = phrase.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-            const regex = new RegExp(`(${escaped})`, 'gi');
-            content = content.replace(regex, '<span class="story-highlight" title="Target Tense">$1</span>');
-        });
-    }
-    
-    elements.storyContent.innerHTML = content;
-    
-    // Simplified Click Handler: Just clear selection or handle basic clicks
-    elements.storyContent.onclick = (e) => {
-        // Optional: If we want single click to select word, we can use simpler logic
-        // But for now, let's rely on native Double Click or user selection.
-        // We can check if user clicked a specific word span if we implemented tokenization later.
-    };
-    
-    // Safer Double Click Handler
-    elements.storyContent.ondblclick = (e) => {
-        console.log("Double click detected!");
-        const sel = window.getSelection();
-        if (!sel.rangeCount) return;
-        
-        const word = sel.toString().trim();
-        console.log("Selected word:", word);
-        
-        if (word && word.length > 0) {
-             // Try to get a rough sentence context
-             let sentence = "";
-             try {
-                 const node = sel.anchorNode;
-                 if (node && node.nodeType === 3) { // Text node
-                     sentence = node.textContent; 
-                 } else if (node) {
-                     sentence = node.innerText || "";
-                 }
-             } catch(err) {
-                 sentence = "Context unavailable";
-             }
-             
-             // Clean the word of punctuation
-             const cleanWord = word.replace(/^[^\w]+|[^\w]+$/g, '');
-             console.log("Clean word:", cleanWord);
-             
-             if (cleanWord.length > 0) openDictionary(cleanWord, sentence);
-        }
-    };
-
-    if (story.grammar_notes && story.grammar_notes.length > 0) {
-        elements.storyNotes.classList.remove('hidden');
-        elements.storyNotes.innerHTML = `
-            <h4>Grammar Notes</h4>
-            <ul>
-                ${story.grammar_notes.map(note => `<li>${note}</li>`).join('')}
-            </ul>
-        `;
-    } else {
-        elements.storyNotes.classList.add('hidden');
-    }
-}
-
-// Expose to window for inline onclicks if needed? No, module.
-
 
 // --- Event Listeners ---
 
+// Navigation
+elements.navItems.forEach(btn => {
+    btn.addEventListener('click', () => {
+        const viewId = btn.dataset.view;
+        if (viewId) {
+            switchView(viewId);
+        } else if (btn.id === 'statsNavBtn') {
+            openStats();
+        }
+    });
+});
+
+// Learn View
 if (elements.loadBtn) elements.loadBtn.addEventListener('click', () => loadTheme(false));
 if (elements.shuffleBtn) elements.shuffleBtn.addEventListener('click', () => loadTheme(true));
-
 if (elements.topicInput) elements.topicInput.addEventListener('keydown', (e) => {
     if (e.key === 'Enter') loadTheme(false);
 });
 
+// Drill View (Tabs)
 elements.tabs.forEach(tab => {
     tab.addEventListener('click', () => {
         elements.tabs.forEach(t => t.classList.remove('active'));
         tab.classList.add('active');
         state.currentLayer = tab.dataset.layer;
+        
+        // Re-render everything that depends on tense
         renderMatrix();
-        renderStory();
+        renderStory(); // Story updates based on tense too
         renderScenario();
         renderChat();
     });
 });
 
-if (elements.closeQuizBtn) elements.closeQuizBtn.addEventListener('click', () => {
-    elements.quizModal.classList.add('hidden');
-});
-
+// Modals
+if (elements.closeQuizBtn) elements.closeQuizBtn.addEventListener('click', () => elements.quizModal.classList.add('hidden'));
 if (elements.quizModal) elements.quizModal.addEventListener('click', (e) => {
     if (e.target === elements.quizModal) elements.quizModal.classList.add('hidden');
 });
 
+if (elements.closeStatsBtn) elements.closeStatsBtn.addEventListener('click', () => elements.statsModal.classList.add('hidden'));
+if (elements.statsModal) elements.statsModal.addEventListener('click', (e) => {
+    if (e.target === elements.statsModal) elements.statsModal.classList.add('hidden');
+});
+
+// Dictionary
+if (elements.closeDictBtn) elements.closeDictBtn.addEventListener('click', () => elements.dictModal.classList.add('hidden'));
+if (elements.dictModal) elements.dictModal.addEventListener('click', (e) => {
+    if (e.target === elements.dictModal) elements.dictModal.classList.add('hidden');
+});
+if (elements.askAiBtn) elements.askAiBtn.addEventListener('click', askAiContext);
+
+// Apply View
 if (elements.scenarioSubmitBtn) elements.scenarioSubmitBtn.addEventListener('click', submitScenarioResponse);
 if (elements.scenarioInput) elements.scenarioInput.addEventListener('keydown', (e) => {
     if (e.key === 'Enter') submitScenarioResponse();
@@ -337,16 +185,7 @@ if (elements.chatInput) elements.chatInput.addEventListener('keydown', (e) => {
     if (e.key === 'Enter') sendChatMessage();
 });
 
-if (elements.statsBtn) elements.statsBtn.addEventListener('click', openStats);
-if (elements.closeStatsBtn) elements.closeStatsBtn.addEventListener('click', () => {
-    elements.statsModal.classList.add('hidden');
-});
-if (elements.statsModal) elements.statsModal.addEventListener('click', (e) => {
-    if (e.target === elements.statsModal) elements.statsModal.classList.add('hidden');
-});
-
-
-// --- Logic ---
+// --- Core Logic ---
 
 async function loadTheme(shuffle) {
     const topic = elements.topicInput.value.trim();
@@ -370,19 +209,25 @@ async function loadTheme(shuffle) {
 
         state.vocab = await res.json();
         state.topic = topic;
+        // Clear caches
         state.sentences = {}; 
         state.stories = {};   
         state.scenarios = {}; 
         state.chats = {}; 
 
-        renderVocab();
+        // Unhide content blocks
         elements.vocabSection.classList.remove('hidden');
-        elements.matrixSection.classList.remove('hidden');
+        elements.storyContainer.classList.remove('hidden'); 
         
-        await renderMatrix();
-        await renderStory();
-        await renderScenario();
-        await renderChat();
+        // Render
+        renderVocab();
+        await renderMatrix();  
+        await renderStory();    
+        await renderScenario(); 
+        await renderChat();     
+
+        // Focus Learn View
+        switchView('viewLearn');
 
     } catch (err) {
         showToast(err.message, 'error');
@@ -432,6 +277,7 @@ async function renderStory() {
     const layer = state.currentLayer;
     const cacheKey = `${topic}_${layer}`;
 
+    // Elements inside viewLearn/storyContainer
     elements.storyContainer.classList.remove('hidden');
     
     if (state.stories[cacheKey]) {
@@ -461,6 +307,61 @@ async function renderStory() {
     }
 }
 
+// Update displayStory to handle clicks and basic markdown
+function displayStory(story) {
+    elements.storyTitle.textContent = story.title || `${story.target_tense} Story`;
+    let content = story.content || "";
+    
+    // Basic Markdown Parsing (Bold & Italic)
+    content = content
+        .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+        .replace(/\*(.*?)\*/g, '<em>$1</em>');
+
+    if (story.highlights && story.highlights.length > 0) {
+        story.highlights.forEach(phrase => {
+            const escaped = phrase.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            const regex = new RegExp(`(${escaped})`, 'gi');
+            content = content.replace(regex, '<span class="story-highlight" title="Target Tense">$1</span>');
+        });
+    }
+    
+    elements.storyContent.innerHTML = content;
+    
+    // Double click to lookup
+    elements.storyContent.ondblclick = (e) => {
+        const sel = window.getSelection();
+        if (!sel.rangeCount) return;
+        
+        const word = sel.toString().trim();
+        if (word && word.length > 0) {
+             let sentence = "";
+             try {
+                 const node = sel.anchorNode;
+                 if (node && node.nodeType === 3) {
+                     sentence = node.textContent; 
+                 } else if (node) {
+                     sentence = node.innerText || "";
+                 }
+             } catch(err) {
+                 sentence = "Context unavailable";
+             }
+             const cleanWord = word.replace(/^[^\w]+|[^\w]+$/g, '');
+             if (cleanWord.length > 0) openDictionary(cleanWord, sentence);
+        }
+    };
+
+    if (story.grammar_notes && story.grammar_notes.length > 0) {
+        elements.storyNotes.classList.remove('hidden');
+        elements.storyNotes.innerHTML = `
+            <h4>Grammar Notes</h4>
+            <ul>
+                ${story.grammar_notes.map(note => `<li>${note}</li>`).join('')}
+            </ul>
+        `;
+    } else {
+        elements.storyNotes.classList.add('hidden');
+    }
+}
 
 
 // --- Matrix ---
@@ -468,6 +369,10 @@ async function renderStory() {
 async function renderMatrix() {
     const layer = state.currentLayer;
     elements.matrixRows.innerHTML = '<div style="padding:2rem; text-align:center; color:#94a3b8">Generating sentences...</div>';
+    
+    // Ensure Matrix Container is visible if it was hidden
+    // Note: In new layout, matrixSection is the scrollable container.
+    // We don't need to toggle visibility of matrixSection usually, direct render.
 
     if (!state.sentences[layer]) {
         try {
@@ -534,6 +439,7 @@ async function renderMatrix() {
         elements.matrixRows.appendChild(row);
     });
 }
+
 
 // --- Quiz ---
 
@@ -753,7 +659,6 @@ async function sendChatMessage() {
         session.messages.push({ role: 'ai', content: data.reply });
         elements.chatWindow.scrollTop = elements.chatWindow.scrollHeight;
         
-        // Log generic attempt (active engagement)
         logAttempt('mission', true, { message: txt });
         
     } catch(e) {
@@ -767,6 +672,121 @@ function appendMessage(role, text) {
     div.textContent = text;
     elements.chatWindow.appendChild(div);
 }
+
+// --- Dictionary Logic ---
+
+async function openDictionary(word, contextSentence) {
+    state.selectedWord = word;
+    state.selectedContext = contextSentence;
+    
+    elements.dictModal.classList.remove('hidden');
+    elements.dictWord.textContent = word;
+    elements.dictDefinition.innerHTML = '<div class="spinner" style="width:20px;height:20px;border-width:2px;display:inline-block"></div> Searching...';
+    elements.aiExplanation.classList.add('hidden');
+    elements.aiExplanation.textContent = '';
+    
+    try {
+        const res = await fetch('/api/dictionary/lookup', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ word: word })
+        });
+        const data = await res.json();
+        
+        if (data.results && data.results.length > 0) {
+            
+            elements.dictDefinition.innerHTML = '';
+            
+            const iframe = document.createElement('iframe');
+            iframe.style.width = '100%';
+            iframe.style.height = '100%';
+            iframe.style.border = 'none';
+            iframe.style.backgroundColor = '#ffffff'; 
+            
+            elements.dictDefinition.appendChild(iframe);
+            
+            const doc = iframe.contentWindow.document;
+            doc.open();
+            
+            const definitionsHTML = data.results.map(r => `
+                <div class="dict-entry">
+                    <small style="color:#64748b; font-family: sans-serif;">${r.dictionary}</small>
+                    <div>${r.definition}</div>
+                </div>
+            `).join('<hr style="border-color:#e2e8f0; margin:1rem 0">');
+            
+            const style = `
+                <style>
+                    body { 
+                        font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+                        color: #1e293b; 
+                        padding: 1.5rem; 
+                        margin: 0;
+                        background-color: #ffffff;
+                    }
+                    * { max-width: 100%; }
+                    img { height: auto; }
+                </style>
+            `;
+            
+            doc.write(`
+                <!DOCTYPE html>
+                <html>
+                <head>${style}</head>
+                <body>${definitionsHTML}</body>
+                <script>
+                    document.addEventListener('click', function(e) {
+                        const target = e.target.closest('[href^="sound://"], [src^="sound://"]');
+                        if (target) {
+                            e.preventDefault();
+                            const word = window.currentWord || "";
+                            if (word) {
+                                const u = new SpeechSynthesisUtterance(word);
+                                u.lang = 'en-US';
+                                window.speechSynthesis.speak(u);
+                            }
+                        }
+                    }, true);
+                </script>
+                </html>
+            `);
+            
+            iframe.contentWindow.currentWord = state.selectedWord;
+            doc.close();
+
+        } else {
+            elements.dictDefinition.innerHTML = '<span style="color:#94a3b8">No local definition found. Try asking AI.</span>';
+        }
+    } catch (e) {
+        console.error(e);
+        elements.dictDefinition.textContent = 'Error loading definition: ' + e.message;
+    }
+}
+
+async function askAiContext() {
+    if (!state.selectedWord || !state.selectedContext) return;
+    
+    elements.askAiBtn.disabled = true;
+    elements.askAiBtn.textContent = 'Thinking...';
+    elements.aiExplanation.classList.remove('hidden');
+    elements.aiExplanation.textContent = '...';
+    
+    try {
+        const res = await fetch('/api/dictionary/context', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ word: state.selectedWord, sentence: state.selectedContext })
+        });
+        const data = await res.json();
+        elements.aiExplanation.textContent = data.explanation;
+    } catch (e) {
+        elements.aiExplanation.textContent = 'Failed to get explanation.';
+    } finally {
+        elements.askAiBtn.disabled = false;
+        elements.askAiBtn.textContent = 'Ask AI to explain in context';
+    }
+}
+
 
 // --- Stats & Logging ---
 

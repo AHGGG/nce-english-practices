@@ -8,6 +8,7 @@
     - [x] Local Caching (JSON).
 - [x] **UI/UX Refreshed**:
     - [x] Modern Dark Mode interface (Glassmorphism).
+    - [x] **Sidebar Navigation Layout** (Learn / Drill / Apply views).
     - [x] Responsive Design.
 
 ## ✅ Phase 2: The "Active Gym" Implementation (Completed)

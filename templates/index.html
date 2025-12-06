@@ -9,7 +9,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="/static/css/style.css">
+    <link rel="stylesheet" href="/static/css/style.css?v=6">
     <link rel="manifest" href="/static/manifest.json">
     <link rel="apple-touch-icon" href="/static/icon-192.png">
 
@@ -26,138 +26,172 @@
 
 <body>
 
-    <div class="app-container">
-        <!-- Header / Topic Section -->
-        <header class="app-header">
+    <div class="app-layout">
+        <!-- Sidebar Navigation -->
+        <aside class="sidebar">
             <div class="logo">
                 <h1>NCE Practice</h1>
                 <span class="badge">AI Tutor</span>
             </div>
 
             <div class="topic-input-group">
-                <input type="text" id="topicInput" placeholder="Enter a topic (e.g., travel, coding)..."
-                    autocomplete="off">
-                <button id="loadBtn" class="btn-primary">
-                    <span class="icon">✨</span> Generate
+                <input type="text" id="topicInput" placeholder="Enter topic..." autocomplete="off">
+                <button id="loadBtn" class="btn-icon" title="Generate">
+                    ✨
                 </button>
             </div>
 
-            <button id="statsBtn" class="btn-secondary" style="margin-left:auto">
-                📊 Stats
-            </button>
-        </header>
+            <nav class="nav-menu">
+                <button class="nav-item active" data-view="viewLearn">
+                    <span class="icon">📚</span> Learn
+                </button>
+                <button class="nav-item" data-view="viewDrill">
+                    <span class="icon">⚡</span> Drill
+                </button>
+                <button class="nav-item" data-view="viewApply">
+                    <span class="icon">🚀</span> Apply
+                </button>
+                <div class="spacer"></div>
+                <button class="nav-item" id="statsNavBtn">
+                    <span class="icon">📊</span> Stats
+                </button>
+            </nav>
+        </aside>
 
-        <main>
-            <!-- ... (existing main content) ... -->
+        <!-- Main Content Area -->
+        <main class="main-content">
 
-            <!-- Loading Overlay -->
+            <!-- Global Loading -->
             <div id="loadingOverlay" class="loading-overlay hidden">
                 <div class="spinner"></div>
                 <p id="loadingText">Consulting the AI...</p>
             </div>
 
-            <!-- Vocabulary Section -->
-            <section id="vocabSection" class="vocab-section hidden">
-                <div class="section-header">
-                    <h2>Vocabulary</h2>
-                    <button id="shuffleBtn" class="btn-secondary" title="Shuffle Words">
-                        <span class="icon">🎲</span> Shuffle
-                    </button>
-                </div>
+            <!-- VIEW 1: LEARN (Context & Input) -->
+            <section id="viewLearn" class="view-panel active">
+                <header class="panel-header">
+                    <h2>Context & Vocabulary</h2>
+                    <div class="header-actions">
+                        <button id="shuffleBtn" class="btn-secondary is-small">
+                            <span class="icon">🎲</span> Refresh
+                        </button>
+                    </div>
+                </header>
 
-                <div class="vocab-grid" id="vocabGrid">
-                    <!-- Vocab cards injected here -->
+                <div class="panel-content scrollable">
+                    <!-- Vocabulary Section -->
+                    <div id="vocabSection" class="section-block hidden">
+                        <h3 class="section-label">Core Vocabulary</h3>
+                        <div class="vocab-grid" id="vocabGrid">
+                            <!-- Vocab cards injected here -->
+                        </div>
+                    </div>
+
+                    <!-- Story Section -->
+                    <div id="storyContainer" class="section-block hidden">
+                        <h3 class="section-label">Context Story</h3>
+                        <div class="story-card">
+                            <h3 class="story-title" id="storyTitle">Context Story</h3>
+                            <div class="story-content" id="storyContent">
+                                Loading story...
+                            </div>
+                            <div class="story-notes hidden" id="storyNotes">
+                                <!-- Grammar notes injected here -->
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </section>
 
-            <!-- Tense Matrix Section -->
-            <section id="matrixSection" class="matrix-section hidden">
-                <div class="tabs">
-                    <button class="tab-btn active" data-layer="present">Present</button>
-                    <button class="tab-btn" data-layer="past">Past</button>
-                    <button class="tab-btn" data-layer="future">Future</button>
-                    <button class="tab-btn" data-layer="past_future">Past Future</button>
-                </div>
-
-                <!-- Story & Scenario & Chat Container -->
-                <div id="storyContainer" class="story-container hidden">
-
-                    <!-- Context Story Card -->
-                    <div class="story-card">
-                        <h3 class="story-title" id="storyTitle">Context Story</h3>
-                        <div class="story-content" id="storyContent">
-                            Loading story...
-                        </div>
-                        <div class="story-notes hidden" id="storyNotes">
-                            <!-- Grammar notes injected here -->
-                        </div>
+            <!-- VIEW 2: DRILL (Matrix) -->
+            <section id="viewDrill" class="view-panel hidden">
+                <header class="panel-header">
+                    <h2>Tense Matrix Drill</h2>
+                    <div class="tabs">
+                        <button class="tab-btn active" data-layer="present">Present</button>
+                        <button class="tab-btn" data-layer="past">Past</button>
+                        <button class="tab-btn" data-layer="future">Future</button>
+                        <button class="tab-btn" data-layer="past_future">Past Future</button>
                     </div>
+                </header>
 
-                    <!-- Scenario Challenge Card -->
-                    <div class="scenario-card hidden" id="scenarioCard">
-                        <div class="scenario-header">
-                            <h3>Real-life Challenge</h3>
-                            <span class="badge-scenario">Apply</span>
-                        </div>
-                        <div class="scenario-body">
-                            <p class="scenario-situation" id="scenarioSituation">Loading situation...</p>
-                            <div class="scenario-goal">
-                                <strong>Goal:</strong> <span id="scenarioGoal">...</span>
-                            </div>
-                            <div class="scenario-input-group">
-                                <input type="text" id="scenarioInput" placeholder="Type your response here..."
-                                    autocomplete="off">
-                                <button id="scenarioSubmitBtn" class="btn-action">Submit</button>
-                            </div>
-                            <div class="scenario-feedback hidden" id="scenarioFeedback">
-                                <!-- Feedback injected here -->
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Chat Roleplay Card -->
-                    <div class="chat-card hidden" id="chatCard">
-                        <div class="chat-header">
-                            <h3>Secret Mission</h3>
-                            <span class="badge-roleplay">Speak</span>
+                <div class="panel-content scrollable" id="matrixSection">
+                    <div class="matrix-container" id="matrixContainer">
+                        <div class="matrix-header">
+                            <div class="col-header">Form</div>
+                            <div class="col-header">Simple</div>
+                            <div class="col-header">Perfect</div>
+                            <div class="col-header">Progressive</div>
+                            <div class="col-header">Perfect Prog.</div>
                         </div>
 
-                        <div class="mission-brief" id="missionBrief">
-                            <strong id="missionTitle">Loading Mission...</strong>
-                            <p id="missionDesc">...</p>
-                            <div class="mission-goals">
-                                <small>OBJECTIVES:</small>
-                                <ul id="missionGoals"></ul>
-                            </div>
+                        <!-- Matrix Rows -->
+                        <div id="matrixRows" class="matrix-rows">
+                            <!-- Rows injected via JS -->
                         </div>
-
-                        <div class="chat-window" id="chatWindow">
-                            <!-- Messages -->
-                        </div>
-
-                        <div class="chat-input-area">
-                            <input type="text" id="chatInput" placeholder="Say something..." autocomplete="off">
-                            <button id="chatSendBtn" class="btn-action">Send</button>
-                        </div>
-                    </div>
-
-                </div>
-
-                <div class="matrix-container">
-                    <div class="matrix-header">
-                        <div class="col-header">Form</div>
-                        <div class="col-header">Simple</div>
-                        <div class="col-header">Perfect</div>
-                        <div class="col-header">Progressive</div>
-                        <div class="col-header">Perfect Prog.</div>
-                    </div>
-
-                    <!-- Matrix Rows -->
-                    <div id="matrixRows" class="matrix-rows">
-                        <!-- Rows injected via JS -->
                     </div>
                 </div>
             </section>
+
+            <!-- VIEW 3: APPLY (Scenario & Chat) -->
+            <section id="viewApply" class="view-panel hidden">
+                <header class="panel-header">
+                    <h2>Real-World Application</h2>
+                </header>
+
+                <div class="panel-content scrollable">
+                    <div class="split-view">
+                        <!-- Scenario Challenge Card -->
+                        <div class="scenario-card hidden" id="scenarioCard">
+                            <div class="scenario-header">
+                                <h3>Wait for it...</h3>
+                                <span class="badge-scenario">Challenge</span>
+                            </div>
+                            <div class="scenario-body">
+                                <p class="scenario-situation" id="scenarioSituation">Loading situation...</p>
+                                <div class="scenario-goal">
+                                    <strong>Goal:</strong> <span id="scenarioGoal">...</span>
+                                </div>
+                                <div class="scenario-input-group">
+                                    <input type="text" id="scenarioInput" placeholder="Type your response here..."
+                                        autocomplete="off">
+                                    <button id="scenarioSubmitBtn" class="btn-action">Submit</button>
+                                </div>
+                                <div class="scenario-feedback hidden" id="scenarioFeedback">
+                                    <!-- Feedback injected here -->
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Chat Roleplay Card -->
+                        <div class="chat-card hidden" id="chatCard">
+                            <div class="chat-header">
+                                <h3>Secret Mission</h3>
+                                <span class="badge-roleplay">Roleplay</span>
+                            </div>
+
+                            <div class="mission-brief" id="missionBrief">
+                                <strong id="missionTitle">Loading Mission...</strong>
+                                <p id="missionDesc">...</p>
+                                <div class="mission-goals">
+                                    <small>OBJECTIVES:</small>
+                                    <ul id="missionGoals"></ul>
+                                </div>
+                            </div>
+
+                            <div class="chat-window" id="chatWindow">
+                                <!-- Messages -->
+                            </div>
+
+                            <div class="chat-input-area">
+                                <input type="text" id="chatInput" placeholder="Say something..." autocomplete="off">
+                                <button id="chatSendBtn" class="btn-action">Send</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
         </main>
     </div>
 
@@ -178,7 +212,7 @@
         </div>
     </div>
 
-    <!-- Stats Modal -->
+    <!-- Stats Modal (Can be converted to view later, keeping modal for now but triggered from sidebar) -->
     <div id="statsModal" class="modal hidden">
         <div class="modal-content">
             <div class="modal-header">
