@@ -10,7 +10,7 @@
     - [x] Modern Dark Mode interface (Glassmorphism).
     - [x] Responsive Design.
 
-## 🚧 Phase 2: The "Active Gym" Implementation (Current Focus)
+## ✅ Phase 2: The "Active Gym" Implementation (Completed)
 
 ### Stage 1: Learn (Context)
 - [x] **Story Generator** (`/api/story`).
@@ -32,7 +32,13 @@
     - [x] Stateful Chat interface (`/api/chat`).
     - [x] "Secret Mission" prompt engineering.
 
-## ⏳ Phase 3: Retention & Polish
-- [ ] User Accounts / Progress Tracking.
-- [ ] Anki Export.
-- [ ] PWA Support.
+## 🚧 Phase 3: Retention & Polish (Current Focus)
+- [x] **Data Dashboard**:
+    - [x] Backend Strategy pattern for stats (`/api/stats`).
+    - [x] Frontend specific Visualization (XP, Recent Activity).
+- [x] **PWA Support** (Installable App).
+- [ ] **Hybrid Dictionary System**:
+    - [ ] MDX Parser service (`readmdict`).
+    - [ ] `/api/dictionary` endpoint.
+    - [ ] Frontend Popover UI.
+- [ ] **Anki Export**.

@@ -14,6 +14,9 @@ from chat_manager import start_new_mission, handle_chat_turn
 from practice_core import client, grade_sentence, log_matrix_attempt
 from models import SelectionSnapshot, Story, QuizItem, ScenarioPrompt, ScenarioResponse, Mission
 
+# [DB] Import new DB functions
+from database import log_session, log_story, log_attempt, get_user_stats
+
 app = FastAPI(title="NCE English Practice")
 
 app.mount("/static", StaticFiles(directory="static"), name="static")
@@ -82,11 +85,38 @@ class LogRequest(BaseModel):
     result: Dict[str, Any]
     wh_word: Optional[str] = None
 
+class GenericLogRequest(BaseModel):
+    activity_type: str # quiz, mission
+    topic: str
+    tense: str
+    is_pass: bool
+    details: Dict[str, Any] = {}
+
 # --- Routes ---
 
 @app.get("/")
 async def read_root(request: Request):
     return templates.TemplateResponse("index.html", {"request": request})
+
+@app.get("/api/stats")
+async def api_get_stats():
+    return get_user_stats()
+
+@app.post("/api/log_attempt")
+async def api_log_generic(payload: GenericLogRequest):
+    try:
+        log_attempt(
+            activity_type=payload.activity_type,
+            topic=payload.topic,
+            tense=payload.tense,
+            input_data={},
+            user_response=payload.details,
+            is_pass=payload.is_pass
+        )
+        return {"status": "ok"}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
 
 @app.post("/api/theme")
 async def api_generate_theme(payload: ThemeRequest):
@@ -104,6 +134,10 @@ async def api_generate_theme(payload: ThemeRequest):
             refresh=True if prev_vocab_obj else False,
             previous_vocab=prev_vocab_obj
         )
+        
+        # [DB] Log Session
+        log_session(payload.topic, vocab.serialize())
+
         return vocab.serialize()
     except RuntimeError as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -116,6 +150,10 @@ async def api_generate_story(payload: StoryRequest):
             tense=payload.target_tense,
             client=client
         )
+        
+        # [DB] Log Story
+        log_story(payload.topic, payload.target_tense, story.dict())
+
         return story
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -157,6 +195,17 @@ async def api_grade_scenario(payload: ScenarioGradeRequest):
             user_input=payload.user_input,
             tense=payload.tense
         )
+        
+        # [DB] Log Attempt
+        log_attempt(
+            activity_type='scenario',
+            topic='unknown',
+            tense=payload.tense,
+            input_data={"situation": payload.situation, "goal": payload.goal},
+            user_response={"text": payload.user_input},
+            is_pass=result.is_pass
+        )
+
         return result
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

@@ -6,6 +6,7 @@ const state = {
     sentences: {}, // cache by time_layer
     stories: {},   // cache by topic_tense
     scenarios: {}, // cache by topic_tense
+    chats: {},     // cache by topic_tense
     currentScenario: null
 };
 
@@ -46,15 +47,22 @@ const elements = {
     missionGoals: document.getElementById('missionGoals'),
     chatWindow: document.getElementById('chatWindow'),
     chatInput: document.getElementById('chatInput'),
-    chatSendBtn: document.getElementById('chatSendBtn')
+    chatSendBtn: document.getElementById('chatSendBtn'),
+    // Stats Elements
+    statsBtn: document.getElementById('statsBtn'),
+    statsModal: document.getElementById('statsModal'),
+    closeStatsBtn: document.getElementById('closeStatsBtn'),
+    totalXp: document.getElementById('totalXp'),
+    activityStats: document.getElementById('activityStats'),
+    recentHistory: document.getElementById('recentHistory')
 };
 
 // --- Event Listeners ---
 
-elements.loadBtn.addEventListener('click', () => loadTheme(false));
-elements.shuffleBtn.addEventListener('click', () => loadTheme(true));
+if (elements.loadBtn) elements.loadBtn.addEventListener('click', () => loadTheme(false));
+if (elements.shuffleBtn) elements.shuffleBtn.addEventListener('click', () => loadTheme(true));
 
-elements.topicInput.addEventListener('keydown', (e) => {
+if (elements.topicInput) elements.topicInput.addEventListener('keydown', (e) => {
     if (e.key === 'Enter') loadTheme(false);
 });
 
@@ -70,26 +78,34 @@ elements.tabs.forEach(tab => {
     });
 });
 
-elements.closeQuizBtn.addEventListener('click', () => {
+if (elements.closeQuizBtn) elements.closeQuizBtn.addEventListener('click', () => {
     elements.quizModal.classList.add('hidden');
 });
 
-elements.quizModal.addEventListener('click', (e) => {
+if (elements.quizModal) elements.quizModal.addEventListener('click', (e) => {
     if (e.target === elements.quizModal) elements.quizModal.classList.add('hidden');
 });
 
-elements.scenarioSubmitBtn.addEventListener('click', submitScenarioResponse);
-elements.scenarioInput.addEventListener('keydown', (e) => {
+if (elements.scenarioSubmitBtn) elements.scenarioSubmitBtn.addEventListener('click', submitScenarioResponse);
+if (elements.scenarioInput) elements.scenarioInput.addEventListener('keydown', (e) => {
     if (e.key === 'Enter') submitScenarioResponse();
 });
 
-elements.chatSendBtn.addEventListener('click', sendChatMessage);
-elements.chatInput.addEventListener('keydown', (e) => {
+if (elements.chatSendBtn) elements.chatSendBtn.addEventListener('click', sendChatMessage);
+if (elements.chatInput) elements.chatInput.addEventListener('keydown', (e) => {
     if (e.key === 'Enter') sendChatMessage();
 });
 
+if (elements.statsBtn) elements.statsBtn.addEventListener('click', openStats);
+if (elements.closeStatsBtn) elements.closeStatsBtn.addEventListener('click', () => {
+    elements.statsModal.classList.add('hidden');
+});
+if (elements.statsModal) elements.statsModal.addEventListener('click', (e) => {
+    if (e.target === elements.statsModal) elements.statsModal.classList.add('hidden');
+});
 
-// --- Actions ---
+
+// --- Logic ---
 
 async function loadTheme(shuffle) {
     const topic = elements.topicInput.value.trim();
@@ -116,7 +132,7 @@ async function loadTheme(shuffle) {
         state.sentences = {}; 
         state.stories = {};   
         state.scenarios = {}; 
-        state.chats = {}; // Cache chats { session_id, mission, messages }
+        state.chats = {}; 
 
         renderVocab();
         elements.vocabSection.classList.remove('hidden');
@@ -134,121 +150,6 @@ async function loadTheme(shuffle) {
     }
 }
 
-// ... renderVocab / renderStory / renderScenario / submitScenarioResponse ...
-
-// --- Chat ---
-
-async function renderChat() {
-    const topic = state.topic;
-    const layer = state.currentLayer;
-    
-    elements.chatCard.classList.remove('hidden');
-    elements.chatWindow.innerHTML = '';
-    elements.missionTitle.innerHTML = '<span style="color:#94a3b8">Initiating Mission...</span>';
-    elements.missionDesc.textContent = '...';
-    elements.missionGoals.innerHTML = '';
-    elements.chatInput.value = '';
-    
-    // Check if we already have an active session for this topic+layer
-    // Actually, one chat per topic/layer tuple is good.
-    const cacheKey = `${topic}_${layer}`;
-    
-    if (state.chats && state.chats[cacheKey]) {
-        restoreChat(state.chats[cacheKey]);
-        return;
-    }
-
-    try {
-        const res = await fetch('/api/chat/start', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ topic: topic, tense: layer, aspect: 'simple' })
-        });
-        
-        if (!res.ok) throw new Error((await res.json()).detail);
-        
-        const data = await res.json();
-        
-        // Save to state
-        const chatSession = {
-            session_id: data.session_id,
-            mission: data.mission,
-            messages: [{ role: 'ai', content: data.first_message }]
-        };
-        
-        if (!state.chats) state.chats = {};
-        state.chats[cacheKey] = chatSession;
-        
-        restoreChat(chatSession);
-
-    } catch (err) {
-        elements.missionTitle.textContent = "Mission Failed to Start";
-        elements.missionDesc.textContent = err.message;
-    }
-}
-
-function restoreChat(session) {
-    elements.missionTitle.textContent = session.mission.title;
-    elements.missionDesc.textContent = session.mission.description;
-    
-    elements.missionGoals.innerHTML = session.mission.required_grammar
-        .map(g => `<li>${g}</li>`).join('');
-        
-    elements.chatWindow.innerHTML = '';
-    session.messages.forEach(msg => {
-        appendMessage(msg.role, msg.content);
-    });
-}
-
-async function sendChatMessage() {
-    const txt = elements.chatInput.value.trim();
-    if (!txt) return;
-    
-    const topic = state.topic;
-    const layer = state.currentLayer;
-    const cacheKey = `${topic}_${layer}`;
-    const session = state.chats[cacheKey];
-    
-    if (!session) return;
-    
-    // Optimistic UI
-    appendMessage('user', txt);
-    elements.chatInput.value = '';
-    session.messages.push({ role: 'user', content: txt });
-    
-    // Scroll to bottom
-    elements.chatWindow.scrollTop = elements.chatWindow.scrollHeight;
-
-    try {
-        const res = await fetch('/api/chat/reply', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ session_id: session.session_id, message: txt })
-        });
-        
-        if (!res.ok) throw new Error((await res.json()).detail);
-        
-        const data = await res.json();
-        const reply = data.reply;
-        
-        appendMessage('ai', reply);
-        session.messages.push({ role: 'ai', content: reply });
-        elements.chatWindow.scrollTop = elements.chatWindow.scrollHeight;
-
-    } catch (err) {
-        appendMessage('system', 'Error sending message.');
-    }
-}
-
-function appendMessage(role, text) {
-    const msg = document.createElement('div');
-    msg.className = `chat-message ${role}`;
-    msg.textContent = text;
-    elements.chatWindow.appendChild(msg);
-}
-
-// ... openQuiz / displayQuiz / renderMatrix ...
-
 function renderVocab() {
     elements.vocabGrid.innerHTML = '';
     
@@ -257,7 +158,6 @@ function renderVocab() {
     const slots = state.vocab.slots;
     const verbs = state.vocab.verbs || [];
 
-    const order = ['subject', 'verb', 'object', 'manner', 'place', 'time'];
     let verbDisplay = "—";
     if (verbs.length > 0) {
         const v = verbs[0];
@@ -344,163 +244,7 @@ function displayStory(story) {
     }
 }
 
-// --- Scenario ---
-
-async function renderScenario() {
-    const topic = state.topic;
-    const layer = state.currentLayer;
-    
-    elements.scenarioCard.classList.remove('hidden');
-    elements.scenarioSituation.innerHTML = '<span style="color:#94a3b8">Finding a situation...</span>';
-    elements.scenarioGoal.textContent = '...';
-    elements.scenarioFeedback.classList.add('hidden');
-    elements.scenarioInput.value = '';
-    elements.scenarioInput.disabled = false;
-    elements.scenarioSubmitBtn.disabled = false;
-
-    if (!state.scenarios) state.scenarios = {};
-    const cacheKey = `${topic}_${layer}`;
-
-    if (state.scenarios[cacheKey]) {
-        displayScenario(state.scenarios[cacheKey]);
-        return;
-    }
-
-    try {
-        const res = await fetch('/api/scenario', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ topic: topic, tense: layer, aspect: 'simple' }) 
-        });
-        
-        if (!res.ok) throw new Error((await res.json()).detail);
-        
-        const scenario = await res.json();
-        state.scenarios[cacheKey] = scenario;
-        displayScenario(scenario);
-
-    } catch (err) {
-        elements.scenarioSituation.textContent = "Could not load scenario.";
-    }
-}
-
-function displayScenario(scenario) {
-    elements.scenarioSituation.textContent = scenario.situation;
-    elements.scenarioGoal.textContent = scenario.goal;
-    state.currentScenario = scenario;
-}
-
-async function submitScenarioResponse() {
-    const input = elements.scenarioInput.value.trim();
-    if (!input) return;
-    if (!state.currentScenario) return;
-
-    elements.scenarioInput.disabled = true;
-    elements.scenarioSubmitBtn.disabled = true;
-    elements.scenarioFeedback.classList.remove('hidden');
-    elements.scenarioFeedback.innerHTML = '<div class="spinner" style="width:20px;height:20px;border-width:2px;display:inline-block"></div> Grading...';
-    elements.scenarioFeedback.className = 'scenario-feedback';
-
-    try {
-        const payload = {
-            situation: state.currentScenario.situation,
-            goal: state.currentScenario.goal,
-            user_input: input,
-            tense: state.currentLayer
-        };
-
-        const res = await fetch('/api/scenario/grade', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
-        });
-
-        if (!res.ok) throw new Error((await res.json()).detail);
-        const result = await res.json();
-        
-        const cls = result.is_pass ? 'pass' : 'fail';
-        elements.scenarioFeedback.className = `scenario-feedback ${cls}`;
-        elements.scenarioFeedback.innerHTML = `
-            <strong>${result.is_pass ? 'Passed!' : 'Needs Improvement'}</strong><br>
-            ${result.feedback}
-            ${result.improved_version ? `<span class="improved-version">💡 Better: "${result.improved_version}"</span>` : ''}
-        `;
-
-        if (!result.is_pass) {
-             elements.scenarioInput.disabled = false;
-             elements.scenarioSubmitBtn.disabled = false;
-        }
-
-    } catch (err) {
-        elements.scenarioFeedback.innerHTML = `<span style="color:red">Error: ${err.message}</span>`;
-        elements.scenarioInput.disabled = false;
-        elements.scenarioSubmitBtn.disabled = false;
-    }
-}
-
-// --- Matrix & Quiz ---
-
-async function openQuiz(tenseLabel, aspectLabel, sentence) {
-    if (!sentence || sentence === '—') return;
-    
-    elements.quizModal.classList.remove('hidden');
-    elements.quizQuestion.innerHTML = '<div class="spinner" style="width:30px;height:30px;border-width:2px"></div><div style="text-align:center;font-size:0.9rem;color:#94a3b8">Generating Drill...</div>';
-    elements.quizOptions.innerHTML = '';
-    elements.quizFeedback.classList.add('hidden');
-    elements.quizTitle.textContent = `${tenseLabel} · ${aspectLabel}`;
-
-    try {
-        const payload = {
-            topic: state.topic,
-            tense: state.currentLayer,
-            aspect: aspectLabel.toLowerCase(),
-            correct_sentence: sentence
-        };
-
-        const res = await fetch('/api/quiz', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
-        });
-
-        if (!res.ok) throw new Error((await res.json()).detail);
-        const quiz = await res.json();
-        displayQuiz(quiz);
-
-    } catch (err) {
-        elements.quizQuestion.innerHTML = `<span style="color:red">Error: ${err.message}</span>`;
-    }
-}
-
-function displayQuiz(quiz) {
-    elements.quizQuestion.textContent = quiz.question_context;
-    elements.quizOptions.innerHTML = '';
-    
-    quiz.options.forEach(opt => {
-        const btn = document.createElement('div');
-        btn.className = 'quiz-option';
-        btn.innerHTML = `<span class="option-marker">${opt.id}</span> <span>${opt.text}</span>`;
-        
-        btn.onclick = () => {
-            if (btn.classList.contains('disabled')) return;
-            const allOpts = document.querySelectorAll('.quiz-option');
-            allOpts.forEach(o => o.classList.add('disabled'));
-            
-            if (opt.is_correct) {
-                btn.classList.add('correct');
-                elements.quizFeedback.innerHTML = `<strong>Correct!</strong> <br> ${opt.explanation}`;
-                elements.quizFeedback.className = 'quiz-feedback';
-            } else {
-                btn.classList.add('incorrect');
-                const correctBtn = Array.from(allOpts).find(o => o.querySelector('.option-marker').textContent === quiz.options.find(q => q.is_correct).id);
-                if (correctBtn) correctBtn.classList.add('correct');
-                elements.quizFeedback.innerHTML = `<strong>Incorrect.</strong> <br> ${opt.explanation || "Better luck next time!"}`;
-                elements.quizFeedback.className = 'quiz-feedback';
-            }
-        };
-        elements.quizOptions.appendChild(btn);
-    });
-}
+// --- Matrix ---
 
 async function renderMatrix() {
     const layer = state.currentLayer;
@@ -572,12 +316,297 @@ async function renderMatrix() {
     });
 }
 
-function setLoading(isLoading) {
-    if (isLoading) {
-        elements.loadingOverlay.classList.remove('hidden');
-    } else {
-        elements.loadingOverlay.classList.add('hidden');
+// --- Quiz ---
+
+async function openQuiz(tenseLabel, aspectLabel, sentence) {
+    if (!sentence || sentence === '—') return;
+    
+    elements.quizModal.classList.remove('hidden');
+    elements.quizQuestion.innerHTML = '<div class="spinner" style="width:30px;height:30px;border-width:2px"></div><div style="text-align:center;font-size:0.9rem;color:#94a3b8">Generating Drill...</div>';
+    elements.quizOptions.innerHTML = '';
+    elements.quizFeedback.classList.add('hidden');
+    elements.quizTitle.textContent = `${tenseLabel} · ${aspectLabel}`;
+
+    try {
+        const payload = {
+            topic: state.topic,
+            tense: state.currentLayer,
+            aspect: aspectLabel.toLowerCase(),
+            correct_sentence: sentence
+        };
+
+        const res = await fetch('/api/quiz', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+
+        if (!res.ok) throw new Error((await res.json()).detail);
+        const quiz = await res.json();
+        displayQuiz(quiz);
+
+    } catch (err) {
+        elements.quizQuestion.innerHTML = `<span style="color:red">Error: ${err.message}</span>`;
     }
+}
+
+function displayQuiz(quiz) {
+    elements.quizQuestion.textContent = quiz.question_context;
+    elements.quizOptions.innerHTML = '';
+    
+    quiz.options.forEach(opt => {
+        const btn = document.createElement('div');
+        btn.className = 'quiz-option';
+        btn.innerHTML = `<span class="option-marker">${opt.id}</span> <span>${opt.text}</span>`;
+        
+        btn.onclick = () => {
+            if (btn.classList.contains('disabled')) return;
+            const allOpts = document.querySelectorAll('.quiz-option');
+            allOpts.forEach(o => o.classList.add('disabled'));
+            
+            if (opt.is_correct) {
+                btn.classList.add('correct');
+                elements.quizFeedback.innerHTML = `<strong>Correct!</strong> <br> ${opt.explanation}`;
+                elements.quizFeedback.className = 'quiz-feedback';
+                logAttempt('quiz', true, { question: quiz.question_context, answer: opt.text });
+            } else {
+                btn.classList.add('incorrect');
+                const correctBtn = Array.from(allOpts).find(o => o.querySelector('.option-marker').textContent === quiz.options.find(q => q.is_correct).id);
+                if (correctBtn) correctBtn.classList.add('correct');
+                elements.quizFeedback.innerHTML = `<strong>Incorrect.</strong> <br> ${opt.explanation || "Better luck next time!"}`;
+                elements.quizFeedback.className = 'quiz-feedback';
+                logAttempt('quiz', false, { question: quiz.question_context, answer: opt.text });
+            }
+        };
+        elements.quizOptions.appendChild(btn);
+    });
+}
+
+// --- Scenario ---
+
+async function renderScenario() {
+    const topic = state.topic;
+    const layer = state.currentLayer;
+    const cacheKey = `${topic}_${layer}`;
+    
+    elements.scenarioCard.classList.remove('hidden');
+    elements.scenarioSituation.innerHTML = '<span style="color:#94a3b8">Finding a situation...</span>';
+    elements.scenarioGoal.textContent = '...';
+    elements.scenarioFeedback.classList.add('hidden');
+    elements.scenarioInput.value = '';
+    
+    if (state.scenarios[cacheKey]) {
+        displayScenario(state.scenarios[cacheKey]);
+        return;
+    }
+
+    try {
+        const res = await fetch('/api/scenario', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ topic: topic, tense: layer, aspect: 'simple' }) 
+        });
+        
+        const scenario = await res.json();
+        state.scenarios[cacheKey] = scenario;
+        displayScenario(scenario);
+
+    } catch (err) {
+        elements.scenarioSituation.textContent = "Could not load scenario.";
+    }
+}
+
+function displayScenario(scenario) {
+    elements.scenarioSituation.textContent = scenario.situation;
+    elements.scenarioGoal.textContent = scenario.goal;
+    state.currentScenario = scenario;
+    elements.scenarioInput.disabled = false;
+    elements.scenarioSubmitBtn.disabled = false;
+}
+
+async function submitScenarioResponse() {
+    const input = elements.scenarioInput.value.trim();
+    if (!input) return;
+    
+    elements.scenarioInput.disabled = true;
+    elements.scenarioSubmitBtn.disabled = true;
+    elements.scenarioFeedback.classList.remove('hidden');
+    elements.scenarioFeedback.textContent = 'Grading...';
+
+    try {
+        const payload = {
+            situation: state.currentScenario.situation,
+            goal: state.currentScenario.goal,
+            user_input: input,
+            tense: state.currentLayer
+        };
+
+        const res = await fetch('/api/scenario/grade', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+        const result = await res.json();
+        
+        const cls = result.is_pass ? 'pass' : 'fail';
+        elements.scenarioFeedback.className = `scenario-feedback ${cls}`;
+        elements.scenarioFeedback.innerHTML = `
+            <strong>${result.is_pass ? 'Passed!' : 'Needs Improvement'}</strong><br>
+            ${result.feedback}
+            ${result.improved_version ? `<span class="improved-version">${result.improved_version}</span>` : ''}
+        `;
+        
+        elements.scenarioInput.disabled = false;
+        elements.scenarioSubmitBtn.disabled = false;
+
+    } catch (err) {
+        elements.scenarioFeedback.textContent = 'Error grading.';
+        elements.scenarioInput.disabled = false;
+        elements.scenarioSubmitBtn.disabled = false;
+    }
+}
+
+// --- Chat ---
+
+async function renderChat() {
+    const topic = state.topic;
+    const layer = state.currentLayer;
+    const cacheKey = `${topic}_${layer}`;
+    
+    elements.chatCard.classList.remove('hidden');
+    elements.chatWindow.innerHTML = '';
+    elements.missionTitle.textContent = "Loading Mission...";
+    
+    if (state.chats[cacheKey]) {
+        restoreChat(state.chats[cacheKey]);
+        return;
+    }
+    
+    try {
+        const res = await fetch('/api/chat/start', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ topic: topic, tense: layer, aspect: 'simple' })
+        });
+        const data = await res.json();
+        const session = {
+            session_id: data.session_id,
+            mission: data.mission,
+            messages: [{ role: 'ai', content: data.first_message }]
+        };
+        state.chats[cacheKey] = session;
+        restoreChat(session);
+        
+    } catch (e) {
+        elements.missionTitle.textContent = "Mission Failed";
+    }
+}
+
+function restoreChat(session) {
+    elements.missionTitle.textContent = session.mission.title;
+    elements.missionDesc.textContent = session.mission.description;
+    elements.missionGoals.innerHTML = session.mission.required_grammar.map(g => `<li>${g}</li>`).join('');
+    elements.chatWindow.innerHTML = '';
+    session.messages.forEach(m => appendMessage(m.role, m.content));
+}
+
+async function sendChatMessage() {
+    const txt = elements.chatInput.value.trim();
+    if (!txt) return;
+    
+    const session = state.chats[`${state.topic}_${state.currentLayer}`];
+    if (!session) return;
+    
+    appendMessage('user', txt);
+    elements.chatInput.value = '';
+    session.messages.push({ role: 'user', content: txt });
+    elements.chatWindow.scrollTop = elements.chatWindow.scrollHeight;
+    
+    try {
+        const res = await fetch('/api/chat/reply', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ session_id: session.session_id, message: txt })
+        });
+        const data = await res.json();
+        
+        appendMessage('ai', data.reply);
+        session.messages.push({ role: 'ai', content: data.reply });
+        elements.chatWindow.scrollTop = elements.chatWindow.scrollHeight;
+        
+        // Log generic attempt (active engagement)
+        logAttempt('mission', true, { message: txt });
+        
+    } catch(e) {
+        appendMessage('system', 'Error.');
+    }
+}
+
+function appendMessage(role, text) {
+    const div = document.createElement('div');
+    div.className = `chat-message ${role}`;
+    div.textContent = text;
+    elements.chatWindow.appendChild(div);
+}
+
+// --- Stats & Logging ---
+
+async function openStats() {
+    elements.statsModal.classList.remove('hidden');
+    elements.totalXp.textContent = '...';
+    elements.activityStats.innerHTML = 'Loading...';
+    elements.recentHistory.innerHTML = '';
+    
+    try {
+        const res = await fetch('/api/stats');
+        const data = await res.json();
+        
+        elements.totalXp.textContent = data.total_xp;
+        
+        elements.activityStats.innerHTML = data.activities.map(a => `
+            <div class="activity-item">
+                <strong>${a.count}</strong>
+                <span style="font-size:0.8rem;text-transform:capitalize;color:#94a3b8">${a.activity_type}</span>
+            </div>
+        `).join('');
+        
+        elements.recentHistory.innerHTML = data.recent.map(r => `
+            <li>
+                <div>
+                    <span style="font-weight:600;text-transform:capitalize">${r.activity_type}</span>
+                    <span style="font-size:0.8rem;color:#64748b;margin-left:0.5rem">${r.topic || '-'} (${r.tense || '-'})</span>
+                </div>
+                <span class="${r.is_pass ? 'status-pass' : 'status-fail'}">
+                    ${r.is_pass ? 'Pass' : 'Fail'}
+                </span>
+            </li>
+        `).join('');
+    } catch (e) {
+        elements.totalXp.textContent = 'Err';
+    }
+}
+
+async function logAttempt(type, isPass, details) {
+    try {
+        await fetch('/api/log_attempt', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                activity_type: type,
+                topic: state.topic,
+                tense: state.currentLayer,
+                is_pass: isPass,
+                details: details
+            })
+        });
+    } catch (e) {
+        console.log("Log error", e);
+    }
+}
+
+function setLoading(isLoading) {
+    if (isLoading) elements.loadingOverlay.classList.remove('hidden');
+    else elements.loadingOverlay.classList.add('hidden');
 }
 
 function showToast(msg, type='info') {

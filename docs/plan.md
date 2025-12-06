@@ -40,3 +40,15 @@
 - [ ] **Backend**: New endpoints for `/api/story` and `/api/chat`.
 - [ ] **Frontend**: New "Mode Switcher" (Learn / Drill / Apply / Speak) in the navigation.
 - [ ] **State**: Persist user progress per stage.
+
+## 5. Tools & Ecosystem (The "Support" Layer)
+*Features that support the learning journey.*
+- [ ] **Hybrid Dictionary (Crucial)**:
+    - **Layer 1 (Fast)**: **MDX Support**. Import local dictionary files (e.g., Mdict) for authoritative definitions.
+    - **Layer 2 (Context)**: "Explain in Context" AI button for specific sentence nuances.
+- [ ] **Data Dashboard**:
+    - **Visual Stats**: Daily streaks, words encounter counter, practice volume.
+    - **History**: Log of all completed quizzes and missions.
+- [ ] **Audio Engine**:
+    - **TTS**: Text-to-Speech for all generated sentences (Browser Native or API).
+    - **Shadowing**: Record user audio and compare (Future).
