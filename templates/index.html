@@ -202,6 +202,30 @@
         </div>
     </div>
 
+    <!-- Dictionary Modal -->
+    <div id="dictModal" class="modal hidden">
+        <div class="modal-content dict-content">
+            <div class="modal-header">
+                <h3 id="dictWord">Word</h3>
+                <button id="closeDictBtn" class="close-btn">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="dict-section">
+                    <h4>📖 Definition</h4>
+                    <div id="dictDefinition" class="dict-definition">Loading definitions...</div>
+                </div>
+
+                <div class="dict-section" style="margin-top:1.5rem">
+                    <h4>🤖 Contextual Help</h4>
+                    <div id="dictContext" class="dict-context">
+                        <button id="askAiBtn" class="btn-secondary is-small">Ask AI to explain in context</button>
+                        <div id="aiExplanation" class="hidden" style="margin-top:0.5rem; color:#e2e8f0;"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Notification Toast -->
     <div id="toast" class="toast hidden"></div>
 

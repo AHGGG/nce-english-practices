@@ -990,3 +990,70 @@ h2::before {
 
 .status-pass { color: #10b981; }
 .status-fail { color: #ef4444; }
+
+/* --- Dictionary Modal --- */
+.dict-content {
+    max-width: 600px;
+    max-height: 80vh;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Force light mode for dictionary content to avoid style conflicts */
+.dict-definition {
+    background-color: #ffffff !important;
+    color: #1e293b !important;
+    padding: 1.5rem;
+    border-radius: 8px;
+    overflow-y: auto;
+    font-size: 0.95rem;
+    line-height: 1.6;
+    /* Reset common styles that might inherit */
+    text-align: left;
+    position: relative; /* Ensure z-index works if needed */
+    z-index: 10;
+}
+
+.dict-definition * {
+    max-width: 100%;
+}
+
+/* Dictionary-specific overrides if needed */
+.dict-entry {
+    margin-bottom: 1.5rem;
+}
+
+.dict-definition {
+    background: rgba(15, 23, 42, 0.4);
+    padding: 1rem;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border-color);
+    font-size: 0.95rem;
+    line-height: 1.6;
+    overflow-y: auto;
+    max-height: 300px;
+}
+
+.dict-definition b, .dict-definition strong { color: var(--color-primary); }
+.dict-definition i, .dict-definition em { color: var(--color-secondary); }
+.dict-definition ul, .dict-definition ol { margin-left: 1rem; }
+
+.word-clickable {
+    cursor: pointer;
+    border-bottom: 1px dashed var(--color-text-muted);
+    transition: all 0.2s;
+}
+
+.word-clickable:hover {
+    color: var(--color-primary);
+    border-bottom: 1px solid var(--color-primary);
+    background: rgba(56, 189, 248, 0.1);
+}
+
+.is-small {
+    padding: 0.4rem 0.8rem;
+    font-size: 0.85rem;
+}
+
+.hidden { display: none !important; }
+

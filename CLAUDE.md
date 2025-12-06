@@ -12,13 +12,14 @@ This is an English tense practice application for New Concept English (NCE) lear
 # Install dependencies
 uv sync
 
-# Run the TUI application
-python english_tense_practice.py
+# Run the Web Application (FastAPI)
+uv run python app.py
 
-# CLI demos
-python english_tense_practice.py --matrix-demo travel
-python english_tense_practice.py --export travel
-python english_tense_practice.py --matrix-demo travel --refresh  # force regenerate
+# Or using uvicorn directly
+uv run uvicorn app:app --reload
+
+# Legacy TUI (may be deprecated)
+uv run python english_tense_practice.py
 ```
 
 ## Environment Configuration

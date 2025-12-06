@@ -1,7 +1,8 @@
-from fastapi import FastAPI, Request, HTTPException
+from fastapi import FastAPI, Request, HTTPException, Response
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from fastapi.responses import JSONResponse
+from contextlib import asynccontextmanager
 from pydantic import BaseModel
 from typing import Optional, List, Dict, Any
 
@@ -17,10 +18,121 @@ from models import SelectionSnapshot, Story, QuizItem, ScenarioPrompt, ScenarioR
 # [DB] Import new DB functions
 from database import log_session, log_story, log_attempt, get_user_stats
 
-app = FastAPI(title="NCE English Practice")
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Load dictionary on startup
+    print("Startup: Loading dictionaries...")
+    # This might take time but ensures it's ready
+    # Since load_dictionaries is sync, calling it here blocks the loop briefly, which is fine for startup
+    dict_manager.load_dictionaries()
+    yield
+    # Cleanup if needed
+
+app = FastAPI(title="NCE English Practice", lifespan=lifespan)
 
 app.mount("/static", StaticFiles(directory="static"), name="static")
+app.mount("/dict-assets", StaticFiles(directory="resources/dictionaries"), name="dictionaries")
 templates = Jinja2Templates(directory="templates")
+
+from dictionary_service import dict_manager
+
+# ...
+
+class DictionaryLookupRequest(BaseModel):
+    word: str
+
+class DictionaryContextRequest(BaseModel):
+    word: str
+    sentence: str
+
+# ... Routes ...
+
+@app.get("/dict-assets/{file_path:path}")
+async def get_dict_asset(file_path: str):
+    """
+    Unified endpoint for dictionary assets (CSS, JS, Images).
+    Priority:
+    1. Local file system (resources/dictionaries/{file_path})
+    2. MDD Cache (using basename of file_path)
+    """
+    # 1. Check disk
+    full_path = os.path.join(r"resources/dictionaries", file_path)
+    if os.path.exists(full_path) and os.path.isfile(full_path):
+        media_type, _ = mimetypes.guess_type(full_path)
+        with open(full_path, "rb") as f:
+            content = f.read()
+        return Response(content=content, media_type=media_type or "application/octet-stream")
+
+    # 2. Check MDD (Fallback)
+    # MDD keys are often just the filename (e.g. "image.png") or relative paths.
+    # We try the full relative path first, then just filename.
+    
+    # Try 1: Full path relative to dictionaries root? No, MDD keys are usually "\image.png"
+    # Try 2: Just the filename (basename)
+    filename = os.path.basename(file_path)
+    
+    # We can try to look it up in the specific dictionary if we parsed the path,
+    # but dict_manager.get_resource iterates all, which is fine for now.
+    
+    # Try exact match first (if MDD has directory structure)
+    content, media_type = dict_manager.get_resource(file_path) # Pass relative path
+    if content:
+        return Response(content=content, media_type=media_type)
+
+    # Try basename match (common for flat MDD structures)
+    if filename != file_path:
+        content, media_type = dict_manager.get_resource(filename)
+        if content:
+             return Response(content=content, media_type=media_type)
+
+    raise HTTPException(status_code=404, detail="Asset not found")
+
+@app.get("/dict/resource")
+def get_resource_legacy(path: str):
+    """
+    Legacy/Direct proxy for MDD resources using generic query param.
+    """
+    content, media_type = dict_manager.get_resource(path)
+    if not content:
+        raise HTTPException(status_code=404, detail="Resource not found")
+    
+    return Response(content=content, media_type=media_type)
+
+@app.post("/api/dictionary/lookup")
+async def api_dict_lookup(payload: DictionaryLookupRequest):
+    try:
+        from fastapi.concurrency import run_in_threadpool
+        # Result is now List[Dict] usually containing definition and source_dir
+        results = await run_in_threadpool(dict_manager.lookup, payload.word)
+        
+        # Frontend expects: { results: [ { dictionary: "...", definition: "...", source_dir: "..." } ] }
+        # dict_manager.lookup now returns exactly this structure of dictionaries in a list
+        return {
+            "results": results
+        }
+    except Exception as e:
+        print(f"Dict Lookup Error: {e}")
+        return {"results": [], "error": str(e)}
+
+@app.post("/api/dictionary/context")
+async def api_dict_context(payload: DictionaryContextRequest):
+    try:
+        # AI Explanation
+        prompt = f"""
+        Explain the meaning of the word "{payload.word}" in the context of this sentence:
+        "{payload.sentence}"
+        
+        Keep it brief (max 2 sentences). Explain the nuance or usage.
+        """
+        response = client.generate_content(prompt)
+        explanation = response.text.strip() if response.text else "Could not generate explanation."
+        
+        return {"explanation": explanation}
+    except Exception as e:
+         return {"explanation": f"AI Error: {str(e)}"}
+
+# ... existing stats/log routes ...
+
 
 # --- Pydantic Models for Requests ---
 
@@ -288,4 +400,4 @@ async def api_log(payload: LogRequest):
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run("app:app", host="127.0.0.1", port=8000, reload=True)
+    uvicorn.run("app:app", host="127.0.0.1", port=8001, reload=True)

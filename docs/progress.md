@@ -38,7 +38,7 @@
     - [x] Frontend specific Visualization (XP, Recent Activity).
 - [x] **PWA Support** (Installable App).
 - [ ] **Hybrid Dictionary System**:
-    - [ ] MDX Parser service (`readmdict`).
-    - [ ] `/api/dictionary` endpoint.
+    - [x] MDX Parser service (`readmdict` + `python-lzo`).
+    - [x] `/api/dictionary` endpoint (with Resource Tunnel).
     - [ ] Frontend Popover UI.
 - [ ] **Anki Export**.

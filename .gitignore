@@ -10,3 +10,5 @@ wheels/
 .venv
 .env
 .english_tense_practice/
+
+resources/
