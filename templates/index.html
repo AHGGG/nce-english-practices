@@ -60,7 +60,7 @@
                     <button class="tab-btn" data-layer="past_future">Past Future</button>
                 </div>
 
-                <!-- Story & Scenario Container -->
+                <!-- Story & Scenario & Chat Container -->
                 <div id="storyContainer" class="story-container hidden">
 
                     <!-- Context Story Card -->
@@ -95,6 +95,33 @@
                             </div>
                         </div>
                     </div>
+
+                    <!-- Chat Roleplay Card -->
+                    <div class="chat-card hidden" id="chatCard">
+                        <div class="chat-header">
+                            <h3>Secret Mission</h3>
+                            <span class="badge-roleplay">Speak</span>
+                        </div>
+
+                        <div class="mission-brief" id="missionBrief">
+                            <strong id="missionTitle">Loading Mission...</strong>
+                            <p id="missionDesc">...</p>
+                            <div class="mission-goals">
+                                <small>OBJECTIVES:</small>
+                                <ul id="missionGoals"></ul>
+                            </div>
+                        </div>
+
+                        <div class="chat-window" id="chatWindow">
+                            <!-- Messages -->
+                        </div>
+
+                        <div class="chat-input-area">
+                            <input type="text" id="chatInput" placeholder="Say something..." autocomplete="off">
+                            <button id="chatSendBtn" class="btn-action">Send</button>
+                        </div>
+                    </div>
+
                 </div>
 
                 <div class="matrix-container">

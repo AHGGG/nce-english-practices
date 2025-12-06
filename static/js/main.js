@@ -38,7 +38,15 @@ const elements = {
     scenarioGoal: document.getElementById('scenarioGoal'),
     scenarioInput: document.getElementById('scenarioInput'),
     scenarioSubmitBtn: document.getElementById('scenarioSubmitBtn'),
-    scenarioFeedback: document.getElementById('scenarioFeedback')
+    scenarioFeedback: document.getElementById('scenarioFeedback'),
+    // Chat Elements
+    chatCard: document.getElementById('chatCard'),
+    missionTitle: document.getElementById('missionTitle'),
+    missionDesc: document.getElementById('missionDesc'),
+    missionGoals: document.getElementById('missionGoals'),
+    chatWindow: document.getElementById('chatWindow'),
+    chatInput: document.getElementById('chatInput'),
+    chatSendBtn: document.getElementById('chatSendBtn')
 };
 
 // --- Event Listeners ---
@@ -58,6 +66,7 @@ elements.tabs.forEach(tab => {
         renderMatrix();
         renderStory();
         renderScenario();
+        renderChat();
     });
 });
 
@@ -72,6 +81,11 @@ elements.quizModal.addEventListener('click', (e) => {
 elements.scenarioSubmitBtn.addEventListener('click', submitScenarioResponse);
 elements.scenarioInput.addEventListener('keydown', (e) => {
     if (e.key === 'Enter') submitScenarioResponse();
+});
+
+elements.chatSendBtn.addEventListener('click', sendChatMessage);
+elements.chatInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') sendChatMessage();
 });
 
 
@@ -99,9 +113,10 @@ async function loadTheme(shuffle) {
 
         state.vocab = await res.json();
         state.topic = topic;
-        state.sentences = {}; // Clear sentence cache
-        state.stories = {};   // Clear story cache
-        state.scenarios = {}; // Clear scenario cache
+        state.sentences = {}; 
+        state.stories = {};   
+        state.scenarios = {}; 
+        state.chats = {}; // Cache chats { session_id, mission, messages }
 
         renderVocab();
         elements.vocabSection.classList.remove('hidden');
@@ -110,6 +125,7 @@ async function loadTheme(shuffle) {
         await renderMatrix();
         await renderStory();
         await renderScenario();
+        await renderChat();
 
     } catch (err) {
         showToast(err.message, 'error');
@@ -117,6 +133,121 @@ async function loadTheme(shuffle) {
         setLoading(false);
     }
 }
+
+// ... renderVocab / renderStory / renderScenario / submitScenarioResponse ...
+
+// --- Chat ---
+
+async function renderChat() {
+    const topic = state.topic;
+    const layer = state.currentLayer;
+    
+    elements.chatCard.classList.remove('hidden');
+    elements.chatWindow.innerHTML = '';
+    elements.missionTitle.innerHTML = '<span style="color:#94a3b8">Initiating Mission...</span>';
+    elements.missionDesc.textContent = '...';
+    elements.missionGoals.innerHTML = '';
+    elements.chatInput.value = '';
+    
+    // Check if we already have an active session for this topic+layer
+    // Actually, one chat per topic/layer tuple is good.
+    const cacheKey = `${topic}_${layer}`;
+    
+    if (state.chats && state.chats[cacheKey]) {
+        restoreChat(state.chats[cacheKey]);
+        return;
+    }
+
+    try {
+        const res = await fetch('/api/chat/start', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ topic: topic, tense: layer, aspect: 'simple' })
+        });
+        
+        if (!res.ok) throw new Error((await res.json()).detail);
+        
+        const data = await res.json();
+        
+        // Save to state
+        const chatSession = {
+            session_id: data.session_id,
+            mission: data.mission,
+            messages: [{ role: 'ai', content: data.first_message }]
+        };
+        
+        if (!state.chats) state.chats = {};
+        state.chats[cacheKey] = chatSession;
+        
+        restoreChat(chatSession);
+
+    } catch (err) {
+        elements.missionTitle.textContent = "Mission Failed to Start";
+        elements.missionDesc.textContent = err.message;
+    }
+}
+
+function restoreChat(session) {
+    elements.missionTitle.textContent = session.mission.title;
+    elements.missionDesc.textContent = session.mission.description;
+    
+    elements.missionGoals.innerHTML = session.mission.required_grammar
+        .map(g => `<li>${g}</li>`).join('');
+        
+    elements.chatWindow.innerHTML = '';
+    session.messages.forEach(msg => {
+        appendMessage(msg.role, msg.content);
+    });
+}
+
+async function sendChatMessage() {
+    const txt = elements.chatInput.value.trim();
+    if (!txt) return;
+    
+    const topic = state.topic;
+    const layer = state.currentLayer;
+    const cacheKey = `${topic}_${layer}`;
+    const session = state.chats[cacheKey];
+    
+    if (!session) return;
+    
+    // Optimistic UI
+    appendMessage('user', txt);
+    elements.chatInput.value = '';
+    session.messages.push({ role: 'user', content: txt });
+    
+    // Scroll to bottom
+    elements.chatWindow.scrollTop = elements.chatWindow.scrollHeight;
+
+    try {
+        const res = await fetch('/api/chat/reply', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ session_id: session.session_id, message: txt })
+        });
+        
+        if (!res.ok) throw new Error((await res.json()).detail);
+        
+        const data = await res.json();
+        const reply = data.reply;
+        
+        appendMessage('ai', reply);
+        session.messages.push({ role: 'ai', content: reply });
+        elements.chatWindow.scrollTop = elements.chatWindow.scrollHeight;
+
+    } catch (err) {
+        appendMessage('system', 'Error sending message.');
+    }
+}
+
+function appendMessage(role, text) {
+    const msg = document.createElement('div');
+    msg.className = `chat-message ${role}`;
+    msg.textContent = text;
+    elements.chatWindow.appendChild(msg);
+}
+
+// ... openQuiz / displayQuiz / renderMatrix ...
 
 function renderVocab() {
     elements.vocabGrid.innerHTML = '';

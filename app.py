@@ -10,8 +10,9 @@ from sentence_generator import ensure_sentences
 from story_generator import ensure_story
 from quiz_generator import generate_quiz
 from scenario_generator import generate_scenario, grade_scenario_response
+from chat_manager import start_new_mission, handle_chat_turn
 from practice_core import client, grade_sentence, log_matrix_attempt
-from models import SelectionSnapshot, Story, QuizItem, ScenarioPrompt, ScenarioResponse
+from models import SelectionSnapshot, Story, QuizItem, ScenarioPrompt, ScenarioResponse, Mission
 
 app = FastAPI(title="NCE English Practice")
 
@@ -44,6 +45,15 @@ class ScenarioGradeRequest(BaseModel):
     goal: str
     user_input: str
     tense: str
+
+class ChatStartRequest(BaseModel):
+    topic: str
+    tense: str
+    aspect: str
+
+class ChatReplyRequest(BaseModel):
+    session_id: str
+    message: str
 
 class SentenceRequest(BaseModel):
     topic: str
@@ -150,6 +160,32 @@ async def api_grade_scenario(payload: ScenarioGradeRequest):
         return result
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/chat/start")
+async def api_chat_start(payload: ChatStartRequest):
+    try:
+        data = start_new_mission(
+            client=client,
+            topic=payload.topic,
+            tense=payload.tense,
+            aspect=payload.aspect
+        )
+        return data
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/chat/reply")
+async def api_chat_reply(payload: ChatReplyRequest):
+    try:
+        data = handle_chat_turn(
+            client=client,
+            session_id=payload.session_id,
+            user_message=payload.message
+        )
+        return data
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 
 @app.post("/api/sentences")
 async def api_generate_sentences(payload: SentenceRequest):

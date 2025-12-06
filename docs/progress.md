@@ -13,24 +13,24 @@
 ## 🚧 Phase 2: The "Active Gym" Implementation (Current Focus)
 
 ### Stage 1: Learn (Context)
-- [ ] **Story Generator** (`/api/story`).
-    - [ ] Generic story generation based on topic & tense.
-    - [ ] Frontend: Story reader component.
+- [x] **Story Generator** (`/api/story`).
+    - [x] Generic story generation based on topic & tense.
+    - [x] Frontend: Story reader component.
 
 ### Stage 2: Drill (Matrix)
-- [ ] **Interactive Inputs**:
-    - [ ] Add typing support to the Matrix View entries.
-    - [ ] Real-time grading feedback (Visual diffs).
+- [x] **Interactive Inputs**:
+    - [x] Click-to-Quiz (MCQ) implementation.
+    - [x] Real-time grading feedback (Modal UI).
 
-### Stage 3: Apply (Cloze/Scramble)
-- [ ] **Application UI**:
-    - [ ] "Fill in the blank" mode.
-    - [ ] "Scramble" mode.
+### Stage 3: Apply (Scenario)
+- [x] **Application UI**:
+    - [x] "Real-life Scenario" mode (`/api/scenario`).
+    - [x] Interactive Grading & Feedback loop.
 
 ### Stage 4: Speak (Chat)
-- [ ] **Roleplay Agent**:
-    - [ ] Basic chat interface.
-    - [ ] "Mission" prompt engineering.
+- [x] **Roleplay Agent**:
+    - [x] Stateful Chat interface (`/api/chat`).
+    - [x] "Secret Mission" prompt engineering.
 
 ## ⏳ Phase 3: Retention & Polish
 - [ ] User Accounts / Progress Tracking.
