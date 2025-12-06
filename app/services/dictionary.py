@@ -117,6 +117,9 @@ import mimetypes
 from readmdict import MDX, MDD
 from typing import Optional, Tuple, List, Dict
 from bs4 import BeautifulSoup
+import pickle
+import time
+
 
 # Global path configuration
 DICT_BASE_DIR = r"resources/dictionaries"
@@ -153,48 +156,79 @@ class DictionaryManager:
 
         for mdx_path in mdx_files:
             try:
-                print(f"Loading MDX: {mdx_path} ...")
-                mdx = MDX(mdx_path)
+                # Check for Cache
+                cache_path = mdx_path + ".cache.pkl"
+                loaded_from_cache = False
                 
-                # Associated MDD? (Same basename, .mdd extension)
-                base = os.path.splitext(mdx_path)[0]
-                mdd_path = base + ".mdd"
-                mdd = None
-                if os.path.exists(mdd_path):
-                    print(f"Loading MDD: {mdd_path} ...")
-                    mdd = MDD(mdd_path)
-                
-                # Build detailed cache for this dictionary
-                mdx_cache = {}
-                count = 0
-                for key, value in mdx.items():
-                    try:
-                        k_str = key.decode('utf-8').strip()
-                        mdx_cache[k_str] = value
-                        count += 1
-                    except:
-                        continue
-                
-                mdd_cache = {}
-                if mdd:
-                    m_count = 0
-                    for key, value in mdd.items():
-                        mdd_cache[key] = value
-                        m_count += 1
-                    print(f"Loaded {m_count} resources.")
+                if os.path.exists(cache_path):
+                    mdx_mtime = os.path.getmtime(mdx_path)
+                    cache_mtime = os.path.getmtime(cache_path)
+                    if cache_mtime > mdx_mtime:
+                        print(f"Loading cached dictionary: {cache_path} ...")
+                        try:
+                            with open(cache_path, "rb") as f:
+                                data = pickle.load(f)
+                                self.dictionaries.append(data)
+                                print(f"Loaded {len(data['mdx_cache'])} entries from cache.")
+                                loaded_from_cache = True
+                        except Exception as e:
+                            print(f"Cache load failed ({e}), falling back to MDX parsing.")
 
-                # Calculate relative subdir for static assets logic if needed
-                # e.g. "Collins V2.30"
-                rel_path = os.path.relpath(os.path.dirname(mdx_path), DICT_BASE_DIR)
-                rel_path = rel_path.replace("\\", "/") 
-                
-                self.dictionaries.append({
-                    "name": os.path.basename(mdx_path),
-                    "mdx_cache": mdx_cache,
-                    "mdd_cache": mdd_cache,
-                    "subdir": rel_path if rel_path != "." else ""
-                })
-                print(f"Loaded {count} entries from {os.path.basename(mdx_path)}")
+                if not loaded_from_cache:
+                    print(f"Loading MDX: {mdx_path} ...")
+                    start_time = time.time()
+                    mdx = MDX(mdx_path)
+                    
+                    # Associated MDD? (Same basename, .mdd extension)
+                    base = os.path.splitext(mdx_path)[0]
+                    mdd_path = base + ".mdd"
+                    mdd = None
+                    if os.path.exists(mdd_path):
+                        print(f"Loading MDD: {mdd_path} ...")
+                        mdd = MDD(mdd_path)
+                    
+                    # Build detailed cache for this dictionary
+                    mdx_cache = {}
+                    count = 0
+                    for key, value in mdx.items():
+                        try:
+                            k_str = key.decode('utf-8').strip()
+                            mdx_cache[k_str] = value
+                            count += 1
+                        except:
+                            continue
+                    
+                    mdd_cache = {}
+                    if mdd:
+                        m_count = 0
+                        for key, value in mdd.items():
+                            mdd_cache[key] = value
+                            m_count += 1
+                        print(f"Loaded {m_count} resources.")
+
+                    # Calculate relative subdir for static assets logic if needed
+                    # e.g. "Collins V2.30"
+                    rel_path = os.path.relpath(os.path.dirname(mdx_path), DICT_BASE_DIR)
+                    rel_path = rel_path.replace("\\", "/") 
+                    
+                    dict_data = {
+                        "name": os.path.basename(mdx_path),
+                        "mdx_cache": mdx_cache,
+                        "mdd_cache": mdd_cache,
+                        "subdir": rel_path if rel_path != "." else ""
+                    }
+                    
+                    self.dictionaries.append(dict_data)
+                    print(f"Loaded {count} entries from {os.path.basename(mdx_path)} in {time.time() - start_time:.2f}s")
+                    
+                    # Save Cache
+                    try:
+                        print(f"Saving cache to {cache_path} ...")
+                        with open(cache_path, "wb") as f:
+                            pickle.dump(dict_data, f)
+                        print("Cache saved.")
+                    except Exception as e:
+                        print(f"Failed to save cache: {e}")
 
             except Exception as e:
                 print(f"Failed to load {mdx_path}: {e}")
