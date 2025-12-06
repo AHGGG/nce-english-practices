@@ -12,6 +12,8 @@
     <link rel="stylesheet" href="/static/css/style.css?v=6">
     <link rel="manifest" href="/static/manifest.json">
     <link rel="apple-touch-icon" href="/static/icon-192.png">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
     <script>
         if ('serviceWorker' in navigator) {
@@ -52,7 +54,7 @@
                     <span class="icon">🚀</span> Apply
                 </button>
                 <div class="spacer"></div>
-                <button class="nav-item" id="statsNavBtn">
+                <button class="nav-item" data-view="viewStats">
                     <span class="icon">📊</span> Stats
                 </button>
             </nav>
@@ -192,6 +194,49 @@
                 </div>
             </section>
 
+            <!-- VIEW 4: STATS -->
+            <section id="viewStats" class="view-panel hidden">
+                <header class="panel-header">
+                    <h2>Your Progress</h2>
+                    <div class="header-actions">
+                        <button id="refreshStatsBtn" class="btn-secondary is-small">
+                            <span class="icon">🔄</span> Refresh
+                        </button>
+                    </div>
+                </header>
+
+                <div class="panel-content scrollable">
+                    <!-- KPI Cards -->
+                    <div class="stats-overview-grid">
+                        <div class="stat-kpi-card">
+                            <span class="stat-value" id="statsTotalXp">0</span>
+                            <span class="stat-label">Total XP</span>
+                        </div>
+                        <div class="stat-kpi-card">
+                            <span class="stat-value" id="statsTotalActivities">0</span>
+                            <span class="stat-label">Activities Completed</span>
+                        </div>
+                        <div class="stat-kpi-card">
+                            <span class="stat-value" id="statsWinRate">0%</span>
+                            <span class="stat-label">Success Rate</span>
+                        </div>
+                    </div>
+
+                    <div class="stats-charts-row">
+                        <div class="chart-container">
+                            <h3>Activity Breakdown</h3>
+                            <canvas id="activityChart"></canvas>
+                        </div>
+                        <div class="history-container">
+                            <h3>Recent History</h3>
+                            <ul id="statsRecentList" class="recent-list">
+                                <!-- History Items -->
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
         </main>
     </div>
 
@@ -208,30 +253,6 @@
                     <!-- Options injected here -->
                 </div>
                 <div id="quizFeedback" class="quiz-feedback hidden"></div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Stats Modal (Can be converted to view later, keeping modal for now but triggered from sidebar) -->
-    <div id="statsModal" class="modal hidden">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3>Gym Stats</h3>
-                <button id="closeStatsBtn" class="close-btn">&times;</button>
-            </div>
-            <div class="modal-body">
-                <div class="stats-overview">
-                    <div class="stat-box">
-                        <span class="stat-value" id="totalXp">0</span>
-                        <span class="stat-label">Total XP</span>
-                    </div>
-                </div>
-
-                <h4>Activity Breakdown</h4>
-                <div id="activityStats" class="activity-stats"></div>
-
-                <h4>Recent History</h4>
-                <ul id="recentHistory" class="recent-list"></ul>
             </div>
         </div>
     </div>

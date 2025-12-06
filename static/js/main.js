@@ -12,9 +12,9 @@ import { setLoading, showToast } from './core/utils.js';
 import { renderVocab, renderStory, initLearnView } from './views/learn.js';
 import { switchView, renderMatrix, handleTenseChange } from './views/drill.js';
 import { renderScenario, renderChat, submitScenarioResponse, sendChatMessage } from './views/apply.js';
+import { renderStats } from './views/stats.js';
 
 import { openDictionary, askAiContext } from './components/dictionary.js';
-import { openStats } from './components/stats.js';
 
 // --- Core Theme Loader ---
 async function loadTheme(shuffle) {
@@ -60,8 +60,9 @@ elements.navItems.forEach(btn => {
         const viewId = btn.dataset.view;
         if (viewId) {
             switchView(viewId);
-        } else if (btn.id === 'statsNavBtn') {
-            openStats();
+            if (viewId === 'viewStats') {
+                renderStats();
+            }
         }
     });
 });
@@ -89,11 +90,14 @@ if (elements.quizModal) elements.quizModal.addEventListener('click', (e) => {
     if (e.target === elements.quizModal) elements.quizModal.classList.add('hidden');
 });
 
-// Stats Modal
-if (elements.closeStatsBtn) elements.closeStatsBtn.addEventListener('click', () => elements.statsModal.classList.add('hidden'));
-if (elements.statsModal) elements.statsModal.addEventListener('click', (e) => {
-    if (e.target === elements.statsModal) elements.statsModal.classList.add('hidden');
-});
+// Stats View Refresh
+const refreshStatsBtn = document.getElementById('refreshStatsBtn');
+if (refreshStatsBtn) {
+    refreshStatsBtn.addEventListener('click', () => {
+        renderStats();
+        showToast('Stats updated!');
+    });
+}
 
 // Dictionary Modal
 if (elements.closeDictBtn) elements.closeDictBtn.addEventListener('click', () => elements.dictModal.classList.add('hidden'));

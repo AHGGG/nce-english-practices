@@ -39,6 +39,13 @@ export function switchView(viewId) {
 
 export async function renderMatrix() {
     const layer = state.currentLayer;
+    
+    // GUARD: Check if vocab is loaded
+    if (!state.vocab) {
+        elements.matrixRows.innerHTML = '<div style="padding:2rem; text-align:center; color:#94a3b8">Please enter a topic and click "Generate" first.</div>';
+        return;
+    }
+
     elements.matrixRows.innerHTML = '<div style="padding:2rem; text-align:center; color:#94a3b8">Generating sentences...</div>';
 
     if (!state.sentences[layer]) {
