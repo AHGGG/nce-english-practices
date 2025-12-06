@@ -1,7 +1,7 @@
 import json
 from uuid import uuid4
-from config import MODEL_NAME
-from models import Mission, ChatState
+from app.config import MODEL_NAME
+from app.models import Mission, ChatState
 
 # Store active sessions in memory for simplicity (in a real app, use Redis/DB)
 # session_id -> ChatState

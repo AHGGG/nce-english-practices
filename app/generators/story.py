@@ -6,8 +6,8 @@ from pathlib import Path
 from typing import Optional, List
 from datetime import datetime
 
-from config import HOME_DIR, MODEL_NAME
-from models import Story
+from app.config import HOME_DIR, MODEL_NAME
+from app.models import Story
 
 # Local storage for stories
 STORIES_DIR = HOME_DIR / "stories"

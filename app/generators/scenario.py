@@ -1,8 +1,8 @@
 from __future__ import annotations
 
 import json
-from config import MODEL_NAME
-from models import ScenarioPrompt, ScenarioResponse
+from app.config import MODEL_NAME
+from app.models import ScenarioPrompt, ScenarioResponse
 
 SCENARIO_PROMPT = """You are an English language coach.
 Create a "Real-life Scenario" for the user to practice the target tense: "{tense} {aspect}".

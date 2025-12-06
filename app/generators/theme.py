@@ -7,8 +7,8 @@ from datetime import datetime
 from pathlib import Path
 from typing import Dict, List, Optional
 
-from config import HOME_DIR, MODEL_NAME, THEMES_DIR
-from models import VerbEntry
+from app.config import HOME_DIR, MODEL_NAME, THEMES_DIR
+from app.models import VerbEntry
 
 DEFAULT_SLOTS: Dict[str, List[str]] = {
     "subject": ["I", "We", "My friends"],

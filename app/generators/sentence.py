@@ -6,7 +6,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Dict, Optional
 
-from config import HOME_DIR, MODEL_NAME
+from app.config import HOME_DIR, MODEL_NAME
 
 SENTENCES_DIR = HOME_DIR / "sentences"
 SENTENCES_DIR.mkdir(parents=True, exist_ok=True)

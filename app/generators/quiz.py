@@ -2,8 +2,8 @@ from __future__ import annotations
 
 import json
 from typing import List
-from config import MODEL_NAME
-from models import QuizItem, QuizOption
+from app.config import MODEL_NAME
+from app.models import QuizItem, QuizOption
 
 QUIZ_PROMPT = """You are an expert English grammar test creator.
 Create a Multiple Choice Question (MCQ) to test the user's knowledge of the target tense.

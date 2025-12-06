@@ -6,17 +6,17 @@ from contextlib import asynccontextmanager
 from pydantic import BaseModel
 from typing import Optional, List, Dict, Any
 
-from theme_vocab import ensure_theme, ThemeVocabulary
-from sentence_generator import ensure_sentences
-from story_generator import ensure_story
-from quiz_generator import generate_quiz
-from scenario_generator import generate_scenario, grade_scenario_response
-from chat_manager import start_new_mission, handle_chat_turn
-from practice_core import client, grade_sentence, log_matrix_attempt
-from models import SelectionSnapshot, Story, QuizItem, ScenarioPrompt, ScenarioResponse, Mission
+from app.generators.theme import ensure_theme, ThemeVocabulary
+from app.generators.sentence import ensure_sentences
+from app.generators.story import ensure_story
+from app.generators.quiz import generate_quiz
+from app.generators.scenario import generate_scenario, grade_scenario_response
+from app.services.chat import start_new_mission, handle_chat_turn
+from app.core.practice import client, grade_sentence, log_matrix_attempt
+from app.models import SelectionSnapshot, Story, QuizItem, ScenarioPrompt, ScenarioResponse, Mission
 
 # [DB] Import new DB functions
-from database import log_session, log_story, log_attempt, get_user_stats
+from app.database import log_session, log_story, log_attempt, get_user_stats
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -30,11 +30,14 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title="NCE English Practice", lifespan=lifespan)
 
+# Mount paths need to be careful about CWD
+# If running `uv run python -m app.main` from root, CWD is root.
+# Static files:
 app.mount("/static", StaticFiles(directory="static"), name="static")
 app.mount("/dict-assets", StaticFiles(directory="resources/dictionaries"), name="dictionaries")
 templates = Jinja2Templates(directory="templates")
 
-from dictionary_service import dict_manager
+from app.services.dictionary import dict_manager
 
 # ...
 
@@ -400,4 +403,4 @@ async def api_log(payload: LogRequest):
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run("app:app", host="127.0.0.1", port=8001, reload=True)
+    uvicorn.run("app.main:app", host="127.0.0.1", port=8001, reload=True)
