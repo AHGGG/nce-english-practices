@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Request, HTTPException, Response
+from fastapi import FastAPI, Request, HTTPException, Response, WebSocket, WebSocketDisconnect
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from fastapi.responses import JSONResponse
@@ -6,7 +6,11 @@ from contextlib import asynccontextmanager
 from pydantic import BaseModel
 from typing import Optional, List, Dict, Any
 import asyncio
-
+import os
+import mimetypes
+import base64
+import json
+from google import genai
 
 from app.generators.theme import ensure_theme, ThemeVocabulary
 from app.generators.sentence import ensure_sentences
@@ -20,6 +24,12 @@ from app.models import SelectionSnapshot, Story, QuizItem, ScenarioPrompt, Scena
 # [DB] Import new DB functions
 from app.database import log_session, log_story, log_attempt, get_user_stats
 from app.config import MODEL_NAME
+
+# Voice Config - Use model from user's reference
+VOICE_MODEL_NAME = "gemini-2.5-flash-native-audio-preview-09-2025"
+# Initialize GenAI Client for Voice (shares API key from env usually, or we load it)
+# We can use the same key as the main client if it's the same provider, or os.getenv('GEMINI_API_KEY')
+voice_client = genai.Client(http_options={'api_version': 'v1alpha'})
 
 
 @asynccontextmanager
@@ -51,7 +61,127 @@ class DictionaryContextRequest(BaseModel):
     word: str
     sentence: str
 
+class VoiceTokenRequest(BaseModel):
+    topic: str
+    mission_context: str
+    tense: str
+
 # ... Routes ...
+
+@app.websocket("/ws/voice")
+async def websocket_endpoint(websocket: WebSocket):
+    await websocket.accept()
+    print("WS: Client Connected")
+    
+    client_connected = True  # Track browser connection state
+    
+    async def send_to_gemini(session):
+        nonlocal client_connected
+        try:
+            while client_connected:
+                msg = await websocket.receive_json()
+                if msg.get("type") == "audio":
+                    audio_data = base64.b64decode(msg["data"])
+                    await session.send_realtime_input(
+                        audio={"data": audio_data, "mime_type": "audio/pcm"}
+                    )
+        except WebSocketDisconnect:
+            print("WS: Browser Disconnected")
+            client_connected = False
+        except Exception as e:
+            print(f"Error in send_to_gemini: {e}")
+            client_connected = False
+
+    async def receive_from_gemini(session):
+        nonlocal client_connected
+        try:
+            while client_connected:
+                turn = session.receive()
+                async for response in turn:
+                    if not client_connected:
+                        break
+                    if response.server_content and response.server_content.model_turn:
+                        for part in response.server_content.model_turn.parts:
+                            if part.inline_data and isinstance(part.inline_data.data, bytes):
+                                b64_data = base64.b64encode(part.inline_data.data).decode('utf-8')
+                                if client_connected:
+                                    await websocket.send_json({
+                                        "type": "audio",
+                                        "data": b64_data
+                                    })
+                            if part.text and client_connected:
+                                await websocket.send_json({
+                                    "type": "transcript",
+                                    "text": part.text,
+                                    "isUser": False
+                                })
+                    
+                    if response.server_content and response.server_content.turn_complete:
+                        if client_connected:
+                            await websocket.send_json({"type": "turnComplete"})
+                    
+                    if response.server_content and response.server_content.interrupted:
+                        if client_connected:
+                            await websocket.send_json({"type": "interrupted"})
+        except Exception as e:
+            print(f"Error in receive_from_gemini: {e}")
+            client_connected = False
+
+    try:
+        # 1. Wait for frontend config (Handshake)
+        config_data = await websocket.receive_json()
+        print(f"WS: Received Config: {config_data}")
+        
+        voice_name = config_data.get("voiceName", "Puck")
+        sys_instruction = config_data.get("systemInstruction", "You are a helpful AI assistant.")
+        
+        print(f"WS: Config - Voice: {voice_name}, Instruction length: {len(sys_instruction)}")
+        
+        # 2. Connect to Gemini Live API
+        async with voice_client.aio.live.connect(
+            model=VOICE_MODEL_NAME,
+            config={
+                "response_modalities": ["AUDIO"],
+                "speech_config": {
+                    "voice_config": {"prebuilt_voice_config": {"voice_name": voice_name}}
+                },
+                "system_instruction": {"parts": [{"text": sys_instruction}]}
+            }
+        ) as session:
+            print("WS: Connected to Gemini Live")
+            
+            # 3. Run tasks with TaskGroup for proper cancellation
+            try:
+                async with asyncio.TaskGroup() as tg:
+                    tg.create_task(send_to_gemini(session))
+                    tg.create_task(receive_from_gemini(session))
+            except* Exception as eg:
+                for exc in eg.exceptions:
+                    print(f"Task error: {exc}")
+
+    except WebSocketDisconnect:
+        print("WS: Connection Closed (Handshake)")
+    except Exception as e:
+        print(f"WS: Error: {e}")
+    finally:
+        client_connected = False
+        try:
+            await websocket.close()
+        except:
+            pass
+        print("WS: Cleanup Complete")
+
+
+@app.post("/api/voice/token")
+async def api_voice_token(payload: VoiceTokenRequest):
+    # This might be deprecated if we use /ws/voice directly, 
+    # but we can keep it if the frontend uses it to prepare the connection URL?
+    # For now, we don't return a "token" in the Gemini sense, just success.
+    # Or we can return the WS URL.
+    return {
+        "url": "/ws/voice", # Relative URL for proxy
+        "token": "proxy" 
+    }
 
 @app.get("/dict-assets/{file_path:path}")
 async def get_dict_asset(file_path: str):
@@ -418,4 +548,19 @@ async def api_log(payload: LogRequest):
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run("app.main:app", host="127.0.0.1", port=8000, reload=True)
+    import os
+    
+    # Check for SSL certificates
+    ssl_keyfile = "key.pem" if os.path.exists("key.pem") else None
+    ssl_certfile = "cert.pem" if os.path.exists("cert.pem") else None
+    
+    if ssl_keyfile and ssl_certfile:
+        print("Starting with HTTPS (self-signed certificate)")
+        print("Access via: https://192.168.0.100:8000")
+        print("Note: Accept the security warning in your browser")
+        uvicorn.run("app.main:app", host="0.0.0.0", port=8000, reload=True,
+                    ssl_keyfile=ssl_keyfile, ssl_certfile=ssl_certfile)
+    else:
+        print("Starting with HTTP (no SSL)")
+        print("For mobile voice, generate cert: uv run python generate_cert.py")
+        uvicorn.run("app.main:app", host="0.0.0.0", port=8000, reload=True)

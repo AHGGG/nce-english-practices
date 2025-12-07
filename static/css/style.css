@@ -796,8 +796,65 @@ body {
     color: var(--text-secondary);
     font-size: 0.9rem;
     text-transform: uppercase;
-    letter-spacing: 0.05em;
-    font-weight: 600;
+
+/* --- Voice UI --- */
+.voice-panel {
+    background: rgba(15, 21, 40, 0.9);
+    border: 1px solid var(--accent-color);
+    border-radius: 12px;
+    padding: 1.5rem;
+    margin-bottom: 1rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    overflow: hidden;
+    min-height: 120px;
+}
+
+.voice-status {
+    color: var(--accent-color);
+    text-transform: uppercase;
+    font-size: 0.8rem;
+    letter-spacing: 0.1em;
+    font-weight: 700;
+    margin-bottom: 1rem;
+    z-index: 2;
+}
+
+.voice-visualizer {
+    width: 60px;
+    height: 60px;
+    background: var(--accent-color);
+    border-radius: 50%;
+    opacity: 0.8;
+    transition: transform 0.1s;
+    box-shadow: 0 0 30px var(--accent-glow);
+    z-index: 1;
+}
+
+/* Animations */
+.pulse {
+    animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+    0% { opacity: 1; }
+    50% { opacity: 0.5; }
+    100% { opacity: 1; }
+}
+
+.active-call {
+    background: rgba(239, 68, 68, 0.2) !important;
+    color: #fca5a5 !important;
+    border: 1px solid rgba(239, 68, 68, 0.5) !important;
+}
+
+.active-call:hover {
+    background: rgba(239, 68, 68, 0.3) !important;
+}
+
 }
 
 .stats-charts-row {

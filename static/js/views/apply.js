@@ -3,6 +3,7 @@
 import { state, getCacheKey } from '../core/state.js';
 import { elements } from '../core/elements.js';
 import { fetchScenario, gradeScenario, startChat, sendChatReply, logAttempt } from '../core/api.js';
+import { GeminiLiveClient } from '../core/gemini-live.js';
 
 // --- Scenario ---
 
@@ -75,6 +76,8 @@ export async function submitScenarioResponse() {
 
 // --- Chat ---
 
+let activeVoiceClient = null;
+
 export async function renderChat() {
     const topic = state.topic;
     const layer = state.currentLayer;
@@ -83,6 +86,13 @@ export async function renderChat() {
     elements.chatCard.classList.remove('hidden');
     elements.chatWindow.innerHTML = '';
     elements.missionTitle.textContent = "Loading Mission...";
+    
+    // Stop any active voice session if switching views
+    if (activeVoiceClient) {
+        activeVoiceClient.disconnect();
+        activeVoiceClient = null;
+        updateVoiceUI(false);
+    }
     
     if (state.chats[cacheKey]) {
         restoreChat(state.chats[cacheKey]);
@@ -142,4 +152,104 @@ function appendMessage(role, text) {
     div.className = `chat-message ${role}`;
     div.textContent = text;
     elements.chatWindow.appendChild(div);
+}
+
+// --- Voice Integration ---
+
+export async function toggleVoiceCall() {
+    if (activeVoiceClient) {
+        // Stop Call
+        activeVoiceClient.disconnect();
+        activeVoiceClient = null;
+        updateVoiceUI(false);
+        return;
+    }
+
+    // Start Call
+    updateVoiceUI(true, true); // Loading state
+
+    const topic = state.topic;
+    const layer = state.currentLayer;
+    const cacheKey = getCacheKey(topic, layer);
+    const session = state.chats[cacheKey];
+
+    if (!session) {
+        updateVoiceUI(false);
+        return;
+    }
+
+    try {
+        // 1. Prepare System Instruction from Mission context
+        const systemInstruction = `You are a roleplay partner for English practice. 
+Topic: ${topic}. Context: ${session.mission.description}. 
+Keep responses natural and conversational. Gently correct grammar mistakes.`;
+
+        // 2. Connect Gemini Live (Proxy)
+        const client = new GeminiLiveClient(); // Defaults to /ws/voice
+        
+        client.onDisconnect = () => {
+            activeVoiceClient = null;
+            updateVoiceUI(false);
+        };
+        
+        client.onAudioLevel = (level) => {
+             const viz = document.getElementById('voiceVisualizer');
+             if (viz) {
+                 const scale = 1 + Math.min(0.5, level * 2);
+                 viz.style.transform = `scale(${scale})`;
+             }
+        };
+        
+        // Callback for text transcripts
+        client.onTranscript = (text, isUser) => {
+            appendMessage(isUser ? 'user' : 'ai', text);
+            elements.chatWindow.scrollTop = elements.chatWindow.scrollHeight;
+        };
+
+        // Handshake data
+        await client.connect({
+            voiceName: "Puck",
+            systemInstruction: systemInstruction
+        });
+        
+        activeVoiceClient = client;
+        updateVoiceUI(true, false); // Active state
+
+    } catch (err) {
+        console.error("Voice Error", err);
+        alert("Could not start voice call: " + err.message);
+        activeVoiceClient = null;
+        updateVoiceUI(false);
+    }
+}
+
+function updateVoiceUI(active, loading = false) {
+    const btn = document.getElementById('voiceCallBtn');
+    const panel = document.getElementById('voicePanel');
+    const chatInputArea = document.querySelector('.chat-input-area');
+    
+    if (loading) {
+        btn.innerHTML = '<span class="icon spin">⏳</span> Connecting...';
+        btn.classList.add('pulse');
+        return;
+    }
+
+    if (active) {
+        btn.innerHTML = '<span class="icon">🛑</span> End Call';
+        btn.classList.add('active-call');
+        btn.classList.remove('pulse');
+        
+        // Show Voice Overlay/Panel
+        if(panel) panel.classList.remove('hidden');
+        // Hide Text Input to focus on voice? Or keep both?
+        // Let's hide text input to reduce confusion, or just disable it.
+        // chatInputArea.style.display = 'none'; 
+    } else {
+        btn.innerHTML = '<span class="icon">📞</span> Start Call';
+        btn.classList.remove('active-call');
+        btn.classList.remove('pulse');
+        
+        if(panel) panel.classList.add('hidden');
+        // chatInputArea.style.display = 'flex';
+    }
 }

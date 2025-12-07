@@ -185,7 +185,16 @@
                                 <!-- Messages -->
                             </div>
 
+                            <!-- Voice Interface Panel (Overlay/Integral) -->
+                            <div id="voicePanel" class="voice-panel hidden">
+                                <div class="voice-status">Active Call</div>
+                                <div id="voiceVisualizer" class="voice-visualizer"></div>
+                            </div>
+
                             <div class="chat-input-area">
+                                <button id="voiceCallBtn" class="btn-secondary" style="margin-right:0.5rem">
+                                    <span class="icon">📞</span> Start Call
+                                </button>
                                 <input type="text" id="chatInput" placeholder="Say something..." autocomplete="off">
                                 <button id="chatSendBtn" class="btn-action">Send</button>
                             </div>
@@ -284,7 +293,7 @@
     <!-- Notification Toast -->
     <div id="toast" class="toast hidden"></div>
 
-    <script type="module" src="/static/js/main.js"></script>
+    <script type="module" src="/static/js/main.js?v=3"></script>
 </body>
 
 </html>

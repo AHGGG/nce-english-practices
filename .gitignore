@@ -12,4 +12,6 @@ wheels/
 .english_tense_practice/
 
 resources/
-practice.db
+*.db
+key.pem
+cert.pem
