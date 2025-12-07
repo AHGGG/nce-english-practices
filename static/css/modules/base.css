@@ -1,0 +1,19 @@
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: var(--font-family);
+    background-color: var(--bg-color);
+    color: var(--text-primary);
+    height: 100vh;
+    overflow: hidden; /* Prevent body scroll, handle in main */
+    background-image: 
+        radial-gradient(circle at 15% 50%, rgba(56, 189, 248, 0.08) 0%, transparent 25%), 
+        radial-gradient(circle at 85% 30%, rgba(124, 58, 237, 0.08) 0%, transparent 25%);
+}
+
+/* Utilities */
+.hidden { display: none !important; }

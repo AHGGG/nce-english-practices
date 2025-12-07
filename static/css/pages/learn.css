@@ -1,0 +1,65 @@
+/* Vocab Grid */
+.vocab-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 1rem;
+    margin-bottom: 2rem;
+}
+
+.vocab-card {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    padding: 1.2rem;
+    border-radius: 12px;
+}
+
+.vocab-label {
+    display: block;
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--text-secondary);
+    margin-bottom: 0.5rem;
+}
+
+.vocab-value {
+    font-size: 1.1rem;
+    color: var(--text-primary);
+    font-weight: 500;
+}
+
+/* Story */
+.story-container {
+    animation: fadeIn 0.5s ease-out;
+}
+
+.story-card {
+    background: rgba(30, 41, 59, 0.4);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    padding: 2rem;
+    border-radius: 16px;
+}
+
+.story-content {
+    line-height: 1.8;
+    color: #cbd5e1;
+    font-size: 1.1rem;
+}
+
+/* Highlight target tense (strong tags from markdown or .story-highlight class) */
+.story-content strong,
+.story-highlight {
+    background: rgba(56, 189, 248, 0.2);
+    border-bottom: 2px solid var(--accent-color);
+    color: white;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-weight: 500;
+    cursor: help;
+    transition: all 0.2s;
+}
+
+.story-content strong:hover,
+.story-highlight:hover {
+    background: rgba(56, 189, 248, 0.35);
+}

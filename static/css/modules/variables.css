@@ -1,0 +1,14 @@
+:root {
+    --bg-color: #0f172a;
+    --sidebar-bg: #1e293b;
+    --card-bg: rgba(30, 41, 59, 0.6);
+    --card-border: 1px solid rgba(255, 255, 255, 0.08);
+    --text-primary: #f8fafc;
+    --text-secondary: #94a3b8;
+    --accent-color: #38bdf8;
+    --accent-glow: rgba(56, 189, 248, 0.4);
+    --primary-gradient: linear-gradient(135deg, #0ea5e9 0%, #6366f1 100%);
+    --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+    --font-family: 'Outfit', sans-serif;
+    --sidebar-width: 260px;
+}

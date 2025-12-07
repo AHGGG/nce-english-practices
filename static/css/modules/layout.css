@@ -1,0 +1,132 @@
+/* --- App Layout --- */
+.app-layout {
+    display: grid;
+    grid-template-columns: var(--sidebar-width) 1fr;
+    height: 100vh;
+}
+
+/* --- Sidebar --- */
+.sidebar {
+    background: var(--sidebar-bg);
+    border-right: 1px solid rgba(255, 255, 255, 0.05);
+    padding: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+    z-index: 10;
+}
+
+.logo h1 {
+    font-size: 1.5rem;
+    font-weight: 800;
+    background: var(--primary-gradient);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    letter-spacing: -0.02em;
+}
+
+/* Nav Menu */
+.nav-menu {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    flex: 1;
+}
+
+.nav-item {
+    background: transparent;
+    border: none;
+    color: var(--text-secondary);
+    padding: 0.8rem 1rem;
+    border-radius: 12px;
+    text-align: left;
+    font-size: 1rem;
+    font-weight: 500;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+    transition: all 0.2s;
+}
+
+.nav-item:hover {
+    background: rgba(255, 255, 255, 0.05);
+    color: var(--text-primary);
+}
+
+.nav-item.active {
+    background: var(--primary-gradient);
+    color: white;
+    box-shadow: 0 4px 12px rgba(14, 165, 233, 0.3);
+}
+
+.nav-item .icon {
+    font-size: 1.2rem;
+}
+
+.spacer {
+    flex: 1;
+}
+
+/* --- Main Content --- */
+.main-content {
+    position: relative;
+    height: 100vh;
+    overflow: hidden;
+}
+
+/* View Panels */
+.view-panel {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    opacity: 0;
+    pointer-events: none;
+    transform: translateY(10px);
+    transition: opacity 0.3s ease, transform 0.3s ease;
+    padding: 2rem; 
+}
+
+.view-panel.active {
+    opacity: 1;
+    pointer-events: auto;
+    transform: translateY(0);
+}
+
+.panel-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+    flex-shrink: 0;
+}
+
+.panel-header h2 {
+    font-size: 1.8rem;
+    font-weight: 700;
+}
+
+.panel-content {
+    flex: 1;
+    overflow-y: auto;
+    padding-bottom: 2rem;
+}
+
+/* Scrollbar Styling */
+.scrollable::-webkit-scrollbar {
+    width: 8px;
+}
+.scrollable::-webkit-scrollbar-track {
+    background: transparent;
+}
+.scrollable::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 4px;
+}
+.scrollable::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.2);
+}

@@ -22,6 +22,24 @@
                     .then(reg => console.log('SW Registered!', reg.scope))
                     .catch(err => console.log('SW Failed:', err));
             });
+            window.app = window.app || {};
+            window.app.switchApplyTab = function (tabName, btn) {
+                // Update Buttons
+                document.querySelectorAll('#viewApply .tab-btn').forEach(b => b.classList.remove('active'));
+                if (btn) btn.classList.add('active');
+
+                // Toggle Views
+                const scenarioCard = document.getElementById('scenarioCard');
+                const chatCard = document.getElementById('chatCard');
+
+                if (tabName === 'scenario') {
+                    scenarioCard.classList.remove('hidden');
+                    chatCard.classList.add('hidden');
+                } else {
+                    scenarioCard.classList.add('hidden');
+                    chatCard.classList.remove('hidden');
+                }
+            };
         }
     </script>
 </head>
@@ -29,6 +47,14 @@
 <body>
 
     <div class="app-layout">
+        <!-- Mobile Header (Visible only on mobile) -->
+        <header class="mobile-header">
+            <div class="logo-small">
+                <h1>NCE</h1>
+                <span class="badge">AI</span>
+            </div>
+            <button id="mobileTopicBtn" class="btn-icon is-small">✨</button>
+        </header>
         <!-- Sidebar Navigation -->
         <aside class="sidebar">
             <div class="logo">
@@ -137,14 +163,18 @@
 
             <!-- VIEW 3: APPLY (Scenario & Chat) -->
             <section id="viewApply" class="view-panel hidden">
-                <header class="panel-header">
-                    <h2>Real-World Application</h2>
+                <header class="panel-header" style="flex-wrap: wrap; gap: 1rem;">
+                    <h2>Application</h2>
+                    <div class="tabs">
+                        <button class="tab-btn active" onclick="app.switchApplyTab('scenario', this)">Challenge</button>
+                        <button class="tab-btn" onclick="app.switchApplyTab('chat', this)">Roleplay</button>
+                    </div>
                 </header>
 
                 <div class="panel-content scrollable">
-                    <div class="split-view">
+                    <div id="applyContainer">
                         <!-- Scenario Challenge Card -->
-                        <div class="scenario-card hidden" id="scenarioCard">
+                        <div class="scenario-card apply-view" id="scenarioCard">
                             <div class="scenario-header">
                                 <h3>Wait for it...</h3>
                                 <span class="badge-scenario">Challenge</span>
@@ -166,7 +196,7 @@
                         </div>
 
                         <!-- Chat Roleplay Card -->
-                        <div class="chat-card hidden" id="chatCard">
+                        <div class="chat-card apply-view hidden" id="chatCard">
                             <div class="chat-header">
                                 <h3>Secret Mission</h3>
                                 <span class="badge-roleplay">Roleplay</span>
