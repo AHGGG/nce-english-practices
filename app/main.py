@@ -98,8 +98,35 @@ async def websocket_endpoint(websocket: WebSocket):
             while client_connected:
                 turn = session.receive()
                 async for response in turn:
-                    if not client_connected:
-                        break
+                    if response.server_content:
+                        # print(f"DEBUG: ServerContent:T={type(response.server_content)} V={response.server_content}")
+                        pass
+                    
+                    # 1. Handle User Transcription (New)
+                    if response.server_content and getattr(response.server_content, 'input_transcription', None):
+                        trx = response.server_content.input_transcription
+                        user_text = getattr(trx, 'text', None)
+                        
+                        if user_text and client_connected:
+                             await websocket.send_json({
+                                "type": "transcript",
+                                "text": user_text,
+                                "isUser": True
+                            })
+
+                    # 2. Handle AI Speech Transcription (Output)
+                    if response.server_content and getattr(response.server_content, 'output_transcription', None):
+                        trx = response.server_content.output_transcription
+                        ai_text = getattr(trx, 'text', None)
+                        
+                        if ai_text and client_connected:
+                             await websocket.send_json({
+                                "type": "transcript",
+                                "text": ai_text,
+                                "isUser": False
+                            })
+
+                    # 3. Handle Model Turn (Audio & Text)
                     if response.server_content and response.server_content.model_turn:
                         for part in response.server_content.model_turn.parts:
                             if part.inline_data and isinstance(part.inline_data.data, bytes):
@@ -109,7 +136,15 @@ async def websocket_endpoint(websocket: WebSocket):
                                         "type": "audio",
                                         "data": b64_data
                                     })
-                            if part.text and client_connected:
+                            
+                            # Only send text if it's NOT a thought (avoid internal monologue)
+                            # Or if we rely solely on output_transcription for speech, we might skip this entirely for text?
+                            # Usually 'text' in model_turn is the "Text Content" of the response.
+                            # For Gemini 2.0 Flash Audio, the text part is often the Thought.
+                            is_thought = getattr(part, 'thought', False)
+                            if part.text and not is_thought and client_connected:
+                                # This might be redundant with output_transcription, or it might be a text-only response?
+                                # Let's keep it but filtered.
                                 await websocket.send_json({
                                     "type": "transcript",
                                     "text": part.text,
@@ -145,6 +180,8 @@ async def websocket_endpoint(websocket: WebSocket):
                 "speech_config": {
                     "voice_config": {"prebuilt_voice_config": {"voice_name": voice_name}}
                 },
+                "input_audio_transcription": {},
+                "output_audio_transcription": {},
                 "system_instruction": {"parts": [{"text": sys_instruction}]}
             }
         ) as session:

@@ -202,7 +202,7 @@ Keep responses natural and conversational. Gently correct grammar mistakes.`;
         
         // Callback for text transcripts
         client.onTranscript = (text, isUser) => {
-            appendMessage(isUser ? 'user' : 'ai', text);
+            appendOrUpdateMessage(isUser ? 'user' : 'ai', text);
             elements.chatWindow.scrollTop = elements.chatWindow.scrollHeight;
         };
 
@@ -220,6 +220,15 @@ Keep responses natural and conversational. Gently correct grammar mistakes.`;
         alert("Could not start voice call: " + err.message);
         activeVoiceClient = null;
         updateVoiceUI(false);
+    }
+}
+
+function appendOrUpdateMessage(role, text) {
+    const lastMsg = elements.chatWindow.lastElementChild;
+    if (lastMsg && lastMsg.classList.contains(role)) {
+        lastMsg.textContent += text;
+    } else {
+        appendMessage(role, text);
     }
 }
 
