@@ -21,6 +21,17 @@ export function getElements() {
         loadBtn: document.getElementById('loadBtn'),
         loadingOverlay: document.getElementById('loadingOverlay'),
         toast: document.getElementById('toast'),
+
+        // Mobile Specific
+        mobileTopicBtn: document.getElementById('mobileTopicBtn'),
+        // Inline Mobile Input
+        mobileInlineInput: document.getElementById('mobileInlineInput'),
+        mobileInlineBtn: document.getElementById('mobileInlineBtn'),
+        
+        topicModal: document.getElementById('topicModal'),
+        closeTopicModal: document.getElementById('closeTopicModal'),
+        mobileTopicInput: document.getElementById('mobileTopicInput'),
+        mobileTopicSubmit: document.getElementById('mobileTopicSubmit'),
         
         // View 1: Learn
         vocabSection: document.getElementById('vocabSection'),

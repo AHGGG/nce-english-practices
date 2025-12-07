@@ -56,15 +56,16 @@
 
     <div class="flex h-screen w-full relative overflow-hidden">
         <!-- Mobile Header (Visible only on mobile) -->
+        <!-- Mobile Header (Visible only on mobile) -->
         <header
-            class="md:hidden absolute top-0 left-0 right-0 z-50 flex items-center justify-between p-4 bg-sidebar-bg border-b border-white/10 md:hidden">
-            <div class="flex items-center gap-3">
-                <h1 class="text-xl font-bold tracking-tight text-white">NCE</h1>
+            class="md:hidden absolute top-0 left-0 right-0 z-50 flex items-center justify-between px-4 py-3 bg-sidebar-bg border-b border-white/10 md:hidden h-[54px]">
+            <div class="flex items-center gap-2">
+                <h1 class="text-lg font-bold tracking-tight text-white">NCE</h1>
                 <span
-                    class="text-[10px] font-bold tracking-wider px-2 py-0.5 rounded-full bg-accent/20 text-accent border border-accent/20">AI</span>
+                    class="text-[10px] font-bold tracking-wider px-1.5 py-0.5 rounded-full bg-accent/20 text-accent border border-accent/20">AI</span>
             </div>
             <button id="mobileTopicBtn"
-                class="p-2 rounded-lg text-text-secondary hover:text-accent hover:bg-white/5 transition-colors">✨</button>
+                class="p-1.5 rounded-lg text-text-secondary hover:text-accent hover:bg-white/5 transition-colors">✨</button>
         </header>
 
         <!-- Sidebar Navigation -->
@@ -115,31 +116,48 @@
         </aside>
 
         <!-- Main Content Area -->
-        <main class="flex-1 flex flex-col h-full overflow-hidden relative pt-[70px] md:pt-0">
+        <main class="flex-1 flex flex-col h-full overflow-hidden relative md:pt-0">
 
             <!-- Global Loading -->
             <div id="loadingOverlay"
-                class="hidden absolute inset-0 z-50 bg-app-bg/80 backdrop-blur-sm flex flex-col items-center justify-center">
+                class="hidden absolute inset-0 z-[60] bg-app-bg/80 backdrop-blur-sm flex flex-col items-center justify-center">
                 <div class="w-12 h-12 border-4 border-accent/30 border-t-accent rounded-full animate-spin mb-4"></div>
                 <p id="loadingText" class="text-accent animate-pulse font-medium">Consulting the AI...</p>
             </div>
 
             <!-- VIEW 1: LEARN (Context & Input) -->
             <section id="viewLearn"
-                class="view-panel active flex flex-col h-full w-full absolute inset-0 bg-app-bg transition-opacity duration-300">
+                class="view-panel active flex flex-col h-full w-full absolute inset-0 bg-app-bg transition-opacity duration-300 pt-[54px] md:pt-0">
                 <header
-                    class="flex-none flex items-center justify-between px-8 py-6 border-b border-white/5 bg-app-bg/50 backdrop-blur-md sticky top-0 z-10">
-                    <h2 class="text-2xl font-bold bg-clip-text text-transparent bg-primary-gradient">Context &
+                    class="flex-none flex items-center justify-between px-4 py-3 md:px-8 md:py-6 border-b border-white/5 bg-app-bg/50 backdrop-blur-md sticky top-0 z-10">
+                    <h2 class="text-lg md:text-2xl font-bold bg-clip-text text-transparent bg-primary-gradient">Context
+                        &
                         Vocabulary</h2>
                     <div class="flex gap-2">
                         <button id="shuffleBtn"
-                            class="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-sm font-medium transition-colors border border-white/10">
-                            <span>🎲</span> Refresh
+                            class="flex items-center gap-2 px-2 py-1 md:px-3 md:py-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-xs md:text-sm font-medium transition-colors border border-white/10">
+                            <span>🎲</span> <span class="hidden md:inline">Refresh</span><span
+                                class="md:hidden">New</span>
                         </button>
                     </div>
                 </header>
 
-                <div class="flex-1 overflow-y-auto p-4 md:p-8 scroll-smooth">
+                <div class="flex-1 overflow-y-auto p-4 md:p-8 scroll-smooth pb-24 md:pb-8">
+                    <!-- Mobile Inline Input (Visible only on mobile) -->
+                    <div class="md:hidden mb-8">
+                        <label
+                            class="text-xs uppercase tracking-wider text-text-secondary font-bold mb-2 ml-1 block">Your
+                            Topic</label>
+                        <div class="relative">
+                            <input type="text" id="mobileInlineInput" placeholder="Enter topic..." autocomplete="off"
+                                class="w-full bg-app-bg border border-white/10 text-white rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent transition-all placeholder-slate-500">
+                            <button id="mobileInlineBtn"
+                                class="absolute right-2 top-2 p-1.5 rounded-lg text-text-secondary hover:text-accent hover:bg-white/5 transition-colors">
+                                ✨
+                            </button>
+                        </div>
+                    </div>
+
                     <!-- Vocabulary Section -->
                     <div id="vocabSection" class="hidden mb-8 animate-fade-in-up">
                         <h3 class="text-xs uppercase tracking-wider text-text-secondary font-bold mb-4 ml-1">Core
@@ -176,10 +194,11 @@
 
             <!-- VIEW 2: DRILL (Matrix) -->
             <section id="viewDrill"
-                class="view-panel hidden flex flex-col h-full w-full absolute inset-0 bg-app-bg transition-opacity duration-300">
+                class="view-panel hidden flex flex-col h-full w-full absolute inset-0 bg-app-bg transition-opacity duration-300 pt-[54px] md:pt-0">
                 <header
-                    class="flex-none flex flex-col md:flex-row md:items-center justify-between px-8 py-6 border-b border-white/5 bg-app-bg/50 backdrop-blur-md sticky top-0 z-10 gap-4">
-                    <h2 class="text-2xl font-bold bg-clip-text text-transparent bg-primary-gradient">Tense Matrix Drill
+                    class="flex-none flex flex-col md:flex-row md:items-center justify-between px-4 py-3 md:px-8 md:py-6 border-b border-white/5 bg-app-bg/50 backdrop-blur-md sticky top-0 z-10 gap-3 md:gap-4">
+                    <h2 class="text-lg md:text-2xl font-bold bg-clip-text text-transparent bg-primary-gradient">Tense
+                        Matrix Drill
                     </h2>
                     <div class="flex p-1 bg-sidebar-bg rounded-xl border border-white/10 tabs">
                         <button
@@ -197,7 +216,7 @@
                     </div>
                 </header>
 
-                <div class="flex-1 overflow-y-auto p-4 md:p-8" id="matrixSection">
+                <div class="flex-1 overflow-y-auto p-4 md:p-8 pb-24 md:pb-8" id="matrixSection">
                     <div class="bg-card-bg border border-white/5 rounded-2xl overflow-hidden w-full overflow-x-auto"
                         id="matrixContainer">
                         <div
@@ -219,10 +238,11 @@
 
             <!-- VIEW 3: APPLY (Scenario & Chat) -->
             <section id="viewApply"
-                class="view-panel hidden flex flex-col h-full w-full absolute inset-0 bg-app-bg transition-opacity duration-300">
+                class="view-panel hidden flex flex-col h-full w-full absolute inset-0 bg-app-bg transition-opacity duration-300 pt-[54px] md:pt-0">
                 <header
-                    class="flex-none flex flex-wrap items-center gap-4 px-8 py-6 border-b border-white/5 bg-app-bg/50 backdrop-blur-md sticky top-0 z-10">
-                    <h2 class="text-2xl font-bold bg-clip-text text-transparent bg-primary-gradient mr-auto">Application
+                    class="flex-none flex flex-wrap items-center gap-2 md:gap-4 px-4 py-3 md:px-8 md:py-6 border-b border-white/5 bg-app-bg/50 backdrop-blur-md sticky top-0 z-10">
+                    <h2 class="text-lg md:text-2xl font-bold bg-clip-text text-transparent bg-primary-gradient mr-auto">
+                        Application
                     </h2>
                     <div class="flex p-1 bg-sidebar-bg rounded-xl border border-white/10 tabs">
                         <button
@@ -234,10 +254,18 @@
                     </div>
                 </header>
 
-                <div class="flex-1 overflow-y-auto p-4 md:p-8">
-                    <div id="applyContainer" class="max-w-4xl mx-auto h-full grid place-items-center">
+                <!-- 
+                   UPDATED LAYOUT: 
+                   We remove 'overflow-y-auto' from the container for Chat mode usually, 
+                   but to keep it simple we use h-full and let cards manage scroll.
+                   Added pb-24 padding to container to clear bottom nav.
+                -->
+                <div
+                    class="flex-1 overflow-hidden relative w-full h-full pb-[calc(65px+env(safe-area-inset-bottom))] md:pb-0">
+                    <div id="applyContainer" class="w-full h-full p-4 md:p-8 overflow-y-auto md:overflow-hidden">
+
                         <!-- Scenario Challenge Card -->
-                        <div class="w-full bg-card-bg backdrop-blur-md rounded-2xl border border-white/10 p-6 md:p-8 shadow-glass"
+                        <div class="w-full max-w-4xl mx-auto bg-card-bg backdrop-blur-md rounded-2xl border border-white/10 p-4 md:p-8 shadow-glass mb-20 md:mb-0"
                             id="scenarioCard">
                             <div class="flex items-center justify-between mb-6">
                                 <h3 class="text-xl font-bold text-white">Wait for it...</h3>
@@ -245,14 +273,15 @@
                                     class="px-3 py-1 bg-yellow-500/10 text-yellow-400 border border-yellow-500/20 rounded-full text-xs font-bold uppercase tracking-wide">Challenge</span>
                             </div>
                             <div class="space-y-6">
-                                <p class="text-lg text-slate-300 leading-relaxed italic" id="scenarioSituation">Loading
+                                <p class="text-lg text-slate-300 leading-relaxed italic break-words"
+                                    id="scenarioSituation">Loading
                                     situation...</p>
                                 <div class="bg-indigo-500/10 border-l-4 border-indigo-500 p-4 rounded-r-lg">
                                     <strong
                                         class="text-indigo-400 block text-xs uppercase tracking-wider mb-1">Goal</strong>
-                                    <span id="scenarioGoal" class="text-slate-200">...</span>
+                                    <span id="scenarioGoal" class="text-slate-200 break-words">...</span>
                                 </div>
-                                <div class="flex gap-2">
+                                <div class="flex flex-col md:flex-row gap-2">
                                     <input type="text" id="scenarioInput" placeholder="Type your response here..."
                                         autocomplete="off"
                                         class="flex-1 bg-app-bg border border-white/10 text-white rounded-xl px-4 py-3 focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent transition-all placeholder-slate-600">
@@ -267,50 +296,73 @@
                         </div>
 
                         <!-- Chat Roleplay Card -->
-                        <div class="hidden w-full h-[calc(100vh-180px)] bg-card-bg backdrop-blur-md rounded-2xl border border-white/10 p-0 shadow-glass flex flex-col overflow-hidden relative"
+                        <!-- 
+                           Fixed Height Issue:
+                           On mobile, this card needs to fill available space.
+                           We use h-full. The parent has padding for bottom nav.
+                        -->
+                        <div class="hidden w-full h-full max-w-4xl mx-auto bg-card-bg backdrop-blur-md rounded-2xl border border-white/10 p-0 shadow-glass flex flex-col overflow-hidden relative"
                             id="chatCard">
                             <div
-                                class="flex-none p-4 md:p-6 border-b border-white/10 bg-slate-900/50 flex items-center justify-between">
-                                <h3 class="text-lg font-bold text-white flex items-center gap-2">
-                                    <span class="text-2xl">🕵️</span> Secret Mission
+                                class="flex-none p-3 md:p-6 border-b border-white/10 bg-slate-900/50 flex items-center justify-between">
+                                <h3 class="text-base md:text-lg font-bold text-white flex items-center gap-2">
+                                    <span class="text-xl md:text-2xl">🕵️</span> Secret Mission
                                 </h3>
-                                <span
-                                    class="px-3 py-1 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded-full text-xs font-bold uppercase tracking-wide">Roleplay</span>
-                            </div>
-
-                            <!-- Mission Brief Overlay (Collapsible ideally, but kept simple for now) -->
-                            <div class="flex-none bg-emerald-900/10 border-b border-white/5 p-4 text-sm"
-                                id="missionBrief">
-                                <strong id="missionTitle" class="block text-emerald-400 mb-1">Loading
-                                    Mission...</strong>
-                                <p id="missionDesc" class="text-slate-400 mb-2">...</p>
-                                <div class="">
-                                    <small class="text-xs text-slate-500 uppercase font-bold">OBJECTIVES:</small>
-                                    <ul id="missionGoals" class="list-disc list-inside text-slate-400 mt-1 space-y-1">
-                                    </ul>
+                                <div class="flex items-center gap-2">
+                                    <span
+                                        class="px-2 py-0.5 md:px-3 md:py-1 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded-full text-[10px] md:text-xs font-bold uppercase tracking-wide">Roleplay</span>
+                                    <button id="toggleMissionBrief"
+                                        class="md:hidden text-text-secondary hover:text-white transition-colors p-1"
+                                        title="Toggle Brief">
+                                        ℹ️
+                                    </button>
                                 </div>
                             </div>
 
-                            <div class="flex-1 overflow-y-auto p-4 space-y-4 scroll-smooth" id="chatWindow">
+                            <!-- Mission Brief: Clickable Teaser Bar -->
+                            <!-- Collapsed: 44px (show title), Expanded: 300px (show content) -->
+                            <div class="flex-none bg-emerald-900/10 border-b border-white/5 px-4 transition-all duration-300 overflow-hidden max-h-[44px] md:max-h-[300px] cursor-pointer hover:bg-emerald-900/20"
+                                id="missionBrief">
+                                <div class="h-[44px] flex items-center justify-between" id="missionHeader">
+                                    <strong id="missionTitle"
+                                        class="text-emerald-400 text-sm md:text-base truncate pr-2">Loading
+                                        Mission...</strong>
+                                    <span id="missionChevron"
+                                        class="text-emerald-500/50 text-xs transition-transform duration-300">▼</span>
+                                </div>
+                                <div id="missionContent" class="opacity-100 transition-opacity duration-300 pb-4">
+                                    <p id="missionDesc" class="text-slate-400 mb-2 line-clamp-2 text-xs md:text-sm">...
+                                    </p>
+                                    <div class="">
+                                        <small
+                                            class="text-[10px] md:text-xs text-slate-500 uppercase font-bold">OBJECTIVES:</small>
+                                        <ul id="missionGoals"
+                                            class="list-disc list-inside text-slate-400 mt-1 space-y-1 text-xs md:text-sm">
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="flex-1 overflow-y-auto p-4 space-y-4 scroll-smooth min-h-0" id="chatWindow">
                                 <!-- Messages -->
                             </div>
 
-                            <!-- Voice Interface Panel (Overlay/Integral) -->
                             <div id="voicePanel"
-                                class="hidden absolute bottom-[80px] left-4 right-4 bg-slate-900/90 backdrop-blur-xl border border-white/10 rounded-2xl p-4 flex flex-col items-center justify-center z-10 animate-fade-in-up">
+                                class="hidden absolute bottom-[80px] left-4 right-4 bg-slate-900/90 backdrop-blur-xl border border-white/10 rounded-2xl p-4 flex flex-col items-center justify-center z-20 animate-fade-in-up">
                                 <div class="voice-status text-accent font-bold mb-2 animate-pulse">Active Call</div>
                                 <div id="voiceVisualizer" class="w-full h-12 bg-white/5 rounded-lg"></div>
                             </div>
 
-                            <div class="flex-none p-4 border-t border-white/10 bg-slate-900/50 flex gap-2">
+                            <div
+                                class="flex-none p-3 md:p-4 border-t border-white/10 bg-slate-900/50 flex gap-2 z-10 relative">
                                 <button id="voiceCallBtn"
-                                    class="flex items-center gap-2 px-4 py-3 bg-white/5 hover:bg-white/10 rounded-xl text-text-secondary transition-colors border border-white/10">
+                                    class="flex-none flex items-center justify-center w-10 h-10 md:w-auto md:h-auto md:px-4 md:py-3 bg-white/5 hover:bg-white/10 rounded-xl text-text-secondary transition-colors border border-white/10">
                                     <span class="icon">📞</span>
                                 </button>
                                 <input type="text" id="chatInput" placeholder="Say something..." autocomplete="off"
-                                    class="flex-1 bg-app-bg border border-white/10 text-white rounded-xl px-4 py-3 focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent transition-all placeholder-slate-600">
+                                    class="flex-1 min-w-0 bg-app-bg border border-white/10 text-white rounded-xl px-3 py-2 md:px-4 md:py-3 focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent transition-all placeholder-slate-600 text-sm md:text-base">
                                 <button id="chatSendBtn"
-                                    class="px-6 py-3 bg-accent text-slate-900 font-semibold rounded-xl hover:bg-sky-400 transition-colors shadow-[0_0_20px_rgba(56,189,248,0.3)]">Send</button>
+                                    class="flex-none px-4 py-2 md:px-6 md:py-3 bg-accent text-slate-900 font-semibold rounded-xl hover:bg-sky-400 transition-colors shadow-[0_0_20px_rgba(56,189,248,0.3)] text-sm md:text-base">Send</button>
                             </div>
                         </div>
                     </div>
@@ -319,19 +371,20 @@
 
             <!-- VIEW 4: STATS -->
             <section id="viewStats"
-                class="view-panel hidden flex flex-col h-full w-full absolute inset-0 bg-app-bg transition-opacity duration-300">
+                class="view-panel hidden flex flex-col h-full w-full absolute inset-0 bg-app-bg transition-opacity duration-300 pt-[54px] md:pt-0">
                 <header
-                    class="flex-none flex items-center justify-between px-8 py-6 border-b border-white/5 bg-app-bg/50 backdrop-blur-md sticky top-0 z-10">
-                    <h2 class="text-2xl font-bold bg-clip-text text-transparent bg-primary-gradient">Your Progress</h2>
+                    class="flex-none flex items-center justify-between px-4 py-3 md:px-8 md:py-6 border-b border-white/5 bg-app-bg/50 backdrop-blur-md sticky top-0 z-10">
+                    <h2 class="text-lg md:text-2xl font-bold bg-clip-text text-transparent bg-primary-gradient">Your
+                        Progress</h2>
                     <div class="flex gap-2">
                         <button id="refreshStatsBtn"
-                            class="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-sm font-medium transition-colors border border-white/10">
-                            <span class="icon">🔄</span> Refresh
+                            class="flex items-center gap-2 px-2 py-1 md:px-3 md:py-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-xs md:text-sm font-medium transition-colors border border-white/10">
+                            <span class="icon">🔄</span> <span class="hidden md:inline">Refresh</span>
                         </button>
                     </div>
                 </header>
 
-                <div class="flex-1 overflow-y-auto p-4 md:p-8">
+                <div class="flex-1 overflow-y-auto p-4 md:p-8 pb-24 md:pb-8">
                     <!-- KPI Cards -->
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
                         <div
@@ -369,6 +422,57 @@
             </section>
 
         </main>
+
+        <!-- Bottom Navigation (Mobile Only) -->
+        <nav
+            class="md:hidden fixed bottom-0 left-0 right-0 h-[65px] bg-sidebar-bg border-t border-white/10 flex items-center justify-around px-2 z-40 pb-[env(safe-area-inset-bottom)]">
+            <button
+                class="nav-item flex flex-col items-center justify-center p-2 w-full text-text-secondary hover:text-accent transition-colors"
+                data-view="viewLearn">
+                <span class="text-xl mb-0.5">📚</span>
+                <span class="text-[10px] font-medium">Learn</span>
+            </button>
+            <button
+                class="nav-item flex flex-col items-center justify-center p-2 w-full text-text-secondary hover:text-accent transition-colors"
+                data-view="viewDrill">
+                <span class="text-xl mb-0.5">⚡</span>
+                <span class="text-[10px] font-medium">Drill</span>
+            </button>
+            <button
+                class="nav-item flex flex-col items-center justify-center p-2 w-full text-text-secondary hover:text-accent transition-colors"
+                data-view="viewApply">
+                <span class="text-xl mb-0.5">🚀</span>
+                <span class="text-[10px] font-medium">Apply</span>
+            </button>
+            <button
+                class="nav-item flex flex-col items-center justify-center p-2 w-full text-text-secondary hover:text-accent transition-colors"
+                data-view="viewStats">
+                <span class="text-xl mb-0.5">📊</span>
+                <span class="text-[10px] font-medium">Stats</span>
+            </button>
+        </nav>
+    </div>
+
+    <!-- Mobile Topic Modal -->
+    <div id="topicModal"
+        class="hidden fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-fade-in">
+        <div class="w-full max-w-sm bg-slate-900 border border-white/10 rounded-2xl shadow-2xl p-6 relative">
+            <button id="closeTopicModal"
+                class="absolute top-4 right-4 text-text-secondary hover:text-white transition-colors text-2xl leading-none">&times;</button>
+
+            <h3 class="text-xl font-bold text-white mb-2">New Topic</h3>
+            <p class="text-sm text-slate-400 mb-6">Enter a topic to generate a new lesson context.</p>
+
+            <div class="space-y-4">
+                <input type="text" id="mobileTopicInput" placeholder="e.g., Ordering Coffee..." autocomplete="off"
+                    class="w-full bg-app-bg border border-white/10 text-white rounded-xl px-4 py-3 text-base focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent transition-all placeholder-slate-600">
+
+                <button id="mobileTopicSubmit"
+                    class="w-full py-3 bg-accent text-slate-900 font-bold rounded-xl hover:bg-sky-400 transition-colors shadow-[0_0_20px_rgba(56,189,248,0.3)] flex items-center justify-center gap-2">
+                    <span>✨</span> Generate Lesson
+                </button>
+            </div>
+        </div>
     </div>
 
     <!-- MCQ Modal -->

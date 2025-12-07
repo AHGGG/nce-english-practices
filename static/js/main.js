@@ -108,10 +108,65 @@ if (elements.closeDictBtn) elements.closeDictBtn.addEventListener('click', () =>
 if (elements.dictModal) elements.dictModal.addEventListener('click', (e) => {
     if (e.target === elements.dictModal) elements.dictModal.classList.add('hidden');
 });
-if (elements.askAiBtn) elements.askAiBtn.addEventListener('click', askAiContext);
+if (elements.askAiBtn) elements.askAiBtn.addEventListener('click', () => {
+    const word = elements.dictWord.textContent;
+    const context = elements.dictContext.dataset.context;
+    if (word) askAiForContext(word, context); // Assuming askAiForContext is imported or defined? Wait, line 17 imports askAiContext.
+    // Line 111 in original was: elements.askAiBtn.addEventListener('click', askAiContext);
+    // So I should keep using askAiContext.
+    askAiContext();
+});
 
-// Apply View - Scenario
-if (elements.scenarioSubmitBtn) elements.scenarioSubmitBtn.addEventListener('click', submitScenarioResponse);
+// Mobile Topic Modal Handlers
+if (elements.mobileTopicBtn) {
+    elements.mobileTopicBtn.addEventListener('click', () => {
+        elements.topicModal.classList.remove('hidden');
+        elements.mobileTopicInput.focus();
+    });
+    
+    if (elements.closeTopicModal) elements.closeTopicModal.addEventListener('click', () => {
+        elements.topicModal.classList.add('hidden');
+    });
+    
+    // Sync Inputs & Submit
+    if (elements.mobileTopicSubmit) elements.mobileTopicSubmit.addEventListener('click', () => {
+         const val = elements.mobileTopicInput.value.trim();
+         if(val) {
+             elements.topicInput.value = val; // Sync to main input
+             elements.topicModal.classList.add('hidden');
+             loadTheme(false);
+         }
+    });
+
+    // Close on click outside
+    elements.topicModal.addEventListener('click', (e) => {
+        if (e.target === elements.topicModal) {
+            elements.topicModal.classList.add('hidden');
+        }
+    });
+}
+
+// Mobile Inline Input Handlers
+if (elements.mobileInlineBtn) {
+    elements.mobileInlineBtn.addEventListener('click', () => {
+         const val = elements.mobileInlineInput.value.trim();
+         if(val) {
+             elements.topicInput.value = val;
+             loadTheme(false);
+         }
+    });
+
+    elements.mobileInlineInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+             const val = elements.mobileInlineInput.value.trim();
+             if(val) {
+                 elements.topicInput.value = val;
+                 loadTheme(false);
+             }
+        }
+    });
+}
+
 if (elements.scenarioInput) elements.scenarioInput.addEventListener('keydown', (e) => {
     if (e.key === 'Enter') submitScenarioResponse();
 });
@@ -121,6 +176,30 @@ if (elements.chatSendBtn) elements.chatSendBtn.addEventListener('click', sendCha
 if (elements.chatInput) elements.chatInput.addEventListener('keydown', (e) => {
     if (e.key === 'Enter') sendChatMessage();
 });
+
+// Toggle Mission Brief (Mobile)
+// Toggle Mission Brief (Mobile Teaser Bar)
+const missionBrief = document.getElementById('missionBrief');
+const missionChevron = document.getElementById('missionChevron');
+
+if (missionBrief && missionChevron) {
+    const toggle = () => {
+        const isCollapsed = missionBrief.classList.contains('max-h-[44px]');
+        if (isCollapsed) {
+            // Expand
+            missionBrief.classList.remove('max-h-[44px]');
+            missionBrief.classList.add('max-h-[300px]');
+            missionChevron.style.transform = 'rotate(180deg)';
+        } else {
+            // Collapse
+            missionBrief.classList.add('max-h-[44px]');
+            missionBrief.classList.remove('max-h-[300px]');
+            missionChevron.style.transform = 'rotate(0deg)';
+        }
+    };
+
+    missionBrief.addEventListener('click', toggle);
+}
 
 // Voice Call
 const voiceBtn = document.getElementById('voiceCallBtn');
