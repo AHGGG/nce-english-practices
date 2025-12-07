@@ -35,7 +35,7 @@ export class GeminiLiveClient {
             // 1. First, initialize audio to ensure we have permission (before WS)
             await this.initAudio();
             
-            // 2. Now connect WebSocket
+            // 2. Now connect WebSocket and wait for READY signal
             await this.connectWebSocket(systemInstruction, voiceName);
             
             // 3. Start streaming audio after WS is ready
@@ -103,30 +103,35 @@ export class GeminiLiveClient {
         
         console.log("Audio initialized, sample rate:", this.audioContext.sampleRate);
     }
-    
+
     connectWebSocket(systemInstruction, voiceName) {
         return new Promise((resolve, reject) => {
             this.ws = new WebSocket(this.wsUrl);
+            
+            // Create a secondary promise for the "server_ready" signal
+            this._readyResolver = null;
+            this._readyPromise = new Promise((res) => { this._readyResolver = res; });
             
             const timeout = setTimeout(() => {
                 reject(new Error("WebSocket connection timeout"));
             }, 10000);
             
             this.ws.onopen = () => {
-                clearTimeout(timeout);
-                console.log("Proxy WS Connected");
-                
+                console.log("Proxy WS Connected, sending Handshake...");
                 // Handshake with backend
                 this.ws.send(JSON.stringify({
                     voiceName: voiceName,
                     systemInstruction: systemInstruction
                 }));
-                
-                resolve();
             };
 
             this.ws.onmessage = async (event) => {
-                await this.handleMessage(event.data);
+                const msg = await this.handleMessage(event.data);
+                if (msg && msg.type === 'server_ready') {
+                    console.log("Server Ready Signal Received");
+                    clearTimeout(timeout);
+                    resolve(); // Resolve the main connection promise now
+                }
             };
 
             this.ws.onerror = (err) => {
@@ -247,10 +252,12 @@ export class GeminiLiveClient {
             msg = JSON.parse(data);
         } catch(e) { 
             console.error("Parse Error", e); 
-            return; 
+            return null; 
         }
 
-        if (msg.type === 'audio') {
+        if (msg.type === 'server_ready') {
+            return msg;
+        } else if (msg.type === 'audio') {
             this.playAudioResponse(msg.data);
         } else if (msg.type === 'transcript') {
             console.log("Transcript:", msg.text);
@@ -261,6 +268,7 @@ export class GeminiLiveClient {
         } else if (msg.type === 'turnComplete') {
             // Turn complete
         }
+        return msg;
     }
     
     playAudioResponse(base64Data) {

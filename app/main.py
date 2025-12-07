@@ -187,7 +187,11 @@ async def websocket_endpoint(websocket: WebSocket):
         ) as session:
             print("WS: Connected to Gemini Live")
             
-            # 3. Run tasks with TaskGroup for proper cancellation
+            # Notify client that we are ready
+            if client_connected:
+                await websocket.send_json({"type": "server_ready"})
+            
+            # 3. Run tasks with TaskGroup for proper calculation
             try:
                 async with asyncio.TaskGroup() as tg:
                     tg.create_task(send_to_gemini(session))

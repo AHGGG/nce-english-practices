@@ -163,7 +163,8 @@ function appendMessage(role, text) {
     const isUser = role === 'user';
     const alignClass = isUser ? 'ml-auto bg-accent text-slate-900 rounded-br-sm' : 'mr-auto bg-white/10 text-white rounded-bl-sm';
     
-    div.className = `max-w-[80%] px-4 py-3 rounded-2xl text-[0.95rem] leading-relaxed shadow-sm mb-3 ${alignClass} animate-fade-in`;
+    // ADD ROLE CLASS HERE for identification
+    div.className = `max-w-[80%] px-4 py-3 rounded-2xl text-[0.95rem] leading-relaxed shadow-sm mb-3 ${alignClass} animate-fade-in ${role}`;
     div.textContent = text;
     elements.chatWindow.appendChild(div);
 }
@@ -180,7 +181,7 @@ export async function toggleVoiceCall() {
     }
 
     // Start Call
-    updateVoiceUI(true, true); // Loading state
+    updateVoiceUI(true, true, "Initializing AI..."); // Loading state
 
     const topic = state.topic;
     const layer = state.currentLayer;
@@ -207,16 +208,21 @@ Keep responses natural and conversational. Gently correct grammar mistakes.`;
         };
         
         client.onAudioLevel = (level) => {
-             const viz = document.getElementById('voiceVisualizer');
-             if (viz) {
-                 const scale = 1 + Math.min(0.5, level * 2);
-                 viz.style.transform = `scale(${scale})`;
+             const bars = document.querySelectorAll('.viz-bar');
+             if (bars.length) {
+                 bars.forEach(bar => {
+                     // Randomize variation to make it look organic
+                     const variation = 0.8 + Math.random() * 0.4;
+                     const height = Math.max(12, Math.min(100, level * 150 * variation)); 
+                     bar.style.height = `${height}%`; 
+                 });
              }
         };
         
         // Callback for text transcripts
         client.onTranscript = (text, isUser) => {
             appendOrUpdateMessage(isUser ? 'user' : 'ai', text);
+            // Ensure we scroll to bottom to see new content
             elements.chatWindow.scrollTop = elements.chatWindow.scrollHeight;
         };
 
@@ -227,7 +233,10 @@ Keep responses natural and conversational. Gently correct grammar mistakes.`;
         });
         
         activeVoiceClient = client;
-        updateVoiceUI(true, false); // Active state
+        // Connection established, but let's give it a slight buffer or just show active.
+        // The user complained they couldn't speak immediately. 
+        // We will show "Active" (End Call) but with "Listening" status in header.
+        updateVoiceUI(true, false, "Listening..."); 
 
     } catch (err) {
         console.error("Voice Error", err);
@@ -239,6 +248,7 @@ Keep responses natural and conversational. Gently correct grammar mistakes.`;
 
 function appendOrUpdateMessage(role, text) {
     const lastMsg = elements.chatWindow.lastElementChild;
+    // Check if the last message has the same role class
     if (lastMsg && lastMsg.classList.contains(role)) {
         lastMsg.textContent += text;
     } else {
@@ -246,33 +256,67 @@ function appendOrUpdateMessage(role, text) {
     }
 }
 
-function updateVoiceUI(active, loading = false) {
+/**
+ * Updates the Voice UI state
+ * @param {boolean} active - Whether call is active
+ * @param {boolean} loading - Whether currently connecting/disconnecting
+ * @param {string} [statusText] - Optional text to override status (e.g. "Connecting...")
+ */
+function updateVoiceUI(active, loading = false, statusText = null) {
     const btn = document.getElementById('voiceCallBtn');
-    const panel = document.getElementById('voicePanel');
-    const chatInputArea = document.querySelector('.chat-input-area');
+    // Header Elements
+    const headerNormal = document.getElementById('chatHeaderNormal');
+    const headerActive = document.getElementById('chatHeaderActive');
+    const statusLabel = headerActive ? headerActive.querySelector('span.text-red-400') : null;
     
+    // Find icon and label inside button
+    const iconSpan = btn.querySelector('.icon');
+    const labelSpan = btn.querySelector('.label');
+
     if (loading) {
-        btn.innerHTML = '<span class="icon spin">⏳</span> Connecting...';
+        if(iconSpan) iconSpan.innerHTML = '<span class="spin">⏳</span>';
+        const txt = statusText || 'Connecting...';
+        if(labelSpan) labelSpan.textContent = txt;
         btn.classList.add('pulse');
+        
+        // Show loading status in header for mobile users
+        if(headerNormal) headerNormal.classList.add('hidden');
+        if(headerActive) headerActive.classList.remove('hidden');
+        if(headerActive) headerActive.classList.add('flex');
+        
+        if(statusLabel) {
+             statusLabel.textContent = txt;
+             statusLabel.classList.add('animate-pulse'); // Add pulse to text
+        }
         return;
     }
 
     if (active) {
-        btn.innerHTML = '<span class="icon">🛑</span> End Call';
-        btn.classList.add('active-call');
-        btn.classList.remove('pulse');
+        if(iconSpan) iconSpan.textContent = '🛑'; 
+        if(labelSpan) labelSpan.textContent = 'End Call';
         
-        // Show Voice Overlay/Panel
-        if(panel) panel.classList.remove('hidden');
-        // Hide Text Input to focus on voice? Or keep both?
-        // Let's hide text input to reduce confusion, or just disable it.
-        // chatInputArea.style.display = 'none'; 
+        btn.classList.add('active-call', 'bg-red-500/20', 'border-red-500/50', 'text-red-400');
+        btn.classList.remove('bg-white/5', 'text-text-secondary', 'pulse');
+        
+        // Switch Header to Active Mode
+        if(headerNormal) headerNormal.classList.add('hidden');
+        if(headerActive) headerActive.classList.remove('hidden');
+        if(headerActive) headerActive.classList.add('flex');
+        
+        if(statusLabel && statusText) statusLabel.textContent = statusText;
+        else if(statusLabel) statusLabel.textContent = "Live Call";
+        
     } else {
-        btn.innerHTML = '<span class="icon">📞</span> Start Call';
-        btn.classList.remove('active-call');
+        if(iconSpan) iconSpan.textContent = '📞';
+        if(labelSpan) labelSpan.textContent = 'Start Call';
+        
+        btn.classList.remove('active-call', 'bg-red-500/20', 'border-red-500/50', 'text-red-400');
+        btn.classList.add('bg-white/5', 'text-text-secondary');
         btn.classList.remove('pulse');
         
-        if(panel) panel.classList.add('hidden');
-        // chatInputArea.style.display = 'flex';
+        // Switch Header to Normal Mode
+        if(headerNormal) headerNormal.classList.remove('hidden');
+        if(headerActive) headerActive.classList.add('hidden');
+        if(headerActive) headerActive.classList.remove('flex');
     }
 }
