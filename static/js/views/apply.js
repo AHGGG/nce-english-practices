@@ -10,9 +10,12 @@ import { GeminiLiveClient } from '../core/gemini-live.js';
 export async function renderScenario() {
     const topic = state.topic;
     const layer = state.currentLayer;
+
+    if (!topic || !layer) return console.warn("Missing state for scenario", { topic, layer });
+
     const cacheKey = getCacheKey(topic, layer);
     
-    elements.scenarioCard.classList.remove('hidden');
+    // Visibility handled by Tab Switcher (index.html), do NOT force remove hidden here.
     elements.scenarioSituation.innerHTML = '<span style="color:#94a3b8">Finding a situation...</span>';
     elements.scenarioGoal.textContent = '...';
     elements.scenarioFeedback.classList.add('hidden');
@@ -29,6 +32,7 @@ export async function renderScenario() {
         displayScenario(scenario);
     } catch (err) {
         elements.scenarioSituation.textContent = "Could not load scenario.";
+        console.error(err);
     }
 }
 
@@ -57,12 +61,15 @@ export async function submitScenarioResponse() {
             state.currentLayer
         );
         
-        const cls = result.is_pass ? 'pass' : 'fail';
-        elements.scenarioFeedback.className = `scenario-feedback ${cls}`;
+        const cls = result.is_pass 
+            ? 'mt-4 p-4 rounded-xl bg-slate-800 border border-emerald-500/20 text-sm animate-fade-in text-emerald-300' 
+            : 'mt-4 p-4 rounded-xl bg-slate-800 border border-red-500/20 text-sm animate-fade-in text-red-300';
+            
+        elements.scenarioFeedback.className = cls;
         elements.scenarioFeedback.innerHTML = `
-            <strong>${result.is_pass ? 'Passed!' : 'Needs Improvement'}</strong><br>
-            ${result.feedback}
-            ${result.improved_version ? `<span class="improved-version">${result.improved_version}</span>` : ''}
+            <strong class="block mb-1 text-base">${result.is_pass ? 'Passed!' : 'Needs Improvement'}</strong>
+            <span class="text-slate-300 block mb-2">${result.feedback}</span>
+            ${result.improved_version ? `<div class="mt-2 pt-2 border-t border-white/5 text-slate-400 text-xs uppercase tracking-wider font-bold">Better way:</div><div class="text-accent italic">${result.improved_version}</div>` : ''}
         `;
         
         elements.scenarioInput.disabled = false;
@@ -81,9 +88,12 @@ let activeVoiceClient = null;
 export async function renderChat() {
     const topic = state.topic;
     const layer = state.currentLayer;
+
+    if (!topic || !layer) return console.warn("Missing state for chat", { topic, layer });
+
     const cacheKey = getCacheKey(topic, layer);
     
-    elements.chatCard.classList.remove('hidden');
+    // Visibility handled by Tab Switcher (index.html), do NOT force remove hidden here.
     elements.chatWindow.innerHTML = '';
     elements.missionTitle.textContent = "Loading Mission...";
     
@@ -110,6 +120,7 @@ export async function renderChat() {
         restoreChat(session);
     } catch (e) {
         elements.missionTitle.textContent = "Mission Failed";
+        console.error(e);
     }
 }
 
@@ -149,7 +160,10 @@ export async function sendChatMessage() {
 
 function appendMessage(role, text) {
     const div = document.createElement('div');
-    div.className = `chat-message ${role}`;
+    const isUser = role === 'user';
+    const alignClass = isUser ? 'ml-auto bg-accent text-slate-900 rounded-br-sm' : 'mr-auto bg-white/10 text-white rounded-bl-sm';
+    
+    div.className = `max-w-[80%] px-4 py-3 rounded-2xl text-[0.95rem] leading-relaxed shadow-sm mb-3 ${alignClass} animate-fade-in`;
     div.textContent = text;
     elements.chatWindow.appendChild(div);
 }

@@ -34,7 +34,7 @@ export function getElements() {
         // View 2: Drill
         matrixSection: document.getElementById('matrixSection'),
         matrixRows: document.getElementById('matrixRows'),
-        tabs: document.querySelectorAll('.tab-btn'),
+        tabs: document.querySelectorAll('#viewDrill .tab-btn'),
         
         // Quiz Modal
         quizModal: document.getElementById('quizModal'),

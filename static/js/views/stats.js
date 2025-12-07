@@ -38,19 +38,19 @@ export async function renderStats() {
                 li.className = 'history-item';
                 
                 const timeStr = new Date(item.created_at).toLocaleDateString([], {month:'short', day:'numeric', hour:'2-digit', minute:'2-digit'});
-                const statusClass = item.is_pass ? 'pass' : 'fail';
-                const statusIcon = item.is_pass ? '✅' : '❌';
+                const statusClass = item.is_pass ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/20' : 'bg-red-500/20 text-red-400 border-red-500/20';
+                const statusIcon = item.is_pass ? '✓' : '✗';
                 
                 let activityLabel = item.activity_type.toUpperCase();
                 let detail = `${item.topic} · ${item.tense}`;
 
                 li.innerHTML = `
-                    <div class="hist-icon ${statusClass}">${statusIcon}</div>
-                    <div class="hist-info">
-                        <div class="hist-title">${activityLabel}</div>
-                        <div class="hist-detail">${detail}</div>
+                    <div class="flex-none p-2 rounded-lg border flex items-center justify-center font-bold text-sm ${statusClass}">${statusIcon}</div>
+                    <div class="flex-1 min-w-0">
+                        <div class="text-xs font-bold text-text-secondary uppercase tracking-wider mb-0.5">${activityLabel}</div>
+                        <div class="text-sm text-slate-200 truncate pr-2">${detail}</div>
                     </div>
-                    <div class="hist-time">${timeStr}</div>
+                    <div class="text-xs text-text-secondary whitespace-nowrap">${timeStr}</div>
                 `;
                 recentList.appendChild(li);
             });

@@ -78,8 +78,12 @@ if (elements.topicInput) elements.topicInput.addEventListener('keydown', (e) => 
 // Drill View (Tense Tabs)
 elements.tabs.forEach(tab => {
     tab.addEventListener('click', () => {
-        elements.tabs.forEach(t => t.classList.remove('active'));
-        tab.classList.add('active');
+        elements.tabs.forEach(t => {
+            t.classList.remove('active', 'bg-accent/10', 'text-accent');
+            t.classList.add('text-text-secondary', 'hover:text-text-primary');
+        });
+        tab.classList.remove('text-text-secondary', 'hover:text-text-primary');
+        tab.classList.add('active', 'bg-accent/10', 'text-accent');
         handleTenseChange(tab.dataset.layer);
     });
 });

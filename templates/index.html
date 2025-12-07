@@ -9,7 +9,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="/static/css/style.css?v=6">
+    <link rel="stylesheet" href="/static/css/output.css">
     <link rel="manifest" href="/static/manifest.json">
     <link rel="apple-touch-icon" href="/static/icon-192.png">
     <!-- Chart.js -->
@@ -23,10 +23,17 @@
                     .catch(err => console.log('SW Failed:', err));
             });
             window.app = window.app || {};
+            // Simplified Tab Switcher for pure Tailwind compatibility
             window.app.switchApplyTab = function (tabName, btn) {
                 // Update Buttons
-                document.querySelectorAll('#viewApply .tab-btn').forEach(b => b.classList.remove('active'));
-                if (btn) btn.classList.add('active');
+                document.querySelectorAll('#viewApply .tab-btn').forEach(b => {
+                    b.classList.remove('bg-accent/10', 'text-accent');
+                    b.classList.add('text-text-secondary', 'hover:text-text-primary');
+                });
+                if (btn) {
+                    btn.classList.remove('text-text-secondary', 'hover:text-text-primary');
+                    btn.classList.add('bg-accent/10', 'text-accent');
+                }
 
                 // Toggle Views
                 const scenarioCard = document.getElementById('scenarioCard');
@@ -44,86 +51,122 @@
     </script>
 </head>
 
-<body>
+<body
+    class="bg-app-bg text-text-primary font-sans antialiased selection:bg-accent selection:text-white overflow-hidden">
 
-    <div class="app-layout">
+    <div class="flex h-screen w-full relative overflow-hidden">
         <!-- Mobile Header (Visible only on mobile) -->
-        <header class="mobile-header">
-            <div class="logo-small">
-                <h1>NCE</h1>
-                <span class="badge">AI</span>
+        <header
+            class="md:hidden absolute top-0 left-0 right-0 z-50 flex items-center justify-between p-4 bg-sidebar-bg border-b border-white/10 md:hidden">
+            <div class="flex items-center gap-3">
+                <h1 class="text-xl font-bold tracking-tight text-white">NCE</h1>
+                <span
+                    class="text-[10px] font-bold tracking-wider px-2 py-0.5 rounded-full bg-accent/20 text-accent border border-accent/20">AI</span>
             </div>
-            <button id="mobileTopicBtn" class="btn-icon is-small">✨</button>
+            <button id="mobileTopicBtn"
+                class="p-2 rounded-lg text-text-secondary hover:text-accent hover:bg-white/5 transition-colors">✨</button>
         </header>
+
         <!-- Sidebar Navigation -->
-        <aside class="sidebar">
-            <div class="logo">
-                <h1>NCE Practice</h1>
-                <span class="badge">AI Tutor</span>
+        <aside class="hidden md:flex flex-col z-20 w-[260px] h-full bg-sidebar-bg border-r border-white/10 p-6">
+            <div class="mb-8 flex items-center gap-3 px-2">
+                <h1 class="text-xl font-bold tracking-tight text-white">NCE Practice</h1>
+                <span
+                    class="text-[10px] font-bold tracking-wider px-2 py-0.5 rounded-full bg-accent/20 text-accent border border-accent/20">AI
+                    Tutor</span>
             </div>
 
-            <div class="topic-input-group">
-                <input type="text" id="topicInput" placeholder="Enter topic..." autocomplete="off">
-                <button id="loadBtn" class="btn-icon" title="Generate">
+            <div class="mb-8 relative">
+                <input type="text" id="topicInput" placeholder="Enter topic..." autocomplete="off"
+                    class="w-full bg-app-bg border border-white/10 text-white rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent transition-all placeholder-slate-500">
+                <button id="loadBtn"
+                    class="absolute right-2 top-2 p-1.5 rounded-lg text-text-secondary hover:text-accent hover:bg-white/5 transition-colors"
+                    title="Generate">
                     ✨
                 </button>
             </div>
 
-            <nav class="nav-menu">
-                <button class="nav-item active" data-view="viewLearn">
-                    <span class="icon">📚</span> Learn
+            <nav class="flex flex-col gap-1 w-full">
+                <!-- Nav Items (Active class logic handled in JS, defaulting styles here) -->
+                <!-- Ideally JS toggles 'bg-accent/10 text-accent' vs 'text-text-secondary hover:bg-white/5' -->
+                <button
+                    class="nav-item w-full flex items-center gap-3 px-4 py-3 rounded-xl text-text-secondary hover:bg-white/5 hover:text-text-primary transition-all mb-1 text-left"
+                    data-view="viewLearn">
+                    <span class="text-lg opacity-80">📚</span> <span class="font-medium">Learn</span>
                 </button>
-                <button class="nav-item" data-view="viewDrill">
-                    <span class="icon">⚡</span> Drill
+                <button
+                    class="nav-item w-full flex items-center gap-3 px-4 py-3 rounded-xl text-text-secondary hover:bg-white/5 hover:text-text-primary transition-all mb-1 text-left"
+                    data-view="viewDrill">
+                    <span class="text-lg opacity-80">⚡</span> <span class="font-medium">Drill</span>
                 </button>
-                <button class="nav-item" data-view="viewApply">
-                    <span class="icon">🚀</span> Apply
+                <button
+                    class="nav-item w-full flex items-center gap-3 px-4 py-3 rounded-xl text-text-secondary hover:bg-white/5 hover:text-text-primary transition-all mb-1 text-left"
+                    data-view="viewApply">
+                    <span class="text-lg opacity-80">🚀</span> <span class="font-medium">Apply</span>
                 </button>
-                <div class="spacer"></div>
-                <button class="nav-item" data-view="viewStats">
-                    <span class="icon">📊</span> Stats
+                <div class="flex-1"></div>
+                <!-- Spacer handled by flex-1 in container or explicitly -->
+                <button
+                    class="nav-item w-full flex items-center gap-3 px-4 py-3 rounded-xl text-text-secondary hover:bg-white/5 hover:text-text-primary transition-all mt-auto text-left"
+                    data-view="viewStats">
+                    <span class="text-lg opacity-80">📊</span> <span class="font-medium">Stats</span>
                 </button>
             </nav>
         </aside>
 
         <!-- Main Content Area -->
-        <main class="main-content">
+        <main class="flex-1 flex flex-col h-full overflow-hidden relative pt-[70px] md:pt-0">
 
             <!-- Global Loading -->
-            <div id="loadingOverlay" class="loading-overlay hidden">
-                <div class="spinner"></div>
-                <p id="loadingText">Consulting the AI...</p>
+            <div id="loadingOverlay"
+                class="hidden absolute inset-0 z-50 bg-app-bg/80 backdrop-blur-sm flex flex-col items-center justify-center">
+                <div class="w-12 h-12 border-4 border-accent/30 border-t-accent rounded-full animate-spin mb-4"></div>
+                <p id="loadingText" class="text-accent animate-pulse font-medium">Consulting the AI...</p>
             </div>
 
             <!-- VIEW 1: LEARN (Context & Input) -->
-            <section id="viewLearn" class="view-panel active">
-                <header class="panel-header">
-                    <h2>Context & Vocabulary</h2>
-                    <div class="header-actions">
-                        <button id="shuffleBtn" class="btn-secondary is-small">
-                            <span class="icon">🎲</span> Refresh
+            <section id="viewLearn"
+                class="view-panel active flex flex-col h-full w-full absolute inset-0 bg-app-bg transition-opacity duration-300">
+                <header
+                    class="flex-none flex items-center justify-between px-8 py-6 border-b border-white/5 bg-app-bg/50 backdrop-blur-md sticky top-0 z-10">
+                    <h2 class="text-2xl font-bold bg-clip-text text-transparent bg-primary-gradient">Context &
+                        Vocabulary</h2>
+                    <div class="flex gap-2">
+                        <button id="shuffleBtn"
+                            class="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-sm font-medium transition-colors border border-white/10">
+                            <span>🎲</span> Refresh
                         </button>
                     </div>
                 </header>
 
-                <div class="panel-content scrollable">
+                <div class="flex-1 overflow-y-auto p-4 md:p-8 scroll-smooth">
                     <!-- Vocabulary Section -->
-                    <div id="vocabSection" class="section-block hidden">
-                        <h3 class="section-label">Core Vocabulary</h3>
-                        <div class="vocab-grid" id="vocabGrid">
-                            <!-- Vocab cards injected here -->
+                    <div id="vocabSection" class="hidden mb-8 animate-fade-in-up">
+                        <h3 class="text-xs uppercase tracking-wider text-text-secondary font-bold mb-4 ml-1">Core
+                            Vocabulary</h3>
+                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" id="vocabGrid">
+                            <!-- Vocab cards injected here (See learn.js) -->
                         </div>
                     </div>
 
                     <!-- Story Section -->
-                    <div id="storyContainer" class="section-block hidden">
-                        <h3 class="section-label">Context Story</h3>
-                        <div class="story-card">
-                            <h3 class="story-title" id="storyTitle">Context Story</h3>
-                            <div class="story-content" id="storyContent">
+                    <div id="storyContainer" class="hidden mb-12 animate-fade-in-up" style="animation-delay: 0.1s">
+                        <h3 class="text-xs uppercase tracking-wider text-text-secondary font-bold mb-4 ml-1">Context
+                            Story</h3>
+                        <div
+                            class="bg-card-bg backdrop-blur-md rounded-2xl border border-white/10 p-6 shadow-glass relative overflow-hidden group">
+                            <!-- Glow Effect -->
+                            <div
+                                class="absolute -top-24 -right-24 w-48 h-48 bg-accent/10 rounded-full blur-3xl group-hover:bg-accent/20 transition-all duration-700">
+                            </div>
+
+                            <h3 class="text-xl font-semibold mb-4 text-white relative z-10" id="storyTitle">Context
+                                Story</h3>
+                            <div class="prose prose-invert prose-p:text-slate-300 prose-strong:text-accent prose-em:text-indigo-300 leading-relaxed text-lg max-w-none relative z-10"
+                                id="storyContent">
                                 Loading story...
                             </div>
-                            <div class="story-notes hidden" id="storyNotes">
+                            <div class="hidden mt-6 pt-6 border-t border-white/10" id="storyNotes">
                                 <!-- Grammar notes injected here -->
                             </div>
                         </div>
@@ -132,101 +175,142 @@
             </section>
 
             <!-- VIEW 2: DRILL (Matrix) -->
-            <section id="viewDrill" class="view-panel hidden">
-                <header class="panel-header">
-                    <h2>Tense Matrix Drill</h2>
-                    <div class="tabs">
-                        <button class="tab-btn active" data-layer="present">Present</button>
-                        <button class="tab-btn" data-layer="past">Past</button>
-                        <button class="tab-btn" data-layer="future">Future</button>
-                        <button class="tab-btn" data-layer="past_future">Past Future</button>
+            <section id="viewDrill"
+                class="view-panel hidden flex flex-col h-full w-full absolute inset-0 bg-app-bg transition-opacity duration-300">
+                <header
+                    class="flex-none flex flex-col md:flex-row md:items-center justify-between px-8 py-6 border-b border-white/5 bg-app-bg/50 backdrop-blur-md sticky top-0 z-10 gap-4">
+                    <h2 class="text-2xl font-bold bg-clip-text text-transparent bg-primary-gradient">Tense Matrix Drill
+                    </h2>
+                    <div class="flex p-1 bg-sidebar-bg rounded-xl border border-white/10 tabs">
+                        <button
+                            class="tab-btn px-4 py-1.5 text-sm font-medium rounded-lg transition-all active bg-accent/10 text-accent"
+                            data-layer="present">Present</button>
+                        <button
+                            class="tab-btn px-4 py-1.5 text-sm font-medium rounded-lg text-text-secondary hover:text-text-primary transition-all"
+                            data-layer="past">Past</button>
+                        <button
+                            class="tab-btn px-4 py-1.5 text-sm font-medium rounded-lg text-text-secondary hover:text-text-primary transition-all"
+                            data-layer="future">Future</button>
+                        <button
+                            class="tab-btn px-4 py-1.5 text-sm font-medium rounded-lg text-text-secondary hover:text-text-primary transition-all"
+                            data-layer="past_future">Past Future</button>
                     </div>
                 </header>
 
-                <div class="panel-content scrollable" id="matrixSection">
-                    <div class="matrix-container" id="matrixContainer">
-                        <div class="matrix-header">
-                            <div class="col-header">Form</div>
-                            <div class="col-header">Simple</div>
-                            <div class="col-header">Perfect</div>
-                            <div class="col-header">Progressive</div>
-                            <div class="col-header">Perfect Prog.</div>
+                <div class="flex-1 overflow-y-auto p-4 md:p-8" id="matrixSection">
+                    <div class="bg-card-bg border border-white/5 rounded-2xl overflow-hidden w-full overflow-x-auto"
+                        id="matrixContainer">
+                        <div
+                            class="grid grid-cols-[120px_1fr_1fr_1fr_1fr] bg-slate-900/80 border-b border-white/5 text-xs text-text-secondary uppercase font-semibold p-4 md:px-6 md:py-4 min-w-[800px]">
+                            <div class="">Form</div>
+                            <div class="">Simple</div>
+                            <div class="">Perfect</div>
+                            <div class="">Progressive</div>
+                            <div class="">Perfect Prog.</div>
                         </div>
 
                         <!-- Matrix Rows -->
-                        <div id="matrixRows" class="matrix-rows">
-                            <!-- Rows injected via JS -->
+                        <div id="matrixRows" class="min-w-[800px]">
+                            <!-- Rows injected via JS (See drill.js) -->
                         </div>
                     </div>
                 </div>
             </section>
 
             <!-- VIEW 3: APPLY (Scenario & Chat) -->
-            <section id="viewApply" class="view-panel hidden">
-                <header class="panel-header" style="flex-wrap: wrap; gap: 1rem;">
-                    <h2>Application</h2>
-                    <div class="tabs">
-                        <button class="tab-btn active" onclick="app.switchApplyTab('scenario', this)">Challenge</button>
-                        <button class="tab-btn" onclick="app.switchApplyTab('chat', this)">Roleplay</button>
+            <section id="viewApply"
+                class="view-panel hidden flex flex-col h-full w-full absolute inset-0 bg-app-bg transition-opacity duration-300">
+                <header
+                    class="flex-none flex flex-wrap items-center gap-4 px-8 py-6 border-b border-white/5 bg-app-bg/50 backdrop-blur-md sticky top-0 z-10">
+                    <h2 class="text-2xl font-bold bg-clip-text text-transparent bg-primary-gradient mr-auto">Application
+                    </h2>
+                    <div class="flex p-1 bg-sidebar-bg rounded-xl border border-white/10 tabs">
+                        <button
+                            class="tab-btn px-6 py-1.5 text-sm font-medium rounded-lg transition-all active bg-accent/10 text-accent"
+                            onclick="app.switchApplyTab('scenario', this)">Challenge</button>
+                        <button
+                            class="tab-btn px-6 py-1.5 text-sm font-medium rounded-lg text-text-secondary hover:text-text-primary transition-all"
+                            onclick="app.switchApplyTab('chat', this)">Roleplay</button>
                     </div>
                 </header>
 
-                <div class="panel-content scrollable">
-                    <div id="applyContainer">
+                <div class="flex-1 overflow-y-auto p-4 md:p-8">
+                    <div id="applyContainer" class="max-w-4xl mx-auto h-full grid place-items-center">
                         <!-- Scenario Challenge Card -->
-                        <div class="scenario-card apply-view" id="scenarioCard">
-                            <div class="scenario-header">
-                                <h3>Wait for it...</h3>
-                                <span class="badge-scenario">Challenge</span>
+                        <div class="w-full bg-card-bg backdrop-blur-md rounded-2xl border border-white/10 p-6 md:p-8 shadow-glass"
+                            id="scenarioCard">
+                            <div class="flex items-center justify-between mb-6">
+                                <h3 class="text-xl font-bold text-white">Wait for it...</h3>
+                                <span
+                                    class="px-3 py-1 bg-yellow-500/10 text-yellow-400 border border-yellow-500/20 rounded-full text-xs font-bold uppercase tracking-wide">Challenge</span>
                             </div>
-                            <div class="scenario-body">
-                                <p class="scenario-situation" id="scenarioSituation">Loading situation...</p>
-                                <div class="scenario-goal">
-                                    <strong>Goal:</strong> <span id="scenarioGoal">...</span>
+                            <div class="space-y-6">
+                                <p class="text-lg text-slate-300 leading-relaxed italic" id="scenarioSituation">Loading
+                                    situation...</p>
+                                <div class="bg-indigo-500/10 border-l-4 border-indigo-500 p-4 rounded-r-lg">
+                                    <strong
+                                        class="text-indigo-400 block text-xs uppercase tracking-wider mb-1">Goal</strong>
+                                    <span id="scenarioGoal" class="text-slate-200">...</span>
                                 </div>
-                                <div class="scenario-input-group">
+                                <div class="flex gap-2">
                                     <input type="text" id="scenarioInput" placeholder="Type your response here..."
-                                        autocomplete="off">
-                                    <button id="scenarioSubmitBtn" class="btn-action">Submit</button>
+                                        autocomplete="off"
+                                        class="flex-1 bg-app-bg border border-white/10 text-white rounded-xl px-4 py-3 focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent transition-all placeholder-slate-600">
+                                    <button id="scenarioSubmitBtn"
+                                        class="px-6 py-3 bg-accent text-slate-900 font-semibold rounded-xl hover:bg-sky-400 transition-colors shadow-[0_0_20px_rgba(56,189,248,0.3)]">Submit</button>
                                 </div>
-                                <div class="scenario-feedback hidden" id="scenarioFeedback">
+                                <div class="hidden p-4 rounded-xl text-sm leading-relaxed animate-fade-in"
+                                    id="scenarioFeedback">
                                     <!-- Feedback injected here -->
                                 </div>
                             </div>
                         </div>
 
                         <!-- Chat Roleplay Card -->
-                        <div class="chat-card apply-view hidden" id="chatCard">
-                            <div class="chat-header">
-                                <h3>Secret Mission</h3>
-                                <span class="badge-roleplay">Roleplay</span>
+                        <div class="hidden w-full h-[calc(100vh-180px)] bg-card-bg backdrop-blur-md rounded-2xl border border-white/10 p-0 shadow-glass flex flex-col overflow-hidden relative"
+                            id="chatCard">
+                            <div
+                                class="flex-none p-4 md:p-6 border-b border-white/10 bg-slate-900/50 flex items-center justify-between">
+                                <h3 class="text-lg font-bold text-white flex items-center gap-2">
+                                    <span class="text-2xl">🕵️</span> Secret Mission
+                                </h3>
+                                <span
+                                    class="px-3 py-1 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded-full text-xs font-bold uppercase tracking-wide">Roleplay</span>
                             </div>
 
-                            <div class="mission-brief" id="missionBrief">
-                                <strong id="missionTitle">Loading Mission...</strong>
-                                <p id="missionDesc">...</p>
-                                <div class="mission-goals">
-                                    <small>OBJECTIVES:</small>
-                                    <ul id="missionGoals"></ul>
+                            <!-- Mission Brief Overlay (Collapsible ideally, but kept simple for now) -->
+                            <div class="flex-none bg-emerald-900/10 border-b border-white/5 p-4 text-sm"
+                                id="missionBrief">
+                                <strong id="missionTitle" class="block text-emerald-400 mb-1">Loading
+                                    Mission...</strong>
+                                <p id="missionDesc" class="text-slate-400 mb-2">...</p>
+                                <div class="">
+                                    <small class="text-xs text-slate-500 uppercase font-bold">OBJECTIVES:</small>
+                                    <ul id="missionGoals" class="list-disc list-inside text-slate-400 mt-1 space-y-1">
+                                    </ul>
                                 </div>
                             </div>
 
-                            <div class="chat-window" id="chatWindow">
+                            <div class="flex-1 overflow-y-auto p-4 space-y-4 scroll-smooth" id="chatWindow">
                                 <!-- Messages -->
                             </div>
 
                             <!-- Voice Interface Panel (Overlay/Integral) -->
-                            <div id="voicePanel" class="voice-panel hidden">
-                                <div class="voice-status">Active Call</div>
-                                <div id="voiceVisualizer" class="voice-visualizer"></div>
+                            <div id="voicePanel"
+                                class="hidden absolute bottom-[80px] left-4 right-4 bg-slate-900/90 backdrop-blur-xl border border-white/10 rounded-2xl p-4 flex flex-col items-center justify-center z-10 animate-fade-in-up">
+                                <div class="voice-status text-accent font-bold mb-2 animate-pulse">Active Call</div>
+                                <div id="voiceVisualizer" class="w-full h-12 bg-white/5 rounded-lg"></div>
                             </div>
 
-                            <div class="chat-input-area">
-                                <button id="voiceCallBtn" class="btn-secondary" style="margin-right:0.5rem">
-                                    <span class="icon">📞</span> Start Call
+                            <div class="flex-none p-4 border-t border-white/10 bg-slate-900/50 flex gap-2">
+                                <button id="voiceCallBtn"
+                                    class="flex items-center gap-2 px-4 py-3 bg-white/5 hover:bg-white/10 rounded-xl text-text-secondary transition-colors border border-white/10">
+                                    <span class="icon">📞</span>
                                 </button>
-                                <input type="text" id="chatInput" placeholder="Say something..." autocomplete="off">
-                                <button id="chatSendBtn" class="btn-action">Send</button>
+                                <input type="text" id="chatInput" placeholder="Say something..." autocomplete="off"
+                                    class="flex-1 bg-app-bg border border-white/10 text-white rounded-xl px-4 py-3 focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent transition-all placeholder-slate-600">
+                                <button id="chatSendBtn"
+                                    class="px-6 py-3 bg-accent text-slate-900 font-semibold rounded-xl hover:bg-sky-400 transition-colors shadow-[0_0_20px_rgba(56,189,248,0.3)]">Send</button>
                             </div>
                         </div>
                     </div>
@@ -234,41 +318,49 @@
             </section>
 
             <!-- VIEW 4: STATS -->
-            <section id="viewStats" class="view-panel hidden">
-                <header class="panel-header">
-                    <h2>Your Progress</h2>
-                    <div class="header-actions">
-                        <button id="refreshStatsBtn" class="btn-secondary is-small">
+            <section id="viewStats"
+                class="view-panel hidden flex flex-col h-full w-full absolute inset-0 bg-app-bg transition-opacity duration-300">
+                <header
+                    class="flex-none flex items-center justify-between px-8 py-6 border-b border-white/5 bg-app-bg/50 backdrop-blur-md sticky top-0 z-10">
+                    <h2 class="text-2xl font-bold bg-clip-text text-transparent bg-primary-gradient">Your Progress</h2>
+                    <div class="flex gap-2">
+                        <button id="refreshStatsBtn"
+                            class="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-sm font-medium transition-colors border border-white/10">
                             <span class="icon">🔄</span> Refresh
                         </button>
                     </div>
                 </header>
 
-                <div class="panel-content scrollable">
+                <div class="flex-1 overflow-y-auto p-4 md:p-8">
                     <!-- KPI Cards -->
-                    <div class="stats-overview-grid">
-                        <div class="stat-kpi-card">
-                            <span class="stat-value" id="statsTotalXp">0</span>
-                            <span class="stat-label">Total XP</span>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+                        <div
+                            class="p-6 rounded-2xl bg-gradient-to-br from-indigo-500/10 to-indigo-500/5 border border-indigo-500/20 flex flex-col items-center">
+                            <span class="text-4xl font-bold text-white mb-1" id="statsTotalXp">0</span>
+                            <span class="text-sm font-medium text-indigo-300 uppercase tracking-wider">Total XP</span>
                         </div>
-                        <div class="stat-kpi-card">
-                            <span class="stat-value" id="statsTotalActivities">0</span>
-                            <span class="stat-label">Activities Completed</span>
+                        <div
+                            class="p-6 rounded-2xl bg-gradient-to-br from-purple-500/10 to-purple-500/5 border border-purple-500/20 flex flex-col items-center">
+                            <span class="text-4xl font-bold text-white mb-1" id="statsTotalActivities">0</span>
+                            <span class="text-sm font-medium text-purple-300 uppercase tracking-wider">Activities
+                                Completed</span>
                         </div>
-                        <div class="stat-kpi-card">
-                            <span class="stat-value" id="statsWinRate">0%</span>
-                            <span class="stat-label">Success Rate</span>
+                        <div
+                            class="p-6 rounded-2xl bg-gradient-to-br from-emerald-500/10 to-emerald-500/5 border border-emerald-500/20 flex flex-col items-center">
+                            <span class="text-4xl font-bold text-white mb-1" id="statsWinRate">0%</span>
+                            <span class="text-sm font-medium text-emerald-300 uppercase tracking-wider">Success
+                                Rate</span>
                         </div>
                     </div>
 
-                    <div class="stats-charts-row">
-                        <div class="chart-container">
-                            <h3>Activity Breakdown</h3>
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                        <div class="bg-card-bg rounded-2xl border border-white/10 p-6 h-[400px]">
+                            <h3 class="text-lg font-bold text-white mb-4">Activity Breakdown</h3>
                             <canvas id="activityChart"></canvas>
                         </div>
-                        <div class="history-container">
-                            <h3>Recent History</h3>
-                            <ul id="statsRecentList" class="recent-list">
+                        <div class="bg-card-bg rounded-2xl border border-white/10 p-6 h-[400px] flex flex-col">
+                            <h3 class="text-lg font-bold text-white mb-4">Recent History</h3>
+                            <ul id="statsRecentList" class="flex-1 overflow-y-auto space-y-3 pr-2">
                                 <!-- History Items -->
                             </ul>
                         </div>
@@ -280,40 +372,53 @@
     </div>
 
     <!-- MCQ Modal -->
-    <div id="quizModal" class="modal hidden">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3 id="quizTitle">Practice Drill</h3>
-                <button id="closeQuizBtn" class="close-btn">&times;</button>
+    <div id="quizModal"
+        class="hidden fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+        <div
+            class="w-full max-w-lg bg-slate-900 border border-white/10 rounded-2xl shadow-2xl overflow-hidden transform transition-all scale-100 opactiy-100">
+            <div class="flex items-center justify-between p-4 border-b border-white/10 bg-white/5">
+                <h3 id="quizTitle" class="font-bold text-text-primary">Practice Drill</h3>
+                <button id="closeQuizBtn"
+                    class="text-text-secondary hover:text-white transition-colors text-2xl leading-none">&times;</button>
             </div>
-            <div class="modal-body">
-                <p id="quizQuestion" class="quiz-question">Loading question...</p>
-                <div id="quizOptions" class="quiz-options">
+            <div class="p-6">
+                <p id="quizQuestion" class="text-lg text-white mb-6 leading-relaxed">Loading question...</p>
+                <div id="quizOptions" class="space-y-3">
                     <!-- Options injected here -->
                 </div>
-                <div id="quizFeedback" class="quiz-feedback hidden"></div>
+                <div id="quizFeedback"
+                    class="hidden mt-4 p-4 rounded-xl bg-slate-800 border border-white/5 text-sm animate-fade-in"></div>
             </div>
         </div>
     </div>
 
     <!-- Dictionary Modal -->
-    <div id="dictModal" class="modal hidden">
-        <div class="modal-content dict-content">
-            <div class="modal-header">
-                <h3 id="dictWord">Word</h3>
-                <button id="closeDictBtn" class="close-btn">&times;</button>
+    <div id="dictModal"
+        class="hidden fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+        <div
+            class="w-full max-w-2xl bg-slate-900 border border-white/10 rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[85vh]">
+            <div class="flex items-center justify-between p-4 border-b border-white/10 bg-white/5">
+                <h3 id="dictWord" class="text-xl font-bold text-accent font-serif tracking-wide">Word</h3>
+                <button id="closeDictBtn"
+                    class="text-text-secondary hover:text-white transition-colors text-2xl leading-none">&times;</button>
             </div>
-            <div class="modal-body">
-                <div class="dict-section">
-                    <h4>📖 Definition</h4>
-                    <div id="dictDefinition" class="dict-definition">Loading definitions...</div>
+            <div class="p-6 overflow-y-auto">
+                <div class="mb-8">
+                    <h4 class="text-xs uppercase tracking-wider text-text-secondary font-bold mb-3">📖 Definition</h4>
+                    <div id="dictDefinition" class="text-slate-300 leading-relaxed text-sm space-y-2">Loading
+                        definitions...</div>
                 </div>
 
-                <div class="dict-section" style="margin-top:1.5rem">
-                    <h4>🤖 Contextual Help</h4>
-                    <div id="dictContext" class="dict-context">
-                        <button id="askAiBtn" class="btn-secondary is-small">Ask AI to explain in context</button>
-                        <div id="aiExplanation" class="hidden" style="margin-top:0.5rem; color:#e2e8f0;"></div>
+                <div class="mt-6 pt-6 border-t border-white/10">
+                    <h4 class="text-xs uppercase tracking-wider text-text-secondary font-bold mb-3">🤖 Contextual Help
+                    </h4>
+                    <div id="dictContext" class="">
+                        <button id="askAiBtn"
+                            class="px-3 py-1.5 rounded-lg bg-indigo-500/20 text-indigo-400 hover:bg-indigo-500/30 text-xs font-semibold uppercase tracking-wide transition-colors border border-indigo-500/20">Ask
+                            AI to explain in context</button>
+                        <div id="aiExplanation"
+                            class="hidden mt-3 text-slate-300 text-sm bg-slate-800/50 p-4 rounded-xl border border-white/5">
+                        </div>
                     </div>
                 </div>
             </div>
@@ -321,7 +426,9 @@
     </div>
 
     <!-- Notification Toast -->
-    <div id="toast" class="toast hidden"></div>
+    <div id="toast"
+        class="hidden fixed bottom-6 right-6 bg-slate-800 text-white px-4 py-3 rounded-xl shadow-2xl border border-white/10 z-[150] animate-slide-in-up flex items-center gap-3">
+    </div>
 
     <script type="module" src="/static/js/main.js?v=3"></script>
 </body>

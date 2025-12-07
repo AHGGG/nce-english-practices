@@ -13,8 +13,13 @@ export function switchView(viewId) {
 
     // Update Nav
     elements.navItems.forEach(btn => {
-        if (btn.dataset.view === viewId) btn.classList.add('active');
-        else if (btn.dataset.view) btn.classList.remove('active'); 
+        if (btn.dataset.view === viewId) {
+             btn.classList.add('active', 'bg-white/5', 'text-text-primary');
+             btn.classList.remove('text-text-secondary');
+        } else if (btn.dataset.view) {
+             btn.classList.remove('active', 'bg-white/5', 'text-text-primary');
+             btn.classList.add('text-text-secondary');
+        }
     });
 
     // Update Panels - MUST remove 'hidden' class because it has !important
@@ -80,16 +85,16 @@ export async function renderMatrix() {
 
     forms.forEach(form => {
         const row = document.createElement('div');
-        row.className = 'matrix-row';
+        row.className = 'grid grid-cols-[120px_1fr_1fr_1fr_1fr] p-6 border-b border-white/5 transition-colors hover:bg-white/2';
         let label = form.charAt(0).toUpperCase() + form.slice(1);
         if (form === 'when') label = 'When?';
 
-        row.innerHTML = `<div class="row-label">${label}</div>`;
+        row.innerHTML = `<div class="text-sm text-text-secondary uppercase font-semibold">${label}</div>`;
 
         aspects.forEach(aspect => {
             const text = data[aspect] ? data[aspect][form] : '';
             const cell = document.createElement('div');
-            cell.className = 'sentence-cell';
+            cell.className = 'pr-4 text-[0.95rem] text-slate-200 cursor-pointer transition-colors hover:text-white';
             cell.dataset.label = aspect.replace('_', ' ');
             cell.textContent = text || '—';
             
@@ -112,7 +117,7 @@ export async function openQuiz(tenseLabel, aspectLabel, sentence) {
     if (!sentence || sentence === '—') return;
     
     elements.quizModal.classList.remove('hidden');
-    elements.quizQuestion.innerHTML = '<div class="spinner" style="width:30px;height:30px;border-width:2px"></div><div style="text-align:center;font-size:0.9rem;color:#94a3b8">Generating Drill...</div>';
+    elements.quizQuestion.innerHTML = '<div class="w-8 h-8 border-2 border-accent/30 border-t-accent rounded-full animate-spin"></div><div style="text-align:center;font-size:0.9rem;color:#94a3b8">Generating Drill...</div>';
     elements.quizOptions.innerHTML = '';
     elements.quizFeedback.classList.add('hidden');
     elements.quizTitle.textContent = `${tenseLabel} · ${aspectLabel}`;
@@ -121,7 +126,7 @@ export async function openQuiz(tenseLabel, aspectLabel, sentence) {
         const quiz = await fetchQuiz(state.topic, state.currentLayer, aspectLabel, sentence);
         displayQuiz(quiz);
     } catch (err) {
-        elements.quizQuestion.innerHTML = `<span style="color:red">Error: ${err.message}</span>`;
+        elements.quizQuestion.innerHTML = `<span class="text-red-500">Error: ${err.message}</span>`;
     }
 }
 
@@ -131,25 +136,38 @@ function displayQuiz(quiz) {
     
     quiz.options.forEach(opt => {
         const btn = document.createElement('div');
-        btn.className = 'quiz-option';
-        btn.innerHTML = `<span class="option-marker">${opt.id}</span> <span>${opt.text}</span>`;
+        btn.className = 'block w-full text-left p-4 mb-2 rounded-xl bg-slate-700/50 border border-white/5 hover:bg-white/5 cursor-pointer flex items-center gap-3 transition-colors group';
+        btn.innerHTML = `<span class="option-marker flex items-center justify-center w-6 h-6 rounded-full bg-white/10 text-xs font-bold group-hover:bg-white/20 transition-colors">${opt.id}</span> <span class="text-slate-200">${opt.text}</span>`;
         
         btn.onclick = () => {
-            if (btn.classList.contains('disabled')) return;
-            const allOpts = document.querySelectorAll('.quiz-option');
-            allOpts.forEach(o => o.classList.add('disabled'));
+            if (btn.classList.contains('pointer-events-none')) return;
+            const allOpts = document.querySelectorAll('#quizOptions > div'); // selector specific to children
+            allOpts.forEach(o => o.classList.add('pointer-events-none', 'opacity-60'));
+            btn.classList.remove('opacity-60');
             
+            const marker = btn.querySelector('.option-marker');
+
             if (opt.is_correct) {
-                btn.classList.add('correct');
-                elements.quizFeedback.innerHTML = `<strong>Correct!</strong> <br> ${opt.explanation}`;
-                elements.quizFeedback.className = 'quiz-feedback';
+                btn.className = 'block w-full text-left p-4 mb-2 rounded-xl bg-emerald-500/20 border border-emerald-500/50 cursor-default flex items-center gap-3 transition-colors';
+                marker.className = 'flex items-center justify-center w-6 h-6 rounded-full bg-emerald-500 text-white text-xs font-bold';
+                
+                elements.quizFeedback.innerHTML = `<strong class="text-emerald-400 block mb-1">Correct!</strong> <span class="text-slate-300">${opt.explanation}</span>`;
+                elements.quizFeedback.className = 'mt-4 p-4 rounded-xl bg-slate-800 border border-emerald-500/20 text-sm animate-fade-in block';
                 logAttempt('quiz', state.topic, state.currentLayer, true, { question: quiz.question_context, answer: opt.text });
             } else {
-                btn.classList.add('incorrect');
+                btn.className = 'block w-full text-left p-4 mb-2 rounded-xl bg-red-500/20 border border-red-500/50 cursor-default flex items-center gap-3 transition-colors';
+                marker.className = 'flex items-center justify-center w-6 h-6 rounded-full bg-red-500 text-white text-xs font-bold';
+
+                // Highlight correct one
                 const correctBtn = Array.from(allOpts).find(o => o.querySelector('.option-marker').textContent === quiz.options.find(q => q.is_correct).id);
-                if (correctBtn) correctBtn.classList.add('correct');
-                elements.quizFeedback.innerHTML = `<strong>Incorrect.</strong> <br> ${opt.explanation || "Better luck next time!"}`;
-                elements.quizFeedback.className = 'quiz-feedback';
+                if (correctBtn) {
+                     correctBtn.className = 'block w-full text-left p-4 mb-2 rounded-xl bg-emerald-500/20 border border-emerald-500/50 cursor-default flex items-center gap-3 transition-colors';
+                     correctBtn.querySelector('.option-marker').className = 'flex items-center justify-center w-6 h-6 rounded-full bg-emerald-500 text-white text-xs font-bold';
+                     correctBtn.classList.remove('opacity-60');
+                }
+
+                elements.quizFeedback.innerHTML = `<strong class="text-red-400 block mb-1">Incorrect.</strong> <span class="text-slate-300">${opt.explanation || "Better luck next time!"}</span>`;
+                elements.quizFeedback.className = 'mt-4 p-4 rounded-xl bg-slate-800 border border-red-500/20 text-sm animate-fade-in block';
                 logAttempt('quiz', state.topic, state.currentLayer, false, { question: quiz.question_context, answer: opt.text });
             }
         };

@@ -5,7 +5,8 @@ const headers = { 'Content-Type': 'application/json' };
 async function handleResponse(res) {
     if (!res.ok) {
         const error = await res.json().catch(() => ({ detail: 'Request failed' }));
-        throw new Error(error.detail || 'Request failed');
+        const msg = typeof error.detail === 'object' ? JSON.stringify(error.detail) : (error.detail || 'Request failed');
+        throw new Error(msg);
     }
     return res.json();
 }

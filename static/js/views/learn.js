@@ -30,10 +30,10 @@ export function renderVocab() {
 
     items.forEach(item => {
         const div = document.createElement('div');
-        div.className = 'vocab-card';
+        div.className = 'bg-slate-800/50 rounded-xl p-4 border border-white/5 flex flex-col gap-1 transition-all hover:bg-slate-800/80 group';
         div.innerHTML = `
-            <span class="vocab-label">${item.label}</span>
-            <span class="vocab-value">${item.value || '—'}</span>
+            <span class="text-[10px] uppercase tracking-wider font-bold text-text-secondary group-hover:text-accent transition-colors">${item.label}</span>
+            <span class="text-lg text-slate-200 font-medium leading-tight">${item.value || '—'}</span>
         `;
         elements.vocabGrid.appendChild(div);
     });
@@ -43,6 +43,11 @@ export async function renderStory() {
     const topic = state.topic;
     const layer = state.currentLayer;
     const cacheKey = getCacheKey(topic, layer);
+
+    if (!topic) {
+        elements.storyContainer.classList.add('hidden');
+        return;
+    }
 
     elements.storyContainer.classList.remove('hidden');
     
@@ -77,7 +82,7 @@ export function displayStory(story) {
         story.highlights.forEach(phrase => {
             const escaped = phrase.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
             const regex = new RegExp(`(${escaped})`, 'gi');
-            content = content.replace(regex, '<span class="story-highlight" title="Target Tense">$1</span>');
+            content = content.replace(regex, '<span class="bg-accent/20 text-accent px-1 rounded font-medium border border-accent/20 shadow-[0_0_10px_rgba(56,189,248,0.2)]" title="Target Tense">$1</span>');
         });
     }
     
