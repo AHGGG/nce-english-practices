@@ -41,5 +41,15 @@
 - [ ] **Hybrid Dictionary System**:
     - [x] MDX Parser service (`readmdict` + `python-lzo`).
     - [x] `/api/dictionary` endpoint (with Resource Tunnel).
+    - [ ] **Fix**: `@@@LINK` redirect support.
     - [ ] Frontend Popover UI.
-- [ ] **Anki Export**.
+- [ ] **Anki Export** / **SRS System**.
+
+## 📅 Phase 4: Refinement & Advanced Features (Next)
+- [ ] **Async Core**: Refactor blocking calls in `chat.py`.
+- [ ] **Grammar Coach**: "Polish" button for user messages.
+- [ ] **Review System**:
+    - [ ] Note extraction from chat.
+    - [ ] SRS Scheduler.
+- [ ] **Stats 2.0**:
+    - [ ] Practice Duration Tracker.

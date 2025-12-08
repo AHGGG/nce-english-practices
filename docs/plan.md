@@ -35,19 +35,34 @@
     - Open-ended chat interface with an AI persona.
 - [ ] **Mission System**:
     - The AI judges if you *achieved the goal* AND *used the grammar correctly*.
+- [ ] **Grammar Coach** (New):
+    - **Contextual Refinement**: "Polish my sentence" button on user messages.
+    - AI suggests more native/idiomatic expressions based on the conversation context.
+
+## 5. Stage 4: Review & Retention (The "Keep" Stage)
+*For long-term mastery.*
+- [ ] **Review Notes System**:
+    - Extract key vocabulary/grammar points from chat sessions.
+    - User accepts/rejects notes.
+- [ ] **Spaced Repetition (SRS)**:
+    - Schedule reviews for accepted notes (Anki-style algorithms).
+
 
 ## Technical Foundation Updates
 - [ ] **Backend**: New endpoints for `/api/story` and `/api/chat`.
 - [ ] **Frontend**: New "Mode Switcher" (Learn / Drill / Apply / Speak) in the navigation.
 - [ ] **State**: Persist user progress per stage.
+- [ ] **Async Architecture**: Refactor synchronous LLM calls to prevent blocking.
+- [ ] **Dictionary Fixes**: Support `@@@LINK` redirects and relative asset pathing.
 
-## 5. Tools & Ecosystem (The "Support" Layer)
+## 6. Tools & Ecosystem (The "Support" Layer)
 *Features that support the learning journey.*
 - [ ] **Hybrid Dictionary (Crucial)**:
     - **Layer 1 (Fast)**: **MDX Support**. Import local dictionary files (e.g., Mdict) for authoritative definitions.
     - **Layer 2 (Context)**: "Explain in Context" AI button for specific sentence nuances.
 - [ ] **Data Dashboard**:
     - **Visual Stats**: Daily streaks, words encounter counter, practice volume.
+    - **Time Tracking**: Record total practice duration per session.
     - **History**: Log of all completed quizzes and missions.
 - [ ] **Audio Engine**:
     - **TTS**: Text-to-Speech for all generated sentences (Browser Native or API).
