@@ -104,29 +104,68 @@ export function displayStory(story) {
 export function initLearnView() {
     // Double click to lookup
     if (elements.storyContent) {
-        elements.storyContent.ondblclick = (e) => {
-            const sel = window.getSelection();
-            if (!sel.rangeCount) return;
-            
-            const word = sel.toString().trim();
-            console.log("Double click detected:", word);
-
-            if (word && word.length > 0) {
-                let sentence = "";
-                try {
-                    const node = sel.anchorNode;
-                    if (node && node.nodeType === 3) {
-                        sentence = node.textContent; 
-                    } else if (node) {
-                        sentence = node.innerText || "";
-                    }
-                } catch(err) {
-                    sentence = "Context unavailable";
+        // Single click/tap lookup
+            elements.storyContent.addEventListener('click', (e) => {
+                // If user is selecting text (range length > 0), don't trigger lookup on the click
+                const sel = window.getSelection();
+                if (sel.toString().length > 0) {
+                    return; 
                 }
-                const cleanWord = word.replace(/^[^\w]+|[^\w]+$/g, '');
-                console.log("Opening dictionary for:", cleanWord);
-                if (cleanWord.length > 0) openDictionary(cleanWord, sentence);
-            }
-        };
+
+                // 1. Try standard caretRangeFromPoint (Chrome, Safari, Edge)
+                let range;
+                let textNode;
+                let offset;
+
+                if (document.caretRangeFromPoint) {
+                    range = document.caretRangeFromPoint(e.clientX, e.clientY);
+                    if (range) {
+                        textNode = range.startContainer;
+                        offset = range.startOffset;
+                    }
+                } else if (document.caretPositionFromPoint) {
+                    // 2. Try Firefox specific
+                    const pos = document.caretPositionFromPoint(e.clientX, e.clientY);
+                    if (pos) {
+                        textNode = pos.offsetNode;
+                        offset = pos.offset;
+                    }
+                }
+
+                // Verify we hit a text node
+                if (!textNode || textNode.nodeType !== Node.TEXT_NODE) {
+                    return;
+                }
+
+                // Get the full word at this offset
+                const text = textNode.textContent;
+                // Regex to find word boundaries: [A-Za-z0-9_]
+                // Expand left
+                let start = offset;
+                while (start > 0 && /[\w']/.test(text[start - 1])) {
+                    start--;
+                }
+                // Expand right
+                let end = offset;
+                while (end < text.length && /[\w']/.test(text[end])) {
+                    end++;
+                }
+
+                const word = text.substring(start, end).trim();
+                
+                // Get sentence context
+                let sentence = "Context unavailable";
+                try {
+                     sentence = textNode.parentElement.innerText; 
+                } catch(err) {}
+
+                if (word.length > 0) {
+                    console.log(`Tap lookup: "${word}"`);
+                    const cleanWord = word.replace(/^[^\w]+|[^\w]+$/g, '');
+                    if (cleanWord.length > 0) {
+                         openDictionary(cleanWord, sentence);
+                    }
+                }
+            });
     }
 }
