@@ -29,13 +29,17 @@ from app.config import MODEL_NAME
 VOICE_MODEL_NAME = "gemini-2.5-flash-native-audio-preview-09-2025"
 # Initialize GenAI Client for Voice (shares API key from env usually, or we load it)
 # We can use the same key as the main client if it's the same provider, or os.getenv('GEMINI_API_KEY')
-voice_client = genai.Client(http_options={'api_version': 'v1alpha'})
+try:
+    voice_client = genai.Client(http_options={'api_version': 'v1alpha'})
+except Exception as e:
+    print(f"Warning: GenAI Client not initialized: {e}")
+    voice_client = None
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Initialize DB (Create tables)
-    init_db()
+    await init_db()
     
     # Load dictionary on startup (Background)
     print("Startup: Initiating dictionary loading in background...")
@@ -428,12 +432,12 @@ async def read_root(request: Request):
 
 @app.get("/api/stats")
 async def api_get_stats():
-    return get_user_stats()
+    return await get_user_stats()
 
 @app.post("/api/log_attempt")
 async def api_log_generic(payload: GenericLogRequest):
     try:
-        log_attempt(
+        await log_attempt(
             activity_type=payload.activity_type,
             topic=payload.topic,
             tense=payload.tense,
@@ -467,7 +471,7 @@ async def api_generate_theme(payload: ThemeRequest):
         )
         
         # [DB] Log Session
-        log_session(payload.topic, vocab.serialize())
+        await log_session(payload.topic, vocab.serialize())
 
         return vocab.serialize()
     except RuntimeError as e:
@@ -485,7 +489,7 @@ async def api_generate_story(payload: StoryRequest):
         )
         
         # [DB] Log Story
-        log_story(payload.topic, payload.target_tense, story.dict())
+        await log_story(payload.topic, payload.target_tense, story.dict())
 
         return story
     except Exception as e:
@@ -536,7 +540,7 @@ async def api_grade_scenario(payload: ScenarioGradeRequest):
         )
         
         # [DB] Log Attempt
-        log_attempt(
+        await log_attempt(
             activity_type='scenario',
             topic='unknown',
             tense=payload.tense,
