@@ -39,7 +39,8 @@ Your instructions:
 
 """
 
-def start_new_mission(client, topic: str, tense: str, aspect: str) -> dict:
+
+async def start_new_mission(client, topic: str, tense: str, aspect: str) -> dict:
     if not client:
         raise RuntimeError("LLM client unavailable")
 
@@ -51,7 +52,7 @@ def start_new_mission(client, topic: str, tense: str, aspect: str) -> dict:
     ]
 
     try:
-        rsp = client.chat.completions.create(model=MODEL_NAME, messages=messages, temperature=0.8)
+        rsp = await client.chat.completions.create(model=MODEL_NAME, messages=messages, temperature=0.8)
         content = rsp.choices[0].message.content.strip()
         if content.startswith("```json"): content = content[7:-3]
         elif content.startswith("```"): content = content[3:-3]
@@ -62,9 +63,7 @@ def start_new_mission(client, topic: str, tense: str, aspect: str) -> dict:
         session_id = str(uuid4())
         
         # Initial AI message to start the scene
-        # We can ask LLM to generate the first line, or just have the user start.
-        # Let's generate the first line for better immersion.
-        start_msg = generate_ai_reply(client, data['description'], data['required_grammar'], [])
+        start_msg = await generate_ai_reply(client, data['description'], data['required_grammar'], [])
         
         session_state = {
             "mission": data,
@@ -94,7 +93,7 @@ def start_new_mission(client, topic: str, tense: str, aspect: str) -> dict:
             "first_message": "Hello! Let's practice."
         }
 
-def handle_chat_turn(client, session_id: str, user_message: str) -> dict:
+async def handle_chat_turn(client, session_id: str, user_message: str) -> dict:
     if session_id not in ACTIVE_SESSIONS:
         return {"error": "Session not found", "reply": "Session expired."}
     
@@ -106,7 +105,7 @@ def handle_chat_turn(client, session_id: str, user_message: str) -> dict:
     history.append({"role": "user", "content": user_message})
     
     # Generate Reply
-    reply = generate_ai_reply(
+    reply = await generate_ai_reply(
         client, 
         mission['description'], 
         json.dumps(mission['required_grammar']), 
@@ -124,13 +123,14 @@ def handle_chat_turn(client, session_id: str, user_message: str) -> dict:
         "history": history
     }
 
-def generate_ai_reply(client, description, grammar, history):
+async def generate_ai_reply(client, description, grammar, history):
     sys_prompt = CHAT_SYSTEM_PROMPT.format(description=description, grammar=grammar)
     
     messages = [{"role": "system", "content": sys_prompt}] + history
     
     try:
-        rsp = client.chat.completions.create(model=MODEL_NAME, messages=messages, temperature=0.7)
+        rsp = await client.chat.completions.create(model=MODEL_NAME, messages=messages, temperature=0.7)
         return rsp.choices[0].message.content.strip()
     except Exception:
         return "..."
+

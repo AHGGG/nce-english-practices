@@ -7,9 +7,10 @@ from typing import Dict, Iterable, List, Optional
 
 from app.config import EXPORT_FILE, MODEL_NAME, OPENAI_API_KEY, OPENAI_BASE_URL, PROGRESS_FILE
 from app.models import BaseSentence, SelectionSnapshot
-from openai import OpenAI
+from openai import OpenAI, AsyncOpenAI
 
 client = OpenAI(api_key=OPENAI_API_KEY, base_url=OPENAI_BASE_URL) if OPENAI_API_KEY else None
+async_client = AsyncOpenAI(api_key=OPENAI_API_KEY, base_url=OPENAI_BASE_URL) if OPENAI_API_KEY else None
 
 
 TIME_LAYERS = ["past", "present", "future", "past_future"]

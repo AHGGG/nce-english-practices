@@ -7,6 +7,7 @@ export async function renderStats() {
     const kpiXp = document.getElementById('statsTotalXp');
     const kpiCount = document.getElementById('statsTotalActivities');
     const kpiRate = document.getElementById('statsWinRate');
+    const kpiTime = document.getElementById('statsTotalTime');
     const recentList = document.getElementById('statsRecentList');
 
     if (!kpiXp) return; // Guard if elements missing
@@ -26,6 +27,10 @@ export async function renderStats() {
         kpiCount.textContent = totalCount;
         const rate = totalCount > 0 ? Math.round((totalPassed / totalCount) * 100) : 0;
         kpiRate.textContent = `${rate}%`;
+        
+        if (kpiTime) {
+            kpiTime.textContent = data.total_minutes || 0;
+        }
 
         // 2. Chart
         renderChart(activityStats);

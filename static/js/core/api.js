@@ -97,6 +97,24 @@ export async function sendChatReply(sessionId, message) {
     return handleResponse(res);
 }
 
+export async function polishSentence(sentence, context = []) {
+    const res = await fetch('/api/chat/polish', {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({ sentence, context })
+    });
+    return handleResponse(res);
+}
+
+export async function addReviewNote(original, better, tags = []) {
+    const res = await fetch('/api/review/add', {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({ original, better, tags })
+    });
+    return handleResponse(res);
+}
+
 // Dictionary
 export async function lookupDictionary(word) {
     const res = await fetch('/api/dictionary/lookup', {
@@ -122,7 +140,18 @@ export async function fetchStats() {
     return handleResponse(res);
 }
 
+// Track time between logs
+let lastLogTime = Date.now();
+
 export async function logAttempt(type, topic, tense, isPass, details) {
+    const now = Date.now();
+    // Cap duration to 5 minutes to avoid idle time skewing
+    let duration = Math.round((now - lastLogTime) / 1000);
+    if (duration > 300) duration = 60; // Fallback for idle
+    if (duration < 0) duration = 0;
+    
+    lastLogTime = now;
+
     try {
         await fetch('/api/log_attempt', {
             method: 'POST',
@@ -132,7 +161,8 @@ export async function logAttempt(type, topic, tense, isPass, details) {
                 topic,
                 tense,
                 is_pass: isPass,
-                details
+                details,
+                duration_seconds: duration
             })
         });
     } catch (e) {

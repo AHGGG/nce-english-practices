@@ -2,7 +2,7 @@
 
 import { state, getCacheKey } from '../core/state.js';
 import { elements } from '../core/elements.js';
-import { fetchScenario, gradeScenario, startChat, sendChatReply, logAttempt } from '../core/api.js';
+import { fetchScenario, gradeScenario, startChat, sendChatReply, logAttempt, polishSentence, addReviewNote } from '../core/api.js';
 import { GeminiLiveClient } from '../core/gemini-live.js';
 
 // --- Scenario ---
@@ -164,8 +164,65 @@ function appendMessage(role, text) {
     const alignClass = isUser ? 'ml-auto bg-accent text-slate-900 rounded-br-sm' : 'mr-auto bg-white/10 text-white rounded-bl-sm';
     
     // ADD ROLE CLASS HERE for identification
-    div.className = `max-w-[80%] px-4 py-3 rounded-2xl text-[0.95rem] leading-relaxed shadow-sm mb-3 ${alignClass} animate-fade-in ${role}`;
-    div.textContent = text;
+    div.className = `max-w-[80%] px-4 py-3 rounded-2xl text-[0.95rem] leading-relaxed shadow-sm mb-3 ${alignClass} animate-fade-in ${role} relative group`;
+    
+    // Message Text
+    const textSpan = document.createElement('span');
+    textSpan.textContent = text;
+    div.appendChild(textSpan);
+
+    // Polish Button (User only)
+    if (isUser) {
+        const btn = document.createElement('button');
+        btn.className = 'absolute -left-8 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity p-1.5 rounded-full bg-slate-700/50 hover:bg-slate-700 text-xs text-accent';
+        btn.innerHTML = '✨';
+        btn.title = 'Polish Grammar';
+        
+        btn.onclick = async () => {
+             if (div.querySelector('.polish-result')) return; // Already polished
+             
+             btn.innerHTML = '⏳';
+             try {
+                 // Get context
+                 const cacheKey = getCacheKey(state.topic, state.currentLayer);
+                 const history = state.chats[cacheKey]?.messages || [];
+                 
+                 const res = await polishSentence(text, history);
+                 
+                 // Render Result
+                 const resDiv = document.createElement('div');
+                 resDiv.className = 'polish-result mt-2 pt-2 border-t border-white/10 text-xs text-emerald-300 italic animate-fade-in flex justify-between items-center';
+                 resDiv.innerHTML = `<div><strong>✨ Suggestion:</strong> ${res.suggestion}</div>`;
+                 
+                 // Save Button
+                 const saveBtn = document.createElement('button');
+                 saveBtn.className = 'ml-2 text-[10px] uppercase font-bold tracking-wider text-slate-400 hover:text-accent transition-colors';
+                 saveBtn.textContent = 'SAVE';
+                 saveBtn.title = 'Add to Review Queue';
+                 saveBtn.onclick = async () => {
+                     try {
+                         saveBtn.textContent = '...';
+                         await addReviewNote(text, res.suggestion, ['chat']);
+                         saveBtn.textContent = 'SAVED';
+                         saveBtn.className = 'ml-2 text-[10px] uppercase font-bold tracking-wider text-emerald-500';
+                         saveBtn.disabled = true;
+                     } catch(err) {
+                         saveBtn.textContent = 'ERR';
+                         console.error(err);
+                     }
+                 };
+                 resDiv.appendChild(saveBtn);
+                 div.appendChild(resDiv);
+                 
+                 btn.remove(); // Remove button after use
+             } catch (e) {
+                 btn.innerHTML = '❌';
+                 console.error(e);
+             }
+        };
+        div.appendChild(btn);
+    }
+    
     elements.chatWindow.appendChild(div);
 }
 

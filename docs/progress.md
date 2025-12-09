@@ -38,18 +38,19 @@
     - [x] Backend Strategy pattern for stats (`/api/stats`).
     - [x] Frontend specific Visualization (XP, Recent Activity).
 - [x] **PWA Support** (Installable App).
-- [ ] **Hybrid Dictionary System**:
+- [x] **Hybrid Dictionary System**:
     - [x] MDX Parser service (`readmdict` + `python-lzo`).
     - [x] `/api/dictionary` endpoint (with Resource Tunnel).
-    - [ ] **Fix**: `@@@LINK` redirect support.
-    - [ ] Frontend Popover UI.
+    - [x] **Fix**: `@@@LINK` redirect support.
+    - [x] Frontend Popover UI.
 - [ ] **Anki Export** / **SRS System**.
 
-## 📅 Phase 4: Refinement & Advanced Features (Next)
-- [ ] **Async Core**: Refactor blocking calls in `chat.py`.
-- [ ] **Grammar Coach**: "Polish" button for user messages.
-- [ ] **Review System**:
-    - [ ] Note extraction from chat.
-    - [ ] SRS Scheduler.
-- [ ] **Stats 2.0**:
-    - [ ] Practice Duration Tracker.
+## 📅 Phase 4: Refinement & Advanced Features (Completed)
+- [x] **Async Core**: Refactor blocking calls in `chat.py` & `main.py`.
+- [x] **Grammar Coach**: "Polish" button for suggestions in Chat.
+- [x] **Review System (SRS)**:
+    - [x] Database Schema (ReviewNote, SRSReview).
+    - [x] SRS Algorithm (SuperMemo-2).
+    - [x] "Add to Review" UI Integration.
+- [x] **Stats 2.0**:
+    - [x] Practice Duration Tracker (Global Timer + Stats UI).

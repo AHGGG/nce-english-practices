@@ -280,9 +280,13 @@ class DictionaryManager:
             cache = d['mdx_cache']
             
             definition_bytes = None
+            found_word = None
+            
+            # Simple lookup
             for w in word_variations:
                 if w in cache:
                     definition_bytes = cache[w]
+                    found_word = w
                     break
             
             if definition_bytes:
@@ -295,6 +299,40 @@ class DictionaryManager:
                     except:
                         continue # Skip if decode fails
                 
+                html_content = html_content.strip()
+
+                # Handle Link (Redirect)
+                # Format: @@@LINK=target_word
+                # We follow up to 5 redirects to avoid infinite loops
+                redirect_depth = 0
+                while html_content.startswith("@@@LINK=") and redirect_depth < 5:
+                    target_word = html_content.replace("@@@LINK=", "").strip()
+                    # print(f"DEBUG: Redirecting {word} -> {target_word}")
+                    
+                    # Look up the target word in THE SAME dictionary first 
+                    # (Standard MDX behavior: links are usually internal)
+                    target_bytes = cache.get(target_word)
+                    if not target_bytes:
+                        # Try variations of the target word?
+                        # MDX specs says strict match for link, but let's be safe
+                        pass
+                    
+                    if target_bytes:
+                        try:
+                            # Decode new content
+                            try:
+                                html_content = target_bytes.decode('utf-8')
+                            except:
+                                html_content = target_bytes.decode('gbk')
+                        except:
+                            break
+                        
+                        html_content = html_content.strip()
+                        redirect_depth += 1
+                    else:
+                        # Broken link or link to another dictionary (not supported yet)
+                        break
+
                 processed_html = self._process_html(html_content, d['name'], d['subdir'])
                 results.append({
                     "dictionary": d['name'],

@@ -18,11 +18,11 @@ from app.generators.story import ensure_story
 from app.generators.quiz import generate_quiz
 from app.generators.scenario import generate_scenario, grade_scenario_response
 from app.services.chat import start_new_mission, handle_chat_turn
-from app.core.practice import client, grade_sentence, log_matrix_attempt
+from app.core.practice import client, grade_sentence, log_matrix_attempt, async_client
 from app.models import SelectionSnapshot, Story, QuizItem, ScenarioPrompt, ScenarioResponse, Mission
 
 # [DB] Import new DB functions
-from app.database import log_session, log_story, log_attempt, get_user_stats
+from app.database import log_session, log_story, log_attempt, get_user_stats, init_db
 from app.config import MODEL_NAME
 
 # Voice Config - Use model from user's reference
@@ -34,6 +34,9 @@ voice_client = genai.Client(http_options={'api_version': 'v1alpha'})
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    # Initialize DB (Create tables)
+    init_db()
+    
     # Load dictionary on startup (Background)
     print("Startup: Initiating dictionary loading in background...")
     # Run synchronous load_dictionaries in a thread to avoid blocking the event loop
@@ -392,6 +395,30 @@ class GenericLogRequest(BaseModel):
     tense: str
     is_pass: bool
     details: Dict[str, Any] = {}
+    duration_seconds: int = 0
+
+class PolishRequest(BaseModel):
+    sentence: str
+    context: List[Dict[str, str]] = []
+
+from app.generators.coach import polish_sentence
+
+@app.post("/api/chat/polish")
+async def api_chat_polish(payload: PolishRequest):
+    try:
+        suggestion = await polish_sentence(async_client, payload.sentence, payload.context)
+        return {"suggestion": suggestion}
+    except Exception as e:
+        return {"suggestion": "Error", "details": str(e)}
+
+class ReviewAddRequest(BaseModel):
+    original: str
+    better: str
+    tags: List[str] = []
+
+class ReviewUpdateRequest(BaseModel):
+    note_id: int
+    quality: int # 0-5
 
 # --- Routes ---
 
@@ -412,7 +439,8 @@ async def api_log_generic(payload: GenericLogRequest):
             tense=payload.tense,
             input_data={},
             user_response=payload.details,
-            is_pass=payload.is_pass
+            is_pass=payload.is_pass,
+            duration_seconds=payload.duration_seconds
         )
         return {"status": "ok"}
     except Exception as e:
@@ -429,7 +457,9 @@ async def api_generate_theme(payload: ThemeRequest):
             except Exception:
                 pass 
 
-        vocab = ensure_theme(
+        from fastapi.concurrency import run_in_threadpool
+        vocab = await run_in_threadpool(
+            ensure_theme,
             topic=payload.topic, 
             client=client, 
             refresh=True if prev_vocab_obj else False,
@@ -446,7 +476,9 @@ async def api_generate_theme(payload: ThemeRequest):
 @app.post("/api/story")
 async def api_generate_story(payload: StoryRequest):
     try:
-        story = ensure_story(
+        from fastapi.concurrency import run_in_threadpool
+        story = await run_in_threadpool(
+            ensure_story,
             topic=payload.topic,
             tense=payload.target_tense,
             client=client
@@ -462,7 +494,9 @@ async def api_generate_story(payload: StoryRequest):
 @app.post("/api/quiz")
 async def api_generate_quiz(payload: QuizRequest):
     try:
-        quiz = generate_quiz(
+        from fastapi.concurrency import run_in_threadpool
+        quiz = await run_in_threadpool(
+            generate_quiz,
             client=client,
             topic=payload.topic,
             tense=payload.tense,
@@ -476,7 +510,9 @@ async def api_generate_quiz(payload: QuizRequest):
 @app.post("/api/scenario")
 async def api_generate_scenario(payload: ScenarioRequest):
     try:
-        scenario = generate_scenario(
+        from fastapi.concurrency import run_in_threadpool
+        scenario = await run_in_threadpool(
+            generate_scenario,
             client=client,
             topic=payload.topic,
             tense=payload.tense,
@@ -489,7 +525,9 @@ async def api_generate_scenario(payload: ScenarioRequest):
 @app.post("/api/scenario/grade")
 async def api_grade_scenario(payload: ScenarioGradeRequest):
     try:
-        result = grade_scenario_response(
+        from fastapi.concurrency import run_in_threadpool
+        result = await run_in_threadpool(
+            grade_scenario_response,
             client=client,
             situation=payload.situation,
             goal=payload.goal,
@@ -514,8 +552,8 @@ async def api_grade_scenario(payload: ScenarioGradeRequest):
 @app.post("/api/chat/start")
 async def api_chat_start(payload: ChatStartRequest):
     try:
-        data = start_new_mission(
-            client=client,
+        data = await start_new_mission(
+            client=async_client,
             topic=payload.topic,
             tense=payload.tense,
             aspect=payload.aspect
@@ -527,8 +565,8 @@ async def api_chat_start(payload: ChatStartRequest):
 @app.post("/api/chat/reply")
 async def api_chat_reply(payload: ChatReplyRequest):
     try:
-        data = handle_chat_turn(
-            client=client,
+        data = await handle_chat_turn(
+            client=async_client,
             session_id=payload.session_id,
             user_message=payload.message
         )
@@ -540,7 +578,10 @@ async def api_chat_reply(payload: ChatReplyRequest):
 @app.post("/api/sentences")
 async def api_generate_sentences(payload: SentenceRequest):
     try:
-        data = ensure_sentences(
+        # Heaviest function, definitely thread it
+        from fastapi.concurrency import run_in_threadpool
+        data = await run_in_threadpool(
+            ensure_sentences,
             topic=payload.topic,
             time_layer=payload.time_layer,
             subject=payload.subject,
