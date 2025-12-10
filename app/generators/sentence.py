@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import Dict, Optional
 
 from app.config import HOME_DIR, MODEL_NAME
+from app.services.prompt_manager import prompt_manager
 
 SENTENCES_DIR = HOME_DIR / "sentences"
 SENTENCES_DIR.mkdir(parents=True, exist_ok=True)
@@ -23,60 +24,6 @@ TIME_LAYER_LABELS = {
     "future": "Future",
     "past_future": "Past Future (would)"
 }
-
-SENTENCE_GENERATION_PROMPT = """You are an English grammar expert. Generate practice sentences for English tense learning.
-
-Given a topic and base sentence components, generate ALL sentence variations for the {time_layer} time layer.
-
-Base components (MUST USE THESE EXACT WORDS):
-- Subject: {subject}
-- Verb: {verb_base} (past: {verb_past}, participle: {verb_participle})
-- Object: {object}
-- Manner: {manner}
-- Place: {place}
-- Time: {time}
-
-Generate sentences for {time_layer} in these aspects: simple, perfect, progressive, perfect_progressive.
-
-For EACH aspect, generate:
-1. affirmative (positive statement)
-2. negative (negative statement)
-3. question (yes/no question)
-4. special questions with wh-words: when, where, how, why, who
-
-Return JSON format:
-{{
-  "time_layer": "{time_layer}",
-  "simple": {{
-    "affirmative": "...",
-    "negative": "...",
-    "question": "...",
-    "when": "...",
-    "where": "...",
-    "how": "...",
-    "why": "...",
-    "who": "..."
-  }},
-  "perfect": {{ ... same structure ... }},
-  "progressive": {{ ... same structure ... }},
-  "perfect_progressive": {{ ... same structure ... }}
-}}
-
-CRITICAL RULES:
-1. MUST use the EXACT subject provided: "{subject}"
-2. MUST use the EXACT verb provided (conjugate correctly for tense): "{verb_base}"
-3. MUST use the EXACT object provided: "{object}"
-4. MUST include manner, place, time when provided
-5. Use correct grammar for {time_layer} tenses
-6. For special questions, use appropriate wh-word at the beginning
-7. Return ONLY valid JSON, no markdown or explanation
-
-Example for "I / study / English / carefully / at home / every day":
-- Affirmative: "I study English carefully at home every day"
-- Negative: "I do not study English carefully at home every day"
-- Question: "Do I study English carefully at home every day?"
-"""
-
 
 def get_sentence_cache_path(topic: str, time_layer: str) -> Path:
     """Get the cache file path for a specific topic and time layer."""
@@ -123,7 +70,7 @@ def generate_sentences_for_time_layer(
     if time_layer not in TIME_LAYERS:
         raise ValueError(f"Invalid time_layer: {time_layer}")
 
-    prompt = SENTENCE_GENERATION_PROMPT.format(
+    prompt = prompt_manager.format("sentence.user_template",
         time_layer=time_layer,
         subject=subject,
         verb_base=verb_base,
@@ -134,9 +81,10 @@ def generate_sentences_for_time_layer(
         place=place or "—",
         time=time or "—",
     )
+    system_prompt = prompt_manager.get("sentence.system")
 
     messages = [
-        {"role": "system", "content": "You are a precise English grammar teacher who generates correct tense forms."},
+        {"role": "system", "content": system_prompt},
         {"role": "user", "content": prompt},
     ]
 

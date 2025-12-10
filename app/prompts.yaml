@@ -1,0 +1,238 @@
+# NCE English Practice - LLM Prompts Configuration
+
+# --- Generators ---
+
+theme:
+  system: "You are an English tutor for New Concept English learners."
+  user_template: |
+    Given a topic, provide JSON with ONE set of words for sentence practice.
+
+    Response JSON schema:
+    {
+      "topic": "<topic>",
+      "slots": {
+         "subject": "I",
+         "object": "new vocabulary",
+         "manner": "carefully",
+         "place": "at home",
+         "time": "every day"
+      },
+      "verbs": [
+        {"base":"study","past":"studied","participle":"studied","note":"to learn"}
+      ]
+    }
+
+    CRITICAL REQUIREMENTS:
+    1. MUST use the topic word in at least ONE slot (subject, object, manner, place, or time)
+    2. The topic word should appear naturally in the sentence
+    3. Generate ONLY ONE word/phrase for each slot (not arrays)
+    4. Choose ONE appropriate verb related to this topic
+    5. Keep words concise and appropriate for CEFR B1 learners
+
+    Examples:
+    - Topic "muse" → object: "the muse" or "my muse"
+    - Topic "travel" → object: "travel plans" or verb: "travel"
+    - Topic "coffee" → object: "coffee" or place: "at the coffee shop"
+
+    Topic: {topic}
+
+    {previous_context}
+
+    Respond with JSON only.
+
+story:
+  system: "You are a creative English teacher."
+  user_template: |
+    You are an expert English teacher creating contextual learning materials.
+    Write a SHORT, ENGAGING story (approx. 100-150 words) that naturally emphasizes the target tense.
+
+    Target Topic: {topic}
+    Target Tense: {tense}
+
+    REQUIREMENTS:
+    1. "Input Flooding": Use the target tense at least 3-5 times naturally within the story.
+    2. Context: The story should make it clear *why* this tense is used.
+    3. Level: CEFR B1/B2.
+
+    OUTPUT FORMAT:
+    1. First, write the story text directly.
+    2. Then, output a divider line: "---METADATA---"
+    3. Finally, output the JSON metdata for highlights and grammar notes.
+
+    Example Layout:
+    Title: The Adventure
+    Once upon a time... (Story content)
+    ---METADATA---
+    {{
+      "title": "The Adventure",
+      "highlights": ["had gone"],
+      "grammar_notes": ["Explanation..."]
+    }}
+
+sentence:
+  system: "You are a precise English grammar teacher who generates correct tense forms."
+  user_template: |
+    You are an English grammar expert. Generate practice sentences for English tense learning.
+
+    Given a topic and base sentence components, generate ALL sentence variations for the {time_layer} time layer.
+
+    Base components (MUST USE THESE EXACT WORDS):
+    - Subject: {subject}
+    - Verb: {verb_base} (past: {verb_past}, participle: {verb_participle})
+    - Object: {object}
+    - Manner: {manner}
+    - Place: {place}
+    - Time: {time}
+
+    Generate sentences for {time_layer} in these aspects: simple, perfect, progressive, perfect_progressive.
+
+    For EACH aspect, generate:
+    1. affirmative (positive statement)
+    2. negative (negative statement)
+    3. question (yes/no question)
+    4. special questions with wh-words: when, where, how, why, who
+
+    Return JSON format:
+    {{
+      "time_layer": "{time_layer}",
+      "simple": {{
+        "affirmative": "...",
+        "negative": "...",
+        "question": "...",
+        "when": "...",
+        "where": "...",
+        "how": "...",
+        "why": "...",
+        "who": "..."
+      }},
+      "perfect": {{ ... }},
+      "progressive": {{ ... }},
+      "perfect_progressive": {{ ... }}
+    }}
+
+    CRITICAL RULES:
+    1. MUST use the EXACT subject provided: "{subject}"
+    2. MUST use the EXACT verb provided (conjugate correctly for tense): "{verb_base}"
+    3. MUST use the EXACT object provided: "{object}"
+    4. MUST include manner, place, time when provided
+    5. Use correct grammar for {time_layer} tenses
+    6. For special questions, use appropriate wh-word at the beginning
+    7. Return ONLY valid JSON, no markdown or explanation
+
+quiz:
+  system: "You are an expert English grammar test creator."
+  user_template: |
+    Generate a multiple-choice quiz question for the following sentence to test the tense usage.
+
+    Context: The user is practicing "{tense} {aspect}".
+    Correct Sentence: "{correct_sentence}"
+
+    REQUIREMENTS:
+    1. Create a "Fill-in-the-blank" question based on the Correct Sentence.
+    2. The ANSWER must be the correct conjugation from the sentence.
+    3. DISTRACTORS (Wrong Options):
+       - Must be plausible mistakes (e.g., wrong tense, wrong auxiliary, wrong participle).
+       - DO NOT use random words. Use other tenses or common learner errors.
+    4. Explanation: Brief 1-sentence reason why the answer is correct.
+
+    Output JSON Format:
+    {{
+      "question": "Tomorrow by 5 PM, I ______ (finish) the work.",
+      "options": ["will have finished", "will finish", "have finished", "had finished"],
+      "correct_index": 0,
+      "explanation": "Future Perfect is used for actions completed before a future time."
+    }}
+
+    Note: Output 'question', 'options' (list of strings), 'correct_index' (int), 'explanation' (string).
+
+scenario:
+  generation:
+    system: "You are an English language coach."
+    user_template: |
+      Create a "Real-life Scenario" for the user to practice the target tense: "{tense} {aspect}".
+      Topic: "{topic}"
+
+      OUTPUT REQUIREMENTS:
+      1. Situation: A brief, realistic context (1-2 sentences).
+      2. Goal: A specific communicative goal (e.g., "Explain why...", "Ask about...", "Describe...").
+         - The goal MUST require using the target tense naturally.
+         - DO NOT give away the answer.
+
+      Output JSON Format:
+      {{
+        "situation": "You arrive at the meeting 10 minutes late. The boss looks annoyed.",
+        "goal": "Apologize and give a reason using the Past Simple tense."
+      }}
+
+  grading:
+    system: "You are an English teacher grading a student's answer."
+    user_template: |
+      Situation: "{situation}"
+      Goal: "{goal}"
+      Student Answer: "{user_input}"
+      Target Tense: "{tense}"
+
+      REQUIREMENTS:
+      1. Check if the Goal was achieved.
+      2. Check if the grammar (especially target tense) is correct.
+      3. Provide an Improved Version (natural, native-speaker level).
+
+      Output JSON Format:
+      {{
+        "is_pass": true,
+        "feedback": "Good job! You used the correct tense.",
+        "better_response": "I'm so sorry I'm late; traffic was terrible."
+      }}
+
+coach:
+  polish:
+    system: |
+      You are a native English coach.
+      Your task is to Suggest a more natural, idiomatic, or grammatically correct way to say the user's sentence, GIVEN the context of the conversation.
+      If the sentence is already perfect, just return it as is.
+      Output ONLY the suggested sentence. Do not add quotes or explanations.
+    user_template: |
+      Polish this sentence: "{sentence}"
+
+      Context of conversation:
+      {context}
+
+# --- Services ---
+
+chat:
+  system: |
+    You are a roleplay partner in an English practice session.
+    Current Mission: {description}
+    Target Grammar: {grammar}
+
+    Your instructions:
+    1. Stay in character tightly.
+    2. Keep responses short (1-2 sentences) to keep the pace fast.
+    3. If the user makes a grammar mistake related to the Target Grammar, briefly correct them OUT OF CHARACTER in brackets, then continue in character.
+       Example: "[Correction: Say 'I didn't do it', not 'I no do it'.] ANYWAY, tell me the truth!"
+    4. Check if the user has satisfied the mission goals.
+
+  mission_generation: |
+    You are a Game Master for an English learning RPG.
+    Create a "Secret Mission" for the user to practice the proper usage of: "{tense} {aspect}".
+    Topic: "{topic}"
+
+    Output JSON Requirements:
+    1. title: Catchy mission title.
+    2. description: The roleplay setup. Who is the user? Who is the AI? What is the conflict?
+       - AI Role: The AI should play a specific character (e.g., "Grumpy Shopkeeper", "Nosy Neighbor").
+    3. required_grammar: List of specific grammar targets they must use (e.g., "Use 'didn't' twice", "Ask a question with 'Did you'").
+
+    Output JSON Example:
+    {{
+      "id": "mission_123",
+      "title": "The Broken Vase",
+      "description": "You are a child who broke a vase. I am your angry mother. You must explain what happened without admitting fault directly.",
+      "required_grammar": ["Use Past Simple negative", "Use Past Continuous"]
+    }}
+
+voice:
+  system: |
+    You are a helpful and immersive English language tutor and roleplay partner.
+    Your voice should be warm, encouraging, and clear.
+    Keep responses concise (1-2 sentences) to encourage conversation.

@@ -4,12 +4,10 @@ import json
 from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Dict, List, Optional
-from fastapi.concurrency import run_in_threadpool
-import asyncio
 
 from app.config import MODEL_NAME
 from app.models import VerbEntry
-from app.database import get_session_vocab, log_session
+from app.services.prompt_manager import prompt_manager
 
 DEFAULT_SLOTS: Dict[str, List[str]] = {
     "subject": ["I", "We", "My friends"],
@@ -76,45 +74,12 @@ class ThemeVocabulary:
         return vocab
 
 
-THEME_PROMPT = """You are an English tutor for New Concept English learners.
-Given a topic, provide JSON with ONE set of words for sentence practice.
-
-Response JSON schema:
-{
-  "topic": "<topic>",
-  "slots": {
-     "subject": "I",
-     "object": "new vocabulary",
-     "manner": "carefully",
-     "place": "at home",
-     "time": "every day"
-  },
-  "verbs": [
-    {"base":"study","past":"studied","participle":"studied","note":"to learn"}
-  ]
-}
-
-CRITICAL REQUIREMENTS:
-1. MUST use the topic word in at least ONE slot (subject, object, manner, place, or time)
-2. The topic word should appear naturally in the sentence
-3. Generate ONLY ONE word/phrase for each slot (not arrays)
-4. Choose ONE appropriate verb related to this topic
-5. Keep words concise and appropriate for CEFR B1 learners
-
-Examples:
-- Topic "muse" → object: "the muse" or "my muse"
-- Topic "travel" → object: "travel plans" or verb: "travel"
-- Topic "coffee" → object: "coffee" or place: "at the coffee shop"
-"""
-
-
 def generate_theme_sync(topic: str, client, previous_vocab: Optional[ThemeVocabulary] = None) -> ThemeVocabulary:
     if not client:
         raise RuntimeError("LLM client unavailable for theme generation")
 
-    # Build prompt with previous words to avoid
-    user_prompt = f"{THEME_PROMPT}\nTopic: {topic}"
-
+    # Build context for avoidance
+    context_str = ""
     if previous_vocab:
         avoid_list = []
         for slot_name, values in previous_vocab.slots.items():
@@ -125,12 +90,13 @@ def generate_theme_sync(topic: str, client, previous_vocab: Optional[ThemeVocabu
             avoid_list.append(f"verbs: {', '.join(verb_bases)}")
 
         if avoid_list:
-            user_prompt += f"\n\nIMPORTANT: Generate NEW words. Avoid repeating these previously used words:\n" + "\n".join(avoid_list)
+            context_str = f"\n\nIMPORTANT: Generate NEW words. Avoid repeating these previously used words:\n" + "\n".join(avoid_list)
 
-    user_prompt += "\n\nRespond with JSON only."
+    user_prompt = prompt_manager.format("theme.user_template", topic=topic, previous_context=context_str)
+    system_prompt = prompt_manager.get("theme.system")
 
     messages = [
-        {"role": "system", "content": "You craft vocabulary slots for sentence practice."},
+        {"role": "system", "content": system_prompt},
         {"role": "user", "content": user_prompt},
     ]
     try:
@@ -148,21 +114,4 @@ def generate_theme_sync(topic: str, client, previous_vocab: Optional[ThemeVocabu
 
 
 def ensure_theme(topic: str, client=None, refresh: bool = False, previous_vocab: Optional[ThemeVocabulary] = None) -> ThemeVocabulary:
-    """
-    Ensures a theme is available.
-    NOTE: 'ensure_theme' is currently called inside 'run_in_threadpool' from the API.
-    However, we need async DB access to check cache.
-    The current architecture calls this function SYNCly in a threadpool.
-    We can't easily await async DB functions here.
-
-    Workaround:
-    The API caller (app/api/routers/content.py) should check DB *before* calling this generation logic.
-    But for now, to keep the signature, we might just generate it.
-
-    Actually, let's fix the API to do the DB check.
-    Here we only do generation.
-    """
-    # Just generate. The caller handles caching/persistence.
-    # Why? because this function is run in a threadpool (sync context) so it cannot await `get_session_vocab`.
-    # It's better to move the "check cache" logic to the async router.
     return generate_theme_sync(topic, client, previous_vocab)

@@ -1,11 +1,6 @@
 from app.config import MODEL_NAME
 from app.services.llm import llm_service
-
-POLISH_SYSTEM_PROMPT = """You are a native English coach. 
-Your task is to Suggest a more natural, idiomatic, or grammatically correct way to say the user's sentence, GIVEN the context of the conversation.
-If the sentence is already perfect, just return it as is.
-Output ONLY the suggested sentence. Do not add quotes or explanations.
-"""
+from app.services.prompt_manager import prompt_manager
 
 async def polish_sentence(user_sentence: str, context_messages: list) -> str:
     """
@@ -14,30 +9,36 @@ async def polish_sentence(user_sentence: str, context_messages: list) -> str:
     if not llm_service.async_client:
         return "Error: AI Client unavailable."
 
-    # Prepare messages
-    # Context format: [{"role": "user/assistant", "content": "..."}]
-    # We might want to limit context size
+    # Format Prompt
+    # Note: The new prompt template expects {sentence} and {context} as string in user_template.
+    # But here we are passing context as 'messages' list to the API directly.
+    # Strategy: We use the system prompt from config, and append the user prompt.
+
+    system_prompt = prompt_manager.get("coach.polish.system")
     
-    messages = [{"role": "system", "content": POLISH_SYSTEM_PROMPT}]
+    # We will serialize context for the "user_template" OR keep using the message history approach.
+    # The config template approach:
+    # user_template: "Polish this: {sentence}\nContext: {context}"
     
-    # Add recent context (last 4 messages)
+    # Let's try to serialize context for the prompt to match the template.
+    # OR we can just use the system prompt and keep the "Chat history" structure if preferred.
+    # But adhering to the template is cleaner for "External Prompts".
+
+    context_str = ""
     if context_messages:
-        # Sanitize roles: 'ai' -> 'assistant'
-        sanitized_context = []
         for msg in context_messages[-4:]:
             role = msg.get('role', 'user')
             content = msg.get('content', '')
-            if role == 'ai':
-                role = 'assistant'
-            # Filter out system messages or unknown roles if strictly needed, 
-            # but usually just mapping ai->assistant is enough for this app.
-            if role in ['user', 'assistant', 'system']:
-                sanitized_context.append({"role": role, "content": content})
-        
-        messages.extend(sanitized_context)
+            context_str += f"{role}: {content}\n"
+
+    user_prompt = prompt_manager.format("coach.polish.user_template",
+                                        sentence=user_sentence,
+                                        context=context_str)
     
-    # Add the target sentence
-    messages.append({"role": "user", "content": f"Polish this: {user_sentence}"})
+    messages = [
+        {"role": "system", "content": system_prompt},
+        {"role": "user", "content": user_prompt}
+    ]
     
     try:
         content = await llm_service.chat_complete(messages=messages, temperature=0.3)

@@ -3,51 +3,17 @@ from __future__ import annotations
 import json
 from app.config import MODEL_NAME
 from app.models import ScenarioPrompt, ScenarioResponse
-
-SCENARIO_PROMPT = """You are an English language coach.
-Create a "Real-life Scenario" for the user to practice the target tense: "{tense} {aspect}".
-Topic: "{topic}"
-
-OUTPUT REQUIREMENTS:
-1. Situation: A brief, realistic context (1-2 sentences).
-2. Goal: A specific communicative goal (e.g., "Explain why...", "Ask about...", "Describe...").
-   - The goal MUST require using the target tense naturally.
-   - DO NOT give away the answer.
-
-Output JSON Format:
-{{
-  "situation": "You arrive at the meeting 10 minutes late. The boss looks annoyed.",
-  "goal": "Apologize and give a reason using the Past Simple tense."
-}}
-"""
-
-GRADING_PROMPT = """You are an English teacher grading a student's answer.
-Situation: "{situation}"
-Goal: "{goal}"
-Student Answer: "{user_input}"
-Target Tense: "{tense}"
-
-REQUIREMENTS:
-1. Check if the Goal was achieved.
-2. Check if the grammar (especially target tense) is correct.
-3. Provide an Improved Version (natural, native-speaker level).
-
-Output JSON Format:
-{{
-  "is_pass": true,
-  "feedback": "Good job! You used the correct tense.",
-  "improved_version": "I'm so sorry I'm late; traffic was terrible."
-}}
-"""
+from app.services.prompt_manager import prompt_manager
 
 def generate_scenario(client, topic: str, tense: str, aspect: str) -> ScenarioPrompt:
     if not client:
         raise RuntimeError("LLM client unavailable")
 
-    prompt = SCENARIO_PROMPT.format(topic=topic, tense=tense, aspect=aspect)
+    prompt = prompt_manager.format("scenario.generation.user_template", topic=topic, tense=tense, aspect=aspect)
+    system_prompt = prompt_manager.get("scenario.generation.system")
     
     messages = [
-        {"role": "system", "content": "You create English practice scenarios."},
+        {"role": "system", "content": system_prompt},
         {"role": "user", "content": prompt}
     ]
 
@@ -67,10 +33,12 @@ def grade_scenario_response(client, situation: str, goal: str, user_input: str, 
         # Fallback without LLM
         return ScenarioResponse(is_pass=False, feedback="API Key missing. Cannot grade.", improved_version="")
 
-    prompt = GRADING_PROMPT.format(situation=situation, goal=goal, user_input=user_input, tense=tense)
+    prompt = prompt_manager.format("scenario.grading.user_template",
+                                   situation=situation, goal=goal, user_input=user_input, tense=tense)
+    system_prompt = prompt_manager.get("scenario.grading.system")
     
     messages = [
-        {"role": "system", "content": "You are a helpful English teacher."},
+        {"role": "system", "content": system_prompt},
         {"role": "user", "content": prompt}
     ]
 
@@ -83,6 +51,10 @@ def grade_scenario_response(client, situation: str, goal: str, user_input: str, 
         data = json.loads(content.strip())
         # Inject user_input as it is required by the model and not returned by LLM
         data['user_input'] = user_input
+        # Map fields if new prompt changed keys
+        if 'better_response' in data and 'improved_version' not in data:
+            data['improved_version'] = data['better_response']
+
         return ScenarioResponse(**data)
     except Exception as e:
         return ScenarioResponse(

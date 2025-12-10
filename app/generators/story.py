@@ -5,42 +5,18 @@ from typing import Optional, AsyncGenerator
 
 from app.config import MODEL_NAME
 from app.models import Story
-
-STORY_PROMPT = """You are an expert English teacher creating contextual learning materials.
-Write a SHORT, ENGAGING story (approx. 100-150 words) that naturally emphasizes the target tense.
-
-Target Topic: {topic}
-Target Tense: {tense}
-
-REQUIREMENTS:
-1. "Input Flooding": Use the target tense at least 3-5 times naturally within the story.
-2. Context: The story should make it clear *why* this tense is used.
-3. Level: CEFR B1/B2.
-
-OUTPUT FORMAT:
-1. First, write the story text directly.
-2. Then, output a divider line: "---METADATA---"
-3. Finally, output the JSON metdata for highlights and grammar notes.
-
-Example Layout:
-Title: The Adventure
-Once upon a time... (Story content)
----METADATA---
-{{
-  "title": "The Adventure",
-  "highlights": ["had gone"],
-  "grammar_notes": ["Explanation..."]
-}}
-"""
+from app.services.prompt_manager import prompt_manager
 
 async def generate_story_stream(topic: str, tense: str, client) -> AsyncGenerator[str, None]:
     if not client:
         yield json.dumps({"error": "LLM client unavailable"})
         return
 
-    prompt = STORY_PROMPT.format(topic=topic, tense=tense)
+    prompt = prompt_manager.format("story.user_template", topic=topic, tense=tense)
+    system_prompt = prompt_manager.get("story.system")
+
     messages = [
-        {"role": "system", "content": "You are a creative English teacher."},
+        {"role": "system", "content": system_prompt},
         {"role": "user", "content": prompt}
     ]
 
