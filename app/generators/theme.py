@@ -1,14 +1,15 @@
 from __future__ import annotations
 
 import json
-import re
 from dataclasses import dataclass, field
 from datetime import datetime
-from pathlib import Path
 from typing import Dict, List, Optional
+from fastapi.concurrency import run_in_threadpool
+import asyncio
 
-from app.config import HOME_DIR, MODEL_NAME, THEMES_DIR
+from app.config import MODEL_NAME
 from app.models import VerbEntry
+from app.database import get_session_vocab, log_session
 
 DEFAULT_SLOTS: Dict[str, List[str]] = {
     "subject": ["I", "We", "My friends"],
@@ -75,30 +76,6 @@ class ThemeVocabulary:
         return vocab
 
 
-def slugify(topic: str) -> str:
-    slug = re.sub(r"[^a-z0-9]+", "-", topic.lower())
-    return slug.strip("-") or "topic"
-
-
-def theme_path(topic: str) -> Path:
-    return THEMES_DIR / f"{slugify(topic)}.json"
-
-
-def load_theme(topic: str) -> Optional[ThemeVocabulary]:
-    path = theme_path(topic)
-    if not path.exists():
-        return None
-    with path.open("r", encoding="utf-8") as fh:
-        data = json.load(fh)
-    return ThemeVocabulary.from_payload(data)
-
-
-def save_theme(vocab: ThemeVocabulary) -> None:
-    path = theme_path(vocab.topic)
-    with path.open("w", encoding="utf-8") as fh:
-        json.dump(vocab.serialize(), fh, indent=2, ensure_ascii=False)
-
-
 THEME_PROMPT = """You are an English tutor for New Concept English learners.
 Given a topic, provide JSON with ONE set of words for sentence practice.
 
@@ -131,7 +108,7 @@ Examples:
 """
 
 
-def generate_theme(topic: str, client=None, previous_vocab: Optional[ThemeVocabulary] = None) -> ThemeVocabulary:
+def generate_theme_sync(topic: str, client, previous_vocab: Optional[ThemeVocabulary] = None) -> ThemeVocabulary:
     if not client:
         raise RuntimeError("LLM client unavailable for theme generation")
 
@@ -171,11 +148,21 @@ def generate_theme(topic: str, client=None, previous_vocab: Optional[ThemeVocabu
 
 
 def ensure_theme(topic: str, client=None, refresh: bool = False, previous_vocab: Optional[ThemeVocabulary] = None) -> ThemeVocabulary:
-    cached = load_theme(topic) if not refresh else None
-    if cached:
-        return cached
-    if not client:
-        raise RuntimeError("No cached vocabulary and model unavailable.")
-    vocab = generate_theme(topic, client=client, previous_vocab=previous_vocab)
-    save_theme(vocab)
-    return vocab
+    """
+    Ensures a theme is available.
+    NOTE: 'ensure_theme' is currently called inside 'run_in_threadpool' from the API.
+    However, we need async DB access to check cache.
+    The current architecture calls this function SYNCly in a threadpool.
+    We can't easily await async DB functions here.
+
+    Workaround:
+    The API caller (app/api/routers/content.py) should check DB *before* calling this generation logic.
+    But for now, to keep the signature, we might just generate it.
+
+    Actually, let's fix the API to do the DB check.
+    Here we only do generation.
+    """
+    # Just generate. The caller handles caching/persistence.
+    # Why? because this function is run in a threadpool (sync context) so it cannot await `get_session_vocab`.
+    # It's better to move the "check cache" logic to the async router.
+    return generate_theme_sync(topic, client, previous_vocab)

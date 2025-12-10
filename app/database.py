@@ -23,6 +23,20 @@ async def log_session(topic: str, vocab_data: Dict[str, Any]):
             print(f"DB Error log_session: {e}")
             await session.rollback()
 
+async def get_session_vocab(topic: str) -> Optional[Dict[str, Any]]:
+    async with AsyncSessionLocal() as session:
+        try:
+            # Get latest session for this topic
+            stmt = select(SessionLog).where(SessionLog.topic == topic).order_by(desc(SessionLog.created_at)).limit(1)
+            result = await session.execute(stmt)
+            session_log = result.scalar_one_or_none()
+            if session_log:
+                return session_log.vocab_json
+            return None
+        except Exception as e:
+            print(f"DB Error get_session_vocab: {e}")
+            return None
+
 # --- Story ---
 
 async def log_story(topic: str, tense: str, story_data: Dict[str, Any]):

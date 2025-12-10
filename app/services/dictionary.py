@@ -1,125 +1,16 @@
 import os
 import mimetypes
-from readmdict import MDX, MDD
-from typing import Optional, Tuple
-from bs4 import BeautifulSoup
-
-# Global path configuration
-DICT_BASE_DIR = r"resources/dictionaries"
-
-class DictionaryManager:
-    def __init__(self):
-        # List of dict objects: [{'name': '...', 'mdx': ..., 'mdd': ..., 'subdir': '...'}]
-        # BUT for performance with limited memory, we might want to be careful.
-        # User has enough RAM for 2 dictionaries.
-        # We also need a combined cache or iterate through list. 
-        # Iterating through list is safer for conflict resolution (first come first serve).
-        self.dictionaries = []
-        self.loaded = False
-
-    def load_dictionaries(self):
-        """
-        Scans DICT_BASE_DIR recursively for .mdx files and loads them.
-        """
-        if self.loaded:
-            return
-
-        if not os.path.exists(DICT_BASE_DIR):
-            print(f"Warning: Dictionary directory not found: {DICT_BASE_DIR}")
-            return
-        
-        # 1. Find all MDX files
-        mdx_files = []
-        for root, dirs, files in os.walk(DICT_BASE_DIR):
-            for file in files:
-                if file.lower().endswith('.mdx'):
-                    mdx_files.append(os.path.join(root, file))
-        
-        print(f"Found {len(mdx_files)} dictionary files.")
-
-        for mdx_path in mdx_files:
-            try:
-                print(f"Loading MDX: {mdx_path} ...")
-                mdx = MDX(mdx_path)
-                
-                # Associated MDD? (Same basename, .mdd extension)
-                base = os.path.splitext(mdx_path)[0]
-                mdd_path = base + ".mdd"
-                mdd = None
-                if os.path.exists(mdd_path):
-                    print(f"Loading MDD: {mdd_path} ...")
-                    mdd = MDD(mdd_path)
-                
-                # Build detailed cache for this dictionary
-                mdx_cache = {}
-                count = 0
-                for key, value in mdx.items():
-                    try:
-                        k_str = key.decode('utf-8').strip()
-                        mdx_cache[k_str] = value
-                        count += 1
-                    except:
-                        continue
-                
-                mdd_cache = {}
-                if mdd:
-                    m_count = 0
-                    for key, value in mdd.items():
-                        mdd_cache[key] = value
-                        m_count += 1
-                    print(f"Loaded {m_count} resources.")
-
-                # Calculate relative subdir for static assets logic if needed
-                # e.g. "Collins V2.30"
-                rel_path = os.path.relpath(os.path.dirname(mdx_path), DICT_BASE_DIR)
-                
-                self.dictionaries.append({
-                    "name": os.path.basename(mdx_path),
-                    "mdx_cache": mdx_cache,
-                    "mdd_cache": mdd_cache,
-                    "subdir": rel_path if rel_path != "." else ""
-                })
-                print(f"Loaded {count} entries from {os.path.basename(mdx_path)}")
-
-            except Exception as e:
-                print(f"Failed to load {mdx_path}: {e}")
-
-        self.loaded = True
-        print(f"Total dictionaries loaded: {len(self.dictionaries)}")
-
-    def get_resource(self, path: str) -> Tuple[Optional[bytes], str]:
-        """
-        Iterates all loaded dictionaries to find the resource.
-        """
-        # Normalize path
-        key = path.replace("/", "\\")
-        if not key.startswith("\\"):
-            key = "\\" + key
-            
-        key_bytes_utf8 = key.encode('utf-8')
-        key_bytes_gbk = None 
-        try:
-            key_bytes_gbk = key.encode('gbk')
-        except:
-            pass
-
-        for d in self.dictionaries:
-            cache = d['mdd_cache']
-            if not cache:
-                continue
-            
-            content = cache.get(key_bytes_utf8)
-            if not content and key_bytes_gbk:
-                content = cache.get(key_bytes_gbk)
-            
-import os
-import mimetypes
-from readmdict import MDX, MDD
 from typing import Optional, Tuple, List, Dict
 from bs4 import BeautifulSoup
 import pickle
 import time
 
+try:
+    from readmdict import MDX, MDD
+except ImportError:
+    MDX = None
+    MDD = None
+    print("Warning: readmdict/python-lzo not installed. Dictionary support is disabled.")
 
 # Global path configuration
 DICT_BASE_DIR = r"resources/dictionaries"
@@ -139,6 +30,11 @@ class DictionaryManager:
         Scans DICT_BASE_DIR recursively for .mdx files and loads them.
         """
         if self.loaded:
+            return
+
+        if not MDX:
+            print("Dictionary loading skipped (Missing dependencies).")
+            self.loaded = True
             return
 
         if not os.path.exists(DICT_BASE_DIR):

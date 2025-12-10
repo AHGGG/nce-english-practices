@@ -10,9 +10,8 @@ from app.core.db import Base, get_db
 from app.main import app
 
 # FORCE Test Database
-# WARNING: This assumes a running Postgres instance.
-# If this fails, the user needs to create the DB: `createdb nce_practice_test`
-TEST_DATABASE_URL = "postgresql+asyncpg://postgres:gxt980613@localhost:5432/nce_practice_test"
+# Use SQLite for portable testing in CI/Sandbox
+TEST_DATABASE_URL = "sqlite+aiosqlite:///./test.db"
 
 # Handle Windows Event Loop Policy globally
 # if sys.platform == "win32":
@@ -26,7 +25,10 @@ settings.DATABASE_URL = TEST_DATABASE_URL
 @pytest.fixture(scope="function")
 async def db_engine():
     """Create async engine and tables once per session."""
-    engine = create_async_engine(TEST_DATABASE_URL, echo=False)
+    # SQLite-specific args
+    connect_args = {"check_same_thread": False} if "sqlite" in TEST_DATABASE_URL else {}
+
+    engine = create_async_engine(TEST_DATABASE_URL, echo=False, connect_args=connect_args)
     
     async with engine.begin() as conn:
         # Reset DB state: Drop all and Create all

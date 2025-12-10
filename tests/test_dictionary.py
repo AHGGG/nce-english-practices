@@ -24,13 +24,8 @@ async def test_dictionary_lookup(client: AsyncClient):
 
 @pytest.mark.asyncio
 async def test_dictionary_context_no_api_key(client: AsyncClient):
-    # If API Key is missing (implied in test env unless set), it should return explanation about missing key
-    # But wait, app.main imports `client` from app.core.practice.
-    # If that client is None, it returns a specific message.
-    # We should mock app.main.client or check behavior.
-    
-    # Let's mock the client to raise exception or be None
-    with patch("app.main.client", None):
+    # Mock llm_service.sync_client to be None
+    with patch("app.services.llm.llm_service.sync_client", None):
         response = await client.post("/api/dictionary/context", json={
             "word": "run",
             "sentence": "I run fast."

@@ -1,24 +1,10 @@
 from __future__ import annotations
 
 import json
-import re
-from pathlib import Path
-from typing import Optional, List, AsyncGenerator
-from datetime import datetime
+from typing import Optional, AsyncGenerator
 
-from app.config import HOME_DIR, MODEL_NAME
+from app.config import MODEL_NAME
 from app.models import Story
-
-# Local storage for stories
-STORIES_DIR = HOME_DIR / "stories"
-STORIES_DIR.mkdir(parents=True, exist_ok=True)
-
-def slugify(text: str) -> str:
-    slug = re.sub(r"[^a-z0-9]+", "-", text.lower())
-    return slug.strip("-") or "story"
-
-def story_path(topic: str, tense: str) -> Path:
-    return STORIES_DIR / f"{slugify(topic)}_{slugify(tense)}.json"
 
 STORY_PROMPT = """You are an expert English teacher creating contextual learning materials.
 Write a SHORT, ENGAGING story (approx. 100-150 words) that naturally emphasizes the target tense.
@@ -70,6 +56,8 @@ async def generate_story_stream(topic: str, tense: str, client) -> AsyncGenerato
         yielded_idx = 0
         metadata_layer = False
         
+        from app.database import log_story
+
         async for chunk in stream:
             token = chunk.choices[0].delta.content or ""
             if not token: continue
@@ -100,7 +88,7 @@ async def generate_story_stream(topic: str, tense: str, client) -> AsyncGenerato
         # Parse metadata
         parts = full_buffer.split("---METADATA---")
         
-        # Save to DB/Disk if successful
+        # Save to DB if successful
         if len(parts) > 1:
             try:
                 story_text = parts[0].strip()
@@ -117,7 +105,8 @@ async def generate_story_stream(topic: str, tense: str, client) -> AsyncGenerato
                     highlights=meta.get("highlights", []),
                     grammar_notes=meta.get("grammar_notes", [])
                 )
-                save_story(story_obj)
+                # Async DB call
+                await log_story(topic, tense, story_obj.dict())
                 
                 # Send metadata event
                 yield json.dumps({"type": "data", "story": story_obj.dict()}) + "\n"
@@ -129,92 +118,14 @@ async def generate_story_stream(topic: str, tense: str, client) -> AsyncGenerato
     except Exception as e:
         yield json.dumps({"error": str(e)}) + "\n"
 
-def save_story(story: Story):
-    path = story_path(story.topic, story.target_tense)
-    with path.open("w", encoding="utf-8") as f:
-        json.dump(story.dict(), f, indent=2, ensure_ascii=False)
-        
-    # Also log to DB if possible (async fire-and-forget or sync wrapper?)
-    # Since we are in potentially async context (generate_story_stream) or sync (ensure_story),
-    # and log_story is async...
-    # For now, let's just stick to local cache which is what this module handles.
-    # The main.py or database layer can handle DB logging if needed, but 
-    # generate_story_stream calls this.
-    
-    # Actually, we should try to log to DB. But log_story is async.
-    # If we are in async context (stream), we can await it?
-    # But save_story is called from sync ensure_story too.
-    
-    # Pragmactic approach: Just save to disk for now to fix NameError.
-    # The user request "log logic problem" was about stats.
-    pass
 
 def load_story(topic: str, tense: str) -> Optional[Story]:
-    path = story_path(topic, tense)
-    if not path.exists():
-        # Try to fetch from DB?
-        # For now, just disk
-        return None
-    try:
-        with path.open("r", encoding="utf-8") as f:
-            data = json.load(f)
-        return Story(**data)
-    except Exception:
-        return None
+    """
+    Synchronous wrapper for loading story.
+    WARNING: Since we are moving to Async DB, this sync wrapper is tricky.
+    Use `get_story` from `app.database` which is async.
 
-def generate_story(topic: str, tense: str, client) -> Story:
-    # Legacy synchronous generation
-    if not client:
-        raise RuntimeError("LLM client unavailable")
-
-    prompt = STORY_PROMPT.format(topic=topic, tense=tense)
-    messages = [
-        {"role": "system", "content": "You are a creative English teacher."},
-        {"role": "user", "content": prompt}
-    ]
-
-    try:
-        # Check if client is async or sync. 
-        # In main.py, 'client' is passed which is usually the sync client. 'async_client' is passed to stream.
-        rsp = client.chat.completions.create(model=MODEL_NAME, messages=messages, temperature=0.7)
-        content = rsp.choices[0].message.content.strip()
-        
-        # Clean up marker and metadata
-        if "---METADATA---" in content:
-            parts = content.split("---METADATA---")
-            story_text = parts[0].strip()
-            json_str = parts[1].strip()
-            if json_str.startswith("```json"): json_str = json_str[7:-3]
-            elif json_str.startswith("```"): json_str = json_str[3:-3]
-            
-            meta = json.loads(json_str)
-            return Story(
-                topic=topic,
-                target_tense=tense,
-                title=meta.get("title", topic),
-                content=story_text,
-                highlights=meta.get("highlights", []),
-                grammar_notes=meta.get("grammar_notes", [])
-            )
-        else:
-            # Fallback for old format or failure
-            if content.startswith("```json"): content = content[7:-3]
-            elif content.startswith("```"): content = content[3:-3]
-            try:
-                data = json.loads(content)
-                return Story(**data)
-            except:
-                return Story(topic=topic, target_tense=tense, title=topic, content=content, highlights=[], grammar_notes=[])
-                
-    except Exception as e:
-        raise RuntimeError(f"Failed to generate story: {e}")
-
-def ensure_story(topic: str, tense: str, client, refresh: bool = False) -> Story:
-    if not refresh:
-        cached = load_story(topic, tense)
-        if cached:
-            return cached
-            
-    story = generate_story(topic, tense, client)
-    save_story(story)
-    return story
+    This function should be deprecated or use `asyncio.run` (bad practice inside event loop).
+    The API router `app/api/routers/content.py` should be updated to use `get_story` directly.
+    """
+    return None # Force regeneration or use async path in Router
