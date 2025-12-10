@@ -399,7 +399,7 @@ class GenericLogRequest(BaseModel):
     topic: str
     tense: str
     is_pass: bool
-    details: Dict[str, Any] = {}
+    details: Optional[Dict[str, Any]] = None
     duration_seconds: int = 0
 
 class PolishRequest(BaseModel):
@@ -443,7 +443,7 @@ async def api_log_generic(payload: GenericLogRequest):
             topic=payload.topic,
             tense=payload.tense,
             input_data={},
-            user_response=payload.details,
+            user_response=payload.details or {},
             is_pass=payload.is_pass,
             duration_seconds=payload.duration_seconds
         )

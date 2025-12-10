@@ -3,7 +3,7 @@ from datetime import datetime
 from typing import Dict, List, Any, Optional
 
 
-from sqlalchemy import select, update, desc, func
+from sqlalchemy import select, update, desc, func, Integer
 from sqlalchemy.orm import selectinload
 
 from app.core.db import AsyncSessionLocal

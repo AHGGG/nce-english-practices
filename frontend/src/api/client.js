@@ -135,11 +135,11 @@ export const logAttempt = async (type, topic, tense, isPass, details) => {
 
   try {
     await client.post('/api/log_attempt', {
-      activity_type: type,
-      topic,
-      tense,
-      is_pass: isPass,
-      details,
+      activity_type: type || 'unknown',
+      topic: topic || 'unknown',
+      tense: tense || 'general',
+      is_pass: !!isPass,
+      details: details || {},
       duration_seconds: duration,
     });
   } catch (e) {

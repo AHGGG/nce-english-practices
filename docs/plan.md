@@ -5,7 +5,8 @@
 
 ## 1. Stage 0: Context & Concept (The "Learn" Stage)
 *For beginners or starting a new concept.*
-- [ ] **Contextual Story Generator**:
+- [x] **Contextual Story Generator**:
+    - [x] **Streaming Support**: Real-time story generation for better UX.
     - Generates a short, engaging story that naturally uses the target tense/aspect multiple times.
     - **Why**: Primes the brain with pattern recognition before analyzing rules.
 - [ ] **Interactive Explainer**:
@@ -14,7 +15,7 @@
 
 ## 2. Stage 1: The Matrix Gym (The "Drill" Stage)
 *For building speed and mechanical accuracy.*
-- [ ] **Interactive Matrix** (Current Core):
+- [x] **Interactive Matrix** (Current Core):
     - Transformation practice: "Change this Present Simple sentence to Future Perfect."
     - **Upgrade**: Add strict input validation and "Give me a hint" button.
 - [ ] **comparative Analysis**:
@@ -30,38 +31,41 @@
 
 ## 4. Stage 3: Real-World Simulation (The "Speak" Stage)
 *The ultimate goal: Spontaneous usage.*
-- [ ] **Scenario Roleplay**:
+- [x] **Scenario Roleplay**:
     - "You are at a cafe. Order a coffee using *would like*."
     - Open-ended chat interface with an AI persona.
 - [ ] **Mission System**:
     - The AI judges if you *achieved the goal* AND *used the grammar correctly*.
-- [ ] **Grammar Coach** (New):
+- [x] **Grammar Coach** (New):
     - **Contextual Refinement**: "Polish my sentence" button on user messages.
     - AI suggests more native/idiomatic expressions based on the conversation context.
 
 ## 5. Stage 4: Review & Retention (The "Keep" Stage)
 *For long-term mastery.*
-- [ ] **Review Notes System**:
+- [x] **Review Notes System**:
     - Extract key vocabulary/grammar points from chat sessions.
     - User accepts/rejects notes.
-- [ ] **Spaced Repetition (SRS)**:
+- [x] **Spaced Repetition (SRS)**:
     - Schedule reviews for accepted notes (Anki-style algorithms).
 
-
 ## Technical Foundation Updates
-- [ ] **Backend**: New endpoints for `/api/story` and `/api/chat`.
-- [ ] **Frontend**: New "Mode Switcher" (Learn / Drill / Apply / Speak) in the navigation.
+- [x] **Backend**: New endpoints for `/api/story` and `/api/chat`.
+- [x] **Frontend**: New "Mode Switcher" (Learn / Drill / Apply / Speak) in the navigation.
 - [x] **State**: Persist user progress per stage (Now in PostgreSQL).
 - [x] **Async Architecture**: Refactor synchronous LLM calls to prevent blocking (Complete).
-- [ ] **Dictionary Fixes**: Support `@@@LINK` redirects and relative asset pathing.
+- [x] **Dictionary Fixes**: Support `@@@LINK` redirects and relative asset pathing.
 - [x] **Testing Infrastructure**: `pytest` suite with `nce_practice_test` DB for safe backend testing.
+- [x] **Mobile Adaptation**:
+    - [x] Responsive Sidebar/Navbar.
+    - [x] HTTPS Configuration for local external access.
+    - [x] Layout optimizations for smaller screens.
 
 ## 6. Tools & Ecosystem (The "Support" Layer)
 *Features that support the learning journey.*
-- [ ] **Hybrid Dictionary (Crucial)**:
+- [x] **Hybrid Dictionary (Crucial)**:
     - **Layer 1 (Fast)**: **MDX Support**. Import local dictionary files (e.g., Mdict) for authoritative definitions.
     - **Layer 2 (Context)**: "Explain in Context" AI button for specific sentence nuances.
-- [ ] **Data Dashboard**:
+- [x] **Data Dashboard**:
     - **Visual Stats**: Daily streaks, words encounter counter, practice volume.
     - **Time Tracking**: Record total practice duration per session.
     - **History**: Log of all completed quizzes and missions.

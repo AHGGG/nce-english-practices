@@ -17,6 +17,7 @@
 - [x] **Story Generator** (`/api/story`).
     - [x] Generic story generation based on topic & tense.
     - [x] Frontend: Story reader component.
+    - [x] **Streaming Support**: Real-time output via NDJSON stream.
 
 ### Stage 2: Drill (Matrix)
 - [x] **Interactive Inputs**:
@@ -55,7 +56,7 @@
 - [x] **Stats 2.0**:
     - [x] Practice Duration Tracker (Global Timer + Stats UI).
 
-## 🚀 Phase 5: Infrastructure & Scalability (New)
+## 🚀 Phase 5: Infrastructure & Scalability (Completed)
 - [x] **Backend Refactoring (Red Flags Resolved)**:
     - [x] **Database Migration**: Synchronous SQLite -> **Async PostgreSQL**.
     - [x] **ORM Layer**: Validated SQLAlchemy 2.0 + Pydantic models.
@@ -63,3 +64,11 @@
     - [x] **Stateless Architecture**: Moved Chat Sessions from memory (`ACTIVE_SESSIONS`) to DB to support horizontal scaling/restarts.
     - [x] **Testing Infrastructure**: Added `pytest` + `asyncpg` + `httpx` with `nce_practice_test` database.
 
+## 📱 Phase 6: Mobile & Polish (New & Completed)
+- [x] **Mobile Adaptation**:
+    - [x] **Layout**: Bottom Navigation Bar (`MobileNav.jsx`).
+    - [x] **Header Input**: Responsive Topic Input (`TopicInput.jsx`).
+    - [x] **Access**: Configured `host: 0.0.0.0` and Firewall rules for external access.
+- [x] **UX Polish**:
+    - [x] **Loading States**: Scenarios/Chat load independently of Story stream.
+    - [x] **Styling**: Fixed StoryReader text styles and bold highlighting.
