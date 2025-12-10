@@ -480,21 +480,68 @@ async def api_generate_theme(payload: ThemeRequest):
 
 @app.post("/api/story")
 async def api_generate_story(payload: StoryRequest):
-    try:
-        from fastapi.concurrency import run_in_threadpool
-        story = await run_in_threadpool(
-            ensure_story,
-            topic=payload.topic,
-            tense=payload.target_tense,
-            client=client
-        )
-        
-        # [DB] Log Story
-        await log_story(payload.topic, payload.target_tense, story.dict())
+    # This endpoint remains for legacy non-streaming calls if needed, 
+    # but we can also point to stream if we wanted.
+    # For now, let's keep it using the generator but gathering all chunks for compatibility,
+    # OR simpler: just reimplement using the non-stream logic if we want to keep it simple.
+    # But since I overwrote ensure_story/generate_story in story.py, I need to check what exists.
+    # Wait, I removed `ensure_story` in the previous step? 
+    # Yes, I overwrote the file. I need to restore `ensure_story` helper or use the stream generator here.
+    
+    # Re-implement simple blocking fetch using the stream logic or just import if I kept it?
+    # I overwrote the file, so `ensure_story` is GONE.
+    # checking imports... `from app.generators.story import ensure_story` will FAIL.
+    
+    # I MUST FIX `app/generators/story.py` to include `ensure_story` wrapper 
+    # OR update this endpoint to gather the stream.
+    
+    # Let's fix main.py to use `generate_story_stream` and gather it.
+    from app.generators.story import generate_story_stream, load_story
+    
+    # Check cache first
+    cached = load_story(payload.topic, payload.target_tense)
+    if cached:
+        return cached
 
-        return story
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    # Gather stream
+    full_content = ""
+    last_data = None
+    async for chunk_str in generate_story_stream(payload.topic, payload.target_tense, async_client):
+        chunk = json.loads(chunk_str)
+        if chunk.get("type") == "text":
+            full_content += chunk.get("chunk", "")
+        elif chunk.get("type") == "data":
+            last_data = chunk.get("story")
+    
+    if last_data:
+        return last_data
+        
+    # Fallback if stream failed to produce data object
+    raise HTTPException(status_code=500, detail="Failed to generate story")
+
+from app.generators.story import generate_story_stream, load_story
+from fastapi.responses import StreamingResponse
+
+@app.post("/api/story/stream")
+async def api_stream_story(payload: StoryRequest):
+    # Check cache first?
+    # If cached, we should fake a stream or just return it?
+    # If we return it, the frontend `fetchStoryStream` needs to handle a standard JSON response too?
+    # Or we can just stream the cached content.
+    
+    cached = load_story(payload.topic, payload.target_tense)
+    if cached:
+        # Yield as a single data event
+        async def fake_stream():
+             # Yield text as one big chunk (optional, or just yield data)
+             # yield json.dumps({"type": "text", "chunk": cached.content}) + "\n"
+             yield json.dumps({"type": "data", "story": cached.dict()}) + "\n"
+        return StreamingResponse(fake_stream(), media_type="application/x-ndjson")
+
+    return StreamingResponse(
+        generate_story_stream(payload.topic, payload.target_tense, async_client),
+        media_type="application/x-ndjson"
+    )
 
 @app.post("/api/quiz")
 async def api_generate_quiz(payload: QuizRequest):

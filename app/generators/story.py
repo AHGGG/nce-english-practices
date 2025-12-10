@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 import re
 from pathlib import Path
-from typing import Optional, List
+from typing import Optional, List, AsyncGenerator
 from datetime import datetime
 
 from app.config import HOME_DIR, MODEL_NAME
@@ -28,47 +28,106 @@ Target Tense: {tense}
 
 REQUIREMENTS:
 1. "Input Flooding": Use the target tense at least 3-5 times naturally within the story.
-2. Context: The story should make it clear *why* this tense is used (e.g., sequence of events for Past Perfect).
-3. Level: CEFR B1/B2 (Natural but accessible).
-4. Highlights: Identify the exact substrings where the target tense is used.
-5. Grammar Notes: briefly explain WHY the tense was used in those specific instances.
+2. Context: The story should make it clear *why* this tense is used.
+3. Level: CEFR B1/B2.
 
-Output JSON Format:
+OUTPUT FORMAT:
+1. First, write the story text directly.
+2. Then, output a divider line: "---METADATA---"
+3. Finally, output the JSON metdata for highlights and grammar notes.
+
+Example Layout:
+Title: The Adventure
+Once upon a time... (Story content)
+---METADATA---
 {{
-  "topic": "{topic}",
-  "target_tense": "{tense}",
-  "title": "Creative Title Here",
-  "content": "Full story text here...",
-  "highlights": ["had gone", "had already finished"],
-  "grammar_notes": ["Used 'had gone' to show it happened before arrival."]
+  "title": "The Adventure",
+  "highlights": ["had gone"],
+  "grammar_notes": ["Explanation..."]
 }}
 """
 
-def generate_story(topic: str, tense: str, client) -> Story:
+async def generate_story_stream(topic: str, tense: str, client) -> AsyncGenerator[str, None]:
     if not client:
-        raise RuntimeError("LLM client unavailable for story generation")
+        yield json.dumps({"error": "LLM client unavailable"})
+        return
 
     prompt = STORY_PROMPT.format(topic=topic, tense=tense)
-    
     messages = [
         {"role": "system", "content": "You are a creative English teacher."},
         {"role": "user", "content": prompt}
     ]
 
     try:
-        rsp = client.chat.completions.create(model=MODEL_NAME, messages=messages, temperature=0.7)
-        content = rsp.choices[0].message.content.strip()
+        stream = await client.chat.completions.create(
+            model=MODEL_NAME, 
+            messages=messages, 
+            temperature=0.7,
+            stream=True
+        )
+
+        full_buffer = ""
+        yielded_idx = 0
+        metadata_layer = False
         
-        # Clean up markdown code blocks if present
-        if content.startswith("```json"):
-            content = content[7:-3]
-        elif content.startswith("```"):
-            content = content[3:-3]
+        async for chunk in stream:
+            token = chunk.choices[0].delta.content or ""
+            if not token: continue
             
-        data = json.loads(content.strip())
-        return Story(**data)
+            full_buffer += token
+            
+            if not metadata_layer:
+                if "---METADATA---" in full_buffer:
+                    metadata_layer = True
+                    # Split at first occurrence
+                    parts = full_buffer.split("---METADATA---")
+                    text_part = parts[0]
+                    
+                    # Yield any remaining text
+                    if len(text_part) > yielded_idx:
+                        yield json.dumps({"type": "text", "chunk": text_part[yielded_idx:]}) + "\n"
+                        yielded_idx = len(text_part)
+                else:
+                    # Safe to yield up to len - marker_len
+                    marker_len = len("---METADATA---")
+                    safe_len = len(full_buffer) - marker_len
+                    if safe_len > yielded_idx:
+                        chunk_to_send = full_buffer[yielded_idx:safe_len]
+                        yield json.dumps({"type": "text", "chunk": chunk_to_send}) + "\n"
+                        yielded_idx = safe_len
+        
+        # Stream finished.
+        # Parse metadata
+        parts = full_buffer.split("---METADATA---")
+        
+        # Save to DB/Disk if successful
+        if len(parts) > 1:
+            try:
+                story_text = parts[0].strip()
+                json_str = parts[1].strip()
+                if json_str.startswith("```json"): json_str = json_str[7:-3]
+                elif json_str.startswith("```"): json_str = json_str[3:-3]
+                
+                meta = json.loads(json_str)
+                story_obj = Story(
+                    topic=topic,
+                    target_tense=tense,
+                    title=meta.get("title", topic),
+                    content=story_text,
+                    highlights=meta.get("highlights", []),
+                    grammar_notes=meta.get("grammar_notes", [])
+                )
+                save_story(story_obj)
+                
+                # Send metadata event
+                yield json.dumps({"type": "data", "story": story_obj.dict()}) + "\n"
+            except Exception as e:
+                print(f"Meta parse error: {e}")
+                # Fallback: just send text
+                yield json.dumps({"type": "text", "chunk": ""}) + "\n"
+                
     except Exception as e:
-        raise RuntimeError(f"Failed to generate story: {e}")
+        yield json.dumps({"error": str(e)}) + "\n"
 
 def load_story(topic: str, tense: str) -> Optional[Story]:
     path = story_path(topic, tense)
@@ -81,10 +140,52 @@ def load_story(topic: str, tense: str) -> Optional[Story]:
     except Exception:
         return None
 
-def save_story(story: Story):
-    path = story_path(story.topic, story.target_tense)
-    with path.open("w", encoding="utf-8") as f:
-        json.dump(story.dict(), f, indent=2, ensure_ascii=False)
+def generate_story(topic: str, tense: str, client) -> Story:
+    # Legacy synchronous generation
+    if not client:
+        raise RuntimeError("LLM client unavailable")
+
+    prompt = STORY_PROMPT.format(topic=topic, tense=tense)
+    messages = [
+        {"role": "system", "content": "You are a creative English teacher."},
+        {"role": "user", "content": prompt}
+    ]
+
+    try:
+        # Check if client is async or sync. 
+        # In main.py, 'client' is passed which is usually the sync client. 'async_client' is passed to stream.
+        rsp = client.chat.completions.create(model=MODEL_NAME, messages=messages, temperature=0.7)
+        content = rsp.choices[0].message.content.strip()
+        
+        # Clean up marker and metadata
+        if "---METADATA---" in content:
+            parts = content.split("---METADATA---")
+            story_text = parts[0].strip()
+            json_str = parts[1].strip()
+            if json_str.startswith("```json"): json_str = json_str[7:-3]
+            elif json_str.startswith("```"): json_str = json_str[3:-3]
+            
+            meta = json.loads(json_str)
+            return Story(
+                topic=topic,
+                target_tense=tense,
+                title=meta.get("title", topic),
+                content=story_text,
+                highlights=meta.get("highlights", []),
+                grammar_notes=meta.get("grammar_notes", [])
+            )
+        else:
+            # Fallback for old format or failure
+            if content.startswith("```json"): content = content[7:-3]
+            elif content.startswith("```"): content = content[3:-3]
+            try:
+                data = json.loads(content)
+                return Story(**data)
+            except:
+                return Story(topic=topic, target_tense=tense, title=topic, content=content, highlights=[], grammar_notes=[])
+                
+    except Exception as e:
+        raise RuntimeError(f"Failed to generate story: {e}")
 
 def ensure_story(topic: str, tense: str, client, refresh: bool = False) -> Story:
     if not refresh:
