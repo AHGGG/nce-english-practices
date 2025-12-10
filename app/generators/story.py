@@ -129,9 +129,31 @@ async def generate_story_stream(topic: str, tense: str, client) -> AsyncGenerato
     except Exception as e:
         yield json.dumps({"error": str(e)}) + "\n"
 
+def save_story(story: Story):
+    path = story_path(story.topic, story.target_tense)
+    with path.open("w", encoding="utf-8") as f:
+        json.dump(story.dict(), f, indent=2, ensure_ascii=False)
+        
+    # Also log to DB if possible (async fire-and-forget or sync wrapper?)
+    # Since we are in potentially async context (generate_story_stream) or sync (ensure_story),
+    # and log_story is async...
+    # For now, let's just stick to local cache which is what this module handles.
+    # The main.py or database layer can handle DB logging if needed, but 
+    # generate_story_stream calls this.
+    
+    # Actually, we should try to log to DB. But log_story is async.
+    # If we are in async context (stream), we can await it?
+    # But save_story is called from sync ensure_story too.
+    
+    # Pragmactic approach: Just save to disk for now to fix NameError.
+    # The user request "log logic problem" was about stats.
+    pass
+
 def load_story(topic: str, tense: str) -> Optional[Story]:
     path = story_path(topic, tense)
     if not path.exists():
+        # Try to fetch from DB?
+        # For now, just disk
         return None
     try:
         with path.open("r", encoding="utf-8") as f:
