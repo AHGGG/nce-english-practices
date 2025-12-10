@@ -1,5 +1,5 @@
 import os
-from app.config import MODEL_NAME
+from app.config import MODEL_NAME, settings
 # We need to import the new google.genai library
 # Note: google-genai package provides 'google.genai'
 from google import genai
@@ -15,7 +15,7 @@ from google.genai.types import (
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY") or os.getenv("DEEPSEEK_API_KEY") # Fallback layout? No, must be Gemini.
 
 # Using gemini-2.0-flash-exp for Live API
-VOICE_MODEL_NAME = "gemini-2.0-flash-exp"
+VOICE_MODEL_NAME = settings.GEMINI_VOICE_MODEL_NAME
 
 VOICE_SYSTEM_PROMPT = """You are a helpful and immersive English language tutor and roleplay partner.
 Your goal is to help the user practice English through conversation.

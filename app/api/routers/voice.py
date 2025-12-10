@@ -2,12 +2,13 @@ from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 from pydantic import BaseModel
 import base64
 import asyncio
+from app.config import settings
 from app.services.llm import llm_service
 
 router = APIRouter()
 
 # Voice Config - Use model from user's reference
-VOICE_MODEL_NAME = "gemini-2.5-flash-native-audio-preview-09-2025"
+VOICE_MODEL_NAME = settings.GEMINI_VOICE_MODEL_NAME
 
 class VoiceTokenRequest(BaseModel):
     topic: str
