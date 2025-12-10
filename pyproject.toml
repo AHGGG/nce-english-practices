@@ -15,4 +15,8 @@ dependencies = [
     "python-lzo>=1.15",
     "google-genai>=1.53.0",
     "cryptography>=46.0.3",
+    "sqlalchemy[asyncio]>=2.0.44",
+    "asyncpg>=0.31.0",
+    "alembic>=1.17.2",
+    "pydantic-settings>=2.12.0",
 ]

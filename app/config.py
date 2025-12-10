@@ -1,31 +1,58 @@
 import os
 from pathlib import Path
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
-from dotenv import load_dotenv
+class Settings(BaseSettings):
+    # App Paths
+    USER_HOME: Path = Path(os.path.expanduser("~/.english_tense_practice"))
+    
+    # LLM Settings
+    DEEPSEEK_API_KEY: str = ""
+    DEEPSEEK_BASE_URL: str = "https://api.deepseek.com/v1"
+    MODEL_NAME: str = "deepseek-chat"
+    
+    # Database Settings
+    # Default to local postgres if not set. Users should set this in .env
+    DATABASE_URL: str = "postgresql+asyncpg://postgres:postgres@localhost:5432/nce_practice"
 
-# Derive and prepare filesystem locations used by the application.
-_preferred_home = Path(os.path.expanduser("~/.english_tense_practice"))
-_fallback_home = Path(__file__).resolve().parent / ".english_tense_practice"
+    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
 
-try:
-    _preferred_home.mkdir(parents=True, exist_ok=True)
-    HOME_DIR = _preferred_home
-except PermissionError:
-    _fallback_home.mkdir(parents=True, exist_ok=True)
-    HOME_DIR = _fallback_home
+    @property
+    def home_dir(self) -> Path:
+        """Ensure home directory exists and return it."""
+        try:
+            self.USER_HOME.mkdir(parents=True, exist_ok=True)
+            return self.USER_HOME
+        except PermissionError:
+            # Fallback to local dir
+            fallback = Path(__file__).resolve().parent.parent / ".english_tense_practice"
+            fallback.mkdir(parents=True, exist_ok=True)
+            return fallback
 
-THEMES_DIR = HOME_DIR / "themes"
-THEMES_DIR.mkdir(parents=True, exist_ok=True)
+    @property
+    def themes_dir(self) -> Path:
+        path = self.home_dir / "themes"
+        path.mkdir(parents=True, exist_ok=True)
+        return path
+    
+    @property
+    def progress_file(self) -> Path:
+        return self.home_dir / "progress.json"
+        
+    @property
+    def export_file(self) -> Path:
+        return self.home_dir / "exported_practice.csv"
 
-PROGRESS_FILE = HOME_DIR / "progress.json"
-EXPORT_FILE = HOME_DIR / "exported_practice.csv"
+settings = Settings()
 
-# Load environment variables (DeepSeek/OpenAI compatible keys).
-load_dotenv()
-OPENAI_API_KEY = os.getenv("DEEPSEEK_API_KEY", "")
-OPENAI_BASE_URL = os.getenv("DEEPSEEK_BASE_URL", "https://api.deepseek.com/v1")
-MODEL_NAME = os.getenv("MODEL_NAME", "deepseek-chat")
-
+# Backwards compatibility exports
+HOME_DIR = settings.home_dir
+THEMES_DIR = settings.themes_dir
+PROGRESS_FILE = settings.progress_file
+EXPORT_FILE = settings.export_file
+MODEL_NAME = settings.MODEL_NAME
+OPENAI_API_KEY = settings.DEEPSEEK_API_KEY
+OPENAI_BASE_URL = settings.DEEPSEEK_BASE_URL
 
 def check_model_availability(client):
     """Probe the LLM API to confirm connectivity and return (ok, message)."""

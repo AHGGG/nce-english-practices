@@ -1,11 +1,6 @@
 import json
-from uuid import uuid4
 from app.config import MODEL_NAME
-from app.models import Mission, ChatState
-
-# Store active sessions in memory for simplicity (in a real app, use Redis/DB)
-# session_id -> ChatState
-ACTIVE_SESSIONS = {}
+from app.database import create_chat_session, get_chat_session, update_chat_history
 
 MISSION_PROMPT = """You are a Game Master for an English learning RPG.
 Create a "Secret Mission" for the user to practice the proper usage of: "{tense} {aspect}".
@@ -59,20 +54,15 @@ async def start_new_mission(client, topic: str, tense: str, aspect: str) -> dict
         
         data = json.loads(content.strip())
         
-        # Initialize Session
-        session_id = str(uuid4())
-        
         # Initial AI message to start the scene
         start_msg = await generate_ai_reply(client, data['description'], data['required_grammar'], [])
         
-        session_state = {
-            "mission": data,
-            "history": [
-                {"role": "assistant", "content": start_msg}
-            ]
-        }
+        initial_history = [
+            {"role": "assistant", "content": start_msg}
+        ]
         
-        ACTIVE_SESSIONS[session_id] = session_state
+        # PERSISTENCE: Create Session in DB
+        session_id = await create_chat_session(data, initial_history)
         
         return {
             "session_id": session_id,
@@ -94,12 +84,14 @@ async def start_new_mission(client, topic: str, tense: str, aspect: str) -> dict
         }
 
 async def handle_chat_turn(client, session_id: str, user_message: str) -> dict:
-    if session_id not in ACTIVE_SESSIONS:
-        return {"error": "Session not found", "reply": "Session expired."}
+    # PERSISTENCE: Load Session from DB
+    session_data = await get_chat_session(session_id)
     
-    session = ACTIVE_SESSIONS[session_id]
-    mission = session['mission']
-    history = session['history']
+    if not session_data:
+        return {"error": "Session not found", "reply": "Session expired or not found."}
+    
+    mission = session_data['mission']
+    history = session_data['history']
     
     # Update history
     history.append({"role": "user", "content": user_message})
@@ -114,9 +106,14 @@ async def handle_chat_turn(client, session_id: str, user_message: str) -> dict:
     
     history.append({"role": "assistant", "content": reply})
     
-    # Limit history size in memory
-    if len(history) > 20:
-        session['history'] = history[-20:]
+    # Limit history size in JSON storage? 
+    # Let's keep last 20 for context window, but maybe we want to store full history in DB?
+    # For now, let's just keep growing it in DB so we don't lose data, but trim when sending to LLM if needed.
+    # Actually, let's keep the logic of limiting context window locally but store checks elsewhere if needed.
+    # For MVP simply append.
+        
+    # PERSISTENCE: Update Session in DB
+    await update_chat_history(session_id, history)
         
     return {
         "reply": reply,
@@ -126,11 +123,13 @@ async def handle_chat_turn(client, session_id: str, user_message: str) -> dict:
 async def generate_ai_reply(client, description, grammar, history):
     sys_prompt = CHAT_SYSTEM_PROMPT.format(description=description, grammar=grammar)
     
-    messages = [{"role": "system", "content": sys_prompt}] + history
+    # Limit context window for LLM to avoid tokens limit
+    context_window = history[-10:] if len(history) > 10 else history
+    
+    messages = [{"role": "system", "content": sys_prompt}] + context_window
     
     try:
         rsp = await client.chat.completions.create(model=MODEL_NAME, messages=messages, temperature=0.7)
         return rsp.choices[0].message.content.strip()
     except Exception:
         return "..."
-
