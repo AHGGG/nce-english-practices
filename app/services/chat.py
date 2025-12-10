@@ -1,6 +1,7 @@
 import json
 from app.config import MODEL_NAME
 from app.database import create_chat_session, get_chat_session, update_chat_history
+from app.services.llm import llm_service
 
 MISSION_PROMPT = """You are a Game Master for an English learning RPG.
 Create a "Secret Mission" for the user to practice the proper usage of: "{tense} {aspect}".
@@ -35,8 +36,8 @@ Your instructions:
 """
 
 
-async def start_new_mission(client, topic: str, tense: str, aspect: str) -> dict:
-    if not client:
+async def start_new_mission(topic: str, tense: str, aspect: str) -> dict:
+    if not llm_service.async_client:
         raise RuntimeError("LLM client unavailable")
 
     prompt = MISSION_PROMPT.format(topic=topic, tense=tense, aspect=aspect)
@@ -47,15 +48,14 @@ async def start_new_mission(client, topic: str, tense: str, aspect: str) -> dict
     ]
 
     try:
-        rsp = await client.chat.completions.create(model=MODEL_NAME, messages=messages, temperature=0.8)
-        content = rsp.choices[0].message.content.strip()
+        content = await llm_service.chat_complete(messages=messages, temperature=0.8)
         if content.startswith("```json"): content = content[7:-3]
         elif content.startswith("```"): content = content[3:-3]
         
         data = json.loads(content.strip())
         
         # Initial AI message to start the scene
-        start_msg = await generate_ai_reply(client, data['description'], data['required_grammar'], [])
+        start_msg = await generate_ai_reply(data['description'], data['required_grammar'], [])
         
         initial_history = [
             {"role": "assistant", "content": start_msg}
@@ -83,7 +83,7 @@ async def start_new_mission(client, topic: str, tense: str, aspect: str) -> dict
             "first_message": "Hello! Let's practice."
         }
 
-async def handle_chat_turn(client, session_id: str, user_message: str) -> dict:
+async def handle_chat_turn(session_id: str, user_message: str) -> dict:
     # PERSISTENCE: Load Session from DB
     session_data = await get_chat_session(session_id)
     
@@ -97,8 +97,8 @@ async def handle_chat_turn(client, session_id: str, user_message: str) -> dict:
     history.append({"role": "user", "content": user_message})
     
     # Generate Reply
+    # Generate Reply
     reply = await generate_ai_reply(
-        client, 
         mission['description'], 
         json.dumps(mission['required_grammar']), 
         history
@@ -120,7 +120,7 @@ async def handle_chat_turn(client, session_id: str, user_message: str) -> dict:
         "history": history
     }
 
-async def generate_ai_reply(client, description, grammar, history):
+async def generate_ai_reply(description, grammar, history):
     sys_prompt = CHAT_SYSTEM_PROMPT.format(description=description, grammar=grammar)
     
     # Limit context window for LLM to avoid tokens limit
@@ -129,7 +129,8 @@ async def generate_ai_reply(client, description, grammar, history):
     messages = [{"role": "system", "content": sys_prompt}] + context_window
     
     try:
-        rsp = await client.chat.completions.create(model=MODEL_NAME, messages=messages, temperature=0.7)
-        return rsp.choices[0].message.content.strip()
+
+        content = await llm_service.chat_complete(messages=messages, temperature=0.7)
+        return content
     except Exception:
         return "..."

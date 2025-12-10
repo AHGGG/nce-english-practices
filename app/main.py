@@ -20,8 +20,9 @@ from app.generators.story import ensure_story
 from app.generators.quiz import generate_quiz
 from app.generators.scenario import generate_scenario, grade_scenario_response
 from app.services.chat import start_new_mission, handle_chat_turn
-from app.core.practice import client, grade_sentence, log_matrix_attempt, async_client
+from app.core.practice import grade_sentence, log_matrix_attempt
 from app.models import SelectionSnapshot, Story, QuizItem, ScenarioPrompt, ScenarioResponse, Mission
+from app.services.llm import llm_service
 
 # [DB] Import new DB functions
 from app.database import log_session, log_story, log_attempt, get_user_stats
@@ -29,12 +30,6 @@ from app.config import MODEL_NAME
 
 # Voice Config - Use model from user's reference
 VOICE_MODEL_NAME = "gemini-2.5-flash-native-audio-preview-09-2025"
-# Initialize GenAI Client for Voice (shares API key from env usually, or we load it)
-# We can use the same key as the main client if it's the same provider, or os.getenv('GEMINI_API_KEY')
-voice_client = genai.Client(
-    api_key=os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY"),
-    http_options={'api_version': 'v1alpha'}
-)
 
 
 @asynccontextmanager
@@ -180,8 +175,13 @@ async def websocket_endpoint(websocket: WebSocket):
         
         print(f"WS: Config - Voice: {voice_name}, Instruction length: {len(sys_instruction)}")
         
+        if not llm_service.voice_client:
+            print("WS: Voice Client Unavailable")
+            await websocket.close()
+            return
+
         # 2. Connect to Gemini Live API
-        async with voice_client.aio.live.connect(
+        async with llm_service.voice_client.aio.live.connect(
             model=VOICE_MODEL_NAME,
             config={
                 "response_modalities": ["AUDIO"],
@@ -304,7 +304,7 @@ async def api_dict_context(payload: DictionaryContextRequest):
     try:
         from fastapi.concurrency import run_in_threadpool
         
-        if not client:
+        if not llm_service.sync_client:
             return {"explanation": "AI client is not configured (API Key missing)."}
 
         # AI Explanation
@@ -316,7 +316,7 @@ async def api_dict_context(payload: DictionaryContextRequest):
         """
         
         response = await run_in_threadpool(
-            lambda: client.chat.completions.create(
+            lambda: llm_service.sync_client.chat.completions.create(
                 model=MODEL_NAME,
                 messages=[{"role": "user", "content": prompt}],
                 temperature=0.3
@@ -411,7 +411,7 @@ from app.generators.coach import polish_sentence
 @app.post("/api/chat/polish")
 async def api_chat_polish(payload: PolishRequest):
     try:
-        suggestion = await polish_sentence(async_client, payload.sentence, payload.context)
+        suggestion = await polish_sentence(payload.sentence, payload.context)
         return {"suggestion": suggestion}
     except Exception as e:
         return {"suggestion": "Error", "details": str(e)}
@@ -466,7 +466,7 @@ async def api_generate_theme(payload: ThemeRequest):
         vocab = await run_in_threadpool(
             ensure_theme,
             topic=payload.topic, 
-            client=client, 
+            client=llm_service.sync_client, 
             refresh=True if prev_vocab_obj else False,
             previous_vocab=prev_vocab_obj
         )
@@ -508,7 +508,7 @@ async def api_generate_story(payload: StoryRequest):
     # Gather stream
     full_content = ""
     last_data = None
-    async for chunk_str in generate_story_stream(payload.topic, payload.target_tense, async_client):
+    async for chunk_str in generate_story_stream(payload.topic, payload.target_tense, llm_service.async_client):
         chunk = json.loads(chunk_str)
         if chunk.get("type") == "text":
             full_content += chunk.get("chunk", "")
@@ -546,7 +546,7 @@ async def api_stream_story(payload: StoryRequest):
         return StreamingResponse(fake_stream(), media_type="application/x-ndjson")
 
     return StreamingResponse(
-        generate_story_stream(payload.topic, payload.target_tense, async_client),
+        generate_story_stream(payload.topic, payload.target_tense, llm_service.async_client),
         media_type="application/x-ndjson"
     )
 
@@ -556,7 +556,7 @@ async def api_generate_quiz(payload: QuizRequest):
         from fastapi.concurrency import run_in_threadpool
         quiz = await run_in_threadpool(
             generate_quiz,
-            client=client,
+            client=llm_service.sync_client,
             topic=payload.topic,
             tense=payload.tense,
             aspect=payload.aspect,
@@ -572,7 +572,7 @@ async def api_generate_scenario(payload: ScenarioRequest):
         from fastapi.concurrency import run_in_threadpool
         scenario = await run_in_threadpool(
             generate_scenario,
-            client=client,
+            client=llm_service.sync_client,
             topic=payload.topic,
             tense=payload.tense,
             aspect=payload.aspect
@@ -587,7 +587,7 @@ async def api_grade_scenario(payload: ScenarioGradeRequest):
         from fastapi.concurrency import run_in_threadpool
         result = await run_in_threadpool(
             grade_scenario_response,
-            client=client,
+            client=llm_service.sync_client,
             situation=payload.situation,
             goal=payload.goal,
             user_input=payload.user_input,
@@ -613,7 +613,6 @@ async def api_grade_scenario(payload: ScenarioGradeRequest):
 async def api_chat_start(payload: ChatStartRequest):
     try:
         data = await start_new_mission(
-            client=async_client,
             topic=payload.topic,
             tense=payload.tense,
             aspect=payload.aspect
@@ -626,7 +625,6 @@ async def api_chat_start(payload: ChatStartRequest):
 async def api_chat_reply(payload: ChatReplyRequest):
     try:
         data = await handle_chat_turn(
-            client=async_client,
             session_id=payload.session_id,
             user_message=payload.message
         )
@@ -652,7 +650,7 @@ async def api_generate_sentences(payload: SentenceRequest):
             manner=payload.manner,
             place=payload.place,
             time=payload.time,
-            client=client
+            client=llm_service.sync_client
         )
         return data
     except Exception as e:

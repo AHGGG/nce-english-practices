@@ -5,12 +5,9 @@ import json
 from datetime import datetime
 from typing import Dict, Iterable, List, Optional
 
-from app.config import EXPORT_FILE, MODEL_NAME, OPENAI_API_KEY, OPENAI_BASE_URL, PROGRESS_FILE
+from app.config import EXPORT_FILE, MODEL_NAME, PROGRESS_FILE
 from app.models import BaseSentence, SelectionSnapshot
-from openai import OpenAI, AsyncOpenAI
-
-client = OpenAI(api_key=OPENAI_API_KEY, base_url=OPENAI_BASE_URL) if OPENAI_API_KEY else None
-async_client = AsyncOpenAI(api_key=OPENAI_API_KEY, base_url=OPENAI_BASE_URL) if OPENAI_API_KEY else None
+from app.services.llm import llm_service
 
 
 TIME_LAYERS = ["past", "present", "future", "past_future"]
@@ -279,7 +276,7 @@ def build_matrix(sentence: BaseSentence, forms: Optional[Iterable[str]] = None, 
 def grade_sentence(expected: str, user: str) -> Dict[str, Optional[str]]:
     if not user.strip():
         return {"score": 0.0, "llm": False, "feedback": "No answer provided."}
-    if not client:
+    if not llm_service.sync_client:
         ratio = difflib.SequenceMatcher(None, expected.lower(), user.lower()).ratio()
         return {"score": ratio, "llm": False, "feedback": "Similarity comparison (no API key)."}
     prompt = f"""You are an encouraging English teacher. Compare the EXPECTED and USER sentences.
@@ -288,12 +285,10 @@ EXPECTED: {expected}
 USER: {user}
 """
     try:
-        rsp = client.chat.completions.create(
-            model=MODEL_NAME,
+        content = llm_service.chat_complete_sync(
             messages=[{"role": "user", "content": prompt}],
             temperature=0,
         )
-        content = rsp.choices[0].message.content.strip()
         data = json.loads(content)
         return {"score": float(data.get("score", 0)), "llm": True, "feedback": data.get("feedback", "").strip()}
     except json.JSONDecodeError as exc:

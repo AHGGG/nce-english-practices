@@ -9,7 +9,11 @@ class Settings(BaseSettings):
     # LLM Settings
     DEEPSEEK_API_KEY: str = ""
     DEEPSEEK_BASE_URL: str = "https://api.deepseek.com/v1"
+
     MODEL_NAME: str = "deepseek-chat"
+    
+    # Voice / Gemini Settings
+    GEMINI_API_KEY: str = "" # Can also be set via GOOGLE_API_KEY in env if pydantic picks it up, but explicit is better
     
     # Database Settings
     # Default to local postgres if not set. Users should set this in .env
@@ -53,6 +57,7 @@ EXPORT_FILE = settings.export_file
 MODEL_NAME = settings.MODEL_NAME
 OPENAI_API_KEY = settings.DEEPSEEK_API_KEY
 OPENAI_BASE_URL = settings.DEEPSEEK_BASE_URL
+GEMINI_API_KEY = settings.GEMINI_API_KEY or os.getenv("GOOGLE_API_KEY")
 
 def check_model_availability(client):
     """Probe the LLM API to confirm connectivity and return (ok, message)."""
