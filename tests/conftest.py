@@ -1,5 +1,6 @@
 import pytest
 import asyncio
+import sys
 from typing import AsyncGenerator
 from httpx import AsyncClient, ASGITransport
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncSession
@@ -12,6 +13,10 @@ from app.main import app
 # WARNING: This assumes a running Postgres instance.
 # If this fails, the user needs to create the DB: `createdb nce_practice_test`
 TEST_DATABASE_URL = "postgresql+asyncpg://postgres:gxt980613@localhost:5432/nce_practice_test"
+
+# Handle Windows Event Loop Policy globally
+# if sys.platform == "win32":
+#    asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
 
 # Override global settings
 settings.DATABASE_URL = TEST_DATABASE_URL

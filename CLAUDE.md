@@ -29,11 +29,14 @@ uv run python legacy/tui_app.py
 ## Testing
 
 ```bash
-# Run all tests
-uv run pytest
+# Run Frontend E2E Tests (Recommended on Windows)
+uv run pytest tests/e2e
 
-# Run tests with output
-uv run pytest -v
+# Run Backend Unit Tests (Run separately to avoid loop conflicts)
+uv run pytest tests/test_*.py
+
+# Setup for E2E Tests (Playwright)
+uv run playwright install
 ```
 ```
 

@@ -54,6 +54,7 @@
 - [x] **State**: Persist user progress per stage (Now in PostgreSQL).
 - [x] **Async Architecture**: Refactor synchronous LLM calls to prevent blocking (Complete).
 - [ ] **Dictionary Fixes**: Support `@@@LINK` redirects and relative asset pathing.
+- [x] **Testing Infrastructure**: `pytest` suite with `nce_practice_test` DB for safe backend testing.
 
 ## 6. Tools & Ecosystem (The "Support" Layer)
 *Features that support the learning journey.*

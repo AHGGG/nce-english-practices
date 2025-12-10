@@ -377,3 +377,33 @@ function updateVoiceUI(active, loading = false, statusText = null) {
         if(headerActive) headerActive.classList.remove('flex');
     }
 }
+
+export function switchApplyTab(tabName, btn) {
+    const scenarioCard = document.getElementById('scenarioCard');
+    const chatCard = document.getElementById('chatCard');
+    const buttons = document.querySelectorAll('#viewApply .tab-btn');
+
+    if (tabName === 'scenario') {
+        scenarioCard.classList.remove('hidden');
+        chatCard.classList.add('hidden');
+    } else {
+        scenarioCard.classList.add('hidden');
+        chatCard.classList.remove('hidden');
+        // Ensure chat renders when switched to
+        renderChat();
+    }
+
+    // Update Buttons
+    if (buttons) {
+        buttons.forEach(b => {
+            b.classList.remove('bg-emerald-500/10', 'text-emerald-400', 'border', 'border-emerald-500/20');
+            b.classList.add('text-text-secondary', 'hover:text-text-primary'); 
+        });
+    }
+
+    // Active Style
+    if (btn) {
+        btn.classList.remove('text-text-secondary', 'hover:text-text-primary');
+        btn.classList.add('bg-emerald-500/10', 'text-emerald-400', 'border', 'border-emerald-500/20');
+    }
+}

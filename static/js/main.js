@@ -11,7 +11,7 @@ import { setLoading, showToast } from './core/utils.js';
 
 import { renderVocab, renderStory, initLearnView } from './views/learn.js';
 import { switchView, renderMatrix, handleTenseChange } from './views/drill.js';
-import { renderScenario, renderChat, submitScenarioResponse, sendChatMessage, toggleVoiceCall } from './views/apply.js';
+import { renderScenario, renderChat, submitScenarioResponse, sendChatMessage, toggleVoiceCall, switchApplyTab } from './views/apply.js';
 import { renderStats } from './views/stats.js';
 
 import { openDictionary, askAiContext } from './components/dictionary.js';
@@ -204,3 +204,9 @@ if (missionBrief && missionChevron) {
 // Voice Call
 const voiceBtn = document.getElementById('voiceCallBtn');
 if (voiceBtn) voiceBtn.addEventListener('click', toggleVoiceCall);
+
+// Expose legacy/inline handlers to global scope
+window.app = {
+    ...window.app,
+    switchApplyTab
+};
