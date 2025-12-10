@@ -51,8 +51,8 @@
 ## Technical Foundation Updates
 - [ ] **Backend**: New endpoints for `/api/story` and `/api/chat`.
 - [ ] **Frontend**: New "Mode Switcher" (Learn / Drill / Apply / Speak) in the navigation.
-- [ ] **State**: Persist user progress per stage.
-- [ ] **Async Architecture**: Refactor synchronous LLM calls to prevent blocking.
+- [x] **State**: Persist user progress per stage (Now in PostgreSQL).
+- [x] **Async Architecture**: Refactor synchronous LLM calls to prevent blocking (Complete).
 - [ ] **Dictionary Fixes**: Support `@@@LINK` redirects and relative asset pathing.
 
 ## 6. Tools & Ecosystem (The "Support" Layer)

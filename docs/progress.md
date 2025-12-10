@@ -54,3 +54,11 @@
     - [x] "Add to Review" UI Integration.
 - [x] **Stats 2.0**:
     - [x] Practice Duration Tracker (Global Timer + Stats UI).
+
+## 🚀 Phase 5: Infrastructure & Scalability (New)
+- [x] **Backend Refactoring (Red Flags Resolved)**:
+    - [x] **Database Migration**: Synchronous SQLite -> **Async PostgreSQL**.
+    - [x] **ORM Layer**: Validated SQLAlchemy 2.0 + Pydantic models.
+    - [x] **Migrations**: Added **Alembic** version control for database schema.
+    - [x] **Stateless Architecture**: Moved Chat Sessions from memory (`ACTIVE_SESSIONS`) to DB to support horizontal scaling/restarts.
+
