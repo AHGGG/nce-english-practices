@@ -1,23 +1,33 @@
 from datetime import datetime, timedelta
-from app.database import update_srs_schedule, get_db_connection
+from typing import Dict, Any, Optional
+from sqlalchemy import select
+from app.core.db import AsyncSessionLocal
+from app.db_models import SRSSchedule
+from app.database import update_srs_schedule
 
-def process_review_result(note_id: int, quality: int):
+async def process_review_result(note_id: int, quality: int) -> Optional[Dict[str, Any]]:
     """
     Implements SuperMemo-2 Algorithm.
     quality: 0-5
     """
     # 1. Fetch current state
-    conn = get_db_connection()
-    row = conn.execute('SELECT * FROM srs_schedule WHERE note_id = ?', (note_id,)).fetchone()
-    conn.close()
-    
-    if not row:
-        return # Should not happen
-    
-    prev_interval = row['interval_days']
-    prev_ease = row['ease_factor']
-    prev_reps = row['repetitions']
-    
+    async with AsyncSessionLocal() as session:
+        try:
+            stmt = select(SRSSchedule).where(SRSSchedule.note_id == note_id)
+            result = await session.execute(stmt)
+            schedule = result.scalar_one_or_none()
+
+            if not schedule:
+                print(f"Error: No schedule found for note {note_id}")
+                return None
+
+            prev_interval = schedule.interval_days
+            prev_ease = schedule.ease_factor
+            prev_reps = schedule.repetitions
+        except Exception as e:
+            print(f"Error fetching schedule: {e}")
+            return None
+
     new_interval = 0
     new_ease = prev_ease
     new_reps = prev_reps
@@ -41,13 +51,11 @@ def process_review_result(note_id: int, quality: int):
     else:
         new_reps = 0
         new_interval = 1
-        # Ease factor doesn't change on failure in standard SM-2, 
-        # or sometimes it decreases. Let's keep it same for simplicity or decrease?
-        # SM-2 says "EF unchanged" usually, but resetting reps handles it.
+        # Ease factor doesn't change on failure in standard SM-2
         
     next_due = datetime.utcnow() + timedelta(days=new_interval)
     
-    update_srs_schedule(note_id, next_due, new_interval, new_ease, new_reps)
+    await update_srs_schedule(note_id, next_due, new_interval, new_ease, new_reps)
     
     return {
         "next_due": next_due.isoformat(),

@@ -8,19 +8,19 @@ theme:
     Given a topic, provide JSON with ONE set of words for sentence practice.
 
     Response JSON schema:
-    {
+    {{
       "topic": "<topic>",
-      "slots": {
+      "slots": {{
          "subject": "I",
          "object": "new vocabulary",
          "manner": "carefully",
          "place": "at home",
          "time": "every day"
-      },
+      }},
       "verbs": [
-        {"base":"study","past":"studied","participle":"studied","note":"to learn"}
+        {{"base":"study","past":"studied","participle":"studied","note":"to learn"}}
       ]
-    }
+    }}
 
     CRITICAL REQUIREMENTS:
     1. MUST use the topic word in at least ONE slot (subject, object, manner, place, or time)
