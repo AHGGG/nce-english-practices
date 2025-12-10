@@ -6,6 +6,7 @@ from app.config import settings
 
 # Create Async Engine
 # echo=False in production, can be set to True for debugging
+
 engine = create_async_engine(
     settings.DATABASE_URL,
     echo=False,

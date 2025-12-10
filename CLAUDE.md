@@ -25,6 +25,16 @@ uv run uvicorn app.main:app --reload
 
 # Legacy TUI (Deprecated)
 uv run python legacy/tui_app.py
+
+## Testing
+
+```bash
+# Run all tests
+uv run pytest
+
+# Run tests with output
+uv run pytest -v
+```
 ```
 
 ## Environment Configuration
