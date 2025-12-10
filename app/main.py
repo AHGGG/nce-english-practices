@@ -475,7 +475,9 @@ async def api_generate_theme(payload: ThemeRequest):
         await log_session(payload.topic, vocab.serialize())
 
         return vocab.serialize()
-    except RuntimeError as e:
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/api/story")
@@ -531,10 +533,15 @@ async def api_stream_story(payload: StoryRequest):
     
     cached = load_story(payload.topic, payload.target_tense)
     if cached:
-        # Yield as a single data event
         async def fake_stream():
-             # Yield text as one big chunk (optional, or just yield data)
-             # yield json.dumps({"type": "text", "chunk": cached.content}) + "\n"
+             # Simulate streaming for cached content to maintain UX
+             content = cached.content
+             chunk_size = 5 # chars per chunk
+             for i in range(0, len(content), chunk_size):
+                 chunk = content[i:i+chunk_size]
+                 yield json.dumps({"type": "text", "chunk": chunk}) + "\n"
+                 await asyncio.sleep(0.01) # 10ms delay
+             
              yield json.dumps({"type": "data", "story": cached.dict()}) + "\n"
         return StreamingResponse(fake_stream(), media_type="application/x-ndjson")
 
