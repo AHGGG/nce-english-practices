@@ -6,6 +6,7 @@ import basicSsl from '@vitejs/plugin-basic-ssl'
 export default defineConfig({
   plugins: [react(), basicSsl()],
   server: {
+    host: true, // Listen on all addresses (0.0.0.0)
     proxy: {
       '/api': {
         target: 'https://127.0.0.1:8000',

@@ -69,6 +69,7 @@ export const useTheme = () => {
                   topic, 
                   'present',
                   (chunk) => {
+                      // console.log("Stream chunk:", chunk.length);
                       currentContent += chunk;
                       actions.cacheStory(`${topic}_present`, {
                           title: topic, 
