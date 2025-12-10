@@ -728,6 +728,8 @@ dependencies = [
     { name = "openai" },
     { name = "pydantic-settings" },
     { name = "python-dotenv" },
+    { name = "python-lzo" },
+    { name = "readmdict" },
     { name = "sqlalchemy", extra = ["asyncio"] },
     { name = "uvicorn" },
 ]
@@ -754,6 +756,8 @@ requires-dist = [
     { name = "openai", specifier = ">=2.8.1" },
     { name = "pydantic-settings", specifier = ">=2.12.0" },
     { name = "python-dotenv", specifier = ">=1.2.1" },
+    { name = "python-lzo", specifier = ">=1.15" },
+    { name = "readmdict", specifier = ">=0.1.1" },
     { name = "sqlalchemy", extras = ["asyncio"], specifier = ">=2.0.44" },
     { name = "uvicorn", specifier = ">=0.30.0" },
 ]
@@ -1079,6 +1083,15 @@ wheels = [
 ]
 
 [[package]]
+name = "python-lzo"
+version = "1.15"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/a4/8f/60cbc1a57257cd21c9e35217a8bc8713424dc7502df17794d914738df50f/python-lzo-1.15.tar.gz", hash = "sha256:a57aaa00c5c3a0515dd9f7426ba2cf601767dc19dc023d8b99d4a13b0a327b49", size = 17633, upload-time = "2023-05-22T06:53:06.11Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/85/13/be679f0243c67646b5dc64bb167a3ae9aa625aa8f881701c13e2dd2251c5/python_lzo-1.15-cp311-cp311-win_amd64.whl", hash = "sha256:6b00d32d53928514a3954385583c0d06850259fe8c54039260d0dbc0842a9d9e", size = 40036, upload-time = "2023-05-22T06:52:38.56Z" },
+]
+
+[[package]]
 name = "python-slugify"
 version = "8.0.4"
 source = { registry = "https://pypi.org/simple" }
@@ -1088,6 +1101,15 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/87/c7/5e1547c44e31da50a460df93af11a535ace568ef89d7a811069ead340c4a/python-slugify-8.0.4.tar.gz", hash = "sha256:59202371d1d05b54a9e7720c5e038f928f45daaffe41dd10822f3907b937c856", size = 10921, upload-time = "2024-02-08T18:32:45.488Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/a4/62/02da182e544a51a5c3ccf4b03ab79df279f9c60c5e82d5e8bec7ca26ac11/python_slugify-8.0.4-py2.py3-none-any.whl", hash = "sha256:276540b79961052b66b7d116620b36518847f52d5fd9e3a70164fc8c50faa6b8", size = 10051, upload-time = "2024-02-08T18:32:43.911Z" },
+]
+
+[[package]]
+name = "readmdict"
+version = "0.1.1"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/da/93/433a3a990fa7c2e671da92b653b0e65c4e98b54096219250cf19a9683365/readmdict-0.1.1.tar.gz", hash = "sha256:45556f5ce476b673cdf9a6f9024ed81cb6e01aaec013912cedc149aa3bd3beb6", size = 15881, upload-time = "2021-12-27T09:18:17.509Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/e2/ff/6396b5a0aa754a5eafeaae1d50d4e718dfffffa4d285a1a9580f482b3d5f/readmdict-0.1.1-py3-none-any.whl", hash = "sha256:6ac590f68489dfbec843a83a6c392fb0388f19fda2ce9ed83c8be8a7cf2f55e8", size = 16838, upload-time = "2021-12-27T09:18:16.287Z" },
 ]
 
 [[package]]
