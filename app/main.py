@@ -44,6 +44,23 @@ app.include_router(content.router)
 app.include_router(practice.router)
 app.include_router(stats.router)
 
+from app.models import RemoteLog
+
+@app.post("/api/logs")
+async def receive_remote_log(log: RemoteLog):
+    """
+    Receive logs from frontend and print them to backend console.
+    """
+    prefix = f"[FRONTEND] [{log.level.upper()}]"
+    if log.timestamp:
+        prefix += f" [{log.timestamp}]"
+    
+    print(f"{prefix} {log.message}")
+    if log.data:
+        print(f"{prefix} Data: {log.data}")
+    
+    return {"status": "ok"}
+
 @app.get("/")
 async def read_root(request: Request):
     return templates.TemplateResponse("index.html", {"request": request})

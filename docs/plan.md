@@ -65,6 +65,8 @@
 - [x] **Hybrid Dictionary (Crucial)**:
     - **Layer 1 (Fast)**: **MDX Support**. Import local dictionary files (e.g., Mdict) for authoritative definitions.
     - **Layer 2 (Context)**: "Explain in Context" AI button for specific sentence nuances.
+- [x] **Log Bridge**:
+    - [x] **Unified Debugging**: Stream frontend logs (console.log) to the backend terminal to allow AI agents to debug full-stack issues in one place.
 - [x] **Data Dashboard**:
     - **Visual Stats**: Daily streaks, words encounter counter, practice volume.
     - **Time Tracking**: Record total practice duration per session.

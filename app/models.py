@@ -149,3 +149,10 @@ class ChatState(BaseModel):
     mission_id: str
     history: List[Dict[str, str]]
     goals_met: List[bool]
+
+class RemoteLog(BaseModel):
+    """Log entry from frontend"""
+    level: str
+    message: str
+    data: Optional[Dict] = None
+    timestamp: Optional[str] = None

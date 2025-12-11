@@ -143,9 +143,13 @@ The application supports loading multiple MDX dictionaries simultaneously.
 ### 1. Two-Stage LLM Generation
 - **Stage 1 (Theme)**: Generate vocabulary slots first (`app/generators/theme.py`).
 - **Stage 2 (Content)**: Generate sentences/stories using *only* the specific vocabulary from Stage 1.
-- This ensures vocabulary consistency across all practice modes.
 
-### 2. Multi-Dictionary Isolation
+### 2. Unified Debugging (Log Bridge)
+- **Feature**: Frontend `console.log` / `warn` / `error` are automatically streamed to the backend terminal.
+- **Usage**: When debugging frontend issues, **check the backend terminal logs first**. You will see entries like `[FRONTEND] [LOG] Message...`.
+- **Benefit**: No need to ask the user to check browser console logs; you can see them directly in your stdout capture.
+
+### 3. Multi-Dictionary Isolation
 To support multiple dictionaries (e.g., Collins + LDOCE) in one view:
 - **No Global Base URL**: We do *not* use `<base>` tags in the frontend.
 - **Path Rewriting**: The backend rewrites all relative asset links at runtime to point to their specific dictionary subdirectory.

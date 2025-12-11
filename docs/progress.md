@@ -63,6 +63,7 @@
     - [x] **Migrations**: Added **Alembic** version control for database schema.
     - [x] **Stateless Architecture**: Moved Chat Sessions from memory (`ACTIVE_SESSIONS`) to DB to support horizontal scaling/restarts.
     - [x] **Unified LLM Service**: Centralized OpenAI and Google GenAI client management (`app.services.llm`).
+    - [x] **Log Bridge**: Frontend console logs now stream to backend terminal for unified debugging.
     - [x] **Testing Infrastructure**: Added `pytest` + `asyncpg` + `httpx` with `nce_practice_test` database.
 
 ## 📱 Phase 6: Mobile & Polish (New & Completed)
