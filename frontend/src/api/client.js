@@ -40,6 +40,7 @@ export const fetchStoryStream = async (topic, targetTense, onChunk, onComplete) 
     const reader = response.body.getReader();
     const decoder = new TextDecoder();
     let buffer = '';
+    let finalStory = null;
 
     while (true) {
         const { done, value } = await reader.read();
@@ -58,6 +59,7 @@ export const fetchStoryStream = async (topic, targetTense, onChunk, onComplete) 
                 if (data.type === 'text') {
                     onChunk(data.chunk);
                 } else if (data.type === 'data') {
+                    finalStory = data.story; // CAPTURE IT
                     onComplete(data.story);
                 }
             } catch (e) {
@@ -67,13 +69,12 @@ export const fetchStoryStream = async (topic, targetTense, onChunk, onComplete) 
     }
     
     // Process final buffer if any
-    let finalStory = null;
     if (buffer.trim()) {
          try {
             const data = JSON.parse(buffer);
             if (data.type === 'text') onChunk(data.chunk);
             else if (data.type === 'data') {
-                finalStory = data.story;
+                finalStory = data.story; // CAPTURE IT
                 onComplete(finalStory);
             }
         } catch (e) {}
