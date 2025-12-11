@@ -106,3 +106,16 @@ async def test_api_log_generic(client: AsyncClient):
         })
         assert response.status_code == 200
         mock_log.assert_called_once()
+
+@pytest.mark.asyncio
+async def test_api_chat_polish(client: AsyncClient):
+    with patch("app.api.routers.practice.polish_sentence") as mock_polish:
+        mock_polish.return_value = "Better sentence."
+
+        response = await client.post("/api/chat/polish", json={
+            "sentence": "Bad sentence",
+            "context": []
+        })
+
+        assert response.status_code == 200
+        assert response.json()["suggestion"] == "Better sentence."

@@ -3,11 +3,21 @@ from httpx import AsyncClient
 from unittest.mock import patch, AsyncMock, MagicMock
 from app.api.routers.content import ThemeVocabulary
 
+# Note on Patching:
+# app.api.routers.content imports DB functions inside the route handler functions.
+# e.g., `from app.database import get_session_vocab` inside `api_generate_theme`.
+# Therefore, `sys.modules` lookup for `app.database` happens at runtime inside the function.
+# Patching `app.database.get_session_vocab` GLOBALLY works in this case because
+# the import happens *after* the patch is applied (when the route is called).
+#
+# Unlike top-level imports where `from x import y` binds `y` at module load time (before tests run),
+# local imports inside functions bind at call time.
+
 @pytest.mark.asyncio
 async def test_api_generate_theme_cache_hit(client: AsyncClient):
     mock_vocab = {"topic": "Travel", "words": []}
 
-    # Mock get_session_vocab to return a cached value
+    # Correctly mocking app.database.get_session_vocab works because of local import
     with patch("app.database.get_session_vocab", new_callable=AsyncMock) as mock_get:
         mock_get.return_value = mock_vocab
 
@@ -15,8 +25,6 @@ async def test_api_generate_theme_cache_hit(client: AsyncClient):
 
         assert response.status_code == 200
         assert response.json() == mock_vocab
-        # verify log_session not called (or logic dependent)
-        # Actually logic says: if cached_vocab and not payload.previous_vocab: return cached_vocab
         mock_get.assert_called_once_with("Travel")
 
 @pytest.mark.asyncio
@@ -25,11 +33,11 @@ async def test_api_generate_theme_generate_new(client: AsyncClient):
     with patch("app.database.get_session_vocab", new_callable=AsyncMock) as mock_get:
         mock_get.return_value = None
 
-        # Mock ensure_theme (called via run_in_threadpool)
         mock_theme_obj = MagicMock(spec=ThemeVocabulary)
         mock_theme_obj.serialize.return_value = {"topic": "Travel", "generated": True}
 
-        # Patch fastapi.concurrency.run_in_threadpool directly
+        # Patching fastapi.concurrency.run_in_threadpool
+        # Since it is also imported locally inside the function, global patch works.
         with patch("fastapi.concurrency.run_in_threadpool", new_callable=AsyncMock) as mock_run, \
              patch("app.database.log_session", new_callable=AsyncMock) as mock_log:
 
@@ -39,7 +47,7 @@ async def test_api_generate_theme_generate_new(client: AsyncClient):
 
             assert response.status_code == 200
             assert response.json()["generated"] is True
-            mock_log.assert_called_once() # Verify logging happens
+            mock_log.assert_called_once()
 
 @pytest.mark.asyncio
 async def test_api_generate_story_cache_hit(client: AsyncClient):
@@ -59,7 +67,10 @@ async def test_api_generate_story_stream_to_data(client: AsyncClient):
     with patch("app.database.get_story", new_callable=AsyncMock) as mock_get:
         mock_get.return_value = None
 
-        # Mock generate_story_stream
+        # generate_story_stream is imported at top level:
+        # `from app.generators.story import generate_story_stream`
+        # So we MUST patch `app.api.routers.content.generate_story_stream`
+
         async def mock_stream(*args, **kwargs):
             yield '{"type": "text", "chunk": "Once "}'
             yield '{"type": "text", "chunk": "upon a time."}'
@@ -78,7 +89,7 @@ async def test_api_generate_story_stream_to_data(client: AsyncClient):
 async def test_api_generate_sentences(client: AsyncClient):
     mock_data = {"sentences": ["I ran."]}
 
-    # Patch fastapi.concurrency.run_in_threadpool directly
+    # run_in_threadpool imported locally
     with patch("fastapi.concurrency.run_in_threadpool", new_callable=AsyncMock) as mock_run:
         mock_run.return_value = mock_data
 

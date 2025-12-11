@@ -80,10 +80,10 @@ async def generate_story_stream(topic: str, tense: str, client) -> AsyncGenerato
                     grammar_notes=meta.get("grammar_notes", [])
                 )
                 # Async DB call
-                await log_story(topic, tense, story_obj.dict())
+                await log_story(topic, tense, story_obj.model_dump())
                 
                 # Send metadata event
-                yield json.dumps({"type": "data", "story": story_obj.dict()}) + "\n"
+                yield json.dumps({"type": "data", "story": story_obj.model_dump()}) + "\n"
             except Exception as e:
                 print(f"Meta parse error: {e}")
                 # Fallback: just send text

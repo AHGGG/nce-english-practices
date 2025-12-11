@@ -1,10 +1,12 @@
 import pytest
-from unittest.mock import MagicMock, patch, mock_open
+from unittest.mock import MagicMock, patch, mock_open, AsyncMock
 from app.generators.theme import ThemeVocabulary, generate_theme_sync
 from app.generators.scenario import generate_scenario, grade_scenario_response
 from app.generators.quiz import generate_quiz
 from app.generators.sentence import generate_sentences_for_time_layer
+from app.generators.story import generate_story_stream
 from datetime import datetime
+import json
 
 # Fixture for mock client
 @pytest.fixture
@@ -199,3 +201,60 @@ def test_generate_sentences_success(mock_client):
         assert result["sentences"] == ["I ran home."]
         assert "generated_at" in result
         mock_save.assert_called_once()
+
+# --- Story Tests ---
+
+@pytest.mark.asyncio
+async def test_generate_story_stream_success(mock_client):
+    # Mock async stream response
+    # The client.chat.completions.create returns a Coroutine which resolves to a Stream object
+    # The Stream object is an async iterator
+
+    mock_client.chat.completions.create = AsyncMock()
+
+    # Create chunks
+    chunks = [
+        MagicMock(choices=[MagicMock(delta=MagicMock(content="Once upon "))]),
+        MagicMock(choices=[MagicMock(delta=MagicMock(content="a time."))]),
+        MagicMock(choices=[MagicMock(delta=MagicMock(content="---METADATA---"))]),
+        MagicMock(choices=[MagicMock(delta=MagicMock(content='{"title": "The End"}'))])
+    ]
+
+    async def mock_stream_gen():
+        for c in chunks:
+            yield c
+
+    mock_client.chat.completions.create.return_value = mock_stream_gen()
+
+    with patch("app.database.log_story", new_callable=AsyncMock) as mock_log:
+
+        results = []
+        async for chunk in generate_story_stream("Fairy", "Past", mock_client):
+            data = json.loads(chunk.strip())
+            results.append(data)
+
+        # Verify Text Chunks
+        text_content = "".join([r["chunk"] for r in results if r["type"] == "text"])
+        assert "Once upon a time." in text_content
+
+        # Verify Metadata Event
+        data_event = next((r for r in results if r.get("type") == "data"), None)
+        assert data_event is not None
+        assert data_event["story"]["title"] == "The End"
+        assert data_event["story"]["content"] == "Once upon a time."
+
+        # Verify DB Log
+        mock_log.assert_called_once()
+
+@pytest.mark.asyncio
+async def test_generate_story_stream_failure(mock_client):
+    mock_client.chat.completions.create = AsyncMock()
+    mock_client.chat.completions.create.side_effect = Exception("API Error")
+
+    results = []
+    async for chunk in generate_story_stream("Fairy", "Past", mock_client):
+        data = json.loads(chunk.strip())
+        results.append(data)
+
+    assert len(results) == 1
+    assert "error" in results[0]
