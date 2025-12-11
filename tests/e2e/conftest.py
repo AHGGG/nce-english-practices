@@ -67,10 +67,13 @@ def frontend_server(backend_server):
     env = os.environ.copy()
     env["VITE_API_TARGET"] = backend_server
 
+    # Determine npm command based on OS
+    npm_cmd = "npm.cmd" if os.name == "nt" else "npm"
+
     # Start Vite process
     # Note: We use --port to specify port
     proc = subprocess.Popen(
-        ["npm", "run", "dev", "--", "--port", str(FRONTEND_PORT)],
+        [npm_cmd, "run", "dev", "--", "--port", str(FRONTEND_PORT)],
         cwd=os.path.join(os.getcwd(), "frontend"),
         env=env,
         stdout=subprocess.DEVNULL,

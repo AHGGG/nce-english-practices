@@ -180,9 +180,15 @@ To support multiple dictionaries (e.g., Collins + LDOCE) in one view:
 
 ## Common Pitfalls
 
-### Event Loop Conflicts
-- **Problem**: Running E2E tests (Playwright) with backend tests causes `RuntimeError: Event loop is closed`.
-- **Solution**: Run E2E tests separately: `pytest tests/e2e/` and `pytest tests/test_*.py`.
+### Windows Testing Pitfalls
+- **Global Run Conflict**: Running `uv run pytest tests` fails because `pytest-playwright` (Sync) and `httpx`/`asyncpg` (Async) require conflicting Event Loop policies on Windows (Selector vs Proactor).
+    - **Solution**: ALWAYS run suites separately:
+        1. E2E: `uv run pytest tests/e2e`
+        2. Backend: `uv run pytest tests --ignore=tests/e2e`
+- **E2E `npm` Issue**: `subprocess.Popen("npm")` fails on Windows with `[WinError 2]`.
+    - **Fix**: Use `npm.cmd` on Windows. (This is handled in `tests/e2e/conftest.py`).
+- **Backend `RuntimeError`**: `asyncio.run()` loops conflict with `pytest-asyncio` loops.
+    - **Fix**: Tests require `nest_asyncio.apply()` on Windows. (This is handled in `tests/conftest.py`).
 
 ### Database Connection
 - **Tests**: Require PostgreSQL running on `localhost:5432` with `nce_practice_test` database.

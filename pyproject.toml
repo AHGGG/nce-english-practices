@@ -30,6 +30,7 @@ dictionary = [
 [dependency-groups]
 dev = [
     "httpx>=0.28.1",
+    "nest-asyncio>=1.6.0",
     "pytest>=9.0.2",
     "pytest-asyncio>=1.3.0",
     "pytest-env>=1.2.0",

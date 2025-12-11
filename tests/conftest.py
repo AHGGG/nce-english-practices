@@ -1,9 +1,14 @@
 import pytest
 import asyncio
 import sys
+import nest_asyncio
 from typing import AsyncGenerator
 from httpx import AsyncClient, ASGITransport
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncSession
+
+# Apply nest_asyncio to allow nested event loops (required for TestClient/AsyncClient on Windows)
+if sys.platform == "win32":
+    nest_asyncio.apply()
 
 from app.config import settings
 from app.core.db import Base, get_db
