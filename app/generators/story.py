@@ -6,6 +6,7 @@ from typing import Optional, AsyncGenerator
 from app.config import MODEL_NAME
 from app.models import Story
 from app.services.prompt_manager import prompt_manager
+from app.core.utils import parse_llm_json
 
 async def generate_story_stream(topic: str, tense: str, client) -> AsyncGenerator[str, None]:
     if not client:
@@ -69,10 +70,7 @@ async def generate_story_stream(topic: str, tense: str, client) -> AsyncGenerato
             try:
                 story_text = parts[0].strip()
                 json_str = parts[1].strip()
-                if json_str.startswith("```json"): json_str = json_str[7:-3]
-                elif json_str.startswith("```"): json_str = json_str[3:-3]
-                
-                meta = json.loads(json_str)
+                meta = parse_llm_json(json_str)
                 story_obj = Story(
                     topic=topic,
                     target_tense=tense,

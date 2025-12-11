@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { lookupDictionary, explainInContext } from '../../api/client';
+import DangerousHtml from './DangerousHtml';
 
 const DictionaryModal = ({ isOpen, onClose, word, contextSentence }) => {
     const [loading, setLoading] = useState(false);
@@ -106,9 +107,9 @@ const DictionaryModal = ({ isOpen, onClose, word, contextSentence }) => {
                                         <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">
                                             {entry.dictionary}
                                         </div>
-                                        <div
+                                        <DangerousHtml
                                             className="prose prose-slate prose-sm max-w-none text-slate-700 leading-relaxed"
-                                            dangerouslySetInnerHTML={{ __html: entry.definition }}
+                                            html={entry.definition}
                                         />
                                         {idx < data.results.length - 1 && <hr className="my-6 border-slate-100" />}
                                     </div>

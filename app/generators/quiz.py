@@ -5,6 +5,7 @@ from typing import List
 from app.config import MODEL_NAME
 from app.models import QuizItem, QuizOption
 from app.services.prompt_manager import prompt_manager
+from app.core.utils import parse_llm_json
 
 def generate_quiz(client, topic: str, tense: str, aspect: str, correct_sentence: str) -> QuizItem:
     if not client:
@@ -22,13 +23,7 @@ def generate_quiz(client, topic: str, tense: str, aspect: str, correct_sentence:
     try:
         rsp = client.chat.completions.create(model=MODEL_NAME, messages=messages, temperature=0.7)
         content = rsp.choices[0].message.content.strip()
-        
-        if content.startswith("```json"):
-            content = content[7:-3]
-        elif content.startswith("```"):
-            content = content[3:-3]
-            
-        data = json.loads(content.strip())
+        data = parse_llm_json(content)
 
         # Map fields if the prompt format changed (e.g. prompt returns 'question' but model expects 'question_context')
         # The new prompt template outputs "question", "options", "correct_index", "explanation".
