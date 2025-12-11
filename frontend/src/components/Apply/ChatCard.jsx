@@ -13,7 +13,12 @@ const ChatCard = ({ chatSession, topic, layer }) => {
 
     useEffect(() => {
         if (chatSession) {
-            setMessages(chatSession.messages || []);
+            // Handle both legacy (first_message) and new (messages array) formats
+            let msgs = chatSession.messages || [];
+            if (msgs.length === 0 && chatSession.first_message) {
+                msgs = [{ role: 'ai', content: chatSession.first_message }];
+            }
+            setMessages(msgs);
             // Scroll to bottom
             setTimeout(() => scrollToBottom(), 100);
         }
@@ -165,7 +170,7 @@ const ChatCard = ({ chatSession, topic, layer }) => {
                 </div>
             </div>
 
-            <div ref={chatWindowRef} className="flex-1 overflow-y-auto p-4 space-y-4 scroll-smooth min-h-0">
+            <div ref={chatWindowRef} id="chatWindow" className="flex-1 overflow-y-auto p-4 space-y-4 scroll-smooth min-h-0">
                 {messages.map((msg, idx) => {
                     const isUser = msg.role === 'user';
                     return (
@@ -194,6 +199,7 @@ const ChatCard = ({ chatSession, topic, layer }) => {
                     <span className="hidden md:inline text-sm font-semibold">{voiceActive ? 'End Call' : 'Start Call'}</span>
                 </button>
                 <input
+                    id="chatInput"
                     type="text"
                     value={input}
                     onChange={(e) => setInput(e.target.value)}
@@ -203,6 +209,7 @@ const ChatCard = ({ chatSession, topic, layer }) => {
                     className="flex-1 min-w-0 bg-[#0f172a] border border-white/10 text-white rounded-xl px-3 py-2 md:px-4 md:py-3 focus:outline-none focus:border-sky-400 focus:ring-1 focus:ring-sky-400 transition-all placeholder-slate-600 text-sm md:text-base"
                 />
                 <button
+                    id="chatSendBtn"
                     onClick={handleSend}
                     className="flex-none px-4 py-2 md:px-6 md:py-3 bg-sky-400 text-slate-900 font-semibold rounded-xl hover:bg-sky-500 transition-colors shadow-[0_0_20px_rgba(56,189,248,0.3)] text-sm md:text-base"
                 >

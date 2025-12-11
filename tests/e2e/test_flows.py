@@ -6,6 +6,10 @@ def test_story_generation_flow(page: Page, base_url: str, mock_llm_response):
     """
     Test the flow of generating a story in the Learn tab.
     """
+    # Debug console
+    page.on("console", lambda msg: print(f"BROWSER CONSOLE: {msg.text}"))
+    page.on("pageerror", lambda err: print(f"BROWSER ERROR: {err}"))
+
     # 1. Mock the APIs required by loadTheme
     mock_llm_response(
         endpoint="theme",
@@ -21,15 +25,25 @@ def test_story_generation_flow(page: Page, base_url: str, mock_llm_response):
             "simple": {"affirmative": "Zeus throws.", "negative": "Zeus does not throw.", "question": "Does Zeus throw?"} 
         }
     )
+
+    # Mock Streaming Story
+    story_data = {
+        "title": "The Golden Apple",
+        "content": "Once upon a time, there was a golden apple.",
+        "highlights": [],
+        "grammar_notes": []
+    }
     mock_llm_response(
-        endpoint="story",
-        response_data={
-            "title": "The Golden Apple",
-            "content": "Once upon a time, there was a golden apple.",
-            "highlights": [],
-            "grammar_notes": []
-        }
+        endpoint="story/stream",
+        response_data={}, # ignored for stream
+        is_stream=True,
+        stream_chunks=[
+            {"type": "text", "chunk": "Once upon a time"},
+            {"type": "text", "chunk": ", there was a golden apple."},
+            {"type": "data", "story": story_data}
+        ]
     )
+
     mock_llm_response(
         endpoint="scenario",
         response_data={
@@ -46,31 +60,55 @@ def test_story_generation_flow(page: Page, base_url: str, mock_llm_response):
         }
     )
     
-    # 2. Navigate
+    # 2. Navigate (default is /learn)
     page.goto(base_url)
-    page.click("button[data-view='viewLearn']")
     
     # 3. Input Topic (Sidebar)
-    page.fill("#topicInput", "Mythology")
-    page.click("#loadBtn")
+    topic_input = page.locator("input[placeholder='Enter topic...'] >> visible=true")
+    expect(topic_input).to_be_visible()
+    topic_input.fill("Mythology")
     
+    # Click generate button next to it
+    generate_btn = page.locator("button[title='Generate'] >> visible=true")
+    generate_btn.click()
+    
+    # Check for error message
+    error_msg = page.locator(".text-red-400")
+    if error_msg.is_visible():
+        print(f"ERROR MESSAGE VISIBLE: {error_msg.text_content()}")
+
     # 4. Verify Result
-    # Expect the story title to appear
-    title_locator = page.locator("#storyTitle")
-    expect(title_locator).to_have_text("The Golden Apple", timeout=15000)
-    
-    content_locator = page.locator("#storyContent")
-    expect(content_locator).to_contain_text("Once upon a time")
+    try:
+        # StoryReader.jsx renders h3 with title
+        expect(page.locator("h3", has_text="The Golden Apple")).to_be_visible(timeout=15000)
+
+        # Story content is in a prose div
+        content_locator = page.locator(".prose")
+        expect(content_locator).to_contain_text("Once upon a time")
+    except AssertionError:
+        print("ASSERTION FAILED. PAGE CONTENT:")
+        print(page.content())
+        raise
 
 def test_chat_roleplay_flow(page: Page, base_url: str, mock_llm_response):
     """
     Test the flow of starting a chat and sending a message.
     """
+    page.on("console", lambda msg: print(f"BROWSER CONSOLE: {msg.text}"))
+    page.on("pageerror", lambda err: print(f"BROWSER ERROR: {err}"))
+
     # 1. Mock APIs
-    # Mock other dependencies for loadTheme (since it calls everything)
     mock_llm_response(endpoint="theme", response_data={"topic": "Spy", "slots": {}, "verbs": []}) 
     mock_llm_response(endpoint="sentences", response_data={})
-    mock_llm_response(endpoint="story", response_data={"title": "Spy Story", "content": "..."})
+
+    # Mock stream for implicit story load (if any)
+    mock_llm_response(
+        endpoint="story/stream",
+        response_data={},
+        is_stream=True,
+        stream_chunks=[{"type": "text", "chunk": "..."}]
+    )
+
     mock_llm_response(endpoint="scenario", response_data={"situation": "Spying", "goal": "Find intel"})
 
     mock_llm_response(
@@ -90,31 +128,49 @@ def test_chat_roleplay_flow(page: Page, base_url: str, mock_llm_response):
         endpoint="chat/reply",
         response_data={
             "reply": "Good job, Agent.",
-            "history": [] # Simplified
+            "history": []
         }
     )
 
-    # 2. Navigate to Apply -> Roleplay
+    # 2. Navigate to Apply
     page.goto(base_url)
-    page.click("button[data-view='viewApply']")
     
-    # Switch to Roleplay tab using a specific selector (class tab-btn + text)
-    page.locator("#viewApply button.tab-btn:has-text('Roleplay')").click()
+    # Click link to Apply. Use visible=true to avoid hidden mobile/desktop duplicates
+    page.locator("a[href='/apply'] >> visible=true").click()
+    
+    # Switch to Roleplay tab in Apply.jsx
+    # Button with text 'Roleplay'
+    page.locator("button", has_text="Roleplay").click()
     
     # 3. Start Mission via Sidebar
-    page.fill("#topicInput", "Spy Mission")
-    page.click("#loadBtn")
+    topic_input = page.locator("input[placeholder='Enter topic...'] >> visible=true")
+    expect(topic_input).to_be_visible()
+    topic_input.fill("Spy Mission")
+    
+    generate_btn = page.locator("button[title='Generate'] >> visible=true")
+    generate_btn.click()
     
     # 4. Verify Mission Started
-    # content should contain "Welcome, Agent."
-    expect(page.locator("#chatWindow")).to_contain_text("Welcome, Agent.", timeout=10000)
-    expect(page.locator("#missionTitle")).to_contain_text("Secret Agent")
-    
-    # 5. Send a Message
-    # Workaround for visibility check issues in headless layout for the footer
-    # Directly set value via JS to ensure it's there even if fill(force=True) failed to trigger events
-    page.evaluate('document.getElementById("chatInput").value = "I accept the mission."')
-    page.locator("#chatSendBtn").dispatch_event("click")
-    
-    # 6. Verify Reply
-    expect(page.locator("#chatWindow")).to_contain_text("Good job, Agent.", timeout=10000)
+    try:
+        # ChatCard.jsx: Mission title in emerald text
+        expect(page.locator("p.text-emerald-400", has_text="Secret Agent")).to_be_visible(timeout=10000)
+
+        # Verify first message
+        expect(page.locator("span", has_text="Welcome, Agent.")).to_be_visible()
+
+        # 5. Send a Message
+        # ChatCard.jsx: input[placeholder='Say something...']
+        # Button: button with text 'Send'
+        chat_input = page.locator("input[placeholder='Say something...']")
+        expect(chat_input).to_be_visible()
+        chat_input.fill("I accept the mission.")
+
+        send_btn = page.locator("button", has_text="Send")
+        send_btn.click()
+
+        # 6. Verify Reply
+        expect(page.locator("span", has_text="Good job, Agent.")).to_be_visible(timeout=10000)
+    except AssertionError:
+        print("ASSERTION FAILED. PAGE CONTENT:")
+        print(page.content())
+        raise
