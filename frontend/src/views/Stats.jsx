@@ -9,6 +9,7 @@ import {
     Legend,
 } from 'chart.js';
 import { Bar } from 'react-chartjs-2';
+import { Activity, Trophy, CheckCircle2, Clock4, CircleX } from 'lucide-react';
 import api from '../api/client'; // Assuming default export exists or named, checking client.js
 
 // Register ChartJS components
@@ -93,7 +94,9 @@ const Stats = () => {
         <section className="h-full w-full bg-[#0f172a] overflow-y-auto p-4 md:p-8 pb-24 md:pb-8">
             <header className="mb-8 p-6 bg-[#0f172a]/50 backdrop-blur-md rounded-2xl border border-white/5 flex flex-col md:flex-row md:items-center justify-between gap-6">
                 <div className="flex items-center gap-3">
-                    <div className="p-3 bg-sky-500/10 rounded-xl text-2xl">📊</div>
+                    <div className="p-3 bg-sky-500/10 rounded-xl text-sky-400">
+                        <Activity size={24} />
+                    </div>
                     <div>
                         <h2 className="text-2xl font-bold text-white">Your Progress</h2>
                         <p className="text-slate-400 text-sm">Keep up the good work!</p>
@@ -101,8 +104,10 @@ const Stats = () => {
                 </div>
 
                 <div className="flex gap-4 md:gap-8">
-                    <div className="text-center">
-                        <div className="text-2xl font-bold text-sky-400">{totalXp}</div>
+                    <div className="text-center flex flex-col items-center">
+                        <div className="text-2xl font-bold text-sky-400 flex items-center gap-1">
+                            {totalXp} <Trophy size={16} className="text-sky-500/50" />
+                        </div>
                         <div className="text-[10px] uppercase font-bold tracking-wider text-slate-500">XP</div>
                     </div>
                     <div className="text-center">
@@ -113,8 +118,10 @@ const Stats = () => {
                         <div className="text-2xl font-bold text-indigo-400">{totalCount}</div>
                         <div className="text-[10px] uppercase font-bold tracking-wider text-slate-500">Activities</div>
                     </div>
-                    <div className="text-center">
-                        <div className="text-2xl font-bold text-purple-400">{totalTime}</div>
+                    <div className="text-center flex flex-col items-center">
+                        <div className="text-2xl font-bold text-purple-400 flex items-center gap-1">
+                            {totalTime} <Clock4 size={16} className="text-purple-500/50" />
+                        </div>
                         <div className="text-[10px] uppercase font-bold tracking-wider text-slate-500">Mins</div>
                     </div>
                 </div>
@@ -124,18 +131,18 @@ const Stats = () => {
                 {/* Chart Card */}
                 <div className="bg-[#0f172a]/50 backdrop-blur-md rounded-2xl border border-white/5 p-6 md:p-8 shadow-xl">
                     <h3 className="text-lg font-bold text-white mb-6">Activity Breakdown</h3>
-                    <Bar data={chartData} options={chartOptions} />
+                    <Bar data={chartData} options={{ ...chartOptions, plugins: { ...chartOptions.plugins, title: { display: true, text: 'Activity Performance' } } }} aria-label="Bar chart showing passed vs total activities by type" role="img" />
                 </div>
 
                 {/* Recent History */}
                 <div className="bg-[#0f172a]/50 backdrop-blur-md rounded-2xl border border-white/5 p-6 md:p-8 shadow-xl">
                     <h3 className="text-lg font-bold text-white mb-6">Recent Activity</h3>
-                    <div className="space-y-4">
+                    <div className="space-y-4" role="list" aria-label="Recent activities">
                         {stats.recent && stats.recent.length > 0 ? (
                             stats.recent.map((item, i) => (
-                                <div key={i} className="flex items-center gap-4 group">
-                                    <div className={`flex-none w-10 h-10 rounded-xl border flex items-center justify-center font-bold text-lg ${item.is_pass ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 'bg-red-500/10 text-red-400 border-red-500/20'}`}>
-                                        {item.is_pass ? '✓' : '✗'}
+                                <div key={i} className="flex items-center gap-4 group" role="listitem">
+                                    <div className={`flex-none w-10 h-10 rounded-xl border flex items-center justify-center ${item.is_pass ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 'bg-red-500/10 text-red-400 border-red-500/20'}`}>
+                                        {item.is_pass ? <CheckCircle2 size={20} /> : <CircleX size={20} />}
                                     </div>
                                     <div className="flex-1 min-w-0">
                                         <div className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-0.5">{item.activity_type}</div>

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useTheme } from '../../hooks/useTheme';
 import { motion } from 'framer-motion';
+import { Sparkles, Loader2, ArrowRight } from 'lucide-react';
 
 const TopicInput = ({ className }) => {
     const [inputTopic, setInputTopic] = useState('');
@@ -49,7 +50,7 @@ const TopicInput = ({ className }) => {
                 className="absolute right-2 top-1.5 p-1.5 rounded-lg text-slate-400 hover:text-sky-400 hover:bg-white/5 transition-colors disabled:opacity-50"
                 title="Generate"
             >
-                {loading ? <div className="w-4 h-4 border-2 border-slate-500 border-t-sky-400 rounded-full animate-spin"></div> : '✨'}
+                {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
             </button>
         </motion.div>
     );

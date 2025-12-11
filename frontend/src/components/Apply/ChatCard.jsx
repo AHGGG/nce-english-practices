@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { sendChatReply, polishSentence, addReviewNote, logAttempt } from '../../api/client';
 import { GeminiLiveClient } from '../../api/gemini-live';
-import { Loader2, Send } from 'lucide-react';
+import { Loader2, Send, Mic, MicOff, Sparkles, MessageCircle } from 'lucide-react';
 
 const ChatCard = ({ chatSession, topic, layer }) => {
     const [messages, setMessages] = useState([]);
@@ -141,7 +141,8 @@ const ChatCard = ({ chatSession, topic, layer }) => {
                 {!voiceActive ? (
                     <div className="flex items-center justify-between w-full">
                         <h3 className="text-base md:text-lg font-bold text-white flex items-center gap-2">
-                            <span className="text-xl md:text-2xl">🕵️</span> Secret Mission
+                            <MessageCircle className="w-6 h-6 text-sky-400" aria-hidden="true" />
+                            Secret Mission
                         </h3>
                         <span className="px-2 py-0.5 md:px-3 md:py-1 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded-full text-[10px] md:text-xs font-bold uppercase tracking-wide">Roleplay</span>
                     </div>
@@ -171,20 +172,21 @@ const ChatCard = ({ chatSession, topic, layer }) => {
                 </div>
             </div>
 
-            <div ref={chatWindowRef} id="chatWindow" className="flex-1 overflow-y-auto p-4 space-y-4 scroll-smooth min-h-0">
+            <div ref={chatWindowRef} id="chatWindow" className="flex-1 overflow-y-auto p-4 space-y-4 scroll-smooth min-h-0" aria-live="polite">
                 {messages.map((msg, idx) => {
                     const isUser = msg.role === 'user';
                     return (
                         <div key={idx} className={`max-w-[80%] px-4 py-3 rounded-2xl text-[0.95rem] leading-relaxed shadow-sm mb-3 relative group ${isUser ? 'ml-auto bg-sky-400 text-slate-900 rounded-br-sm' : 'mr-auto bg-white/10 text-white rounded-bl-sm'}`}>
+                            <span className="sr-only">{isUser ? 'You said:' : 'AI said:'}</span>
                             <span>{msg.content}</span>
                             {isUser && (
                                 <button
                                     onClick={() => handlePolish(idx, msg.content)}
-                                    className="absolute -left-8 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity p-1.5 rounded-full bg-slate-700/50 hover:bg-slate-700 text-xs text-sky-400"
+                                    className="absolute -left-10 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity p-2 rounded-full bg-slate-800 border border-white/10 text-sky-400 hover:text-sky-300 hover:bg-slate-700 shadow-lg"
                                     title="Polish"
-                                    aria-label="Get suggestions to polish this sentence"
+                                    aria-label="Get polish suggestions"
                                 >
-                                    ✨
+                                    <Sparkles size={14} />
                                 </button>
                             )}
                         </div>
@@ -198,7 +200,7 @@ const ChatCard = ({ chatSession, topic, layer }) => {
                     aria-label={voiceActive ? "End voice call" : "Start voice call"}
                     className={`flex-none flex items-center justify-center w-10 h-10 md:w-auto md:h-auto md:px-4 md:py-3 rounded-xl transition-colors border border-white/10 gap-2 ${voiceActive ? 'bg-red-500/20 border-red-500/50 text-red-400 animate-pulse' : 'bg-white/5 hover:bg-white/10 text-slate-400'}`}
                 >
-                    <span className="text-lg">{voiceActive ? '🛑' : '📞'}</span>
+                    {voiceActive ? <MicOff size={20} /> : <Mic size={20} />}
                     <span className="hidden md:inline text-sm font-semibold">{voiceActive ? 'End Call' : 'Start Call'}</span>
                 </button>
                 <input

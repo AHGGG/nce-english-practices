@@ -71,9 +71,14 @@ const StoryReader = ({ story }) => {
 
     return (
         <div className="mb-12 animate-fade-in-up" style={{ animationDelay: '0.1s' }}>
-            <h3 className="text-xs uppercase tracking-wider text-slate-400 font-bold mb-4 ml-1">
-                Context Story
-            </h3>
+            <div className="flex justify-between items-end mb-4 ml-1">
+                <h3 className="text-xs uppercase tracking-wider text-slate-400 font-bold">
+                    Context Story
+                </h3>
+                <span className="text-[10px] text-slate-500 bg-slate-800/50 px-2 py-0.5 rounded-full border border-white/5 select-none" aria-hidden="true">
+                    Tip: Click words to define
+                </span>
+            </div>
             <div className="bg-[#0f172a]/50 backdrop-blur-md rounded-2xl border border-white/10 p-6 shadow-xl relative overflow-hidden group">
                 <div className="absolute -top-24 -right-24 w-48 h-48 bg-sky-400/10 rounded-full blur-3xl group-hover:bg-sky-400/20 transition-all duration-700"></div>
 
@@ -82,6 +87,8 @@ const StoryReader = ({ story }) => {
                 </h3>
 
                 <div
+                    role="region"
+                    aria-label={`Story content: ${story.title || 'Practice text'}`}
                     className="prose prose-invert prose-p:text-slate-300 text-slate-300 font-normal prose-strong:text-sky-400 prose-em:text-indigo-300 leading-relaxed text-lg max-w-none relative z-10 cursor-pointer"
                     dangerouslySetInnerHTML={{ __html: processedContent }}
                     onClick={handleWordClick}
