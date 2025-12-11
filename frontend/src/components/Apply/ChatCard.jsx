@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { sendChatReply, polishSentence, addReviewNote, logAttempt } from '../../api/client';
 import { GeminiLiveClient } from '../../api/gemini-live';
+import { Loader2, Send } from 'lucide-react';
 
 const ChatCard = ({ chatSession, topic, layer }) => {
     const [messages, setMessages] = useState([]);
@@ -181,6 +182,7 @@ const ChatCard = ({ chatSession, topic, layer }) => {
                                     onClick={() => handlePolish(idx, msg.content)}
                                     className="absolute -left-8 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity p-1.5 rounded-full bg-slate-700/50 hover:bg-slate-700 text-xs text-sky-400"
                                     title="Polish"
+                                    aria-label="Get suggestions to polish this sentence"
                                 >
                                     ✨
                                 </button>
@@ -193,6 +195,7 @@ const ChatCard = ({ chatSession, topic, layer }) => {
             <div className="flex-none p-3 md:p-4 border-t border-white/10 bg-slate-900/50 flex gap-2 z-10 relative">
                 <button
                     onClick={toggleVoice}
+                    aria-label={voiceActive ? "End voice call" : "Start voice call"}
                     className={`flex-none flex items-center justify-center w-10 h-10 md:w-auto md:h-auto md:px-4 md:py-3 rounded-xl transition-colors border border-white/10 gap-2 ${voiceActive ? 'bg-red-500/20 border-red-500/50 text-red-400 animate-pulse' : 'bg-white/5 hover:bg-white/10 text-slate-400'}`}
                 >
                     <span className="text-lg">{voiceActive ? '🛑' : '📞'}</span>
@@ -206,14 +209,19 @@ const ChatCard = ({ chatSession, topic, layer }) => {
                     onKeyDown={handleKeyDown}
                     placeholder="Say something..."
                     autoComplete="off"
-                    className="flex-1 min-w-0 bg-[#0f172a] border border-white/10 text-white rounded-xl px-3 py-2 md:px-4 md:py-3 focus:outline-none focus:border-sky-400 focus:ring-1 focus:ring-sky-400 transition-all placeholder-slate-600 text-sm md:text-base"
+                    aria-label="Type your message"
+                    className="flex-1 min-w-0 bg-[#0f172a] border border-white/10 text-white rounded-xl px-3 py-2 md:px-4 md:py-3 focus:outline-none focus:border-sky-400 focus:ring-1 focus:ring-sky-400 transition-all placeholder-slate-600 text-sm md:text-base disabled:opacity-50"
+                    disabled={loading}
                 />
                 <button
                     id="chatSendBtn"
                     onClick={handleSend}
-                    className="flex-none px-4 py-2 md:px-6 md:py-3 bg-sky-400 text-slate-900 font-semibold rounded-xl hover:bg-sky-500 transition-colors shadow-[0_0_20px_rgba(56,189,248,0.3)] text-sm md:text-base"
+                    disabled={!input.trim() || loading}
+                    aria-label="Send message"
+                    className="flex-none px-4 py-2 md:px-6 md:py-3 bg-sky-400 text-slate-900 font-semibold rounded-xl hover:bg-sky-500 transition-all shadow-[0_0_20px_rgba(56,189,248,0.3)] text-sm md:text-base disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none disabled:bg-slate-700 disabled:text-slate-400 flex items-center gap-2"
                 >
-                    Send
+                    {loading ? <Loader2 className="animate-spin w-4 h-4" /> : <Send className="w-4 h-4" />}
+                    <span className="hidden md:inline">{loading ? 'Sending...' : 'Send'}</span>
                 </button>
             </div>
         </div>
