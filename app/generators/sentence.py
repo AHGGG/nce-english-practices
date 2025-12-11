@@ -8,6 +8,7 @@ from typing import Dict, Optional
 
 from app.config import HOME_DIR, MODEL_NAME
 from app.services.prompt_manager import prompt_manager
+from app.core.utils import parse_llm_json
 
 SENTENCES_DIR = HOME_DIR / "sentences"
 SENTENCES_DIR.mkdir(parents=True, exist_ok=True)
@@ -87,7 +88,6 @@ def generate_sentences_for_time_layer(
         {"role": "system", "content": system_prompt},
         {"role": "user", "content": prompt},
     ]
-
     try:
         rsp = client.chat.completions.create(
             model=MODEL_NAME,
@@ -95,14 +95,8 @@ def generate_sentences_for_time_layer(
             temperature=0.2,
         )
         content = rsp.choices[0].message.content.strip()
-        # Remove markdown code blocks if present
-        if content.startswith("```"):
-            content = content.split("```")[1]
-            if content.startswith("json"):
-                content = content[4:]
-            content = content.strip()
-
-        data = json.loads(content)
+        
+        data = parse_llm_json(content)
         data["generated_at"] = datetime.utcnow().isoformat()
         data["topic"] = topic
 

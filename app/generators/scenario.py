@@ -4,6 +4,7 @@ import json
 from app.config import MODEL_NAME
 from app.models import ScenarioPrompt, ScenarioResponse
 from app.services.prompt_manager import prompt_manager
+from app.core.utils import parse_llm_json
 
 def generate_scenario(client, topic: str, tense: str, aspect: str) -> ScenarioPrompt:
     if not client:
@@ -20,10 +21,8 @@ def generate_scenario(client, topic: str, tense: str, aspect: str) -> ScenarioPr
     try:
         rsp = client.chat.completions.create(model=MODEL_NAME, messages=messages, temperature=0.7)
         content = rsp.choices[0].message.content.strip()
-        if content.startswith("```json"): content = content[7:-3]
-        elif content.startswith("```"): content = content[3:-3]
-        
-        data = json.loads(content.strip())
+        content = rsp.choices[0].message.content.strip()
+        data = parse_llm_json(content)
         return ScenarioPrompt(**data)
     except Exception as e:
         return ScenarioPrompt(situation="Error generating scenario.", goal="Just practice asking a question.")
@@ -45,10 +44,8 @@ def grade_scenario_response(client, situation: str, goal: str, user_input: str, 
     try:
         rsp = client.chat.completions.create(model=MODEL_NAME, messages=messages, temperature=0.0)
         content = rsp.choices[0].message.content.strip()
-        if content.startswith("```json"): content = content[7:-3]
-        elif content.startswith("```"): content = content[3:-3]
-        
-        data = json.loads(content.strip())
+        content = rsp.choices[0].message.content.strip()
+        data = parse_llm_json(content)
         # Inject user_input as it is required by the model and not returned by LLM
         data['user_input'] = user_input
         # Map fields if new prompt changed keys

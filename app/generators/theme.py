@@ -8,6 +8,7 @@ from typing import Dict, List, Optional
 from app.config import MODEL_NAME
 from app.models import VerbEntry
 from app.services.prompt_manager import prompt_manager
+from app.core.utils import parse_llm_json
 
 DEFAULT_SLOTS: Dict[str, List[str]] = {
     "subject": ["I", "We", "My friends"],
@@ -102,7 +103,7 @@ def generate_theme_sync(topic: str, client, previous_vocab: Optional[ThemeVocabu
     try:
         rsp = client.chat.completions.create(model=MODEL_NAME, messages=messages, temperature=0.7)
         content = rsp.choices[0].message.content.strip()
-        data = json.loads(content)
+        data = parse_llm_json(content)
         if "topic" not in data:
             data["topic"] = topic
         data.setdefault("generated_at", datetime.utcnow().isoformat())

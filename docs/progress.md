@@ -73,3 +73,10 @@
 - [x] **UX Polish**:
     - [x] **Loading States**: Scenarios/Chat load independently of Story stream.
     - [x] **Styling**: Fixed StoryReader text styles and bold highlighting.
+    
+## 🐛 Phase 7: Stability & Bug Fixes (Current)
+- [x] **Dictionary**:
+    - [x] Fixed JS execution in MDX definitions (`DangerousHtml`).
+- [x] **LLM Reliability**:
+    - [x] Fixed 500 error on Markdown-wrapped JSON responses (Robust Parsing).
+    - [x] Fixed API hangs with 30s timeout settings.

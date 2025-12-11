@@ -15,13 +15,21 @@ class LLMService:
         
         # Sync Client
         if self.api_key:
-            self.sync_client = OpenAI(api_key=self.api_key, base_url=self.base_url)
+            self.sync_client = OpenAI(
+                api_key=self.api_key, 
+                base_url=self.base_url,
+                timeout=30.0
+            )
         else:
             self.sync_client = None
             
         # Async Client
         if self.api_key:
-            self.async_client = AsyncOpenAI(api_key=self.api_key, base_url=self.base_url)
+            self.async_client = AsyncOpenAI(
+                api_key=self.api_key, 
+                base_url=self.base_url,
+                timeout=30.0
+            )
         else:
             self.async_client = None
 
