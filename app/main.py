@@ -1,9 +1,10 @@
 from fastapi import FastAPI, Request
 from fastapi.staticfiles import StaticFiles
-from fastapi.templating import Jinja2Templates
+from fastapi.responses import FileResponse
 from contextlib import asynccontextmanager
 import asyncio
 from dotenv import load_dotenv
+import os
 
 from app.services.dictionary import dict_manager
 from app.api.routers import voice, dictionary, content, practice, stats
@@ -24,18 +25,6 @@ async def lifespan(app: FastAPI):
     # Cleanup if needed
 
 app = FastAPI(title="NCE English Practice", lifespan=lifespan)
-
-# Mount paths
-app.mount("/static", StaticFiles(directory="static"), name="static")
-
-# We mount dict-assets via the router, but we also need the static mount for fallback?
-# Actually, the router handles /dict-assets.
-# But `app/main.py` had `app.mount("/dict-assets", ...)`
-# The router uses `os.path.join(r"resources/dictionaries", file_path)`
-# Let's keep the explicit mount if the router fails or for performance?
-# No, the router logic is complex (MDD fallback), so we need the router.
-
-templates = Jinja2Templates(directory="templates")
 
 # Include Routers
 app.include_router(voice.router)
@@ -61,9 +50,29 @@ async def receive_remote_log(log: RemoteLog):
     
     return {"status": "ok"}
 
-@app.get("/")
-async def read_root(request: Request):
-    return templates.TemplateResponse("index.html", {"request": request})
+# --- SPA Static File Serving ---
+# Serve React Build Files (Dist)
+
+# 1. Mount assets (JS/CSS)
+if os.path.exists("frontend/dist/assets"):
+    app.mount("/assets", StaticFiles(directory="frontend/dist/assets"), name="assets")
+
+# 2. Serve index.html for root and unknown paths (SPA Fallback)
+@app.get("/{full_path:path}")
+async def serve_spa(full_path: str):
+    # API routes are already handled above by include_router
+    # If a path matches a static file (e.g. favicon.ico), serve it?
+    # For simplicity, let's just serve index.html for everything else unless it's a specific static file we want to expose.
+    
+    file_path = os.path.join("frontend/dist", full_path)
+    if os.path.isfile(file_path):
+        return FileResponse(file_path)
+        
+    # Fallback to index.html
+    index_path = "frontend/dist/index.html"
+    if os.path.exists(index_path):
+        return FileResponse(index_path)
+    return {"error": "Frontend not built. Run 'npm run build' in frontend/ directory."}
 
 if __name__ == "__main__":
     import uvicorn

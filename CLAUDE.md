@@ -10,7 +10,7 @@ This is a comprehensive English learning platform that combines:
 3. **Scenario Roleplay**: Real-time AI chat for practicing specific grammar points in realistic contexts.
 4. **Voice Practice**: Real-time voice conversation using Gemini Native Audio API.
 
-The backend is built with **FastAPI** and the frontend uses standard HTML/JS with Jinja2 templates.
+The backend is built with **FastAPI** and the frontend is a **React** Single Page Application (SPA) built with **Vite**.
 
 ## Development Setup
 

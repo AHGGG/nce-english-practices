@@ -48,7 +48,7 @@
 - [x] **Spaced Repetition (SRS)**:
     - Schedule reviews for accepted notes (Anki-style algorithms).
 
-## Technical Foundation Updates
+## Technical Foundation & Deployment Updates
 - [x] **Backend**: New endpoints for `/api/story` and `/api/chat`.
 - [x] **Frontend**: New "Mode Switcher" (Learn / Drill / Apply / Speak) in the navigation.
 - [x] **State**: Persist user progress per stage (Now in PostgreSQL).
@@ -59,6 +59,11 @@
     - [x] Responsive Sidebar/Navbar.
     - [x] HTTPS Configuration for local external access.
     - [x] Layout optimizations for smaller screens.
+- [ ] **Deployment & Architecture Optimization** (New):
+    - [x] **Dockerization**: Multi-stage build for React (Vite) + FastAPI.
+    - [x] **SPA Serving**: Configure FastAPI to serve React static files (remove Jinja2).
+    - [x] **Code Cleanup**: Remove legacy `templates/` directory and synchronous DB patterns.
+    - [x] **Service Layer Refactor**: Decouple business logic from `voice.py` router.
 
 ## 6. Tools & Ecosystem (The "Support" Layer)
 *Features that support the learning journey.*
@@ -68,9 +73,9 @@
 - [x] **Log Bridge**:
     - [x] **Unified Debugging**: Stream frontend logs (console.log) to the backend terminal to allow AI agents to debug full-stack issues in one place.
 - [x] **Data Dashboard**:
-    - **Visual Stats**: Daily streaks, words encounter counter, practice volume.
-    - **Time Tracking**: Record total practice duration per session.
-    - **History**: Log of all completed quizzes and missions.
+    - [x] **Visual Stats**: Daily streaks, words encounter counter, practice volume.
+    - [x] **Time Tracking**: Record total practice duration per session.
+    - [x] **History**: Log of all completed quizzes and missions.
 - [ ] **Audio Engine**:
-    - **TTS**: Text-to-Speech for all generated sentences (Browser Native or API).
-    - **Shadowing**: Record user audio and compare (Future).
+    - [x] **TTS**: Text-to-Speech for all generated sentences (Browser Native or API).
+    - [ ] **Shadowing**: Record user audio and compare (Future).
