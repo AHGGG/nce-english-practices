@@ -78,6 +78,8 @@
 ## 🐛 Phase 7: Stability & Bug Fixes (Completed)
 - [x] **Dictionary**:
     - [x] Fixed JS execution in MDX definitions (`DangerousHtml`).
+    - [x] **Architecture**: Migrated Dictionary Content to Iframe Sandbox for perfect CSS/JS isolation (Fixes Sidebar & Scripts).
+    - [x] **Sandbox**: Switched to `srcDoc` + `postMessage` isolation to block Extension conflicts (SES Error) and fix Infinite Scroll.
 - [x] **LLM Reliability**:
     - [x] Fixed 500 error on Markdown-wrapped JSON responses (Robust Parsing).
     - [x] Fixed API hangs with 30s timeout settings.

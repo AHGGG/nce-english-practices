@@ -1,77 +1,90 @@
 import React, { useRef, useEffect, useState } from 'react';
 
 const DangerousHtml = ({ html, className, ...props }) => {
-    const containerRef = useRef(null);
-    const [isReady, setIsReady] = useState(false);
+    const iframeRef = useRef(null);
+    const [height, setHeight] = useState(100);
 
     useEffect(() => {
-        setIsReady(false);
-        if (!containerRef.current || !html) return;
-
-        // 1. Attach Shadow DOM (if not already attached)
-        let shadow = containerRef.current.shadowRoot;
-        if (!shadow) {
-            shadow = containerRef.current.attachShadow({ mode: 'open' });
-        }
-
-        // 2. Set the HTML content into Shadow DOM
-        shadow.innerHTML = html;
-
-        // 3. Script Execution Logic (adapted for Shadow DOM)
-        const scripts = shadow.querySelectorAll('script');
-        const scriptsArray = Array.from(scripts);
-
-        scriptsArray.forEach(oldScript => {
-            const newScript = document.createElement('script');
-            Array.from(oldScript.attributes).forEach(attr => {
-                newScript.setAttribute(attr.name, attr.value);
-            });
-            newScript.appendChild(document.createTextNode(oldScript.innerHTML));
-            oldScript.parentNode.replaceChild(newScript, oldScript);
-        });
-
-        // 4. Wait for styles and images to load to prevent FOUC
-        const links = Array.from(shadow.querySelectorAll('link[rel="stylesheet"]'));
-        const images = Array.from(shadow.querySelectorAll('img'));
-
-        const resources = [...links, ...images];
-
-        if (resources.length === 0) {
-            setIsReady(true);
-            return;
-        }
-
-        const promises = resources.map(el => {
-            return new Promise(resolve => {
-                if (el.tagName === 'IMG' && el.complete) {
-                    resolve();
-                    return;
+        const handleMessage = (event) => {
+            // Security: We don't check origin because srcDoc origin is "null" or unique.
+            // But we can check if source matches our iframe
+            if (iframeRef.current && event.source === iframeRef.current.contentWindow) {
+                if (event.data && event.data.type === 'resize') {
+                    const newHeight = event.data.height;
+                    // Apply a safety max-limit logic or just set it
+                    if (newHeight > 0) {
+                        setHeight(newHeight);
+                    }
                 }
+            }
+        };
 
-                const onFinish = () => {
-                    el.removeEventListener('load', onFinish);
-                    el.removeEventListener('error', onFinish);
-                    resolve();
-                };
+        window.addEventListener('message', handleMessage);
+        return () => window.removeEventListener('message', handleMessage);
+    }, []);
 
-                el.addEventListener('load', onFinish);
-                el.addEventListener('error', onFinish);
-            });
-        });
+    // Construct the srcDoc with embedded resize reporter
+    const srcDoc = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <style>
+                body { margin: 0; padding: 0; overflow: hidden; }
+            </style>
+        </head>
+        <body>
+            <div id="content-wrapper">${html}</div>
+            <script>
+                (function() {
+                    const wrapper = document.getElementById('content-wrapper');
+                    let lastHeight = 0;
+                    
+                    function reportHeight() {
+                        const height = wrapper.getBoundingClientRect().height;
+                        if (Math.abs(height - lastHeight) > 2) { // 2px threshold
+                            lastHeight = height;
+                            // Add a small buffer (20px) to prevent scrollbars
+                            window.parent.postMessage({ type: 'resize', height: Math.ceil(height + 20) }, '*');
+                        }
+                    }
+                    
+                    // Initial report
+                    // Use a polling + observer strategy for robustness
+                    
+                    const resizeObserver = new ResizeObserver(() => {
+                        window.requestAnimationFrame(reportHeight);
+                    });
+                     
+                    resizeObserver.observe(wrapper);
+                    resizeObserver.observe(document.body);
+                    
+                    // Also observe images loading
+                    document.querySelectorAll('img').forEach(img => {
+                        img.addEventListener('load', reportHeight);
+                    });
 
-        // Timeout safeguard
-        const timeout = new Promise(resolve => setTimeout(resolve, 1000));
-
-        Promise.race([Promise.all(promises), timeout]).then(() => {
-            setIsReady(true);
-        });
-
-    }, [html]);
+                    // Force check after a moment (scripts execution)
+                    setTimeout(reportHeight, 500);
+                    setTimeout(reportHeight, 1500);
+                })();
+            </script>
+        </body>
+        </html>
+    `;
 
     return (
-        <div
-            ref={containerRef}
-            className={`${className} transition-opacity duration-300 ease-in-out ${isReady ? 'opacity-100' : 'opacity-0'}`}
+        <iframe
+            ref={iframeRef}
+            srcDoc={srcDoc}
+            sandbox="allow-scripts allow-popups allow-forms"
+            scrolling="no"
+            className={`${className} w-full border-none block`}
+            style={{
+                height: `${height}px`,
+                minHeight: '100px',
+                transition: 'height 0.2s ease'
+            }}
+            title="Dictionary Content"
             {...props}
         />
     );

@@ -135,7 +135,6 @@ const DictionaryModal = ({ isOpen, onClose, word, contextSentence }) => {
                                             {entry.dictionary}
                                         </div>
                                         <DangerousHtml
-                                            className="prose prose-slate prose-sm max-w-none text-slate-700 leading-relaxed"
                                             html={entry.definition}
                                         />
                                         {idx < data.results.length - 1 && <hr className="my-6 border-slate-100" />}
