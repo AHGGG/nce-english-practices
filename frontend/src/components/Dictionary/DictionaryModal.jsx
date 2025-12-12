@@ -54,8 +54,8 @@ const DictionaryModal = ({ isOpen, onClose, word, contextSentence }) => {
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in" onClick={onClose}>
-            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[85vh] flex flex-col overflow-hidden animate-slide-up" onClick={e => e.stopPropagation()}>
+        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/30 backdrop-blur-sm animate-fade-in" onClick={onClose}>
+            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl min-h-[50vh] max-h-[85vh] flex flex-col overflow-hidden animate-slide-up" onClick={e => e.stopPropagation()}>
                 {/* Header */}
                 <div className="flex items-center justify-between p-4 border-b border-slate-200 bg-slate-50">
                     <div className="flex items-center gap-3">
