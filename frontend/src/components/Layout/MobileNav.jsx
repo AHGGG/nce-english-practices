@@ -12,7 +12,7 @@ const MobileNav = () => {
                         }`
                     }
                 >
-                    <span className="text-xl">📚</span>
+                    <span className="text-xl" aria-hidden="true">📚</span>
                     <span className="text-[10px] font-medium">Learn</span>
                 </NavLink>
 
@@ -23,7 +23,7 @@ const MobileNav = () => {
                         }`
                     }
                 >
-                    <span className="text-xl">⚡</span>
+                    <span className="text-xl" aria-hidden="true">⚡</span>
                     <span className="text-[10px] font-medium">Drill</span>
                 </NavLink>
 
@@ -34,7 +34,7 @@ const MobileNav = () => {
                         }`
                     }
                 >
-                    <span className="text-xl">🚀</span>
+                    <span className="text-xl" aria-hidden="true">🚀</span>
                     <span className="text-[10px] font-medium">Apply</span>
                 </NavLink>
 
@@ -45,7 +45,7 @@ const MobileNav = () => {
                         }`
                     }
                 >
-                    <span className="text-xl">📊</span>
+                    <span className="text-xl" aria-hidden="true">📊</span>
                     <span className="text-[10px] font-medium">Stats</span>
                 </NavLink>
             </div>

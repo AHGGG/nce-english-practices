@@ -29,7 +29,7 @@ const Sidebar = () => {
                         }`
                     }
                 >
-                    <span className="text-lg opacity-80">📚</span> <span className="font-medium">Learn</span>
+                    <span className="text-lg opacity-80" aria-hidden="true">📚</span> <span className="font-medium">Learn</span>
                 </NavLink>
                 <NavLink
                     to="/drill"
@@ -38,7 +38,7 @@ const Sidebar = () => {
                         }`
                     }
                 >
-                    <span className="text-lg opacity-80">⚡</span> <span className="font-medium">Drill</span>
+                    <span className="text-lg opacity-80" aria-hidden="true">⚡</span> <span className="font-medium">Drill</span>
                 </NavLink>
                 <NavLink
                     to="/apply"
@@ -47,7 +47,7 @@ const Sidebar = () => {
                         }`
                     }
                 >
-                    <span className="text-lg opacity-80">🚀</span> <span className="font-medium">Apply</span>
+                    <span className="text-lg opacity-80" aria-hidden="true">🚀</span> <span className="font-medium">Apply</span>
                 </NavLink>
                 <div className="flex-1"></div>
                 <NavLink
@@ -57,7 +57,7 @@ const Sidebar = () => {
                         }`
                     }
                 >
-                    <span className="text-lg opacity-80">📊</span> <span className="font-medium">Stats</span>
+                    <span className="text-lg opacity-80" aria-hidden="true">📊</span> <span className="font-medium">Stats</span>
                 </NavLink>
             </nav>
         </aside >

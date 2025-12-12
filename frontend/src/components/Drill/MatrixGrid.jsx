@@ -22,18 +22,19 @@ const MatrixGrid = ({ data, onCellClick }) => {
 
                     return (
                         <div key={form} className="grid grid-cols-[120px_1fr_1fr_1fr_1fr] p-6 border-b border-white/5 transition-colors hover:bg-white/5">
-                            <div className="text-sm text-slate-400 uppercase font-semibold">{label}</div>
+                            <div className="text-sm text-slate-400 uppercase font-semibold mt-1">{label}</div>
                             {aspects.map(aspect => {
                                 const text = data[aspect] ? data[aspect][form] : '—';
                                 return (
-                                    <div
+                                    <button
                                         key={aspect}
-                                        className="pr-4 text-[0.95rem] text-slate-200 cursor-pointer transition-colors hover:text-white"
+                                        className="pr-4 text-[0.95rem] text-slate-200 cursor-pointer transition-colors hover:text-white text-left w-full focus:outline-none focus:underline decoration-sky-400 decoration-2 underline-offset-4"
                                         title="Click to Practice, Shift+Click to Copy"
+                                        aria-label={`Practice ${aspect.replace('_', ' ')} ${form}: ${text}`}
                                         onClick={(e) => onCellClick(e, aspect, text)}
                                     >
                                         {text}
-                                    </div>
+                                    </button>
                                 );
                             })}
                         </div>
