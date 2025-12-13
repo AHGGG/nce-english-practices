@@ -1,65 +1,62 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { NavLink } from 'react-router-dom';
 import { useTheme } from '../../hooks/useTheme';
+import { Zap, BookOpen, Terminal, Rocket, BarChart2 } from 'lucide-react';
 import TopicInput from './TopicInput';
 
 const Sidebar = () => {
     const { error } = useTheme();
 
+    const NavItem = ({ to, icon: Icon, label }) => (
+        <NavLink
+            to={to}
+            className={({ isActive }) =>
+                `group flex items-center gap-3 px-4 py-3 border-l-2 transition-all font-mono text-sm uppercase tracking-wide mb-1 ${isActive
+                    ? 'border-neon-green bg-neon-green/5 text-neon-green'
+                    : 'border-transparent text-ink-muted hover:text-ink hover:border-ink-faint hover:pl-5'
+                }`
+            }
+        >
+            <Icon size={16} className="shrink-0" />
+            <span className="font-bold">{label}</span>
+        </NavLink>
+    );
+
     return (
-        <aside className="hidden md:flex flex-col z-20 w-[260px] h-full bg-[#0f172a] border-r border-white/10 p-6">
-            <div className="mb-8 flex items-center gap-3 px-2">
-                <h1 className="text-xl font-bold tracking-tight text-white">NCE Practice</h1>
-                <span className="text-[10px] font-bold tracking-wider px-2 py-0.5 rounded-full bg-sky-400/20 text-sky-400 border border-sky-400/20">
-                    AI Tutor
-                </span>
+        <aside className="hidden md:flex flex-col z-20 w-[280px] h-full bg-bg-paper border-r border-ink-faint shrink-0">
+            <div className="p-6 border-b border-ink-faint bg-bg">
+                <div className="flex items-center gap-3 mb-1">
+                    <div className="w-8 h-8 bg-neon-green flex items-center justify-center shrink-0">
+                        <Zap size={20} className="text-black fill-current" />
+                    </div>
+                    <div>
+                        <h1 className="text-lg font-serif font-bold text-ink leading-none tracking-tight">Active Gym</h1>
+                        <span className="text-[10px] font-mono text-neon-green tracking-[0.2em] uppercase">System Online</span>
+                    </div>
+                </div>
             </div>
 
-            <div className="mb-8 relative">
+            <div className="p-6 pb-2">
                 <TopicInput />
+                {error && <div className="mt-2 text-[10px] font-mono text-neon-pink">{error}</div>}
             </div>
 
-            {error && <div className="mb-4 px-2 text-xs text-red-400">{error}</div>}
+            <nav className="flex flex-col gap-1 w-full mt-4">
+                <div className="px-6 mb-2 text-[10px] font-bold text-ink-muted uppercase tracking-widest">Modules</div>
+                <NavItem to="/learn" icon={BookOpen} label="Context (Story)" />
+                <NavItem to="/drill" icon={Terminal} label="Matrix (Drill)" />
+                <NavItem to="/apply" icon={Rocket} label="Scenario (Sim)" />
 
-            <nav className="flex flex-col gap-1 w-full">
-                <NavLink
-                    to="/learn"
-                    className={({ isActive }) =>
-                        `nav-item w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all mb-1 text-left ${isActive ? 'bg-sky-400/10 text-sky-400' : 'text-slate-400 hover:bg-white/5 hover:text-white'
-                        }`
-                    }
-                >
-                    <span className="text-lg opacity-80" aria-hidden="true">📚</span> <span className="font-medium">Learn</span>
-                </NavLink>
-                <NavLink
-                    to="/drill"
-                    className={({ isActive }) =>
-                        `nav-item w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all mb-1 text-left ${isActive ? 'bg-sky-400/10 text-sky-400' : 'text-slate-400 hover:bg-white/5 hover:text-white'
-                        }`
-                    }
-                >
-                    <span className="text-lg opacity-80" aria-hidden="true">⚡</span> <span className="font-medium">Drill</span>
-                </NavLink>
-                <NavLink
-                    to="/apply"
-                    className={({ isActive }) =>
-                        `nav-item w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all mb-1 text-left ${isActive ? 'bg-sky-400/10 text-sky-400' : 'text-slate-400 hover:bg-white/5 hover:text-white'
-                        }`
-                    }
-                >
-                    <span className="text-lg opacity-80" aria-hidden="true">🚀</span> <span className="font-medium">Apply</span>
-                </NavLink>
-                <div className="flex-1"></div>
-                <NavLink
-                    to="/stats"
-                    className={({ isActive }) =>
-                        `nav-item w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all mt-auto text-left ${isActive ? 'bg-sky-400/10 text-sky-400' : 'text-slate-400 hover:bg-white/5 hover:text-white'
-                        }`
-                    }
-                >
-                    <span className="text-lg opacity-80" aria-hidden="true">📊</span> <span className="font-medium">Stats</span>
-                </NavLink>
+                <div className="mt-8 px-6 mb-2 text-[10px] font-bold text-ink-muted uppercase tracking-widest">Data</div>
+                <NavItem to="/stats" icon={BarChart2} label="Performance" />
             </nav>
+
+            <div className="mt-auto p-6 border-t border-ink-faint">
+                <div className="flex items-center gap-2 text-[10px] font-mono text-ink-muted">
+                    <div className="w-2 h-2 bg-neon-green rounded-full animate-pulse"></div>
+                    <div>v2.1.0-CN <span className="opacity-50">STABLE</span></div>
+                </div>
+            </div>
         </aside >
     );
 };

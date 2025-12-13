@@ -1,3 +1,37 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@layer base {
+  body {
+    background-color: theme('colors.canvas.DEFAULT');
+    color: theme('colors.ink.DEFAULT');
+    font-family: theme('fontFamily.sans');
+  }
+
+  ::selection {
+    background-color: theme('colors.neon.green');
+    color: black;
+  }
+  
+  h1, h2, h3, h4, h5, h6 {
+    font-family: theme('fontFamily.serif');
+  }
+}
+
+@layer utilities {
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  .custom-scrollbar::-webkit-scrollbar-track {
+    background: theme('colors.canvas.elevated');
+  }
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    background: theme('colors.ink.faint');
+    border-radius: 0px; 
+  }
+  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: theme('colors.neon.cyan');
+  }
+}

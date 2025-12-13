@@ -10,7 +10,7 @@ const TenseTabs = ({ currentLayer, onChange }) => {
 
     return (
         <div
-            className="flex p-1 bg-[#0f172a] rounded-xl border border-white/10"
+            className="flex p-1 bg-bg-elevated border-b border-ink-faint"
             role="tablist"
             aria-label="Tense selection"
         >
@@ -22,9 +22,9 @@ const TenseTabs = ({ currentLayer, onChange }) => {
                     aria-controls={`panel-${layer.id}`}
                     id={`tab-${layer.id}`}
                     onClick={() => onChange(layer.id)}
-                    className={`px-4 py-1.5 text-sm font-medium rounded-lg transition-all focus:outline-none focus:ring-2 focus:ring-sky-400 ${currentLayer === layer.id
-                            ? 'bg-sky-400/10 text-sky-400'
-                            : 'text-slate-400 hover:text-white'
+                    className={`px-4 py-2 text-sm font-mono uppercase tracking-wider transition-all focus:outline-none border-b-2 mx-1 ${currentLayer === layer.id
+                        ? 'border-neon-green text-neon-green font-bold bg-neon-green/5'
+                        : 'border-transparent text-ink-muted hover:text-ink hover:bg-white/5'
                         }`}
                 >
                     {layer.label}

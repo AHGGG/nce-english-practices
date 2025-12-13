@@ -67,21 +67,31 @@ const Drill = () => {
     const currentData = sentences[currentLayer];
 
     return (
-        <section className="flex flex-col h-full w-full bg-[#0f172a] overflow-hidden">
-            <header className="flex-none flex flex-col md:flex-row md:items-center justify-between px-4 py-3 md:px-8 md:py-6 border-b border-white/5 bg-[#0f172a]/50 backdrop-blur-md sticky top-0 z-10 gap-3 md:gap-4">
-                <h2 className="text-lg md:text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-sky-400 to-indigo-400">
-                    Tense Matrix Drill
-                </h2>
+        <section className="flex flex-col h-full w-full bg-bg overflow-hidden">
+            <header className="flex-none flex flex-col md:flex-row md:items-center justify-between px-6 py-4 border-b border-ink-faint bg-bg sticky top-0 z-10 gap-3 md:gap-4">
+                <div className="flex items-center gap-2">
+                    <div className="w-1 h-6 bg-neon-pink"></div>
+                    <h2 className="text-xl font-serif font-bold text-ink">
+                        Tense Matrix Drill
+                    </h2>
+                </div>
                 <TenseTabs currentLayer={currentLayer} onChange={actions.setLayer} />
             </header>
 
             <div className="flex-1 overflow-y-auto p-4 md:p-8 pb-24 md:pb-8">
                 {!topic && (
-                    <div className="text-center text-slate-500 mt-20">Please enter a topic first.</div>
+                    <div className="text-center text-ink-muted mt-20 font-mono">
+                        {`> Waiting for Topic Initialization...`}
+                    </div>
                 )}
 
-                {loading && <div className="text-center text-sky-400 py-8">Generating sentences...</div>}
-                {error && <div className="text-center text-red-400 py-8">{error}</div>}
+                {loading && (
+                    <div className="flex flex-col items-center justify-center py-20 text-neon-green font-mono animate-pulse">
+                        {`>> GENERATING NEURAL MATRIX... <<`}
+                    </div>
+                )}
+
+                {error && <div className="text-center text-neon-pink py-8 font-mono border border-neon-pink/20 bg-neon-pink/5 mx-auto max-w-lg">{`[ERROR]: ${error}`}</div>}
 
                 {currentData && <MatrixGrid data={currentData} onCellClick={handleCellClick} />}
             </div>

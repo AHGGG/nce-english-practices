@@ -84,7 +84,7 @@
     - [x] Fixed 500 error on Markdown-wrapped JSON responses (Robust Parsing).
     - [x] Fixed API hangs with 30s timeout settings.
 
-## 🏗️ Phase 8: Architecture & Deployment Optimization (Current)
+## 🏗️ Phase 8: Architecture & Deployment Optimization (Completed)
 - [x] **Analysis**:
     - [x] Completed Architecture Review (`review_report.md`).
     - [x] Updated `CLAUDE.md` to reflect React stack.
@@ -93,3 +93,14 @@
     - [x] **Main.py Refactor**: Remove Jinja2, serve React Static Files.
     - [x] **Code Cleanup**: Delete legacy `templates/` directory.
     - [x] **Service Layer Refactor**: Decouple business logic from `voice.py` router.
+
+## 🎨 Phase 9: Visual & UX Overhaul (Completed)
+- [x] **Concept**:
+    - [x] Analyzed 4 candidate UI systems.
+    - [x] Established "Cyber-Noir" direction (Synthwave + Ink & Paper).
+    - [x] **Prototype**: Created `UnifiedDesignSystem.jsx` proof-of-concept.
+- [x] **Implementation**:
+    - [x] Global Tailwind Config updates (Design Tokens).
+    - [x] Component Library Refactor (`src/components/ui`).
+    - [x] View Migration (Learn, Drill, Apply).
+    - [x] Custom Scrollbar styling.

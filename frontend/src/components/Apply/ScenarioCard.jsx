@@ -33,58 +33,69 @@ const ScenarioCard = ({ scenario, layer }) => {
     if (!scenario) return <div className="text-slate-500">Loading scenario...</div>;
 
     return (
-        <div className="w-full max-w-4xl mx-auto bg-[#0f172a]/50 backdrop-blur-md rounded-2xl border border-white/10 p-4 md:p-8 shadow-xl mb-20 md:mb-0">
-            <div className="flex items-center justify-between mb-6">
-                <h3 className="text-xl font-bold text-white">Wait for it...</h3>
-                <span className="flex items-center gap-1.5 px-3 py-1 bg-yellow-500/10 text-yellow-400 border border-yellow-500/20 rounded-full text-xs font-bold uppercase tracking-wide">
-                    <Trophy size={14} /> Challenge
+        <div className="w-full max-w-4xl mx-auto bg-bg-paper border border-ink-faint shadow-hard p-6 md:p-8 mb-20 md:mb-0 relative overflow-hidden group">
+            {/* Decorative Corner */}
+            <div className="absolute top-0 right-0 w-16 h-16 bg-gradient-to-bl from-neon-cyan/20 to-transparent pointer-events-none"></div>
+
+            <div className="flex items-center justify-between mb-8 border-b border-ink-faint pb-4">
+                <h3 className="text-2xl font-serif font-bold text-ink">Mission Challenge</h3>
+                <span className="flex items-center gap-2 px-3 py-1 bg-neon-cyan/10 text-neon-cyan border border-neon-cyan rounded-none text-xs font-mono font-bold uppercase tracking-widest">
+                    <Trophy size={14} /> Active
                 </span>
             </div>
 
-            <div className="space-y-6">
-                <p className="text-lg text-slate-300 leading-relaxed italic break-words">
-                    {scenario.situation}
-                </p>
-
-                <div className="bg-indigo-500/10 border-l-4 border-indigo-500 p-4 rounded-r-lg">
-                    <strong className="text-indigo-400 block text-xs uppercase tracking-wider mb-1">Goal</strong>
-                    <span className="text-slate-200 break-words">{scenario.goal}</span>
+            <div className="space-y-8">
+                <div className="relative pl-6 border-l-2 border-neon-purple">
+                    <p className="text-xl text-ink leading-relaxed font-serif italic">
+                        "{scenario.situation}"
+                    </p>
                 </div>
 
-                <div className="flex flex-col md:flex-row gap-2">
+                <div className="bg-bg-elevated border border-ink-faint p-6 relative">
+                    <div className="absolute -top-3 left-4 bg-bg px-2 text-xs font-mono font-bold text-neon-cyan uppercase tracking-widest border border-ink-faint">
+                        Objective
+                    </div>
+                    <span className="text-ink font-mono tracking-tight leading-relaxed block mt-2">{scenario.goal}</span>
+                </div>
+
+                <div className="flex flex-col md:flex-row gap-0 border border-ink-faint shadow-hard focus-within:border-neon-cyan transition-colors">
                     <input
                         type="text"
                         value={input}
                         onChange={(e) => setInput(e.target.value)}
                         onKeyDown={handleKeyDown}
                         disabled={loading}
-                        placeholder="Type your response here..."
+                        placeholder=">> TYPE RESPONSE HERE..."
                         autoComplete="off"
                         aria-label="Your response"
-                        className="flex-1 bg-[#0f172a] border border-white/10 text-white rounded-xl px-4 py-3 focus:outline-none focus:border-sky-400 focus:ring-1 focus:ring-sky-400 transition-all placeholder-slate-600 disabled:opacity-50"
+                        className="flex-1 bg-bg text-ink placeholder-ink-muted px-4 py-4 focus:outline-none font-mono text-lg disabled:opacity-50"
                     />
                     <button
                         onClick={handleSubmit}
                         disabled={loading || !input.trim()}
                         aria-label="Submit response"
-                        className="px-6 py-3 bg-sky-400 text-slate-900 font-semibold rounded-xl hover:bg-sky-500 transition-colors shadow-[0_0_20px_rgba(56,189,248,0.3)] disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 justify-center"
+                        className="px-8 py-4 bg-neon-cyan text-black font-bold uppercase tracking-wider hover:bg-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 justify-center border-l border-ink-faint"
                     >
                         {loading ? <Loader2 size={20} className="animate-spin" /> : <Send size={20} />}
-                        <span className="hidden md:inline">{loading ? 'Checking...' : 'Submit'}</span>
+                        <span className="hidden md:inline font-mono">{loading ? 'PROCESSING...' : 'TRANSMIT'}</span>
                     </button>
                 </div>
 
                 {feedback && (
                     <div
-                        className={`mt-4 p-4 rounded-xl border text-sm animate-fade-in ${feedback.is_pass ? 'bg-slate-800 border-emerald-500/20 text-emerald-300' : 'bg-slate-800 border-red-500/20 text-red-300'}`}
+                        className={`mt-4 p-6 border text-sm animate-fade-in font-mono ${feedback.is_pass ? 'bg-neon-green/5 border-neon-green text-neon-green' : 'bg-neon-pink/5 border-neon-pink text-neon-pink'}`}
                         aria-live="polite"
                     >
-                        <strong className="block mb-1 text-base">{feedback.is_pass ? 'Passed!' : 'Needs Improvement'}</strong>
-                        <span className="text-slate-300 block mb-2">{feedback.feedback}</span>
+                        <div className="flex items-center gap-2 mb-2 border-b border-current pb-2 opacity-80">
+                            {feedback.is_pass ? <Trophy size={18} /> : <div className="w-4 h-4 bg-current" />}
+                            <strong className="text-base uppercase tracking-widest">{feedback.is_pass ? 'PASSED' : 'FAILED'}</strong>
+                        </div>
+
+                        <span className="block mb-4 text-ink leading-relaxed font-sans">{feedback.feedback}</span>
                         {feedback.improved_version && (
                             <>
-                                <h4 className="mt-2 pt-2 border-t border-white/5 text-slate-400 text-xs uppercase tracking-wider font-bold">Better way:</h4>
-                                <div className="text-sky-400 italic">{feedback.improved_version}</div>
+                                <h4 className="mt-2 text-xs uppercase tracking-widest font-bold opacity-70 mb-1">// OPTIMIZED OUTPUT:</h4>
+                                <div className="text-ink font-serif italic border-l-2 border-current pl-3 py-1 bg-white/5">{feedback.improved_version}</div>
                             </>
                         )}
                     </div>

@@ -6,8 +6,8 @@ const MatrixGrid = ({ data, onCellClick }) => {
     const forms = ['affirmative', 'negative', 'question', 'when'];
 
     return (
-        <div className="bg-[#0f172a]/50 backdrop-blur-md border border-white/5 rounded-2xl overflow-hidden w-full overflow-x-auto shadow-xl">
-            <div className="grid grid-cols-[120px_1fr_1fr_1fr_1fr] bg-slate-900/80 border-b border-white/5 text-xs text-slate-400 uppercase font-semibold p-4 md:px-6 md:py-4 min-w-[800px]">
+        <div className="bg-bg-paper border border-ink-faint w-full overflow-x-auto shadow-hard">
+            <div className="grid grid-cols-[120px_1fr_1fr_1fr_1fr] bg-bg-elevated border-b border-ink-faint text-xs text-ink-muted uppercase font-mono tracking-wider p-4 md:px-6 md:py-3 min-w-[800px]">
                 <div>Form</div>
                 <div>Simple</div>
                 <div>Perfect</div>
@@ -21,14 +21,14 @@ const MatrixGrid = ({ data, onCellClick }) => {
                     if (form === 'when') label = 'When?';
 
                     return (
-                        <div key={form} className="grid grid-cols-[120px_1fr_1fr_1fr_1fr] p-6 border-b border-white/5 transition-colors hover:bg-white/5">
-                            <div className="text-sm text-slate-400 uppercase font-semibold mt-1">{label}</div>
+                        <div key={form} className="grid grid-cols-[120px_1fr_1fr_1fr_1fr] p-6 border-b border-ink-faint transition-colors hover:bg-white/5 group">
+                            <div className="text-xs text-ink-muted uppercase font-bold mt-1 font-mono group-hover:text-neon-pink transition-colors">{label}</div>
                             {aspects.map(aspect => {
                                 const text = data[aspect] ? data[aspect][form] : '—';
                                 return (
                                     <button
                                         key={aspect}
-                                        className="pr-4 text-[0.95rem] text-slate-200 cursor-pointer transition-colors hover:text-white text-left w-full focus:outline-none focus:underline decoration-sky-400 decoration-2 underline-offset-4"
+                                        className="pr-4 text-sm font-mono text-ink cursor-pointer transition-colors hover:text-neon-green text-left w-full focus:outline-none focus:text-neon-green active:opacity-70"
                                         title="Click to Practice, Shift+Click to Copy"
                                         aria-label={`Practice ${aspect.replace('_', ' ')} ${form}: ${text}`}
                                         onClick={(e) => onCellClick(e, aspect, text)}

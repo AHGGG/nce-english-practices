@@ -79,3 +79,17 @@
 - [ ] **Audio Engine**:
     - [x] **TTS**: Text-to-Speech for all generated sentences (Browser Native or API).
     - [ ] **Shadowing**: Record user audio and compare (Future).
+
+## 7. Visual & UX Overhaul (The "Cyber-Noir" System)
+*Goal: Combine Synthwave aesthetics with Ink & Paper sharpness for a high-performance "Mental Gym".*
+- [x] **Design Exploration**:
+    - [x] Review candidate UIs (Ink, Neon, Nomadic, Synthwave).
+    - [x] Prototype "Cyber-Noir" Unified System (High contrast, 1px borders, No glow).
+- [x] **Core Design System**:
+    - [x] **Tokens**: Define Colors (OLED Black, Neon Green/Pink), Typography (Serif Headers + Mono Data).
+    - [x] **Components**: Rebuild primitives (Button, Input, Card, Modal) in `frontend/src/components/ui/`.
+- [x] **View Implementation**:
+    - [x] **App Shell**: Update Sidebar/Navbar to "Cyber-Noir" style.
+    - [x] **Story Mode**: Apply Serif typography and high-contrast reading experience.
+    - [x] **Drill Matrix**: Apply Monospace data aesthetic and snappy interactions.
+    - [x] **Scenario/Chat**: Update message bubbles to "Hard Shape" style.

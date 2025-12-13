@@ -136,54 +136,71 @@ const ChatCard = ({ chatSession, topic, layer }) => {
     if (!chatSession) return <div className="text-slate-500">Loading chat...</div>;
 
     return (
-        <div className="w-full h-full max-w-4xl mx-auto bg-[#0f172a]/50 backdrop-blur-md rounded-2xl border border-white/10 p-0 shadow-xl flex flex-col overflow-hidden relative">
-            <div className="flex-none p-3 md:p-6 border-b border-white/10 bg-slate-900/50 flex items-center justify-between">
+        <div className="w-full h-full max-w-4xl mx-auto bg-bg border border-ink-faint shadow-hard flex flex-col overflow-hidden relative">
+            {/* Header / Status Bar */}
+            <div className="flex-none p-4 border-b border-ink-faint bg-bg-elevated flex items-center justify-between">
                 {!voiceActive ? (
                     <div className="flex items-center justify-between w-full">
-                        <h3 className="text-base md:text-lg font-bold text-white flex items-center gap-2">
-                            <MessageCircle className="w-6 h-6 text-sky-400" aria-hidden="true" />
-                            Secret Mission
+                        <h3 className="text-base md:text-lg font-mono font-bold text-ink flex items-center gap-3 uppercase tracking-wider">
+                            <MessageCircle className="w-5 h-5 text-neon-pink" aria-hidden="true" />
+                            // SEC_MISSION_CHANNEL
                         </h3>
-                        <span className="px-2 py-0.5 md:px-3 md:py-1 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded-full text-[10px] md:text-xs font-bold uppercase tracking-wide">Roleplay</span>
+                        <span className="px-3 py-1 bg-neon-purple/10 text-neon-purple border border-neon-purple rounded-none text-xs font-mono font-bold uppercase tracking-widest">
+                            ENCRYPTED
+                        </span>
                     </div>
                 ) : (
                     <div className="flex items-center justify-between w-full animate-fade-in">
                         <div className="flex items-center gap-3">
                             <div className="relative flex h-3 w-3">
-                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-                                <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span>
+                                <span className="animate-ping absolute inline-flex h-full w-full bg-neon-pink opacity-75"></span>
+                                <span className="relative inline-flex h-3 w-3 bg-neon-pink"></span>
                             </div>
-                            <span className="text-red-400 font-bold text-sm uppercase tracking-wider">{voiceStatus}</span>
+                            <span className="text-neon-pink font-mono font-bold text-sm uppercase tracking-wider">{voiceStatus}</span>
                         </div>
-                        <div className="h-8 flex items-center gap-1">
+                        <div className="h-6 flex items-center gap-1">
                             {[1, 2, 3, 4, 5].map(i => (
-                                <div key={i} className="viz-bar w-1 h-3 bg-red-400/80 rounded-full transition-all duration-75"></div>
+                                <div key={i} className="viz-bar w-1 h-3 bg-neon-pink rounded-none transition-all duration-75"></div>
                             ))}
                         </div>
                     </div>
                 )}
             </div>
 
-            {/* Mission Brief */}
-            <div className="flex-none bg-emerald-900/10 border-b border-white/5 px-4 py-2">
-                <p className="text-emerald-400 text-sm font-bold truncate">{chatSession.mission.title}</p>
-                <div className="max-h-24 overflow-y-auto mt-1">
-                    <p className="text-slate-400 text-xs leading-relaxed">{chatSession.mission.description}</p>
+            {/* Mission Brief - Collapsible feels better but let's keep it visible per user request usually */}
+            <div className="flex-none bg-bg-paper border-b border-ink-faint px-6 py-4">
+                <p className="text-neon-green text-sm font-mono font-bold truncate mb-1">Target: {chatSession.mission.title}</p>
+                <div className="max-h-24 overflow-y-auto custom-scrollbar">
+                    <p className="text-ink-muted text-xs leading-relaxed font-mono border-l-2 border-ink-faint pl-3">{chatSession.mission.description}</p>
                 </div>
             </div>
 
-            <div ref={chatWindowRef} id="chatWindow" className="flex-1 overflow-y-auto p-4 space-y-4 scroll-smooth min-h-0" aria-live="polite">
+            {/* Terminal Window */}
+            <div ref={chatWindowRef} id="chatWindow" className="flex-1 overflow-y-auto p-6 space-y-6 scroll-smooth min-h-0 bg-bg" aria-live="polite">
                 {messages.map((msg, idx) => {
                     const isUser = msg.role === 'user';
                     return (
-                        <div key={idx} className={`max-w-[80%] px-4 py-3 rounded-2xl text-[0.95rem] leading-relaxed shadow-sm mb-3 relative group ${isUser ? 'ml-auto bg-sky-400 text-slate-900 rounded-br-sm' : 'mr-auto bg-white/10 text-white rounded-bl-sm'}`}>
-                            <span className="sr-only">{isUser ? 'You said:' : 'AI said:'}</span>
-                            <span>{msg.content}</span>
+                        <div key={idx} className={`max-w-[85%] group relative ${isUser ? 'ml-auto text-right' : 'mr-auto text-left'}`}>
+                            {/* Label */}
+                            <div className={`text-[10px] font-mono uppercase tracking-widest mb-1 ${isUser ? 'text-neon-cyan' : 'text-neon-pink'}`}>
+                                {isUser ? '>> OPERATOR' : '>> SYSTEM_AI'}
+                            </div>
+
+                            {/* Message Block */}
+                            <div className={`inline-block px-5 py-3 border text-sm md:text-base font-mono leading-relaxed shadow-hard transition-all
+                                ${isUser
+                                    ? 'bg-bg-elevated border-neon-cyan text-ink'
+                                    : 'bg-bg-paper border-neon-pink text-ink'}
+                            `}>
+                                <span>{msg.content}</span>
+                            </div>
+
+                            {/* Polish Button */}
                             {isUser && (
                                 <button
                                     onClick={() => handlePolish(idx, msg.content)}
-                                    className="absolute -left-10 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity p-2 rounded-full bg-slate-800 border border-white/10 text-sky-400 hover:text-sky-300 hover:bg-slate-700 shadow-lg"
-                                    title="Polish"
+                                    className="absolute -left-12 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 focus:opacity-100 transition-all p-2 bg-bg border border-neon-cyan text-neon-cyan hover:bg-neon-cyan hover:text-black shadow-hard"
+                                    title="Optimize Syntax"
                                     aria-label="Get polish suggestions"
                                 >
                                     <Sparkles size={14} />
@@ -194,36 +211,42 @@ const ChatCard = ({ chatSession, topic, layer }) => {
                 })}
             </div>
 
-            <div className="flex-none p-3 md:p-4 border-t border-white/10 bg-slate-900/50 flex gap-2 z-10 relative">
+            {/* Input Area */}
+            <div className="flex-none p-4 border-t border-ink-faint bg-bg-elevated flex gap-0 z-10 relative shadow-hard-up">
                 <button
                     onClick={toggleVoice}
                     aria-label={voiceActive ? "End voice call" : "Start voice call"}
-                    className={`flex-none flex items-center justify-center w-10 h-10 md:w-auto md:h-auto md:px-4 md:py-3 rounded-xl transition-colors border border-white/10 gap-2 ${voiceActive ? 'bg-red-500/20 border-red-500/50 text-red-400 animate-pulse' : 'bg-white/5 hover:bg-white/10 text-slate-400'}`}
+                    className={`flex-none flex items-center justify-center w-12 md:w-auto md:px-5 transition-colors border-y border-l border-ink-faint gap-2
+                        ${voiceActive
+                            ? 'bg-neon-pink text-black border-neon-pink animate-pulse font-bold'
+                            : 'bg-bg hover:bg-white/5 text-ink-muted hover:text-neon-pink'}`}
                 >
                     {voiceActive ? <MicOff size={20} /> : <Mic size={20} />}
-                    <span className="hidden md:inline text-sm font-semibold">{voiceActive ? 'End Call' : 'Start Call'}</span>
+                    <span className="hidden md:inline text-xs font-mono font-bold uppercase tracking-wider">{voiceActive ? 'ABORT' : 'VOICE'}</span>
                 </button>
+
                 <input
                     id="chatInput"
                     type="text"
                     value={input}
                     onChange={(e) => setInput(e.target.value)}
                     onKeyDown={handleKeyDown}
-                    placeholder="Say something..."
+                    placeholder="ENTER COMMAND..."
                     autoComplete="off"
                     aria-label="Type your message"
-                    className="flex-1 min-w-0 bg-[#0f172a] border border-white/10 text-white rounded-xl px-3 py-2 md:px-4 md:py-3 focus:outline-none focus:border-sky-400 focus:ring-1 focus:ring-sky-400 transition-all placeholder-slate-600 text-sm md:text-base disabled:opacity-50"
+                    className="flex-1 min-w-0 bg-bg border border-ink-faint text-ink px-4 py-3 focus:outline-none focus:border-neon-cyan transition-all placeholder-ink-muted text-sm md:text-base font-mono disabled:opacity-50"
                     disabled={loading}
                 />
+
                 <button
                     id="chatSendBtn"
                     onClick={handleSend}
                     disabled={!input.trim() || loading}
                     aria-label="Send message"
-                    className="flex-none px-4 py-2 md:px-6 md:py-3 bg-sky-400 text-slate-900 font-semibold rounded-xl hover:bg-sky-500 transition-all shadow-[0_0_20px_rgba(56,189,248,0.3)] text-sm md:text-base disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none disabled:bg-slate-700 disabled:text-slate-400 flex items-center gap-2"
+                    className="flex-none px-6 bg-neon-cyan text-black font-bold hover:bg-white transition-all border border-neon-cyan disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-transparent disabled:text-ink-muted flex items-center gap-2"
                 >
                     {loading ? <Loader2 className="animate-spin w-4 h-4" /> : <Send className="w-4 h-4" />}
-                    <span className="hidden md:inline">{loading ? 'Sending...' : 'Send'}</span>
+                    <span className="hidden md:inline font-mono uppercase tracking-wider text-xs">{loading ? 'SENDING' : 'SEND'}</span>
                 </button>
             </div>
         </div>

@@ -117,7 +117,18 @@ The `llm_service` singleton in `app/services/llm.py` provides:
 - **Async Client**: `llm_service.async_client` for async endpoints.
 - **Voice Client**: `llm_service.voice_client` (Gemini) for WebSocket voice sessions.
 
-All generators and routes use this service rather than creating clients directly.
+ALL generators and routes use this service rather than creating clients directly.
+
+### Frontend Design System ("Cyber-Noir")
+- **Philosophy**: "Mental Gym" - High contrast, information-dense, no distractions.
+- **Tech Stack**: TailwindCSS + Lucide Icons + custom `index.css` utilities.
+- **Tokens**:
+  - **Colors**: `canvas` (Black), `ink` (Off-white), `neon` (Accents).
+  - **Typography**: `Merriweather` (Content/Serif), `JetBrains Mono` (Data/UI).
+- **Architecture**:
+  - `src/components/ui/`: Core atomic components (Button, Input, Card).
+  - `src/index.css`: Global token definitions via Tailwind `@layer base`.
+  - `tailwind.config.js`: Central source of truth for design tokens.
 
 ### Dictionary Service
 
