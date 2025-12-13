@@ -2,12 +2,15 @@ import React from 'react';
 import { useGlobalState } from '../context/GlobalContext';
 import VocabGrid from '../components/Learn/VocabGrid';
 import StoryReader from '../components/Learn/StoryReader';
+import EmptyState from '../components/Layout/EmptyState';
 
 const Learn = () => {
     const { state, actions } = useGlobalState();
     const { vocab, stories, topic, currentLayer } = state;
 
     const currentStory = stories[`${topic}_${currentLayer}`];
+
+    if (!topic) return <EmptyState />;
 
     return (
         <section className="flex flex-col h-full w-full bg-bg overflow-hidden">
@@ -22,12 +25,6 @@ const Learn = () => {
             </header>
 
             <div className="flex-1 overflow-y-auto p-6 md:p-8 scroll-smooth pb-24 md:pb-8">
-                {!topic && (
-                    <div className="text-center text-ink-muted mt-20 font-mono">
-                        {`> Waiting for Topic Initialization...`}
-                    </div>
-                )}
-
                 {vocab && <VocabGrid vocab={vocab} />}
                 {currentStory && <StoryReader story={currentStory} />}
             </div>

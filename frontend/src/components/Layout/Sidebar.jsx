@@ -1,26 +1,40 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
+import { useGlobalState } from '../../context/GlobalContext';
 import { useTheme } from '../../hooks/useTheme';
 import { Zap, BookOpen, Terminal, Rocket, BarChart2 } from 'lucide-react';
 import TopicInput from './TopicInput';
 
 const Sidebar = () => {
     const { error } = useTheme();
+    const { state } = useGlobalState();
+    const { topic } = state;
 
-    const NavItem = ({ to, icon: Icon, label }) => (
-        <NavLink
-            to={to}
-            className={({ isActive }) =>
-                `group flex items-center gap-3 px-4 py-3 border-l-2 transition-all font-mono text-sm uppercase tracking-wide mb-1 ${isActive
-                    ? 'border-neon-green bg-neon-green/5 text-neon-green'
-                    : 'border-transparent text-ink-muted hover:text-ink hover:border-ink-faint hover:pl-5'
-                }`
-            }
-        >
-            <Icon size={16} className="shrink-0" />
-            <span className="font-bold">{label}</span>
-        </NavLink>
-    );
+    const NavItem = ({ to, icon: Icon, label, disabled }) => {
+        if (disabled) {
+            return (
+                <div className="group flex items-center gap-3 px-4 py-3 border-l-2 border-transparent transition-all font-mono text-sm uppercase tracking-wide mb-1 opacity-30 grayscale cursor-not-allowed">
+                    <Icon size={16} className="shrink-0" />
+                    <span className="font-bold">{label}</span>
+                </div>
+            );
+        }
+
+        return (
+            <NavLink
+                to={to}
+                className={({ isActive }) =>
+                    `group flex items-center gap-3 px-4 py-3 border-l-2 transition-all font-mono text-sm uppercase tracking-wide mb-1 ${isActive
+                        ? 'border-neon-green bg-neon-green/5 text-neon-green'
+                        : 'border-transparent text-ink-muted hover:text-ink hover:border-ink-faint hover:pl-5'
+                    }`
+                }
+            >
+                <Icon size={16} className="shrink-0" />
+                <span className="font-bold">{label}</span>
+            </NavLink>
+        );
+    };
 
     return (
         <aside className="hidden md:flex flex-col z-20 w-[280px] h-full bg-bg-paper border-r border-ink-faint shrink-0">
@@ -36,16 +50,18 @@ const Sidebar = () => {
                 </div>
             </div>
 
-            <div className="p-6 pb-2">
-                <TopicInput />
-                {error && <div className="mt-2 text-[10px] font-mono text-neon-pink">{error}</div>}
-            </div>
+            {topic && (
+                <div className="p-6 pb-2">
+                    <TopicInput />
+                    {error && <div className="mt-2 text-[10px] font-mono text-neon-pink">{error}</div>}
+                </div>
+            )}
 
             <nav className="flex flex-col gap-1 w-full mt-4">
                 <div className="px-6 mb-2 text-[10px] font-bold text-ink-muted uppercase tracking-widest">Modules</div>
                 <NavItem to="/learn" icon={BookOpen} label="Context (Story)" />
-                <NavItem to="/drill" icon={Terminal} label="Matrix (Drill)" />
-                <NavItem to="/apply" icon={Rocket} label="Scenario (Sim)" />
+                <NavItem to="/drill" icon={Terminal} label="Matrix (Drill)" disabled={!topic} />
+                <NavItem to="/apply" icon={Rocket} label="Scenario (Sim)" disabled={!topic} />
 
                 <div className="mt-8 px-6 mb-2 text-[10px] font-bold text-ink-muted uppercase tracking-widest">Data</div>
                 <NavItem to="/stats" icon={BarChart2} label="Performance" />

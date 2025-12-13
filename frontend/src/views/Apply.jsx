@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useGlobalState } from '../context/GlobalContext';
 import ScenarioCard from '../components/Apply/ScenarioCard';
 import ChatCard from '../components/Apply/ChatCard';
+import EmptyState from '../components/Layout/EmptyState';
 
 const Apply = () => {
     const { state } = useGlobalState();
@@ -19,6 +20,8 @@ const Apply = () => {
         scenariosKeys: Object.keys(scenarios),
         scenarioData: currentScenario
     });
+
+    if (!topic) return <EmptyState />;
 
     return (
         <section className="flex flex-col h-full w-full bg-bg overflow-hidden">
@@ -52,33 +55,25 @@ const Apply = () => {
 
             <div className="flex-1 overflow-hidden relative w-full h-full pb-[calc(65px+env(safe-area-inset-bottom))] md:pb-0">
                 <div className="w-full h-full p-6 md:p-8 overflow-y-auto scroll-smooth">
-                    {!topic ? (
-                        <div className="text-center text-ink-muted mt-20 font-mono">
-                            {`> Waiting for Topic Initialization...`}
-                        </div>
-                    ) : (
-                        <>
-                            {activeTab === 'scenario' && (
-                                currentScenario ? (
-                                    <ScenarioCard scenario={currentScenario} layer={currentLayer} />
-                                ) : (
-                                    <div className="flex flex-col items-center justify-center h-64 font-mono gap-4">
-                                        <div className="w-12 h-12 border-4 border-ink-faint border-t-neon-cyan rounded-none animate-spin"></div>
-                                        <div className="text-neon-cyan tracking-widest animate-pulse">GENERATING SCENARIO MATRIX...</div>
-                                    </div>
-                                )
-                            )}
-                            {activeTab === 'chat' && (
-                                chatSession ? (
-                                    <ChatCard chatSession={chatSession} topic={topic} layer={currentLayer} />
-                                ) : (
-                                    <div className="flex flex-col items-center justify-center h-64 font-mono gap-4">
-                                        <div className="w-12 h-12 border-4 border-ink-faint border-t-neon-pink rounded-none animate-spin"></div>
-                                        <div className="text-neon-pink tracking-widest animate-pulse">ESTABLISHING NEURAL LINK...</div>
-                                    </div>
-                                )
-                            )}
-                        </>
+                    {activeTab === 'scenario' && (
+                        currentScenario ? (
+                            <ScenarioCard scenario={currentScenario} layer={currentLayer} />
+                        ) : (
+                            <div className="flex flex-col items-center justify-center h-64 font-mono gap-4">
+                                <div className="w-12 h-12 border-4 border-ink-faint border-t-neon-cyan rounded-none animate-spin"></div>
+                                <div className="text-neon-cyan tracking-widest animate-pulse">GENERATING SCENARIO MATRIX...</div>
+                            </div>
+                        )
+                    )}
+                    {activeTab === 'chat' && (
+                        chatSession ? (
+                            <ChatCard chatSession={chatSession} topic={topic} layer={currentLayer} />
+                        ) : (
+                            <div className="flex flex-col items-center justify-center h-64 font-mono gap-4">
+                                <div className="w-12 h-12 border-4 border-ink-faint border-t-neon-pink rounded-none animate-spin"></div>
+                                <div className="text-neon-pink tracking-widest animate-pulse">ESTABLISHING NEURAL LINK...</div>
+                            </div>
+                        )
                     )}
                 </div>
             </div>

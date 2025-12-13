@@ -33,16 +33,29 @@ def test_chat_roleplay_flow(page: Page, base_url: str, mock_llm_response):
     )
 
     # 2. Navigate to Apply
+    # 2. Start Mission (Initialize Topic first)
     page.goto(base_url)
-    page.locator("a[href='/apply'] >> visible=true").click()
-    page.locator("button", has_text="Roleplay").click()
-
-    # 3. Start Mission
+    
+    # New Flow: Must initialize topic to unlock navigation
     page.locator("input[placeholder='Initialize Topic...'] >> visible=true").fill("Spy Mission")
     page.locator("button[title='Execute'] >> visible=true").click()
 
-    # 4. Verify Mission Started
-    # Relaxed selector as color classes might change (e.g., text-neon-green)
+    # Wait for topic to load (Header appears in Learn/layout)
+    # Just wait for the nav item to be enabled or simply wait for content
+    # But we want to go to Apply.
+    
+    # 3. Navigate to Apply
+    # Wait for the Apply link to be clickable (not disabled)
+    # The 'disabled' class is removing pointer-events, so we might need to wait for that class to disappear?
+    # Or just wait a bit. Using expect to be enabled might work if I used 'disabled' attribute, but I used CSS class.
+    # Let's wait for specific content that indicates we are ready.
+    # The header "Spy Mission" is a good indicator.
+    
+    # 4. Navigate and Select Tab
+    page.locator("a[href='/apply'] >> visible=true").click()
+    page.locator("button", has_text="Roleplay").click()
+
+    # 5. Verify Mission Started
     expect(page.locator("p", has_text="Secret Agent")).to_be_visible(timeout=10000)
 
     # 5. Send a Message
@@ -83,14 +96,18 @@ def test_scenario_challenge_flow(page: Page, base_url: str, mock_llm_response):
     )
 
     # Navigate
+    # Navigate
     page.goto(base_url)
+    
+    # Start (Initialize first)
+    page.locator("input[placeholder='Initialize Topic...'] >> visible=true").fill("Shopping")
+    page.locator("button[title='Execute'] >> visible=true").click()
+    page.wait_for_timeout(2000)
+    
+    # Navigate to Apply
     page.locator("a[href='/apply'] >> visible=true").click()
 
     # Default tab is Challenge (Scenario)
-
-    # Start
-    page.locator("input[placeholder='Initialize Topic...'] >> visible=true").fill("Shopping")
-    page.locator("button[title='Execute'] >> visible=true").click()
 
     # Verify Scenario
     expect(page.locator("text='You are at a shop.'")).to_be_visible(timeout=10000)

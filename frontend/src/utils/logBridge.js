@@ -13,31 +13,54 @@ const originalConsole = {
 
 const BRIDGE_ENDPOINT = '/api/logs';
 
+function formatError(error) {
+    if (error instanceof Error) {
+        return {
+            message: error.message,
+            name: error.name,
+            stack: error.stack
+        };
+    }
+    return error;
+}
+
 function sendToBackend(level, message, ...args) {
-    // Prevent infinite loops: don't log if the message is from our bridge itself
-    // or if it's a network error related to the bridge.
-    
-    // Simple loop prevention: if we are already sending, don't send again?
-    // Or just avoid logging errors from the fetch itself.
-    
     const timestamp = new Date().toISOString();
     
     // Prepare data
     let data = null;
+    let finalMessage = message;
+
+    // Special handling if the primary message is an Error
+    if (message instanceof Error) {
+        const fmt = formatError(message);
+        finalMessage = fmt.message;
+        data = { ...data, stack: fmt.stack, errorName: fmt.name };
+    } else {
+        finalMessage = String(message);
+    }
+
     if (args.length > 0) {
         try {
-            // Simple serialization for additional arguments
-            data = args.reduce((acc, arg, index) => {
-                acc[`arg${index}`] = typeof arg === 'object' ? JSON.stringify(arg) : String(arg);
+            const argsData = args.reduce((acc, arg, index) => {
+                // Handle Error objects in arguments
+                const val = arg instanceof Error ? formatError(arg) : arg;
+                
+                // Safe stringify
+                try {
+                    acc[`arg${index}`] = typeof val === 'object' ? JSON.stringify(val) : String(val);
+                } catch (err) {
+                    acc[`arg${index}`] = '[Circular/Unserializable]';
+                }
                 return acc;
             }, {});
+            
+            data = { ...data, ...argsData };
         } catch (e) {
-            data = { error: "Could not serialize args" };
+            data = { ...data, serializationError: "Could not serialize args" };
         }
     }
 
-    // "Fire and forget" - we don't want to await this or catch errors loudly
-    // to avoid polluting the console more or causing loops.
     fetch(BRIDGE_ENDPOINT, {
         method: 'POST',
         headers: {
@@ -45,12 +68,13 @@ function sendToBackend(level, message, ...args) {
         },
         body: JSON.stringify({
             level,
-            message: String(message),
+            message: finalMessage,
             data,
             timestamp
         })
     }).catch(err => {
-        // SILENT FAILURE: Do not console.log here, or we get infinite loops!
+        // Use originalConsole to avoid infinite loops
+        originalConsole.error("[LogBridge] Failed to send log:", err);
     });
 }
 
@@ -58,19 +82,36 @@ export function initLogBridge() {
     if (window.__LOG_BRIDGE_INITIALIZED__) return;
     window.__LOG_BRIDGE_INITIALIZED__ = true;
 
+    // 1. Intercept Console
     ['log', 'warn', 'error', 'info', 'debug'].forEach(level => {
         console[level] = function (...args) {
-            // 1. Call original method (so it still shows in browser devtools)
+            // Call original method
             originalConsole[level].apply(console, args);
 
-            // 2. Send to backend
+            // Send to backend
             try {
                 sendToBackend(level, ...args);
             } catch (e) {
-                // Formatting error, ignore
+                // Ignore internal errors
             }
         };
     });
+
+    // 2. Global Error Handler (Uncaught Exceptions)
+    window.addEventListener('error', (event) => {
+        try {
+            sendToBackend('error', `[Uncaught] ${event.message}`, event.error);
+        } catch (e) { /* ignore */ }
+    });
+
+    // 3. Unhandled Promise Rejections
+    window.addEventListener('unhandledrejection', (event) => {
+        try {
+            sendToBackend('error', `[Unhandled Rejection] ${event.reason ? (event.reason.message || event.reason) : 'Unknown'}`, event.reason);
+        } catch (e) { /* ignore */ }
+    });
     
     console.log("Log Bridge initialized. Logs are now streaming to backend.");
+    // Test the bridge immediately
+    sendToBackend('info', 'LogBridge Connection Test: Initialized successfully');
 }

@@ -4,6 +4,7 @@ import { fetchSentences } from '../api/client';
 import MatrixGrid from '../components/Drill/MatrixGrid';
 import TenseTabs from '../components/Drill/TenseTabs';
 import QuizModal from '../components/Drill/QuizModal';
+import EmptyState from '../components/Layout/EmptyState';
 
 const Drill = () => {
     const { state, actions } = useGlobalState();
@@ -66,6 +67,8 @@ const Drill = () => {
 
     const currentData = sentences[currentLayer];
 
+    if (!topic) return <EmptyState />;
+
     return (
         <section className="flex flex-col h-full w-full bg-bg overflow-hidden">
             <header className="flex-none flex flex-col md:flex-row md:items-center justify-between px-6 py-4 border-b border-ink-faint bg-bg sticky top-0 z-10 gap-3 md:gap-4">
@@ -79,12 +82,6 @@ const Drill = () => {
             </header>
 
             <div className="flex-1 overflow-y-auto p-4 md:p-8 pb-24 md:pb-8">
-                {!topic && (
-                    <div className="text-center text-ink-muted mt-20 font-mono">
-                        {`> Waiting for Topic Initialization...`}
-                    </div>
-                )}
-
                 {loading && (
                     <div className="flex flex-col items-center justify-center py-20 text-neon-green font-mono animate-pulse">
                         {`>> GENERATING NEURAL MATRIX... <<`}

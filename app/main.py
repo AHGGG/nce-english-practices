@@ -45,8 +45,17 @@ async def receive_remote_log(log: RemoteLog):
         prefix += f" [{log.timestamp}]"
     
     print(f"{prefix} {log.message}")
+    
     if log.data:
-        print(f"{prefix} Data: {log.data}")
+        # Check for stack trace to print nicely
+        stack = log.data.get("stack")
+        if stack:
+            print(f"{prefix} STACK TRACE:\n{stack}")
+            # Remove stack from data to avoid double printing if we want to print the rest
+            del log.data["stack"]
+        
+        if log.data:
+            print(f"{prefix} Data: {log.data}")
     
     return {"status": "ok"}
 

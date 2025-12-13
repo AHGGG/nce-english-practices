@@ -4,6 +4,7 @@ import './index.css'
 import App from './App.jsx'
 import { initLogBridge } from './utils/logBridge';
 import { ToastProvider } from './components/ui';
+import LogErrorBoundary from './components/LogErrorBoundary';
 
 // Initialize logging bridge for development
 if (import.meta.env.DEV) {
@@ -12,8 +13,10 @@ if (import.meta.env.DEV) {
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
-    <ToastProvider>
-      <App />
-    </ToastProvider>
+    <LogErrorBoundary>
+      <ToastProvider>
+        <App />
+      </ToastProvider>
+    </LogErrorBoundary>
   </StrictMode>,
 )
