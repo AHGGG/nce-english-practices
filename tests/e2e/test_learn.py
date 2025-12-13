@@ -45,11 +45,11 @@ def test_story_generation_flow(page: Page, base_url: str, mock_llm_response):
     page.goto(base_url)
 
     # 3. Input Topic
-    topic_input = page.locator("input[placeholder='Enter topic...'] >> visible=true")
+    topic_input = page.locator("input[placeholder='Initialize Topic...'] >> visible=true")
     expect(topic_input).to_be_visible()
     topic_input.fill("Mythology")
 
-    page.locator("button[title='Generate'] >> visible=true").click()
+    page.locator("button[title='Execute'] >> visible=true").click()
 
     # 4. Verify Result
     expect(page.locator("h3", has_text="The Golden Apple")).to_be_visible(timeout=15000)

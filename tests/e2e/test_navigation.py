@@ -10,13 +10,13 @@ def test_initial_load(page: Page, base_url: str):
     
     # Check Title
     # Use get_by_role to be specific about the heading level and name
-    expect(page.get_by_role("heading", name="NCE Practice")).to_be_visible()
+    expect(page.get_by_role("heading", name="Active Gym")).to_be_visible()
     
     # Verify Learn link is active
     # We look for the link that has the active class style
     # first is a property, not a method
-    learn_link = page.locator("a[href='/learn']").filter(has_text="Learn").first
-    expect(learn_link).to_have_class(re.compile(r"text-sky-400"))
+    learn_link = page.locator("a[href='/learn']").filter(has_text="Context").first
+    expect(learn_link).to_have_class(re.compile(r"text-neon-green"))
 
 def test_tab_switching(page: Page, base_url: str):
     """
@@ -33,20 +33,20 @@ def test_tab_switching(page: Page, base_url: str):
 
     # Switch to Drill
     get_link("/drill").click()
-    expect(get_link("/drill")).to_have_class(re.compile(r"text-sky-400"))
+    expect(get_link("/drill")).to_have_class(re.compile(r"text-neon-green"))
     expect(page).to_have_url(f"{base_url}/drill")
     
     # Switch to Apply
     get_link("/apply").click()
-    expect(get_link("/apply")).to_have_class(re.compile(r"text-sky-400"))
+    expect(get_link("/apply")).to_have_class(re.compile(r"text-neon-green"))
     expect(page).to_have_url(f"{base_url}/apply")
     
     # Switch to Stats
     get_link("/stats").click()
-    expect(get_link("/stats")).to_have_class(re.compile(r"text-sky-400"))
+    expect(get_link("/stats")).to_have_class(re.compile(r"text-neon-green"))
     expect(page).to_have_url(f"{base_url}/stats")
     
     # Switch back to Learn
     get_link("/learn").click()
-    expect(get_link("/learn")).to_have_class(re.compile(r"text-sky-400"))
+    expect(get_link("/learn")).to_have_class(re.compile(r"text-neon-green"))
     expect(page).to_have_url(f"{base_url}/learn")

@@ -136,24 +136,24 @@ const Stats = () => {
                     </div>
                 </div>
 
-                <div className="flex gap-4 md:gap-8 bg-bg-elevated p-4 border border-ink-faint shadow-hard">
+                <div className="grid grid-cols-2 lg:flex gap-4 lg:gap-8 bg-bg-elevated p-4 border border-ink-faint shadow-hard w-full lg:w-auto">
                     <div className="text-center flex flex-col items-center min-w-[80px]">
                         <div className="text-2xl font-mono font-bold text-neon-cyan flex items-center gap-1">
                             {totalXp} <Trophy size={14} className="opacity-50" />
                         </div>
                         <div className="text-[10px] uppercase font-bold tracking-widest text-ink-muted mt-1">XP_TOTAL</div>
                     </div>
-                    <div className="w-px bg-ink-faint self-stretch"></div>
-                    <div className="text-center min-w-[80px]">
+                    <div className="w-px bg-ink-faint self-stretch hidden lg:block"></div>
+                    <div className="text-center flex flex-col items-center min-w-[80px]">
                         <div className="text-2xl font-mono font-bold text-neon-green">{winRate}%</div>
                         <div className="text-[10px] uppercase font-bold tracking-widest text-ink-muted mt-1">SUCCESS_RT</div>
                     </div>
-                    <div className="w-px bg-ink-faint self-stretch"></div>
-                    <div className="text-center min-w-[80px]">
+                    <div className="w-px bg-ink-faint self-stretch hidden lg:block"></div>
+                    <div className="text-center flex flex-col items-center min-w-[80px]">
                         <div className="text-2xl font-mono font-bold text-ink">{totalCount}</div>
                         <div className="text-[10px] uppercase font-bold tracking-widest text-ink-muted mt-1">OPS_COUNT</div>
                     </div>
-                    <div className="w-px bg-ink-faint self-stretch"></div>
+                    <div className="w-px bg-ink-faint self-stretch hidden lg:block"></div>
                     <div className="text-center flex flex-col items-center min-w-[80px]">
                         <div className="text-2xl font-mono font-bold text-neon-purple flex items-center gap-1">
                             {totalTime} <Clock4 size={14} className="opacity-50" />

@@ -26,8 +26,8 @@ def test_drill_flow(page: Page, base_url: str, mock_llm_response):
 
     # Navigate and Load
     page.goto(base_url)
-    page.locator("input[placeholder='Enter topic...'] >> visible=true").fill("DrillTopic")
-    page.locator("button[title='Generate'] >> visible=true").click()
+    page.locator("input[placeholder='Initialize Topic...'] >> visible=true").fill("DrillTopic")
+    page.locator("button[title='Execute'] >> visible=true").click()
 
     # Wait for processing
     expect(page.locator("h3", has_text="DrillTopic")).to_be_visible(timeout=10000)
