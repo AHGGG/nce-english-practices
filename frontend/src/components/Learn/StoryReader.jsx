@@ -80,8 +80,8 @@ const StoryReader = ({ story }) => {
                 </span>
             </div>
 
-            <div className="bg-bg-paper border border-ink-faint p-8 shadow-hard relative overflow-hidden group">
-                <h3 className="text-2xl font-serif font-bold mb-6 text-ink border-b border-ink-faint pb-4">
+            <div className="bg-bg-paper border border-ink-faint p-5 md:p-8 shadow-hard relative overflow-hidden group">
+                <h3 className="text-xl font-serif font-bold mb-4 text-ink border-b border-ink-faint pb-3">
                     {story.title || `${story.target_tense} Story`}
                 </h3>
 
@@ -89,16 +89,16 @@ const StoryReader = ({ story }) => {
                     role="region"
                     aria-label={`Story content: ${story.title || 'Practice text'}`}
                     className="prose prose-invert max-w-none 
-                        font-serif text-lg leading-loose text-ink/90
-                        prose-p:mb-6 prose-strong:text-neon-green prose-em:text-ink-muted"
+                        font-serif text-base leading-relaxed text-ink/90
+                        prose-p:mb-4 prose-strong:text-neon-green prose-em:text-ink-muted"
                     dangerouslySetInnerHTML={{ __html: processedContent }}
                     onClick={handleWordClick}
                 />
 
                 {story.grammar_notes && story.grammar_notes.length > 0 && (
-                    <div className="mt-8 pt-6 border-t border-ink-faint text-ink-muted font-mono text-sm">
-                        <h4 className="font-bold text-neon-pink uppercase tracking-widest mb-3 text-xs">Grammar Notes</h4>
-                        <ul className="list-disc list-inside space-y-2 marker:text-neon-pink">
+                    <div className="mt-6 pt-5 border-t border-ink-faint text-ink-muted font-mono text-sm">
+                        <h4 className="font-bold text-neon-pink uppercase tracking-widest mb-2 text-xs">Grammar Notes</h4>
+                        <ul className="list-disc list-inside space-y-1 marker:text-neon-pink">
                             {story.grammar_notes.map((note, idx) => (
                                 <li key={idx}>{note}</li>
                             ))}

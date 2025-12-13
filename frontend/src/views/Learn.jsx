@@ -36,7 +36,7 @@ const Learn = () => {
             </header>
 
             <div
-                className="flex-1 overflow-y-auto p-6 md:p-8 scroll-smooth pb-24 md:pb-8"
+                className="flex-1 overflow-y-auto p-4 md:p-8 scroll-smooth pb-24 md:pb-8"
                 onScroll={handleScroll}
             >
                 {vocab && <VocabGrid vocab={vocab} isCollapsed={isScrolled} />}

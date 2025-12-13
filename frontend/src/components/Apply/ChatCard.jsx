@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { sendChatReply, polishSentence, addReviewNote, logAttempt } from '../../api/client';
 import { GeminiLiveClient } from '../../api/gemini-live';
-import { Loader2, Send, Mic, MicOff, Sparkles, MessageCircle } from 'lucide-react';
+import { Loader2, Send, Mic, MicOff, Sparkles, MessageCircle, ChevronDown, ChevronUp, Lock, Unlock } from 'lucide-react';
 import { useToast } from '../ui';
 
 const ChatCard = ({ chatSession, topic, layer }) => {
@@ -13,6 +13,7 @@ const ChatCard = ({ chatSession, topic, layer }) => {
     const chatWindowRef = useRef(null);
     const voiceClientRef = useRef(null);
     const { addToast } = useToast();
+    const [isMissionExpanded, setIsMissionExpanded] = useState(false);
 
     useEffect(() => {
         if (chatSession) {
@@ -143,42 +144,31 @@ const ChatCard = ({ chatSession, topic, layer }) => {
 
     return (
         <div className="w-full h-full max-w-4xl mx-auto bg-bg border border-ink-faint shadow-hard flex flex-col overflow-hidden relative">
-            {/* Header / Status Bar */}
-            <div className="flex-none p-4 border-b border-ink-faint bg-bg-elevated flex items-center justify-between">
-                {!voiceActive ? (
-                    <div className="flex items-center justify-between w-full">
-                        <h3 className="text-base md:text-lg font-mono font-bold text-ink flex items-center gap-3 uppercase tracking-wider">
-                            <MessageCircle className="w-5 h-5 text-neon-pink" aria-hidden="true" />
-                            // SEC_MISSION_CHANNEL
-                        </h3>
-                        <span className="px-3 py-1 bg-neon-purple/10 text-neon-purple border border-neon-purple rounded-none text-xs font-mono font-bold uppercase tracking-widest">
-                            ENCRYPTED
-                        </span>
-                    </div>
-                ) : (
-                    <div className="flex items-center justify-between w-full animate-fade-in">
-                        <div className="flex items-center gap-3">
-                            <div className="relative flex h-3 w-3">
-                                <span className="animate-ping absolute inline-flex h-full w-full bg-neon-pink opacity-75"></span>
-                                <span className="relative inline-flex h-3 w-3 bg-neon-pink"></span>
-                            </div>
-                            <span className="text-neon-pink font-mono font-bold text-sm uppercase tracking-wider">{voiceStatus}</span>
-                        </div>
-                        <div className="h-6 flex items-center gap-1">
-                            {[1, 2, 3, 4, 5].map(i => (
-                                <div key={i} className="viz-bar w-1 h-3 bg-neon-pink rounded-none transition-all duration-75"></div>
-                            ))}
-                        </div>
+
+
+            {/* Mission Brief - Collapsible */}
+            <div
+                className="flex-none bg-bg-paper border-b border-ink-faint px-6 py-2 cursor-pointer hover:bg-white/5 transition-colors group/mission"
+                onClick={() => setIsMissionExpanded(!isMissionExpanded)}
+            >
+                <div className="flex items-center justify-between">
+                    <p className="text-neon-green text-sm font-mono font-bold truncate mb-0 flex-1">
+                        Target: {chatSession.mission.title}
+                    </p>
+                    {isMissionExpanded ? (
+                        <ChevronUp size={16} className="text-ink-muted group-hover/mission:text-neon-cyan transition-colors" />
+                    ) : (
+                        <ChevronDown size={16} className="text-ink-muted group-hover/mission:text-neon-cyan transition-colors" />
+                    )}
+                </div>
+
+                {isMissionExpanded && (
+                    <div className="mt-2 max-h-24 overflow-y-auto custom-scrollbar animate-in slide-in-from-top-2 duration-200">
+                        <p className="text-ink-muted text-xs leading-relaxed font-mono border-l-2 border-ink-faint pl-3">
+                            {chatSession.mission.description}
+                        </p>
                     </div>
                 )}
-            </div>
-
-            {/* Mission Brief - Collapsible feels better but let's keep it visible per user request usually */}
-            <div className="flex-none bg-bg-paper border-b border-ink-faint px-6 py-4">
-                <p className="text-neon-green text-sm font-mono font-bold truncate mb-1">Target: {chatSession.mission.title}</p>
-                <div className="max-h-24 overflow-y-auto custom-scrollbar">
-                    <p className="text-ink-muted text-xs leading-relaxed font-mono border-l-2 border-ink-faint pl-3">{chatSession.mission.description}</p>
-                </div>
             </div>
 
             {/* Terminal Window */}
@@ -231,19 +221,47 @@ const ChatCard = ({ chatSession, topic, layer }) => {
                     <span className="hidden md:inline ml-2 text-xs font-mono font-bold uppercase tracking-wider">{voiceActive ? 'ABORT' : 'VOICE'}</span>
                 </button>
 
-                <div className="flex-1 relative group">
-                    <input
-                        id="chatInput"
-                        type="text"
-                        value={input}
-                        onChange={(e) => setInput(e.target.value)}
-                        onKeyDown={handleKeyDown}
-                        placeholder="ENTER COMMAND..."
-                        autoComplete="off"
-                        aria-label="Type your message"
-                        className="w-full bg-bg border border-ink-faint text-ink px-3 py-2 md:px-4 md:py-3 focus:outline-none focus:border-neon-cyan transition-all placeholder-ink-muted/50 text-sm md:text-base font-mono disabled:opacity-50"
-                        disabled={loading}
-                    />
+                <div className={`flex-1 relative group flex items-center border transition-all ${voiceActive
+                        ? 'border-neon-pink bg-neon-pink/5'
+                        : 'border-ink-faint bg-bg focus-within:border-neon-cyan'
+                    }`}>
+                    {/* Signal Status Indicator */}
+                    <div className="absolute left-3 md:left-4 flex-none text-ink-muted">
+                        {voiceActive ? (
+                            <div className="relative flex h-2 w-2">
+                                <span className="animate-ping absolute inline-flex h-full w-full bg-neon-pink opacity-75 rounded-full"></span>
+                                <span className="relative inline-flex h-2 w-2 bg-neon-pink rounded-full"></span>
+                            </div>
+                        ) : (
+                            <Lock size={14} className="text-neon-cyan" />
+                        )}
+                    </div>
+
+                    {!voiceActive ? (
+                        <input
+                            id="chatInput"
+                            type="text"
+                            value={input}
+                            onChange={(e) => setInput(e.target.value)}
+                            onKeyDown={handleKeyDown}
+                            placeholder="SECURE CHANNEL..."
+                            autoComplete="off"
+                            aria-label="Type your message"
+                            className="w-full bg-transparent text-ink px-3 py-2 md:px-4 md:py-3 pl-8 md:pl-10 focus:outline-none placeholder-ink-muted/50 text-sm md:text-base font-mono disabled:opacity-50"
+                            disabled={loading}
+                        />
+                    ) : (
+                        <div className="w-full px-3 py-2 md:px-4 md:py-3 pl-8 md:pl-10 flex items-center justify-between animate-fade-in">
+                            <span className="text-neon-pink font-mono font-bold text-sm uppercase tracking-wider animate-pulse">
+                                {voiceStatus || "TRANSMITTING..."}
+                            </span>
+                            <div className="h-4 flex items-center gap-1">
+                                {[1, 2, 3, 4, 5].map(i => (
+                                    <div key={i} className="viz-bar w-1 h-3 bg-neon-pink rounded-none transition-all duration-75"></div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
                 </div>
 
                 <button

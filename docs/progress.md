@@ -111,3 +111,9 @@
     - [x] **Mobile Optimization**:
         - [x] **Core Data Slots**: Implemented Compact HUD Grid (2x3) with Auto-Collapse logic on scroll.
         - [x] **Transitions**: Smooth CSS animations for header collapse.
+        - [x] **Typography**: Optimized font sizes for Learn (Story) and Apply (Scenario) for better readability.
+        - [x] **Roleplay Layout**: Optimized ChatCard to maximize vertical space (Collapsible Mission Brief + Compact Header).
+        - [x] **Transformer Input**: Integrated Connection Status & Voice Visualizer into the Input Bar, removing the top status bar entirely.
+        - [x] **Challenge Layout**: Compacted ScenarioCard (padding, fonts, spacing) to eliminate scrolling for standard tasks.
+        - [x] **Drill Matrix**: Implemented Responsive Matrix Grid (Table on Desktop, Stacked Cards on Mobile) to fix horizontal scrolling.
+        - [x] **Context Story Layout**: Optimized Typography and Spacing in StoryReader to increase information density and reduce scrolling.

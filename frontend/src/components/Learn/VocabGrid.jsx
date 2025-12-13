@@ -28,7 +28,7 @@ const VocabGrid = ({ vocab, isCollapsed }) => {
     ];
 
     return (
-        <div className="mb-8 transition-all duration-500 ease-in-out">
+        <div className="mb-4 transition-all duration-500 ease-in-out">
             {/* Collapsed Summary View */}
             <div
                 className={`
