@@ -8,7 +8,18 @@ def test_chat_roleplay_flow(page: Page, base_url: str, mock_llm_response):
     # 1. Mock APIs
     mock_llm_response(endpoint="theme", response_data={"topic": "Spy", "slots": {}, "verbs": []})
     mock_llm_response(endpoint="sentences", response_data={})
-    mock_llm_response(endpoint="story/stream", response_data={}, is_stream=True, stream_chunks=[{"type": "text", "chunk": "..."}])
+    
+    story_data = {"title": "Spy", "content": "...", "highlights": [], "grammar_notes": []}
+    mock_llm_response(
+        endpoint="story/stream", 
+        response_data={}, 
+        is_stream=True, 
+        stream_chunks=[
+            {"type": "text", "chunk": "..."},
+            {"type": "data", "story": story_data}
+        ]
+    )
+    
     mock_llm_response(endpoint="scenario", response_data={"situation": "Spying", "goal": "Find intel"})
 
     mock_llm_response(
@@ -34,25 +45,21 @@ def test_chat_roleplay_flow(page: Page, base_url: str, mock_llm_response):
 
     # 2. Navigate to Apply
     # 2. Start Mission (Initialize Topic first)
+    # 2. Navigate to Apply
+    # 2. Start Mission (Initialize Topic first)
     page.goto(base_url)
     
     # New Flow: Must initialize topic to unlock navigation
-    page.locator("input[placeholder='Initialize Topic...'] >> visible=true").fill("Spy Mission")
-    page.locator("button[title='Execute'] >> visible=true").click()
+    topic_input = page.locator("input[placeholder='Initialize Topic...']")
+    expect(topic_input).to_be_visible()
+    topic_input.fill("Spy Mission")
+    page.locator("button[title='Execute']").click()
 
-    # Wait for topic to load (Header appears in Learn/layout)
-    # Just wait for the nav item to be enabled or simply wait for content
-    # But we want to go to Apply.
-    
-    # 3. Navigate to Apply
-    # Wait for the Apply link to be clickable (not disabled)
-    # The 'disabled' class is removing pointer-events, so we might need to wait for that class to disappear?
-    # Or just wait a bit. Using expect to be enabled might work if I used 'disabled' attribute, but I used CSS class.
-    # Let's wait for specific content that indicates we are ready.
-    # The header "Spy Mission" is a good indicator.
+    # Wait for Apply link to be unlocked
+    page.locator("a[href='/apply']").first.wait_for(state="visible", timeout=10000)
     
     # 4. Navigate and Select Tab
-    page.locator("a[href='/apply'] >> visible=true").click()
+    page.locator("a[href='/apply']").first.click()
     page.locator("button", has_text="Roleplay").click()
 
     # 5. Verify Mission Started
@@ -73,7 +80,16 @@ def test_scenario_challenge_flow(page: Page, base_url: str, mock_llm_response):
     # Mock APIs
     mock_llm_response(endpoint="theme", response_data={"topic": "Shop", "slots": {}, "verbs": []})
     mock_llm_response(endpoint="sentences", response_data={})
-    mock_llm_response(endpoint="story/stream", response_data={}, is_stream=True, stream_chunks=[{"type": "text", "chunk": "..."}])
+    story_data = {"title": "Shop", "content": "...", "highlights": [], "grammar_notes": []}
+    mock_llm_response(
+        endpoint="story/stream", 
+        response_data={}, 
+        is_stream=True, 
+        stream_chunks=[
+            {"type": "text", "chunk": "..."},
+            {"type": "data", "story": story_data}
+        ]
+    )
 
     # Mock Scenario Generation
     mock_llm_response(
@@ -97,26 +113,32 @@ def test_scenario_challenge_flow(page: Page, base_url: str, mock_llm_response):
 
     # Navigate
     # Navigate
+    # Navigate
+    # Navigate
     page.goto(base_url)
     
     # Start (Initialize first)
-    page.locator("input[placeholder='Initialize Topic...'] >> visible=true").fill("Shopping")
-    page.locator("button[title='Execute'] >> visible=true").click()
-    page.wait_for_timeout(2000)
+    topic_input = page.locator("input[placeholder='Initialize Topic...']")
+    expect(topic_input).to_be_visible()
+    topic_input.fill("Shopping")
+    page.locator("button[title='Execute']").click()
+    
+    # Wait for Apply link to be unlocked
+    page.locator("a[href='/apply']").first.wait_for(state="visible", timeout=10000)
     
     # Navigate to Apply
-    page.locator("a[href='/apply'] >> visible=true").click()
+    page.locator("a[href='/apply']").first.click()
 
     # Default tab is Challenge (Scenario)
 
     # Verify Scenario
-    expect(page.locator("text='You are at a shop.'")).to_be_visible(timeout=10000)
+    # Text is wrapped in quotes in UI, so use has_text to be safe
+    expect(page.locator("p", has_text="You are at a shop.")).to_be_visible(timeout=10000)
 
     # Submit Answer
-    # ScenarioCard uses input[placeholder='Type your response here...'] (It changed from textarea to input in my read earlier? No, it was input type="text" in the read code!)
-    # `input type="text" ... placeholder="Type your response here..."`
-    page.locator("input[placeholder='Type your response here...']").fill("I buy milk.")
-    page.locator("button", has_text="Submit").click()
+    # ScenarioCard placeholder is uppercase with >>
+    page.locator("input[placeholder='>> TYPE RESPONSE HERE...']").fill("I buy milk.")
+    page.locator("button", has_text="TRANSMIT").click()
 
     # Verify Feedback
     expect(page.locator("text='Perfect!'")).to_be_visible(timeout=10000)

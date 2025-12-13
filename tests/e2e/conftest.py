@@ -120,7 +120,17 @@ def mock_llm_response(page: Page):
     Also mocks /api/logs to silence errors.
     """
     # Mock logs globally for this page
-    page.route("**/api/logs", lambda route: route.fulfill(status=200, body='{"status":"ok"}'))
+    def handle_logs(route):
+        try:
+            data = route.request.post_data_json
+            print(f"[FRONTEND LOG] {data.get('level', 'unknown').upper()}: {data.get('message', '')}")
+            if data.get('data'):
+                print(f"Data: {data.get('data')}")
+        except:
+            pass
+        route.fulfill(status=200, body='{"status":"ok"}')
+        
+    page.route("**/api/logs", handle_logs)
 
     def _mock(endpoint: str, response_data: dict, delay_ms: int = 100, is_stream: bool = False, stream_chunks: list = None):
         def handle_route(route):

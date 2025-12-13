@@ -28,16 +28,34 @@ function sendToBackend(level, message, ...args) {
     const timestamp = new Date().toISOString();
     
     // Prepare data
-    let data = null;
+    let data = {};
     let finalMessage = message;
+    let stackTrace = null;
+    let errName = null;
 
-    // Special handling if the primary message is an Error
+    // 1. Check if the primary message is an Error
     if (message instanceof Error) {
         const fmt = formatError(message);
         finalMessage = fmt.message;
-        data = { ...data, stack: fmt.stack, errorName: fmt.name };
+        stackTrace = fmt.stack;
+        errName = fmt.name;
     } else {
         finalMessage = String(message);
+    }
+
+    // 2. Scan args for Errors if we haven't found a stack trace yet
+    // This handles cases like: console.error("Something went wrong", errorObj)
+    args.forEach(arg => {
+        if (!stackTrace && arg instanceof Error) {
+            const fmt = formatError(arg);
+            stackTrace = fmt.stack;
+            errName = fmt.name;
+        }
+    });
+
+    if (stackTrace) {
+        data.stack = stackTrace;
+        data.errorName = errName;
     }
 
     if (args.length > 0) {

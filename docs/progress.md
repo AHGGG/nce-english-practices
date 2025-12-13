@@ -106,3 +106,5 @@
     - [x] Custom Scrollbar styling.
     - [x] **Toast System**: Implemented non-blocking notifications.
     - [x] **Mobile Optimize**: Refined Chat/Apply layout for small screens.
+    - [x] **Empty State 2.0**: Implemented "System Standby" screen with locked navigation to prevent phantom interaction.
+    - [x] **Debug Infrastructure**: Fixed Log Bridge (Error Boundary + Stack Trace) for full-stack visibility.

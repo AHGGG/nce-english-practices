@@ -20,24 +20,47 @@ def test_drill_flow(page: Page, base_url: str, mock_llm_response):
     mock_llm_response(endpoint="sentences", response_data={
         "simple": {"affirmative": "I run.", "negative": "I do not run.", "question": "Do I run?"}
     })
-    mock_llm_response(endpoint="story/stream", response_data={}, is_stream=True, stream_chunks=[{"type": "text", "chunk": "."}])
+    
+    story_data = {
+        "title": "Drill Story",
+        "content": "I run every day.",
+        "highlights": [],
+        "grammar_notes": []
+    }
+    mock_llm_response(
+        endpoint="story/stream", 
+        response_data={}, 
+        is_stream=True, 
+        stream_chunks=[
+            {"type": "text", "chunk": "I run every day."},
+            {"type": "data", "story": story_data}
+        ]
+    )
+    
     mock_llm_response(endpoint="scenario", response_data={})
     mock_llm_response(endpoint="chat/start", response_data={"session_id": "1", "mission": {}, "first_message": "Hi"})
 
     # Navigate and Load
+    # Navigate and Load
     page.goto(base_url)
-    page.locator("input[placeholder='Initialize Topic...'] >> visible=true").fill("DrillTopic")
-    page.locator("button[title='Execute'] >> visible=true").click()
-    page.wait_for_timeout(2000)
+    
+    # Initialize Topic
+    # Wait for input to be ready and interact
+    topic_input = page.locator("input[placeholder='Initialize Topic...']")
+    expect(topic_input).to_be_visible()
+    topic_input.fill("DrillTopic")
+    page.locator("button[title='Execute']").click()
+    
+    # Wait for Drill link to be active/unlocked
+    # Based on Sidebar implementation, it switches from div.cursor-not-allowed to a.href
+    page.locator("a[href='/drill']").first.wait_for(state="visible", timeout=10000)
 
     # 3. Switch to Drill
-    # Now navigation should be unlocked
-    page.locator("a[href='/drill'] >> visible=true").click()
+    page.locator("a[href='/drill']").first.click()
 
     # 3. Verify Matrix Grid
-    # Should see "I run."
-    # Use exact=True to avoid matching other things if possible, or verify visibility of one instance
-    expect(page.locator("text='I run.'").first).to_be_visible()
+    # Check button existence
+    expect(page.locator("button", has_text="I run.").first).to_be_visible(timeout=10000)
 
     # 4. Click a cell to open Quiz
     # Setup Quiz Mock
@@ -49,9 +72,9 @@ def test_drill_flow(page: Page, base_url: str, mock_llm_response):
         ]
     })
 
-    # Click the grid cell. Grid cell is a div.
-    # We can be specific: div with text "I run." that is NOT inside the modal (which isn't open yet).
-    page.locator("div", has_text="I run.").first.click()
+    # Click the grid cell. 
+    # Use 'button' since the grid uses buttons for interaction
+    page.locator("button", has_text="I run.").first.click()
 
     # 5. Verify Modal
     expect(page.locator("text='Translate: I run.'")).to_be_visible()
@@ -64,8 +87,11 @@ def test_drill_flow(page: Page, base_url: str, mock_llm_response):
     # Let's target the option specifically.
     # Option has class `border` and text "I run."
     # Or better: The option has "A" or "B" badge.
-    # Click option A.
-    page.locator("text='A'").click()
+    # 6. Click Correct Option
+    # Scope to modal (fixed z-100) to avoid clicking grid cell
+    # Escape brackets in selector: z-[100] -> z-\[100\]
+    page.locator(".fixed.z-\\[100\\] button", has_text="I run.").click()
 
-    # 7. Verify Feedback
-    expect(page.locator("text='Correct!'")).to_be_visible()
+    # 7. Check Feedback
+    # Use has_text for safety
+    expect(page.locator("text='Correct.'")).to_be_visible(timeout=5000)

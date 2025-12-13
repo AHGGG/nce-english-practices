@@ -21,32 +21,56 @@ def test_initial_load(page: Page, base_url: str):
 def test_tab_switching(page: Page, base_url: str):
     """
     Verify clicking navigation buttons switches views.
+    Handles 'System Standby' state where nav is locked until topic is set.
     """
     page.goto(base_url)
     
-    # Helper to get visible link
+    # Helper to get visible link (or disabled item)
     def get_link(href):
-        # We might have mobile and desktop links.
-        # The Sidebar links have text and icon.
-        # first is a property
         return page.locator(f"a[href='{href}']").filter(has_text=re.compile(r"[a-zA-Z]")).first
 
-    # Switch to Drill
+    def get_disabled_item(label):
+        return page.locator(f"div.cursor-not-allowed").filter(has_text=label).first
+
+    # 1. Verify initially locked
+    expect(get_disabled_item("Matrix")).to_be_visible()
+    expect(get_disabled_item("Scenario")).to_be_visible()
+
+    # 2. Initialize Topic to unlock
+    # We can just type into the input and hit enter/execute. 
+    # Since we are running against real backend (or mocked), we need to ensure it succeeds.
+    # For now, let's assume the backend is responding or we are monitoring mocks.
+    # However, test_navigation doesn't setup mocks.
+    # Let's type a simple topic.
+    
+    topic_input = page.locator("input[placeholder='Initialize Topic...']")
+    if topic_input.is_visible():
+        topic_input.fill("Test Navigation")
+        page.locator("button[title='Execute']").click()
+        
+        # Wait for unlocking (nav items become links)
+        # The topic generation might take a bit if real LLM is used, but usually it's fast or mocked in other tests.
+        # This test file doesn't import mocks, so it might be hitting real backend?
+        # If so, it depends on API keys. 
+        # But we can try to wait for the link to appear.
+        expect(get_link("/drill")).to_be_visible(timeout=10000)
+
+    # 3. Switch to Drill
     get_link("/drill").click()
     expect(get_link("/drill")).to_have_class(re.compile(r"text-neon-green"))
     expect(page).to_have_url(f"{base_url}/drill")
     
-    # Switch to Apply
+    # 4. Switch to Apply
     get_link("/apply").click()
     expect(get_link("/apply")).to_have_class(re.compile(r"text-neon-green"))
     expect(page).to_have_url(f"{base_url}/apply")
     
-    # Switch to Stats
+    # 5. Switch to Stats (Always enabled)
     get_link("/stats").click()
     expect(get_link("/stats")).to_have_class(re.compile(r"text-neon-green"))
     expect(page).to_have_url(f"{base_url}/stats")
     
-    # Switch back to Learn
+    # 6. Switch back to Learn
     get_link("/learn").click()
     expect(get_link("/learn")).to_have_class(re.compile(r"text-neon-green"))
     expect(page).to_have_url(f"{base_url}/learn")
