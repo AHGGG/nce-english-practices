@@ -104,3 +104,5 @@
     - [x] Component Library Refactor (`src/components/ui`).
     - [x] View Migration (Learn, Drill, Apply).
     - [x] Custom Scrollbar styling.
+    - [x] **Toast System**: Implemented non-blocking notifications.
+    - [x] **Mobile Optimize**: Refined Chat/Apply layout for small screens.
