@@ -4,7 +4,7 @@
 
 @layer base {
   body {
-    background-color: theme('colors.canvas.DEFAULT');
+    background-color: theme('colors.bg.DEFAULT');
     color: theme('colors.ink.DEFAULT');
     font-family: theme('fontFamily.sans');
   }
@@ -25,7 +25,7 @@
     height: 6px;
   }
   .custom-scrollbar::-webkit-scrollbar-track {
-    background: theme('colors.canvas.elevated');
+    background: theme('colors.bg.elevated');
   }
   .custom-scrollbar::-webkit-scrollbar-thumb {
     background: theme('colors.ink.faint');

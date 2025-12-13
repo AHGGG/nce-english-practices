@@ -9,7 +9,7 @@ export default {
       colors: {
         // Cyber-Noir Palette
         // Cyber-Noir Palette
-        canvas: {
+        bg: {
           DEFAULT: '#050505', // OLED Black with subtle noise
           paper: '#0A0A0A',   // Secondary background
           elevated: '#111111', // Tertiary background
