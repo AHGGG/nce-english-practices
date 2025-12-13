@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { sendChatReply, polishSentence, addReviewNote, logAttempt } from '../../api/client';
 import { GeminiLiveClient } from '../../api/gemini-live';
 import { Loader2, Send, Mic, MicOff, Sparkles, MessageCircle } from 'lucide-react';
+import { useToast } from '../ui';
 
 const ChatCard = ({ chatSession, topic, layer }) => {
     const [messages, setMessages] = useState([]);
@@ -11,6 +12,7 @@ const ChatCard = ({ chatSession, topic, layer }) => {
     const [voiceStatus, setVoiceStatus] = useState('');
     const chatWindowRef = useRef(null);
     const voiceClientRef = useRef(null);
+    const { addToast } = useToast();
 
     useEffect(() => {
         if (chatSession) {
@@ -129,8 +131,12 @@ const ChatCard = ({ chatSession, topic, layer }) => {
             // Only polish user messages
             const history = messages;
             const res = await polishSentence(text, history);
-            alert(`Suggestion: ${res.suggestion}`); // Placeholder for nicer UI
-        } catch (e) { console.error(e); }
+            addToast(res.suggestion, 'success', 5000);
+            // Copy to clipboard option could be good here too
+        } catch (e) {
+            console.error(e);
+            addToast("Failed to get suggestion", 'error');
+        }
     };
 
     if (!chatSession) return <div className="text-slate-500">Loading chat...</div>;
@@ -212,38 +218,40 @@ const ChatCard = ({ chatSession, topic, layer }) => {
             </div>
 
             {/* Input Area */}
-            <div className="flex-none p-4 border-t border-ink-faint bg-bg-elevated flex gap-0 z-10 relative shadow-hard-up">
+            <div className="flex-none p-3 md:p-4 border-t border-ink-faint bg-bg-elevated flex gap-2 z-10 relative shadow-hard-up items-center">
                 <button
                     onClick={toggleVoice}
                     aria-label={voiceActive ? "End voice call" : "Start voice call"}
-                    className={`flex-none flex items-center justify-center w-12 md:w-auto md:px-5 transition-colors border-y border-l border-ink-faint gap-2
+                    className={`flex-none flex items-center justify-center w-10 h-10 md:w-auto md:h-auto md:px-5 md:py-3 transition-all border border-ink-faint 
                         ${voiceActive
                             ? 'bg-neon-pink text-black border-neon-pink animate-pulse font-bold'
                             : 'bg-bg hover:bg-white/5 text-ink-muted hover:text-neon-pink'}`}
                 >
-                    {voiceActive ? <MicOff size={20} /> : <Mic size={20} />}
-                    <span className="hidden md:inline text-xs font-mono font-bold uppercase tracking-wider">{voiceActive ? 'ABORT' : 'VOICE'}</span>
+                    {voiceActive ? <MicOff size={18} /> : <Mic size={18} />}
+                    <span className="hidden md:inline ml-2 text-xs font-mono font-bold uppercase tracking-wider">{voiceActive ? 'ABORT' : 'VOICE'}</span>
                 </button>
 
-                <input
-                    id="chatInput"
-                    type="text"
-                    value={input}
-                    onChange={(e) => setInput(e.target.value)}
-                    onKeyDown={handleKeyDown}
-                    placeholder="ENTER COMMAND..."
-                    autoComplete="off"
-                    aria-label="Type your message"
-                    className="flex-1 min-w-0 bg-bg border border-ink-faint text-ink px-4 py-3 focus:outline-none focus:border-neon-cyan transition-all placeholder-ink-muted text-sm md:text-base font-mono disabled:opacity-50"
-                    disabled={loading}
-                />
+                <div className="flex-1 relative group">
+                    <input
+                        id="chatInput"
+                        type="text"
+                        value={input}
+                        onChange={(e) => setInput(e.target.value)}
+                        onKeyDown={handleKeyDown}
+                        placeholder="ENTER COMMAND..."
+                        autoComplete="off"
+                        aria-label="Type your message"
+                        className="w-full bg-bg border border-ink-faint text-ink px-3 py-2 md:px-4 md:py-3 focus:outline-none focus:border-neon-cyan transition-all placeholder-ink-muted/50 text-sm md:text-base font-mono disabled:opacity-50"
+                        disabled={loading}
+                    />
+                </div>
 
                 <button
                     id="chatSendBtn"
                     onClick={handleSend}
                     disabled={!input.trim() || loading}
                     aria-label="Send message"
-                    className="flex-none px-6 bg-neon-cyan text-black font-bold hover:bg-white transition-all border border-neon-cyan disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-transparent disabled:text-ink-muted flex items-center gap-2"
+                    className="flex-none w-10 h-10 md:w-auto md:h-auto md:px-6 bg-neon-cyan text-black font-bold hover:bg-white transition-all border border-neon-cyan disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-transparent disabled:text-ink-muted flex items-center justify-center gap-2"
                 >
                     {loading ? <Loader2 className="animate-spin w-4 h-4" /> : <Send className="w-4 h-4" />}
                     <span className="hidden md:inline font-mono uppercase tracking-wider text-xs">{loading ? 'SENDING' : 'SEND'}</span>

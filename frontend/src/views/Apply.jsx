@@ -22,18 +22,18 @@ const Apply = () => {
 
     return (
         <section className="flex flex-col h-full w-full bg-bg overflow-hidden">
-            <header className="flex-none flex flex-wrap items-center gap-2 md:gap-4 px-6 py-4 border-b border-ink-faint bg-bg sticky top-0 z-10">
-                <div className="flex items-center gap-2 mr-auto">
-                    <div className="w-1 h-6 bg-neon-cyan"></div>
-                    <h2 className="text-xl font-serif font-bold text-ink">
+            <header className="flex-none flex flex-wrap items-center justify-between gap-y-2 px-4 py-3 md:px-6 md:py-4 border-b border-ink-faint bg-bg sticky top-0 z-10">
+                <div className="flex items-center gap-2">
+                    <div className="w-1 h-5 md:h-6 bg-neon-cyan"></div>
+                    <h2 className="text-lg md:text-xl font-serif font-bold text-ink">
                         Application
                     </h2>
                 </div>
 
-                <div className="flex p-1 bg-bg-elevated border-b border-ink-faint">
+                <div className="flex p-0.5 bg-bg-elevated border border-ink-faint">
                     <button
                         onClick={() => setActiveTab('scenario')}
-                        className={`px-4 py-2 text-sm font-mono uppercase tracking-wider transition-all focus:outline-none border-b-2 mx-1 ${activeTab === 'scenario'
+                        className={`px-3 py-1.5 md:px-4 md:py-2 text-xs md:text-sm font-mono uppercase tracking-wider transition-all focus:outline-none border-b-2 mx-0.5 ${activeTab === 'scenario'
                             ? 'border-neon-cyan text-neon-cyan font-bold bg-neon-cyan/5'
                             : 'border-transparent text-ink-muted hover:text-ink hover:bg-white/5'}`}
                     >
@@ -41,7 +41,7 @@ const Apply = () => {
                     </button>
                     <button
                         onClick={() => setActiveTab('chat')}
-                        className={`px-4 py-2 text-sm font-mono uppercase tracking-wider transition-all focus:outline-none border-b-2 mx-1 ${activeTab === 'chat'
+                        className={`px-3 py-1.5 md:px-4 md:py-2 text-xs md:text-sm font-mono uppercase tracking-wider transition-all focus:outline-none border-b-2 mx-0.5 ${activeTab === 'chat'
                             ? 'border-neon-pink text-neon-pink font-bold bg-neon-pink/5'
                             : 'border-transparent text-ink-muted hover:text-ink hover:bg-white/5'}`}
                     >
