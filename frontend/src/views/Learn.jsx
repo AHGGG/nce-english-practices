@@ -10,11 +10,22 @@ const Learn = () => {
 
     const currentStory = stories[`${topic}_${currentLayer}`];
 
+    const [isScrolled, setIsScrolled] = React.useState(false);
+
+    const handleScroll = (e) => {
+        const scrollTop = e.target.scrollTop;
+        if (scrollTop > 10 && !isScrolled) {
+            setIsScrolled(true);
+        } else if (scrollTop <= 10 && isScrolled) {
+            setIsScrolled(false);
+        }
+    };
+
     if (!topic) return <EmptyState />;
 
     return (
         <section className="flex flex-col h-full w-full bg-bg overflow-hidden">
-            <header className="flex-none flex items-center justify-between px-6 py-4 border-b border-ink-faint bg-bg sticky top-0 z-10">
+            <header className="flex-none flex items-center justify-between px-6 py-4 border-b border-ink-faint bg-bg sticky top-0 z-10 transition-all duration-300">
                 <div className="flex items-center gap-2">
                     <div className="w-1 h-6 bg-neon-green"></div>
                     <h2 className="text-xl font-serif font-bold text-ink">
@@ -24,8 +35,11 @@ const Learn = () => {
                 {/* Refresh button could go here */}
             </header>
 
-            <div className="flex-1 overflow-y-auto p-6 md:p-8 scroll-smooth pb-24 md:pb-8">
-                {vocab && <VocabGrid vocab={vocab} />}
+            <div
+                className="flex-1 overflow-y-auto p-6 md:p-8 scroll-smooth pb-24 md:pb-8"
+                onScroll={handleScroll}
+            >
+                {vocab && <VocabGrid vocab={vocab} isCollapsed={isScrolled} />}
                 {currentStory && <StoryReader story={currentStory} />}
             </div>
         </section>

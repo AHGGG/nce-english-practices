@@ -108,3 +108,6 @@
     - [x] **Mobile Optimize**: Refined Chat/Apply layout for small screens.
     - [x] **Empty State 2.0**: Implemented "System Standby" screen with locked navigation to prevent phantom interaction.
     - [x] **Debug Infrastructure**: Fixed Log Bridge (Error Boundary + Stack Trace) for full-stack visibility.
+    - [x] **Mobile Optimization**:
+        - [x] **Core Data Slots**: Implemented Compact HUD Grid (2x3) with Auto-Collapse logic on scroll.
+        - [x] **Transitions**: Smooth CSS animations for header collapse.
