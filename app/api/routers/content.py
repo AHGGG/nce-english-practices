@@ -67,7 +67,7 @@ async def api_generate_theme(payload: ThemeRequest):
     except Exception as e:
         import traceback
         traceback.print_exc()
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Internal Server Error")
 
 @router.post("/api/story")
 async def api_generate_story(payload: StoryRequest):
@@ -138,4 +138,6 @@ async def api_generate_sentences(payload: SentenceRequest):
         )
         return data
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail="Internal Server Error")

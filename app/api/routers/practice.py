@@ -80,7 +80,9 @@ async def api_generate_quiz(payload: QuizRequest):
         )
         return quiz
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail="Internal Server Error")
 
 @router.post("/api/scenario")
 async def api_generate_scenario(payload: ScenarioRequest):
@@ -95,7 +97,9 @@ async def api_generate_scenario(payload: ScenarioRequest):
         )
         return scenario
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail="Internal Server Error")
 
 @router.post("/api/scenario/grade")
 async def api_grade_scenario(payload: ScenarioGradeRequest):
@@ -121,7 +125,9 @@ async def api_grade_scenario(payload: ScenarioGradeRequest):
 
         return result
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail="Internal Server Error")
 
 @router.post("/api/chat/start")
 async def api_chat_start(payload: ChatStartRequest):
@@ -133,7 +139,9 @@ async def api_chat_start(payload: ChatStartRequest):
         )
         return data
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail="Internal Server Error")
 
 @router.post("/api/chat/reply")
 async def api_chat_reply(payload: ChatReplyRequest):
@@ -144,7 +152,9 @@ async def api_chat_reply(payload: ChatReplyRequest):
         )
         return data
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail="Internal Server Error")
 
 @router.post("/api/grade")
 async def api_grade(payload: GradeRequest):
@@ -152,7 +162,9 @@ async def api_grade(payload: GradeRequest):
         result = grade_sentence(expected=payload.expected, user=payload.user)
         return result
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail="Internal Server Error")
 
 @router.post("/api/log")
 async def api_log(payload: LogRequest):
@@ -174,7 +186,7 @@ async def api_log(payload: LogRequest):
         return {"status": "ok"}
     except Exception as e:
         print(f"Logging error: {e}")
-        return {"status": "error", "message": str(e)}
+        return {"status": "error", "message": "Internal Server Error"}
 
 @router.post("/api/log_attempt")
 async def api_log_generic(payload: GenericLogRequest):
@@ -190,7 +202,9 @@ async def api_log_generic(payload: GenericLogRequest):
         )
         return {"status": "ok"}
     except Exception as e:
-        return {"status": "error", "message": str(e)}
+        import traceback
+        traceback.print_exc()
+        return {"status": "error", "message": "Internal Server Error"}
 
 @router.post("/api/chat/polish")
 async def api_chat_polish(payload: PolishRequest):
@@ -198,4 +212,6 @@ async def api_chat_polish(payload: PolishRequest):
         suggestion = await polish_sentence(payload.sentence, payload.context)
         return {"suggestion": suggestion}
     except Exception as e:
-        return {"suggestion": "Error", "details": str(e)}
+        import traceback
+        traceback.print_exc()
+        return {"suggestion": "Error", "details": "Internal Server Error"}

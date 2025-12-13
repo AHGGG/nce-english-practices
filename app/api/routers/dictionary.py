@@ -62,7 +62,7 @@ async def api_dict_lookup(payload: DictionaryLookupRequest):
         }
     except Exception as e:
         print(f"Dict Lookup Error: {e}")
-        return {"results": [], "error": str(e)}
+        return {"results": [], "error": "Internal Dictionary Error"}
 
 @router.post("/api/dictionary/context")
 async def api_dict_context(payload: DictionaryContextRequest):
@@ -90,4 +90,5 @@ async def api_dict_context(payload: DictionaryContextRequest):
 
         return {"explanation": explanation}
     except Exception as e:
-         return {"explanation": f"AI Error: {str(e)}"}
+         print(f"AI Error: {e}")
+         return {"explanation": "An error occurred while generating explanation."}
