@@ -130,8 +130,12 @@ let lastLogTime = Date.now();
 export const logAttempt = async (type, topic, tense, isPass, details) => {
   const now = Date.now();
   let duration = Math.round((now - lastLogTime) / 1000);
-  if (duration > 300) duration = 60;
-  if (duration < 0) duration = 0;
+  if (details && typeof details.duration_seconds === 'number') {
+      duration = details.duration_seconds;
+  } else {
+      if (duration > 300) duration = 60;
+      if (duration < 0) duration = 0;
+  }
   lastLogTime = now;
 
   try {

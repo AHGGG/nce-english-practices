@@ -122,15 +122,22 @@ async def get_user_stats() -> Dict[str, Any]:
             # Breakdown
             # Select activity_type, count(*), sum(case when is_pass then 1 else 0 end)
             # This is complex in pure ORM, raw SQL or group_by is easier
+            # Breakdown with duration
             stmt = select(
                 Attempt.activity_type,
                 func.count(Attempt.id).label("count"),
-                func.sum(func.cast(Attempt.is_pass, Integer)).label("passed")
+                func.sum(func.cast(Attempt.is_pass, Integer)).label("passed"),
+                func.sum(Attempt.duration_seconds).label("duration")
             ).group_by(Attempt.activity_type)
             
             res = await session.execute(stmt)
             stats['activities'] = [
-                {"activity_type": row.activity_type, "count": row.count, "passed": row.passed or 0} 
+                {
+                    "activity_type": row.activity_type, 
+                    "count": row.count, 
+                    "passed": row.passed or 0,
+                    "duration_seconds": row.duration or 0
+                } 
                 for row in res.all()
             ]
             

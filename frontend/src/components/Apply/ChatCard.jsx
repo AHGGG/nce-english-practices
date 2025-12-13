@@ -14,6 +14,17 @@ const ChatCard = ({ chatSession, topic, layer }) => {
     const voiceClientRef = useRef(null);
     const { addToast } = useToast();
     const [isMissionExpanded, setIsMissionExpanded] = useState(false);
+    const lastActionTime = useRef(Date.now());
+    const voiceStartTime = useRef(0);
+
+    // Cleanup voice on unmount
+    useEffect(() => {
+        return () => {
+            if (voiceClientRef.current) {
+                voiceClientRef.current.disconnect();
+            }
+        };
+    }, []);
 
     useEffect(() => {
         if (chatSession) {
@@ -25,6 +36,9 @@ const ChatCard = ({ chatSession, topic, layer }) => {
             setMessages(msgs);
             // Scroll to bottom
             setTimeout(() => scrollToBottom(), 100);
+
+            // Reset timer when session loads to track active engagement time
+            lastActionTime.current = Date.now();
         }
     }, [chatSession]);
 
@@ -45,9 +59,14 @@ const ChatCard = ({ chatSession, topic, layer }) => {
         scrollToBottom();
 
         try {
+            // Calculate duration for this turn (User thinking + typing time)
+            const now = Date.now();
+            const turnDuration = Math.round((now - lastActionTime.current) / 1000);
+            lastActionTime.current = now;
+
             const data = await sendChatReply(chatSession.session_id, txt);
             setMessages(prev => [...prev, { role: 'ai', content: data.reply }]);
-            logAttempt('mission', topic, layer, true, { message: txt });
+            logAttempt('mission', topic, layer, true, { message: txt, duration_seconds: turnDuration });
         } catch (err) {
             console.error(err);
             // Toast error?
@@ -74,6 +93,7 @@ const ChatCard = ({ chatSession, topic, layer }) => {
             // Start
             setVoiceActive(true);
             setVoiceStatus('Initializing...');
+            voiceStartTime.current = Date.now();
 
             try {
                 const client = new GeminiLiveClient();
@@ -81,6 +101,12 @@ const ChatCard = ({ chatSession, topic, layer }) => {
                     setVoiceActive(false);
                     setVoiceStatus('');
                     voiceClientRef.current = null;
+
+                    // Log Voice Session
+                    const duration = Math.round((Date.now() - voiceStartTime.current) / 1000);
+                    if (duration > 1) { // Only log if significant
+                        logAttempt('mission', topic, layer, true, { message: 'Voice Call Session', duration_seconds: duration });
+                    }
                 };
                 client.onAudioLevel = (level) => {
                     // Update visualizer - accessing DOM directly or using State?
@@ -222,8 +248,8 @@ const ChatCard = ({ chatSession, topic, layer }) => {
                 </button>
 
                 <div className={`flex-1 relative group flex items-center border transition-all ${voiceActive
-                        ? 'border-neon-pink bg-neon-pink/5'
-                        : 'border-ink-faint bg-bg focus-within:border-neon-cyan'
+                    ? 'border-neon-pink bg-neon-pink/5'
+                    : 'border-ink-faint bg-bg focus-within:border-neon-cyan'
                     }`}>
                     {/* Signal Status Indicator */}
                     <div className="absolute left-3 md:left-4 flex-none text-ink-muted">

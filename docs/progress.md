@@ -55,6 +55,7 @@
     - [x] "Add to Review" UI Integration.
 - [x] **Stats 2.0**:
     - [x] Practice Duration Tracker (Global Timer + Stats UI).
+    - [x] **RolePlay Duration**: Accurate per-turn and voice session tracking.
 
 ## 🚀 Phase 5: Infrastructure & Scalability (Completed)
 - [x] **Backend Refactoring (Red Flags Resolved)**:

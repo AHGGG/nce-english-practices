@@ -125,6 +125,14 @@ const Stats = () => {
 
 
 
+    const formatDuration = (seconds) => {
+        if (!seconds) return '';
+        if (seconds < 60) return `${seconds}s`;
+        const m = Math.floor(seconds / 60);
+        const s = seconds % 60;
+        return `${m}m ${s}s`;
+    };
+
     return (
         <section className="h-full w-full bg-bg overflow-y-auto p-4 md:p-8 pb-24 md:pb-8">
             <header className="mb-8 border-b border-ink-faint pb-6 flex flex-col md:flex-row md:items-end justify-between gap-6">
@@ -197,6 +205,12 @@ const Stats = () => {
                                         <div className="flex items-center gap-2 mb-1">
                                             <span className="text-xs font-mono font-bold text-ink uppercase tracking-wider">{item.activity_type}</span>
                                             <span className="text-[10px] font-mono text-ink-muted border border-ink-faint px-1">{item.tense}</span>
+                                            {item.duration_seconds > 0 && (
+                                                <span className="text-[10px] font-mono text-neon-purple border border-neon-purple/30 px-1 flex items-center gap-1">
+                                                    <Clock4 size={10} />
+                                                    {formatDuration(item.duration_seconds)}
+                                                </span>
+                                            )}
                                         </div>
                                         <div className="text-sm text-ink-muted truncate font-serif italic">"{item.topic}"</div>
                                     </div>
