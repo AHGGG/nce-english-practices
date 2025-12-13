@@ -129,18 +129,21 @@ quiz:
 
     REQUIREMENTS:
     1. Create a "Fill-in-the-blank" question based on the Correct Sentence.
-    2. The ANSWER must be the correct conjugation from the sentence.
-    3. DISTRACTORS (Wrong Options):
-       - Must be plausible mistakes (e.g., wrong tense, wrong auxiliary, wrong participle).
-       - DO NOT use random words. Use other tenses or common learner errors.
-    4. Explanation: Brief 1-sentence reason why the answer is correct.
+    2. **CRITICAL: You MUST add a specific TIME MARKER or CONTEXT CLUE** to the sentence if one is missing, so that the target tense is the ONLY logical answer.
+       - BAD: "I ______ (write) a letter." (Could be wrote, write, am writing...)
+       - GOOD: "Look! I ______ (write) a letter right now." (Must be 'am writing')
+       - GOOD: "By next year, I ______ (write) a book." (Must be 'will have written')
+    3. The ANSWER must be the correct conjugation.
+    4. DISTRACTORS (Wrong Options):
+       - Must be plausible learner mistakes but **CLEARLY WRONG** given the time marker.
+       - Do not use synonyms that could also be correct.
 
     Output JSON Format:
     {{
-      "question": "Tomorrow by 5 PM, I ______ (finish) the work.",
-      "options": ["will have finished", "will finish", "have finished", "had finished"],
+      "question": "Look! I ______ (finish) the work right now.",
+      "options": ["am finishing", "finish", "finished", "have finished"],
       "correct_index": 0,
-      "explanation": "Future Perfect is used for actions completed before a future time."
+      "explanation": "We use 'Look!' and 'right now' for actions happening at the moment of speaking (Present Continuous)."
     }}
 
     Note: Output 'question', 'options' (list of strings), 'correct_index' (int), 'explanation' (string).
