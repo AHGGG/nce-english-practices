@@ -6,7 +6,7 @@ import EmptyState from '../components/Layout/EmptyState';
 
 const Learn = () => {
     const { state, actions } = useGlobalState();
-    const { vocab, stories, topic, currentLayer } = state;
+    const { vocab, stories, topic, currentLayer, isLoading } = state;
 
     const currentStory = stories[`${topic}_${currentLayer}`];
 
@@ -20,6 +20,18 @@ const Learn = () => {
             setIsScrolled(false);
         }
     };
+
+    // Show loading state when loading a new theme
+    if (isLoading && !vocab) {
+        return (
+            <section className="flex flex-col h-full w-full bg-bg overflow-hidden items-center justify-center">
+                <div className="flex flex-col items-center gap-4 animate-pulse">
+                    <div className="w-12 h-12 border-2 border-neon-green border-t-transparent rounded-full animate-spin"></div>
+                    <p className="text-neon-green font-mono text-sm">{`>> INITIALIZING NEURAL CORE... <<`}</p>
+                </div>
+            </section>
+        );
+    }
 
     if (!topic) return <EmptyState />;
 

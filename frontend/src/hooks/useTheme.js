@@ -4,13 +4,13 @@ import { fetchTheme, fetchSentences, fetchStory, fetchScenario, startChat } from
 
 export const useTheme = () => {
   const { state, actions } = useGlobalState();
-  const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const loading = state.isLoading;  // Use global loading state
 
   const loadTheme = async (topic, shuffle = false) => {
     if (!topic) return;
 
-    setLoading(true);
+    actions.setLoading(true);  // Set global loading
     setError(null);
 
     try {
@@ -105,7 +105,7 @@ export const useTheme = () => {
       console.error(err);
       setError(err.message || "Failed to load theme");
     } finally {
-      setLoading(false);
+      actions.setLoading(false);
     }
   };
 

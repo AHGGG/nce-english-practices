@@ -13,13 +13,15 @@ export const GlobalProvider = ({ children }) => {
         chats: {},       // cache by topic_tense
         currentScenario: null,
         selectedWord: null,
-        selectedContext: null
+        selectedContext: null,
+        isLoading: false  // Global loading state for theme loading
     });
 
     const actions = useMemo(() => ({
         setTopic: (topic) => setState(prev => ({ ...prev, topic })),
         setVocab: (vocab) => setState(prev => ({ ...prev, vocab })),
         setLayer: (layer) => setState(prev => ({ ...prev, currentLayer: layer })),
+        setLoading: (isLoading) => setState(prev => ({ ...prev, isLoading })),
 
         // Cache helpers
         cacheSentences: (layer, data) => setState(prev => ({ ...prev, sentences: { ...prev.sentences, [layer]: data } })),
@@ -46,7 +48,8 @@ export const GlobalProvider = ({ children }) => {
             chats: {},
             currentScenario: null,
             selectedWord: null,
-            selectedContext: null
+            selectedContext: null,
+            isLoading: false
         })
     }), []);
 

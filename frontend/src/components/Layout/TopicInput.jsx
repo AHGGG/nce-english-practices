@@ -1,4 +1,5 @@
 import React, { useState, useId } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useTheme } from '../../hooks/useTheme';
 import { motion } from 'framer-motion';
 import { Loader2, Play } from 'lucide-react';
@@ -8,6 +9,7 @@ const TopicInput = ({ className }) => {
     const [isShake, setIsShake] = useState(false);
     const { loadTheme, loading } = useTheme();
     const inputId = useId();
+    const navigate = useNavigate();
 
     const handleLoad = async () => {
         if (!inputTopic.trim()) {
@@ -15,6 +17,8 @@ const TopicInput = ({ className }) => {
             setTimeout(() => setIsShake(false), 500);
             return;
         }
+        // Navigate first to avoid race condition where Drill.jsx reacts to state before redirect
+        navigate('/learn');
         await loadTheme(inputTopic.trim());
     };
 
@@ -44,8 +48,8 @@ const TopicInput = ({ className }) => {
                 disabled={loading}
                 aria-invalid={isShake}
                 className={`w-full bg-bg-elevated border text-ink px-4 py-2.5 pl-8 text-sm font-mono focus:outline-none focus:ring-1 transition-all placeholder:text-ink-muted/50 disabled:opacity-50 ${isShake
-                        ? 'border-neon-pink focus:border-neon-pink focus:ring-neon-pink'
-                        : 'border-ink-faint focus:border-neon-green focus:ring-neon-green'
+                    ? 'border-neon-pink focus:border-neon-pink focus:ring-neon-pink'
+                    : 'border-ink-faint focus:border-neon-green focus:ring-neon-green'
                     }`}
             />
 
