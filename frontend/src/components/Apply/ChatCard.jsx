@@ -173,23 +173,28 @@ const ChatCard = ({ chatSession, topic, layer }) => {
 
 
             {/* Mission Brief - Collapsible */}
-            <div
-                className="flex-none bg-bg-paper border-b border-ink-faint px-6 py-2 cursor-pointer hover:bg-white/5 transition-colors group/mission"
-                onClick={() => setIsMissionExpanded(!isMissionExpanded)}
-            >
-                <div className="flex items-center justify-between">
-                    <p className="text-neon-green text-sm font-mono font-bold truncate mb-0 flex-1">
-                        Target: {chatSession.mission.title}
-                    </p>
-                    {isMissionExpanded ? (
-                        <ChevronUp size={16} className="text-ink-muted group-hover/mission:text-neon-cyan transition-colors" />
-                    ) : (
-                        <ChevronDown size={16} className="text-ink-muted group-hover/mission:text-neon-cyan transition-colors" />
-                    )}
-                </div>
+            <div className="flex-none bg-bg-paper border-b border-ink-faint group/mission">
+                <button
+                    type="button"
+                    className="w-full text-left px-6 py-2 cursor-pointer hover:bg-white/5 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-neon-cyan"
+                    onClick={() => setIsMissionExpanded(!isMissionExpanded)}
+                    aria-expanded={isMissionExpanded}
+                    aria-controls="mission-details"
+                >
+                    <div className="flex items-center justify-between pointer-events-none">
+                        <p className="text-neon-green text-sm font-mono font-bold truncate mb-0 flex-1">
+                            Target: {chatSession.mission.title}
+                        </p>
+                        {isMissionExpanded ? (
+                            <ChevronUp size={16} className="text-ink-muted group-hover/mission:text-neon-cyan transition-colors" />
+                        ) : (
+                            <ChevronDown size={16} className="text-ink-muted group-hover/mission:text-neon-cyan transition-colors" />
+                        )}
+                    </div>
+                </button>
 
                 {isMissionExpanded && (
-                    <div className="mt-2 max-h-24 overflow-y-auto custom-scrollbar animate-in slide-in-from-top-2 duration-200">
+                    <div id="mission-details" className="px-6 pb-2 max-h-24 overflow-y-auto custom-scrollbar animate-in slide-in-from-top-2 duration-200">
                         <p className="text-ink-muted text-xs leading-relaxed font-mono border-l-2 border-ink-faint pl-3">
                             {chatSession.mission.description}
                         </p>

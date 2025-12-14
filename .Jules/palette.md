@@ -5,3 +5,7 @@
 ## 2025-12-11 - Communicating Async States
 **Learning:** Buttons that trigger network requests (like sending a chat) feel broken if they don't provide immediate visual feedback. Adding a disabled state, cursor change, and loading spinner makes the UI feel responsive even during latency.
 **Action:** Always wrap async handlers with `loading` state. Map `loading` to `disabled`, `cursor-not-allowed`, and a visible spinner icon (`lucide-react` is available). Use `aria-label` to clarify the action.
+
+## 2025-12-12 - Interactive Elements Semantics
+**Learning:** Using `div` with `onClick` for interactive elements (like collapsible headers) excludes keyboard and screen reader users.
+**Action:** Always use `<button type="button">` for interactive toggles. Use `aria-expanded` and `aria-controls` to link the button to the content it reveals.
