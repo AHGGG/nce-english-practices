@@ -42,10 +42,18 @@ async def generate_story_stream(topic: str, tense: str, client) -> AsyncGenerato
             full_buffer += token
             
             if not metadata_layer:
-                if "---METADATA---" in full_buffer:
+                # OPTIMIZATION: Check only the tail of the buffer for the marker.
+                # We need to look back enough to catch a marker that might have been
+                # split by the new token.
+                # Max lookback needed: len(marker) - 1 (from old buffer) + len(token)
+                marker_str = "---METADATA---"
+                marker_len = len(marker_str)
+                search_start = max(0, len(full_buffer) - len(token) - marker_len)
+
+                if marker_str in full_buffer[search_start:]:
                     metadata_layer = True
                     # Split at first occurrence
-                    parts = full_buffer.split("---METADATA---")
+                    parts = full_buffer.split(marker_str)
                     text_part = parts[0]
                     
                     # Yield any remaining text
