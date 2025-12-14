@@ -73,9 +73,14 @@ async def serve_spa(full_path: str):
     # If a path matches a static file (e.g. favicon.ico), serve it?
     # For simplicity, let's just serve index.html for everything else unless it's a specific static file we want to expose.
     
-    file_path = os.path.join("frontend/dist", full_path)
-    if os.path.isfile(file_path):
-        return FileResponse(file_path)
+    # 🛡️ Sentinel Security Fix: Prevent Path Traversal
+    base_dir = os.path.abspath("frontend/dist")
+    file_path = os.path.abspath(os.path.join(base_dir, full_path))
+
+    # Verify the resolved path is actually inside the base directory
+    if os.path.commonpath([base_dir, file_path]) == base_dir:
+        if os.path.isfile(file_path):
+            return FileResponse(file_path)
         
     # Fallback to index.html
     index_path = "frontend/dist/index.html"
