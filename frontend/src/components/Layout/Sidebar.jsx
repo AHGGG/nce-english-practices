@@ -1,41 +1,38 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
-import { useGlobalState } from '../../context/GlobalContext';
-import { useTheme } from '../../hooks/useTheme';
 import { Zap, BookOpen, Terminal, Rocket, BarChart2 } from 'lucide-react';
 import TopicInput from './TopicInput';
 
-const Sidebar = () => {
-    const { error } = useTheme();
-    const { state } = useGlobalState();
-    const { topic } = state;
-
-    const NavItem = ({ to, icon: Icon, label, disabled }) => {
-        if (disabled) {
-            return (
-                <div className="group flex items-center gap-3 px-4 py-3 border-l-2 border-transparent transition-all font-mono text-sm uppercase tracking-wide mb-1 opacity-30 grayscale cursor-not-allowed">
-                    <Icon size={16} className="shrink-0" />
-                    <span className="font-bold">{label}</span>
-                </div>
-            );
-        }
-
+// NavItem is defined outside to prevent recreation on each render
+const NavItem = ({ to, icon: Icon, label, disabled }) => {
+    if (disabled) {
         return (
-            <NavLink
-                to={to}
-                className={({ isActive }) =>
-                    `group flex items-center gap-3 px-4 py-3 border-l-2 transition-all font-mono text-sm uppercase tracking-wide mb-1 ${isActive
-                        ? 'border-neon-green bg-neon-green/5 text-neon-green'
-                        : 'border-transparent text-ink-muted hover:text-ink hover:border-ink-faint hover:pl-5'
-                    }`
-                }
-            >
+            <div className="group flex items-center gap-3 px-4 py-3 border-l-2 border-transparent transition-all font-mono text-sm uppercase tracking-wide mb-1 opacity-30 grayscale cursor-not-allowed">
                 <Icon size={16} className="shrink-0" />
                 <span className="font-bold">{label}</span>
-            </NavLink>
+            </div>
         );
-    };
+    }
 
+    return (
+        <NavLink
+            to={to}
+            className={({ isActive }) =>
+                `group flex items-center gap-3 px-4 py-3 border-l-2 transition-all font-mono text-sm uppercase tracking-wide mb-1 ${isActive
+                    ? 'border-neon-green bg-neon-green/5 text-neon-green'
+                    : 'border-transparent text-ink-muted hover:text-ink hover:border-ink-faint hover:pl-5'
+                }`
+            }
+        >
+            <Icon size={16} className="shrink-0" />
+            <span className="font-bold">{label}</span>
+        </NavLink>
+    );
+};
+
+// Sidebar receives topic as prop, NOT from context
+// This prevents re-renders during story streaming
+const Sidebar = React.memo(({ topic }) => {
     return (
         <aside className="hidden md:flex flex-col z-20 w-[280px] h-full bg-bg-paper border-r border-ink-faint shrink-0">
             <div className="p-6 border-b border-ink-faint bg-bg">
@@ -53,7 +50,6 @@ const Sidebar = () => {
             {topic && (
                 <div className="p-6 pb-2">
                     <TopicInput />
-                    {error && <div className="mt-2 text-[10px] font-mono text-neon-pink">{error}</div>}
                 </div>
             )}
 
@@ -75,6 +71,9 @@ const Sidebar = () => {
             </div>
         </aside >
     );
-};
+});
+
+Sidebar.displayName = 'Sidebar';
 
 export default Sidebar;
+

@@ -9,7 +9,8 @@ import EmptyState from '../components/Layout/EmptyState';
 const Drill = () => {
     const { state, actions } = useGlobalState();
     const { topic, vocab, sentences, currentLayer } = state;
-    const [loading, setLoading] = useState(false);
+    // Derive loading state from global tracker
+    const loading = state.loadingLayers.has(currentLayer);
     const [error, setError] = useState(null);
 
     // Quiz State
@@ -23,9 +24,15 @@ const Drill = () => {
         // If topic exists but sentences for this layer don't, fetch them.
         // Also need vocab to be present.
         if (topic && vocab && !sentences[currentLayer]) {
+            // Check if already fetching
+            if (state.loadingLayers.has(currentLayer)) {
+                return;
+            }
+
             const loadLayer = async () => {
-                setLoading(true);
                 setError(null);
+                actions.addLoadingLayer(currentLayer); // Mark as loading globally
+
                 try {
                     const v = vocab.verbs && vocab.verbs[0];
                     // Construct payload similar to legacy drill.js
@@ -47,12 +54,12 @@ const Drill = () => {
                 } catch (err) {
                     setError(err.message || "Failed to load sentences");
                 } finally {
-                    setLoading(false);
+                    actions.removeLoadingLayer(currentLayer); // Remove form global loading
                 }
             };
             loadLayer();
         }
-    }, [topic, vocab, currentLayer, sentences, actions]);
+    }, [topic, vocab, currentLayer, sentences, actions, state.loadingLayers]);
 
     const handleCellClick = (e, aspect, text) => {
         if (e.shiftKey) {

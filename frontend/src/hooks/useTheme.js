@@ -47,9 +47,16 @@ export const useTheme = () => {
       
       // 1. Sentences
       // 1. Sentences
+      actions.addLoadingLayer('present'); // Mark as loading globally so Drill doesn't re-fetch
       const p1 = fetchSentences(sentencePayload)
-        .then(data => actions.cacheSentences('present', data))
-        .catch(e => console.error("Sentences failed", e));
+        .then(data => {
+            actions.cacheSentences('present', data);
+            actions.removeLoadingLayer('present');
+        })
+        .catch(e => {
+            console.error("Sentences failed", e);
+            actions.removeLoadingLayer('present');
+        });
 
       // 2. Scenario
       const p3 = fetchScenario(topic, 'present')
@@ -61,22 +68,29 @@ export const useTheme = () => {
         .then(data => actions.cacheChat(`${topic}_simple`, data))
         .catch(e => console.error("Chat failed", e));
       
-      // 4. Streaming Story
+      // 4. Streaming Story (with throttled updates to prevent UI jank)
       const processStoryStream = new Promise((resolve, reject) => {
           let currentContent = "";
+          let lastUpdateTime = 0;
+          const THROTTLE_MS = 200; // Update UI at most every 200ms
+          
           import('../api/client').then(({ fetchStoryStream }) => {
               fetchStoryStream(
                   topic, 
                   'present',
                   (chunk) => {
-                      // console.log("Stream chunk:", chunk.length);
                       currentContent += chunk;
-                      actions.cacheStory(`${topic}_present`, {
-                          title: topic, 
-                          content: currentContent,
-                          highlights: [],
-                          grammar_notes: []
-                      });
+                      const now = Date.now();
+                      // Throttle UI updates to prevent sidebar from freezing
+                      if (now - lastUpdateTime > THROTTLE_MS) {
+                          lastUpdateTime = now;
+                          actions.cacheStory(`${topic}_present`, {
+                              title: topic, 
+                              content: currentContent,
+                              highlights: [],
+                              grammar_notes: []
+                          });
+                      }
                   },
                   (fullStory) => {
                       if (fullStory) {

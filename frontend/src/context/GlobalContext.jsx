@@ -14,7 +14,9 @@ export const GlobalProvider = ({ children }) => {
         currentScenario: null,
         selectedWord: null,
         selectedContext: null,
-        isLoading: false  // Global loading state for theme loading
+        selectedContext: null,
+        isLoading: false,  // Global loading state for theme loading
+        loadingLayers: new Set() // Track which layers are currently fetching
     });
 
     const actions = useMemo(() => ({
@@ -22,6 +24,18 @@ export const GlobalProvider = ({ children }) => {
         setVocab: (vocab) => setState(prev => ({ ...prev, vocab })),
         setLayer: (layer) => setState(prev => ({ ...prev, currentLayer: layer })),
         setLoading: (isLoading) => setState(prev => ({ ...prev, isLoading })),
+
+        // Loading layer tracking
+        addLoadingLayer: (layer) => setState(prev => {
+            const newSet = new Set(prev.loadingLayers);
+            newSet.add(layer);
+            return { ...prev, loadingLayers: newSet };
+        }),
+        removeLoadingLayer: (layer) => setState(prev => {
+            const newSet = new Set(prev.loadingLayers);
+            newSet.delete(layer);
+            return { ...prev, loadingLayers: newSet };
+        }),
 
         // Cache helpers
         cacheSentences: (layer, data) => setState(prev => ({ ...prev, sentences: { ...prev.sentences, [layer]: data } })),
@@ -49,12 +63,18 @@ export const GlobalProvider = ({ children }) => {
             currentScenario: null,
             selectedWord: null,
             selectedContext: null,
-            isLoading: false
+            selectedWord: null,
+            selectedContext: null,
+            isLoading: false,
+            loadingLayers: new Set()
         })
     }), []);
 
+    // Memoize context value to reduce re-renders
+    const contextValue = React.useMemo(() => ({ state, actions }), [state, actions]);
+
     return (
-        <GlobalContext.Provider value={{ state, actions }}>
+        <GlobalContext.Provider value={contextValue}>
             {children}
         </GlobalContext.Provider>
     );

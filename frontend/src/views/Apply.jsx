@@ -6,17 +6,18 @@ import EmptyState from '../components/Layout/EmptyState';
 
 const Apply = () => {
     const { state } = useGlobalState();
-    const { topic, scenarios, chats, currentLayer } = state;
+    const { topic, scenarios, chats } = state;
     const [activeTab, setActiveTab] = useState('scenario'); // 'scenario' or 'chat'
 
     const chatKey = `${topic}_simple`;
     const chatSession = chats[chatKey];
-    const currentScenario = scenarios[`${topic}_${currentLayer}`];
+    // Always use 'present' for scenario since that's what was loaded during theme init
+    // The currentLayer is for Drill, not for Apply
+    const currentScenario = scenarios[`${topic}_present`];
 
     console.log("Apply Debug:", {
         topic,
-        currentLayer,
-        scenarioKey: `${topic}_${currentLayer}`,
+        scenarioKey: `${topic}_present`,
         scenariosKeys: Object.keys(scenarios),
         scenarioData: currentScenario
     });
@@ -57,7 +58,7 @@ const Apply = () => {
                 <div className="w-full h-full p-6 md:p-8 overflow-y-auto scroll-smooth">
                     {activeTab === 'scenario' && (
                         currentScenario ? (
-                            <ScenarioCard scenario={currentScenario} layer={currentLayer} />
+                            <ScenarioCard scenario={currentScenario} layer="present" />
                         ) : (
                             <div className="flex flex-col items-center justify-center h-64 font-mono gap-4">
                                 <div className="w-12 h-12 border-4 border-ink-faint border-t-neon-cyan rounded-none animate-spin"></div>
@@ -67,7 +68,7 @@ const Apply = () => {
                     )}
                     {activeTab === 'chat' && (
                         chatSession ? (
-                            <ChatCard chatSession={chatSession} topic={topic} layer={currentLayer} />
+                            <ChatCard chatSession={chatSession} topic={topic} layer="present" />
                         ) : (
                             <div className="flex flex-col items-center justify-center h-64 font-mono gap-4">
                                 <div className="w-12 h-12 border-4 border-ink-faint border-t-neon-pink rounded-none animate-spin"></div>

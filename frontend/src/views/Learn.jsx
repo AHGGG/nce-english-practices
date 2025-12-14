@@ -6,9 +6,11 @@ import EmptyState from '../components/Layout/EmptyState';
 
 const Learn = () => {
     const { state, actions } = useGlobalState();
-    const { vocab, stories, topic, currentLayer, isLoading } = state;
+    const { vocab, stories, topic, isLoading } = state;
 
-    const currentStory = stories[`${topic}_${currentLayer}`];
+    // Always use 'present' for story since that's what was loaded during theme init
+    // The currentLayer is for Drill, not for Learn
+    const currentStory = stories[`${topic}_present`];
 
     const [isScrolled, setIsScrolled] = React.useState(false);
 

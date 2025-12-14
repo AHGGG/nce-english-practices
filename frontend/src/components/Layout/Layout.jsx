@@ -21,13 +21,13 @@ const Layout = () => {
                 </header>
             )}
 
-            <Sidebar />
+            <Sidebar topic={topic} />
 
             <main className={`flex-1 flex flex-col h-full overflow-hidden relative md:pt-0 bg-bg ${topic ? 'pt-[64px]' : 'pt-0'}`}>
                 <Outlet />
             </main>
 
-            <MobileNav />
+            <MobileNav topic={topic} />
         </div>
     );
 };
