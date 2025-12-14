@@ -67,13 +67,13 @@ def frontend_server(backend_server):
     env = os.environ.copy()
     env["VITE_API_TARGET"] = backend_server
 
-    # Determine npm command based on OS
-    npm_cmd = "npm.cmd" if os.name == "nt" else "npm"
+    # Determine pnpm command based on OS
+    pnpm_cmd = "pnpm.cmd" if os.name == "nt" else "pnpm"
 
     # Start Vite process
     # Note: We use --port to specify port
     proc = subprocess.Popen(
-        [npm_cmd, "run", "dev", "--", "--port", str(FRONTEND_PORT)],
+        [pnpm_cmd, "run", "dev", "--", "--port", str(FRONTEND_PORT)],
         cwd=os.path.join(os.getcwd(), "frontend"),
         env=env,
         stdout=subprocess.DEVNULL,
@@ -81,7 +81,7 @@ def frontend_server(backend_server):
     )
 
     # Wait for frontend to be ready
-    max_retries = 30
+    max_retries = 120
     for i in range(max_retries):
         if proc.poll() is not None:
             raise RuntimeError("Frontend process exited prematurely.")
