@@ -12,9 +12,8 @@ export const GlobalProvider = ({ children }) => {
         scenarios: {},   // cache by topic_tense
         chats: {},       // cache by topic_tense
         currentScenario: null,
-        selectedWord: null,
-        selectedContext: null,
-        selectedContext: null,
+
+
         isLoading: false,  // Global loading state for theme loading
         loadingLayers: new Set() // Track which layers are currently fetching
     });

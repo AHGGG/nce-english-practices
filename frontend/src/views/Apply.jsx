@@ -1,26 +1,60 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useGlobalState } from '../context/GlobalContext';
+import { fetchScenario, startChat } from '../api/client';
 import ScenarioCard from '../components/Apply/ScenarioCard';
 import ChatCard from '../components/Apply/ChatCard';
 import EmptyState from '../components/Layout/EmptyState';
 
 const Apply = () => {
-    const { state } = useGlobalState();
-    const { topic, scenarios, chats } = state;
+    const { state, actions } = useGlobalState();
+    const { topic, scenarios, chats, currentLayer, loadingLayers } = state;
     const [activeTab, setActiveTab] = useState('scenario'); // 'scenario' or 'chat'
 
-    const chatKey = `${topic}_simple`;
-    const chatSession = chats[chatKey];
-    // Always use 'present' for scenario since that's what was loaded during theme init
-    // The currentLayer is for Drill, not for Apply
-    const currentScenario = scenarios[`${topic}_present`];
+    // Derived state for the specific layer
+    const scenarioKey = `${topic}_${currentLayer}`;
+    const chatKey = `${topic}_${currentLayer}`;
 
-    console.log("Apply Debug:", {
-        topic,
-        scenarioKey: `${topic}_present`,
-        scenariosKeys: Object.keys(scenarios),
-        scenarioData: currentScenario
-    });
+    const currentScenario = scenarios[scenarioKey];
+    const chatSession = chats[chatKey];
+
+    // Check if we are already fetching this specific item to avoid double-fetch
+    const isFetching = loadingLayers.has(scenarioKey) || loadingLayers.has(chatKey);
+
+    useEffect(() => {
+        if (!topic) return;
+
+        const loadMissingData = async () => {
+            // 1. Load Scenario if missing
+            if (!currentScenario && !loadingLayers.has(scenarioKey)) {
+                actions.addLoadingLayer(scenarioKey);
+                try {
+                    const data = await fetchScenario(topic, currentLayer);
+                    actions.cacheScenario(scenarioKey, data);
+                } catch (e) {
+                    console.error("Failed to load scenario:", e);
+                } finally {
+                    actions.removeLoadingLayer(scenarioKey);
+                }
+            }
+
+            // 2. Load Chat if missing
+            if (!chatSession && !loadingLayers.has(chatKey)) {
+                actions.addLoadingLayer(chatKey);
+                try {
+                    // Start or resume chat for this layer
+                    const data = await startChat(topic, currentLayer);
+                    actions.cacheChat(chatKey, data);
+                } catch (e) {
+                    console.error("Failed to init chat:", e);
+                } finally {
+                    actions.removeLoadingLayer(chatKey);
+                }
+            }
+        };
+
+        loadMissingData();
+
+    }, [topic, currentLayer, currentScenario, chatSession, loadingLayers, actions, scenarioKey, chatKey]);
 
     if (!topic) return <EmptyState />;
 
@@ -58,7 +92,7 @@ const Apply = () => {
                 <div className="w-full h-full p-6 md:p-8 overflow-y-auto scroll-smooth">
                     {activeTab === 'scenario' && (
                         currentScenario ? (
-                            <ScenarioCard scenario={currentScenario} layer="present" />
+                            <ScenarioCard scenario={currentScenario} layer={currentLayer} />
                         ) : (
                             <div className="flex flex-col items-center justify-center h-64 font-mono gap-4">
                                 <div className="w-12 h-12 border-4 border-ink-faint border-t-neon-cyan rounded-none animate-spin"></div>
@@ -68,7 +102,7 @@ const Apply = () => {
                     )}
                     {activeTab === 'chat' && (
                         chatSession ? (
-                            <ChatCard chatSession={chatSession} topic={topic} layer="present" />
+                            <ChatCard chatSession={chatSession} topic={topic} layer={currentLayer} />
                         ) : (
                             <div className="flex flex-col items-center justify-center h-64 font-mono gap-4">
                                 <div className="w-12 h-12 border-4 border-ink-faint border-t-neon-pink rounded-none animate-spin"></div>

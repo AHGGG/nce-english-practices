@@ -209,25 +209,25 @@ const ChatCard = ({ chatSession, topic, layer }) => {
                             </div>
 
                             {/* Message Block */}
-                            <div className={`inline-block px-5 py-3 border text-sm md:text-base font-mono leading-relaxed shadow-hard transition-all
+                            <div className={`relative inline-block px-5 py-3 border text-sm md:text-base font-mono leading-relaxed shadow-hard transition-all
                                 ${isUser
                                     ? 'bg-bg-elevated border-neon-cyan text-ink'
                                     : 'bg-bg-paper border-neon-pink text-ink'}
                             `}>
                                 <span>{msg.content}</span>
-                            </div>
 
-                            {/* Polish Button */}
-                            {isUser && (
-                                <button
-                                    onClick={() => handlePolish(idx, msg.content)}
-                                    className="absolute -left-12 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 focus:opacity-100 transition-all p-2 bg-bg border border-neon-cyan text-neon-cyan hover:bg-neon-cyan hover:text-black shadow-hard"
-                                    title="Optimize Syntax"
-                                    aria-label="Get polish suggestions"
-                                >
-                                    <Sparkles size={14} />
-                                </button>
-                            )}
+                                {/* Polish Button */}
+                                {isUser && (
+                                    <button
+                                        onClick={() => handlePolish(idx, msg.content)}
+                                        className="absolute -left-12 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 focus:opacity-100 transition-all p-2 bg-bg border border-neon-cyan text-neon-cyan hover:bg-neon-cyan hover:text-black shadow-hard"
+                                        title="Optimize Syntax"
+                                        aria-label="Get polish suggestions"
+                                    >
+                                        <Sparkles size={14} />
+                                    </button>
+                                )}
+                            </div>
                         </div>
                     );
                 })}

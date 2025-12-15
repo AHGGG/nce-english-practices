@@ -81,7 +81,7 @@ def frontend_server(backend_server):
     )
 
     # Wait for frontend to be ready
-    max_retries = 30
+    max_retries = 120
     for i in range(max_retries):
         if proc.poll() is not None:
             raise RuntimeError("Frontend process exited prematurely.")

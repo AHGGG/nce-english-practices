@@ -1,18 +1,40 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useGlobalState } from '../context/GlobalContext';
+import { fetchStory } from '../api/client';
 import VocabGrid from '../components/Learn/VocabGrid';
 import StoryReader from '../components/Learn/StoryReader';
 import EmptyState from '../components/Layout/EmptyState';
 
 const Learn = () => {
     const { state, actions } = useGlobalState();
-    const { vocab, stories, topic, isLoading } = state;
+    const { vocab, stories, topic, isLoading, currentLayer, loadingLayers } = state;
 
-    // Always use 'present' for story since that's what was loaded during theme init
-    // The currentLayer is for Drill, not for Learn
-    const currentStory = stories[`${topic}_present`];
+    // Use currentLayer for story to match the specific tense being studied
+    const storyKey = `${topic}_${currentLayer}`;
+    const currentStory = stories[storyKey];
 
     const [isScrolled, setIsScrolled] = React.useState(false);
+
+    useEffect(() => {
+        if (!topic) return;
+
+        // Lazy load story for the current layer if missing
+        if (!currentStory && !loadingLayers.has(storyKey)) {
+            const loadStory = async () => {
+                actions.addLoadingLayer(storyKey);
+                try {
+                    console.log(`Fetching story for ${storyKey}...`);
+                    const data = await fetchStory(topic, currentLayer);
+                    actions.cacheStory(storyKey, data);
+                } catch (e) {
+                    console.error(`Failed to load story for ${currentLayer}`, e);
+                } finally {
+                    actions.removeLoadingLayer(storyKey);
+                }
+            };
+            loadStory();
+        }
+    }, [topic, currentLayer, currentStory, loadingLayers, actions, storyKey]);
 
     const handleScroll = (e) => {
         const scrollTop = e.target.scrollTop;
@@ -23,7 +45,9 @@ const Learn = () => {
         }
     };
 
-    // Show loading state when loading a new theme
+    // Show loading state when loading a new theme (initial load)
+    // For subsequent layer switches, we might want a different loading indicator or just skeleton
+    // But keeping it simple for now: if global isLoading is true, show full screen loader.
     if (isLoading && !vocab) {
         return (
             <section className="flex flex-col h-full w-full bg-bg overflow-hidden items-center justify-center">
@@ -54,7 +78,15 @@ const Learn = () => {
                 onScroll={handleScroll}
             >
                 {vocab && <VocabGrid vocab={vocab} isCollapsed={isScrolled} />}
-                {currentStory && <StoryReader story={currentStory} />}
+                {currentStory ? (
+                    <StoryReader story={currentStory} />
+                ) : (
+                    loadingLayers.has(storyKey) && (
+                        <div className="py-12 flex justify-center">
+                            <div className="w-8 h-8 border-2 border-neon-green border-t-transparent rounded-full animate-spin"></div>
+                        </div>
+                    )
+                )}
             </div>
         </section>
     );
