@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import { useGlobalState } from '../context/GlobalContext';
-import { fetchStory } from '../api/client';
+import { fetchStory, fetchStoryStream } from '../api/client';
 import VocabGrid from '../components/Learn/VocabGrid';
 import StoryReader from '../components/Learn/StoryReader';
 import EmptyState from '../components/Layout/EmptyState';
@@ -15,19 +15,38 @@ const Learn = () => {
 
     const [isScrolled, setIsScrolled] = React.useState(false);
 
+    const [partialStory, setPartialStory] = React.useState(null);
+
     useEffect(() => {
         if (!topic) return;
 
         // Lazy load story for the current layer if missing
-        if (!currentStory && !loadingLayers.has(storyKey)) {
+        if (!currentStory && !loadingLayers.has(storyKey) && !partialStory) {
             const loadStory = async () => {
                 actions.addLoadingLayer(storyKey);
+                setPartialStory({ title: '', content: '', target_tense: currentLayer }); // Initialize placeholder
+
                 try {
-                    console.log(`Fetching story for ${storyKey}...`);
-                    const data = await fetchStory(topic, currentLayer);
-                    actions.cacheStory(storyKey, data);
+                    console.log(`Fetching story stream for ${storyKey}...`);
+                    await fetchStoryStream(
+                        topic,
+                        currentLayer,
+                        (chunk) => {
+                            setPartialStory(prev => ({
+                                ...prev,
+                                content: (prev?.content || "") + chunk
+                            }));
+                        },
+                        (finalStory) => {
+                            if (finalStory) {
+                                actions.cacheStory(storyKey, finalStory);
+                            }
+                            setPartialStory(null);
+                        }
+                    );
                 } catch (e) {
                     console.error(`Failed to load story for ${currentLayer}`, e);
+                    setPartialStory(null);
                 } finally {
                     actions.removeLoadingLayer(storyKey);
                 }
@@ -78,8 +97,8 @@ const Learn = () => {
                 onScroll={handleScroll}
             >
                 {vocab && <VocabGrid vocab={vocab} isCollapsed={isScrolled} />}
-                {currentStory ? (
-                    <StoryReader story={currentStory} />
+                {currentStory || partialStory ? (
+                    <StoryReader story={currentStory || partialStory} />
                 ) : (
                     loadingLayers.has(storyKey) && (
                         <div className="py-12 flex justify-center">
