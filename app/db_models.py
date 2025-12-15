@@ -1,7 +1,7 @@
 import json
 from datetime import datetime
 from typing import Any, Dict, List, Optional
-from sqlalchemy import String, Integer, Text, Boolean, TIMESTAMP, ForeignKey, JSON
+from sqlalchemy import String, Integer, Text, Boolean, TIMESTAMP, ForeignKey, JSON, Index
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.sql import func
 from app.core.db import Base
@@ -27,7 +27,7 @@ class SessionLog(Base):
     __tablename__ = "sessions"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    topic: Mapped[str] = mapped_column(Text)
+    topic: Mapped[str] = mapped_column(Text, index=True)
     vocab_json: Mapped[Dict[str, Any]] = mapped_column(JSON)
     created_at: Mapped[datetime] = mapped_column(TIMESTAMP, server_default=func.now())
 
@@ -37,6 +37,9 @@ class Story(Base):
     Previously table 'stories'.
     """
     __tablename__ = "stories"
+    __table_args__ = (
+        Index("idx_story_topic_tense", "topic", "target_tense"),
+    )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     topic: Mapped[str] = mapped_column(Text)
@@ -55,7 +58,7 @@ class Attempt(Base):
     __tablename__ = "attempts"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    activity_type: Mapped[str] = mapped_column(Text) # 'quiz', 'scenario', 'mission'
+    activity_type: Mapped[str] = mapped_column(Text, index=True) # 'quiz', 'scenario', 'mission'
     topic: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     tense: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     
@@ -66,7 +69,7 @@ class Attempt(Base):
     xp_earned: Mapped[int] = mapped_column(Integer, default=0)
     duration_seconds: Mapped[int] = mapped_column(Integer, default=0)
     
-    created_at: Mapped[datetime] = mapped_column(TIMESTAMP, server_default=func.now())
+    created_at: Mapped[datetime] = mapped_column(TIMESTAMP, server_default=func.now(), index=True)
 
 class ReviewNote(Base):
     """
@@ -93,7 +96,7 @@ class SRSSchedule(Base):
     __tablename__ = "srs_schedule"
 
     note_id: Mapped[int] = mapped_column(ForeignKey("review_notes.id"), primary_key=True)
-    next_review_at: Mapped[datetime] = mapped_column(TIMESTAMP)
+    next_review_at: Mapped[datetime] = mapped_column(TIMESTAMP, index=True)
     interval_days: Mapped[int] = mapped_column(Integer, default=0)
     ease_factor: Mapped[float] = mapped_column(Integer, default=2.5) # Using Float in DB usually but schemas handled REAL/Float
     repetitions: Mapped[int] = mapped_column(Integer, default=0)
