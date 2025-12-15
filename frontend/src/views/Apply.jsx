@@ -20,12 +20,16 @@ const Apply = () => {
     // Check if we are already fetching this specific item to avoid double-fetch
     const isFetching = loadingLayers.has(scenarioKey) || loadingLayers.has(chatKey);
 
+    // Track local in-flight requests to prevent double-firing in Strict Mode
+    const fetchingRef = React.useRef(new Set());
+
     useEffect(() => {
         if (!topic) return;
 
         const loadMissingData = async () => {
             // 1. Load Scenario if missing
-            if (!currentScenario && !loadingLayers.has(scenarioKey)) {
+            if (!currentScenario && !loadingLayers.has(scenarioKey) && !fetchingRef.current.has(scenarioKey)) {
+                fetchingRef.current.add(scenarioKey);
                 actions.addLoadingLayer(scenarioKey);
                 try {
                     const data = await fetchScenario(topic, currentLayer);
@@ -34,11 +38,13 @@ const Apply = () => {
                     console.error("Failed to load scenario:", e);
                 } finally {
                     actions.removeLoadingLayer(scenarioKey);
+                    fetchingRef.current.delete(scenarioKey);
                 }
             }
 
             // 2. Load Chat if missing
-            if (!chatSession && !loadingLayers.has(chatKey)) {
+            if (!chatSession && !loadingLayers.has(chatKey) && !fetchingRef.current.has(chatKey)) {
+                fetchingRef.current.add(chatKey);
                 actions.addLoadingLayer(chatKey);
                 try {
                     // Start or resume chat for this layer
@@ -48,6 +54,7 @@ const Apply = () => {
                     console.error("Failed to init chat:", e);
                 } finally {
                     actions.removeLoadingLayer(chatKey);
+                    fetchingRef.current.delete(chatKey);
                 }
             }
         };
