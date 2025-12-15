@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException, Response
 from fastapi.responses import StreamingResponse
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from typing import Optional, Dict, Any, List
 import json
 import asyncio
@@ -13,25 +13,30 @@ from app.services.llm import llm_service
 
 router = APIRouter()
 
+# 🛡️ Sentinel Security Improvement: Input Validation
+# Regex allows alphanumeric, spaces, and common punctuation (.,?!'-)
+# Prevents script injection and other malicious payloads
+SAFE_INPUT_PATTERN = r"^[\w\s\-\.\?!,;'’]+$"
+
 class ThemeRequest(BaseModel):
-    topic: str
+    topic: str = Field(..., min_length=1, max_length=100, pattern=SAFE_INPUT_PATTERN)
     previous_vocab: Optional[Dict[str, Any]] = None
 
 class StoryRequest(BaseModel):
-    topic: str
-    target_tense: str
+    topic: str = Field(..., min_length=1, max_length=100, pattern=SAFE_INPUT_PATTERN)
+    target_tense: str = Field(..., min_length=1, max_length=50, pattern=SAFE_INPUT_PATTERN)
 
 class SentenceRequest(BaseModel):
-    topic: str
-    time_layer: str
-    subject: str
-    verb_base: str
-    verb_past: str
-    verb_participle: str
-    object: str = ""
-    manner: str = ""
-    place: str = ""
-    time: str = ""
+    topic: str = Field(..., min_length=1, max_length=100, pattern=SAFE_INPUT_PATTERN)
+    time_layer: str = Field(..., max_length=50)
+    subject: str = Field(..., max_length=100)
+    verb_base: str = Field(..., max_length=50)
+    verb_past: str = Field(..., max_length=50)
+    verb_participle: str = Field(..., max_length=50)
+    object: str = Field("", max_length=200)
+    manner: str = Field("", max_length=100)
+    place: str = Field("", max_length=100)
+    time: str = Field("", max_length=100)
 
 @router.post("/api/theme")
 async def api_generate_theme(payload: ThemeRequest):
