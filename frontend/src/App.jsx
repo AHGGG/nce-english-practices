@@ -9,6 +9,7 @@ import Drill from './views/Drill';
 import Apply from './views/Apply';
 import Stats from './views/Stats';
 import Coach from './views/Coach'; // New Coach View
+import VoiceLab from './views/VoiceLab'; // Voice Vendor Test Page
 
 function App() {
   return (
@@ -19,6 +20,7 @@ function App() {
             <Routes>
               {/* Coach Mode Route (Standalone) */}
               <Route path="/coach" element={<Coach />} />
+              <Route path="/voice-lab" element={<VoiceLab />} />
 
               {/* Mixed Mode Routes (Legacy/Standard) */}
               <Route path="/" element={<Layout />}>

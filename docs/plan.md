@@ -76,6 +76,8 @@
     - [x] **Visual Stats**: Daily streaks, words encounter counter, practice volume.
     - [x] **Time Tracking**: Record total practice duration per session.
     - [x] **History**: Log of all completed quizzes and missions.
+- [x] **Voice Vendor Lab**:
+    - [x] **Internal Tool**: `/voice-lab` for testing Google, ElevenLabs, Deepgram, and Azure TTS/STT capabilities.
 - [ ] **Audio Engine**:
     - [x] **TTS**: Text-to-Speech for all generated sentences (Browser Native or API).
     - [ ] **Shadowing**: Record user audio and compare (Future).

@@ -8,7 +8,8 @@ import os
 
 from app.services.dictionary import dict_manager
 from app.api.routers import voice, dictionary, content, practice, stats
-from app.routers import coach
+from app.routers import coach, voice_lab
+from app.admin import setup_admin
 
 load_dotenv()
 
@@ -26,6 +27,7 @@ async def lifespan(app: FastAPI):
     # Cleanup if needed
 
 app = FastAPI(title="NCE English Practice", lifespan=lifespan)
+setup_admin(app)
 
 # Include Routers
 app.include_router(voice.router)
@@ -35,6 +37,7 @@ app.include_router(practice.router)
 
 app.include_router(stats.router)
 app.include_router(coach.router)
+app.include_router(voice_lab.router)
 
 from app.models import RemoteLog
 

@@ -20,6 +20,14 @@ class Settings(BaseSettings):
     # Default to local postgres if not set. Users should set this in .env
     DATABASE_URL: str = "postgresql+asyncpg://postgres:postgres@localhost:5432/nce_practice"
 
+    # Voice Lab Settings
+    ELEVENLABS_API_KEY: str = ""
+    DEEPGRAM_API_KEY: str = ""
+    AZURE_SPEECH_KEY: str = ""
+    AZURE_SPEECH_REGION: str = "eastus"
+    # For Google Cloud Speech/TTS (Unified with Gemini usually, but separate if using standard Google Cloud APIs)
+    GOOGLE_APPLICATION_CREDENTIALS: str = ""
+
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
 
     @property
