@@ -25,9 +25,15 @@ class SessionLog(Base):
     Previously table 'sessions'.
     """
     __tablename__ = "sessions"
+    __table_args__ = (
+        # Optimization: Composite index on (topic, created_at) enables efficient retrieval
+        # of the latest session for a topic without sorting the entire result set.
+        # This speeds up get_session_vocab which does: where(topic=...).order_by(created_at desc).limit(1)
+        Index("idx_session_topic_created", "topic", "created_at"),
+    )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    topic: Mapped[str] = mapped_column(Text, index=True)
+    topic: Mapped[str] = mapped_column(Text)
     vocab_json: Mapped[Dict[str, Any]] = mapped_column(JSON)
     created_at: Mapped[datetime] = mapped_column(TIMESTAMP, server_default=func.now())
 
@@ -145,4 +151,3 @@ class CoachSession(Base):
     ended_at: Mapped[Optional[datetime]] = mapped_column(TIMESTAMP, nullable=True)
     summary: Mapped[Optional[Dict[str, Any]]] = mapped_column(JSON, nullable=True)
     message_count: Mapped[int] = mapped_column(Integer, default=0)
-
