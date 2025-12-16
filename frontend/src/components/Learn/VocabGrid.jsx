@@ -1,5 +1,4 @@
 import React from 'react';
-import { Tag } from '../ui'; // Assuming Tag might be useful, or just manual styling 
 
 const VocabCard = ({ label, value }) => (
     <div className="bg-bg-paper rounded-none border border-ink-faint p-2 md:p-4 flex flex-col gap-1 md:gap-2 transition-all hover:border-neon-cyan hover:shadow-[4px_4px_0px_0px_rgba(6,182,212,0.2)] group h-full">
@@ -12,7 +11,33 @@ const VocabCard = ({ label, value }) => (
     </div>
 );
 
-const VocabGrid = ({ vocab, isCollapsed }) => {
+const SimpleWordCard = ({ word, definition }) => (
+    <div className="bg-surface-100 border border-ink/10 p-6 flex flex-col items-center justify-center gap-2 hover:border-neon-purple transition-all">
+        <h3 className="text-xl font-serif text-ink">{word}</h3>
+        {definition && <p className="text-sm text-ink/60 text-center">{definition}</p>}
+    </div>
+);
+
+const VocabGrid = ({ vocab, isCollapsed, mode = 'slots', words = [] }) => {
+
+    // --- COACH MODE ---
+    if (mode === 'coach-list') {
+        const list = words || [];
+        return (
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 p-4">
+                {list.map((w, idx) => (
+                    // Handle if w is string or object
+                    <SimpleWordCard
+                        key={idx}
+                        word={typeof w === 'string' ? w : w.word}
+                        definition={typeof w === 'object' ? w.definition : null}
+                    />
+                ))}
+            </div>
+        );
+    }
+
+    // --- ORIGINAL MODE (Slots) ---
     if (!vocab) return null;
 
     const { slots, verbs } = vocab;

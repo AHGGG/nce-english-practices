@@ -118,3 +118,17 @@
         - [x] **Challenge Layout**: Compacted ScenarioCard (padding, fonts, spacing) to eliminate scrolling for standard tasks.
         - [x] **Drill Matrix**: Implemented Responsive Matrix Grid (Table on Desktop, Stacked Cards on Mobile) to fix horizontal scrolling.
         - [x] **Context Story Layout**: Optimized Typography and Spacing in StoryReader to increase information density and reduce scrolling.
+
+## 🤖 Phase 10: Coach-Centric Architecture (Completed)
+- [x] **Backend Engine**:
+    - [x] **CoachService**: Centralized session management and LLM orchestration.
+    - [x] **Tool-Use Pattern**: Migrated from simple chat to Tool-Calling Agent (`show_vocabulary`, `present_story`, `start_drill`).
+    - [x] **DSML Parser**: Implemented robust parsing for DeepSeek's raw XML-style tool calls.
+    - [x] **On-Demand Generation**: Implemented fallback logic to generate stories on-the-fly (`_generate_story`).
+- [x] **Audio Upgrade**:
+    - [x] **TTS Engine**: Integrated Microsoft Edge TTS (`edge-tts`) for high-quality, free Neural voices.
+    - [x] **Voice Control**: Full STT (WebSpeech) + TTS loop for hands-free practice.
+- [x] **Frontend Experience**:
+    - [x] **Coach Canvas**: Dynamic workspace that renders UI components (Vocab/Story/Drill) based on Agent commands.
+    - [x] **Cyber-Noir Design**: Hard-edged, information-dense "Terminal" aesthetic for the Coach interface.
+    - [x] **Optimistic UI**: Instant improvements in chat responsiveness.

@@ -79,7 +79,15 @@ uv run alembic downgrade -1
 
 # View migration history
 uv run alembic history
+# View migration history
+uv run alembic history
 ```
+
+## Coach & TTS
+The new Coach architecture uses **Edge-TTS** for audio.
+- **Library**: `edge-tts` (Official Microsoft Edge TTS API wrapper).
+- **Voice**: `en-US-AndrewMultilingualNeural`.
+- **Flow**: Backend streams bytes -> Frontend plays Blob via Web Audio API.
 
 ## Architecture
 
@@ -97,8 +105,11 @@ The project follows a modular package structure:
   - `dictionary.py`: MDX/MDD parsing and multi-dictionary management.
   - `chat.py`: Stateful chat session management.
   - `voice.py`: Voice session management (WebSocket).
+  - `coach.py`: **NEW** Agentic Coach service (LLM Tool use).
+  - `tts.py`: **NEW** Edge-TTS integration.
+  - `dsml_parser.py`: **NEW** Parser for DeepSeek raw XML tool calls.
 - **`app/generators/`**: Content generation logic.
-  - `theme.py`, `sentence.py`, `story.py`, `quiz.py`, `scenario.py`, `coach.py`
+  - `theme.py`, `sentence.py`, `story.py`, `quiz.py`, `scenario.py`
 - **`app/models.py`**: Pydantic models for API requests/responses.
 - **`app/db_models.py`**: SQLAlchemy ORM models.
 - **`app/database.py`**: Database operations and query functions.
@@ -139,6 +150,12 @@ The application supports loading multiple MDX dictionaries simultaneously.
   - Definitions are rewritten to use absolute proxy paths (`/dict-assets/{subdir}/...`) for CSS/JS.
   - Binary assets (images/audio) are served via `/dict-assets/{path}` tunnel.
   - Falls back to MDD cache if file not found on disk.
+
+### Coach Service (Agentic)
+- **Role**: Central orchestrator for the "Neural Link" mode.
+- **Pattern**: Tool-Using Agent. The LLM decides *which* UI component to show (Vocab, Story, Drill) by calling tools.
+- **DSML Parser**: Handles DeepSeek's custom XML-style tool calls (`<｜DSML｜invoke>`).
+- **Data Flow**: User Input -> LLM -> Tool Call -> Backend Execution (e.g., Generate Story) -> Result Re-injection -> Final Response -> Frontend Render.
 
 ### Voice Chat (WebSocket)
 

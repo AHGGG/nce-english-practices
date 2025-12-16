@@ -1,8 +1,16 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useEffect, useRef } from 'react';
 import { useDictionary } from '../../context/DictionaryContext';
 
-const StoryReader = ({ story }) => {
+const StoryReader = ({ story, coachMode = false, highlights = [] }) => {
     const { openDictionary } = useDictionary();
+    const containerRef = useRef(null);
+
+    // Auto-scroll on mount if coach mode
+    useEffect(() => {
+        if (coachMode && containerRef.current) {
+            containerRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+    }, [coachMode]);
 
     if (!story) return null;
 
@@ -15,16 +23,18 @@ const StoryReader = ({ story }) => {
             .replace(/\*\*(.*?)\*\*/g, '<span class="bg-neon-green/10 text-neon-green px-1 border-b border-neon-green font-bold">$1</span>')
             .replace(/\*(.*?)\*/g, '<em class="text-ink-muted">$1</em>');
 
-        // Highlight phrases
-        if (story.highlights && story.highlights.length > 0) {
-            story.highlights.forEach(phrase => {
+        // Dynamic Highlights (from Coach or Story props)
+        const targets = highlights.length > 0 ? highlights : (story.highlights || []);
+
+        if (targets.length > 0) {
+            targets.forEach(phrase => {
                 const escaped = phrase.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
                 const regex = new RegExp(`(${escaped})`, 'gi');
-                content = content.replace(regex, '<span class="bg-neon-green/10 text-neon-green px-1 border-b border-neon-green font-bold" title="Target Tense">$1</span>');
+                content = content.replace(regex, '<span class="bg-neon-cyan/20 text-neon-cyan px-1 border-b border-neon-cyan font-bold" title="Coach Note">$1</span>');
             });
         }
         return content;
-    }, [story]);
+    }, [story, highlights]);
 
     const handleWordClick = (e) => {
         // 1. Get the range/caret position
@@ -61,26 +71,29 @@ const StoryReader = ({ story }) => {
 
         if (cleanWord.length > 0) {
             console.log(`Word clicked: "${cleanWord}"`);
-            // Try to get sentence context (parent element text)
             let sentence = "Context unavailable";
             try { sentence = textNode.parentElement.innerText; } catch (err) { }
-
             openDictionary(cleanWord, sentence);
         }
     };
 
     return (
-        <div className="mb-12 animate-fade-in-up">
-            <div className="flex justify-between items-end mb-4 ml-1">
-                <h3 className="text-xs uppercase tracking-wider text-ink-muted font-bold font-mono">
-                    Context Story
-                </h3>
-                <span className="text-[10px] text-neon-green/80 bg-neon-green/10 px-2 py-0.5 border border-neon-green/20 font-mono select-none">
-                    CLICK TO DEFINE
-                </span>
-            </div>
+        <div ref={containerRef} className={`animate-fade-in-up ${coachMode ? 'mb-4' : 'mb-12'}`}>
+            {!coachMode && (
+                <div className="flex justify-between items-end mb-4 ml-1">
+                    <h3 className="text-xs uppercase tracking-wider text-ink-muted font-bold font-mono">
+                        Context Story
+                    </h3>
+                    <span className="text-[10px] text-neon-green/80 bg-neon-green/10 px-2 py-0.5 border border-neon-green/20 font-mono select-none">
+                        CLICK TO DEFINE
+                    </span>
+                </div>
+            )}
 
-            <div className="bg-bg-paper border border-ink-faint p-5 md:p-8 shadow-hard relative overflow-hidden group">
+            <div className={`
+                bg-bg-paper border border-ink-faint p-5 md:p-8 shadow-hard relative overflow-hidden group
+                ${coachMode ? 'border-neon-cyan/30 shadow-[0_0_15px_rgba(6,182,212,0.1)]' : ''}
+            `}>
                 <h3 className="text-xl font-serif font-bold mb-4 text-ink border-b border-ink-faint pb-3">
                     {story.title || `${story.target_tense} Story`}
                 </h3>
