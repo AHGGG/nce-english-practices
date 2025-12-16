@@ -9,7 +9,6 @@ import os
 from app.services.dictionary import dict_manager
 from app.api.routers import voice, dictionary, content, practice, stats
 from app.routers import coach, voice_lab
-
 load_dotenv()
 
 @asynccontextmanager
