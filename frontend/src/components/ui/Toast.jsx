@@ -82,6 +82,8 @@ const ToastItem = ({ message, type, duration, onDismiss }) => {
 
     return (
         <div
+            role={type === 'error' ? 'alert' : 'status'}
+            aria-live={type === 'error' ? 'assertive' : 'polite'}
             className={`
                 pointer-events-auto 
                 flex items-start gap-3 p-4 
@@ -99,6 +101,7 @@ const ToastItem = ({ message, type, duration, onDismiss }) => {
             <button
                 onClick={() => setIsVisible(false)}
                 className="text-ink-muted hover:text-ink transition-colors"
+                aria-label="Close notification"
             >
                 <X size={14} />
             </button>
