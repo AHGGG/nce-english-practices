@@ -7,7 +7,7 @@ from dotenv import load_dotenv
 import os
 
 from app.services.dictionary import dict_manager
-from app.api.routers import voice, dictionary, content, practice, stats
+from app.api.routers import voice, dictionary, content, practice, stats, deepgram
 from app.routers import coach, voice_lab
 load_dotenv()
 
@@ -35,6 +35,7 @@ app.include_router(practice.router)
 app.include_router(stats.router)
 app.include_router(coach.router)
 app.include_router(voice_lab.router)
+app.include_router(deepgram.router)
 
 from app.models import RemoteLog
 
