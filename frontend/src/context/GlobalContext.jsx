@@ -62,8 +62,6 @@ export const GlobalProvider = ({ children }) => {
             currentScenario: null,
             selectedWord: null,
             selectedContext: null,
-            selectedWord: null,
-            selectedContext: null,
             isLoading: false,
             loadingLayers: new Set()
         })

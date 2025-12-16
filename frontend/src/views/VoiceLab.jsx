@@ -5,6 +5,7 @@ import { Mic, Volume2, Radio, Server, Beaker } from 'lucide-react';
 import TTSPanel from '../components/VoiceLab/TTSPanel';
 import STTPanel from '../components/VoiceLab/STTPanel';
 import LivePanel from '../components/VoiceLab/LivePanel';
+import DeepgramLive from '../components/VoiceLab/DeepgramLive';
 
 const VoiceLab = () => {
     const [activeTab, setActiveTab] = useState('tts');
@@ -59,6 +60,7 @@ const VoiceLab = () => {
                     <TabButton id="tts" icon={Volume2} label="Text-to-Speech" />
                     <TabButton id="stt" icon={Mic} label="Speech-to-Text" />
                     <TabButton id="live" icon={Radio} label="Live / Streaming" />
+                    <TabButton id="deepgram" icon={Server} label="Deepgram (Beta)" />
                 </div>
 
                 {/* Content Area */}
@@ -72,6 +74,7 @@ const VoiceLab = () => {
                             {activeTab === 'tts' && <TTSPanel config={config} />}
                             {activeTab === 'stt' && <STTPanel config={config} />}
                             {activeTab === 'live' && <LivePanel config={config} />}
+                            {activeTab === 'deepgram' && <DeepgramLive />}
                         </>
                     )}
                 </div>
