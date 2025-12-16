@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException, Response
 from fastapi.responses import StreamingResponse
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from typing import Optional, Dict, Any, List
 import json
 import asyncio
@@ -10,28 +10,29 @@ from app.generators.sentence import ensure_sentences
 from app.generators.story import generate_story_stream, load_story
 from app.database import log_session
 from app.services.llm import llm_service
+from app.core.utils import SAFE_INPUT_PATTERN
 
 router = APIRouter()
 
 class ThemeRequest(BaseModel):
-    topic: str
+    topic: str = Field(..., max_length=100, pattern=SAFE_INPUT_PATTERN)
     previous_vocab: Optional[Dict[str, Any]] = None
 
 class StoryRequest(BaseModel):
-    topic: str
-    target_tense: str
+    topic: str = Field(..., max_length=100, pattern=SAFE_INPUT_PATTERN)
+    target_tense: str = Field(..., max_length=50, pattern=SAFE_INPUT_PATTERN)
 
 class SentenceRequest(BaseModel):
-    topic: str
-    time_layer: str
-    subject: str
-    verb_base: str
-    verb_past: str
-    verb_participle: str
-    object: str = ""
-    manner: str = ""
-    place: str = ""
-    time: str = ""
+    topic: str = Field(..., max_length=100, pattern=SAFE_INPUT_PATTERN)
+    time_layer: str = Field(..., max_length=50, pattern=SAFE_INPUT_PATTERN)
+    subject: str = Field(..., max_length=50, pattern=SAFE_INPUT_PATTERN)
+    verb_base: str = Field(..., max_length=50, pattern=SAFE_INPUT_PATTERN)
+    verb_past: str = Field(..., max_length=50, pattern=SAFE_INPUT_PATTERN)
+    verb_participle: str = Field(..., max_length=50, pattern=SAFE_INPUT_PATTERN)
+    object: str = Field("", max_length=100, pattern=SAFE_INPUT_PATTERN)
+    manner: str = Field("", max_length=100, pattern=SAFE_INPUT_PATTERN)
+    place: str = Field("", max_length=100, pattern=SAFE_INPUT_PATTERN)
+    time: str = Field("", max_length=100, pattern=SAFE_INPUT_PATTERN)
 
 @router.post("/api/theme")
 async def api_generate_theme(payload: ThemeRequest):

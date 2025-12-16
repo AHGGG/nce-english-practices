@@ -2,6 +2,13 @@ import json
 import re
 from typing import Dict, List, Union, Any
 
+# Security: Regex pattern for validating safe input strings
+# Allows unicode alphanumeric (for international support), spaces, and standard punctuation.
+# Explicitly disallows HTML tags (< >) and script execution characters ($ ` |) to prevent XSS and Command Injection.
+# Note: This pattern allows characters like ' and ; which are valid in text but potential SQLi primitives.
+# The application MUST use parameterized queries for all database interactions.
+SAFE_INPUT_PATTERN = r"^[\w\s\.,!?'\";:()\-&%+=]+$"
+
 def parse_llm_json(content: str) -> Union[Dict[str, Any], List[Any]]:
     """
     Parses JSON from an LLM response, handling markdown code blocks.

@@ -1,5 +1,5 @@
 from fastapi import APIRouter, HTTPException
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from typing import Optional, Dict, Any, List
 
 from app.generators.quiz import generate_quiz
@@ -10,60 +10,61 @@ from app.database import log_attempt
 from app.services.llm import llm_service
 from app.models import SelectionSnapshot
 from app.generators.coach import polish_sentence
+from app.core.utils import SAFE_INPUT_PATTERN
 
 router = APIRouter()
 
 class QuizRequest(BaseModel):
-    topic: str
-    tense: str
-    aspect: str
-    correct_sentence: str
+    topic: str = Field(..., max_length=100, pattern=SAFE_INPUT_PATTERN)
+    tense: str = Field(..., max_length=50, pattern=SAFE_INPUT_PATTERN)
+    aspect: str = Field(..., max_length=50, pattern=SAFE_INPUT_PATTERN)
+    correct_sentence: str = Field(..., max_length=500, pattern=SAFE_INPUT_PATTERN)
 
 class ScenarioRequest(BaseModel):
-    topic: str
-    tense: str
-    aspect: str
+    topic: str = Field(..., max_length=100, pattern=SAFE_INPUT_PATTERN)
+    tense: str = Field(..., max_length=50, pattern=SAFE_INPUT_PATTERN)
+    aspect: str = Field(..., max_length=50, pattern=SAFE_INPUT_PATTERN)
 
 class ScenarioGradeRequest(BaseModel):
-    situation: str
-    goal: str
-    user_input: str
-    tense: str
+    situation: str = Field(..., max_length=1000, pattern=SAFE_INPUT_PATTERN)
+    goal: str = Field(..., max_length=500, pattern=SAFE_INPUT_PATTERN)
+    user_input: str = Field(..., max_length=1000, pattern=SAFE_INPUT_PATTERN)
+    tense: str = Field(..., max_length=50, pattern=SAFE_INPUT_PATTERN)
 
 class ChatStartRequest(BaseModel):
-    topic: str
-    tense: str
-    aspect: str
+    topic: str = Field(..., max_length=100, pattern=SAFE_INPUT_PATTERN)
+    tense: str = Field(..., max_length=50, pattern=SAFE_INPUT_PATTERN)
+    aspect: str = Field(..., max_length=50, pattern=SAFE_INPUT_PATTERN)
 
 class ChatReplyRequest(BaseModel):
-    session_id: str
-    message: str
+    session_id: str = Field(..., max_length=50, pattern=r"^[a-zA-Z0-9\-_]+$") # Session ID is usually UUID or similar
+    message: str = Field(..., max_length=2000, pattern=SAFE_INPUT_PATTERN)
 
 class GradeRequest(BaseModel):
-    expected: str
-    user: str
+    expected: str = Field(..., max_length=500, pattern=SAFE_INPUT_PATTERN)
+    user: str = Field(..., max_length=500, pattern=SAFE_INPUT_PATTERN)
 
 class LogRequest(BaseModel):
-    topic: str
+    topic: str = Field(..., max_length=100, pattern=SAFE_INPUT_PATTERN)
     words: Dict[str, List[str]]
     verb: Dict[str, str]
-    tense: str
-    form: str
-    expected: str
-    user: str
+    tense: str = Field(..., max_length=50, pattern=SAFE_INPUT_PATTERN)
+    form: str = Field(..., max_length=50, pattern=SAFE_INPUT_PATTERN)
+    expected: str = Field(..., max_length=500, pattern=SAFE_INPUT_PATTERN)
+    user: str = Field(..., max_length=500, pattern=SAFE_INPUT_PATTERN)
     result: Dict[str, Any]
     wh_word: Optional[str] = None
 
 class GenericLogRequest(BaseModel):
-    activity_type: str # quiz, mission
-    topic: str
-    tense: str
+    activity_type: str = Field(..., max_length=50, pattern=SAFE_INPUT_PATTERN) # quiz, mission
+    topic: str = Field(..., max_length=100, pattern=SAFE_INPUT_PATTERN)
+    tense: str = Field(..., max_length=50, pattern=SAFE_INPUT_PATTERN)
     is_pass: bool
     details: Optional[Dict[str, Any]] = None
     duration_seconds: int = 0
 
 class PolishRequest(BaseModel):
-    sentence: str
+    sentence: str = Field(..., max_length=1000, pattern=SAFE_INPUT_PATTERN)
     context: List[Dict[str, str]] = []
 
 @router.post("/api/quiz")

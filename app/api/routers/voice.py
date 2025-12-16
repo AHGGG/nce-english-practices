@@ -1,10 +1,11 @@
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 import base64
 import asyncio
 from app.config import settings
 from app.services.llm import llm_service
 from app.services.voice_session import VoiceSession
+from app.core.utils import SAFE_INPUT_PATTERN
 
 router = APIRouter()
 
@@ -12,9 +13,9 @@ router = APIRouter()
 VOICE_MODEL_NAME = settings.GEMINI_VOICE_MODEL_NAME
 
 class VoiceTokenRequest(BaseModel):
-    topic: str
-    mission_context: str
-    tense: str
+    topic: str = Field(..., max_length=100, pattern=SAFE_INPUT_PATTERN)
+    mission_context: str = Field(..., max_length=1000, pattern=SAFE_INPUT_PATTERN)
+    tense: str = Field(..., max_length=50, pattern=SAFE_INPUT_PATTERN)
 
 @router.websocket("/ws/voice")
 async def websocket_endpoint(websocket: WebSocket):
