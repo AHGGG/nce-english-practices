@@ -138,16 +138,10 @@
     - [x] Integration with Python SDK v3 (`elevenlabs.client`).
     - [x] Confirmed TTS streaming validation.
 - [x] **Deepgram**:
-    - [x] Integration with Python SDK v3.
     - [x] **TTS**: Aura Voice (`speak.v1.audio.generate`).
     - [x] **STT**: Nova-2 (`listen.v1.media.transcribe_file`).
 - [x] **Google (Gemini)**:
     - [x] **TTS**: Multimodal Generation (Live API + WAV Header Injection).
     - [x] **STT**: Multimodal Transcription.
-- [x] **Azure**:
-    - [x] **TTS**: Speech SDK (Non-streaming).
-    - [x] **STT**: PushAudioInputStream (Memory Stream).
-    - [x] **Pronunciation Assessment**: `PronunciationAssessmentConfig` (Phoneme level scores).
-    - [x] **Automated Verification**: Implemented verification suite (`tests/verification/`) for TTS, STT, and Realtime Voice.
-    - [x] **UI Refactor**: Reorganized Voice Lab to **Vendor-Centric Layout** (Manufacturer Tabs).
-
+- [x] **Automated Verification**: Implemented verification suite (`tests/verification/`) for TTS, STT, and Realtime Voice.
+- [x] **UI Refactor**: Reorganized Voice Lab to **Vendor-Centric Layout** (Manufacturer Tabs).

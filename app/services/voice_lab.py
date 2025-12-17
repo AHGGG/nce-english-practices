@@ -13,11 +13,6 @@ logger = logging.getLogger(__name__)
 
 # --- Optional Imports to prevent crash if installation issues ---
 try:
-    import azure.cognitiveservices.speech as speechsdk
-except ImportError:
-    speechsdk = None
-
-try:
     from deepgram import DeepgramClient
 except ImportError:
     DeepgramClient = None
@@ -227,10 +222,13 @@ class ElevenLabsProvider(VoiceProvider):
         if model == "default" or not model:
             model = "eleven_multilingual_v2"
         
+        # Handle voice_id if passed as dict from config
+        actual_voice_id = voice_id["id"] if isinstance(voice_id, dict) else voice_id
+
         # ElevenLabs SDK v3+ change: .convert returns a generator
         audio_stream = self.client.text_to_speech.convert(
             text=text,
-            voice_id=voice_id,
+            voice_id=actual_voice_id,
             model_id=model
         )
         
@@ -266,7 +264,6 @@ class DeepgramProvider(VoiceProvider):
         if not self.client:
              raise ValueError("Deepgram API Key missing.")
         
-        # Handle default model - use a valid Deepgram Aura voice
         # For Deepgram TTS, the 'model' parameter IS the voice name
         if model == "default" or not model:
             model = voice_id if voice_id else "aura-2-asteria-en"
@@ -299,154 +296,12 @@ class DeepgramProvider(VoiceProvider):
         raise NotImplementedError("Deepgram does not support pronunciation assessment yet.")
 
 
-class AzureProvider(VoiceProvider):
-    def __init__(self):
-        self.key = settings.AZURE_SPEECH_KEY
-        self.region = settings.AZURE_SPEECH_REGION
-        self.config = None
-        if self.key and speechsdk:
-            self.config = speechsdk.SpeechConfig(subscription=self.key, region=self.region)
-
-    def get_config(self) -> Dict[str, Any]:
-        return {
-            "models": ["standard"],
-            "voices": ["en-US-AvaMultilingualNeural", "en-US-AndrewMultilingualNeural", "en-US-EmmaMultilingualNeural"]
-        }
-
-    async def tts(self, text: str, voice_id: str, model: str) -> AsyncGenerator[bytes, None]:
-        if not self.config:
-            raise ValueError("Azure Speech Key/Region missing.")
-        
-        self.config.speech_synthesis_voice_name = voice_id
-        # Blocking call, run in thread if heavy, but for now simple wrapper
-        # Azure SDK is tricky for streaming bytes back to python directly without file.
-        # PullAudioOutputStream is the way.
-        
-        stream_callback = PushAudioOutputStreamCallback()
-        audio_stream = speechsdk.audio.PushAudioOutputStream(stream_callback)
-        audio_config_stream = speechsdk.audio.AudioOutputConfig(stream=audio_stream)
-        
-        synthesizer_stream = speechsdk.SpeechSynthesizer(speech_config=self.config, audio_config=audio_config_stream)
-        result = synthesizer_stream.speak_text_async(text).get() # Blocking helper
-        
-        # Simply returning bytes for now (non-streaming for Azure simpler implementation)
-        if result.reason == speechsdk.ResultReason.SynthesizingAudioCompleted:
-             yield result.audio_data
-        else:
-             details = result.cancellation_details
-             logger.error(f"Azure TTS Error: {details.reason}. Details: {details.error_details}")
-
-    async def stt(self, audio_data: bytes, model: str = "general") -> str:
-        if not self.config:
-            raise ValueError("Azure Speech Key/Region missing.")
-
-        # Use PushAudioInputStream to handle in-memory audio bytes
-        stream = speechsdk.audio.PushAudioInputStream()
-        audio_config = speechsdk.audio.AudioConfig(stream=stream)
-        speech_recognizer = speechsdk.SpeechRecognizer(speech_config=self.config, audio_config=audio_config)
-        
-        # Write bytes and close stream
-        stream.write(audio_data)
-        stream.close()
-        
-        # Run recognition in thread to avoid blocking async event loop
-        # recognize_once_async returns a future, .get() blocks until result
-        result = await asyncio.to_thread(speech_recognizer.recognize_once_async().get)
-        
-        if result.reason == speechsdk.ResultReason.RecognizedSpeech:
-            return result.text
-        elif result.reason == speechsdk.ResultReason.NoMatch:
-             return "No speech could be recognized."
-        elif result.reason == speechsdk.ResultReason.Canceled:
-             details = result.cancellation_details
-             return f"Canceled: {details.reason}. Error: {details.error_details}"
-        
-        return ""
-
-    async def assess(self, audio_data: bytes, reference_text: str) -> Dict[str, Any]:
-        if not self.config:
-            raise ValueError("Azure Speech Key/Region missing.")
-
-        # Create Pronunciation Assessment Config
-        # We assume standard American English for now, or use voice_id logic if we had it.
-        pronunciation_config = speechsdk.PronunciationAssessmentConfig(
-            reference_text=reference_text,
-            grading_system=speechsdk.PronunciationAssessmentGradingSystem.HundredMark,
-            granularity=speechsdk.PronunciationAssessmentGranularity.Phoneme,
-            enable_miscue=True
-        )
-
-        # Stream Setup
-        stream = speechsdk.audio.PushAudioInputStream()
-        audio_config = speechsdk.audio.AudioConfig(stream=stream)
-        speech_recognizer = speechsdk.SpeechRecognizer(speech_config=self.config, audio_config=audio_config)
-        
-        # Apply config
-        pronunciation_config.apply_to(speech_recognizer)
-
-        # Write data
-        stream.write(audio_data)
-        stream.close()
-
-        # Execute
-        result = await asyncio.to_thread(speech_recognizer.recognize_once_async().get)
-
-        if result.reason == speechsdk.ResultReason.RecognizedSpeech:
-            # Parse Detailed Results
-            pronunciation_result = speechsdk.PronunciationAssessmentResult(result)
-            
-            # Helper to extract words
-            # The full JSON result has phoneme level details.
-            # result.properties[speechsdk.PropertyId.SpeechServiceResponse_JsonResult]
-            json_result = result.properties.get(speechsdk.PropertyId.SpeechServiceResponse_JsonResult)
-            parsed_json = json.loads(json_result) if json_result else {}
-            
-            # Basic Scores
-            response = {
-                "accuracy": pronunciation_result.accuracy_score,
-                "fluency": pronunciation_result.fluency_score,
-                "completeness": pronunciation_result.completeness_score,
-                "pronunciation": pronunciation_result.pronunciation_score,
-                "words": [] # We can populate detailed word list from parsed_json
-            }
-            
-            # Extract detailed word info if available
-            # Current Azure JSON structure usually has NBest -> [0] -> Words
-            if "NBest" in parsed_json and len(parsed_json["NBest"]) > 0:
-                words_data = parsed_json["NBest"][0].get("Words", [])
-                response["words"] = words_data
-                
-            return response
-
-        elif result.reason == speechsdk.ResultReason.NoMatch:
-             return {"error": "No speech recognized."}
-        elif result.reason == speechsdk.ResultReason.Canceled:
-             details = result.cancellation_details
-             return {"error": f"Canceled: {details.reason}", "details": details.error_details}
-        
-        return {"error": "Unknown error during assessment."}
-
-# Helper for Azure Stream if needed
-if speechsdk:
-    class PushAudioOutputStreamCallback(speechsdk.audio.PushAudioOutputStreamCallback):
-        def __init__(self):
-            super().__init__()
-            self._audio_data = bytearray()
-        
-        def write(self, data: memoryview) -> int:
-            self._audio_data.extend(data)
-            return data.nbytes
-            
-        def close(self):
-            pass
-
 class VoiceLabService:
     def __init__(self):
         self.providers = {
             "google": GoogleProvider(),
             "elevenlabs": ElevenLabsProvider(),
-            "deepgram": DeepgramProvider(),
-            "azure": AzureProvider()
+            "deepgram": DeepgramProvider()
         }
     
     def get_provider(self, name: str) -> VoiceProvider:

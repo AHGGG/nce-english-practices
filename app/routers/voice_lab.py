@@ -38,9 +38,9 @@ async def tts_endpoint(
                 logger.error(f"TTS Streaming Error: {e}")
                 # We can't change HTTP status since stream started, but we stop yielding.
         
-        # Return audio/mpeg as generic container, checking if wav needed for Azure or Google
+        # Return audio/mpeg as generic container, checking if wav needed for Google
         media_type = "audio/mpeg"
-        if provider == "azure" or provider == "google":
+        if provider == "google":
              media_type = "audio/wav" 
         
         return StreamingResponse(audio_gen(), media_type=media_type)
@@ -66,7 +66,7 @@ async def stt_endpoint(
 
 @router.post("/assess")
 async def assess_endpoint(
-    provider: str = Form("azure"),
+    provider: str = Form("mock"),
     reference_text: str = Form(...),
     file: UploadFile = File(...)
 ):

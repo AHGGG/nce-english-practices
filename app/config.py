@@ -23,8 +23,6 @@ class Settings(BaseSettings):
     # Voice Lab Settings
     ELEVENLABS_API_KEY: str = ""
     DEEPGRAM_API_KEY: str = ""
-    AZURE_SPEECH_KEY: str = ""
-    AZURE_SPEECH_REGION: str = "eastus"
     # For Google Cloud Speech/TTS (Unified with Gemini usually, but separate if using standard Google Cloud APIs)
     GOOGLE_APPLICATION_CREDENTIALS: str = ""
 

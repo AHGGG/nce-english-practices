@@ -19,18 +19,6 @@ async def test_google_tts():
     full_audio = b"".join(chunks)
     assert validate_audio_format(full_audio), "Google TTS returned invalid empty data"
 
-@pytest.mark.asyncio
-async def test_azure_tts():
-    provider = voice_lab_service.get_provider("azure")
-    config = provider.get_config()
-    voice_id = config["voices"][0]
-    
-    chunks = []
-    async for chunk in provider.tts(TEST_TEXT, voice_id, "default"):
-        chunks.append(chunk)
-
-    full_audio = b"".join(chunks)
-    assert validate_audio_format(full_audio), "Azure TTS returned invalid empty data"
 
 @pytest.mark.asyncio
 async def test_deepgram_tts():
@@ -53,7 +41,7 @@ async def test_elevenlabs_tts():
     voice_id = config["voices"][0]
     
     chunks = []
-    async for chunk in provider.tts(TEST_TEXT, voice_id, "eleven_monolingual_v1"):
+    async for chunk in provider.tts(TEST_TEXT, voice_id, "eleven_multilingual_v2"):
         chunks.append(chunk)
 
     full_audio = b"".join(chunks)

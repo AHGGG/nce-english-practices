@@ -19,14 +19,6 @@ async def test_google_stt(reference_audio):
     text_lower = transcript.lower()
     assert "verification" in text_lower or "test" in text_lower, f"Unexpected transcription: {transcript}"
 
-@pytest.mark.asyncio
-async def test_azure_stt(reference_audio):
-    provider = voice_lab_service.get_provider("azure")
-    transcript = await provider.stt(reference_audio)
-    
-    assert transcript, "Azure STT returned empty transcription"
-    text_lower = transcript.lower()
-    assert "verification" in text_lower or "test" in text_lower, f"Unexpected transcription: {transcript}"
 
 @pytest.mark.asyncio
 async def test_deepgram_stt(reference_audio):

@@ -9,7 +9,6 @@ import DeepgramFlux from '../components/VoiceLab/DeepgramFlux';
 import DeepgramStreamingTTS from '../components/VoiceLab/DeepgramStreamingTTS';
 import DeepgramVoiceAgent from '../components/VoiceLab/DeepgramVoiceAgent';
 import DeepgramUnified from '../components/VoiceLab/DeepgramUnified';
-import PronunciationPanel from '../components/VoiceLab/PronunciationPanel';
 import { Mic, Volume2, Radio, Server, Beaker, GraduationCap, Cloud, Zap, Globe, Cpu, Bot, TestTube2 } from 'lucide-react';
 
 const VoiceLab = () => {
@@ -70,7 +69,6 @@ const VoiceLab = () => {
                 {/* Tabs */}
                 <div className="flex border-b border-ink-faint mb-6 overflow-x-auto">
                     <TabButton id="google" icon={Globe} label="Google Gemini" />
-                    <TabButton id="azure" icon={Cloud} label="Azure Speech" />
                     <TabButton id="deepgram" icon={Zap} label="Deepgram" />
                     <TabButton id="elevenlabs" icon={Volume2} label="ElevenLabs" />
                 </div>
@@ -99,26 +97,6 @@ const VoiceLab = () => {
                                     <section>
                                         <SectionHeader title="Live Streaming (Native Audio)" icon={Radio} />
                                         <LivePanel config={config} fixedProvider="google" />
-                                    </section>
-                                </div>
-                            )}
-
-                            {/* AZURE VIEW */}
-                            {activeTab === 'azure' && (
-                                <div className="space-y-12 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                                    <section>
-                                        <SectionHeader title="Text-to-Speech" icon={Volume2} />
-                                        <TTSPanel config={config} fixedProvider="azure" />
-                                    </section>
-
-                                    <section>
-                                        <SectionHeader title="Speech-to-Text" icon={Mic} />
-                                        <STTPanel config={config} fixedProvider="azure" />
-                                    </section>
-
-                                    <section>
-                                        <SectionHeader title="Pronunciation Assessment" icon={GraduationCap} />
-                                        <PronunciationPanel config={config} />
                                     </section>
                                 </div>
                             )}

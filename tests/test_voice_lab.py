@@ -12,7 +12,6 @@ async def test_service_initialization():
     assert "google" in config
     assert "deepgram" in config
     assert "elevenlabs" in config
-    assert "azure" in config
 
 @pytest.mark.asyncio
 async def test_mock_provider():
