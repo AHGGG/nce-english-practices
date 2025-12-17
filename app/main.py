@@ -1,6 +1,5 @@
 from fastapi import FastAPI, Request
-from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse
+
 from contextlib import asynccontextmanager
 import asyncio
 from dotenv import load_dotenv
@@ -63,34 +62,7 @@ async def receive_remote_log(log: RemoteLog):
     
     return {"status": "ok"}
 
-# --- SPA Static File Serving ---
-# Serve React Build Files (Dist)
 
-# 1. Mount assets (JS/CSS)
-if os.path.exists("frontend/dist/assets"):
-    app.mount("/assets", StaticFiles(directory="frontend/dist/assets"), name="assets")
-
-# 2. Serve index.html for root and unknown paths (SPA Fallback)
-@app.get("/{full_path:path}")
-async def serve_spa(full_path: str):
-    # API routes are already handled above by include_router
-    # If a path matches a static file (e.g. favicon.ico), serve it?
-    # For simplicity, let's just serve index.html for everything else unless it's a specific static file we want to expose.
-    
-    # 🛡️ Sentinel Security Fix: Prevent Path Traversal
-    base_dir = os.path.abspath("frontend/dist")
-    file_path = os.path.abspath(os.path.join(base_dir, full_path))
-
-    # Verify the resolved path is actually inside the base directory
-    if os.path.commonpath([base_dir, file_path]) == base_dir:
-        if os.path.isfile(file_path):
-            return FileResponse(file_path)
-        
-    # Fallback to index.html
-    index_path = "frontend/dist/index.html"
-    if os.path.exists(index_path):
-        return FileResponse(index_path)
-    return {"error": "Frontend not built. Run 'npm run build' in frontend/ directory."}
 
 if __name__ == "__main__":
     import uvicorn

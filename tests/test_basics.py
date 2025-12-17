@@ -2,10 +2,16 @@ import pytest
 from httpx import AsyncClient
 
 @pytest.mark.asyncio
-async def test_health_check(client: AsyncClient):
-    response = await client.get("/")
+async def test_api_docs_reachable(client: AsyncClient):
+    # Verify Swagger UI is reachable (App is up)
+    response = await client.get("/docs")
     assert response.status_code == 200
-    # assert "text/html" in response.headers["content-type"]
+
+@pytest.mark.asyncio
+async def test_legacy_root_removed(client: AsyncClient):
+    # Verify legacy frontend serving is removed
+    response = await client.get("/")
+    assert response.status_code == 404
 
 @pytest.mark.asyncio
 async def test_stats_empty_db(client: AsyncClient):

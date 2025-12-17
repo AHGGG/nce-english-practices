@@ -198,7 +198,7 @@ To support multiple dictionaries (e.g., Collins + LDOCE) in one view:
 
 **Source Code**:
 - `app/` - Main application package
-- `static/` - Frontend assets (JS/CSS)
+
 - `templates/` - Jinja2 HTML templates
 - `resources/dictionaries/` - MDX/MDD dictionary files
 - `alembic/` - Database migrations

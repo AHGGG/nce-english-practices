@@ -89,7 +89,7 @@
 - [x] **Analysis**:
     - [x] Completed Architecture Review (`review_report.md`).
     - [x] Updated `CLAUDE.md` to reflect React stack.
-- [ ] **Deployment**:
+- [x] **Deployment**:
     - [x] **Dockerfile**: Multi-stage build (Node build -> Python runtime).
     - [x] **Main.py Refactor**: Remove Jinja2, serve React Static Files.
     - [x] **Code Cleanup**: Delete legacy `templates/` directory.
