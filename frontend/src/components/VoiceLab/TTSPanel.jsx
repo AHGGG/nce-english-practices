@@ -1,7 +1,7 @@
 
 import React, { useState, useRef } from 'react';
 import { Card, Button, Input } from '../ui';
-import { Play, Download, Loader2, StopCircle } from 'lucide-react';
+import { Play, Download, Loader2, StopCircle, Volume2 } from 'lucide-react';
 
 const TTSPanel = ({ config }) => {
     const [provider, setProvider] = useState('google');

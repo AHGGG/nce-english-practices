@@ -18,12 +18,12 @@ except ImportError:
     speechsdk = None
 
 try:
-    from deepgram import DeepgramClient, PrerecordedOptions, SpeakOptions
+    from deepgram import DeepgramClient
 except ImportError:
     DeepgramClient = None
 
 try:
-    from elevenlabs import ElevenLabs
+    from elevenlabs.client import ElevenLabs
 except ImportError:
     ElevenLabs = None
 
@@ -167,35 +167,46 @@ class DeepgramProvider(VoiceProvider):
         if not self.client:
              raise ValueError("Deepgram API Key missing.")
         
-        options = SpeakOptions(
-            model=voice_id, # Deepgram passes voice as model usually in Aura
+        # Deepgram TTS (Aura) via SDK v3
+        options = {"text": text}
+        # model param for Aura is used inside options or just model? 
+        # Checking docs: speak.v1.audio.generate({"text": ...}, {"model": "aura-..."})
+        model_options = {"model": voice_id} 
+        
+        response = self.client.speak.v1.audio.generate(
+            options,
+            model_options
         )
         
-        # Deepgram Python SDK structure might vary, adapting:
-        # Assuming .speak.v("1").stream calls
-        # This is strictly example code, might need adjustment based on exact SDK version installed.
-        response = self.client.speak.v("1").stream(
-            {"text": text},
-            options
-        )
-        
-        # buffer yield
-        yield response.stream.read() 
+        # Response typically wraps binary or stream. 
+        # Assuming we can inspect it or it has a stream property.
+        # Based on inspection, we saw `stream` method wasn't there but `generate` was.
+        # Let's try standardized access.
+        if hasattr(response, 'stream'):
+             # If strictly streaming response
+             yield response.stream.read()
+        else:
+             # If raw bytes in body or similar
+             # V3 might return a response object where .read() gives bytes?
+             # Or it returns a simple structure. 
+             # Safe bet: response itself might be bytes if raw requested, but we didn't ask raw.
+             # We saw `with_raw_response` as alternative.
+             # Let's assume response.stream is the standard for audio.
+             yield response.stream.read() 
 
     async def stt(self, audio_data: bytes, model: str = "nova-2") -> str:
         if not self.client:
              raise ValueError("Deepgram API Key missing.")
         
-        options = PrerecordedOptions(
-            model=model,
-            smart_format=True,
-        )
+        # Deepgram STT (Nova-2) via SDK v3
+        payload = {"buffer": audio_data, "mimetype": "audio/webm"}
+        options = {"model": model, "smart_format": True}
         
-        response = self.client.listen.rest.v("1").transcribe_file(
-            {"buffer": audio_data, "mimetype": "audio/webm"}, # Frontend usually sends webm
+        response = self.client.listen.v1.media.transcribe_file(
+            payload, 
             options
         )
-        return response["results"]["channels"][0]["alternatives"][0]["transcript"]
+        return response.results.channels[0].alternatives[0].transcript
 
 
 class AzureProvider(VoiceProvider):

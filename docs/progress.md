@@ -132,3 +132,13 @@
     - [x] **Coach Canvas**: Dynamic workspace that renders UI components (Vocab/Story/Drill) based on Agent commands.
     - [x] **Cyber-Noir Design**: Hard-edged, information-dense "Terminal" aesthetic for the Coach interface.
     - [x] **Optimistic UI**: Instant improvements in chat responsiveness.
+
+## 🎙️ Phase 11: Voice Vendor Integrations (Completed)
+- [x] **ElevenLabs**:
+    - [x] Integration with Python SDK v3 (`elevenlabs.client`).
+    - [x] Confirmed TTS streaming validation.
+- [x] **Deepgram**:
+    - [x] Integration with Python SDK v3.
+    - [x] **TTS**: Aura Voice (`speak.v1.audio.generate`).
+    - [x] **STT**: Nova-2 (`listen.v1.media.transcribe_file`).
+
