@@ -232,3 +232,8 @@ To support multiple dictionaries (e.g., Collins + LDOCE) in one view:
 ### Voice on Mobile
 - **HTTPS Required**: WebSocket with audio requires HTTPS. Generate cert with `generate_cert.py`.
 - **Certificate Trust**: Users must accept self-signed cert warning on first connection.
+
+### Voice Integrations (SDK Patterns)
+- **ElevenLabs**: Use `from elevenlabs.client import ElevenLabs` (SDK v3). Do NOT use top-level `elevenlabs` import.
+- **Deepgram**: Use `client.speak.v1.audio.generate` (TTS) and `client.listen.v1.media.transcribe_file` (STT). Do NOT use `PrerecordedOptions` or `SpeakOptions` classes; use dicts.
+

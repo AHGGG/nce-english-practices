@@ -78,6 +78,7 @@
     - [x] **History**: Log of all completed quizzes and missions.
 - [x] **Voice Vendor Lab**:
     - [x] **Internal Tool**: `/voice-lab` for testing Google, ElevenLabs, Deepgram, and Azure TTS/STT capabilities.
+    - [x] **SDK Upgrades**: Updated ElevenLabs and Deepgram to Python SDK v3.
 - [ ] **Audio Engine**:
     - [x] **TTS**: Text-to-Speech for all generated sentences (Browser Native or API).
     - [ ] **Shadowing**: Record user audio and compare (Future).
