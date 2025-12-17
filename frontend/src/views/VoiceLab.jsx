@@ -8,12 +8,13 @@ import DeepgramLive from '../components/VoiceLab/DeepgramLive';
 import DeepgramFlux from '../components/VoiceLab/DeepgramFlux';
 import DeepgramStreamingTTS from '../components/VoiceLab/DeepgramStreamingTTS';
 import DeepgramVoiceAgent from '../components/VoiceLab/DeepgramVoiceAgent';
+import DeepgramUnified from '../components/VoiceLab/DeepgramUnified';
 import PronunciationPanel from '../components/VoiceLab/PronunciationPanel';
-import { Mic, Volume2, Radio, Server, Beaker, GraduationCap, Cloud, Zap, Globe, Cpu, Bot } from 'lucide-react';
+import { Mic, Volume2, Radio, Server, Beaker, GraduationCap, Cloud, Zap, Globe, Cpu, Bot, TestTube2 } from 'lucide-react';
 
 const VoiceLab = () => {
     const [activeTab, setActiveTab] = useState('google');
-    const [deepgramSubTab, setDeepgramSubTab] = useState('stt');
+    const [deepgramSubTab, setDeepgramSubTab] = useState('unified');
     const [config, setConfig] = useState(null);
     const [loading, setLoading] = useState(true);
 
@@ -128,7 +129,7 @@ const VoiceLab = () => {
                                 <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
                                     {/* Sub-tabs for Deepgram */}
                                     <div className="flex justify-center space-x-2 mb-6">
-                                        {['stt', 'tts', 'agent'].map((sub) => (
+                                        {['unified', 'stt', 'tts', 'agent'].map((sub) => (
                                             <button
                                                 key={sub}
                                                 onClick={() => setDeepgramSubTab(sub)}
@@ -137,12 +138,20 @@ const VoiceLab = () => {
                                                     : 'bg-bg-elevated border-ink-faint text-ink-muted hover:border-neon-cyan/50 hover:text-ink'
                                                     }`}
                                             >
+                                                {sub === 'unified' && '🧪 UNIFIED TEST'}
                                                 {sub === 'stt' && 'SPEECH TO TEXT'}
                                                 {sub === 'tts' && 'TEXT TO SPEECH'}
                                                 {sub === 'agent' && 'VOICE AGENT'}
                                             </button>
                                         ))}
                                     </div>
+
+                                    {deepgramSubTab === 'unified' && (
+                                        <>
+                                            <SectionHeader title="Unified Testing Panel (Nova-3 vs Flux)" icon={TestTube2} />
+                                            <DeepgramUnified />
+                                        </>
+                                    )}
 
                                     {deepgramSubTab === 'stt' && (
                                         <>
