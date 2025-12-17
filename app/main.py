@@ -35,6 +35,8 @@ app.include_router(stats.router)
 app.include_router(coach.router)
 app.include_router(voice_lab.router)
 app.include_router(deepgram.router)
+from app.api.routers import deepgram_websocket
+app.include_router(deepgram_websocket.router)
 
 from app.models import RemoteLog
 

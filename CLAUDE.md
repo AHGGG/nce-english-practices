@@ -235,5 +235,34 @@ To support multiple dictionaries (e.g., Collins + LDOCE) in one view:
 
 ### Voice Integrations (SDK Patterns)
 - **ElevenLabs**: Use `from elevenlabs.client import ElevenLabs` (SDK v3). Do NOT use top-level `elevenlabs` import.
-- **Deepgram**: Use `client.speak.v1.audio.generate` (TTS) and `client.listen.v1.media.transcribe_file` (STT). Do NOT use `PrerecordedOptions` or `SpeakOptions` classes; use dicts.
+- **Deepgram SDK v5.3.0**:
+  - **TTS**: `client.speak.v1.audio.generate(text=..., model=...)` returns a **generator** of bytes chunks. Iterate to get audio.
+  - **STT**: `client.listen.v1.media.transcribe_file(request=audio_bytes, model=..., smart_format=True)` with keyword args.
+  - **No Option Classes**: `SpeakOptions`, `PrerecordedOptions` do NOT exist in v5. Use keyword arguments directly.
+  - **Model Names**: TTS uses `aura-2-asteria-en` format; STT uses `nova-3` (latest).
+  - ⚠️ **WARNING**: 官方 README 中 `response.stream.getvalue()` 是**错误的**！实际 v5.3.0 返回的是 generator，需要迭代。
+
+### Third-Party SDK Debugging: Lessons Learned (2025-12-17)
+
+**问题背景**: Deepgram TTS/STT 调用失败，尝试多次修复无效。
+
+**根本原因**: 安装的是 Deepgram SDK **v5.3.0**，但 MCP 文档和网上资料多为 v3/v4 API，导致：
+1. `from deepgram import SpeakOptions` 失败 - 该类在 v5 不存在
+2. `speak.rest.v("1").save()` 方法签名不同
+3. `listen.rest.v("1").transcribe_file()` 参数格式变了
+
+**错误的调试方式**:
+1. ❌ 直接信任 MCP Context7 文档去修改代码
+2. ❌ 没有先检查实际安装的 SDK 版本
+3. ❌ 没有写小测试脚本验证 API 用法
+
+**正确的调试方式**:
+1. ✅ **先检查版本**: `uv run python -c "import deepgram; print(deepgram.__version__)"`
+2. ✅ **检查可用导出**: `uv run python -c "import deepgram; print([x for x in dir(deepgram) if not x.startswith('_')])"`
+3. ✅ **写小测试脚本**: 独立验证 SDK API 而非直接改业务代码
+4. ✅ **观察返回类型**: `print(type(response))` 发现 v5 返回 generator 而非 bytes
+
+**经验总结**:
+> 当第三方 SDK 调用出问题时，**永远先验证版本和实际 API**，不要盲目相信文档。
+> 写一个最小化测试脚本，隔离问题后再修改业务代码。
 

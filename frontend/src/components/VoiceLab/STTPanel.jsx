@@ -3,8 +3,8 @@ import React, { useState, useRef } from 'react';
 import { Card, Button } from '../ui';
 import { Mic, StopCircle, Upload, FileAudio, RefreshCw } from 'lucide-react';
 
-const STTPanel = ({ config }) => {
-    const [provider, setProvider] = useState('deepgram');
+const STTPanel = ({ config, fixedProvider = null }) => {
+    const [provider, setProvider] = useState(fixedProvider || 'deepgram');
     const [isRecording, setIsRecording] = useState(false);
     const [audioBlob, setAudioBlob] = useState(null);
     const [transcript, setTranscript] = useState('');
@@ -75,18 +75,20 @@ const STTPanel = ({ config }) => {
             <Card title="Input Source">
                 <div className="space-y-6">
                     {/* Provider Select */}
-                    <div className="space-y-1">
-                        <label className="text-xs font-mono font-bold text-ink-muted uppercase">Provider</label>
-                        <select
-                            value={provider}
-                            onChange={(e) => setProvider(e.target.value)}
-                            className="w-full bg-bg-elevated border border-ink-faint text-ink px-4 py-2.5 text-sm font-mono focus:border-neon-cyan focus:outline-none"
-                        >
-                            {config && Object.keys(config).map(p => (
-                                <option key={p} value={p}>{p.toUpperCase()}</option>
-                            ))}
-                        </select>
-                    </div>
+                    {!fixedProvider && (
+                        <div className="space-y-1">
+                            <label className="text-xs font-mono font-bold text-ink-muted uppercase">Provider</label>
+                            <select
+                                value={provider}
+                                onChange={(e) => setProvider(e.target.value)}
+                                className="w-full bg-bg-elevated border border-ink-faint text-ink px-4 py-2.5 text-sm font-mono focus:border-neon-cyan focus:outline-none"
+                            >
+                                {config && Object.keys(config).map(p => (
+                                    <option key={p} value={p}>{p.toUpperCase()}</option>
+                                ))}
+                            </select>
+                        </div>
+                    )}
 
                     {/* Recorder */}
                     <div className="border border-dashed border-ink-faint bg-bg-elevated/50 p-8 rounded-lg text-center transition-all hover:border-ink-muted">

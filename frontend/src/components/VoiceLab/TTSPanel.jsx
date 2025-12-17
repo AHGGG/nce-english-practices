@@ -3,8 +3,8 @@ import React, { useState, useRef } from 'react';
 import { Card, Button, Input } from '../ui';
 import { Play, Download, Loader2, StopCircle, Volume2 } from 'lucide-react';
 
-const TTSPanel = ({ config }) => {
-    const [provider, setProvider] = useState('google');
+const TTSPanel = ({ config, fixedProvider = null }) => {
+    const [provider, setProvider] = useState(fixedProvider || 'google');
     const [voice, setVoice] = useState('');
     const [text, setText] = useState('Hello, this is a test of the neural voice synthesis system.');
     const [loading, setLoading] = useState(false);
@@ -24,7 +24,9 @@ const TTSPanel = ({ config }) => {
             const formData = new FormData();
             formData.append('provider', provider);
             formData.append('text', text);
-            formData.append('voice_id', voice || availableVoices[0]);
+            const firstVoice = availableVoices[0];
+            const defaultVoiceId = typeof firstVoice === 'object' ? firstVoice.id : firstVoice;
+            formData.append('voice_id', voice || defaultVoiceId);
             formData.append('model', 'default');
 
             const response = await fetch('/api/voice-lab/tts', {
@@ -55,19 +57,21 @@ const TTSPanel = ({ config }) => {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <Card title="Configuration">
                 <div className="space-y-4">
-                    {/* Provider Select */}
-                    <div className="space-y-1">
-                        <label className="text-xs font-mono font-bold text-ink-muted uppercase">Provider</label>
-                        <select
-                            value={provider}
-                            onChange={(e) => { setProvider(e.target.value); setVoice(''); }}
-                            className="w-full bg-bg-elevated border border-ink-faint text-ink px-4 py-2.5 text-sm font-mono focus:border-neon-cyan focus:outline-none"
-                        >
-                            {config && Object.keys(config).map(p => (
-                                <option key={p} value={p}>{p.toUpperCase()}</option>
-                            ))}
-                        </select>
-                    </div>
+                    {/* Provider Select - Show only if no fixed provider */}
+                    {!fixedProvider && (
+                        <div className="space-y-1">
+                            <label className="text-xs font-mono font-bold text-ink-muted uppercase">Provider</label>
+                            <select
+                                value={provider}
+                                onChange={(e) => { setProvider(e.target.value); setVoice(''); }}
+                                className="w-full bg-bg-elevated border border-ink-faint text-ink px-4 py-2.5 text-sm font-mono focus:border-neon-cyan focus:outline-none"
+                            >
+                                {config && Object.keys(config).map(p => (
+                                    <option key={p} value={p}>{p.toUpperCase()}</option>
+                                ))}
+                            </select>
+                        </div>
+                    )}
 
                     {/* Voice Select */}
                     <div className="space-y-1">
@@ -78,9 +82,11 @@ const TTSPanel = ({ config }) => {
                             className="w-full bg-bg-elevated border border-ink-faint text-ink px-4 py-2.5 text-sm font-mono focus:border-neon-cyan focus:outline-none"
                         >
                             <option value="">-- Select Voice --</option>
-                            {availableVoices.map(v => (
-                                <option key={v} value={v}>{v}</option>
-                            ))}
+                            {availableVoices.map(v => {
+                                const id = typeof v === 'object' ? v.id : v;
+                                const name = typeof v === 'object' ? v.name : v;
+                                return <option key={id} value={id}>{name}</option>
+                            })}
                         </select>
                     </div>
 
@@ -98,9 +104,21 @@ const TTSPanel = ({ config }) => {
                     <Button
                         fullWidth
                         variant="primary"
-                        onClick={handleGenerate}
+                        onClick={() => {
+                            // Handle default voice if none selected
+                            if (!voice && availableVoices.length > 0) {
+                                const first = availableVoices[0];
+                                const firstId = typeof first === 'object' ? first.id : first;
+                                // We can't easily update state and allow generate in same tick without ref or passing the val.
+                                // But handleGenerate uses 'voice'. We should ensure handleGenerate checks this logic too.
+                                // Actually, handleGenerate repeats this check. I will update handleGenerate logic inside the component 
+                                // or just let the user select.
+                                // But for now, let's just trigger generate.
+                            }
+                            handleGenerate();
+                        }}
                         isLoading={loading}
-                        disabled={!voice && availableVoices.length > 0}
+                        disabled={loading}
                     >
                         {loading ? 'Synthesizing...' : 'Generate Audio'}
                     </Button>

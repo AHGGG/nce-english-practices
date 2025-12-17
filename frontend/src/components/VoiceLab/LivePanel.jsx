@@ -3,8 +3,8 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Card, Button, Tag } from '../ui';
 import { Radio, Activity, XCircle, Terminal } from 'lucide-react';
 
-const LivePanel = ({ config }) => {
-    const [provider, setProvider] = useState('deepgram');
+const LivePanel = ({ config, fixedProvider = null }) => {
+    const [provider, setProvider] = useState(fixedProvider || 'deepgram');
     const [isConnected, setIsConnected] = useState(false);
     const [logs, setLogs] = useState([]);
 
@@ -68,19 +68,21 @@ const LivePanel = ({ config }) => {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <Card title="Socket Control">
                 <div className="space-y-6">
-                    <div className="space-y-1">
-                        <label className="text-xs font-mono font-bold text-ink-muted uppercase">Provider Target</label>
-                        <select
-                            value={provider}
-                            onChange={(e) => setProvider(e.target.value)}
-                            disabled={isConnected}
-                            className="w-full bg-bg-elevated border border-ink-faint text-ink px-4 py-2.5 text-sm font-mono focus:border-neon-cyan focus:outline-none disabled:opacity-50"
-                        >
-                            {config && Object.keys(config).map(p => (
-                                <option key={p} value={p}>{p.toUpperCase()}</option>
-                            ))}
-                        </select>
-                    </div>
+                    {!fixedProvider && (
+                        <div className="space-y-1">
+                            <label className="text-xs font-mono font-bold text-ink-muted uppercase">Provider Target</label>
+                            <select
+                                value={provider}
+                                onChange={(e) => setProvider(e.target.value)}
+                                disabled={isConnected}
+                                className="w-full bg-bg-elevated border border-ink-faint text-ink px-4 py-2.5 text-sm font-mono focus:border-neon-cyan focus:outline-none disabled:opacity-50"
+                            >
+                                {config && Object.keys(config).map(p => (
+                                    <option key={p} value={p}>{p.toUpperCase()}</option>
+                                ))}
+                            </select>
+                        </div>
+                    )}
 
                     <div className="p-4 bg-bg-elevated rounded border border-ink-faint">
                         <div className="flex items-center justify-between mb-2">

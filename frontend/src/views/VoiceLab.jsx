@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, Button, Tag } from '../components/ui';
 
@@ -6,11 +5,15 @@ import TTSPanel from '../components/VoiceLab/TTSPanel';
 import STTPanel from '../components/VoiceLab/STTPanel';
 import LivePanel from '../components/VoiceLab/LivePanel';
 import DeepgramLive from '../components/VoiceLab/DeepgramLive';
+import DeepgramFlux from '../components/VoiceLab/DeepgramFlux';
+import DeepgramStreamingTTS from '../components/VoiceLab/DeepgramStreamingTTS';
+import DeepgramVoiceAgent from '../components/VoiceLab/DeepgramVoiceAgent';
 import PronunciationPanel from '../components/VoiceLab/PronunciationPanel';
-import { Mic, Volume2, Radio, Server, Beaker, GraduationCap } from 'lucide-react';
+import { Mic, Volume2, Radio, Server, Beaker, GraduationCap, Cloud, Zap, Globe, Cpu, Bot } from 'lucide-react';
 
 const VoiceLab = () => {
-    const [activeTab, setActiveTab] = useState('tts');
+    const [activeTab, setActiveTab] = useState('google');
+    const [deepgramSubTab, setDeepgramSubTab] = useState('stt');
     const [config, setConfig] = useState(null);
     const [loading, setLoading] = useState(true);
 
@@ -40,9 +43,16 @@ const VoiceLab = () => {
         </button>
     );
 
+    const SectionHeader = ({ title, icon: Icon }) => (
+        <div className="flex items-center gap-2 mb-4 mt-8 border-b border-ink-faint pb-2">
+            <Icon size={20} className="text-neon-pink" />
+            <h2 className="text-xl font-serif font-bold text-ink">{title}</h2>
+        </div>
+    );
+
     return (
         <div className="min-h-screen bg-canvas p-6 pb-24 md:p-8 md:pl-72">
-            <div className="max-w-5xl mx-auto space-y-8">
+            <div className="max-w-6xl mx-auto space-y-8">
                 {/* Header */}
                 <div className="flex justify-between items-start">
                     <div>
@@ -51,20 +61,17 @@ const VoiceLab = () => {
                             Voice Vendor Lab
                         </h1>
                         <p className="text-ink-muted font-mono max-w-2xl">
-                            Integration testing environment for voice synthesis (TTS), recognition (STT),
-                            and real-time streaming capabilities across different providers.
+                            Vendor-specific integration testing for TTS, STT, and Streaming capabilities.
                         </p>
                     </div>
                 </div>
 
                 {/* Tabs */}
                 <div className="flex border-b border-ink-faint mb-6 overflow-x-auto">
-                    <TabButton id="tts" icon={Volume2} label="Text-to-Speech" />
-                    <TabButton id="stt" icon={Mic} label="Speech-to-Text" />
-                    <TabButton id="live" icon={Radio} label="Live / Streaming" />
-                    <TabButton id="live" icon={Radio} label="Live / Streaming" />
-                    <TabButton id="deepgram" icon={Server} label="Deepgram (Beta)" />
-                    <TabButton id="pronunciation" icon={GraduationCap} label="Pronunciation" />
+                    <TabButton id="google" icon={Globe} label="Google Gemini" />
+                    <TabButton id="azure" icon={Cloud} label="Azure Speech" />
+                    <TabButton id="deepgram" icon={Zap} label="Deepgram" />
+                    <TabButton id="elevenlabs" icon={Volume2} label="ElevenLabs" />
                 </div>
 
                 {/* Content Area */}
@@ -74,13 +81,130 @@ const VoiceLab = () => {
                             Initializing Vendor Configurations...
                         </div>
                     ) : (
-                        <>
-                            {activeTab === 'tts' && <TTSPanel config={config} />}
-                            {activeTab === 'stt' && <STTPanel config={config} />}
-                            {activeTab === 'live' && <LivePanel config={config} />}
-                            {activeTab === 'deepgram' && <DeepgramLive />}
-                            {activeTab === 'pronunciation' && <PronunciationPanel config={config} />}
-                        </>
+                        <div className="space-y-12">
+                            {/* GOOGLE VIEW */}
+                            {activeTab === 'google' && (
+                                <div className="space-y-12 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                                    <section>
+                                        <SectionHeader title="Text-to-Speech (Multimodal)" icon={Volume2} />
+                                        <TTSPanel config={config} fixedProvider="google" />
+                                    </section>
+
+                                    <section>
+                                        <SectionHeader title="Speech-to-Text (Multimodal)" icon={Mic} />
+                                        <STTPanel config={config} fixedProvider="google" />
+                                    </section>
+
+                                    <section>
+                                        <SectionHeader title="Live Streaming (Native Audio)" icon={Radio} />
+                                        <LivePanel config={config} fixedProvider="google" />
+                                    </section>
+                                </div>
+                            )}
+
+                            {/* AZURE VIEW */}
+                            {activeTab === 'azure' && (
+                                <div className="space-y-12 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                                    <section>
+                                        <SectionHeader title="Text-to-Speech" icon={Volume2} />
+                                        <TTSPanel config={config} fixedProvider="azure" />
+                                    </section>
+
+                                    <section>
+                                        <SectionHeader title="Speech-to-Text" icon={Mic} />
+                                        <STTPanel config={config} fixedProvider="azure" />
+                                    </section>
+
+                                    <section>
+                                        <SectionHeader title="Pronunciation Assessment" icon={GraduationCap} />
+                                        <PronunciationPanel config={config} />
+                                    </section>
+                                </div>
+                            )}
+
+
+                            {/* Deepgram Content */}
+                            {activeTab === 'deepgram' && (
+                                <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                                    {/* Sub-tabs for Deepgram */}
+                                    <div className="flex justify-center space-x-2 mb-6">
+                                        {['stt', 'tts', 'agent'].map((sub) => (
+                                            <button
+                                                key={sub}
+                                                onClick={() => setDeepgramSubTab(sub)}
+                                                className={`px-4 py-2 text-xs font-mono border transition-all duration-300 ${deepgramSubTab === sub
+                                                    ? 'bg-neon-cyan/20 border-neon-cyan text-neon-cyan shadow-[0_0_10px_rgba(0,255,255,0.3)]'
+                                                    : 'bg-bg-elevated border-ink-faint text-ink-muted hover:border-neon-cyan/50 hover:text-ink'
+                                                    }`}
+                                            >
+                                                {sub === 'stt' && 'SPEECH TO TEXT'}
+                                                {sub === 'tts' && 'TEXT TO SPEECH'}
+                                                {sub === 'agent' && 'VOICE AGENT'}
+                                            </button>
+                                        ))}
+                                    </div>
+
+                                    {deepgramSubTab === 'stt' && (
+                                        <>
+                                            <SectionHeader title="Speech-to-Text (Nova-2 / Nova-3)" icon={Mic} />
+                                            <div className="grid grid-cols-1 gap-6">
+                                                <div className="p-4 border border-ink-faint rounded bg-bg-elevated/50">
+                                                    <h3 className="text-sm font-mono text-neon-cyan mb-4">1. Pre-recorded Audio (REST API)</h3>
+                                                    <STTPanel fixedProvider="deepgram" />
+                                                </div>
+                                                <div className="p-4 border border-ink-faint rounded bg-bg-elevated/50">
+                                                    <h3 className="text-sm font-mono text-neon-cyan mb-4">2. Live Streaming (WebSocket)</h3>
+                                                    <DeepgramLive />
+                                                </div>
+                                                <div className="p-4 border border-ink-faint rounded bg-bg-elevated/50">
+                                                    <h3 className="text-sm font-mono text-neon-cyan mb-4">3. Flux Conversational (WebSocket)</h3>
+                                                    <DeepgramFlux />
+                                                </div>
+                                            </div>
+                                        </>
+                                    )}
+
+                                    {deepgramSubTab === 'tts' && (
+                                        <>
+                                            <SectionHeader title="Text-to-Speech (Aura)" icon={Volume2} />
+                                            <div className="grid grid-cols-1 gap-6">
+                                                <div className="p-4 border border-ink-faint rounded bg-bg-elevated/50">
+                                                    <h3 className="text-sm font-mono text-neon-cyan mb-4">1. Single Request (REST API)</h3>
+                                                    <TTSPanel fixedProvider="deepgram" />
+                                                </div>
+                                                <div className="p-4 border border-ink-faint rounded bg-bg-elevated/50">
+                                                    <h3 className="text-sm font-mono text-neon-cyan mb-4">2. Streaming Text (WebSocket)</h3>
+                                                    <DeepgramStreamingTTS />
+                                                </div>
+                                            </div>
+                                        </>
+                                    )}
+
+                                    {deepgramSubTab === 'agent' && (
+                                        <>
+                                            <SectionHeader title="Voice Agent API (End-to-End)" icon={Bot} />
+                                            <div className="p-4 border border-ink-faint rounded bg-bg-elevated/50">
+                                                <DeepgramVoiceAgent />
+                                            </div>
+                                        </>
+                                    )}
+                                </div>
+                            )}
+
+                            {/* ELEVENLABS VIEW */}
+                            {activeTab === 'elevenlabs' && (
+                                <div className="space-y-12 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                                    <section>
+                                        <SectionHeader title="Text-to-Speech (Turbo v2.5)" icon={Volume2} />
+                                        <TTSPanel config={config} fixedProvider="elevenlabs" />
+                                    </section>
+
+                                    <div className="p-8 border border-dashed border-ink-faint rounded-lg text-center text-ink-muted">
+                                        <p>STT and other features are not available for ElevenLabs yet.</p>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
                     )}
                 </div>
 
@@ -88,7 +212,7 @@ const VoiceLab = () => {
                 <Card variant="outline" className="mt-12 opacity-50">
                     <div className="flex items-center gap-2 text-xs font-mono text-ink-muted">
                         <Server size={14} />
-                        <span>Connected Providers:</span>
+                        <span>Available Configs:</span>
                         {config && Object.keys(config).map(provider => (
                             <Tag key={provider} variant="outline" color="gray" className="mr-1">
                                 {provider}

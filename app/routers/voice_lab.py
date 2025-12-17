@@ -11,7 +11,12 @@ router = APIRouter(prefix="/api/voice-lab", tags=["voice-lab"])
 @router.get("/config")
 async def get_config():
     """Get available providers, voices, and models."""
-    return voice_lab_service.get_all_configs()
+    """Get available providers, voices, and models."""
+    try:
+        return voice_lab_service.get_all_configs()
+    except Exception as e:
+        logger.error(f"Config Error: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
 
 @router.post("/tts")
 async def tts_endpoint(
@@ -33,9 +38,9 @@ async def tts_endpoint(
                 logger.error(f"TTS Streaming Error: {e}")
                 # We can't change HTTP status since stream started, but we stop yielding.
         
-        # Return audio/mpeg as generic container, checking if wav needed for Azure
+        # Return audio/mpeg as generic container, checking if wav needed for Azure or Google
         media_type = "audio/mpeg"
-        if provider == "azure":
+        if provider == "azure" or provider == "google":
              media_type = "audio/wav" 
         
         return StreamingResponse(audio_gen(), media_type=media_type)

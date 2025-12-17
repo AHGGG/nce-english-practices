@@ -14,7 +14,7 @@ class Settings(BaseSettings):
     
     # Voice / Gemini Settings
     GEMINI_API_KEY: str = "" # Can also be set via GOOGLE_API_KEY in env if pydantic picks it up, but explicit is better
-    GEMINI_VOICE_MODEL_NAME: str = "gemini-2.5-flash-native-audio-preview-12-2025"
+    GEMINI_VOICE_MODEL_NAME: str = "gemini-2.0-flash-exp"
     
     # Database Settings
     # Default to local postgres if not set. Users should set this in .env
@@ -78,3 +78,4 @@ def check_model_availability(client):
         return True, f"{count} models reachable"
     except Exception as exc:
         return False, str(exc)
+

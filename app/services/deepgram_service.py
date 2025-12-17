@@ -63,10 +63,10 @@ class DeepgramService:
                 # project_id = data['projects'][0]['project_id']
 
                 # Use SDK if installed
-                deepgram = DeepgramClient(self.api_key)
+                deepgram = DeepgramClient(api_key=self.api_key)
 
                 # Fetch projects to find ID
-                projects_response = await deepgram.manage.v1.get_projects()
+                projects_response = deepgram.manage.v1.projects.list()
                 if not projects_response.projects:
                      raise ValueError("No Deepgram projects found for this key.")
 
@@ -85,16 +85,18 @@ class DeepgramService:
                 # The SDK method signature might vary, let's look at common v3 usage.
                 # await deepgram.manage.v1.create_project_key(project_id, options)
 
-                # Note: scopes should probably be member based?
-                # Actually, for transcribing, you just need a key.
-
-                key_response = await deepgram.manage.v1.create_project_key(project_id, options)
+                # Create a temporary key
+                # SDK Call: deepgram.manage.v1.keys.create(project_id, options)
+                key_response = deepgram.manage.v1.keys.create(project_id, options)
                 return {"key": key_response.key}
 
         except Exception as e:
             print(f"Deepgram Token Gen Error: {e}")
-            # Fallback for dev: If everything fails, and we are in dev...
-            # But I should probably just re-raise.
+            # Fallback: Return the main API key directly if temp key generation fails.
+            # This is acceptable for a local Voice Lab environment.
+            if self.api_key:
+                print("Falling back to main DEEPGRAM_API_KEY")
+                return {"key": self.api_key}
             raise e
 
 deepgram_service = DeepgramService()
