@@ -59,6 +59,25 @@ async def stt_endpoint(
         logger.error(f"STT Error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
+@router.post("/assess")
+async def assess_endpoint(
+    provider: str = Form("azure"),
+    reference_text: str = Form(...),
+    file: UploadFile = File(...)
+):
+    """Assess pronunciation quality."""
+    try:
+        logger.info(f"Assessment Request: {provider}")
+        svc = voice_lab_service.get_provider(provider)
+        content = await file.read()
+        
+        # Call assess method
+        result = await svc.assess(content, reference_text)
+        return result
+    except Exception as e:
+        logger.error(f"Assessment Error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
 @router.websocket("/live/{provider}")
 async def websocket_live(websocket: WebSocket, provider: str):
     """

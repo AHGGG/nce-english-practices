@@ -147,4 +147,5 @@
 - [x] **Azure**:
     - [x] **TTS**: Speech SDK (Non-streaming).
     - [x] **STT**: PushAudioInputStream (Memory Stream).
+    - [x] **Pronunciation Assessment**: `PronunciationAssessmentConfig` (Phoneme level scores).
 

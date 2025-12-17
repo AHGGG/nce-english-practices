@@ -51,6 +51,11 @@ class VoiceProvider(abc.ABC):
         """Return available voices/models."""
         pass
 
+    @abc.abstractmethod
+    async def assess(self, audio_data: bytes, reference_text: str) -> Dict[str, Any]:
+        """Assess pronunciation."""
+        pass
+
 # --- Implementations ---
 
 class MockProvider(VoiceProvider):
@@ -63,8 +68,16 @@ class MockProvider(VoiceProvider):
 
     def get_config(self) -> Dict[str, Any]:
         return {
-            "models": ["mock-v1"],
             "voices": ["mock-male", "mock-female"]
+        }
+
+    async def assess(self, audio_data: bytes, reference_text: str) -> Dict[str, Any]:
+        return {
+            "accuracy": 95.0,
+            "fluency": 90.0,
+            "completeness": 100.0,
+            "pronunciation": 92.0,
+            "words": []
         }
 
 class GoogleProvider(VoiceProvider):
@@ -80,7 +93,7 @@ class GoogleProvider(VoiceProvider):
 
     def get_config(self) -> Dict[str, Any]:
         return {
-            "models": ["gemini-2.0-flash-exp"],
+            "models": [settings.GEMINI_VOICE_MODEL_NAME, "gemini-2.0-flash-exp"],
             "voices": ["Puck", "Charon", "Kore", "Fenrir", "Aoede"] # Standard Gemini voices
         }
 
@@ -93,7 +106,7 @@ class GoogleProvider(VoiceProvider):
         
         # Set default model if generic 'model' passed
         if model == "default" or not model:
-            model = "gemini-2.0-flash-exp"
+            model = settings.GEMINI_VOICE_MODEL_NAME
             
         try:
             # Using specific config structure for speech synthesis
@@ -130,7 +143,9 @@ class GoogleProvider(VoiceProvider):
             logger.error(f"Google TTS Error: {e}")
             raise
 
-    async def stt(self, audio_data: bytes, model: str = "gemini-2.0-flash-exp") -> str:
+    async def stt(self, audio_data: bytes, model: str = None) -> str:
+        if not model:
+             model = settings.GEMINI_VOICE_MODEL_NAME
         if not self.client:
             raise ValueError("Google Client not ready.")
         
@@ -146,6 +161,9 @@ class GoogleProvider(VoiceProvider):
             ]
         )
         return response.text
+
+    async def assess(self, audio_data: bytes, reference_text: str) -> Dict[str, Any]:
+        raise NotImplementedError("Google does not support pronunciation assessment yet.")
 
 class ElevenLabsProvider(VoiceProvider):
     def __init__(self):
@@ -178,6 +196,9 @@ class ElevenLabsProvider(VoiceProvider):
 
     async def stt(self, audio_data: bytes, model: str = "general") -> str:
         raise NotImplementedError("ElevenLabs does not support STT yet.")
+
+    async def assess(self, audio_data: bytes, reference_text: str) -> Dict[str, Any]:
+        raise NotImplementedError("ElevenLabs does not support pronunciation assessment.")
 
 class DeepgramProvider(VoiceProvider):
     def __init__(self):
@@ -236,6 +257,9 @@ class DeepgramProvider(VoiceProvider):
             options
         )
         return response.results.channels[0].alternatives[0].transcript
+
+    async def assess(self, audio_data: bytes, reference_text: str) -> Dict[str, Any]:
+        raise NotImplementedError("Deepgram does not support pronunciation assessment yet.")
 
 
 class AzureProvider(VoiceProvider):
@@ -305,6 +329,69 @@ class AzureProvider(VoiceProvider):
              return f"Canceled: {details.reason}. Error: {details.error_details}"
         
         return ""
+
+    async def assess(self, audio_data: bytes, reference_text: str) -> Dict[str, Any]:
+        if not self.config:
+            raise ValueError("Azure Speech Key/Region missing.")
+
+        # Create Pronunciation Assessment Config
+        # We assume standard American English for now, or use voice_id logic if we had it.
+        pronunciation_config = speechsdk.PronunciationAssessmentConfig(
+            reference_text=reference_text,
+            grading_system=speechsdk.PronunciationAssessmentGradingSystem.HundredMark,
+            granularity=speechsdk.PronunciationAssessmentGranularity.Phoneme,
+            enable_miscue=True
+        )
+
+        # Stream Setup
+        stream = speechsdk.audio.PushAudioInputStream()
+        audio_config = speechsdk.audio.AudioConfig(stream=stream)
+        speech_recognizer = speechsdk.SpeechRecognizer(speech_config=self.config, audio_config=audio_config)
+        
+        # Apply config
+        pronunciation_config.apply_to(speech_recognizer)
+
+        # Write data
+        stream.write(audio_data)
+        stream.close()
+
+        # Execute
+        result = await asyncio.to_thread(speech_recognizer.recognize_once_async().get)
+
+        if result.reason == speechsdk.ResultReason.RecognizedSpeech:
+            # Parse Detailed Results
+            pronunciation_result = speechsdk.PronunciationAssessmentResult(result)
+            
+            # Helper to extract words
+            # The full JSON result has phoneme level details.
+            # result.properties[speechsdk.PropertyId.SpeechServiceResponse_JsonResult]
+            json_result = result.properties.get(speechsdk.PropertyId.SpeechServiceResponse_JsonResult)
+            parsed_json = json.loads(json_result) if json_result else {}
+            
+            # Basic Scores
+            response = {
+                "accuracy": pronunciation_result.accuracy_score,
+                "fluency": pronunciation_result.fluency_score,
+                "completeness": pronunciation_result.completeness_score,
+                "pronunciation": pronunciation_result.pronunciation_score,
+                "words": [] # We can populate detailed word list from parsed_json
+            }
+            
+            # Extract detailed word info if available
+            # Current Azure JSON structure usually has NBest -> [0] -> Words
+            if "NBest" in parsed_json and len(parsed_json["NBest"]) > 0:
+                words_data = parsed_json["NBest"][0].get("Words", [])
+                response["words"] = words_data
+                
+            return response
+
+        elif result.reason == speechsdk.ResultReason.NoMatch:
+             return {"error": "No speech recognized."}
+        elif result.reason == speechsdk.ResultReason.Canceled:
+             details = result.cancellation_details
+             return {"error": f"Canceled: {details.reason}", "details": details.error_details}
+        
+        return {"error": "Unknown error during assessment."}
 
 # Helper for Azure Stream if needed
 if speechsdk:

@@ -1,11 +1,13 @@
 
 import React, { useState, useEffect } from 'react';
 import { Card, Button, Tag } from '../components/ui';
-import { Mic, Volume2, Radio, Server, Beaker } from 'lucide-react';
+
 import TTSPanel from '../components/VoiceLab/TTSPanel';
 import STTPanel from '../components/VoiceLab/STTPanel';
 import LivePanel from '../components/VoiceLab/LivePanel';
 import DeepgramLive from '../components/VoiceLab/DeepgramLive';
+import PronunciationPanel from '../components/VoiceLab/PronunciationPanel';
+import { Mic, Volume2, Radio, Server, Beaker, GraduationCap } from 'lucide-react';
 
 const VoiceLab = () => {
     const [activeTab, setActiveTab] = useState('tts');
@@ -29,8 +31,8 @@ const VoiceLab = () => {
         <button
             onClick={() => setActiveTab(id)}
             className={`flex items-center gap-2 px-6 py-3 font-mono font-bold uppercase transition-all ${activeTab === id
-                    ? 'text-neon-cyan border-b-2 border-neon-cyan bg-neon-cyan/5'
-                    : 'text-ink-muted hover:text-ink'
+                ? 'text-neon-cyan border-b-2 border-neon-cyan bg-neon-cyan/5'
+                : 'text-ink-muted hover:text-ink'
                 }`}
         >
             <Icon size={18} />
@@ -60,7 +62,9 @@ const VoiceLab = () => {
                     <TabButton id="tts" icon={Volume2} label="Text-to-Speech" />
                     <TabButton id="stt" icon={Mic} label="Speech-to-Text" />
                     <TabButton id="live" icon={Radio} label="Live / Streaming" />
+                    <TabButton id="live" icon={Radio} label="Live / Streaming" />
                     <TabButton id="deepgram" icon={Server} label="Deepgram (Beta)" />
+                    <TabButton id="pronunciation" icon={GraduationCap} label="Pronunciation" />
                 </div>
 
                 {/* Content Area */}
@@ -75,6 +79,7 @@ const VoiceLab = () => {
                             {activeTab === 'stt' && <STTPanel config={config} />}
                             {activeTab === 'live' && <LivePanel config={config} />}
                             {activeTab === 'deepgram' && <DeepgramLive />}
+                            {activeTab === 'pronunciation' && <PronunciationPanel config={config} />}
                         </>
                     )}
                 </div>
