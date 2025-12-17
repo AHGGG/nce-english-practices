@@ -141,4 +141,10 @@
     - [x] Integration with Python SDK v3.
     - [x] **TTS**: Aura Voice (`speak.v1.audio.generate`).
     - [x] **STT**: Nova-2 (`listen.v1.media.transcribe_file`).
+- [x] **Google (Gemini)**:
+    - [x] **TTS**: Multimodal Generation (`response_modalities=["AUDIO"]`).
+    - [x] **STT**: Multimodal Transcription.
+- [x] **Azure**:
+    - [x] **TTS**: Speech SDK (Non-streaming).
+    - [x] **STT**: PushAudioInputStream (Memory Stream).
 

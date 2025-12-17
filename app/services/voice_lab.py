@@ -88,32 +88,61 @@ class GoogleProvider(VoiceProvider):
         if not self.client:
             raise ValueError("Google GenAI Client not initialized (Missing Key or SDK).")
         
-        # NOTE: GenAI Python SDK usage for simple TTS might vary by version.
-        # This is a best-effort using the likely 'models.generate_content' with audio modality 
-        # OR specialized speech endpoint if publicly available in the SDK.
-        # As of early 2025, usually text-to-speech is a specific call.
-        # If not standard, we might fallback to REST.
-        # But wait, User specifically asked for Google TTS. 
-        # I will use a REST fallback if SDK doesn't have high-level TTS helper yet.
-        # Actually, let's assume valid SDK usage for now or a simple error if not ready.
+        # Use Gemini Multimodal Generation for TTS
+        # Reference: https://ai.google.dev/gemini-api/docs/speech-synthesis
         
-        # Placeholder Implementation for Safety:
-        # In real Gemini Developer API, speech generation is often:
-        # response = client.models.generate_content(...)
-        # but pure TTS is different.
-        # Just returning error for now if not clear, to avoid breaking.
-        raise NotImplementedError("Google TTS via GenAI SDK pending specific implementation details.")
+        # Set default model if generic 'model' passed
+        if model == "default" or not model:
+            model = "gemini-2.0-flash-exp"
+            
+        try:
+            # Using specific config structure for speech synthesis
+            # Note: The SDK usage might require types.GenerateContentConfig or simple dict.
+            # Using dict for broader compatibility if types change.
+            config = {
+                "response_modalities": ["AUDIO"],
+                "speech_config": {
+                    "voice_config": {
+                        "prebuilt_voice_config": {
+                            "voice_name": voice_id
+                        }
+                    }
+                }
+            }
+            
+            response = self.client.models.generate_content(
+                model=model,
+                contents=text,
+                config=config
+            )
+            
+            # The response contains parts with inline_data (bytes)
+            # It might be a single response or stream (if stream=True)
+            # For simplicity in this first pass, we use non-streaming call then yield chunks,
+            # unless we implement stream=True and iterate.
+            # Docs say: "The response contains audio data in the parts list."
+            
+            if response.candidates and response.candidates[0].content.parts:
+                for part in response.candidates[0].content.parts:
+                    if part.inline_data:
+                         yield part.inline_data.data
+        except Exception as e:
+            logger.error(f"Google TTS Error: {e}")
+            raise
 
-    async def stt(self, audio_data: bytes, model: str = "gemini-1.5-flash") -> str:
+    async def stt(self, audio_data: bytes, model: str = "gemini-2.0-flash-exp") -> str:
         if not self.client:
             raise ValueError("Google Client not ready.")
         
         # Gemini Multimodal STT
+        # We need to wrap bytes in types.Part or dict
+        encoded_audio = types.Part.from_bytes(data=audio_data, mime_type="audio/webm") # Assuming webm from frontend
+        
         response = self.client.models.generate_content(
             model=model,
             contents=[
-                types.Part.from_bytes(data=audio_data, mime_type="audio/webm"), # Assuming webm from frontend
-                "Transcribe this audio exactly."
+                encoded_audio,
+                "Transcribe this audio exactly. Output only the transcription."
             ]
         )
         return response.text
@@ -251,8 +280,31 @@ class AzureProvider(VoiceProvider):
              logger.error(f"Azure TTS Error: {result.cancellation_details.reason}")
 
     async def stt(self, audio_data: bytes, model: str = "general") -> str:
-        # TODO: Implement Azure STT from memory stream
-        return "Azure STT Placeholder"
+        if not self.config:
+            raise ValueError("Azure Speech Key/Region missing.")
+
+        # Use PushAudioInputStream to handle in-memory audio bytes
+        stream = speechsdk.audio.PushAudioInputStream()
+        audio_config = speechsdk.audio.AudioConfig(stream=stream)
+        speech_recognizer = speechsdk.SpeechRecognizer(speech_config=self.config, audio_config=audio_config)
+        
+        # Write bytes and close stream
+        stream.write(audio_data)
+        stream.close()
+        
+        # Run recognition in thread to avoid blocking async event loop
+        # recognize_once_async returns a future, .get() blocks until result
+        result = await asyncio.to_thread(speech_recognizer.recognize_once_async().get)
+        
+        if result.reason == speechsdk.ResultReason.RecognizedSpeech:
+            return result.text
+        elif result.reason == speechsdk.ResultReason.NoMatch:
+             return "No speech could be recognized."
+        elif result.reason == speechsdk.ResultReason.Canceled:
+             details = result.cancellation_details
+             return f"Canceled: {details.reason}. Error: {details.error_details}"
+        
+        return ""
 
 # Helper for Azure Stream if needed
 if speechsdk:
