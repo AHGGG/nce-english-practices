@@ -137,13 +137,14 @@
 - [x] **ElevenLabs**:
     - [x] Integration with Python SDK v3 (`elevenlabs.client`).
     - [x] Confirmed TTS streaming validation.
+    - [x] **New Features**: Added Text-to-SFX and Speech-to-Speech (Voice Changer).
 - [x] **Deepgram**:
     - [x] **TTS**: Aura Voice (`speak.v1.audio.generate`).
     - [x] **STT**: Nova-2 (`listen.v1.media.transcribe_file`).
 - [x] **Google (Gemini)**:
     - [x] **TTS**: Multimodal Generation (Live API + WAV Header Injection).
     - [x] **STT**: Multimodal Transcription.
-- [x] **Automated Verification**: Implemented verification suite (`tests/verification/`) for TTS, STT, and Realtime Voice.
+- [x] **Automated Verification**: Implemented "Round-Trip" testing framework (`VoiceTester`) verifying Semantic Integrity across all vendors.
 - [x] **UI Refactor**: Reorganized Voice Lab to **Vendor-Centric Layout** (Manufacturer Tabs).
 - [x] **Router Consolidation**: Consolidated all routers from `app/routers` into `app/api/routers` for architectural consistency.
 
