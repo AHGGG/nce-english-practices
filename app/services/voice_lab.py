@@ -204,13 +204,17 @@ class ElevenLabsProvider(VoiceProvider):
 
     def get_config(self) -> Dict[str, Any]:
         return {
-            "models": ["eleven_multilingual_v2", "eleven_turbo_v2_5", "eleven_turbo_v2"],
+            "models": ["eleven_multilingual_v2", "eleven_turbo_v2_5", "eleven_turbo_v2", "eleven_flash_v2_5", "eleven_flash_v2"],
             "voices": [
                 {"id": "21m00Tcm4TlvDq8ikWAM", "name": "Rachel"},
                 {"id": "29vD33N1CtxCmqQRPOHJ", "name": "Drew"},
                 {"id": "2EiwWnXFnvU5JabPnv8n", "name": "Clyde"},
                 {"id": "zrHiDhphv9ZnVXBqCLjf", "name": "Mimi"},
-                {"id": "D38z5RcWu1voky8WS1ja", "name": "Fin"}
+                {"id": "D38z5RcWu1voky8WS1ja", "name": "Fin"},
+                {"id": "cgSgspJ2msm6clMCkdW9", "name": "Jessica"},
+                {"id": "iP95p4xoKVk53GoZ742B", "name": "Chris"},
+                {"id": "pFZP5JQG7iQjIQuC4Bku", "name": "Lily"},
+                {"id": "nPczCjz8fI2SgwMYtF60", "name": "Daniel"}
             ]
         }
 
@@ -225,27 +229,114 @@ class ElevenLabsProvider(VoiceProvider):
         # Handle voice_id if passed as dict from config
         actual_voice_id = voice_id["id"] if isinstance(voice_id, dict) else voice_id
 
-        # ElevenLabs SDK v3+ change: .convert returns a generator
-        audio_stream = self.client.text_to_speech.convert(
-            text=text,
-            voice_id=actual_voice_id,
-            model_id=model
-        )
-        
-        # If it returns bytes directly:
-        if isinstance(audio_stream, bytes):
-             yield audio_stream
-        else:
-             # If it is iterator
-             for chunk in audio_stream:
-                 if chunk:
-                     yield chunk
+        try:
+            # ElevenLabs SDK v3+ stream method
+            # We explicitly request mp3_44100_128 for good balance of quality and size
+            audio_stream = self.client.text_to_speech.stream(
+                text=text,
+                voice_id=actual_voice_id,
+                model_id=model,
+                output_format="mp3_44100_128"
+            )
+            
+            # The SDK returns a generator of bytes
+            for chunk in audio_stream:
+                if chunk:
+                    yield chunk
+                    
+        except Exception as e:
+            logger.error(f"ElevenLabs TTS Error: {e}")
+            raise
 
-    async def stt(self, audio_data: bytes, model: str = "general") -> str:
-        raise NotImplementedError("ElevenLabs does not support STT yet.")
+    async def stt(self, audio_data: bytes, model: str = "scribe_v1") -> str:
+        if not self.client:
+            raise ValueError("ElevenLabs API Key missing.")
+            
+        try:
+            # ElevenLabs STT (Scribe)
+            # Requires a file-like object with a name
+            import io
+            # We wrap the bytes in BytesIO and give it a name so the SDK can guess/handle format
+            audio_file = io.BytesIO(audio_data)
+            audio_file.name = "audio.mp3" # Naming it .mp3 is usually safe, or .wav
+            
+            # Calling the convert method
+            response = self.client.speech_to_text.convert(
+                file=audio_file,
+                model_id="scribe_v1", # Scribe v1 is the current STT model
+                tag_audio_events=False # Simplified text output
+            )
+            
+            if response and response.text:
+                return response.text
+            return ""
+            
+        except Exception as e:
+            logger.error(f"ElevenLabs STT Error: {e}")
+            raise
 
     async def assess(self, audio_data: bytes, reference_text: str) -> Dict[str, Any]:
         raise NotImplementedError("ElevenLabs does not support pronunciation assessment.")
+
+    async def text_to_sfx(self, text: str, duration_seconds: Optional[float] = None, prompt_influence: float = 0.3) -> AsyncGenerator[bytes, None]:
+        if not self.client:
+            raise ValueError("ElevenLabs API Key missing.")
+        
+        try:
+            # ElevenLabs Text to Sound Effects
+            # Returns a generator of bytes (audio/mpeg)
+            result = self.client.text_to_sound_effects.convert(
+                text=text,
+                duration_seconds=duration_seconds,
+                prompt_influence=prompt_influence
+            )
+            
+            # If it returns bytes directly (some SDK versions):
+            if isinstance(result, bytes):
+                 yield result
+            else:
+                 # If it is iterator
+                 for chunk in result:
+                     if chunk:
+                         yield chunk
+                         
+        except Exception as e:
+            logger.error(f"ElevenLabs SFX Error: {e}")
+            raise
+
+    async def speech_to_speech(self, audio_data: bytes, voice_id: str, model_id: str = "eleven_english_sts_v2") -> AsyncGenerator[bytes, None]:
+        if not self.client:
+            raise ValueError("ElevenLabs API Key missing.")
+            
+        try:
+             # ElevenLabs Voice Changer
+             # Need to handle audio data input. SDK expects a file-like object or path?
+             # Based on docs/SDK usage, convert usually takes 'audio' as file-like.
+             import io
+             audio_file = io.BytesIO(audio_data)
+             audio_file.name = "input_audio.mp3" # Or wav, SDK should handle detection
+             
+             # Handle voice_id if passed as dict
+             actual_voice_id = voice_id["id"] if isinstance(voice_id, dict) else voice_id
+
+             # Returns generator
+             result = self.client.speech_to_speech.convert(
+                 voice_id=actual_voice_id,
+                 audio=audio_file,
+                 model_id=model_id,
+                 output_format="mp3_44100_128"
+             )
+
+             if isinstance(result, bytes):
+                 yield result
+             else:
+                 for chunk in result:
+                     if chunk:
+                         yield chunk
+
+        except Exception as e:
+            logger.error(f"ElevenLabs STS Error: {e}")
+            raise
 
 class DeepgramProvider(VoiceProvider):
     def __init__(self):
@@ -256,41 +347,84 @@ class DeepgramProvider(VoiceProvider):
 
     def get_config(self) -> Dict[str, Any]:
         return {
-            "models": ["nova-3", "nova-2"],  # STT models - nova-3 is latest
-            "voices": ["aura-2-asteria-en", "aura-2-luna-en", "aura-2-stella-en", "aura-2-athena-en"]  # Aura 2 TTS voices
+            "models": ["nova-3", "nova-2", "nova-2-general", "nova-2-meeting"],  # STT models
+            "voices": [
+                # English (US)
+                "aura-asteria-en", "aura-luna-en", "aura-stella-en", "aura-athena-en",
+                "aura-hera-en", "aura-orion-en", "aura-arcas-en", "aura-perseus-en",
+                "aura-angus-en", "aura-orpheus-en", "aura-helios-en", "aura-zeus-en",
+                # English (UK)
+                "aura-toulouse-en",
+                # 2.0 Voices (Higher fidelity)
+                "aura-2-asteria-en", "aura-2-luna-en", "aura-2-stella-en", "aura-2-athena-en"
+            ]
         }
 
     async def tts(self, text: str, voice_id: str, model: str) -> AsyncGenerator[bytes, None]:
         if not self.client:
              raise ValueError("Deepgram API Key missing.")
         
-        # For Deepgram TTS, the 'model' parameter IS the voice name
-        if model == "default" or not model:
-            model = voice_id if voice_id else "aura-2-asteria-en"
+        # In Deepgram TTS, 'model' usually refers to the voice name itself.
+        # But if 'voice_id' is provided, we use that.
+        voice_model = voice_id if voice_id else "aura-asteria-en"
         
-        # Deepgram TTS SDK v5.3.0 - speak.v1.audio.generate() returns a generator
-        response = self.client.speak.v1.audio.generate(
-            text=text,
-            model=model
-        )
-        
-        # Response is a generator of bytes chunks - yield each one
-        for chunk in response:
-            if isinstance(chunk, bytes) and chunk:
-                yield chunk 
+        # Deepgram TTS SDK v5.3.0
+        # We explicitly request MP3 or Linear16. Let's use MP3 for bandwidth efficiency 
+        # unless specifically needed otherwise.
+        # However, for highest compatibility with standard players, MP3 is safe.
+        try:
+            options = {
+                "text": text,
+                "model": voice_model,
+                "encoding": "mp3", # Explicit encoding
+            }
+            
+            response = self.client.speak.v1.audio.generate(**options)
+            
+            # response is a generator in v5
+            for chunk in response:
+                if isinstance(chunk, bytes) and chunk:
+                    yield chunk 
+        except Exception as e:
+            logger.error(f"Deepgram TTS Error: {e}")
+            raise
 
     async def stt(self, audio_data: bytes, model: str = "nova-3") -> str:
         if not self.client:
              raise ValueError("Deepgram API Key missing.")
         
-        # Deepgram STT SDK v5.3.0 - use listen.v1.media.transcribe_file
-        # Pass options as keyword arguments, not a class
-        response = self.client.listen.v1.media.transcribe_file(
-            request=audio_data,
-            model=model,
-            smart_format=True
-        )
-        return response.results.channels[0].alternatives[0].transcript
+        # Deepgram STT SDK v5.3.0
+        try:
+            # Construct options with robust default checking
+            options = {
+                "model": model or "nova-3",
+                "smart_format": True,
+                "punctuate": True, 
+                "utterances": True, # Useful for segmentation if needed later
+                "language": "en-US"
+            }
+            
+            # Detect mimetype if possible, or default to general audio handling
+            # The SDK handles raw bytes well if we just pass them directly.
+            
+            # Original code used 'request' with raw bytes and worked.
+            response = self.client.listen.v1.media.transcribe_file(
+                request=audio_data, 
+                **options
+            )
+            
+            # Robustly extract transcript
+            if (response.results and 
+                response.results.channels and 
+                response.results.channels[0].alternatives and 
+                response.results.channels[0].alternatives[0].transcript):
+                return response.results.channels[0].alternatives[0].transcript
+            
+            return ""
+            
+        except Exception as e:
+            logger.error(f"Deepgram STT Error: {e}")
+            raise
 
     async def assess(self, audio_data: bytes, reference_text: str) -> Dict[str, Any]:
         raise NotImplementedError("Deepgram does not support pronunciation assessment yet.")
