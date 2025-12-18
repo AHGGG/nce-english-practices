@@ -102,3 +102,27 @@ async def websocket_live(websocket: WebSocket, provider: str):
         logger.warning(f"WS Error: {e}")
     finally:
         await websocket.close()
+
+@router.post("/llm")
+async def llm_endpoint(
+    text: str = Form(...),
+    model: str = Form(None)
+):
+    """
+    Simple LLM wrapper for Voice Lab Conversation Loop.
+    """
+    try:
+        from app.services.llm import llm_service
+        logger.info(f"LLM Loop Request: {text[:50]}...")
+        
+        # Simple prompt
+        messages = [
+            {"role": "system", "content": "You are a helpful AI assistant in a voice lab test. Keep responses concise and conversational."},
+            {"role": "user", "content": text}
+        ]
+        
+        response = await llm_service.chat_complete(messages, model=model)
+        return {"text": response}
+    except Exception as e:
+        logger.error(f"LLM Loop Error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))

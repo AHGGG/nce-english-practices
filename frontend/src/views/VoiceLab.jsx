@@ -9,10 +9,11 @@ import DeepgramFlux from '../components/VoiceLab/DeepgramFlux';
 import DeepgramStreamingTTS from '../components/VoiceLab/DeepgramStreamingTTS';
 import DeepgramVoiceAgent from '../components/VoiceLab/DeepgramVoiceAgent';
 import DeepgramUnified from '../components/VoiceLab/DeepgramUnified';
-import { Mic, Volume2, Radio, Server, Beaker, GraduationCap, Cloud, Zap, Globe, Cpu, Bot, TestTube2 } from 'lucide-react';
+import ConversationLoop from '../components/VoiceLab/ConversationLoop';
+import { Mic, Volume2, Radio, Server, Beaker, GraduationCap, Cloud, Zap, Globe, Cpu, Bot, TestTube2, RefreshCw } from 'lucide-react';
 
 const VoiceLab = () => {
-    const [activeTab, setActiveTab] = useState('google');
+    const [activeTab, setActiveTab] = useState('loop');
     const [deepgramSubTab, setDeepgramSubTab] = useState('unified');
     const [config, setConfig] = useState(null);
     const [loading, setLoading] = useState(true);
@@ -33,7 +34,7 @@ const VoiceLab = () => {
     const TabButton = ({ id, icon: Icon, label }) => (
         <button
             onClick={() => setActiveTab(id)}
-            className={`flex items-center gap-2 px-6 py-3 font-mono font-bold uppercase transition-all ${activeTab === id
+            className={`flex items-center gap-2 px-6 py-3 font-mono font-bold uppercase transition-all whitespace-nowrap ${activeTab === id
                 ? 'text-neon-cyan border-b-2 border-neon-cyan bg-neon-cyan/5'
                 : 'text-ink-muted hover:text-ink'
                 }`}
@@ -67,7 +68,8 @@ const VoiceLab = () => {
                 </div>
 
                 {/* Tabs */}
-                <div className="flex border-b border-ink-faint mb-6 overflow-x-auto">
+                <div className="flex border-b border-ink-faint mb-6 overflow-x-auto no-scrollbar">
+                    <TabButton id="loop" icon={RefreshCw} label="Conversation Loop" />
                     <TabButton id="google" icon={Globe} label="Google Gemini" />
                     <TabButton id="deepgram" icon={Zap} label="Deepgram" />
                     <TabButton id="elevenlabs" icon={Volume2} label="ElevenLabs" />
@@ -81,6 +83,11 @@ const VoiceLab = () => {
                         </div>
                     ) : (
                         <div className="space-y-12">
+                            {/* CONVERSATION LOOP VIEW */}
+                            {activeTab === 'loop' && (
+                                <ConversationLoop config={config} />
+                            )}
+
                             {/* GOOGLE VIEW */}
                             {activeTab === 'google' && (
                                 <div className="space-y-12 animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -187,7 +194,7 @@ const VoiceLab = () => {
                                     </section>
 
                                     <div className="p-8 border border-dashed border-ink-faint rounded-lg text-center text-ink-muted">
-                                        <p>STT and other features are not available for ElevenLabs yet.</p>
+                                        <p>STT is now available! See Conversation Loop for integration.</p>
                                     </div>
                                 </div>
                             )}
