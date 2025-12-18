@@ -145,3 +145,4 @@
     - [x] **STT**: Multimodal Transcription.
 - [x] **Automated Verification**: Implemented verification suite (`tests/verification/`) for TTS, STT, and Realtime Voice.
 - [x] **UI Refactor**: Reorganized Voice Lab to **Vendor-Centric Layout** (Manufacturer Tabs).
+- [x] **Router Consolidation**: Consolidated all routers from `app/routers` into `app/api/routers` for architectural consistency.

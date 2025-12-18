@@ -6,8 +6,7 @@ from dotenv import load_dotenv
 import os
 
 from app.services.dictionary import dict_manager
-from app.api.routers import voice, dictionary, content, practice, stats, deepgram
-from app.routers import coach, voice_lab
+from app.api.routers import voice, dictionary, content, practice, stats, deepgram, coach, voice_lab
 load_dotenv()
 
 @asynccontextmanager
