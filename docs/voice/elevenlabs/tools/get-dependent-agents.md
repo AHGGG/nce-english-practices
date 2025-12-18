@@ -1,0 +1,247 @@
+# Get dependent agents
+
+GET https://api.elevenlabs.io/v1/convai/tools/{tool_id}/dependent-agents
+
+Get a list of agents depending on this tool
+
+Reference: https://elevenlabs.io/docs/api-reference/tools/get-dependent-agents
+
+## OpenAPI Specification
+
+```yaml
+openapi: 3.1.1
+info:
+  title: Get Dependent Agents List
+  version: endpoint_conversationalAi/tools.get_dependent_agents
+paths:
+  /v1/convai/tools/{tool_id}/dependent-agents:
+    get:
+      operationId: get-dependent-agents
+      summary: Get Dependent Agents List
+      description: Get a list of agents depending on this tool
+      tags:
+        - - subpackage_conversationalAi
+          - subpackage_conversationalAi/tools
+      parameters:
+        - name: tool_id
+          in: path
+          description: ID of the requested tool.
+          required: true
+          schema:
+            type: string
+        - name: cursor
+          in: query
+          description: Used for fetching next page. Cursor is returned in the response.
+          required: false
+          schema:
+            type:
+              - string
+              - 'null'
+        - name: page_size
+          in: query
+          description: >-
+            How many documents to return at maximum. Can not exceed 100,
+            defaults to 30.
+          required: false
+          schema:
+            type: integer
+            default: 30
+        - name: xi-api-key
+          in: header
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetToolDependentAgentsResponseModel'
+        '422':
+          description: Validation Error
+          content: {}
+components:
+  schemas:
+    DependentAvailableAgentIdentifierAccessLevel:
+      type: string
+      enum:
+        - value: admin
+        - value: editor
+        - value: commenter
+        - value: viewer
+    DependentAvailableAgentIdentifier:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        type:
+          type: string
+          enum:
+            - type: stringLiteral
+              value: available
+        created_at_unix_secs:
+          type: integer
+        access_level:
+          $ref: '#/components/schemas/DependentAvailableAgentIdentifierAccessLevel'
+      required:
+        - id
+        - name
+        - created_at_unix_secs
+        - access_level
+    DependentUnknownAgentIdentifier:
+      type: object
+      properties:
+        type:
+          type: string
+          enum:
+            - type: stringLiteral
+              value: unknown
+    GetToolDependentAgentsResponseModelAgentsItems:
+      oneOf:
+        - $ref: '#/components/schemas/DependentAvailableAgentIdentifier'
+        - $ref: '#/components/schemas/DependentUnknownAgentIdentifier'
+    GetToolDependentAgentsResponseModel:
+      type: object
+      properties:
+        agents:
+          type: array
+          items:
+            $ref: >-
+              #/components/schemas/GetToolDependentAgentsResponseModelAgentsItems
+        next_cursor:
+          type:
+            - string
+            - 'null'
+        has_more:
+          type: boolean
+      required:
+        - agents
+        - has_more
+
+```
+
+## SDK Code Examples
+
+```typescript
+import { ElevenLabsClient } from "@elevenlabs/elevenlabs-js";
+
+async function main() {
+    const client = new ElevenLabsClient({
+        environment: "https://api.elevenlabs.io",
+    });
+    await client.conversationalAi.tools.getDependentAgents("tool_id", {});
+}
+main();
+
+```
+
+```python
+from elevenlabs import ElevenLabs
+
+client = ElevenLabs(
+    base_url="https://api.elevenlabs.io"
+)
+
+client.conversational_ai.tools.get_dependent_agents(
+    tool_id="tool_id"
+)
+
+```
+
+```go
+package main
+
+import (
+	"fmt"
+	"net/http"
+	"io"
+)
+
+func main() {
+
+	url := "https://api.elevenlabs.io/v1/convai/tools/tool_id/dependent-agents"
+
+	req, _ := http.NewRequest("GET", url, nil)
+
+	req.Header.Add("xi-api-key", "xi-api-key")
+
+	res, _ := http.DefaultClient.Do(req)
+
+	defer res.Body.Close()
+	body, _ := io.ReadAll(res.Body)
+
+	fmt.Println(res)
+	fmt.Println(string(body))
+
+}
+```
+
+```ruby
+require 'uri'
+require 'net/http'
+
+url = URI("https://api.elevenlabs.io/v1/convai/tools/tool_id/dependent-agents")
+
+http = Net::HTTP.new(url.host, url.port)
+http.use_ssl = true
+
+request = Net::HTTP::Get.new(url)
+request["xi-api-key"] = 'xi-api-key'
+
+response = http.request(request)
+puts response.read_body
+```
+
+```java
+HttpResponse<String> response = Unirest.get("https://api.elevenlabs.io/v1/convai/tools/tool_id/dependent-agents")
+  .header("xi-api-key", "xi-api-key")
+  .asString();
+```
+
+```php
+<?php
+
+$client = new \GuzzleHttp\Client();
+
+$response = $client->request('GET', 'https://api.elevenlabs.io/v1/convai/tools/tool_id/dependent-agents', [
+  'headers' => [
+    'xi-api-key' => 'xi-api-key',
+  ],
+]);
+
+echo $response->getBody();
+```
+
+```csharp
+var client = new RestClient("https://api.elevenlabs.io/v1/convai/tools/tool_id/dependent-agents");
+var request = new RestRequest(Method.GET);
+request.AddHeader("xi-api-key", "xi-api-key");
+IRestResponse response = client.Execute(request);
+```
+
+```swift
+import Foundation
+
+let headers = ["xi-api-key": "xi-api-key"]
+
+let request = NSMutableURLRequest(url: NSURL(string: "https://api.elevenlabs.io/v1/convai/tools/tool_id/dependent-agents")! as URL,
+                                        cachePolicy: .useProtocolCachePolicy,
+                                    timeoutInterval: 10.0)
+request.httpMethod = "GET"
+request.allHTTPHeaderFields = headers
+
+let session = URLSession.shared
+let dataTask = session.dataTask(with: request as URLRequest, completionHandler: { (data, response, error) -> Void in
+  if (error != nil) {
+    print(error as Any)
+  } else {
+    let httpResponse = response as? HTTPURLResponse
+    print(httpResponse)
+  }
+})
+
+dataTask.resume()
+```
