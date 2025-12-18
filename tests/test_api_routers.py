@@ -1,7 +1,7 @@
 import pytest
 from httpx import AsyncClient
 from unittest.mock import patch, MagicMock
-from app.models import ScenarioResponse, Mission
+from app.models.schemas import ScenarioResponse, Mission
 
 # --- Fixtures ---
 # We reuse fixtures from conftest.py (client, db_session)

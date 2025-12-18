@@ -2,7 +2,7 @@ from datetime import datetime, timedelta
 from typing import Dict, Any, Optional
 from sqlalchemy import select
 from app.core.db import AsyncSessionLocal
-from app.db_models import SRSSchedule
+from app.models.orm import SRSSchedule
 from app.database import update_srs_schedule
 
 async def process_review_result(note_id: int, quality: int) -> Optional[Dict[str, Any]]:

@@ -20,13 +20,18 @@ uv sync
 
 # Run the Web Application
 uv run python -m app.main
-
-# Or using uvicorn directly
-uv run uvicorn app.main:app --reload
+# OR (Windows Powershell)
+./scripts/dev.ps1
 
 # For HTTPS (mobile voice requires HTTPS)
 uv run python scripts/generate_cert.py  # Generate self-signed cert
 uv run python -m app.main       # Auto-detects cert.pem/key.pem
+```
+
+## Shortcuts (Windows)
+```powershell
+./scripts/dev.ps1   # Start Server
+./scripts/test.ps1  # Run All Tests (E2E + Backend)
 ```
 
 ## Testing
@@ -111,8 +116,10 @@ The project follows a modular package structure:
   - `dsml_parser.py`: **NEW** Parser for DeepSeek raw XML tool calls.
 - **`app/generators/`**: Content generation logic.
   - `theme.py`, `sentence.py`, `story.py`, `quiz.py`, `scenario.py`
-- **`app/models.py`**: Pydantic models for API requests/responses.
-- **`app/db_models.py`**: SQLAlchemy ORM models.
+- **`app/models/`**: Data models package.
+  - `schemas.py`: Pydantic models (DTOs) and API schemas.
+  - `orm.py`: SQLAlchemy database models.
+- **`app/database.py`**: Database operations and query functions.
 - **`app/database.py`**: Database operations and query functions.
 
 ### Database Layer

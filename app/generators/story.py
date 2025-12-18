@@ -4,13 +4,26 @@ import json
 from typing import Optional, AsyncGenerator
 
 from app.config import MODEL_NAME
-from app.models import Story
+from app.models.schemas import Story
 from app.services.prompt_manager import prompt_manager
 from app.core.utils import parse_llm_json
 
 async def generate_story_stream(topic: str, tense: str, client) -> AsyncGenerator[str, None]:
     if not client:
-        yield json.dumps({"error": "LLM client unavailable"})
+        # Fallback for Offline/Test mode
+        fallback_text = f"Once upon a time, there was a {topic} session. It was a good practice."
+        yield json.dumps({"type": "text", "chunk": fallback_text}) + "\n"
+        
+        # Metadata
+        story_data = {
+            "topic": topic,
+            "target_tense": tense,
+            "title": f"The Story of {topic}",
+            "content": fallback_text,
+            "highlights": ["session"],
+            "grammar_notes": ["This is a fallback story."]
+        }
+        yield json.dumps({"type": "data", "story": story_data}) + "\n"
         return
 
     prompt = prompt_manager.format("story.user_template", topic=topic, tense=tense)

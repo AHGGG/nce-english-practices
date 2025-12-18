@@ -6,7 +6,7 @@ from datetime import datetime
 from typing import Dict, Iterable, List, Optional
 
 from app.config import EXPORT_FILE, MODEL_NAME, PROGRESS_FILE
-from app.models import BaseSentence, SelectionSnapshot
+from app.models.schemas import BaseSentence, SelectionSnapshot
 from app.services.llm import llm_service
 
 

@@ -7,7 +7,7 @@ from sqlalchemy import select, update, desc, func, Integer
 from sqlalchemy.orm import selectinload
 
 from app.core.db import AsyncSessionLocal
-from app.db_models import (
+from app.models.orm import (
     SessionLog, Story, Attempt, ReviewNote, SRSSchedule, ChatSession,
     CoachSession, UserMemory, UserProgress
 )

@@ -8,7 +8,7 @@ from app.services.chat import start_new_mission, handle_chat_turn
 from app.core.practice import grade_sentence, log_matrix_attempt
 from app.database import log_attempt
 from app.services.llm import llm_service
-from app.models import SelectionSnapshot
+from app.models.schemas import SelectionSnapshot
 from app.generators.coach import polish_sentence
 
 router = APIRouter()

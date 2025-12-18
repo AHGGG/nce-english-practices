@@ -146,3 +146,14 @@
 - [x] **Automated Verification**: Implemented verification suite (`tests/verification/`) for TTS, STT, and Realtime Voice.
 - [x] **UI Refactor**: Reorganized Voice Lab to **Vendor-Centric Layout** (Manufacturer Tabs).
 - [x] **Router Consolidation**: Consolidated all routers from `app/routers` into `app/api/routers` for architectural consistency.
+
+## ??? Phase 12: Engineering Optimization & DX (Completed)
+- [x] **Project Structure Optimization**:
+    - [x] **Model Consolidation**: Refactored scattered models (pp/models.py, pp/db_models.py) into a structured pp/models/ package (schemas.py, orm.py).
+    - [x] **Import Cleanup**: Updated all codebase imports to use the new modular structure.
+    - [x] **Cleanup**: Removed legacy and ambiguous model files.
+- [x] **Developer Experience (DX)**:
+    - [x] **Scripting**: Added PowerShell automation scripts (scripts/dev.ps1, scripts/test.ps1) for consistent cross-platform development.
+    - [x] **Testing**: Solved Windows-specific event loop conflicts by isolating E2E and Backend tests in the test runner script.
+    - [x] **Cleanup**: Removed expired E2E tests (`test_navigation.py`) and implemented offline fallbacks.
+

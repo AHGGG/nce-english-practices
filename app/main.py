@@ -37,7 +37,7 @@ app.include_router(deepgram.router)
 from app.api.routers import deepgram_websocket
 app.include_router(deepgram_websocket.router)
 
-from app.models import RemoteLog
+from app.models.schemas import RemoteLog
 
 @app.post("/api/logs")
 async def receive_remote_log(log: RemoteLog):

@@ -11,7 +11,7 @@ from playwright.sync_api import Page, BrowserContext
 BACKEND_PORT = 8001
 FRONTEND_PORT = 5174
 BACKEND_URL = f"http://localhost:{BACKEND_PORT}"
-FRONTEND_URL = f"https://localhost:{FRONTEND_PORT}"
+FRONTEND_URL = f"http://localhost:{FRONTEND_PORT}"
 
 @pytest.fixture(scope="session")
 def backend_server():
@@ -22,13 +22,29 @@ def backend_server():
     if not os.path.exists("app/main.py"):
         raise RuntimeError("E2E tests must be run from the project root.")
 
+    # Initialize Test DB (Create Tables)
+    print("Initializing E2E Test Database...")
+    import asyncio
+    from app.core.db import engine, Base
+    from app.models import orm, schemas # Validating imports to ensure models are registered
+    
+    async def init_db():
+        async with engine.begin() as conn:
+            await conn.run_sync(Base.metadata.drop_all)
+            await conn.run_sync(Base.metadata.create_all)
+        await engine.dispose()
+    
+    asyncio.run(init_db())
+
     print(f"Starting Backend on {BACKEND_PORT}...")
+
     # Start Uvicorn process
     proc = subprocess.Popen(
         [sys.executable, "-m", "uvicorn", "app.main:app", "--port", str(BACKEND_PORT), "--host", "127.0.0.1"],
         cwd=os.getcwd(),
-        stdout=subprocess.DEVNULL,
-        stderr=subprocess.DEVNULL
+        stdout=None,
+        stderr=None
+
     )
     
     # Wait for server to start with polling
@@ -66,6 +82,7 @@ def frontend_server(backend_server):
 
     env = os.environ.copy()
     env["VITE_API_TARGET"] = backend_server
+    env["DISABLE_HTTPS"] = "true"
 
     # Determine npm command based on OS
     npm_cmd = "npm.cmd" if os.name == "nt" else "npm"
@@ -79,6 +96,7 @@ def frontend_server(backend_server):
         stdout=subprocess.DEVNULL,
         stderr=subprocess.DEVNULL
     )
+
 
     # Wait for frontend to be ready
     max_retries = 120

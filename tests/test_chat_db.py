@@ -1,6 +1,6 @@
 import pytest
 from app.database import create_chat_session, get_chat_session, update_chat_history
-from app.db_models import ChatSession
+from app.models.orm import ChatSession
 
 @pytest.mark.asyncio
 async def test_chat_session_lifecycle(db_session):

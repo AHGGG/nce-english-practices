@@ -96,3 +96,9 @@
     - [x] **Story Mode**: Apply Serif typography and high-contrast reading experience.
     - [x] **Drill Matrix**: Apply Monospace data aesthetic and snappy interactions.
     - [x] **Scenario/Chat**: Update message bubbles to "Hard Shape" style.
+
+## 8. Engineering Excellence (Optimization)
+- [x] **Structure Optimization**: Consolidate models into pp/models/ package.
+- [x] **DX**: Scripts for easy startup and testing (scripts/dev.ps1, scripts/test.ps1).
+- [x] **Legacy Cleanup**: Removed expired E2E tests and formalized offline fallback logic.
+

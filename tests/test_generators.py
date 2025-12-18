@@ -72,8 +72,13 @@ def test_generate_theme_sync(mock_client):
 def test_generate_theme_sync_failure(mock_client):
     mock_client.chat.completions.create.side_effect = Exception("API Error")
 
-    with pytest.raises(RuntimeError):
-        generate_theme_sync("ErrorTopic", mock_client)
+    # Should NOT raise RuntimeError anymore, should return fallback
+    result = generate_theme_sync("ErrorTopic", mock_client)
+    
+    assert result.topic == "ErrorTopic"
+    assert "practice" in [v.base for v in result.verbs]
+
+
 
 def test_generate_theme_context_avoidance(mock_client):
     # This checks if the previous vocab is used to build context

@@ -1,7 +1,7 @@
 import pytest
 from unittest.mock import MagicMock, patch, AsyncMock
 from app.services.review import process_review_result
-from app.db_models import SRSSchedule
+from app.models.orm import SRSSchedule
 
 @pytest.mark.asyncio
 async def test_review_first_success():

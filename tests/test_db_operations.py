@@ -9,7 +9,7 @@ from app.database import (
     log_attempt, get_user_stats,
     add_review_note, get_due_reviews, update_srs_schedule
 )
-from app.db_models import ReviewNote, SRSSchedule
+from app.models.orm import ReviewNote, SRSSchedule
 
 # Helpers for testing DB functions that instantiate their own session
 @asynccontextmanager

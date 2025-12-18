@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 from typing import List
 from app.config import MODEL_NAME
-from app.models import QuizItem, QuizOption
+from app.models.schemas import QuizItem, QuizOption
 from app.services.prompt_manager import prompt_manager
 from app.core.utils import parse_llm_json
 

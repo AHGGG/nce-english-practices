@@ -10,9 +10,17 @@ from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, Asyn
 if sys.platform == "win32":
     nest_asyncio.apply()
 
+import os
+
+# FORCE Test Database via Environment Variable (Must be done before app imports)
+# Use SQLite for portable testing in CI/Sandbox
+TEST_DATABASE_URL = "sqlite+aiosqlite:///./test.db"
+os.environ["DATABASE_URL"] = TEST_DATABASE_URL
+
 from app.config import settings
 from app.core.db import Base, get_db
 from app.main import app
+
 
 # FORCE Test Database
 # Use SQLite for portable testing in CI/Sandbox
@@ -23,7 +31,9 @@ TEST_DATABASE_URL = "sqlite+aiosqlite:///./test.db"
 #    asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
 
 # Override global settings
-settings.DATABASE_URL = TEST_DATABASE_URL
+# Override global settings
+# settings.DATABASE_URL = TEST_DATABASE_URL (Already handled via env var)
+
 
 
 

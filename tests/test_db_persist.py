@@ -6,7 +6,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 from app.database import log_session, AsyncSessionLocal
-from app.db_models import SessionLog
+from app.models.orm import SessionLog
 from sqlalchemy import select, func, delete
 
 async def test_persistence():

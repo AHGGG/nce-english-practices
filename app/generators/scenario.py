@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import json
 from app.config import MODEL_NAME
-from app.models import ScenarioPrompt, ScenarioResponse
+from app.models.schemas import ScenarioPrompt, ScenarioResponse
 from app.services.prompt_manager import prompt_manager
 from app.core.utils import parse_llm_json
 
