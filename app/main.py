@@ -82,5 +82,5 @@ if __name__ == "__main__":
                     ssl_keyfile=ssl_keyfile, ssl_certfile=ssl_certfile)
     else:
         print("Starting with HTTP (no SSL)")
-        print("For mobile voice, generate cert: uv run python generate_cert.py")
+        print("For mobile voice, generate cert: uv run python scripts/generate_cert.py")
         uvicorn.run("app.main:app", host="0.0.0.0", port=8000, reload=True)

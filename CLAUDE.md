@@ -25,7 +25,7 @@ uv run python -m app.main
 uv run uvicorn app.main:app --reload
 
 # For HTTPS (mobile voice requires HTTPS)
-uv run python generate_cert.py  # Generate self-signed cert
+uv run python scripts/generate_cert.py  # Generate self-signed cert
 uv run python -m app.main       # Auto-detects cert.pem/key.pem
 ```
 
