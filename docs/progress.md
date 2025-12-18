@@ -145,6 +145,7 @@
     - [x] **TTS**: Multimodal Generation (Live API + WAV Header Injection).
     - [x] **STT**: Multimodal Transcription.
 - [x] **Automated Verification**: Implemented "Round-Trip" testing framework (`VoiceTester`) verifying Semantic Integrity across all vendors.
+- [x] **Conversation Loop**: Integrated generic STT -> LLM -> TTS loop for full-duplex voice testing.
 - [x] **UI Refactor**: Reorganized Voice Lab to **Vendor-Centric Layout** (Manufacturer Tabs).
 - [x] **Router Consolidation**: Consolidated all routers from `app/routers` into `app/api/routers` for architectural consistency.
 

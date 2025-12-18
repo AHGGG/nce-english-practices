@@ -80,6 +80,7 @@
     - [x] **Internal Tool**: `/voice-lab` refactored to **Vendor-Centric Layout** (Google, Deepgram, ElevenLabs tabs).
     - [x] **SDK Upgrades**: Updated ElevenLabs and Deepgram to Python SDK v3.
     - [x] **Automation**: Added `VoiceTester` service for cross-vendor semantic verification.
+    - [x] **Conversation Loop**: Added interactive STT-LLM-TTS loop for real-time testing.
 - [ ] **Audio Engine**:
     - [x] **TTS**: Text-to-Speech for all generated sentences (Browser Native or API).
     - [ ] **Shadowing**: Record user audio and compare (Future).
