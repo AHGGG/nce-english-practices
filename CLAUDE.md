@@ -37,20 +37,18 @@ uv run python -m app.main       # Auto-detects cert.pem/key.pem
 ## Testing
 
 ```bash
-# Run Frontend E2E Tests (Playwright)
-uv run pytest tests/e2e
+# Run All Automated Tests
+uv run pytest tests -v
 
-# Run Backend Unit Tests (Run separately to avoid event loop conflicts)
-uv run pytest tests/test_*.py
+# Run Voice Lab Integration Tests (Backend)
+uv run pytest tests/test_voice_lab_integration.py -v
 
-# Setup for E2E Tests (First time only)
-uv run playwright install
+# Run Deepgram WebSocket Tests
+uv run pytest tests/test_deepgram_websocket.py -v
 
-# Run specific test file
-uv run pytest tests/test_chat_db.py -v
-
-# Run single test
-uv run pytest tests/test_basics.py::test_theme_generation -v
+# Run Manual Verification Config (requires running server)
+# 1. Start Dev Server: ./scripts/dev.ps1
+# 2. Run Script: uv run python tests/verification/verify_deepgram_websocket.py
 ```
 
 ## Environment Configuration
@@ -216,13 +214,8 @@ To support multiple dictionaries (e.g., Collins + LDOCE) in one view:
 
 ## Common Pitfalls
 
-### Windows Testing Pitfalls
 - **Global Run Conflict**: Running `uv run pytest tests` fails because `pytest-playwright` (Sync) and `httpx`/`asyncpg` (Async) require conflicting Event Loop policies on Windows (Selector vs Proactor).
-    - **Solution**: ALWAYS run suites separately:
-        1. E2E: `uv run pytest tests/e2e`
-        2. Backend: `uv run pytest tests --ignore=tests/e2e`
-- **E2E `npm` Issue**: `subprocess.Popen("npm")` fails on Windows with `[WinError 2]`.
-    - **Fix**: Use `npm.cmd` on Windows. (This is handled in `tests/e2e/conftest.py`).
+    - **Solution**: We removed most Playwright E2E tests to simplify this. For remaining synchronous tests, run them separately if needed.
 - **Backend `RuntimeError`**: `asyncio.run()` loops conflict with `pytest-asyncio` loops.
     - **Fix**: Tests require `nest_asyncio.apply()` on Windows. (This is handled in `tests/conftest.py`).
 

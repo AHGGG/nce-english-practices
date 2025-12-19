@@ -172,3 +172,18 @@
 - [x] **Frontend**:
     - [x] Simplified Deepgram VoiceLab UI to 3-tab layout (Live STT, Voice Agent, Tools).
     - [x] Added `ws: true` to Vite proxy for `/api` WebSocket routes.
+
+## 🧪 Phase 14: Automated Testing Infrastructure (Completed 2025-12-19)
+- [x] **Backend Integration Tests**:
+    - [x] Implemented TTS/STT round-trip verification for all vendors (Google, ElevenLabs, Deepgram).
+    - [x] Added specific tests for ElevenLabs STS and SFX.
+- [x] **WebSocket Verification**:
+    - [x] Added automated connection tests for Deepgram Live STT and Streaming TTS.
+    - [x] Added manual verification script (`verify_deepgram_websocket.py`) for full-duplex flows.
+- [x] **Test Utilities**:
+    - [x] **PCM Audio Sim**: Created utilities to simulate real-time audio streaming from WAV files.
+    - [x] **Semantic Similarity**: Added fuzzy matching for STT verification.
+    - [x] **Log Capture**: Investigated and fixed backend log capture for automated verification.
+- [x] **Cleanup**:
+    - [x] Removed legacy E2E tests (learn, apply, drill) and redundant verification scripts.
+    - [x] Consolidated testing structure into `tests/test_voice_lab_integration.py` and `tests/test_deepgram_websocket.py`.

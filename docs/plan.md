@@ -53,8 +53,8 @@
 - [x] **Frontend**: New "Mode Switcher" (Learn / Drill / Apply / Speak) in the navigation.
 - [x] **State**: Persist user progress per stage (Now in PostgreSQL).
 - [x] **Async Architecture**: Refactor synchronous LLM calls to prevent blocking (Complete).
-- [x] **Dictionary Fixes**: Support `@@@LINK` redirects and relative asset pathing.
-- [x] **Testing Infrastructure**: `pytest` suite with `nce_practice_test` DB for safe backend testing.
+- [x] Dictionary Fixes: Support `@@@LINK` redirects and relative asset pathing.
+- [x] Testing Infrastructure: Refactored legacy tests into a modern `pytest` suite for voice integration and WebSocket verification.
 - [x] **Mobile Adaptation**:
     - [x] Responsive Sidebar/Navbar.
     - [x] HTTPS Configuration for local external access.
