@@ -182,6 +182,15 @@ const DeepgramVoiceAgent = () => {
     };
 
     const stopAgent = () => {
+        // 1. Close AudioContext to stop all scheduled audio playback
+        if (audioContextRef.current) {
+            audioContextRef.current.close();
+            audioContextRef.current = null;
+        }
+        // Reset audio scheduling
+        audioQueueRef.current = [];
+        nextStartTimeRef.current = 0;
+
         if (wsRef.current) {
             wsRef.current.close();
             wsRef.current = null;
