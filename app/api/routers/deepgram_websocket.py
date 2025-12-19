@@ -175,7 +175,13 @@ async def deepgram_streaming_tts_websocket(
     }
 
     try:
-        async with websockets.connect(dg_url, additional_headers=headers) as dg_ws:
+        # Add timeout for connection - Deepgram can be slow sometimes
+        async with websockets.connect(
+            dg_url, 
+            additional_headers=headers,
+            open_timeout=10,  # 10 seconds for handshake
+            close_timeout=5
+        ) as dg_ws:
             logger.info(f"Connected to Deepgram TTS: {voice}")
             await websocket.send_json({"type": "ready", "voice": voice})
             
@@ -216,8 +222,8 @@ async def deepgram_streaming_tts_websocket(
                         
                         if msg_type == "text":
                             # Send Speak command
-                            # Format: { "text": "..." }
-                            await dg_ws.send(json.dumps({"text": msg.get("content", "")}))
+                            # Format: { "type": "Speak", "text": "..." }
+                            await dg_ws.send(json.dumps({"type": "Speak", "text": msg.get("content", "")}))
                         
                         elif msg_type == "flush":
                             # Send Flush command
