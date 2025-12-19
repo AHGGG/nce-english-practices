@@ -66,7 +66,8 @@ class DeepgramService:
                 deepgram = DeepgramClient(api_key=self.api_key)
 
                 # Fetch projects to find ID
-                projects_response = deepgram.manage.v1.projects.list()
+                # SDK v3 usage: deepgram.manage.v1.get_projects()
+                projects_response = deepgram.manage.v1.get_projects()
                 if not projects_response.projects:
                      raise ValueError("No Deepgram projects found for this key.")
 
@@ -76,18 +77,14 @@ class DeepgramService:
                 # TTL: 10 minutes (600 seconds)
                 options = {
                     "comment": "VoiceLab Browser Session",
-                    "scopes": ["usage:write"], # Min scope needed for transcription? usually 'usage:write' is for logging?
-                    # Actually standard scope is often sufficient.
+                    # "scopes": ["usage:write"], # Removing scope restriction to ensure transcription access
                     "time_to_live_in_seconds": 600,
                     "tags": ["voicelab"]
                 }
 
-                # The SDK method signature might vary, let's look at common v3 usage.
-                # await deepgram.manage.v1.create_project_key(project_id, options)
-
                 # Create a temporary key
-                # SDK Call: deepgram.manage.v1.keys.create(project_id, options)
-                key_response = deepgram.manage.v1.keys.create(project_id, options)
+                # SDK v3 usage: deepgram.manage.v1.create_project_key(project_id, options)
+                key_response = deepgram.manage.v1.create_project_key(project_id, options)
                 return {"key": key_response.key}
 
         except Exception as e:

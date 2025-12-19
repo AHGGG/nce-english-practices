@@ -6,6 +6,7 @@ const DeepgramVoiceAgent = () => {
     const [isActive, setIsActive] = useState(false);
     const [connectionState, setConnectionState] = useState('disconnected');
     const [messages, setMessages] = useState([]);
+    const [pendingTranscript, setPendingTranscript] = useState(''); // Live transcript being spoken
     const [error, setError] = useState(null);
     const [config, setConfig] = useState({
         stt_model: 'nova-3',
@@ -63,9 +64,7 @@ const DeepgramVoiceAgent = () => {
             setError(null);
 
             // 1. Microphone
-            const stream = await navigator.mediaDevices.getUserMedia({
-                audio: { channelCount: 1, sampleRate: 16000 }
-            });
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
 
             // 2. WebSocket
             const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
@@ -87,7 +86,14 @@ const DeepgramVoiceAgent = () => {
                 if (typeof event.data === 'string') {
                     const msg = JSON.parse(event.data);
                     if (msg.type === 'transcript') {
-                        addMessage('user', msg.text);
+                        if (msg.is_final) {
+                            // Final result: add to messages and clear pending
+                            addMessage('user', msg.text);
+                            setPendingTranscript('');
+                        } else {
+                            // Interim result: update pending transcript for live display
+                            setPendingTranscript(msg.text);
+                        }
                     } else if (msg.type === 'llm_response') {
                         addMessage('ai', msg.text);
                     } else if (msg.type === 'error') {
@@ -115,19 +121,34 @@ const DeepgramVoiceAgent = () => {
     };
 
     const startMicrophone = (stream, ws) => {
-        const audioContext = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 16000 });
+        if (config.stt_model === 'flux') {
+            // Flux requires raw PCM audio (linear16)
+            startPCMAudio(stream, ws);
+        } else {
+            // Nova can handle WebM containers
+            startMediaRecorder(stream, ws);
+        }
+    };
+
+    const startPCMAudio = (stream, ws) => {
+        const audioContext = new (window.AudioContext || window.webkitAudioContext)({
+            sampleRate: 16000
+        });
+
         const source = audioContext.createMediaStreamSource(stream);
         const processor = audioContext.createScriptProcessor(4096, 1, 1);
 
         processor.onaudioprocess = (e) => {
             if (ws.readyState === WebSocket.OPEN) {
                 const inputData = e.inputBuffer.getChannelData(0);
-                const int16Data = new Int16Array(inputData.length);
+                // Convert float32 to int16 PCM
+                const buffer = new ArrayBuffer(inputData.length * 2);
+                const view = new DataView(buffer);
                 for (let i = 0; i < inputData.length; i++) {
-                    const s = Math.max(-1, Math.min(1, inputData[i]));
-                    int16Data[i] = s < 0 ? s * 0x8000 : s * 0x7FFF;
+                    let s = Math.max(-1, Math.min(1, inputData[i]));
+                    view.setInt16(i * 2, s < 0 ? s * 0x8000 : s * 0x7FFF, true);
                 }
-                ws.send(int16Data.buffer);
+                ws.send(buffer);
             }
         };
 
@@ -135,12 +156,28 @@ const DeepgramVoiceAgent = () => {
         processor.connect(audioContext.destination);
 
         microphoneRef.current = {
-            stop: () => {
-                processor.disconnect();
-                source.disconnect();
-                stream.getTracks().forEach(track => track.stop());
-                audioContext.close();
+            type: 'pcm',
+            stream,
+            audioContext,
+            processor,
+            source
+        };
+    };
+
+    const startMediaRecorder = (stream, ws) => {
+        const mediaRecorder = new MediaRecorder(stream, { mimeType: 'audio/webm' });
+
+        mediaRecorder.ondataavailable = (event) => {
+            if (event.data.size > 0 && ws.readyState === WebSocket.OPEN) {
+                ws.send(event.data);
             }
+        };
+
+        mediaRecorder.start(250);
+        microphoneRef.current = {
+            type: 'mediarecorder',
+            stream,
+            recorder: mediaRecorder
         };
     };
 
@@ -149,8 +186,21 @@ const DeepgramVoiceAgent = () => {
             wsRef.current.close();
             wsRef.current = null;
         }
-        if (microphoneRef.current) {
-            microphoneRef.current.stop();
+        const mic = microphoneRef.current;
+        if (mic) {
+            if (mic.type === 'pcm') {
+                // Cleanup PCM audio
+                mic.processor.disconnect();
+                mic.source.disconnect();
+                mic.audioContext.close();
+                mic.stream.getTracks().forEach(track => track.stop());
+            } else if (mic.type === 'mediarecorder') {
+                // Cleanup MediaRecorder
+                if (mic.recorder.state !== 'inactive') {
+                    mic.recorder.stop();
+                }
+                mic.stream.getTracks().forEach(track => track.stop());
+            }
             microphoneRef.current = null;
         }
         setIsActive(false);
@@ -261,8 +311,8 @@ const DeepgramVoiceAgent = () => {
                         {messages.map((msg, i) => (
                             <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                                 <div className={`max-w-[80%] rounded-lg p-3 ${msg.role === 'user'
-                                        ? 'bg-ink/5 border border-ink/10 text-ink'
-                                        : 'bg-neon-cyan/5 border border-neon-cyan/20 text-neon-cyan'
+                                    ? 'bg-ink/5 border border-ink/10 text-ink'
+                                    : 'bg-neon-cyan/5 border border-neon-cyan/20 text-neon-cyan'
                                     }`}>
                                     <div className="flex items-center gap-2 mb-1 opacity-50 text-xs">
                                         {msg.role === 'user' ? <User size={12} /> : <Bot size={12} />}
@@ -272,6 +322,19 @@ const DeepgramVoiceAgent = () => {
                                 </div>
                             </div>
                         ))}
+
+                        {/* Live pending transcript - shows what user is currently saying */}
+                        {pendingTranscript && (
+                            <div className="flex justify-end">
+                                <div className="max-w-[80%] rounded-lg p-3 bg-ink/5 border border-ink/20 border-dashed text-ink/70 animate-pulse">
+                                    <div className="flex items-center gap-2 mb-1 opacity-50 text-xs">
+                                        <User size={12} />
+                                        <span>SPEAKING...</span>
+                                    </div>
+                                    <p className="text-sm leading-relaxed italic">{pendingTranscript}</p>
+                                </div>
+                            </div>
+                        )}
                     </div>
                 </Card>
             </div>

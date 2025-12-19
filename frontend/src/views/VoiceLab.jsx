@@ -4,8 +4,6 @@ import { Card, Button, Tag } from '../components/ui';
 import TTSPanel from '../components/VoiceLab/TTSPanel';
 import STTPanel from '../components/VoiceLab/STTPanel';
 import LivePanel from '../components/VoiceLab/LivePanel';
-import DeepgramLive from '../components/VoiceLab/DeepgramLive';
-import DeepgramFlux from '../components/VoiceLab/DeepgramFlux';
 import DeepgramStreamingTTS from '../components/VoiceLab/DeepgramStreamingTTS';
 import DeepgramVoiceAgent from '../components/VoiceLab/DeepgramVoiceAgent';
 import DeepgramUnified from '../components/VoiceLab/DeepgramUnified';
@@ -14,7 +12,7 @@ import { Mic, Volume2, Radio, Server, Beaker, GraduationCap, Cloud, Zap, Globe, 
 
 const VoiceLab = () => {
     const [activeTab, setActiveTab] = useState('loop');
-    const [deepgramSubTab, setDeepgramSubTab] = useState('unified');
+    const [deepgramSubTab, setDeepgramSubTab] = useState('live');
     const [config, setConfig] = useState(null);
     const [loading, setLoading] = useState(true);
 
@@ -114,7 +112,7 @@ const VoiceLab = () => {
                                 <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
                                     {/* Sub-tabs for Deepgram */}
                                     <div className="flex justify-center space-x-2 mb-6">
-                                        {['unified', 'stt', 'tts', 'agent'].map((sub) => (
+                                        {['live', 'agent', 'tools'].map((sub) => (
                                             <button
                                                 key={sub}
                                                 onClick={() => setDeepgramSubTab(sub)}
@@ -123,54 +121,17 @@ const VoiceLab = () => {
                                                     : 'bg-bg-elevated border-ink-faint text-ink-muted hover:border-neon-cyan/50 hover:text-ink'
                                                     }`}
                                             >
-                                                {sub === 'unified' && '🧪 UNIFIED TEST'}
-                                                {sub === 'stt' && 'SPEECH TO TEXT'}
-                                                {sub === 'tts' && 'TEXT TO SPEECH'}
-                                                {sub === 'agent' && 'VOICE AGENT'}
+                                                {sub === 'live' && '🎙️ LIVE STT'}
+                                                {sub === 'agent' && '🤖 VOICE AGENT'}
+                                                {sub === 'tools' && '🛠️ TOOLS & REST'}
                                             </button>
                                         ))}
                                     </div>
 
-                                    {deepgramSubTab === 'unified' && (
+                                    {deepgramSubTab === 'live' && (
                                         <>
-                                            <SectionHeader title="Unified Testing Panel (Nova-3 vs Flux)" icon={TestTube2} />
+                                            <SectionHeader title="Real-time Transcription" icon={Mic} />
                                             <DeepgramUnified />
-                                        </>
-                                    )}
-
-                                    {deepgramSubTab === 'stt' && (
-                                        <>
-                                            <SectionHeader title="Speech-to-Text (Nova-2 / Nova-3)" icon={Mic} />
-                                            <div className="grid grid-cols-1 gap-6">
-                                                <div className="p-4 border border-ink-faint rounded bg-bg-elevated/50">
-                                                    <h3 className="text-sm font-mono text-neon-cyan mb-4">1. Pre-recorded Audio (REST API)</h3>
-                                                    <STTPanel fixedProvider="deepgram" />
-                                                </div>
-                                                <div className="p-4 border border-ink-faint rounded bg-bg-elevated/50">
-                                                    <h3 className="text-sm font-mono text-neon-cyan mb-4">2. Live Streaming (WebSocket)</h3>
-                                                    <DeepgramLive />
-                                                </div>
-                                                <div className="p-4 border border-ink-faint rounded bg-bg-elevated/50">
-                                                    <h3 className="text-sm font-mono text-neon-cyan mb-4">3. Flux Conversational (WebSocket)</h3>
-                                                    <DeepgramFlux />
-                                                </div>
-                                            </div>
-                                        </>
-                                    )}
-
-                                    {deepgramSubTab === 'tts' && (
-                                        <>
-                                            <SectionHeader title="Text-to-Speech (Aura)" icon={Volume2} />
-                                            <div className="grid grid-cols-1 gap-6">
-                                                <div className="p-4 border border-ink-faint rounded bg-bg-elevated/50">
-                                                    <h3 className="text-sm font-mono text-neon-cyan mb-4">1. Single Request (REST API)</h3>
-                                                    <TTSPanel fixedProvider="deepgram" />
-                                                </div>
-                                                <div className="p-4 border border-ink-faint rounded bg-bg-elevated/50">
-                                                    <h3 className="text-sm font-mono text-neon-cyan mb-4">2. Streaming Text (WebSocket)</h3>
-                                                    <DeepgramStreamingTTS />
-                                                </div>
-                                            </div>
                                         </>
                                     )}
 
@@ -179,6 +140,31 @@ const VoiceLab = () => {
                                             <SectionHeader title="Voice Agent API (End-to-End)" icon={Bot} />
                                             <div className="p-4 border border-ink-faint rounded bg-bg-elevated/50">
                                                 <DeepgramVoiceAgent />
+                                            </div>
+                                        </>
+                                    )}
+
+                                    {deepgramSubTab === 'tools' && (
+                                        <>
+                                            <SectionHeader title="Developer Tools & REST APIs" icon={TestTube2} />
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                                <div className="space-y-6">
+                                                    <div className="p-4 border border-ink-faint rounded bg-bg-elevated/50">
+                                                        <h3 className="text-sm font-mono text-neon-cyan mb-4">REST: Speech-to-Text</h3>
+                                                        <STTPanel fixedProvider="deepgram" />
+                                                    </div>
+                                                    <div className="p-4 border border-ink-faint rounded bg-bg-elevated/50">
+                                                        <h3 className="text-sm font-mono text-neon-cyan mb-4">REST: Text-to-Speech</h3>
+                                                        <TTSPanel fixedProvider="deepgram" />
+                                                    </div>
+                                                </div>
+
+                                                <div className="space-y-6">
+                                                    <div className="p-4 border border-ink-faint rounded bg-bg-elevated/50">
+                                                        <h3 className="text-sm font-mono text-neon-cyan mb-4">Streaming TTS Test</h3>
+                                                        <DeepgramStreamingTTS />
+                                                    </div>
+                                                </div>
                                             </div>
                                         </>
                                     )}

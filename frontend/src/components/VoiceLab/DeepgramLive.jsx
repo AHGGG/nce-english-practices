@@ -1,6 +1,5 @@
 
 import React, { useState, useEffect, useRef } from 'react';
-import { createClient, LiveTranscriptionEvents } from '@deepgram/sdk';
 import { Card, Button, Tag } from '../ui';
 import { Mic, MicOff, AlertCircle } from 'lucide-react';
 
@@ -17,69 +16,52 @@ const DeepgramLive = () => {
         try {
             setConnectionState('connecting');
             setError(null);
+            setTranscript('');
 
-            // 1. Get temp token from backend
-            const response = await fetch('/api/deepgram/token');
-            if (!response.ok) {
-                throw new Error("Failed to get Deepgram token from backend");
-            }
-            const data = await response.json();
-            const key = data.key;
+            // 1. Setup Microphone
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
 
-            if (!key) throw new Error("No key received from backend");
+            // 2. Setup WebSocket Proxy
+            const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+            // Use nova-3 as default model
+            const wsUrl = `${protocol}//${window.location.host}/api/voice-lab/deepgram/live-stt?model=nova-3`;
 
-            // 2. Setup Deepgram Client
-            const deepgram = createClient(key);
+            const ws = new WebSocket(wsUrl);
+            connectionRef.current = ws;
 
-            // 3. Create Live Connection
-            const connection = deepgram.listen.live({
-                model: "nova-3",
-                language: "en-US",
-                smart_format: true,
-            });
-
-            // 4. Handle Events
-            connection.on(LiveTranscriptionEvents.Open, () => {
+            ws.onopen = () => {
                 setConnectionState('connected');
-                console.log("Deepgram: Connected");
-            });
+                console.log("Deepgram: Connected via Proxy");
+                startMicrophone(stream, ws);
+            };
 
-            connection.on(LiveTranscriptionEvents.Close, () => {
+            ws.onclose = () => {
                 setConnectionState('disconnected');
                 console.log("Deepgram: Disconnected");
-                stopMicrophone();
-            });
+                stopMicrophone(); // Ensure mic stops
+            };
 
-            connection.on(LiveTranscriptionEvents.Metadata, (data) => {
-                // console.log("Deepgram Metadata:", data);
-            });
-
-            connection.on(LiveTranscriptionEvents.Transcript, (data) => {
-                const received = data.channel.alternatives[0].transcript;
-                if (received && received.length > 0) {
-                    setTranscript(prev => prev + (prev ? ' ' : '') + received);
-                }
-            });
-
-            connection.on(LiveTranscriptionEvents.Error, (err) => {
-                console.error("Deepgram Error:", err);
-                setError(err.message || "Deepgram Connection Error");
-                setConnectionState('error');
-            });
-
-            connectionRef.current = connection;
-
-            // 5. Setup Microphone
-            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-            microphoneRef.current = new MediaRecorder(stream);
-
-            microphoneRef.current.ondataavailable = (event) => {
-                if (event.data.size > 0 && connection.getReadyState() === 1) {
-                    connection.send(event.data);
+            ws.onmessage = (event) => {
+                try {
+                    const msg = JSON.parse(event.data);
+                    if (msg.type === 'transcript') {
+                        if (msg.text) {
+                            setTranscript(prev => prev + (prev ? ' ' : '') + msg.text);
+                        }
+                    } else if (msg.type === 'error') {
+                        setError(msg.message);
+                    }
+                } catch (e) {
+                    // ignore
                 }
             };
 
-            microphoneRef.current.start(100); // chunk every 100ms
+            ws.onerror = (err) => {
+                console.error("Deepgram Error:", err);
+                setError("Connection Error");
+                setConnectionState('error');
+            };
+
             setIsListening(true);
 
         } catch (err) {
@@ -90,9 +72,22 @@ const DeepgramLive = () => {
         }
     };
 
+    const startMicrophone = (stream, ws) => {
+        const mediaRecorder = new MediaRecorder(stream, { mimeType: 'audio/webm' });
+        microphoneRef.current = mediaRecorder;
+
+        mediaRecorder.ondataavailable = (event) => {
+            if (event.data.size > 0 && ws.readyState === WebSocket.OPEN) {
+                ws.send(event.data);
+            }
+        };
+
+        mediaRecorder.start(250);
+    };
+
     const stopDeepgram = () => {
         if (connectionRef.current) {
-            connectionRef.current.finish();
+            connectionRef.current.close();
             connectionRef.current = null;
         }
         stopMicrophone();
@@ -101,9 +96,11 @@ const DeepgramLive = () => {
     };
 
     const stopMicrophone = () => {
-        if (microphoneRef.current && microphoneRef.current.state !== 'inactive') {
-            microphoneRef.current.stop();
-            microphoneRef.current.stream.getTracks().forEach(track => track.stop());
+        if (microphoneRef.current) {
+            if (microphoneRef.current.state !== 'inactive') {
+                microphoneRef.current.stop();
+                microphoneRef.current.stream.getTracks().forEach(track => track.stop());
+            }
             microphoneRef.current = null;
         }
     };
@@ -124,8 +121,8 @@ const DeepgramLive = () => {
                             <Tag
                                 color={
                                     connectionState === 'connected' ? 'green' :
-                                    connectionState === 'connecting' ? 'yellow' :
-                                    connectionState === 'error' ? 'red' : 'gray'
+                                        connectionState === 'connecting' ? 'yellow' :
+                                            connectionState === 'error' ? 'red' : 'gray'
                                 }
                             >
                                 {connectionState.toUpperCase()}
@@ -153,14 +150,14 @@ const DeepgramLive = () => {
                         </Button>
 
                         <p className="mt-3 text-xs text-ink-muted text-center">
-                            Uses Deepgram "Nova-3" Model via Browser SDK.
+                            Uses Deepgram "Nova-3" Model via Proxy.
                         </p>
                     </div>
                 </div>
             </Card>
 
             <Card title="Live Transcript" className="min-h-[300px] flex flex-col relative">
-                 {transcript ? (
+                {transcript ? (
                     <div className="flex-grow bg-bg-elevated p-4 rounded border border-ink-faint font-serif text-lg leading-relaxed whitespace-pre-wrap animate-in fade-in h-64 overflow-y-auto">
                         {transcript}
                     </div>

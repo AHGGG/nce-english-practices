@@ -139,8 +139,9 @@
     - [x] Confirmed TTS streaming validation.
     - [x] **New Features**: Added Text-to-SFX and Speech-to-Speech (Voice Changer).
 - [x] **Deepgram**:
-    - [x] **TTS**: Aura Voice (`speak.v1.audio.generate`).
-    - [x] **STT**: Nova-2 (`listen.v1.media.transcribe_file`).
+    - [x] **Refactor**: Removed official SDK dependency in favor of raw `httpx` and `websockets` (Nova-3).
+    - [x] **TTS**: Aura Voice (REST + Streaming).
+    - [x] **STT**: Nova-3 (REST + Live WebSocket).
 - [x] **Google (Gemini)**:
     - [x] **TTS**: Multimodal Generation (Live API + WAV Header Injection).
     - [x] **STT**: Multimodal Transcription.
@@ -159,3 +160,15 @@
     - [x] **Testing**: Solved Windows-specific event loop conflicts by isolating E2E and Backend tests in the test runner script.
     - [x] **Cleanup**: Removed expired E2E tests (`test_navigation.py`) and implemented offline fallbacks.
 
+## 🔧 Phase 13: SDK Removal Refactoring (Completed 2025-12-19)
+- [x] **Deepgram**:
+    - [x] Removed `deepgram-sdk` dependency in favor of raw `httpx` + `websockets`.
+    - [x] Fixed WebSocket connections: `extra_headers` → `additional_headers` (websockets v15.x).
+    - [x] Live STT, Streaming TTS, and Voice Agent endpoints verified working.
+- [x] **ElevenLabs**:
+    - [x] Removed `elevenlabs` SDK dependency in favor of raw `httpx`.
+    - [x] Refactored `ElevenLabsProvider`: `tts()`, `stt()`, `text_to_sfx()`, `speech_to_speech()`.
+    - [x] All methods now use direct REST API calls with streaming support.
+- [x] **Frontend**:
+    - [x] Simplified Deepgram VoiceLab UI to 3-tab layout (Live STT, Voice Agent, Tools).
+    - [x] Added `ws: true` to Vite proxy for `/api` WebSocket routes.

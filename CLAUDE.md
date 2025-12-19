@@ -240,14 +240,32 @@ To support multiple dictionaries (e.g., Collins + LDOCE) in one view:
 - **HTTPS Required**: WebSocket with audio requires HTTPS. Generate cert with `generate_cert.py`.
 - **Certificate Trust**: Users must accept self-signed cert warning on first connection.
 
-### Voice Integrations (SDK Patterns)
-- **ElevenLabs**: Use `from elevenlabs.client import ElevenLabs` (SDK v3). Do NOT use top-level `elevenlabs` import.
-- **Deepgram SDK v5.3.0**:
-  - **TTS**: `client.speak.v1.audio.generate(text=..., model=...)` returns a **generator** of bytes chunks. Iterate to get audio.
-  - **STT**: `client.listen.v1.media.transcribe_file(request=audio_bytes, model=..., smart_format=True)` with keyword args.
-  - **No Option Classes**: `SpeakOptions`, `PrerecordedOptions` do NOT exist in v5. Use keyword arguments directly.
-  - **Model Names**: TTS uses `aura-2-asteria-en` format; STT uses `nova-3` (latest).
-  - ⚠️ **WARNING**: 官方 README 中 `response.stream.getvalue()` 是**错误的**！实际 v5.3.0 返回的是 generator，需要迭代。
+### Voice Integrations (Raw API Pattern)
+
+As of 2025-12-19, all voice provider integrations use **raw `httpx` API calls** instead of SDKs for better stability and control:
+
+- **ElevenLabs** (`app/services/voice_lab.py`):
+  - **TTS**: `POST /v1/text-to-speech/{voice_id}` with JSON body, streaming response.
+  - **STT**: `POST /v1/speech-to-text` with multipart form data.
+  - **SFX**: `POST /v1/sound-generation` with JSON body.
+  - **STS**: `POST /v1/speech-to-speech/{voice_id}` with multipart form data.
+  - **Header**: `xi-api-key: {API_KEY}`
+
+- **Deepgram** (`app/services/voice_lab.py` + `app/api/routers/deepgram_websocket.py`):
+  - **TTS**: `POST https://api.deepgram.com/v1/speak?model={voice}&encoding=mp3`
+  - **STT**: `POST https://api.deepgram.com/v1/listen?model=nova-3&smart_format=true`
+  - **Live STT/TTS**: WebSocket proxying via `websockets` library.
+  - **Header**: `Authorization: Token {API_KEY}`
+  - **websockets v15.x**: Use `additional_headers` (not `extra_headers`).
+
+- **Google Gemini** (`app/services/voice_lab.py`):
+  - Uses official `google-genai` SDK with Live API for multimodal TTS/STT.
+
+**Why Raw APIs over SDKs?**
+1. SDK version mismatches cause frequent breakage (v3 vs v4 vs v5 API changes).
+2. Documentation often outdated; raw API specs are more reliable.
+3. Better error handling and debugging visibility.
+4. Reduced dependency footprint.
 
 ### Third-Party SDK Debugging: Lessons Learned (2025-12-17)
 
@@ -258,18 +276,8 @@ To support multiple dictionaries (e.g., Collins + LDOCE) in one view:
 2. `speak.rest.v("1").save()` 方法签名不同
 3. `listen.rest.v("1").transcribe_file()` 参数格式变了
 
-**错误的调试方式**:
-1. ❌ 直接信任 MCP Context7 文档去修改代码
-2. ❌ 没有先检查实际安装的 SDK 版本
-3. ❌ 没有写小测试脚本验证 API 用法
-
-**正确的调试方式**:
-1. ✅ **先检查版本**: `uv run python -c "import deepgram; print(deepgram.__version__)"`
-2. ✅ **检查可用导出**: `uv run python -c "import deepgram; print([x for x in dir(deepgram) if not x.startswith('_')])"`
-3. ✅ **写小测试脚本**: 独立验证 SDK API 而非直接改业务代码
-4. ✅ **观察返回类型**: `print(type(response))` 发现 v5 返回 generator 而非 bytes
+**解决方案**: 移除 SDK，改用 `httpx` 直接调用 REST API。
 
 **经验总结**:
-> 当第三方 SDK 调用出问题时，**永远先验证版本和实际 API**，不要盲目相信文档。
-> 写一个最小化测试脚本，隔离问题后再修改业务代码。
-
+> 当第三方 SDK 频繁出问题时，考虑直接使用 REST API。
+> API 文档比 SDK 文档更稳定可靠。

@@ -12,21 +12,17 @@ from app.config import settings
 logger = logging.getLogger(__name__)
 
 # --- Optional Imports to prevent crash if installation issues ---
-try:
-    from deepgram import DeepgramClient
-except ImportError:
-    DeepgramClient = None
 
-try:
-    from elevenlabs.client import ElevenLabs
-except ImportError:
-    ElevenLabs = None
+# --- Optional Imports to prevent crash if installation issues ---
+# Note: ElevenLabs SDK removed. We use raw httpx.
 
 try:
     from google import genai
     from google.genai import types
 except ImportError:
     genai = None
+
+# Note: Deepgram SDK removed. We use raw httpx/websockets.
 
 # --- Base Class ---
 
@@ -196,11 +192,11 @@ class GoogleProvider(VoiceProvider):
         raise NotImplementedError("Google does not support pronunciation assessment yet.")
 
 class ElevenLabsProvider(VoiceProvider):
+    """ElevenLabs provider using raw HTTP API (no SDK)."""
+    
     def __init__(self):
         self.api_key = settings.ELEVENLABS_API_KEY
-        self.client = None
-        if self.api_key and ElevenLabs:
-            self.client = ElevenLabs(api_key=self.api_key)
+        self.base_url = "https://api.elevenlabs.io/v1"
 
     def get_config(self) -> Dict[str, Any]:
         return {
@@ -219,58 +215,85 @@ class ElevenLabsProvider(VoiceProvider):
         }
 
     async def tts(self, text: str, voice_id: str, model: str) -> AsyncGenerator[bytes, None]:
-        if not self.client:
+        """
+        ElevenLabs TTS using raw HTTP API.
+        POST https://api.elevenlabs.io/v1/text-to-speech/{voice_id}?output_format=mp3_44100_128
+        """
+        if not self.api_key:
             raise ValueError("ElevenLabs API Key missing.")
         
-        # Handle default model - use a valid ElevenLabs model
+        # Handle default model
         if model == "default" or not model:
             model = "eleven_multilingual_v2"
         
         # Handle voice_id if passed as dict from config
         actual_voice_id = voice_id["id"] if isinstance(voice_id, dict) else voice_id
-
+        
+        import httpx
+        
+        url = f"{self.base_url}/text-to-speech/{actual_voice_id}?output_format=mp3_44100_128"
+        headers = {
+            "xi-api-key": self.api_key,
+            "Content-Type": "application/json"
+        }
+        payload = {
+            "text": text,
+            "model_id": model
+        }
+        
         try:
-            # ElevenLabs SDK v3+ stream method
-            # We explicitly request mp3_44100_128 for good balance of quality and size
-            audio_stream = self.client.text_to_speech.stream(
-                text=text,
-                voice_id=actual_voice_id,
-                model_id=model,
-                output_format="mp3_44100_128"
-            )
-            
-            # The SDK returns a generator of bytes
-            for chunk in audio_stream:
-                if chunk:
-                    yield chunk
+            async with httpx.AsyncClient(timeout=30.0) as client:
+                async with client.stream("POST", url, headers=headers, json=payload) as response:
+                    if response.status_code != 200:
+                        error_text = await response.aread()
+                        raise Exception(f"ElevenLabs TTS Failed ({response.status_code}): {error_text.decode()}")
                     
+                    async for chunk in response.aiter_bytes():
+                        if chunk:
+                            yield chunk
+                            
         except Exception as e:
             logger.error(f"ElevenLabs TTS Error: {e}")
             raise
 
     async def stt(self, audio_data: bytes, model: str = "scribe_v1") -> str:
-        if not self.client:
+        """
+        ElevenLabs STT (Scribe) using raw HTTP API.
+        POST https://api.elevenlabs.io/v1/speech-to-text (multipart/form-data)
+        """
+        if not self.api_key:
             raise ValueError("ElevenLabs API Key missing.")
             
+        import httpx
+        
+        url = f"{self.base_url}/speech-to-text"
+        headers = {
+            "xi-api-key": self.api_key
+        }
+        
+        # Multipart form data
+        files = {
+            "file": ("audio.mp3", audio_data, "audio/mpeg")
+        }
+        data = {
+            "model_id": "scribe_v1",
+            "tag_audio_events": "false"
+        }
+        
         try:
-            # ElevenLabs STT (Scribe)
-            # Requires a file-like object with a name
-            import io
-            # We wrap the bytes in BytesIO and give it a name so the SDK can guess/handle format
-            audio_file = io.BytesIO(audio_data)
-            audio_file.name = "audio.mp3" # Naming it .mp3 is usually safe, or .wav
-            
-            # Calling the convert method
-            response = self.client.speech_to_text.convert(
-                file=audio_file,
-                model_id="scribe_v1", # Scribe v1 is the current STT model
-                tag_audio_events=False # Simplified text output
-            )
-            
-            if response and response.text:
-                return response.text
-            return ""
-            
+            async with httpx.AsyncClient(timeout=60.0) as client:
+                response = await client.post(url, headers=headers, files=files, data=data)
+                
+                if response.status_code != 200:
+                    raise Exception(f"ElevenLabs STT Failed ({response.status_code}): {response.text}")
+                
+                result = response.json()
+                
+                # Response can be SpeechToTextChunkResponseModel with 'text' field
+                if "text" in result:
+                    return result["text"]
+                return ""
+                
         except Exception as e:
             logger.error(f"ElevenLabs STT Error: {e}")
             raise
@@ -279,60 +302,78 @@ class ElevenLabsProvider(VoiceProvider):
         raise NotImplementedError("ElevenLabs does not support pronunciation assessment.")
 
     async def text_to_sfx(self, text: str, duration_seconds: Optional[float] = None, prompt_influence: float = 0.3) -> AsyncGenerator[bytes, None]:
-        if not self.client:
+        """
+        ElevenLabs Text to Sound Effects using raw HTTP API.
+        POST https://api.elevenlabs.io/v1/sound-generation
+        """
+        if not self.api_key:
             raise ValueError("ElevenLabs API Key missing.")
         
+        import httpx
+        
+        url = f"{self.base_url}/sound-generation?output_format=mp3_44100_128"
+        headers = {
+            "xi-api-key": self.api_key,
+            "Content-Type": "application/json"
+        }
+        payload = {
+            "text": text,
+            "prompt_influence": prompt_influence
+        }
+        if duration_seconds is not None:
+            payload["duration_seconds"] = duration_seconds
+        
         try:
-            # ElevenLabs Text to Sound Effects
-            # Returns a generator of bytes (audio/mpeg)
-            result = self.client.text_to_sound_effects.convert(
-                text=text,
-                duration_seconds=duration_seconds,
-                prompt_influence=prompt_influence
-            )
-            
-            # If it returns bytes directly (some SDK versions):
-            if isinstance(result, bytes):
-                 yield result
-            else:
-                 # If it is iterator
-                 for chunk in result:
-                     if chunk:
-                         yield chunk
-                         
+            async with httpx.AsyncClient(timeout=60.0) as client:
+                async with client.stream("POST", url, headers=headers, json=payload) as response:
+                    if response.status_code != 200:
+                        error_text = await response.aread()
+                        raise Exception(f"ElevenLabs SFX Failed ({response.status_code}): {error_text.decode()}")
+                    
+                    async for chunk in response.aiter_bytes():
+                        if chunk:
+                            yield chunk
+                            
         except Exception as e:
             logger.error(f"ElevenLabs SFX Error: {e}")
             raise
 
     async def speech_to_speech(self, audio_data: bytes, voice_id: str, model_id: str = "eleven_english_sts_v2") -> AsyncGenerator[bytes, None]:
-        if not self.client:
+        """
+        ElevenLabs Voice Changer using raw HTTP API.
+        POST https://api.elevenlabs.io/v1/speech-to-speech/{voice_id} (multipart/form-data)
+        """
+        if not self.api_key:
             raise ValueError("ElevenLabs API Key missing.")
             
+        import httpx
+        
+        # Handle voice_id if passed as dict
+        actual_voice_id = voice_id["id"] if isinstance(voice_id, dict) else voice_id
+        
+        url = f"{self.base_url}/speech-to-speech/{actual_voice_id}?output_format=mp3_44100_128"
+        headers = {
+            "xi-api-key": self.api_key
+        }
+        
+        # Multipart form data
+        files = {
+            "audio": ("input_audio.mp3", audio_data, "audio/mpeg")
+        }
+        data = {
+            "model_id": model_id
+        }
+        
         try:
-             # ElevenLabs Voice Changer
-             # Need to handle audio data input. SDK expects a file-like object or path?
-             # Based on docs/SDK usage, convert usually takes 'audio' as file-like.
-             import io
-             audio_file = io.BytesIO(audio_data)
-             audio_file.name = "input_audio.mp3" # Or wav, SDK should handle detection
-             
-             # Handle voice_id if passed as dict
-             actual_voice_id = voice_id["id"] if isinstance(voice_id, dict) else voice_id
-
-             # Returns generator
-             result = self.client.speech_to_speech.convert(
-                 voice_id=actual_voice_id,
-                 audio=audio_file,
-                 model_id=model_id,
-                 output_format="mp3_44100_128"
-             )
-
-             if isinstance(result, bytes):
-                 yield result
-             else:
-                 for chunk in result:
-                     if chunk:
-                         yield chunk
+            async with httpx.AsyncClient(timeout=60.0) as client:
+                async with client.stream("POST", url, headers=headers, files=files, data=data) as response:
+                    if response.status_code != 200:
+                        error_text = await response.aread()
+                        raise Exception(f"ElevenLabs STS Failed ({response.status_code}): {error_text.decode()}")
+                    
+                    async for chunk in response.aiter_bytes():
+                        if chunk:
+                            yield chunk
 
         except Exception as e:
             logger.error(f"ElevenLabs STS Error: {e}")
@@ -341,10 +382,7 @@ class ElevenLabsProvider(VoiceProvider):
 class DeepgramProvider(VoiceProvider):
     def __init__(self):
         self.api_key = settings.DEEPGRAM_API_KEY
-        self.client = None
-        if self.api_key and DeepgramClient:
-            self.client = DeepgramClient(api_key=self.api_key)
-
+    
     def get_config(self) -> Dict[str, Any]:
         return {
             "models": ["nova-3", "nova-2", "nova-2-general", "nova-2-meeting"],  # STT models
@@ -361,67 +399,91 @@ class DeepgramProvider(VoiceProvider):
         }
 
     async def tts(self, text: str, voice_id: str, model: str) -> AsyncGenerator[bytes, None]:
-        if not self.client:
+        if not self.api_key:
              raise ValueError("Deepgram API Key missing.")
         
-        # In Deepgram TTS, 'model' usually refers to the voice name itself.
-        # But if 'voice_id' is provided, we use that.
+        import httpx
+        
+        # Determine voice model - defaults to Aura Asteria
         voice_model = voice_id if voice_id else "aura-asteria-en"
         
-        # Deepgram TTS SDK v5.3.0
-        # We explicitly request MP3 or Linear16. Let's use MP3 for bandwidth efficiency 
-        # unless specifically needed otherwise.
-        # However, for highest compatibility with standard players, MP3 is safe.
+        # Deepgram TTS HTTP API
+        # POST https://api.deepgram.com/v1/speak?model={model}&encoding=mp3
+        # Body: {"text": "..."}
+        url = f"https://api.deepgram.com/v1/speak?model={voice_model}&encoding=mp3"
+        headers = {
+            "Authorization": f"Token {self.api_key}",
+            "Content-Type": "application/json"
+        }
+        payload = {"text": text}
+        
         try:
-            options = {
-                "text": text,
-                "model": voice_model,
-                "encoding": "mp3", # Explicit encoding
-            }
-            
-            response = self.client.speak.v1.audio.generate(**options)
-            
-            # response is a generator in v5
-            for chunk in response:
-                if isinstance(chunk, bytes) and chunk:
-                    yield chunk 
+            async with httpx.AsyncClient() as client:
+                async with client.stream("POST", url, headers=headers, json=payload) as response:
+                    if response.status_code != 200:
+                        error_text = await response.read()
+                        raise Exception(f"Deepgram TTS Failed ({response.status_code}): {error_text.decode()}")
+                    
+                    async for chunk in response.aiter_bytes():
+                        if chunk:
+                            yield chunk
+                            
         except Exception as e:
             logger.error(f"Deepgram TTS Error: {e}")
             raise
 
     async def stt(self, audio_data: bytes, model: str = "nova-3") -> str:
-        if not self.client:
+        if not self.api_key:
              raise ValueError("Deepgram API Key missing.")
         
-        # Deepgram STT SDK v5.3.0
+        import httpx
+        
+        # Deepgram STT HTTP API
+        # POST https://api.deepgram.com/v1/listen?model={model}&smart_format=true&punctuate=true
+        # Body: Audio data (Raw or multipart)
+        
+        model_name = model or "nova-3"
+        url = f"https://api.deepgram.com/v1/listen"
+        
+        params = {
+            "model": model_name,
+            "smart_format": "true",
+            "punctuate": "true",
+            "utterances": "true",
+            "language": "en-US"
+        }
+        
+        headers = {
+            "Authorization": f"Token {self.api_key}",
+            "Content-Type": "application/octet-stream" # Sending raw audio bytes
+        }
+        
         try:
-            # Construct options with robust default checking
-            options = {
-                "model": model or "nova-3",
-                "smart_format": True,
-                "punctuate": True, 
-                "utterances": True, # Useful for segmentation if needed later
-                "language": "en-US"
-            }
-            
-            # Detect mimetype if possible, or default to general audio handling
-            # The SDK handles raw bytes well if we just pass them directly.
-            
-            # Original code used 'request' with raw bytes and worked.
-            response = self.client.listen.v1.media.transcribe_file(
-                request=audio_data, 
-                **options
-            )
-            
-            # Robustly extract transcript
-            if (response.results and 
-                response.results.channels and 
-                response.results.channels[0].alternatives and 
-                response.results.channels[0].alternatives[0].transcript):
-                return response.results.channels[0].alternatives[0].transcript
-            
-            return ""
-            
+            async with httpx.AsyncClient() as client:
+                response = await client.post(
+                    url, 
+                    headers=headers, 
+                    params=params, 
+                    content=audio_data, 
+                    timeout=30.0 # STT can take time
+                )
+                
+                if response.status_code != 200:
+                     raise Exception(f"Deepgram STT Failed ({response.status_code}): {response.text}")
+                
+                data = response.json()
+                
+                # Extract transcript
+                # Structure: results -> channels[0] -> alternatives[0] -> transcript
+                if (data.get("results") and 
+                    data["results"].get("channels") and 
+                    data["results"]["channels"][0].get("alternatives") and
+                    data["results"]["channels"][0]["alternatives"][0].get("transcript")):
+                    
+                    return data["results"]["channels"][0]["alternatives"][0]["transcript"]
+                
+                return ""
+                
         except Exception as e:
             logger.error(f"Deepgram STT Error: {e}")
             raise

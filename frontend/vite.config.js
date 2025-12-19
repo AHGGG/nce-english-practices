@@ -17,6 +17,7 @@ export default defineConfig({
         target: process.env.VITE_API_TARGET || 'https://127.0.0.1:8000',
         changeOrigin: true,
         secure: false,
+        ws: true,
       },
       '/dict': {
         target: process.env.VITE_API_TARGET || 'https://127.0.0.1:8000',
