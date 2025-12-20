@@ -273,4 +273,33 @@ As of 2025-12-19, all voice provider integrations use **raw `httpx` API calls** 
 
 **经验总结**:
 > 当第三方 SDK 频繁出问题时，考虑直接使用 REST API。
-> API 文档比 SDK 文档更稳定可靠。
+
+## Documentation Tools
+
+We have a local CLI tool to query the offline API documentation (ElevenLabs & Deepgram) without needing to browse files manually.
+
+```bash
+# General Usage
+uv run python scripts/analyze_voice_api.py [query] [options]
+
+# Examples:
+
+# 0. Get API Catalog / Index (Directory Mode)
+# Lists all available endpoints in a compact format
+uv run python scripts/analyze_voice_api.py --compact
+
+# 1. Search for "websocket" related endpoints
+uv run python scripts/analyze_voice_api.py "websocket"
+
+# 2. List all ElevenLabs endpoints
+uv run python scripts/analyze_voice_api.py --provider elevenlabs
+
+# 3. Get detailed YAML spec for a specific endpoint (e.g., search for /v1/speak)
+uv run python scripts/analyze_voice_api.py "/v1/speak" --details
+
+# Options:
+#   query           Search term (path, summary, description)
+#   -p, --provider  Filter by provider (elevenlabs, deepgram)
+#   -m, --method    Filter by HTTP method (GET, POST)
+#   -d, --details   Show full OpenAPI spec
+```
