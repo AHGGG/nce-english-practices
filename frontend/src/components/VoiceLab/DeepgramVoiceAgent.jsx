@@ -256,6 +256,7 @@ const DeepgramVoiceAgent = () => {
                                 disabled={isActive}
                                 options={[
                                     { value: 'deepseek', label: 'DeepSeek' },
+                                    { value: 'dashscope', label: 'Dashscope (Qwen)' },
                                     { value: 'gemini', label: 'Gemini' }
                                 ]}
                             />

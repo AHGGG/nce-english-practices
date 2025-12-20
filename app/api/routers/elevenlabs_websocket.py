@@ -139,7 +139,7 @@ async def elevenlabs_voice_agent_endpoint(
     websocket: WebSocket,
     voice_id: str = Query(default="JBFqnCBsd6RMkjVDRZzb", description="ElevenLabs Voice ID"),
     model_id: str = Query(default="eleven_turbo_v2_5", description="TTS Model ID"),
-    llm_provider: str = Query(default="deepseek", description="deepseek or gemini"),
+    llm_provider: str = Query(default="deepseek", description="deepseek, dashscope, or gemini"),
     system_prompt: str = Query(default="You are a helpful AI assistant.")
 ):
     """
@@ -205,21 +205,41 @@ async def elevenlabs_voice_agent_endpoint(
                     # 1. LLM Processing
                     conversation_history.append({"role": "user", "content": user_text})
                     
-                    response_text = ""
-                    # Simple sync wrapper for now, assuming llm_service is available
-                    llm_client = llm_service.sync_client
-                    loop = asyncio.get_event_loop()
+                    if llm_provider == "dashscope":
+                         # Use Dashscope Async Client
+                        client = llm_service.get_dashscope_client()
+                        if not client:
+                             response_text = "Dashscope client not configured."
+                        else:
+                             # Dashscope allows "thinking", but for voice agent we might just want the text?
+                             # Or we can support streaming thinking? For now, standard chat completion.
+                             # Note: Qwen Thinking requires using the specific model and `enable_thinking` 
+                             # but here we might just want a standard response or the final answer.
+                             # Let's use standard completion for now to be safe, or re-use existing completion logic.
+                             response = await client.chat.completions.create(
+                                 model=settings.DASHSCOPE_MODEL_NAME,
+                                 messages=conversation_history,
+                                 extra_body={"enable_thinking": False}
+                             )
+                             response_text = response.choices[0].message.content
+
+                    elif llm_provider == "gemini":
+                         response_text = "Gemini provider not implemented in raw mode yet."
                     
-                    # Use LLM Service
-                    response = await loop.run_in_executor(
-                        None, 
-                        lambda: llm_client.chat.completions.create(
-                            model=settings.MODEL_NAME,
-                            messages=conversation_history,
-                            max_tokens=500
+                    else:
+                        # Default: DeepSeek/OpenAI Sync Client
+                        llm_client = llm_service.sync_client
+                        loop = asyncio.get_event_loop()
+                        
+                        response = await loop.run_in_executor(
+                            None, 
+                            lambda: llm_client.chat.completions.create(
+                                model=settings.MODEL_NAME,
+                                messages=conversation_history,
+                                max_tokens=500
+                            )
                         )
-                    )
-                    response_text = response.choices[0].message.content
+                        response_text = response.choices[0].message.content
                     
                     conversation_history.append({"role": "assistant", "content": response_text})
                     

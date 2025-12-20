@@ -43,6 +43,20 @@ class LLMService:
             )
         else:
             self.voice_client = None
+
+        # 3. Initialize Dashscope Client (Deep Thinking)
+        self.dashscope_key = settings.DASHSCOPE_API_KEY
+        self.dashscope_base = settings.DASHSCOPE_COMPATIBLE_BASE_URL
+        self.dashscope_model = settings.DASHSCOPE_MODEL_NAME
+        
+        if self.dashscope_key:
+            self.dashscope_client = AsyncOpenAI(
+                api_key=self.dashscope_key,
+                base_url=self.dashscope_base,
+                timeout=60.0 # Thinking models might take longer
+            )
+        else:
+            self.dashscope_client = None
             
     # --- Accessors ---
     
@@ -54,6 +68,9 @@ class LLMService:
         
     def get_voice_client(self) -> Optional[genai.Client]:
         return self.voice_client
+        
+    def get_dashscope_client(self) -> Optional[AsyncOpenAI]:
+        return self.dashscope_client
 
     # --- Methods ---
     
@@ -86,6 +103,43 @@ class LLMService:
             temperature=temperature
         )
         return response.choices[0].message.content.strip()
+        
+    async def stream_chat_with_reasoning(self, messages: List[Dict[str, str]], model: str = None) -> AsyncGenerator[Dict[str, Any], None]:
+        """
+        Stream chat completion with Reasoning (Thinking) content.
+        Yields: {"type": "reasoning" | "content", "content": "..."}
+        """
+        if not self.dashscope_client:
+             raise RuntimeError("Dashscope client is not configured (API Key missing).")
+             
+        model = model or self.dashscope_model
+        
+        # Qwen-DeepThinking requires extra_body={"enable_thinking": True}
+        stream = await self.dashscope_client.chat.completions.create(
+            model=model,
+            messages=messages,
+            extra_body={"enable_thinking": False},
+            stream=True
+        )
+        
+        is_answering = False
+        
+        async for chunk in stream:
+            delta = chunk.choices[0].delta
+            
+            # Check for Reasoning Content
+            if hasattr(delta, "reasoning_content") and delta.reasoning_content:
+                yield {"type": "reasoning", "content": delta.reasoning_content}
+                
+            # Check for Regular Content
+            if hasattr(delta, "content") and delta.content:
+                if not is_answering:
+                    # Optional: Explicitly signal transition if needed, 
+                    # but consumer usually infers by type change.
+                    # We might yield a null reasoning chunk to close it? 
+                    # For now just yield content.
+                    is_answering = True
+                yield {"type": "content", "content": delta.content}
         
     async def polish_text(self, text: str, context: List[Dict[str, str]] = None) -> str:
         """

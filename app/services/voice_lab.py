@@ -491,13 +491,192 @@ class DeepgramProvider(VoiceProvider):
     async def assess(self, audio_data: bytes, reference_text: str) -> Dict[str, Any]:
         raise NotImplementedError("Deepgram does not support pronunciation assessment yet.")
 
+class DashscopeProvider(VoiceProvider):
+    """
+    Alibaba Cloud Dashscope (Qwen) Provider.
+    Focus on ASR using qwen3-asr inputs.
+    """
+    def __init__(self):
+        self.api_key = settings.DASHSCOPE_API_KEY
+        
+    def get_config(self) -> Dict[str, Any]:
+        return {
+            "models": ["qwen3-asr-flash", "qwen3-tts-flash"],
+            "voices": [
+                {"id": "Cherry", "name": "Cherry (芊悦)"},
+                {"id": "Ethan", "name": "Ethan (晨煦)"},
+                {"id": "Nofish", "name": "Nofish (不吃鱼)"},
+                {"id": "Jennifer", "name": "Jennifer (詹妮弗)"},
+                {"id": "Ryan", "name": "Ryan (甜茶)"},
+                {"id": "Katerina", "name": "Katerina (卡捷琳娜)"},
+                {"id": "Elias", "name": "Elias (雷讲师)"},
+                {"id": "Jada", "name": "Jada (上海-阿珍)"},
+                {"id": "Dylan", "name": "Dylan (北京-晓东)"},
+                {"id": "Sunny", "name": "Sunny (四川-晴儿)"},
+                {"id": "Li", "name": "Li (南京-老李)"},
+                {"id": "Marcus", "name": "Marcus (陕西-秦川)"},
+                {"id": "Roy", "name": "Roy (闽南-阿杰)"},
+                {"id": "Peter", "name": "Peter (天津-李彼得)"},
+                {"id": "Rocky", "name": "Rocky (粤语-阿强)"},
+                {"id": "Kiki", "name": "Kiki (粤语-阿清)"},
+                {"id": "Eric", "name": "Eric (四川-程川)"}
+            ]
+        }
+
+    async def tts(self, text: str, voice_id: str, model: str) -> AsyncGenerator[bytes, None]:
+        """
+        Dashscope TTS using qwen3-tts-flash (or similar).
+        Outputs raw PCM, so we wrap it in a WAV header.
+        """
+        if not self.api_key:
+            raise ValueError("Dashscope API Key missing.")
+
+        import dashscope
+        import base64
+        
+        # Ensure we are using the correct endpoint (defaults to Beijing)
+        # If user has an International key, they might need to change this,
+        # but the snippet suggests trying the Beijing one (aliyuncs.com).
+        dashscope.base_http_api_url = 'https://dashscope.aliyuncs.com/api/v1'
+        
+        # Default model and voice
+        # Ensure we don't accidentally use ASR model for TTS if passed from shared config
+        if not model or model == "default" or "asr" in model:
+            model = "qwen3-tts-flash"
+            
+        voice = voice_id or "Cherry"
+        
+        # Send WAV header first (24kHz, 1ch, 16bit)
+        # Dashscope qwen3-tts-flash typically outputs 24000Hz PCM
+        yield create_wav_header(sample_rate=24000, channels=1, bits_per_sample=16)
+        
+        try:
+            response = dashscope.MultiModalConversation.call(
+                api_key=self.api_key,
+                model=model,
+                text=text,
+                voice=voice,
+                language_type="Chinese" if any(u'\u4e00' <= c <= u'\u9fff' for c in text) else "English", # specific to qwen tts needs? or maybe auto? user snippet shows Chinese.
+                stream=True
+            )
+            
+            for chunk in response:
+                if chunk.status_code != 200:
+                    logger.error(f"Dashscope TTS Chunk Error: {chunk.code} - {chunk.message}")
+                    continue
+                    
+                if chunk.output and chunk.output.audio and chunk.output.audio.data:
+                    # Original snippet: base64 decode -> numpy -> bytes
+                    # We can just decode base64 -> bytes
+                    audio_bytes = base64.b64decode(chunk.output.audio.data)
+                    yield audio_bytes
+                    
+        except Exception as e:
+            logger.error(f"Dashscope TTS Error: {e}")
+            raise
+    async def stt(self, audio_data: bytes, model: str = "qwen3-asr-flash") -> str:
+        """
+        Dashscope Qwen ASR.
+        Uses MultiModalConversation.call
+        """
+        if not self.api_key:
+            raise ValueError("Dashscope API Key missing.")
+            
+        import dashscope
+        import tempfile
+        
+        # Ensure we are using the correct endpoint
+        dashscope.base_http_api_url = 'https://dashscope.aliyuncs.com/api/v1'
+        
+        # Dashscope SDK usually requires a file path for local files in 'audio' field
+        # or a URL. For local files, format can be "file://..." or just path.
+        # We will write bytes to a temp file.
+        
+        with tempfile.NamedTemporaryFile(suffix=".webm", delete=False) as tmp:
+            tmp.write(audio_data)
+            tmp_path = tmp.name
+            
+        try:
+            # Prepare messages
+            # Note: Dashscope might require 'file://' prefix for local files depending on SDK version
+            
+            local_file_uri = f"file://{tmp_path}"
+            
+            messages = [
+                {
+                    "role": "system",
+                    "content": [{"text": ""}] # Context configuration as per docs
+                },
+                {
+                    "role": "user",
+                    "content": [
+                        {"audio": local_file_uri},
+                    ]
+                }
+            ]
+            
+            response = dashscope.MultiModalConversation.call(
+                api_key=self.api_key,
+                model=model or "qwen3-asr-flash",
+                messages=messages,
+                result_format="message",
+                asr_options={
+                    "enable_lid": True,
+                    "enable_itn": False
+                }
+            )
+            
+            if response.status_code == 200:
+                # Response format:
+                # {
+                #   "output": {
+                #     "choices": [
+                #       {
+                #         "message": {
+                #           "content": [
+                #             { "text": "..." } 
+                #           ],
+                #           "role": "assistant"
+                #         }
+                #       }
+                #     ]
+                #   }, ...
+                # }
+                if (response.output and 
+                    response.output.choices and 
+                    len(response.output.choices) > 0 and
+                    response.output.choices[0].message and
+                    response.output.choices[0].message.content):
+                    
+                    # Content is a list of dicts or string?
+                    # Qwen-audio usually returns text in content list
+                    content = response.output.choices[0].message.content
+                    if isinstance(content, list):
+                        text_parts = [c.get("text", "") for c in content if "text" in c]
+                        return " ".join(text_parts)
+                    return str(content)
+                return ""
+            else:
+                raise Exception(f"Dashscope Error: {response.code} - {response.message}")
+                
+        except Exception as e:
+            logger.error(f"Dashscope STT Error: {e}")
+            raise
+        finally:
+            if os.path.exists(tmp_path):
+                os.unlink(tmp_path)
+
+    async def assess(self, audio_data: bytes, reference_text: str) -> Dict[str, Any]:
+        raise NotImplementedError("Dashscope does not support pronunciation assessment.")
+
 
 class VoiceLabService:
     def __init__(self):
         self.providers = {
             "google": GoogleProvider(),
             "elevenlabs": ElevenLabsProvider(),
-            "deepgram": DeepgramProvider()
+            "deepgram": DeepgramProvider(),
+            "dashscope": DashscopeProvider()
         }
     
     def get_provider(self, name: str) -> VoiceProvider:

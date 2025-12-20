@@ -63,6 +63,7 @@ MODEL_NAME=deepseek-chat
 
 # Required for Voice feature
 GEMINI_API_KEY=your_key
+DASHSCOPE_API_KEY=your_key # Alibaba Cloud Dashscope (Qwen)
 
 # Database (defaults to local postgres)
 DATABASE_URL=postgresql+asyncpg://postgres:postgres@localhost:5432/nce_practice
@@ -253,6 +254,12 @@ As of 2025-12-19, all voice provider integrations use **raw `httpx` API calls** 
 
 - **Google Gemini** (`app/services/voice_lab.py`):
   - Uses official `google-genai` SDK with Live API for multimodal TTS/STT.
+
+- **Dashscope (Alibaba Cloud)** (`app/services/voice_lab.py`):
+  - **TTS**: `POST https://dashscope.aliyuncs.com/api/v1/services/aigc/text-generation/generation` (Qwen3-TTS)
+  - **STT**: `POST https://dashscope.aliyuncs.com/api/v1/services/audio/asr/transcription` (Qwen3-ASR)
+  - **LLM**: Uses `AsyncOpenAI` client (compatible mode) for `qwen3-30b-a3b` "Deep Thinking".
+  - **Header**: `Authorization: Bearer {API_KEY}`
 
 **Why Raw APIs over SDKs?**
 1. SDK version mismatches cause frequent breakage (v3 vs v4 vs v5 API changes).

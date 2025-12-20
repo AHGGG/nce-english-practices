@@ -73,6 +73,7 @@ const VoiceLab = () => {
                     <TabButton id="google" icon={Globe} label="Google Gemini" />
                     <TabButton id="deepgram" icon={Zap} label="Deepgram" />
                     <TabButton id="elevenlabs" icon={Volume2} label="ElevenLabs" />
+                    <TabButton id="dashscope" icon={Cloud} label="Dashscope" />
                 </div>
 
                 {/* Content Area */}
@@ -197,6 +198,23 @@ const VoiceLab = () => {
                                         <SectionHeader title="REST: Speech-to-Text (Scribe v1)" icon={TestTube2} />
                                         <STTPanel config={config} fixedProvider="elevenlabs" />
                                     </section>
+                                </div>
+                            )}
+
+                            {/* DASHSCOPE VIEW */}
+                            {activeTab === 'dashscope' && (
+                                <div className="space-y-12 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                                    <section>
+                                        <SectionHeader title="Text-to-Speech (Qwen3-TTS)" icon={Volume2} />
+                                        <TTSPanel config={config} fixedProvider="dashscope" />
+                                    </section>
+                                    <section>
+                                        <SectionHeader title="Speech-to-Text (Qwen3-ASR)" icon={Mic} />
+                                        <STTPanel config={config} fixedProvider="dashscope" />
+                                    </section>
+                                    <div className="p-4 border border-ink-faint rounded bg-bg-elevated/50 text-sm text-ink-muted">
+                                        <p>Note: Currently showing Qwen3 MultiModal Models.</p>
+                                    </div>
                                 </div>
                             )}
                         </div>

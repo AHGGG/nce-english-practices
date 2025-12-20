@@ -268,7 +268,7 @@ async def deepgram_voice_agent_websocket(
     websocket: WebSocket,
     stt_model: str = Query(default="nova-3"),
     tts_voice: str = Query(default="aura-2-asteria-en"),
-    llm_provider: str = Query(default="deepseek", description="deepseek or gemini"),
+    llm_provider: str = Query(default="deepseek", description="deepseek, dashscope, or gemini"),
     system_prompt: str = Query(default="You are a helpful AI assistant.")
 ):
     """
@@ -319,7 +319,18 @@ async def deepgram_voice_agent_websocket(
                     conversation_history.append({"role": "user", "content": user_text})
                     
                     response_text = ""
-                    if llm_provider == "gemini":
+                    if llm_provider == "dashscope":
+                        client = llm_service.get_dashscope_client()
+                        if not client:
+                             response_text = "Dashscope client not configured."
+                        else:
+                             response = await client.chat.completions.create(
+                                 model=settings.DASHSCOPE_MODEL_NAME,
+                                 messages=conversation_history,
+                                 extra_body={"enable_thinking": False}
+                             )
+                             response_text = response.choices[0].message.content
+                    elif llm_provider == "gemini":
                         response_text = "Gemini provider not implemented in raw mode yet."
                     else:
                         llm_client = llm_service.sync_client

@@ -499,6 +499,21 @@ wheels = [
 ]
 
 [[package]]
+name = "dashscope"
+version = "1.25.5"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "aiohttp" },
+    { name = "certifi" },
+    { name = "cryptography" },
+    { name = "requests" },
+    { name = "websocket-client" },
+]
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/c5/91/60f5353c8752d8ce489f4baeb252999d4cfb1a784c0beda34b5287135d65/dashscope-1.25.5-py3-none-any.whl", hash = "sha256:1be9eebaf1e7327317a22db9233770f4252463b926c84071ffd8805ae06cf998", size = 1323186, upload-time = "2025-12-18T02:15:26.462Z" },
+]
+
+[[package]]
 name = "deepgram-sdk"
 version = "5.3.0"
 source = { registry = "https://pypi.org/simple" }
@@ -1125,6 +1140,7 @@ dependencies = [
     { name = "asyncpg" },
     { name = "beautifulsoup4" },
     { name = "cryptography" },
+    { name = "dashscope" },
     { name = "deepgram-sdk" },
     { name = "edge-tts" },
     { name = "elevenlabs" },
@@ -1163,6 +1179,7 @@ requires-dist = [
     { name = "asyncpg", specifier = ">=0.31.0" },
     { name = "beautifulsoup4", specifier = ">=4.14.3" },
     { name = "cryptography", specifier = ">=46.0.3" },
+    { name = "dashscope", specifier = ">=1.20.0" },
     { name = "deepgram-sdk", specifier = ">=3.0.0" },
     { name = "edge-tts", specifier = ">=6.1.10" },
     { name = "elevenlabs", specifier = ">=0.2.0" },
@@ -1884,6 +1901,15 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/cb/ce/f06b84e2697fef4688ca63bdb2fdf113ca0a3be33f94488f2cadb690b0cf/uvicorn-0.38.0.tar.gz", hash = "sha256:fd97093bdd120a2609fc0d3afe931d4d4ad688b6e75f0f929fde1bc36fe0e91d", size = 80605, upload-time = "2025-10-18T13:46:44.63Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/ee/d9/d88e73ca598f4f6ff671fb5fde8a32925c2e08a637303a1d12883c7305fa/uvicorn-0.38.0-py3-none-any.whl", hash = "sha256:48c0afd214ceb59340075b4a052ea1ee91c16fbc2a9b1469cca0e54566977b02", size = 68109, upload-time = "2025-10-18T13:46:42.958Z" },
+]
+
+[[package]]
+name = "websocket-client"
+version = "1.9.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/2c/41/aa4bf9664e4cda14c3b39865b12251e8e7d239f4cd0e3cc1b6c2ccde25c1/websocket_client-1.9.0.tar.gz", hash = "sha256:9e813624b6eb619999a97dc7958469217c3176312b3a16a4bd1bc7e08a46ec98", size = 70576, upload-time = "2025-10-07T21:16:36.495Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/34/db/b10e48aa8fff7407e67470363eac595018441cf32d5e1001567a7aeba5d2/websocket_client-1.9.0-py3-none-any.whl", hash = "sha256:af248a825037ef591efbf6ed20cc5faa03d3b47b9e5a2230a529eeee1c1fc3ef", size = 82616, upload-time = "2025-10-07T21:16:34.951Z" },
 ]
 
 [[package]]

@@ -23,8 +23,13 @@ class Settings(BaseSettings):
     # Voice Lab Settings
     ELEVENLABS_API_KEY: str = ""
     DEEPGRAM_API_KEY: str = ""
+    DASHSCOPE_API_KEY: str = ""
     # For Google Cloud Speech/TTS (Unified with Gemini usually, but separate if using standard Google Cloud APIs)
     GOOGLE_APPLICATION_CREDENTIALS: str = ""
+    
+    # Dashscope LLM Settings (OpenAI Compatible)
+    DASHSCOPE_COMPATIBLE_BASE_URL: str = "https://dashscope.aliyuncs.com/compatible-mode/v1"
+    DASHSCOPE_MODEL_NAME: str = "qwen3-30b-a3b"
 
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
 

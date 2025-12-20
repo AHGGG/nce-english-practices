@@ -81,9 +81,9 @@
     - [x] **SDK Removal**: Removed ElevenLabs and Deepgram SDKs in favor of raw `httpx` API calls.
     - [x] **Automation**: Added `VoiceTester` service for cross-vendor semantic verification.
     - [x] **Conversation Loop**: Added interactive STT-LLM-TTS loop for real-time testing.
-- [ ] **Audio Engine**:
+- [x] **Audio Engine**:
     - [x] **TTS**: Text-to-Speech for all generated sentences (Browser Native or API).
-    - [ ] **Shadowing**: Record user audio and compare (Future).
+    - [x] **Shadowing**: Record user audio and compare (via Voice Lab & Agents).
 
 ## 7. Visual & UX Overhaul (The "Cyber-Noir" System)
 *Goal: Combine Synthwave aesthetics with Ink & Paper sharpness for a high-performance "Mental Gym".*

@@ -1,3 +1,4 @@
+
 # Global Progress Tracker
 
 ## ✅ Phase 1: MVP - Web App Refactor (Completed)
@@ -82,8 +83,8 @@
     - [x] **Architecture**: Migrated Dictionary Content to Iframe Sandbox for perfect CSS/JS isolation (Fixes Sidebar & Scripts).
     - [x] **Sandbox**: Switched to `srcDoc` + `postMessage` isolation to block Extension conflicts (SES Error) and fix Infinite Scroll.
 - [x] **LLM Reliability**:
-    - [x] Fixed 500 error on Markdown-wrapped JSON responses (Robust Parsing).
-    - [x] Fixed API hangs with 30s timeout settings.
+    - [x] **Robust Parsing**: Fixed 500 error on Markdown-wrapped JSON responses.
+    - [x] **Timeout Handling**: Fixed API hangs with 30s timeout settings.
 
 ## 🏗️ Phase 8: Architecture & Deployment Optimization (Completed)
 - [x] **Analysis**:
@@ -91,104 +92,64 @@
     - [x] Updated `CLAUDE.md` to reflect React stack.
 - [x] **Deployment**:
     - [x] **Dockerfile**: Multi-stage build (Node build -> Python runtime).
-    - [x] **Main.py Refactor**: Remove Jinja2, serve React Static Files.
-    - [x] **Code Cleanup**: Delete legacy `templates/` directory.
-    - [x] **Service Layer Refactor**: Decouple business logic from `voice.py` router.
+    - [x] **Serve Static**: `main.py` serves React static files directly.
+    - [x] **Code Cleanup**: Deleted legacy templates and simplified service layer.
 
 ## 🎨 Phase 9: Visual & UX Overhaul (Completed)
 - [x] **Concept**:
-    - [x] Analyzed 4 candidate UI systems.
-    - [x] Established "Cyber-Noir" direction (Synthwave + Ink & Paper).
-    - [x] **Prototype**: Created `UnifiedDesignSystem.jsx` proof-of-concept.
+    - [x] "Cyber-Noir" direction (Synthwave + Ink & Paper).
+    - [x] **Prototype**: `UnifiedDesignSystem.jsx` proof-of-concept.
 - [x] **Implementation**:
-    - [x] Global Tailwind Config updates (Design Tokens).
+    - [x] Global Tailwind Design Tokens.
     - [x] Component Library Refactor (`src/components/ui`).
     - [x] View Migration (Learn, Drill, Apply).
-    - [x] Custom Scrollbar styling.
-    - [x] **Toast System**: Implemented non-blocking notifications.
-    - [x] **Mobile Optimize**: Refined Chat/Apply layout for small screens.
-    - [x] **Empty State 2.0**: Implemented "System Standby" screen with locked navigation to prevent phantom interaction.
-    - [x] **Debug Infrastructure**: Fixed Log Bridge (Error Boundary + Stack Trace) for full-stack visibility.
-    - [x] **Mobile Optimization**:
-        - [x] **Core Data Slots**: Implemented Compact HUD Grid (2x3) with Auto-Collapse logic on scroll.
-        - [x] **Transitions**: Smooth CSS animations for header collapse.
-        - [x] **Typography**: Optimized font sizes for Learn (Story) and Apply (Scenario) for better readability.
-        - [x] **Roleplay Layout**: Optimized ChatCard to maximize vertical space (Collapsible Mission Brief + Compact Header).
-        - [x] **Transformer Input**: Integrated Connection Status & Voice Visualizer into the Input Bar, removing the top status bar entirely.
-        - [x] **Challenge Layout**: Compacted ScenarioCard (padding, fonts, spacing) to eliminate scrolling for standard tasks.
-        - [x] **Drill Matrix**: Implemented Responsive Matrix Grid (Table on Desktop, Stacked Cards on Mobile) to fix horizontal scrolling.
-        - [x] **Context Story Layout**: Optimized Typography and Spacing in StoryReader to increase information density and reduce scrolling.
+    - [x] **Toast System**: Non-blocking notifications.
+    - [x] **Mobile Optimization**: Compact HUD, Collapsible Headers, Responsive Tables.
+    - [x] **Typography**: Optimized font hierarchy for readability.
 
 ## 🤖 Phase 10: Coach-Centric Architecture (Completed)
 - [x] **Backend Engine**:
-    - [x] **CoachService**: Centralized session management and LLM orchestration.
-    - [x] **Tool-Use Pattern**: Migrated from simple chat to Tool-Calling Agent (`show_vocabulary`, `present_story`, `start_drill`).
-    - [x] **DSML Parser**: Implemented robust parsing for DeepSeek's raw XML-style tool calls.
-    - [x] **On-Demand Generation**: Implemented fallback logic to generate stories on-the-fly (`_generate_story`).
+    - [x] **CoachService**: Centralized session management.
+    - [x] **Tool-Use Pattern**: Agentic Command (show_vocabulary, etc.).
+    - [x] **DSML Parser**: Robust XML-style tool call parsing.
 - [x] **Audio Upgrade**:
-    - [x] **TTS Engine**: Integrated Microsoft Edge TTS (`edge-tts`) for high-quality, free Neural voices.
-    - [x] **Voice Control**: Full STT (WebSpeech) + TTS loop for hands-free practice.
+    - [x] **Edge TTS**: High-quality free Neural voices.
+    - [x] **Voice Control**: Full STT (WebSpeech) + TTS loop.
 - [x] **Frontend Experience**:
-    - [x] **Coach Canvas**: Dynamic workspace that renders UI components (Vocab/Story/Drill) based on Agent commands.
-    - [x] **Cyber-Noir Design**: Hard-edged, information-dense "Terminal" aesthetic for the Coach interface.
-    - [x] **Optimistic UI**: Instant improvements in chat responsiveness.
-
+    - [x] **Coach Canvas**: Dynamic UI workspace.
+    - [x] **Cyber-Noir Design**: Hard-edged terminal aesthetic.
+    
 ## 🎙️ Phase 11: Voice Vendor Integrations (Completed)
 - [x] **ElevenLabs**:
-    - [x] Integration with Python SDK v3 (`elevenlabs.client`) -> Migrated to `httpx`.
-    - [x] Confirmed TTS streaming validation.
-    - [x] **New Features**: Added Text-to-SFX and Speech-to-Speech (Voice Changer).
-- [x] **ElevenLabs**:
-    - [x] Integration with Python SDK v3 (`elevenlabs.client`) -> Migrated to `httpx`.
-    - [x] Confirmed TTS streaming validation.
-    - [x] **New Features**: Added Text-to-SFX and Speech-to-Speech (Voice Changer).
-    - [x] **UI**: Integrated STTPanel for REST STT and **Realtime STT (WebSocket)** for streaming.
+    - [x] HTTPX migration (No SDK).
+    - [x] TTS, STT, STS, SFX support.
+    - [x] WebSocket Real-time STT.
 - [x] **Deepgram**:
-    - [x] **Refactor**: Removed official SDK dependency in favor of raw `httpx` and `websockets` (Nova-3).
-    - [x] **TTS**: Aura Voice (REST + Streaming).
-    - [x] **STT**: Nova-3 (REST + Live WebSocket).
+    - [x] HTTPX/Websockets migration (No SDK).
+    - [x] Nova-3 STT (REST + Live).
+    - [x] Aura TTS (REST + Streaming).
 - [x] **Google (Gemini)**:
-    - [x] **TTS**: Multimodal Generation (Live API + WAV Header Injection).
-    - [x] **STT**: Multimodal Transcription.
-- [x] **Automated Verification**: Implemented "Round-Trip" testing framework (`VoiceTester`) verifying Semantic Integrity across all vendors.
-- [x] **Conversation Loop**: Integrated generic STT -> LLM -> TTS loop for full-duplex voice testing.
-- [x] **UI Refactor**: Reorganized Voice Lab to **Vendor-Centric Layout** (Manufacturer Tabs).
-- [x] **Router Consolidation**: Consolidated all routers from `app/routers` into `app/api/routers` for architectural consistency.
-
-## ??? Phase 12: Engineering Optimization & DX (Completed)
-- [x] **Project Structure Optimization**:
-    - [x] **Model Consolidation**: Refactored scattered models (pp/models.py, pp/db_models.py) into a structured pp/models/ package (schemas.py, orm.py).
-    - [x] **Import Cleanup**: Updated all codebase imports to use the new modular structure.
-    - [x] **Cleanup**: Removed legacy and ambiguous model files.
-- [x] **Developer Experience (DX)**:
-    - [x] **Scripting**: Added PowerShell automation scripts (scripts/dev.ps1, scripts/test.ps1) for consistent cross-platform development.
-    - [x] **Testing**: Solved Windows-specific event loop conflicts by isolating E2E and Backend tests in the test runner script.
-    - [x] **Cleanup**: Removed expired E2E tests (`test_navigation.py`) and implemented offline fallbacks.
+    - [x] Multimodal TTS/STT.
+- [x] **Dashscope (Alibaba Cloud)**:
+    - [x] **Qwen-ASR**: `qwen3-asr-flash` integration.
+    - [x] **Qwen-TTS**: `qwen3-tts-flash` integration with WAV header wrapper.
+    - [x] **Qwen-LLM**: `qwen3-30b-a3b` (Deep Thinking) integration in `LLMService`.
+    - [x] **Verification**:
+        - [x] "Round-Trip" semantic integrity tests.
+        - [x] Automated vendor verification scripts (`verify_dashscope_llm.py`).
+    - [x] **Verification**:
+        - [x] "Round-Trip" semantic integrity tests.
+        - [x] Automated vendor verification scripts (`verify_dashscope_llm.py`).
+- [x] **UI**: 
+    - [x] Integrated Vendor-Specific Labs for testing.
+    - [x] Updated Voice Agents (ElevenLabs, Deepgram) to support Dashscope LLM provider selection.
 
 ## 🔧 Phase 13: SDK Removal Refactoring (Completed 2025-12-19)
-- [x] **Deepgram**:
-    - [x] Removed `deepgram-sdk` dependency in favor of raw `httpx` + `websockets`.
-    - [x] Fixed WebSocket connections: `extra_headers` → `additional_headers` (websockets v15.x).
-    - [x] Live STT, Streaming TTS, and Voice Agent endpoints verified working.
-- [x] **ElevenLabs**:
-    - [x] Removed `elevenlabs` SDK dependency in favor of raw `httpx`.
-    - [x] Refactored `ElevenLabsProvider`: `tts()`, `stt()`, `text_to_sfx()`, `speech_to_speech()`.
-    - [x] All methods now use direct REST API calls with streaming support.
-- [x] **Frontend**:
-    - [x] Simplified Deepgram VoiceLab UI to 3-tab layout (Live STT, Voice Agent, Tools).
-    - [x] Added `ws: true` to Vite proxy for `/api` WebSocket routes.
+- [x] **Deepgram**: Removed `deepgram-sdk`.
+- [x] **ElevenLabs**: Removed `elevenlabs` SDK.
+- [x] **Frontend**: Simplified Deepgram UI and fixed WebSocket proxying.
 
 ## 🧪 Phase 14: Automated Testing Infrastructure (Completed 2025-12-19)
-- [x] **Backend Integration Tests**:
-    - [x] Implemented TTS/STT round-trip verification for all vendors (Google, ElevenLabs, Deepgram).
-    - [x] Added specific tests for ElevenLabs STS and SFX.
-- [x] **WebSocket Verification**:
-    - [x] Added automated connection tests for Deepgram Live STT and Streaming TTS.
-    - [x] Added manual verification script (`verify_deepgram_websocket.py`) for full-duplex flows.
-- [x] **Test Utilities**:
-    - [x] **PCM Audio Sim**: Created utilities to simulate real-time audio streaming from WAV files.
-    - [x] **Semantic Similarity**: Added fuzzy matching for STT verification.
-    - [x] **Log Capture**: Investigated and fixed backend log capture for automated verification.
-- [x] **Cleanup**:
-    - [x] Removed legacy E2E tests (learn, apply, drill) and redundant verification scripts.
-    - [x] Consolidated testing structure into `tests/test_voice_lab_integration.py` and `tests/test_deepgram_websocket.py`.
+- [x] **Backend**: Integration tests for all voice vendors.
+- [x] **WebSocket**: Automated connection tests for Deepgram.
+- [x] **Utilities**: PCM Simulation, Semantic Similarity, Log Capture.
