@@ -135,8 +135,14 @@ def main():
             
         if query:
             # Search in path, summary, description, operationId, AND file path
+            # Tokenize query to allow "speech to text" to match "speech-to-text"
+            # We treat spaces as separators and check if ALL tokens exist in the corpus
+            
             corpus = f"{ep['path']} {ep['summary']} {ep['description']} {ep['operationId']} {ep['file']}".lower()
-            if query not in corpus:
+            query_tokens = query.split()
+            
+            # Check if ALL tokens are present in the corpus
+            if not all(token in corpus for token in query_tokens):
                 continue
         
         results.append(ep)
