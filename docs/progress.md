@@ -135,9 +135,14 @@
 
 ## 🎙️ Phase 11: Voice Vendor Integrations (Completed)
 - [x] **ElevenLabs**:
-    - [x] Integration with Python SDK v3 (`elevenlabs.client`).
+    - [x] Integration with Python SDK v3 (`elevenlabs.client`) -> Migrated to `httpx`.
     - [x] Confirmed TTS streaming validation.
     - [x] **New Features**: Added Text-to-SFX and Speech-to-Speech (Voice Changer).
+- [x] **ElevenLabs**:
+    - [x] Integration with Python SDK v3 (`elevenlabs.client`) -> Migrated to `httpx`.
+    - [x] Confirmed TTS streaming validation.
+    - [x] **New Features**: Added Text-to-SFX and Speech-to-Speech (Voice Changer).
+    - [x] **UI**: Integrated STTPanel for REST STT and **Realtime STT (WebSocket)** for streaming.
 - [x] **Deepgram**:
     - [x] **Refactor**: Removed official SDK dependency in favor of raw `httpx` and `websockets` (Nova-3).
     - [x] **TTS**: Aura Voice (REST + Streaming).

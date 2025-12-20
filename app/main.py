@@ -7,6 +7,15 @@ import os
 
 from app.services.dictionary import dict_manager
 from app.api.routers import voice, dictionary, content, practice, stats, deepgram, coach, voice_lab
+import logging
+
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+)
+logger = logging.getLogger(__name__)
+
 load_dotenv()
 
 @asynccontextmanager
@@ -36,6 +45,8 @@ app.include_router(voice_lab.router)
 app.include_router(deepgram.router)
 from app.api.routers import deepgram_websocket
 app.include_router(deepgram_websocket.router)
+from app.api.routers import elevenlabs_websocket
+app.include_router(elevenlabs_websocket.router)
 
 from app.models.schemas import RemoteLog
 

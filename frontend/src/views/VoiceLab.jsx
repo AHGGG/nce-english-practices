@@ -8,6 +8,7 @@ import DeepgramStreamingTTS from '../components/VoiceLab/DeepgramStreamingTTS';
 import DeepgramVoiceAgent from '../components/VoiceLab/DeepgramVoiceAgent';
 import DeepgramUnified from '../components/VoiceLab/DeepgramUnified';
 import ConversationLoop from '../components/VoiceLab/ConversationLoop';
+import ElevenLabsLive from '../components/VoiceLab/ElevenLabsLive';
 import { Mic, Volume2, Radio, Server, Beaker, GraduationCap, Cloud, Zap, Globe, Cpu, Bot, TestTube2, RefreshCw } from 'lucide-react';
 
 const VoiceLab = () => {
@@ -179,9 +180,15 @@ const VoiceLab = () => {
                                         <TTSPanel config={config} fixedProvider="elevenlabs" />
                                     </section>
 
-                                    <div className="p-8 border border-dashed border-ink-faint rounded-lg text-center text-ink-muted">
-                                        <p>STT is now available! See Conversation Loop for integration.</p>
-                                    </div>
+                                    <section>
+                                        <SectionHeader title="Real-time STT (WebSocket)" icon={Mic} />
+                                        <ElevenLabsLive />
+                                    </section>
+
+                                    <section>
+                                        <SectionHeader title="REST: Speech-to-Text (Scribe v1)" icon={TestTube2} />
+                                        <STTPanel config={config} fixedProvider="elevenlabs" />
+                                    </section>
                                 </div>
                             )}
                         </div>
