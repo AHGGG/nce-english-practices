@@ -101,6 +101,28 @@ def test_deepgram_voice_agent_websocket_connection(has_deepgram_key):
         ws.close()
 
 
+def test_deepgram_unified_voice_agent_websocket_connection(has_deepgram_key):
+    """
+    Test WebSocket connection to Deepgram Unified Voice Agent.
+    Uses Deepgram's Agent API (wss://agent.deepgram.com/v1/agent/converse).
+    """
+    client = TestClient(app)
+    
+    url = "/api/voice-lab/deepgram/unified-voice-agent?voice=aura-2-asteria-en&llm_provider=dashscope"
+    
+    with client.websocket_connect(url) as ws:
+        msg = ws.receive_json()
+        
+        assert msg["type"] == "ready", f"Expected 'ready' message, got: {msg}"
+        assert "voice" in msg
+        assert "llm_provider" in msg
+        assert "sample_rate" in msg
+        assert msg["sample_rate"] == 16000  # Verify 16kHz audio
+        
+        # Close immediately
+        ws.close()
+
+
 # --- Utility Tests ---
 
 def test_pcm_utilities():

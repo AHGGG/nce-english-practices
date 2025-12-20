@@ -429,3 +429,296 @@ async def deepgram_voice_agent_websocket(
             await websocket.close()
         except:
             pass
+
+
+# ============================================================================
+# Unified Voice Agent API (Best Practice)
+# Uses wss://agent.deepgram.com/v1/agent/converse for lowest latency
+# ============================================================================
+
+DEEPGRAM_AGENT_URL = "wss://agent.deepgram.com/v1/agent/converse"
+
+# Audio settings matching best practices
+USER_AUDIO_SAMPLE_RATE = 16000  # Browser sends 16kHz PCM
+AGENT_AUDIO_SAMPLE_RATE = 16000  # Deepgram returns 16kHz PCM
+
+
+@router.websocket("/unified-voice-agent")
+async def deepgram_unified_voice_agent_websocket(
+    websocket: WebSocket,
+    voice: str = Query(default="aura-2-asteria-en", description="TTS voice model"),
+    llm_provider: str = Query(default="default", description="LLM provider: default (gpt-4o-mini), dashscope, or deepseek"),
+    system_prompt: str = Query(default="You are a helpful and concise AI assistant. Keep responses brief."),
+    greeting: str = Query(default="Hello! How can I help you today?")
+):
+    """
+    Unified Voice Agent using Deepgram's Agent API.
+    
+    This endpoint proxies to wss://agent.deepgram.com/v1/agent/converse
+    which handles STT -> LLM -> TTS entirely server-side for minimal latency.
+    
+    Key features:
+    - Single WebSocket connection
+    - Built-in VAD and barge-in support
+    - ~300ms response latency
+    
+    LLM Providers:
+    - default: Use Deepgram's built-in OpenAI (gpt-4o-mini) - fastest, no extra API key
+    - dashscope: Use Qwen via Dashscope (requires DASHSCOPE_API_KEY)
+    - deepseek: Use DeepSeek (requires DEEPSEEK_API_KEY)
+    """
+    await websocket.accept()
+    
+    if not settings.DEEPGRAM_API_KEY:
+        await websocket.send_json({"type": "error", "message": "Deepgram API Key not configured"})
+        await websocket.close()
+        return
+
+    # Build LLM endpoint configuration based on provider
+    if llm_provider == "default":
+        # Use Deepgram's built-in OpenAI integration (gpt-4o-mini)
+        # No custom endpoint needed - Deepgram handles the API call
+        think_config = {
+            "provider": {
+                "type": "open_ai",
+                "model": "gpt-4o-mini",
+                "temperature": 0.7,
+            },
+            "prompt": system_prompt,
+        }
+    elif llm_provider == "dashscope":
+        if not settings.DASHSCOPE_API_KEY:
+            await websocket.send_json({"type": "error", "message": "Dashscope API Key not configured"})
+            await websocket.close()
+            return
+        think_config = {
+            "provider": {
+                "type": "open_ai",
+                "model": settings.DASHSCOPE_MODEL_NAME or "qwen3-30b-a3b",
+                "temperature": 0.7,
+            },
+            "endpoint": {
+                "url": "https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions",
+                "headers": {
+                    "authorization": f"Bearer {settings.DASHSCOPE_API_KEY}"
+                }
+            },
+            "prompt": system_prompt,
+        }
+    else:  # deepseek or fallback
+        think_config = {
+            "provider": {
+                "type": "open_ai",
+                "model": settings.MODEL_NAME or "deepseek-chat",
+                "temperature": 0.7,
+            },
+            "endpoint": {
+                "url": settings.DEEPSEEK_BASE_URL + "/chat/completions" if settings.DEEPSEEK_BASE_URL else "https://api.deepseek.com/v1/chat/completions",
+                "headers": {
+                    "authorization": f"Bearer {settings.DEEPSEEK_API_KEY}"
+                }
+            },
+            "prompt": system_prompt,
+        }
+
+    # Build complete settings message (following best practices from examples)
+    agent_settings = {
+        "type": "Settings",
+        "audio": {
+            "input": {
+                "encoding": "linear16",
+                "sample_rate": USER_AUDIO_SAMPLE_RATE,
+            },
+            "output": {
+                "encoding": "linear16",
+                "sample_rate": AGENT_AUDIO_SAMPLE_RATE,
+                "container": "none",
+            },
+        },
+        "agent": {
+            "language": "en",
+            "listen": {
+                "provider": {
+                    "type": "deepgram",
+                    "model": "nova-3",
+                }
+            },
+            "think": think_config,
+            "speak": {
+                "provider": {
+                    "type": "deepgram",
+                    "model": voice,
+                }
+            },
+            "greeting": greeting,
+        }
+    }
+
+    headers = {"Authorization": f"Token {settings.DEEPGRAM_API_KEY}"}
+
+    try:
+        logger.info(f"Connecting to Deepgram Agent API: {DEEPGRAM_AGENT_URL}")
+        async with websockets.connect(
+            DEEPGRAM_AGENT_URL,
+            additional_headers=headers,
+            open_timeout=10,
+            close_timeout=5,
+            ping_interval=20,  # Keep connection alive
+        ) as dg_ws:
+            # Send settings first
+            await dg_ws.send(json.dumps(agent_settings))
+            logger.info(f"Sent agent settings: voice={voice}, llm={llm_provider}")
+            
+            # Notify client we're ready
+            await websocket.send_json({
+                "type": "ready",
+                "voice": voice,
+                "llm_provider": llm_provider,
+                "sample_rate": AGENT_AUDIO_SAMPLE_RATE,
+            })
+
+            # Task: Receive from Deepgram -> Forward to Client
+            async def receive_from_deepgram():
+                try:
+                    async for message in dg_ws:
+                        if isinstance(message, bytes):
+                            # Binary audio data - forward directly to client
+                            await websocket.send_bytes(message)
+                        else:
+                            # JSON events from Deepgram Agent
+                            try:
+                                data = json.loads(message)
+                                msg_type = data.get("type", "")
+                                
+                                logger.info(f"[Deepgram Agent] {msg_type}: {json.dumps(data)[:200]}")
+                                
+                                # Forward relevant events to client
+                                if msg_type == "Welcome":
+                                    await websocket.send_json({
+                                        "type": "connected",
+                                        "session_id": data.get("session_id"),
+                                    })
+                                
+                                elif msg_type == "SettingsApplied":
+                                    logger.info("Agent settings applied successfully")
+                                
+                                elif msg_type == "UserStartedSpeaking":
+                                    # Critical for barge-in: tell client to stop playback
+                                    await websocket.send_json({"type": "user_started_speaking"})
+                                
+                                elif msg_type == "UserStoppedSpeaking":
+                                    await websocket.send_json({"type": "user_stopped_speaking"})
+                                
+                                elif msg_type == "AgentStartedSpeaking":
+                                    await websocket.send_json({"type": "agent_started_speaking"})
+                                
+                                elif msg_type == "AgentAudioDone":
+                                    await websocket.send_json({"type": "agent_audio_done"})
+                                
+                                elif msg_type == "ConversationText":
+                                    # Forward transcripts and responses
+                                    await websocket.send_json({
+                                        "type": "conversation_text",
+                                        "role": data.get("role"),
+                                        "content": data.get("content"),
+                                    })
+                                
+                                elif msg_type == "AgentThinking":
+                                    # Agent's internal reasoning (optional display)
+                                    content = data.get("content", "")
+                                    if content:
+                                        await websocket.send_json({
+                                            "type": "agent_thinking",
+                                            "content": content,
+                                        })
+                                
+                                elif msg_type == "Error":
+                                    logger.error(f"Deepgram Agent Error: {data}")
+                                    await websocket.send_json({
+                                        "type": "error",
+                                        "message": data.get("description", "Unknown error"),
+                                    })
+                                
+                                elif msg_type == "CloseConnection":
+                                    logger.info("Deepgram requested close")
+                                    break
+                                    
+                            except json.JSONDecodeError:
+                                logger.warning(f"Non-JSON message from Deepgram: {message[:100]}")
+                                
+                except websockets.exceptions.ConnectionClosed as e:
+                    logger.info(f"Deepgram connection closed: {e}")
+                except Exception as e:
+                    logger.error(f"Error receiving from Deepgram: {e}")
+
+            # Task: Receive from Client -> Forward to Deepgram
+            async def send_to_deepgram():
+                try:
+                    while True:
+                        # Receive binary audio from client
+                        message = await websocket.receive()
+                        
+                        if "bytes" in message:
+                            # Forward audio to Deepgram
+                            await dg_ws.send(message["bytes"])
+                        elif "text" in message:
+                            # Handle JSON commands from client
+                            try:
+                                data = json.loads(message["text"])
+                                cmd_type = data.get("type", "")
+                                
+                                if cmd_type == "close":
+                                    # Graceful close
+                                    await dg_ws.send(json.dumps({"type": "CloseStream"}))
+                                    break
+                                elif cmd_type == "inject_message":
+                                    # Allow client to inject agent message
+                                    await dg_ws.send(json.dumps({
+                                        "type": "InjectAgentMessage",
+                                        "message": data.get("message", ""),
+                                    }))
+                            except json.JSONDecodeError:
+                                pass
+                                
+                except WebSocketDisconnect:
+                    logger.info("Client disconnected")
+                    try:
+                        await dg_ws.send(json.dumps({"type": "CloseStream"}))
+                    except:
+                        pass
+                except Exception as e:
+                    logger.error(f"Error sending to Deepgram: {e}")
+
+            # Run both tasks concurrently
+            receiver_task = asyncio.create_task(receive_from_deepgram())
+            sender_task = asyncio.create_task(send_to_deepgram())
+            
+            # Wait for either to complete (usually sender when client disconnects)
+            done, pending = await asyncio.wait(
+                [receiver_task, sender_task],
+                return_when=asyncio.FIRST_COMPLETED
+            )
+            
+            # Cancel remaining tasks
+            for task in pending:
+                task.cancel()
+                try:
+                    await task
+                except asyncio.CancelledError:
+                    pass
+
+    except websockets.exceptions.InvalidStatusCode as e:
+        logger.error(f"Deepgram connection rejected: {e}")
+        await websocket.send_json({"type": "error", "message": f"Connection rejected: {e.status_code}"})
+    except Exception as e:
+        logger.error(f"Unified Voice Agent Error: {e}")
+        try:
+            await websocket.send_json({"type": "error", "message": str(e)})
+        except:
+            pass
+    finally:
+        try:
+            await websocket.close()
+        except:
+            pass
+

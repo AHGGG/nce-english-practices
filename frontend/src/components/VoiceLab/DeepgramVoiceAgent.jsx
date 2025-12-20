@@ -1,52 +1,65 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Card, Button, Tag, Select } from '../ui';
-import { Mic, MicOff, Bot, User, Volume2, Cpu } from 'lucide-react';
+import { Mic, MicOff, Bot, User, Volume2, Loader2, Radio } from 'lucide-react';
 
+/**
+ * Deepgram Voice Agent - Unified API Version
+ * 
+ * Uses Deepgram's Voice Agent API (wss://agent.deepgram.com/v1/agent/converse)
+ * for lowest latency STT → LLM → TTS pipeline.
+ * 
+ * Key features:
+ * - Single WebSocket connection
+ * - Built-in VAD and barge-in
+ * - ~300ms response latency
+ */
 const DeepgramVoiceAgent = () => {
     const [isActive, setIsActive] = useState(false);
     const [connectionState, setConnectionState] = useState('disconnected');
+    const [agentState, setAgentState] = useState('idle'); // idle, listening, thinking, speaking
     const [messages, setMessages] = useState([]);
-    const [pendingTranscript, setPendingTranscript] = useState(''); // Live transcript being spoken
+    const [pendingTranscript, setPendingTranscript] = useState('');
     const [error, setError] = useState(null);
     const [config, setConfig] = useState({
-        stt_model: 'nova-3',
-        tts_voice: 'aura-2-asteria-en',
-        llm_provider: 'deepseek',
-        system_prompt: 'You are a helpful and concise AI assistant.'
+        voice: 'aura-2-asteria-en',
+        llm_provider: 'default',  // Default: uses Deepgram's built-in gpt-4o-mini
+        system_prompt: 'You are a helpful and concise AI assistant. Keep responses brief.',
+        greeting: 'Hello! How can I help you today?'
     });
 
     const wsRef = useRef(null);
     const microphoneRef = useRef(null);
     const audioContextRef = useRef(null);
-    const audioQueueRef = useRef([]);
     const nextStartTimeRef = useRef(0);
     const chatContainerRef = useRef(null);
+    const pendingAssistantTextRef = useRef('');  // Track assistant turn
+    const pendingUserTextRef = useRef('');  // Track user turn
 
-    // Audio Playback Logic (Shared with TTS Streaming)
+    // Audio settings - must match backend (16kHz linear16)
+    const SAMPLE_RATE = 16000;
+
+    // Play 16kHz PCM audio
     const playAudioChunk = (data) => {
-        if (!audioContextRef.current) {
-            audioContextRef.current = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 24000 });
+        if (!audioContextRef.current || audioContextRef.current.state === 'closed') {
+            audioContextRef.current = new (window.AudioContext || window.webkitAudioContext)({
+                sampleRate: SAMPLE_RATE
+            });
         }
+
         if (audioContextRef.current.state === 'suspended') {
             audioContextRef.current.resume();
         }
 
         const ctx = audioContextRef.current;
 
-        // Skip header if RIFF
-        let bufferData = data;
-        const view = new DataView(data);
-        if (data.byteLength > 44 && view.getUint32(0) === 0x52494646) {
-            bufferData = data.slice(44);
-        }
-
-        const rawData = new Int16Array(bufferData);
+        // Convert Int16 PCM to Float32
+        const rawData = new Int16Array(data);
         const float32Data = new Float32Array(rawData.length);
         for (let i = 0; i < rawData.length; i++) {
             float32Data[i] = rawData[i] / 0x8000;
         }
 
-        const buffer = ctx.createBuffer(1, float32Data.length, 24000);
+        const buffer = ctx.createBuffer(1, float32Data.length, SAMPLE_RATE);
         buffer.getChannelData(0).set(float32Data);
 
         const source = ctx.createBufferSource();
@@ -58,25 +71,35 @@ const DeepgramVoiceAgent = () => {
         nextStartTimeRef.current = startTime + buffer.duration;
     };
 
+    // Stop audio playback immediately (for barge-in)
+    const stopAudioPlayback = () => {
+        if (audioContextRef.current && audioContextRef.current.state !== 'closed') {
+            audioContextRef.current.close();
+            audioContextRef.current = null;
+        }
+        nextStartTimeRef.current = 0;
+    };
+
     const startAgent = async () => {
         try {
             setConnectionState('connecting');
             setError(null);
+            setMessages([]);
 
-            // 1. Microphone
+            // 1. Request microphone access
             const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
 
-            // 2. WebSocket
+            // 2. Connect to unified WebSocket endpoint
             const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
             const params = new URLSearchParams(config).toString();
-            const wsUrl = `${protocol}//${window.location.host}/api/voice-lab/deepgram/voice-agent?${params}`;
+            const wsUrl = `${protocol}//${window.location.host}/api/voice-lab/deepgram/unified-voice-agent?${params}`;
 
             const ws = new WebSocket(wsUrl);
             ws.binaryType = 'arraybuffer';
             wsRef.current = ws;
 
             ws.onopen = () => {
-                console.log('Agent Connected');
+                console.log('[Agent] WebSocket connected');
                 setConnectionState('connected');
                 startMicrophone(stream, ws);
                 setIsActive(true);
@@ -85,54 +108,133 @@ const DeepgramVoiceAgent = () => {
             ws.onmessage = (event) => {
                 if (typeof event.data === 'string') {
                     const msg = JSON.parse(event.data);
-                    if (msg.type === 'transcript') {
-                        if (msg.is_final) {
-                            // Final result: add to messages and clear pending
-                            addMessage('user', msg.text);
-                            setPendingTranscript('');
-                        } else {
-                            // Interim result: update pending transcript for live display
-                            setPendingTranscript(msg.text);
-                        }
-                    } else if (msg.type === 'llm_response') {
-                        addMessage('ai', msg.text);
-                    } else if (msg.type === 'error') {
-                        setError(msg.message);
-                    }
+                    handleAgentMessage(msg);
                 } else if (event.data instanceof ArrayBuffer) {
+                    // Binary audio from agent
                     playAudioChunk(event.data);
                 }
             };
 
             ws.onerror = (e) => {
-                console.error(e);
-                setError('WebSocket Error');
+                console.error('[Agent] WebSocket error:', e);
+                setError('WebSocket connection failed');
                 setConnectionState('error');
             };
 
             ws.onclose = () => {
+                console.log('[Agent] WebSocket closed');
                 stopAgent();
             };
 
         } catch (err) {
+            console.error('[Agent] Start error:', err);
             setError(err.message);
             setConnectionState('error');
         }
     };
 
-    const startMicrophone = (stream, ws) => {
-        if (config.stt_model === 'flux') {
-            // Flux requires raw PCM audio (linear16)
-            startPCMAudio(stream, ws);
-        } else {
-            // Nova can handle WebM containers
-            startMediaRecorder(stream, ws);
+    const handleAgentMessage = (msg) => {
+        console.log('[Agent] Message:', msg);
+
+        switch (msg.type) {
+            case 'ready':
+                console.log(`[Agent] Ready: voice=${msg.voice}, llm=${msg.llm_provider}`);
+                setAgentState('listening');
+                break;
+
+            case 'connected':
+                console.log(`[Agent] Session: ${msg.session_id}`);
+                break;
+
+            case 'user_started_speaking':
+                // BARGE-IN: Stop playing audio immediately and clear pending text
+                stopAudioPlayback();
+                pendingAssistantTextRef.current = '';  // Clear any partial response
+                setAgentState('listening');
+                setPendingTranscript('');
+                break;
+
+            case 'user_stopped_speaking':
+                setAgentState('thinking');
+                break;
+
+            case 'agent_started_speaking':
+                setAgentState('speaking');
+                break;
+
+            case 'agent_audio_done':
+                // Mark current turn as complete - no longer appending to last message
+                pendingAssistantTextRef.current = '';
+                setAgentState('listening');
+                break;
+
+            case 'conversation_text':
+                if (msg.role === 'user') {
+                    // User messages: merge consecutive messages in same turn
+                    setMessages(prev => {
+                        const lastMsg = prev[prev.length - 1];
+
+                        // If last message is from user and we're in active user turn, append
+                        if (lastMsg && lastMsg.role === 'user' && pendingUserTextRef.current) {
+                            const updated = [...prev];
+                            updated[updated.length - 1] = {
+                                ...lastMsg,
+                                text: lastMsg.text + ' ' + msg.content
+                            };
+                            return updated;
+                        } else {
+                            // First message in this turn - create new
+                            pendingUserTextRef.current = 'active';
+                            pendingAssistantTextRef.current = '';  // Reset assistant turn
+                            return [...prev, { role: 'user', text: msg.content, timestamp: new Date().toISOString() }];
+                        }
+                    });
+                    setPendingTranscript('');
+                } else if (msg.role === 'assistant') {
+                    // Assistant messages: merge consecutive messages in same turn
+                    setMessages(prev => {
+                        const lastMsg = prev[prev.length - 1];
+
+                        // If last message is from AI and we're in the same turn, append
+                        if (lastMsg && lastMsg.role === 'ai' && pendingAssistantTextRef.current) {
+                            const updated = [...prev];
+                            updated[updated.length - 1] = {
+                                ...lastMsg,
+                                text: lastMsg.text + '\n\n' + msg.content
+                            };
+                            return updated;
+                        } else {
+                            // First message in this turn - create new
+                            pendingAssistantTextRef.current = 'active';
+                            pendingUserTextRef.current = '';  // Reset user turn
+                            return [...prev, { role: 'ai', text: msg.content, timestamp: new Date().toISOString() }];
+                        }
+                    });
+                }
+
+                // Auto scroll
+                setTimeout(() => {
+                    if (chatContainerRef.current) {
+                        chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
+                    }
+                }, 50);
+                break;
+
+            case 'agent_thinking':
+                // Optional: show thinking content
+                console.log('[Agent] Thinking:', msg.content);
+                break;
+
+            case 'error':
+                setError(msg.message);
+                break;
         }
     };
 
-    const startPCMAudio = (stream, ws) => {
+    // Start microphone with 16kHz PCM output
+    const startMicrophone = (stream, ws) => {
         const audioContext = new (window.AudioContext || window.webkitAudioContext)({
-            sampleRate: 16000
+            sampleRate: SAMPLE_RATE
         });
 
         const source = audioContext.createMediaStreamSource(stream);
@@ -141,7 +243,8 @@ const DeepgramVoiceAgent = () => {
         processor.onaudioprocess = (e) => {
             if (ws.readyState === WebSocket.OPEN) {
                 const inputData = e.inputBuffer.getChannelData(0);
-                // Convert float32 to int16 PCM
+
+                // Convert Float32 to Int16 PCM
                 const buffer = new ArrayBuffer(inputData.length * 2);
                 const view = new DataView(buffer);
                 for (let i = 0; i < inputData.length; i++) {
@@ -156,7 +259,6 @@ const DeepgramVoiceAgent = () => {
         processor.connect(audioContext.destination);
 
         microphoneRef.current = {
-            type: 'pcm',
             stream,
             audioContext,
             processor,
@@ -164,60 +266,35 @@ const DeepgramVoiceAgent = () => {
         };
     };
 
-    const startMediaRecorder = (stream, ws) => {
-        const mediaRecorder = new MediaRecorder(stream, { mimeType: 'audio/webm' });
-
-        mediaRecorder.ondataavailable = (event) => {
-            if (event.data.size > 0 && ws.readyState === WebSocket.OPEN) {
-                ws.send(event.data);
-            }
-        };
-
-        mediaRecorder.start(250);
-        microphoneRef.current = {
-            type: 'mediarecorder',
-            stream,
-            recorder: mediaRecorder
-        };
-    };
-
     const stopAgent = () => {
-        // 1. Close AudioContext to stop all scheduled audio playback
-        if (audioContextRef.current) {
-            audioContextRef.current.close();
-            audioContextRef.current = null;
-        }
-        // Reset audio scheduling
-        audioQueueRef.current = [];
-        nextStartTimeRef.current = 0;
+        // Stop audio playback
+        stopAudioPlayback();
 
+        // Close WebSocket
         if (wsRef.current) {
             wsRef.current.close();
             wsRef.current = null;
         }
+
+        // Stop microphone
         const mic = microphoneRef.current;
         if (mic) {
-            if (mic.type === 'pcm') {
-                // Cleanup PCM audio
-                mic.processor.disconnect();
-                mic.source.disconnect();
-                mic.audioContext.close();
-                mic.stream.getTracks().forEach(track => track.stop());
-            } else if (mic.type === 'mediarecorder') {
-                // Cleanup MediaRecorder
-                if (mic.recorder.state !== 'inactive') {
-                    mic.recorder.stop();
-                }
-                mic.stream.getTracks().forEach(track => track.stop());
-            }
+            mic.processor.disconnect();
+            mic.source.disconnect();
+            mic.audioContext.close();
+            mic.stream.getTracks().forEach(track => track.stop());
             microphoneRef.current = null;
         }
+
         setIsActive(false);
         setConnectionState('disconnected');
+        setAgentState('idle');
+        setPendingTranscript('');
     };
 
     const addMessage = (role, text) => {
         setMessages(prev => [...prev, { role, text, timestamp: new Date().toISOString() }]);
+
         // Auto scroll
         setTimeout(() => {
             if (chatContainerRef.current) {
@@ -230,6 +307,20 @@ const DeepgramVoiceAgent = () => {
         return () => stopAgent();
     }, []);
 
+    // Agent state indicator
+    const getStateIndicator = () => {
+        switch (agentState) {
+            case 'listening':
+                return <Tag variant="success"><Radio size={12} className="mr-1 animate-pulse" /> Listening</Tag>;
+            case 'thinking':
+                return <Tag variant="warning"><Loader2 size={12} className="mr-1 animate-spin" /> Thinking</Tag>;
+            case 'speaking':
+                return <Tag variant="info"><Volume2 size={12} className="mr-1 animate-pulse" /> Speaking</Tag>;
+            default:
+                return <Tag>Idle</Tag>;
+        }
+    };
+
     return (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-[600px]">
             {/* Configuration Column */}
@@ -237,50 +328,51 @@ const DeepgramVoiceAgent = () => {
                 <Card title="Agent Settings">
                     <div className="space-y-4">
                         <div>
-                            <label className="text-xs font-mono text-ink-muted">STT Model</label>
-                            <Select
-                                value={config.stt_model}
-                                onChange={e => setConfig({ ...config, stt_model: e.target.value })}
-                                disabled={isActive}
-                                options={[
-                                    { value: 'nova-3', label: 'Nova-3' },
-                                    { value: 'flux', label: 'Flux' }
-                                ]}
-                            />
-                        </div>
-                        <div>
                             <label className="text-xs font-mono text-ink-muted">LLM Provider</label>
                             <Select
                                 value={config.llm_provider}
                                 onChange={e => setConfig({ ...config, llm_provider: e.target.value })}
                                 disabled={isActive}
                                 options={[
-                                    { value: 'deepseek', label: 'DeepSeek' },
+                                    { value: 'default', label: 'Default (GPT-4o-mini)' },
                                     { value: 'dashscope', label: 'Dashscope (Qwen)' },
-                                    { value: 'gemini', label: 'Gemini' }
+                                    { value: 'deepseek', label: 'DeepSeek' }
                                 ]}
                             />
                         </div>
                         <div>
                             <label className="text-xs font-mono text-ink-muted">Voice</label>
                             <Select
-                                value={config.tts_voice}
-                                onChange={e => setConfig({ ...config, tts_voice: e.target.value })}
+                                value={config.voice}
+                                onChange={e => setConfig({ ...config, voice: e.target.value })}
                                 disabled={isActive}
                                 options={[
-                                    { value: 'aura-2-asteria-en', label: 'Asteria' },
-                                    { value: 'aura-2-luna-en', label: 'Luna' }
+                                    { value: 'aura-2-asteria-en', label: 'Asteria (Female)' },
+                                    { value: 'aura-2-luna-en', label: 'Luna (Female)' },
+                                    { value: 'aura-2-thalia-en', label: 'Thalia (Female)' },
+                                    { value: 'aura-2-orion-en', label: 'Orion (Male)' },
+                                    { value: 'aura-2-arcas-en', label: 'Arcas (Male)' }
                                 ]}
                             />
                         </div>
                         <div>
-                            <label className="text-xs font-mono text-ink-muted">Prompt</label>
+                            <label className="text-xs font-mono text-ink-muted">System Prompt</label>
                             <textarea
                                 className="w-full text-xs p-2 bg-bg-base border border-ink-faint rounded"
                                 value={config.system_prompt}
                                 onChange={e => setConfig({ ...config, system_prompt: e.target.value })}
                                 disabled={isActive}
                                 rows={3}
+                            />
+                        </div>
+                        <div>
+                            <label className="text-xs font-mono text-ink-muted">Greeting</label>
+                            <input
+                                type="text"
+                                className="w-full text-xs p-2 bg-bg-base border border-ink-faint rounded"
+                                value={config.greeting}
+                                onChange={e => setConfig({ ...config, greeting: e.target.value })}
+                                disabled={isActive}
                             />
                         </div>
 
@@ -297,10 +389,27 @@ const DeepgramVoiceAgent = () => {
                             )}
                         </Button>
 
+                        {/* Agent State */}
+                        {isActive && (
+                            <div className="flex justify-center pt-2">
+                                {getStateIndicator()}
+                            </div>
+                        )}
+
                         {error && (
-                            <div className="text-red-500 text-xs mt-2">{error}</div>
+                            <div className="text-red-500 text-xs mt-2 p-2 bg-red-500/10 rounded">{error}</div>
                         )}
                     </div>
+                </Card>
+
+                {/* Info Card */}
+                <Card title="ℹ️ Unified API">
+                    <p className="text-xs text-ink-muted leading-relaxed">
+                        Using Deepgram's Agent API for lowest latency.
+                        STT → LLM → TTS is processed server-side (~300ms response).
+                        <br /><br />
+                        <strong>Barge-in:</strong> Start speaking anytime to interrupt the agent.
+                    </p>
                 </Card>
             </div>
 
@@ -315,6 +424,7 @@ const DeepgramVoiceAgent = () => {
                             <div className="text-center text-ink-muted/30 py-10">
                                 <Bot size={48} className="mx-auto mb-2" />
                                 <p>Start speaking to begin conversation</p>
+                                <p className="text-xs mt-2">The agent will greet you first</p>
                             </div>
                         )}
 
@@ -333,7 +443,7 @@ const DeepgramVoiceAgent = () => {
                             </div>
                         ))}
 
-                        {/* Live pending transcript - shows what user is currently saying */}
+                        {/* Live pending transcript */}
                         {pendingTranscript && (
                             <div className="flex justify-end">
                                 <div className="max-w-[80%] rounded-lg p-3 bg-ink/5 border border-ink/20 border-dashed text-ink/70 animate-pulse">
