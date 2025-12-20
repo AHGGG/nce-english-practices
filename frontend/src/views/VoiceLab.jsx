@@ -9,6 +9,7 @@ import DeepgramVoiceAgent from '../components/VoiceLab/DeepgramVoiceAgent';
 import DeepgramUnified from '../components/VoiceLab/DeepgramUnified';
 import ConversationLoop from '../components/VoiceLab/ConversationLoop';
 import ElevenLabsLive from '../components/VoiceLab/ElevenLabsLive';
+import ElevenLabsVoiceAgent from '../components/VoiceLab/ElevenLabsVoiceAgent';
 import { Mic, Volume2, Radio, Server, Beaker, GraduationCap, Cloud, Zap, Globe, Cpu, Bot, TestTube2, RefreshCw } from 'lucide-react';
 
 const VoiceLab = () => {
@@ -178,6 +179,13 @@ const VoiceLab = () => {
                                     <section>
                                         <SectionHeader title="Text-to-Speech (Turbo v2.5)" icon={Volume2} />
                                         <TTSPanel config={config} fixedProvider="elevenlabs" />
+                                    </section>
+
+                                    <section>
+                                        <SectionHeader title="Voice Agent (STT + LLM + TTS)" icon={Bot} />
+                                        <div className="p-4 border border-ink-faint rounded bg-bg-elevated/50">
+                                            <ElevenLabsVoiceAgent />
+                                        </div>
                                     </section>
 
                                     <section>

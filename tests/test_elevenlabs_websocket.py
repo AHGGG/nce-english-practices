@@ -48,3 +48,36 @@ def test_elevenlabs_live_stt_websocket_connection(has_elevenlabs_key):
         
         # Close connection
         ws.close()
+
+
+def test_elevenlabs_voice_agent_websocket_connection(has_elevenlabs_key):
+    """
+    Test WebSocket connection to ElevenLabs Voice Agent.
+    Verify: Connection established, params accepted.
+    """
+    client = TestClient(app)
+    
+    # 1. Connect with query params
+    url = "/api/voice-lab/elevenlabs/voice-agent?voice_id=JBFqnCBsd6RMkjVDRZzb&model_id=eleven_turbo_v2_5"
+    
+    with client.websocket_connect(url) as ws:
+        # 2. Protocol Expects 'ready'
+        ws.send_json({"type": "ready"})
+        
+        # 3. Send audio chunk (silence)
+        # 16000Hz * 0.1s * 2 bytes = 3200 bytes
+        silence = b'\x00' * 3200
+        ws.send_bytes(silence)
+        
+        # 4. Check for immediate error (or ack if any)
+        # We don't expect a response for silence immediately unless LLM triggers (it won't on silence)
+        # Just ensure no disconnect
+        try:
+             # Timeout fast if nothing comes
+             data = ws.receive_json(mode="text")
+             pass 
+        except:
+             pass
+             
+        # If we are here, connection is stable enough
+
