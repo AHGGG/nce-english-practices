@@ -57,14 +57,18 @@ class VoiceSession:
                         tg.create_task(self._send_loop(session))
                         tg.create_task(self._receive_loop(session))
                 except* Exception as eg:
-                    # 'except*' is Python 3.11 syntax for ExceptionGroups
                     for exc in eg.exceptions:
-                        print(f"Task error: {exc}")
+                        print(f"WS: Task error: {exc}")
 
         except WebSocketDisconnect:
             print("WS: Connection Closed (Handshake/Loop)")
         except Exception as e:
-            print(f"WS: Error: {e}")
+            # Check for Google API errors
+            print(f"WS: Connection Error: {e}")
+            if hasattr(e, 'status_code'):
+                 print(f"WS: API Status Code: {e.status_code}")
+            if hasattr(e, 'message'):
+                 print(f"WS: API Message: {e.message}")
         finally:
             self.client_connected = False
             try:

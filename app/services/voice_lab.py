@@ -113,12 +113,12 @@ class GoogleProvider(VoiceProvider):
         self.api_key = settings.GEMINI_API_KEY
         self.client = None
         if self.api_key and genai:
-             # v1alpha required for Live API with these models
-             self.client = genai.Client(api_key=self.api_key, http_options={'api_version': 'v1alpha'})
+             # v1beta required for Live API with stable models
+             self.client = genai.Client(api_key=self.api_key, http_options={'api_version': 'v1beta'})
 
     def get_config(self) -> Dict[str, Any]:
         return {
-            "models": ["gemini-2.5-flash-native-audio-latest", "gemini-2.0-flash-exp"],
+            "models": ["gemini-2.0-flash", "gemini-2.5-flash", "gemini-2.0-flash-exp"],
             "voices": ["Puck", "Charon", "Kore", "Fenrir", "Aoede"] # Standard Gemini voices
         }
 
@@ -130,16 +130,22 @@ class GoogleProvider(VoiceProvider):
         
         # Set default model if generic 'model' passed
         if model == "default" or not model:
-            model = "gemini-2.5-flash-native-audio-latest"
+            model = "gemini-2.0-flash-exp" # Align with config.py
             
         try:
+            # Handle "default" voice_id from frontend
+            # The API rejects "default" as a voice name.
+            actual_voice = voice_id
+            if not actual_voice or actual_voice == "default":
+                actual_voice = "Puck"
+
             # Configure for TTS-only: voice selection and system instruction
             config = {
                 "response_modalities": ["AUDIO"],
                 "speech_config": {
                     "voice_config": {
                         "prebuilt_voice_config": {
-                            "voice_name": voice_id or "Puck"
+                            "voice_name": actual_voice
                         }
                     }
                 },

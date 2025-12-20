@@ -39,7 +39,7 @@ class LLMService:
         if self.gemini_key:
             self.voice_client = genai.Client(
                 api_key=self.gemini_key,
-                http_options={'api_version': 'v1alpha'}
+                http_options={'api_version': 'v1beta'}
             )
         else:
             self.voice_client = None

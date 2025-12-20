@@ -7,52 +7,138 @@ const LivePanel = ({ config, fixedProvider = null }) => {
     const [provider, setProvider] = useState(fixedProvider || 'deepgram');
     const [isConnected, setIsConnected] = useState(false);
     const [logs, setLogs] = useState([]);
+    const [transcript, setTranscript] = useState([]);
+    const [status, setStatus] = useState('');
 
     const wsRef = useRef(null);
+    const voiceClientRef = useRef(null);
+    const logsEndRef = useRef(null);
+    const transcriptEndRef = useRef(null);
 
     const appendLog = (msg) => {
-        setLogs(prev => [...prev, `[${new Date().toLocaleTimeString()}] ${msg}`].slice(-20)); // Keep last 20
+        setLogs(prev => [...prev, `[${new Date().toLocaleTimeString()}] ${msg}`].slice(-50));
     };
 
-    const toggleConnection = () => {
+    // Auto-scroll logs
+    useEffect(() => {
+        logsEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    }, [logs]);
+
+    // Auto-scroll transcript
+    useEffect(() => {
+        transcriptEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    }, [transcript]);
+
+    const toggleConnection = async () => {
         if (isConnected) {
-            if (wsRef.current) wsRef.current.close();
+            // Disconnect
+            if (voiceClientRef.current) {
+                voiceClientRef.current.disconnect();
+                voiceClientRef.current = null;
+            }
+            if (wsRef.current) {
+                wsRef.current.close();
+                wsRef.current = null;
+            }
             setIsConnected(false);
+            setStatus('');
             appendLog("Disconnected.");
         } else {
-            const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-            const url = `${protocol}//${window.location.host}/api/voice-lab/live/${provider}`;
+            // Connect
+            setIsConnected(true);
+            setStatus('Initializing...');
+            setTranscript([]); // Clear previous transcript
 
-            const ws = new WebSocket(url);
+            if (provider === 'google') {
+                // Use Real Gemini Live Client
+                try {
+                    const { GeminiLiveClient } = await import('../../api/gemini-live');
+                    const client = new GeminiLiveClient();
 
-            ws.onopen = () => {
-                setIsConnected(true);
-                appendLog(`Connected to ${url}`);
-                ws.send("Hello from Frontend!");
-            };
+                    client.onDisconnect = () => {
+                        setIsConnected(false);
+                        setStatus('');
+                        appendLog("Gemini Client Disconnected.");
+                        voiceClientRef.current = null;
+                    };
 
-            ws.onmessage = (event) => {
-                const data = JSON.parse(event.data);
-                appendLog(`RX: ${data.content}`);
-            };
+                    client.onTranscript = (text, isUser) => {
+                        // Append to transcript
+                        setTranscript(prev => {
+                            const last = prev[prev.length - 1];
+                            // Simple logic: if same role, can stick together or just separate blocks?
+                            // Live usually streams chunks.
+                            // Let's just append blocks for readability for now, or update last if same role?
+                            // For simplicity in this panel: just append everything as new line if it's substantial, 
+                            // or update last if it's partial? 
+                            // The api implementation sends chunks. Let's accumulate.
+                            if (last && last.isUser === isUser) {
+                                return [...prev.slice(0, -1), { ...last, text: last.text + text }];
+                            }
+                            return [...prev, { isUser, text }];
+                        });
+                        appendLog(`TRX (${isUser ? 'User' : 'AI'}): ${text.substring(0, 20)}...`);
+                    };
 
-            ws.onclose = () => {
-                setIsConnected(false);
-                appendLog("Connection closed.");
-            };
+                    client.onError = (err) => {
+                        appendLog(`Error: ${err}`);
+                    };
 
-            ws.onerror = (err) => {
-                console.error(err);
-                appendLog("Socket Error!");
-            };
+                    await client.connect({
+                        systemInstruction: "You are a helpful assistant in the Voice Lab.",
+                        voiceName: "Puck"
+                    });
 
-            wsRef.current = ws;
+                    voiceClientRef.current = client;
+                    setStatus('Listening...');
+                    appendLog("Connected to Gemini Live (Real)");
+
+                } catch (e) {
+                    console.error(e);
+                    appendLog(`Failed to connect: ${e.message}`);
+                    setIsConnected(false);
+                    setStatus('Error');
+                }
+            } else {
+                // Fallback Echo / Other Providers
+                const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+                const url = `${protocol}//${window.location.host}/api/voice-lab/live/${provider}`;
+
+                const ws = new WebSocket(url);
+
+                ws.onopen = () => {
+                    appendLog(`Connected to ${url} (Echo)`);
+                    ws.send("Hello from Frontend!");
+                    setStatus('Connected (Echo)');
+                };
+
+                ws.onmessage = (event) => {
+                    const data = JSON.parse(event.data);
+                    appendLog(`RX: ${data.content}`);
+                };
+
+                ws.onclose = () => {
+                    if (isConnected) { // Only log if we didn't initiate close
+                        setIsConnected(false);
+                        setStatus('');
+                        appendLog("Connection closed.");
+                    }
+                };
+
+                ws.onerror = (err) => {
+                    console.error(err);
+                    appendLog("Socket Error!");
+                };
+
+                wsRef.current = ws;
+            }
         }
     };
 
     useEffect(() => {
         return () => {
             if (wsRef.current) wsRef.current.close();
+            if (voiceClientRef.current) voiceClientRef.current.disconnect();
         };
     }, []);
 
@@ -117,19 +203,41 @@ const LivePanel = ({ config, fixedProvider = null }) => {
             </Card>
 
             <Card className="min-h-[400px] bg-black border-ink-faint font-mono text-xs p-0 overflow-hidden flex flex-col">
-                <div className="bg-bg-elevated px-4 py-2 border-b border-ink-faint flex items-center gap-2">
-                    <Terminal size={12} className="text-neon-cyan" />
-                    <span className="font-bold text-ink-muted">LIVE LOGS</span>
+                <div className="bg-bg-elevated px-4 py-2 border-b border-ink-faint flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                        <Terminal size={12} className="text-neon-cyan" />
+                        <span className="font-bold text-ink-muted">LIVE LOGS</span>
+                    </div>
+                    <span className="text-xs font-mono text-neon-pink animate-pulse">{status}</span>
                 </div>
-                <div className="p-4 flex-grow overflow-y-auto space-y-1 text-neon-green/80">
-                    {logs.length === 0 && (
-                        <span className="text-ink-muted/30 italic">Target ready. Initiate connection...</span>
-                    )}
+                <div className="p-4 h-32 overflow-y-auto space-y-1 text-neon-green/80 border-b border-ink-faint">
                     {logs.map((log, i) => (
                         <div key={i} className="break-all border-b border-white/5 pb-0.5 mb-0.5">
                             {log}
                         </div>
                     ))}
+                    <div ref={logsEndRef} />
+                </div>
+
+                {/* Transcript Area */}
+                <div className="flex-1 flex flex-col min-h-0 bg-bg-paper">
+                    <div className="bg-bg-elevated px-4 py-2 border-b border-ink-faint flex items-center gap-2">
+                        <Radio size={12} className="text-neon-pink" />
+                        <span className="font-bold text-ink-muted">TRANSCRIPT STREAM</span>
+                    </div>
+                    <div className="p-4 overflow-y-auto space-y-4 flex-1">
+                        {transcript.length === 0 && (
+                            <div className="text-ink-muted/30 italic text-center mt-10">Waiting for speech...</div>
+                        )}
+                        {transcript.map((msg, i) => (
+                            <div key={i} className={`flex ${msg.isUser ? 'justify-end' : 'justify-start'}`}>
+                                <div className={`max-w-[80%] p-3 rounded text-sm font-mono border ${msg.isUser ? 'bg-bg-elevated border-neon-cyan text-ink' : 'bg-black border-neon-pink text-neon-pink'}`}>
+                                    {msg.text}
+                                </div>
+                            </div>
+                        ))}
+                        <div ref={transcriptEndRef} />
+                    </div>
                 </div>
             </Card>
         </div>
