@@ -179,10 +179,30 @@ The application supports loading multiple MDX dictionaries simultaneously.
 - **Stage 1 (Theme)**: Generate vocabulary slots first (`app/generators/theme.py`).
 - **Stage 2 (Content)**: Generate sentences/stories using *only* the specific vocabulary from Stage 1.
 
-### 2. Unified Debugging (Log Bridge)
-- **Feature**: Frontend `console.log` / `warn` / `error` are automatically streamed to the backend terminal.
-- **Usage**: When debugging frontend issues, **check the backend terminal logs first**. You will see entries like `[FRONTEND] [LOG] Message...`.
-- **Benefit**: No need to ask the user to check browser console logs; you can see them directly in your stdout capture.
+### 2. Unified Log System (Log Bridge)
+
+A centralized logging system that collects both frontend and backend logs.
+
+**Architecture**:
+- **`app/services/log_collector.py`**: Color-coded terminal output + file logging
+- **`frontend/src/utils/logBridge.js`**: Intercepts `console.log/warn/error` and sends to backend
+- **Log File**: `logs/unified.log` (cleared on each server restart)
+
+**Categories** (Generic, not vendor-specific):
+| Category | Description | Color |
+|----------|-------------|-------|
+| `user_input` | User speech/text, STT results | Blue |
+| `agent_output` | AI responses, TTS | Green |
+| `function_call` | Tool/function executions | Violet |
+| `audio` | Audio processing, chunks | Cyan |
+| `network` | API calls, WebSocket, latency | Yellow |
+| `lifecycle` | Connect/disconnect/init | White |
+| `general` | Default | White |
+
+**For AI Debugging**: Read `logs/unified.log` directly:
+```powershell
+Get-Content logs/unified.log -Tail 50   # Last 50 lines
+```
 
 ### 3. Multi-Dictionary Isolation
 To support multiple dictionaries (e.g., Collins + LDOCE) in one view:

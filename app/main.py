@@ -49,29 +49,46 @@ from app.api.routers import elevenlabs_websocket
 app.include_router(elevenlabs_websocket.router)
 
 from app.models.schemas import RemoteLog
+from app.services.log_collector import (
+    log_collector, LogEntry, LogSource, LogLevel, LogCategory, detect_category
+)
+from datetime import datetime
 
 @app.post("/api/logs")
 async def receive_remote_log(log: RemoteLog):
     """
-    Receive logs from frontend and print them to backend console.
+    Receive logs from frontend and add to unified log collector.
     """
-    prefix = f"[FRONTEND] [{log.level.upper()}]"
-    if log.timestamp:
-        prefix += f" [{log.timestamp}]"
+    # Parse level
+    try:
+        level = LogLevel(log.level.lower())
+    except ValueError:
+        level = LogLevel.INFO
     
-    print(f"{prefix} {log.message}")
+    # Detect or use provided category
+    if log.category:
+        try:
+            category = LogCategory(log.category)
+        except ValueError:
+            category = detect_category(log.message, log.data)
+    else:
+        category = detect_category(log.message, log.data)
     
-    if log.data:
-        # Check for stack trace to print nicely
-        stack = log.data.get("stack")
-        if stack:
-            print(f"{prefix} STACK TRACE:\n{stack}")
-            # Remove stack from data to avoid double printing if we want to print the rest
-            del log.data["stack"]
-        
-        if log.data:
-            print(f"{prefix} Data: {log.data}")
+    # Parse timestamp
+    try:
+        timestamp = datetime.fromisoformat(log.timestamp) if log.timestamp else datetime.now()
+    except (ValueError, TypeError):
+        timestamp = datetime.now()
     
+    entry = LogEntry(
+        timestamp=timestamp,
+        source=LogSource.FRONTEND,
+        level=level,
+        category=category,
+        message=log.message,
+        data=log.data
+    )
+    log_collector.add(entry)
     return {"status": "ok"}
 
 

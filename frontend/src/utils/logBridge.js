@@ -24,6 +24,46 @@ function formatError(error) {
     return error;
 }
 
+/**
+ * Detect log category from message content.
+ * Uses generic patterns that work across any vendor.
+ */
+function detectCategory(message) {
+    const msg = String(message).toLowerCase();
+    
+    // Lifecycle events
+    if (['connected', 'disconnected', 'initialized', 'closed', 'started', 'stopped', 'ready', 'session'].some(kw => msg.includes(kw))) {
+        return 'lifecycle';
+    }
+    
+    // User input (STT, transcripts)
+    if (['transcript', 'user said', 'user input', 'speech-to-text', 'stt', 'recognition'].some(kw => msg.includes(kw))) {
+        return 'user_input';
+    }
+    
+    // Agent output (TTS, responses)
+    if (['agent', 'assistant', 'response', 'text-to-speech', 'tts', 'speaking'].some(kw => msg.includes(kw))) {
+        return 'agent_output';
+    }
+    
+    // Audio processing
+    if (['audio', 'playback', 'chunk', 'sample rate', 'buffer', 'pcm', 'mp3', 'wav'].some(kw => msg.includes(kw))) {
+        return 'audio';
+    }
+    
+    // Function/tool calls
+    if (['function', 'tool', 'calling', 'invoke', 'execute'].some(kw => msg.includes(kw))) {
+        return 'function_call';
+    }
+    
+    // Network/API
+    if (['websocket', 'api', 'fetch', 'request', 'latency', 'timeout'].some(kw => msg.includes(kw))) {
+        return 'network';
+    }
+    
+    return 'general';
+}
+
 function sendToBackend(level, message, ...args) {
     const timestamp = new Date().toISOString();
     
@@ -79,6 +119,9 @@ function sendToBackend(level, message, ...args) {
         }
     }
 
+    // Detect category from message
+    const category = detectCategory(finalMessage);
+
     fetch(BRIDGE_ENDPOINT, {
         method: 'POST',
         headers: {
@@ -88,6 +131,7 @@ function sendToBackend(level, message, ...args) {
             level,
             message: finalMessage,
             data,
+            category,
             timestamp
         })
     }).catch(err => {

@@ -156,3 +156,4 @@ class RemoteLog(BaseModel):
     message: str
     data: Optional[Dict] = None
     timestamp: Optional[str] = None
+    category: Optional[str] = None  # Optional category hint from frontend
