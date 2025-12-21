@@ -153,3 +153,17 @@
 - [x] **Backend**: Integration tests for all voice vendors.
 - [x] **WebSocket**: Automated connection tests for Deepgram.
 - [x] **Utilities**: PCM Simulation, Semantic Similarity, Log Capture.
+
+## 🔧 Phase 15: Voice Agent Function Calling (Completed 2025-12-20)
+- [x] **Agent Functions Module**: Created `app/services/agent_functions.py`.
+    - [x] `lookup_word`: Dictionary lookup using MDX dictionaries.
+    - [x] `get_example_sentences`: LLM-generated example sentences.
+    - [x] `agent_filler`: Conversational filler ("Let me look that up...").
+    - [x] `end_call`: Graceful call termination.
+- [x] **Backend Integration**: Modified `deepgram_websocket.py`.
+    - [x] `functions_enabled` query parameter.
+    - [x] `FunctionCallRequest` event handling.
+    - [x] Function execution and `FunctionCallResponse` sending.
+- [x] **Frontend UI**: Updated `DeepgramVoiceAgent.jsx`.
+    - [x] Toggle switch for enabling functions.
+    - [x] Function call/result display in conversation.

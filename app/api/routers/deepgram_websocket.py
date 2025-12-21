@@ -14,6 +14,11 @@ import websockets  # Standard websockets client
 
 from app.config import settings
 from app.services.llm import llm_service
+from app.services.agent_functions import (
+    FUNCTION_DEFINITIONS,
+    FUNCTION_MAP,
+    is_special_function,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -448,8 +453,9 @@ async def deepgram_unified_voice_agent_websocket(
     websocket: WebSocket,
     voice: str = Query(default="aura-2-asteria-en", description="TTS voice model"),
     llm_provider: str = Query(default="default", description="LLM provider: default (gpt-4o-mini), dashscope, or deepseek"),
-    system_prompt: str = Query(default="You are a helpful and concise AI assistant. Keep responses brief."),
-    greeting: str = Query(default="Hello! How can I help you today?")
+    system_prompt: str = Query(default="You are a helpful and concise AI assistant. Keep responses brief, and don't use markdown in your response."),
+    greeting: str = Query(default="Hello! How can I help you today?"),
+    functions_enabled: bool = Query(default=True, description="Enable function calling for lookup_word, get_example_sentences, etc.")
 ):
     """
     Unified Voice Agent using Deepgram's Agent API.
@@ -521,6 +527,11 @@ async def deepgram_unified_voice_agent_websocket(
             "prompt": system_prompt,
         }
 
+    # Add functions to think_config if enabled
+    if functions_enabled:
+        think_config["functions"] = FUNCTION_DEFINITIONS
+        logger.info(f"Function calling enabled with {len(FUNCTION_DEFINITIONS)} functions")
+
     # Build complete settings message (following best practices from examples)
     agent_settings = {
         "type": "Settings",
@@ -567,7 +578,10 @@ async def deepgram_unified_voice_agent_websocket(
         ) as dg_ws:
             # Send settings first
             await dg_ws.send(json.dumps(agent_settings))
-            logger.info(f"Sent agent settings: voice={voice}, llm={llm_provider}")
+            logger.info(f"Sent agent settings: voice={voice}, llm={llm_provider}, functions={functions_enabled}")
+            
+            # Track connection state for function handling
+            should_close = False
             
             # Notify client we're ready
             await websocket.send_json({
@@ -575,6 +589,7 @@ async def deepgram_unified_voice_agent_websocket(
                 "voice": voice,
                 "llm_provider": llm_provider,
                 "sample_rate": AGENT_AUDIO_SAMPLE_RATE,
+                "functions_enabled": functions_enabled,
             })
 
             # Task: Receive from Deepgram -> Forward to Client
@@ -632,6 +647,105 @@ async def deepgram_unified_voice_agent_websocket(
                                             "content": content,
                                         })
                                 
+                                elif msg_type == "FunctionCalling":
+                                    # LLM is about to call a function
+                                    logger.info(f"[Function] LLM deciding to call function...")
+                                    await websocket.send_json({
+                                        "type": "function_calling",
+                                    })
+                                
+                                elif msg_type == "FunctionCallRequest":
+                                    # Deepgram requests function execution
+                                    nonlocal should_close
+                                    functions = data.get("functions", [])
+                                    
+                                    for func_data in functions:
+                                        function_name = func_data.get("name")
+                                        function_call_id = func_data.get("id")
+                                        arguments_str = func_data.get("arguments", "{}")
+                                        
+                                        try:
+                                            parameters = json.loads(arguments_str) if isinstance(arguments_str, str) else arguments_str
+                                        except json.JSONDecodeError:
+                                            parameters = {}
+                                        
+                                        logger.info(f"[Function] Calling: {function_name}({json.dumps(parameters)})")
+                                        
+                                        # Notify client about function call
+                                        await websocket.send_json({
+                                            "type": "function_call",
+                                            "name": function_name,
+                                            "parameters": parameters,
+                                        })
+                                        
+                                        try:
+                                            # Get and execute the function
+                                            func = FUNCTION_MAP.get(function_name)
+                                            if not func:
+                                                raise ValueError(f"Function '{function_name}' not found")
+                                            
+                                            # Execute function
+                                            result = await func(parameters, dg_ws)
+                                            
+                                            # Handle special functions (agent_filler, end_call)
+                                            if is_special_function(function_name):
+                                                function_response = result.get("function_response", result)
+                                                inject_message = result.get("inject_message")
+                                                close_message = result.get("close_message")
+                                                
+                                                # Send function response first
+                                                response = {
+                                                    "type": "FunctionCallResponse",
+                                                    "id": function_call_id,
+                                                    "name": function_name,
+                                                    "content": json.dumps(function_response),
+                                                }
+                                                await dg_ws.send(json.dumps(response))
+                                                logger.info(f"[Function] Response sent: {json.dumps(function_response)[:100]}")
+                                                
+                                                # Send inject message if present
+                                                if inject_message:
+                                                    await dg_ws.send(json.dumps(inject_message))
+                                                    logger.info(f"[Function] Injected: {inject_message.get('message', '')[:50]}")
+                                                
+                                                # Handle close request
+                                                if close_message:
+                                                    should_close = True
+                                                    logger.info("[Function] Connection close requested after farewell")
+                                            else:
+                                                # Regular function - send result directly
+                                                response = {
+                                                    "type": "FunctionCallResponse",
+                                                    "id": function_call_id,
+                                                    "name": function_name,
+                                                    "content": json.dumps(result),
+                                                }
+                                                await dg_ws.send(json.dumps(response))
+                                                logger.info(f"[Function] Response sent: {json.dumps(result)[:100]}")
+                                            
+                                            # Notify client about result
+                                            await websocket.send_json({
+                                                "type": "function_result",
+                                                "name": function_name,
+                                                "result": result.get("function_response", result) if is_special_function(function_name) else result,
+                                            })
+                                            
+                                        except Exception as e:
+                                            logger.error(f"[Function] Error executing {function_name}: {e}")
+                                            error_response = {
+                                                "type": "FunctionCallResponse",
+                                                "id": function_call_id,
+                                                "name": function_name,
+                                                "content": json.dumps({"error": str(e)}),
+                                            }
+                                            await dg_ws.send(json.dumps(error_response))
+                                            
+                                            await websocket.send_json({
+                                                "type": "function_result",
+                                                "name": function_name,
+                                                "result": {"error": str(e)},
+                                            })
+                                
                                 elif msg_type == "Error":
                                     logger.error(f"Deepgram Agent Error: {data}")
                                     await websocket.send_json({
@@ -642,6 +756,7 @@ async def deepgram_unified_voice_agent_websocket(
                                 elif msg_type == "CloseConnection":
                                     logger.info("Deepgram requested close")
                                     break
+
                                     
                             except json.JSONDecodeError:
                                 logger.warning(f"Non-JSON message from Deepgram: {message[:100]}")

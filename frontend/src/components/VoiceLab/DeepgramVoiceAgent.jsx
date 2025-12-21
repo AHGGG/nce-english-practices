@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Card, Button, Tag, Select } from '../ui';
-import { Mic, MicOff, Bot, User, Volume2, Loader2, Radio } from 'lucide-react';
+import { Mic, MicOff, Bot, User, Volume2, Loader2, Radio, Wrench } from 'lucide-react';
 
 /**
  * Deepgram Voice Agent - Unified API Version
@@ -23,8 +23,9 @@ const DeepgramVoiceAgent = () => {
     const [config, setConfig] = useState({
         voice: 'aura-2-asteria-en',
         llm_provider: 'default',  // Default: uses Deepgram's built-in gpt-4o-mini
-        system_prompt: 'You are a helpful and concise AI assistant. Keep responses brief.',
-        greeting: 'Hello! How can I help you today?'
+        system_prompt: 'You are a helpful and concise AI English learning assistant. You can look up words in the dictionary and provide example sentences. Keep responses brief and educational.',
+        greeting: 'Hello! I can help you learn English. Ask me to define words or give examples!',
+        functions_enabled: true  // Enable function calling by default
     });
 
     const wsRef = useRef(null);
@@ -225,6 +226,42 @@ const DeepgramVoiceAgent = () => {
                 console.log('[Agent] Thinking:', msg.content);
                 break;
 
+            case 'function_calling':
+                // LLM is deciding to call a function
+                console.log('[Agent] Function calling initiated');
+                setAgentState('thinking');
+                break;
+
+            case 'function_call':
+                // Function is being executed
+                console.log('[Agent] Function call:', msg.name, msg.parameters);
+                setMessages(prev => [...prev, {
+                    role: 'function',
+                    type: 'call',
+                    name: msg.name,
+                    parameters: msg.parameters,
+                    timestamp: new Date().toISOString()
+                }]);
+                break;
+
+            case 'function_result':
+                // Function returned a result
+                console.log('[Agent] Function result:', msg.name, msg.result);
+                setMessages(prev => [...prev, {
+                    role: 'function',
+                    type: 'result',
+                    name: msg.name,
+                    result: msg.result,
+                    timestamp: new Date().toISOString()
+                }]);
+                // Auto scroll
+                setTimeout(() => {
+                    if (chatContainerRef.current) {
+                        chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
+                    }
+                }, 50);
+                break;
+
             case 'error':
                 setError(msg.message);
                 break;
@@ -322,144 +359,191 @@ const DeepgramVoiceAgent = () => {
     };
 
     return (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-[600px]">
-            {/* Configuration Column */}
-            <div className="lg:col-span-1 space-y-6">
-                <Card title="Agent Settings">
-                    <div className="space-y-4">
-                        <div>
-                            <label className="text-xs font-mono text-ink-muted">LLM Provider</label>
-                            <Select
-                                value={config.llm_provider}
-                                onChange={e => setConfig({ ...config, llm_provider: e.target.value })}
-                                disabled={isActive}
-                                options={[
-                                    { value: 'default', label: 'Default (GPT-4o-mini)' },
-                                    { value: 'dashscope', label: 'Dashscope (Qwen)' },
-                                    { value: 'deepseek', label: 'DeepSeek' }
-                                ]}
-                            />
-                        </div>
-                        <div>
-                            <label className="text-xs font-mono text-ink-muted">Voice</label>
-                            <Select
-                                value={config.voice}
-                                onChange={e => setConfig({ ...config, voice: e.target.value })}
-                                disabled={isActive}
-                                options={[
-                                    { value: 'aura-2-asteria-en', label: 'Asteria (Female)' },
-                                    { value: 'aura-2-luna-en', label: 'Luna (Female)' },
-                                    { value: 'aura-2-thalia-en', label: 'Thalia (Female)' },
-                                    { value: 'aura-2-orion-en', label: 'Orion (Male)' },
-                                    { value: 'aura-2-arcas-en', label: 'Arcas (Male)' }
-                                ]}
-                            />
-                        </div>
-                        <div>
-                            <label className="text-xs font-mono text-ink-muted">System Prompt</label>
-                            <textarea
-                                className="w-full text-xs p-2 bg-bg-base border border-ink-faint rounded"
-                                value={config.system_prompt}
-                                onChange={e => setConfig({ ...config, system_prompt: e.target.value })}
-                                disabled={isActive}
-                                rows={3}
-                            />
-                        </div>
-                        <div>
-                            <label className="text-xs font-mono text-ink-muted">Greeting</label>
-                            <input
-                                type="text"
-                                className="w-full text-xs p-2 bg-bg-base border border-ink-faint rounded"
-                                value={config.greeting}
-                                onChange={e => setConfig({ ...config, greeting: e.target.value })}
-                                disabled={isActive}
-                            />
-                        </div>
+        <div className="w-full">
+            {/* Main Grid Layout */}
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                {/* Configuration Column - Left Side */}
+                <div className="lg:col-span-4 xl:col-span-3 space-y-4">
+                    <Card title="Agent Settings">
+                        <div className="space-y-4">
+                            <div>
+                                <label className="text-xs font-mono text-ink-muted">LLM Provider</label>
+                                <Select
+                                    value={config.llm_provider}
+                                    onChange={e => setConfig({ ...config, llm_provider: e.target.value })}
+                                    disabled={isActive}
+                                    options={[
+                                        { value: 'default', label: 'Default (GPT-4o-mini)' },
+                                        { value: 'dashscope', label: 'Dashscope (Qwen)' },
+                                        { value: 'deepseek', label: 'DeepSeek' }
+                                    ]}
+                                />
+                            </div>
+                            <div>
+                                <label className="text-xs font-mono text-ink-muted">Voice</label>
+                                <Select
+                                    value={config.voice}
+                                    onChange={e => setConfig({ ...config, voice: e.target.value })}
+                                    disabled={isActive}
+                                    options={[
+                                        { value: 'aura-2-asteria-en', label: 'Asteria (Female)' },
+                                        { value: 'aura-2-luna-en', label: 'Luna (Female)' },
+                                        { value: 'aura-2-thalia-en', label: 'Thalia (Female)' },
+                                        { value: 'aura-2-orion-en', label: 'Orion (Male)' },
+                                        { value: 'aura-2-arcas-en', label: 'Arcas (Male)' }
+                                    ]}
+                                />
+                            </div>
+                            <div>
+                                <label className="text-xs font-mono text-ink-muted">System Prompt</label>
+                                <textarea
+                                    className="w-full text-xs p-2 bg-bg-base border border-ink-faint rounded resize-none"
+                                    value={config.system_prompt}
+                                    onChange={e => setConfig({ ...config, system_prompt: e.target.value })}
+                                    disabled={isActive}
+                                    rows={2}
+                                />
+                            </div>
+                            <div>
+                                <label className="text-xs font-mono text-ink-muted">Greeting</label>
+                                <input
+                                    type="text"
+                                    className="w-full text-xs p-2 bg-bg-base border border-ink-faint rounded"
+                                    value={config.greeting}
+                                    onChange={e => setConfig({ ...config, greeting: e.target.value })}
+                                    disabled={isActive}
+                                />
+                            </div>
+                            <div className="flex items-center justify-between py-1">
+                                <div>
+                                    <label className="text-xs font-mono text-ink-muted">Function Calling</label>
+                                    <p className="text-[10px] text-ink-muted/60">lookup, examples, end_call</p>
+                                </div>
+                                <button
+                                    type="button"
+                                    className={`relative w-10 h-5 rounded-full transition-colors ${config.functions_enabled ? 'bg-neon-cyan' : 'bg-ink/20'}`}
+                                    onClick={() => setConfig({ ...config, functions_enabled: !config.functions_enabled })}
+                                    disabled={isActive}
+                                >
+                                    <span className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white transition-transform ${config.functions_enabled ? 'translate-x-5' : 'translate-x-0'}`} />
+                                </button>
+                            </div>
 
-                        <Button
-                            fullWidth
-                            variant={isActive ? "danger" : "neon"}
-                            onClick={isActive ? stopAgent : startAgent}
-                            isLoading={connectionState === 'connecting'}
-                        >
-                            {isActive ? (
-                                <> <MicOff size={16} className="mr-2" /> End Session </>
-                            ) : (
-                                <> <Mic size={16} className="mr-2" /> Start Voice Agent </>
+                            <Button
+                                fullWidth
+                                variant={isActive ? "danger" : "neon"}
+                                onClick={isActive ? stopAgent : startAgent}
+                                isLoading={connectionState === 'connecting'}
+                            >
+                                {isActive ? (
+                                    <> <MicOff size={16} className="mr-2" /> End Session </>
+                                ) : (
+                                    <> <Mic size={16} className="mr-2" /> Start Voice Agent </>
+                                )}
+                            </Button>
+
+                            {/* Agent State */}
+                            {isActive && (
+                                <div className="flex justify-center">
+                                    {getStateIndicator()}
+                                </div>
                             )}
-                        </Button>
 
-                        {/* Agent State */}
-                        {isActive && (
-                            <div className="flex justify-center pt-2">
-                                {getStateIndicator()}
-                            </div>
-                        )}
+                            {error && (
+                                <div className="text-red-500 text-xs p-2 bg-red-500/10 rounded">{error}</div>
+                            )}
+                        </div>
+                    </Card>
 
-                        {error && (
-                            <div className="text-red-500 text-xs mt-2 p-2 bg-red-500/10 rounded">{error}</div>
-                        )}
+                    {/* Info Card - Collapsible on smaller screens */}
+                    <div className="hidden lg:block">
+                        <Card title="ℹ️ Voice Agent">
+                            <p className="text-xs text-ink-muted leading-relaxed">
+                                Using Deepgram's Agent API for lowest latency (~300ms).
+                                <br /><br />
+                                <strong>Barge-in:</strong> Speak anytime to interrupt.
+                                {config.functions_enabled && (
+                                    <>
+                                        <br /><br />
+                                        <strong>Functions:</strong> "Define [word]" or "Examples of [word]"
+                                    </>
+                                )}
+                            </p>
+                        </Card>
                     </div>
-                </Card>
+                </div>
 
-                {/* Info Card */}
-                <Card title="ℹ️ Unified API">
-                    <p className="text-xs text-ink-muted leading-relaxed">
-                        Using Deepgram's Agent API for lowest latency.
-                        STT → LLM → TTS is processed server-side (~300ms response).
-                        <br /><br />
-                        <strong>Barge-in:</strong> Start speaking anytime to interrupt the agent.
-                    </p>
-                </Card>
-            </div>
-
-            {/* Chat Column */}
-            <div className="lg:col-span-2 h-full">
-                <Card title="Live Conversation" className="h-full flex flex-col">
-                    <div
-                        ref={chatContainerRef}
-                        className="flex-grow overflow-y-auto space-y-4 p-4 bg-bg-base rounded-md"
-                    >
-                        {messages.length === 0 && (
-                            <div className="text-center text-ink-muted/30 py-10">
-                                <Bot size={48} className="mx-auto mb-2" />
-                                <p>Start speaking to begin conversation</p>
-                                <p className="text-xs mt-2">The agent will greet you first</p>
-                            </div>
-                        )}
-
-                        {messages.map((msg, i) => (
-                            <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                                <div className={`max-w-[80%] rounded-lg p-3 ${msg.role === 'user'
-                                    ? 'bg-ink/5 border border-ink/10 text-ink'
-                                    : 'bg-neon-cyan/5 border border-neon-cyan/20 text-neon-cyan'
-                                    }`}>
-                                    <div className="flex items-center gap-2 mb-1 opacity-50 text-xs">
-                                        {msg.role === 'user' ? <User size={12} /> : <Bot size={12} />}
-                                        <span>{msg.role.toUpperCase()}</span>
-                                    </div>
-                                    <p className="text-sm leading-relaxed">{msg.text}</p>
+                {/* Chat Column - Right Side */}
+                <div className="lg:col-span-8 xl:col-span-9">
+                    <Card title="Live Conversation" className="h-full flex flex-col">
+                        <div
+                            ref={chatContainerRef}
+                            className="flex-grow overflow-y-auto space-y-3 p-4 bg-bg-base rounded-md min-h-[400px] max-h-[500px]"
+                        >
+                            {messages.length === 0 && (
+                                <div className="text-center text-ink-muted/30 py-10">
+                                    <Bot size={48} className="mx-auto mb-2" />
+                                    <p>Start speaking to begin</p>
+                                    <p className="text-xs mt-2">The agent will greet you first</p>
                                 </div>
-                            </div>
-                        ))}
+                            )}
 
-                        {/* Live pending transcript */}
-                        {pendingTranscript && (
-                            <div className="flex justify-end">
-                                <div className="max-w-[80%] rounded-lg p-3 bg-ink/5 border border-ink/20 border-dashed text-ink/70 animate-pulse">
-                                    <div className="flex items-center gap-2 mb-1 opacity-50 text-xs">
-                                        <User size={12} />
-                                        <span>SPEAKING...</span>
+                            {messages.map((msg, i) => {
+                                // Function call/result messages
+                                if (msg.role === 'function') {
+                                    return (
+                                        <div key={i} className="flex justify-center">
+                                            <div className="max-w-[90%] rounded-lg p-2 bg-violet-500/10 border border-violet-500/30 text-violet-400">
+                                                <div className="flex items-center gap-2 text-xs">
+                                                    <Wrench size={12} />
+                                                    <span className="font-mono truncate">
+                                                        {msg.type === 'call'
+                                                            ? `⚡ ${msg.name}(${JSON.stringify(msg.parameters)})`
+                                                            : `✓ ${msg.name}: ${msg.result?.message || (msg.result?.found !== undefined ? (msg.result.found ? 'Found' : 'Not found') : 'Done')}`
+                                                        }
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    );
+                                }
+
+                                // User/AI messages
+                                return (
+                                    <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                                        <div className={`max-w-[80%] rounded-lg p-3 ${msg.role === 'user'
+                                            ? 'bg-ink/5 border border-ink/10 text-ink'
+                                            : 'bg-neon-cyan/5 border border-neon-cyan/20 text-neon-cyan'
+                                            }`}>
+                                            <div className="flex items-center gap-2 mb-1 opacity-50 text-xs">
+                                                {msg.role === 'user' ? <User size={12} /> : <Bot size={12} />}
+                                                <span>{msg.role === 'user' ? 'YOU' : 'AI'}</span>
+                                            </div>
+                                            <p className="text-sm leading-relaxed">{msg.text}</p>
+                                        </div>
                                     </div>
-                                    <p className="text-sm leading-relaxed italic">{pendingTranscript}</p>
+                                );
+                            })}
+
+                            {/* Live pending transcript */}
+                            {pendingTranscript && (
+                                <div className="flex justify-end">
+                                    <div className="max-w-[80%] rounded-lg p-3 bg-ink/5 border border-ink/20 border-dashed text-ink/70 animate-pulse">
+                                        <div className="flex items-center gap-2 mb-1 opacity-50 text-xs">
+                                            <User size={12} />
+                                            <span>SPEAKING...</span>
+                                        </div>
+                                        <p className="text-sm leading-relaxed italic">{pendingTranscript}</p>
+                                    </div>
                                 </div>
-                            </div>
-                        )}
-                    </div>
-                </Card>
+                            )}
+                        </div>
+                    </Card>
+                </div>
             </div>
         </div>
     );
 };
 
 export default DeepgramVoiceAgent;
+
