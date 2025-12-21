@@ -256,5 +256,101 @@ def detect_category(message: str, data: Optional[dict] = None) -> LogCategory:
     return LogCategory.GENERAL
 
 
+# =============================================================================
+# Python Logging Handler Bridge
+# =============================================================================
+
+import logging
+
+class LogCollectorHandler(logging.Handler):
+    """
+    Python logging.Handler that bridges standard logging to LogCollector.
+    
+    This allows all backend logger.info(), logger.error() etc. calls
+    to be captured in the unified log file.
+    """
+    
+    def __init__(self, collector: LogCollector):
+        super().__init__()
+        self._collector = collector
+        # Track logged records to prevent duplicates from propagation
+        self._logged_records = set()
+    
+    def emit(self, record: logging.LogRecord) -> None:
+        """Called by Python logging framework for each log record"""
+        try:
+            # Deduplicate: use (timestamp, message) as key
+            record_key = (record.created, record.getMessage())
+            if record_key in self._logged_records:
+                return
+            self._logged_records.add(record_key)
+            
+            # Keep set size bounded (clear old entries periodically)
+            if len(self._logged_records) > 1000:
+                self._logged_records.clear()
+            
+            # Map Python log level to our LogLevel
+            level_map = {
+                logging.DEBUG: LogLevel.DEBUG,
+                logging.INFO: LogLevel.INFO,
+                logging.WARNING: LogLevel.WARN,
+                logging.ERROR: LogLevel.ERROR,
+                logging.CRITICAL: LogLevel.ERROR,
+            }
+            level = level_map.get(record.levelno, LogLevel.INFO)
+            
+            # Format message
+            message = self.format(record)
+            
+            # Detect category from message
+            category = detect_category(message)
+            
+            # Create log entry
+            entry = LogEntry(
+                timestamp=datetime.fromtimestamp(record.created),
+                source=LogSource.BACKEND,
+                level=level,
+                category=category,
+                message=message,
+                data=None
+            )
+            
+            # Write to file only (don't print again, Python logging already prints)
+            self._collector._write_to_file(entry)
+            
+        except Exception:
+            # Never crash on logging errors
+            pass
+
+
+def setup_logging(collector: LogCollector = None) -> None:
+    """
+    Set up Python logging to also write to the unified log file.
+    
+    Call this once at application startup to bridge all logger.xxx() calls
+    to the LogCollector.
+    """
+    if collector is None:
+        collector = log_collector
+    
+    # Check if handler already exists (prevents duplicates on uvicorn reload)
+    root_logger = logging.getLogger()
+    for handler in root_logger.handlers:
+        if isinstance(handler, LogCollectorHandler):
+            return  # Already set up
+    
+    # Create handler
+    handler = LogCollectorHandler(collector)
+    handler.setLevel(logging.DEBUG)
+    
+    # Simple format - just the message since LogCollector adds timestamp/level
+    formatter = logging.Formatter("%(name)s: %(message)s")
+    handler.setFormatter(formatter)
+    
+    # Add to root logger only (child loggers inherit handlers)
+    root_logger.addHandler(handler)
+
+
 # Singleton instance
 log_collector = LogCollector()
+

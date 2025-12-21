@@ -7,6 +7,7 @@ import os
 
 from app.services.dictionary import dict_manager
 from app.api.routers import voice, dictionary, content, practice, stats, deepgram, coach, voice_lab
+from app.services.log_collector import setup_logging
 import logging
 
 # Configure logging
@@ -17,6 +18,9 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 load_dotenv()
+
+# Setup unified logging (bridges Python logging to logs/unified.log)
+setup_logging()
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
