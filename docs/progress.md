@@ -167,3 +167,25 @@
 - [x] **Frontend UI**: Updated `DeepgramVoiceAgent.jsx`.
     - [x] Toggle switch for enabling functions.
     - [x] Function call/result display in conversation.
+
+## 🎨 Phase 16: AUI Streaming System (Completed 2025-12-21)
+- [x] **Event System**: Created AG-UI compatible event types (`app/services/aui_events.py`).
+    - [x] `RENDER_SNAPSHOT`: Backward compatible with existing `AUIRenderPacket`.
+    - [x] `TEXT_DELTA`: Streaming text incremental updates.
+    - [x] `STATE_DELTA`: JSON Patch state updates (defined, not yet used).
+    - [x] `STREAM_START/END/ERROR`: Lifecycle events.
+- [x] **Streaming Service**: Implemented `AUIStreamingService` (`app/services/aui_streaming.py`).
+    - [x] `stream_story_presentation()`: Stream story with incremental text deltas.
+    - [x] `stream_vocabulary_cards()`: Stream vocabulary cards progressively.
+- [x] **SSE API Endpoints**: Added streaming routes (`app/api/routers/aui_stream.py`).
+    - [x] `GET /aui/stream/story`: Stream story presentations.
+    - [x] `GET /aui/stream/vocabulary`: Stream vocabulary cards.
+- [x] **Frontend Stream Hydrator**: Created `AUIStreamHydrator.jsx`.
+    - [x] EventSource integration for SSE consumption.
+    - [x] Text delta accumulation and component state updates.
+    - [x] Dynamic component loading from AUI registry.
+- [x] **Testing Page**: Built `AUIStreamingDemo.jsx` with full test UI.
+    - [x] User level selection (i+1 Scaffolding).
+    - [x] Story and vocabulary streaming tests.
+    - [x] Route registered at `/aui-stream-demo`.
+- [x] **Verification**: Confirmed all endpoints functional via curl tests.

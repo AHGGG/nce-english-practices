@@ -11,6 +11,7 @@ import Stats from './views/Stats';
 import Coach from './views/Coach'; // New Coach View
 import VoiceLab from './views/VoiceLab'; // Voice Vendor Test Page
 import Playground from './views/Playground';
+import AUIStreamingDemo from './views/AUIStreamingDemo'; // AUI Streaming Test
 
 function App() {
   return (
@@ -23,6 +24,7 @@ function App() {
               <Route path="/coach" element={<Coach />} />
               <Route path="/voice-lab" element={<VoiceLab />} />
               <Route path="/playground" element={<Playground />} />
+              <Route path="/aui-stream-demo" element={<AUIStreamingDemo />} />
 
               {/* Mixed Mode Routes (Legacy/Standard) */}
               <Route path="/" element={<Layout />}>

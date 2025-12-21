@@ -123,7 +123,8 @@ class LogCollector:
                 if entry.data:
                     stack = entry.data.get("stack")
                     if stack:
-                        line += f"  STACK: {stack[:500]}...\n" if len(stack) > 500 else f"  STACK: {stack}\n"
+                        # Write full stack without truncation
+                        line += f"  STACK:\n{stack}\n"
                     other = {k: v for k, v in entry.data.items() if k != "stack"}
                     if other:
                         line += f"  DATA: {other}\n"
@@ -196,8 +197,14 @@ class LogCollector:
             stack = entry.data.get("stack")
             if stack:
                 print(f"{Colors.DIM}  Stack:{Colors.RESET}")
-                for line in stack.split("\n")[:5]:  # Limit stack trace lines
-                    print(f"{Colors.DIM}    {line}{Colors.RESET}")
+                # Show more lines for errors
+                max_lines = 10 if entry.level == LogLevel.ERROR else 5
+                stack_lines = stack.split("\n")
+                for line in stack_lines[:max_lines]:
+                    if line.strip():
+                        print(f"{Colors.DIM}    {line}{Colors.RESET}")
+                if len(stack_lines) > max_lines:
+                    print(f"{Colors.DIM}    ... ({len(stack_lines) - max_lines} more lines in unified.log){Colors.RESET}")
             
             # Print other data
             other_data = {k: v for k, v in entry.data.items() if k != "stack"}

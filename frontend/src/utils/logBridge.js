@@ -91,6 +91,12 @@ function sendToBackend(level, message, ...args) {
             stackTrace = fmt.stack;
             errName = fmt.name;
         }
+        
+        // Also capture stack from plain objects with stack property (like Vite errors)
+        if (!stackTrace && typeof arg === 'object' && arg !== null && arg.stack) {
+            stackTrace = arg.stack;
+            errName = arg.name || arg.errorName || 'Error';
+        }
     });
 
     if (stackTrace) {
@@ -172,6 +178,55 @@ export function initLogBridge() {
             sendToBackend('error', `[Unhandled Rejection] ${event.reason ? (event.reason.message || event.reason) : 'Unknown'}`, event.reason);
         } catch (e) { /* ignore */ }
     });
+
+    // 4. Vite Error Overlay (Development Only)
+    // Intercept Vite's error overlay to capture build/compile errors
+    if (import.meta.env.DEV) {
+        // Monitor for Vite error overlay in DOM
+        const observer = new MutationObserver((mutations) => {
+            mutations.forEach((mutation) => {
+                mutation.addedNodes.forEach((node) => {
+                    // Vite error overlay has id="vite-error-overlay"
+                    if (node.id === 'vite-error-overlay' || 
+                        (node.shadowRoot && node.shadowRoot.querySelector('.message-body'))) {
+                        
+                        try {
+                            // Extract error message from overlay
+                            const errorBody = node.shadowRoot?.querySelector('.message-body')?.textContent ||
+                                            node.shadowRoot?.querySelector('pre')?.textContent ||
+                                            node.textContent;
+                            
+                            const errorTitle = node.shadowRoot?.querySelector('.message')?.textContent || 'Vite Build Error';
+                            
+                            if (errorBody) {
+                                sendToBackend('error', `[Vite] ${errorTitle}`, {
+                                    stack: errorBody,
+                                    source: 'vite-overlay',
+                                    timestamp: new Date().toISOString()
+                                });
+                            }
+                        } catch (e) {
+                            originalConsole.error('[LogBridge] Failed to capture Vite error:', e);
+                        }
+                    }
+                });
+            });
+        });
+
+        observer.observe(document.body, { childList: true, subtree: false });
+        
+        // Also listen for vite:error custom event (if available)
+        window.addEventListener('vite:error', (event) => {
+            try {
+                const detail = event.detail || {};
+                sendToBackend('error', `[Vite Event] ${detail.message || 'Build Error'}`, {
+                    stack: detail.stack || detail.error?.stack,
+                    file: detail.filename,
+                    source: 'vite-event'
+                });
+            } catch (e) { /* ignore */ }
+        });
+    }
     
     console.log("Log Bridge initialized. Logs are now streaming to backend.");
     // Test the bridge immediately

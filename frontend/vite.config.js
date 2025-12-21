@@ -24,6 +24,16 @@ export default defineConfig({
         changeOrigin: true,
         secure: false,
       },
+      '/aui/stream': {
+        target: process.env.VITE_API_TARGET || 'https://127.0.0.1:8000',
+        changeOrigin: true,
+        secure: false,
+      },
+      '/aui/render': {
+        target: process.env.VITE_API_TARGET || 'https://127.0.0.1:8000',
+        changeOrigin: true,
+        secure: false,
+      },
       '/ws': {
         target: (process.env.VITE_API_TARGET || 'https://127.0.0.1:8000').replace('http', 'ws'),
         ws: true,

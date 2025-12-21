@@ -53,6 +53,8 @@ from app.api.routers import elevenlabs_websocket
 app.include_router(elevenlabs_websocket.router)
 from app.api.routers import aui_debug
 app.include_router(aui_debug.router)
+from app.api.routers import aui_stream
+app.include_router(aui_stream.router)
 
 from app.models.schemas import RemoteLog
 from app.services.log_collector import (
