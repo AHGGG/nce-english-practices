@@ -7,16 +7,14 @@ import os
 
 from app.services.dictionary import dict_manager
 from app.api.routers import (
-    theme,
-    story,
-    matrix,
-    scenario,
-    chat,
-    stats,
+    voice,
     dictionary,
+    content,
+    practice,
+    stats,
+    deepgram,
+    coach,
     voice_lab,
-    deepgram_websocket,
-    elevenlabs_websocket,
     aui_stream,
     aui_stream_demo
 )
@@ -60,7 +58,6 @@ app.include_router(stats.router)
 app.include_router(coach.router)
 app.include_router(deepgram.router)
 
-app.include_router(chat.router, prefix="/api", tags=["chat"])
 app.include_router(voice_lab.router, prefix="/api", tags=["voice-lab"])
 
 from app.api.routers import deepgram_websocket
