@@ -107,6 +107,22 @@ const AUIStreamingDemo = () => {
                         </button>
                     </div>
 
+                    {/* State Sync Test */}
+                    <div className="mb-6">
+                        <label className="block text-sm font-mono mb-2 text-[#999]">
+                            State Sync (JSON Patch):
+                        </label>
+                        <p className="text-xs text-[#555] mb-2 font-mono">
+                            Simulates a complex process with granular progress/status updates.
+                        </p>
+                        <button
+                            onClick={() => setStreamUrl('/api/aui/stream/state-demo')}
+                            className="px-4 py-2 bg-neon-purple/10 border border-neon-purple hover:bg-neon-purple/20 rounded font-mono text-sm text-neon-purple transition-colors"
+                        >
+                            Test State Sync (System Dashboard)
+                        </button>
+                    </div>
+
                     {/* Reset */}
                     {streamUrl && (
                         <button

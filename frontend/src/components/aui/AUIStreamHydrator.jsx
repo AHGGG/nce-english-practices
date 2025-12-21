@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { applyPatch } from 'fast-json-patch';
 
 /**
  * AUIStreamHydrator - Handles SSE event streams and renders AUI components
@@ -76,6 +77,56 @@ const AUIStreamHydrator = ({ streamUrl, onError, onComplete }) => {
                             current[path[path.length - 1]] = accumulatedText[key] || '';
 
                             return { ...prev, props: updatedProps };
+                        });
+                        break;
+
+                    case 'aui_state_delta':
+                        // Apply JSON Patch
+                        setComponentSpec(prev => {
+                            if (!prev) {
+                                console.warn('[AUIStreamHydrator] Received state delta but no component spec exists');
+                                return null;
+                            }
+
+                            // Create a deep clone to avoid mutation issues before patching
+                            // The 'ui' object in RenderSnapshotEvent maps to { component:..., props:..., intention:..., targetLevel:... }
+                            // We need to patch the WHOLE object to allow targetLevel changes too, 
+                            // but our state 'componentSpec' is slightly different structure than the raw event 'ui'
+
+                            // Let's assume the backend 'create_state_diff' was run on the WHOLE object structure:
+                            // { component: "...", props: { ... }, intention: "...", target_level: ... }
+
+                            // Our state 'componentSpec' is:
+                            // { component, props, intention, targetLevel }
+
+                            // We need to normalize key names if the backend sends 'target_level' but frontend uses 'targetLevel'.
+                            // Ideally, backend should send exactly what frontend expects, OR frontend state mirrors backend.
+
+                            // For now, let's assume the patch is against the object structure:
+                            // { component, props, intention, target_level }
+                            // So we reconstruct that, patch it, and map back.
+
+                            const doc = {
+                                component: prev.component,
+                                props: prev.props,
+                                intention: prev.intention,
+                                target_level: prev.targetLevel
+                            };
+
+                            try {
+                                const result = applyPatch(doc, auiEvent.delta);
+                                const newDoc = result.newDocument;
+
+                                return {
+                                    component: newDoc.component,
+                                    props: newDoc.props,
+                                    intention: newDoc.intention,
+                                    targetLevel: newDoc.target_level
+                                };
+                            } catch (err) {
+                                console.error('[AUIStreamHydrator] JSON Patch failed:', err);
+                                return prev;
+                            }
                         });
                         break;
 

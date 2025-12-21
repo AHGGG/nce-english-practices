@@ -6,7 +6,20 @@ from dotenv import load_dotenv
 import os
 
 from app.services.dictionary import dict_manager
-from app.api.routers import voice, dictionary, content, practice, stats, deepgram, coach, voice_lab
+from app.api.routers import (
+    theme,
+    story,
+    matrix,
+    scenario,
+    chat,
+    stats,
+    dictionary,
+    voice_lab,
+    deepgram_websocket,
+    elevenlabs_websocket,
+    aui_stream,
+    aui_stream_demo
+)
 from app.services.log_collector import setup_logging
 import logging
 
@@ -45,16 +58,20 @@ app.include_router(practice.router)
 
 app.include_router(stats.router)
 app.include_router(coach.router)
-app.include_router(voice_lab.router)
 app.include_router(deepgram.router)
+
+app.include_router(chat.router, prefix="/api", tags=["chat"])
+app.include_router(voice_lab.router, prefix="/api", tags=["voice-lab"])
+
 from app.api.routers import deepgram_websocket
-app.include_router(deepgram_websocket.router)
+app.include_router(deepgram_websocket.router, tags=["websocket"])
 from app.api.routers import elevenlabs_websocket
-app.include_router(elevenlabs_websocket.router)
+app.include_router(elevenlabs_websocket.router, tags=["websocket"])
 from app.api.routers import aui_debug
 app.include_router(aui_debug.router)
 from app.api.routers import aui_stream
-app.include_router(aui_stream.router)
+app.include_router(aui_stream.router, prefix="/api", tags=["aui-stream"])
+app.include_router(aui_stream_demo.router, prefix="/api", tags=["aui-stream-demo"])
 
 from app.models.schemas import RemoteLog
 from app.services.log_collector import (

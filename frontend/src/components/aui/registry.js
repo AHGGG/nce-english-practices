@@ -7,6 +7,8 @@ const StoryReader = lazy(() => import('../Learn/StoryReader'));
 const MarkdownMessage = lazy(() => import('./MarkdownMessage'));
 const DiffCard = lazy(() => import('./DiffCard'));
 const TenseTimeline = lazy(() => import('./TenseTimeline'));
+const TaskDashboard = lazy(() => import('./TaskDashboard'));
+
 
 const COMPONENT_MAP = {
   'FlashCardStack': FlashCardStack,
@@ -15,6 +17,7 @@ const COMPONENT_MAP = {
   'MarkdownMessage': MarkdownMessage,
   'DiffCard': DiffCard,
   'TenseTimeline': TenseTimeline,
+  'TaskDashboard': TaskDashboard,
   // Future components:
   // 'TenseTimeline': lazy(() => import('./TenseTimeline')),
 };

@@ -287,6 +287,20 @@ As of 2025-12-19, all voice provider integrations use **raw `httpx` API calls** 
 3. Better error handling and debugging visibility.
 4. Reduced dependency footprint.
 
+4. Reduced dependency footprint.
+
+### AUI Streaming Protocol (Agent-to-UI)
+
+The system supports a streaming UI protocol for real-time Agent updates:
+
+- **Events**:
+  - `aui_render_snapshot`: Full component render (Backward compatible).
+  - `aui_text_delta`: Incremental text updates (ChatGPT-style).
+  - `aui_state_delta`: granular state updates using **JSON Patch** (RFC 6902).
+- **Architecture**:
+  - **Backend**: `app.services.aui_events` generates events; `app.api.routers.aui_stream` serves SSE.
+  - **Frontend**: `AUIStreamHydrator` consumes SSE and applies patches using `fast-json-patch`.
+
 ### Third-Party SDK Debugging: Lessons Learned (2025-12-17)
 
 **问题背景**: Deepgram TTS/STT 调用失败，尝试多次修复无效。

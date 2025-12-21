@@ -61,9 +61,11 @@ class TextDeltaEvent(BaseAUIEvent):
     field_path: str = "content"  # Which field to update (e.g. "story.content")
 
 
+
 class StateDeltaEvent(BaseAUIEvent):
     """
-    JSON Patch based state update (future phase).
+    JSON Patch based state update.
+    Uses RFC 6902 format to describe changes.
     """
     type: AUIEventType = AUIEventType.STATE_DELTA
     delta: List[Dict[str, Any]]  # JSON Patch operations
@@ -128,4 +130,19 @@ def create_text_delta(
         message_id=message_id,
         delta=delta,
         field_path=field_path
+    )
+
+
+def create_state_diff(old_state: Dict[str, Any], new_state: Dict[str, Any]) -> StateDeltaEvent:
+    """
+    Helper to create a state delta using jsonpatch.
+    Computes the difference between old_state and new_state.
+    """
+    import jsonpatch
+    
+    # Calculate patch (list of ops)
+    patch = jsonpatch.make_patch(old_state, new_state)
+    
+    return StateDeltaEvent(
+        delta=patch.patch
     )
