@@ -238,6 +238,12 @@ class CoachService:
 
     async def _execute_tool(self, user_id: str, name: str, args: Dict[str, Any]) -> Any:
         """Route and execute tools."""
+        from app.services.aui import aui_renderer
+        
+        # Default level for now, could fetch from DB
+        # user_level = await get_mastery(user_id, "general") or 1
+        user_level = 1 
+        
         if name == "remember_user_fact":
             await remember_fact(user_id, args["category"], {"val": args["fact"]})
             return {"status": "saved"}
@@ -247,26 +253,24 @@ class CoachService:
             return {"status": "updated"}
             
         elif name == "show_vocabulary":
-            # Just pass through for UI to render
-            # Could fetch extra data here if needed
-            return {"status": "rendering_ui"}
+            # Delegate to AUI Renderer
+            packet = aui_renderer.render("show_vocabulary", args, user_level)
+            return packet.model_dump()
 
         elif name == "present_story":
             # Attempt to fetch story content if it exists
-            # Attempt to fetch story content if it exists
             story = await get_story(args["topic"], args["tense"])
-            
             if not story:
                 # Fallback: Generate story on the fly
-                print(f"Story not found for {args['topic']}, generating...")
+                # print(f"Story not found for {args['topic']}, generating...")
                 story = await self._generate_story(args["topic"], args["tense"])
 
             if story:
-                return {
-                    "status": "found", 
-                    "story_preview": story["title"],
-                    "content": story["content"] 
-                }
+                # Delegate to AUI Renderer
+                # Merge args with story content
+                render_data = {**args, **story}
+                packet = aui_renderer.render("present_story", render_data, user_level)
+                return packet.model_dump()
             
             return {
                 "status": "error", 

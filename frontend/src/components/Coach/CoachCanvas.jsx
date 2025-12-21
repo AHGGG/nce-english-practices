@@ -3,6 +3,7 @@ import { useCoach } from '../../context/CoachContext';
 import VocabGrid from '../Learn/VocabGrid';
 import StoryReader from '../Learn/StoryReader';
 import DrillSingle from '../Drill/DrillSingle';
+import { AUIHydrator } from '../aui/AUIHydrator';
 
 const CoachCanvas = () => {
     const { activeTool, isLoading } = useCoach();
@@ -45,8 +46,20 @@ const CoachCanvas = () => {
             </div>
         );
 
+        // Check for AUI Protocol Packet
+        if (activeTool?.result?.type === 'aui_render') {
+            return (
+                <Container title="AUI Agent Interface" color="green">
+                    <div className="flex items-center justify-center min-h-[50vh]">
+                        <AUIHydrator packet={activeTool.result} onInteract={(data) => console.log('AUI Interact:', data)} />
+                    </div>
+                </Container>
+            );
+        }
+
         switch (activeTool.name) {
             case 'show_vocabulary':
+                // Legacy Fallback (or if tool not yet on AUI)
                 return (
                     <Container title="Vocabulary Matrix" color="green">
                         <VocabGrid
@@ -59,6 +72,7 @@ const CoachCanvas = () => {
                 );
 
             case 'present_story':
+                // Legacy Fallback
                 return (
                     <Container title={`Context: ${activeTool.args.topic}`} color="white">
                         <StoryReader

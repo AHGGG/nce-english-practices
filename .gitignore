@@ -20,3 +20,5 @@ cert.pem
 node_modules/
 
 docs/voice/deepgram/examples
+
+docs/**/*_ignore.md
