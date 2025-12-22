@@ -15,6 +15,7 @@ from app.services.aui_events import (
     TextMessageStartEvent,
     TextDeltaEvent,
     TextMessageEndEvent,
+    StateSnapshotEvent,
     ActivitySnapshotEvent,
     ActivityDeltaEvent,
     ToolCallStartEvent,
@@ -571,5 +572,79 @@ class AUIStreamingService:
         yield StreamEndEvent(session_id=session_id)
 
 
+    async def stream_with_state_snapshot(
+        self,
+        initial_title: str = "My Story",
+        user_level: int = 1
+    ) -> AsyncGenerator[AUIEvent, None]:
+        """
+        Demonstrate STATE_SNAPSHOT followed by STATE_DELTAs.
+        Shows the snapshot-delta pattern for state recovery.
+        
+        Args:
+            initial_title: Initial story title
+            user_level: User mastery level
+        
+        Yields:
+            AUIEvent: STATE_SNAPSHOT then multiple STATE_DELTAs
+        """
+        session_id = str(uuid.uuid4())
+        
+        yield StreamStartEvent(
+            session_id=session_id,
+            metadata={"demo_type": "state_snapshot_pattern"}
+        )
+        
+        # 1. Initial complete state snapshot - allows recovery/initialization
+        initial_state = {
+            "component": "StoryReader",
+            "props": {
+                "story": {
+                    "title": initial_title,
+                    "content": "",
+                    "grammar_notes": []
+                },
+                "coachMode": True
+            },
+            "intention": "present_story",
+            "target_level": user_level
+        }
+        
+        yield StateSnapshotEvent(state=initial_state)
+        
+        await asyncio.sleep(0.5)
+        
+        # 2. Series of state deltas to update the content
+        content_parts = [
+            "Once upon a time, ",
+            "in a small village, ",
+            "there lived a curious cat named Whiskers. ",
+            "Whiskers loved to explore the forest nearby."
+        ]
+        
+        current_state = copy.deepcopy(initial_state)
+        
+        for part in content_parts:
+            new_state = copy.deepcopy(current_state)
+            new_state["props"]["story"]["content"] += part
+            
+            yield create_state_diff(current_state, new_state)
+            
+            current_state = new_state
+            await asyncio.sleep(0.3)
+        
+        # 3. Final state delta - update title to show completion
+        new_state = copy.deepcopy(current_state)
+        new_state["props"]["story"]["title"] = f"{initial_title} ✓"
+        new_state["props"]["story"]["grammar_notes"] = [
+            {"note": "Past tense narrative style", "example": "there lived"}
+        ]
+        
+        yield create_state_diff(current_state, new_state)
+        
+        yield StreamEndEvent(session_id=session_id)
+
+
 # Singleton instance
 aui_streaming_service = AUIStreamingService()
+

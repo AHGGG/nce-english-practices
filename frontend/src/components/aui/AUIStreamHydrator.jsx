@@ -52,6 +52,16 @@ const AUIStreamHydrator = ({ streamUrl, onError, onComplete }) => {
                         });
                         break;
 
+                    case 'aui_state_snapshot':
+                        // Complete state snapshot - allows recovery/initialization
+                        setComponentSpec({
+                            component: auiEvent.state.component,
+                            props: auiEvent.state.props,
+                            intention: auiEvent.state.intention,
+                            targetLevel: auiEvent.state.target_level
+                        });
+                        break;
+
 
                     case 'aui_text_delta':
                         // Check if this delta belongs to a specific message (lifecycle)

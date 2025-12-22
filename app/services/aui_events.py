@@ -20,6 +20,7 @@ class AUIEventType(str, Enum):
     TEXT_MESSAGE_START = "aui_text_message_start"  # Message lifecycle start
     TEXT_DELTA = "aui_text_delta"
     TEXT_MESSAGE_END = "aui_text_message_end"  # Message lifecycle end
+    STATE_SNAPSHOT = "aui_state_snapshot"  # Complete state for recovery
     STATE_DELTA = "aui_state_delta"
     
     # Activity Progress Events
@@ -98,6 +99,15 @@ class TextMessageEndEvent(BaseAUIEvent):
     message_id: str  # Links to message started earlier
     final_content: Optional[str] = None  # Optional complete message content
 
+
+
+class StateSnapshotEvent(BaseAUIEvent):
+    """
+    Complete state snapshot for recovery/initialization.
+    Frontend uses this to set initial state before applying deltas.
+    """
+    type: AUIEventType = AUIEventType.STATE_SNAPSHOT
+    state: Dict[str, Any]  # Complete component state
 
 
 class StateDeltaEvent(BaseAUIEvent):
@@ -237,6 +247,7 @@ AUIEvent = Union[
     TextMessageStartEvent,
     TextDeltaEvent,
     TextMessageEndEvent,
+    StateSnapshotEvent,
     StateDeltaEvent,
     ActivitySnapshotEvent,
     ActivityDeltaEvent,

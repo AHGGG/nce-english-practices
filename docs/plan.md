@@ -58,6 +58,7 @@
 - [x] **Mobile Adaptation**:
     - [x] `TEXT_DELTA`: Streaming text incremental updates.
     - [x] `TEXT_MESSAGE_START/END`: Message lifecycle events (Segmentation).
+    - [x] `STATE_SNAPSHOT`: Complete state for recovery/initialization (2025-12-22).
     - [x] `STATE_DELTA`: JSON Patch state updates (Implemented via jsonpatch).
     - [x] `STREAM_START/END/ERROR`: Lifecycle events.
     - [x] **AUI Streaming**: Complete AG-UI compatible streaming system (2025-12-22).

@@ -42,6 +42,13 @@ const AUIStreamingDemo = () => {
             getUrl: () => '/api/aui/stream/vocab-patch-demo?level=1'
         },
         {
+            id: 'state-snapshot',
+            label: 'State Snapshot',
+            icon: '📸',
+            description: 'Snapshot + Delta pattern',
+            getUrl: () => '/api/aui/demo/stream/state-snapshot?title=Demo%20Story&level=1'
+        },
+        {
             id: 'activity',
             label: 'Activity Progress',
             icon: '🎯',

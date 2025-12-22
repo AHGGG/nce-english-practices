@@ -172,6 +172,7 @@
 - [x] **Event System**: Created AG-UI compatible event types (`app/services/aui_events.py`).
     - [x] `RENDER_SNAPSHOT`: Backward compatible with existing `AUIRenderPacket`.
     - [x] `TEXT_DELTA`: Streaming text incremental updates.
+    - [x] `STATE_SNAPSHOT`: Complete state for recovery/initialization (2025-12-22).
     - [x] `STATE_DELTA`: JSON Patch state updates (Implemented via jsonpatch).
     - [x] `STREAM_START/END/ERROR`: Lifecycle events.
 - [x] **Streaming Service**: Implemented `AUIStreamingService` (`app/services/aui_streaming.py`).

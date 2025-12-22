@@ -123,3 +123,37 @@ async def demo_multi_messages():
             "X-Accel-Buffering": "no"
         }
     )
+
+
+@router.get("/stream/state-snapshot")
+async def demo_state_snapshot(
+    title: str = "My Story",
+    level: int = 1
+):
+    """
+    Demo STATE_SNAPSHOT + STATE_DELTA pattern.
+    Shows the snapshot-delta pattern for state recovery/initialization.
+    
+    - STATE_SNAPSHOT: Initial complete state (allows recovery)
+    - STATE_DELTA: Incremental updates via JSON Patch
+    
+    Query Parameters:
+    - title: Story title (default: "My Story")
+    - level: User mastery level 1-3 (default: 1)
+    """
+    async def event_generator():
+        async for event in aui_streaming_service.stream_with_state_snapshot(
+            initial_title=title,
+            user_level=level
+        ):
+            yield f"data: {event.model_dump_json()}\n\n"
+    
+    return StreamingResponse(
+        event_generator(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "X-Accel-Buffering": "no"
+        }
+    )
+
