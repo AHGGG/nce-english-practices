@@ -114,7 +114,18 @@ const StoryReader = ({ story, coachMode = false, highlights = [] }) => {
                         <h4 className="font-bold text-neon-pink uppercase tracking-widest mb-2 text-xs">Grammar Notes</h4>
                         <ul className="list-disc list-inside space-y-1 marker:text-neon-pink">
                             {story.grammar_notes.map((note, idx) => (
-                                <li key={idx}>{note}</li>
+                                <li key={idx}>
+                                    {typeof note === 'string' ? note : (
+                                        <>
+                                            <span className="font-semibold">{note.note}</span>
+                                            {note.example && (
+                                                <span className="text-ink-muted/70 ml-2">
+                                                    (e.g., <em>"{note.example}"</em>)
+                                                </span>
+                                            )}
+                                        </>
+                                    )}
+                                </li>
                             ))}
                         </ul>
                     </div>
