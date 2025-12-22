@@ -305,6 +305,10 @@ The system supports a streaming UI protocol for real-time Agent updates:
 - **Architecture**:
   - **Backend**: `app.services.aui_events` generates events; `app.api.routers.aui_stream` serves SSE.
   - **Frontend**: `AUIStreamHydrator` consumes SSE and applies patches using `fast-json-patch`.
+- **Interactivity (Bi-directional)**:
+  - **Downstream**: SSE pushes UI state (buttons/forms).
+  - **Upstream**: Client sends actions via `POST /api/aui/input`.
+  - **Backend**: `AUIInputService` pauses agent execution until input is received (In-Memory Queue).
 
 ### Third-Party SDK Debugging: Lessons Learned (2025-12-17)
 

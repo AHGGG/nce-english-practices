@@ -8,6 +8,7 @@ const MarkdownMessage = lazy(() => import('./MarkdownMessage'));
 const DiffCard = lazy(() => import('./DiffCard'));
 const TenseTimeline = lazy(() => import('./TenseTimeline'));
 const TaskDashboard = lazy(() => import('./TaskDashboard'));
+const InteractiveDemo = lazy(() => import('./interactive/InteractiveDemo'));
 
 
 const COMPONENT_MAP = {
@@ -18,8 +19,7 @@ const COMPONENT_MAP = {
   'DiffCard': DiffCard,
   'TenseTimeline': TenseTimeline,
   'TaskDashboard': TaskDashboard,
-  // Future components:
-  // 'TenseTimeline': lazy(() => import('./TenseTimeline')),
+  'InteractiveDemo': InteractiveDemo,
 };
 
 export const getComponent = (key) => {

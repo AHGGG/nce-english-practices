@@ -17,7 +17,11 @@ from app.api.routers import (
     voice_lab,
     aui_stream,
     aui_stream_demo,
-    aui_demo_extended
+    aui_demo_extended,
+    aui_input,
+    deepgram_websocket,
+    elevenlabs_websocket,
+    aui_debug
 )
 from app.services.log_collector import setup_logging
 import logging
@@ -61,16 +65,13 @@ app.include_router(deepgram.router)
 
 app.include_router(voice_lab.router, prefix="/api", tags=["voice-lab"])
 
-from app.api.routers import deepgram_websocket
 app.include_router(deepgram_websocket.router, tags=["websocket"])
-from app.api.routers import elevenlabs_websocket
 app.include_router(elevenlabs_websocket.router, tags=["websocket"])
-from app.api.routers import aui_debug
 app.include_router(aui_debug.router)
-from app.api.routers import aui_stream
 app.include_router(aui_stream.router, prefix="/api", tags=["aui-stream"])
 app.include_router(aui_stream_demo.router, prefix="/api", tags=["aui-stream-demo"])
 app.include_router(aui_demo_extended.router, tags=["aui-demo-extended"])
+app.include_router(aui_input.router, prefix="/api/aui", tags=["AUI Input"]) # New
 
 from app.models.schemas import RemoteLog
 from app.services.log_collector import (
@@ -112,7 +113,10 @@ async def receive_remote_log(log: RemoteLog):
         message=log.message,
         data=log.data
     )
-    log_collector.add(entry)
+    # TODO: Uncomment after fixing async issue
+    # Run sync file I/O in threadpool to avoid blocking event loop
+    import asyncio
+    await asyncio.to_thread(log_collector.add, entry)
     return {"status": "ok"}
 
 

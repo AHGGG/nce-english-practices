@@ -157,3 +157,29 @@ async def demo_state_snapshot(
         }
     )
 
+
+@router.get("/stream/interactive")
+async def demo_interactive_flow():
+    """
+    Demo Human-in-the-Loop Interaction.
+    
+    Flow:
+    1. Agent sends initial content
+    2. Agent pauses and asks for confirmation (User sees buttons)
+    3. User sends input via POST /api/aui/input
+    4. Agent resumes and updates UI based on input
+    """
+    async def event_generator():
+        async for event in aui_streaming_service.stream_interactive_flow():
+            yield f"data: {event.model_dump_json()}\n\n"
+    
+    return StreamingResponse(
+        event_generator(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "X-Accel-Buffering": "no"
+        }
+    )
+
+

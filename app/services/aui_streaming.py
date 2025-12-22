@@ -30,6 +30,7 @@ from app.services.aui_events import (
     create_state_diff,
     create_activity_delta,
 )
+from app.services.aui_input import input_service, AUIUserInput
 
 
 class AUIStreamingService:
@@ -641,6 +642,90 @@ class AUIStreamingService:
         ]
         
         yield create_state_diff(current_state, new_state)
+        
+        yield StreamEndEvent(session_id=session_id)
+
+
+
+    async def stream_interactive_flow(
+        self
+    ) -> AsyncGenerator[AUIEvent, None]:
+        """
+        Demonstrate Human-in-the-Loop interaction.
+        1. Responds to initial request
+        2. Pauses to ask user for confirmation
+        3. Resumes after user input
+        
+        Yields:
+            AUIEvent: Stream events including interactive components
+        """
+        session_id = str(uuid.uuid4())
+        
+        yield StreamStartEvent(
+            session_id=session_id,
+            metadata={"demo_type": "interactive_flow"}
+        )
+        
+        # 1. Initial State: Show a "Processing" message
+        initial_ui = {
+            "component": "InteractiveDemo",
+            "props": {
+                "status": "processing",
+                "message": "Analyzing your request...",
+                "sessionId": session_id  # Crucial for client to know where to send input
+            }
+        }
+        
+        yield create_snapshot_event(
+            intention="get_confirmation",
+            ui=initial_ui,
+            fallback_text="Analyzing..."
+        )
+        
+        await asyncio.sleep(1.0)
+        
+        # 2. Ask for Confirmation (The "Pause" Moment)
+        # We update the UI to show buttons
+        
+        confirm_ui = copy.deepcopy(initial_ui)
+        confirm_ui["props"]["status"] = "waiting_input"
+        confirm_ui["props"]["message"] = "Analysis complete. Do you want to proceed with the changes?"
+        confirm_ui["props"]["options"] = [
+            {"label": "Yes, Proceed", "action": "confirm", "variant": "primary"},
+            {"label": "No, Cancel", "action": "cancel", "variant": "destructive"}
+        ]
+        
+        yield create_state_diff(initial_ui, confirm_ui)
+        
+        # 3. Wait for User Input
+        # The agent literally yields nothing (pauses) here while awaiting the Queue
+        print(f"Agent waiting for input on session {session_id}...")
+        
+        user_input = await input_service.wait_for_input(session_id, timeout=60.0)
+        
+        if user_input is None:
+            # Timeout case
+            timeout_ui = copy.deepcopy(confirm_ui)
+            timeout_ui["props"]["status"] = "error"
+            timeout_ui["props"]["message"] = "Session timed out waiting for input."
+            timeout_ui["props"]["options"] = []
+            
+            yield create_state_diff(confirm_ui, timeout_ui)
+            yield StreamEndEvent(session_id=session_id)
+            return
+
+        # 4. Handle Input
+        final_ui = copy.deepcopy(confirm_ui)
+        final_ui["props"]["options"] = [] # Remove buttons
+        
+        if user_input.action == "confirm":
+            final_ui["props"]["status"] = "success"
+            final_ui["props"]["message"] = "Confirmed! Changes have been applied successfully."
+        else:
+            final_ui["props"]["status"] = "cancelled"
+            final_ui["props"]["message"] = "Operation cancelled by user."
+            
+        yield create_state_diff(confirm_ui, final_ui)
         
         yield StreamEndEvent(session_id=session_id)
 

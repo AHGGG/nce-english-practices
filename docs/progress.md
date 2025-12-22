@@ -289,4 +289,31 @@
 - [x] **Unit Tests**: `tests/test_aui_text_lifecycle.py` (8 tests passing)
 - [x] **Verification**: `scripts/verify_text_lifecycle.py` (Live stream verification)
 
+### ✅ AUI Bi-directional Communication (Phase 2) (2025-12-22)
+**Implemented "Human-in-the-Loop" capabilities allowing Agents to pause and wait for user input**
+
+#### Backend Extensions
+- [x] **Input Service** (`app/services/aui_input.py`):
+  - `AUIInputService` with `asyncio.Queue` session management.
+  - `wait_for_input(session_id)` blocking helper.
+- [x] **API Endpoint** (`app/api/routers/aui_input.py`):
+  - `POST /api/aui/input` for receiving user actions.
+- [x] **Event/Demo**:
+  - `stream_interactive_flow()` demo in Streaming Service.
+  - `GET /api/aui/demo/stream/interactive`.
+
+#### Frontend Extensions
+- [x] **Interactive Component** (`frontend/src/components/aui/interactive/InteractiveDemo.jsx`):
+  - Visual status indicators (Processing/Waiting/Success).
+  - Button grid for user actions.
+  - Uses `fetch` to submit input to backend.
+- [x] **Demo Integration**:
+  - Added "Human Loop" demo to `AUIStreamingDemo.jsx`.
+
+#### Verification
+- [x] **Internal Verification**: `scripts/verify_interactive_flow.py` (Pass).
+- [x] **Unit Tests**: `tests/test_aui_input.py` (All Pass).
+- [x] **Manual Verification**: Browser interactions verified.
+
+
 

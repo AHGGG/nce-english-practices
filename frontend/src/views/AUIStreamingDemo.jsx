@@ -82,6 +82,13 @@ const AUIStreamingDemo = () => {
             icon: '💬',
             description: 'Concurrent text streams',
             getUrl: () => '/api/aui/demo/stream/multi-messages'
+        },
+        {
+            id: 'interactive',
+            label: 'Human Loop',
+            icon: '🖱️',
+            description: 'Pause & WaitFor Input',
+            getUrl: () => '/api/aui/demo/stream/interactive'
         }
     ];
 

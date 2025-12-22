@@ -65,6 +65,10 @@
         - [x] Backend deep copy bug fixes in `stream_vocabulary_flip()`.
         - [x] Frontend hooks violation fix in `StoryReader` component.
         - [x] All 4 streaming scenarios verified working (Story, Vocabulary, State Sync, Vocab Patch).
+    - [x] **AUI Bi-directional (Phase 2)**: (2025-12-22)
+        - [x] Backend Input Service & Queue.
+        - [x] Interactive UI Components.
+        - [x] Human-in-the-Loop Demo.
 - [ ] **Deployment & Architecture Optimization** (New):
     - [x] **Dockerization**: Multi-stage build for React (Vite) + FastAPI.
     - [x] **SPA Serving**: Configure FastAPI to serve React static files (remove Jinja2).
