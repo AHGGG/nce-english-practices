@@ -23,6 +23,9 @@ class AUIEventType(str, Enum):
     STATE_SNAPSHOT = "aui_state_snapshot"  # Complete state for recovery
     STATE_DELTA = "aui_state_delta"
     
+    # Message History
+    MESSAGES_SNAPSHOT = "aui_messages_snapshot"
+    
     # Activity Progress Events
     ACTIVITY_SNAPSHOT = "aui_activity_snapshot"
     ACTIVITY_DELTA = "aui_activity_delta"
@@ -108,6 +111,15 @@ class StateSnapshotEvent(BaseAUIEvent):
     """
     type: AUIEventType = AUIEventType.STATE_SNAPSHOT
     state: Dict[str, Any]  # Complete component state
+
+
+class MessagesSnapshotEvent(BaseAUIEvent):
+    """
+    Snapshot of message history.
+    Used to sync conversation history when joining a session.
+    """
+    type: AUIEventType = AUIEventType.MESSAGES_SNAPSHOT
+    messages: List[Dict[str, Any]]  # List of message objects
 
 
 class StateDeltaEvent(BaseAUIEvent):
@@ -249,6 +261,7 @@ AUIEvent = Union[
     TextMessageEndEvent,
     StateSnapshotEvent,
     StateDeltaEvent,
+    MessagesSnapshotEvent,
     ActivitySnapshotEvent,
     ActivityDeltaEvent,
     ToolCallStartEvent,

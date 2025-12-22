@@ -211,6 +211,10 @@ const AUIStreamHydrator = ({ streamUrl, onError, onComplete }) => {
                         ));
                         break;
 
+                    case 'aui_messages_snapshot':
+                        setMessages(auiEvent.messages);
+                        break;
+
                     // Activity Progress Events
                     case 'aui_activity_snapshot':
                         setActivities(prev => ({

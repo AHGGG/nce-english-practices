@@ -31,7 +31,8 @@ const FlashCardStack = ({
         }
     };
 
-    const currentWord = words[currentIndex];
+    const rawWord = words[currentIndex];
+    const currentWordData = typeof rawWord === 'object' ? rawWord : { word: rawWord, definition: null };
 
     return (
         <div className="w-full max-w-sm mx-auto perspective-1000">
@@ -46,7 +47,7 @@ const FlashCardStack = ({
              ${isFlipped ? 'rotate-y-180 opacity-0 pointer-events-none' : 'rotate-y-0 opacity-100'}
         `}>
                     <span className="text-sm text-zinc-500 uppercase tracking-widest mb-4">Word {currentIndex + 1}/{words.length}</span>
-                    <h3 className="text-3xl font-serif text-zinc-100">{currentWord}</h3>
+                    <h3 className="text-3xl font-serif text-zinc-100">{currentWordData.word}</h3>
                     <p className="mt-4 text-xs text-neon-green animate-pulse">Tap to reveal</p>
                 </div>
 
@@ -56,9 +57,9 @@ const FlashCardStack = ({
              backface-hidden rotate-y-180
              ${isFlipped ? 'opacity-100 rotate-y-0' : 'opacity-0'}
         `}>
-                    <h3 className="text-2xl font-serif text-zinc-300">{currentWord}</h3>
+                    <h3 className="text-2xl font-serif text-zinc-300">{currentWordData.word}</h3>
                     {show_translation && (
-                        <p className="mt-4 text-lg text-neon-pink">Translation Placeholder</p>
+                        <p className="mt-4 text-lg text-neon-pink">{currentWordData.definition || "Translation Placeholder"}</p>
                     )}
                     <button
                         onClick={(e) => { e.stopPropagation(); handleNext(); }}

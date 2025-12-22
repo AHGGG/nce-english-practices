@@ -60,6 +60,7 @@
     - [x] `TEXT_MESSAGE_START/END`: Message lifecycle events (Segmentation).
     - [x] `STATE_SNAPSHOT`: Complete state for recovery/initialization (2025-12-22).
     - [x] `STATE_DELTA`: JSON Patch state updates (Implemented via jsonpatch).
+    - [x] `MESSAGES_SNAPSHOT`: History synchronization event.
     - [x] `STREAM_START/END/ERROR`: Lifecycle events.
     - [x] **AUI Streaming**: Complete AG-UI compatible streaming system (2025-12-22).
         - [x] Backend deep copy bug fixes in `stream_vocabulary_flip()`.

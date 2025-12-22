@@ -16,6 +16,7 @@ from app.services.aui_events import (
     TextDeltaEvent,
     TextMessageEndEvent,
     StateSnapshotEvent,
+    StateDeltaEvent,
     ActivitySnapshotEvent,
     ActivityDeltaEvent,
     ToolCallStartEvent,
@@ -110,10 +111,10 @@ class AUIStreamingService:
         self,
         words: List[str],
         user_level: int = 1,
-        delay_per_card: float = 0.1
+        delay_per_card: float = 0.5
     ) -> AsyncGenerator[AUIEvent, None]:
         """
-        Stream vocabulary cards one by one.
+        Stream vocabulary cards one by one using STATE_DELTA.
         
         Args:
             words: List of vocabulary words
@@ -121,7 +122,7 @@ class AUIStreamingService:
             delay_per_card: Delay between cards for visual effect
         
         Yields:
-            AUIEvent: Stream of events
+            AUIEvent: Stream of events (snapshot + deltas)
         """
         session_id = str(uuid.uuid4())
         message_id = f"vocab_{session_id}"
@@ -131,10 +132,16 @@ class AUIStreamingService:
             metadata={"intention": "show_vocabulary", "user_level": user_level}
         )
         
-        # Determine component based on user level (from existing AUIRenderer logic)
+        # Determine component props
         if user_level <= 1:
             component = "FlashCardStack"
-            props = {"words": [], "show_translation": True, "messageId": message_id}
+            # FlashCardStack usually expects "words" array
+            props = {
+                "words": [], 
+                "show_translation": True, 
+                "messageId": message_id,
+                "current_index": 0 
+            }
         else:
             component = "VocabGrid"
             props = {
@@ -145,7 +152,7 @@ class AUIStreamingService:
                 "messageId": message_id
             }
         
-        # Send initial empty snapshot
+        # 1. Send initial empty snapshot
         yield create_snapshot_event(
             intention="show_vocabulary",
             ui={"component": component, "props": props},
@@ -153,18 +160,48 @@ class AUIStreamingService:
             target_level=user_level
         )
         
-        # Stream words incrementally (as state deltas in future phase)
-        # For now, we'll send the complete list after a delay
-        await asyncio.sleep(delay_per_card * len(words))
+        await asyncio.sleep(0.5)
         
-        # Send updated snapshot with all words
-        props["words"] = words
-        yield create_snapshot_event(
-            intention="show_vocabulary",
-            ui={"component": component, "props": props},
-            fallback_text=f"Vocabulary: {', '.join(words)}",
-            target_level=user_level
-        )
+        # 2. Iterate words and send STATE_DELTA to add them one by one
+        # JSON Patch op: "add", path: "/props/words/-", value: word_entry
+        # Note: We need to know the structure of 'word_entry'. 
+        # Typically frontend expects object { word: "...", definition: "..." } or just string.
+        # For this demo, let's assume simple strings or simulated objects.
+        
+        # We need a way to mock definitions if they are objects, but input is just list of strings.
+        # Let's wrap them essentially if needed, but 'words' arg implies strings.
+        # Let's update docstring or assume strings. AUI usually handles strings or objects.
+        
+        import copy
+        current_state = {
+            "component": component,
+            "props": copy.deepcopy(props),
+            "intention": "show_vocabulary",
+            "target_level": user_level
+        }
+        
+        for i, word in enumerate(words):
+            # Create the value to add
+            # Ideally this comes from a dictionary service, but for streaming demo we use raw string or mock
+            word_obj = {"word": word, "definition": f"Definition of {word}"}
+            
+            # Construct JSON Patch manually for efficiency/clarity
+            # We are appending to props.words array
+            patch_op = {
+                "op": "add",
+                "path": "/props/words/-",
+                "value": word_obj
+            }
+            
+            yield StateDeltaEvent(delta=[patch_op])
+            
+            # Update internal state tracker (so we know where we are if we generated diffs programmatically)
+            current_state["props"]["words"].append(word_obj)
+            
+            await asyncio.sleep(delay_per_card)
+        
+        # 3. Final visual update (optional, e.g. selecting first card)
+        # For FlashCardStack, we might want to ensure index 0 is valid.
         
         yield StreamEndEvent(session_id=session_id)
 

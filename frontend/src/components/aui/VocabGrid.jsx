@@ -27,24 +27,29 @@ const VocabGrid = ({ words = [], show_translation = false, challenge_mode = fals
             </div>
 
             <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                {words.map((word, idx) => (
-                    <div
-                        key={idx}
-                        className="group relative aspect-square bg-[#111] border border-[#222] rounded-lg hover:border-[#00FF94] transition-all cursor-pointer flex flex-col items-center justify-center p-4 text-center"
-                    >
-                        {/* Word */}
-                        <span className="font-serif text-lg text-white group-hover:scale-110 transition-transform">
-                            {word}
-                        </span>
+                {words.map((item, idx) => {
+                    const word = typeof item === 'object' ? item.word : item;
+                    const definition = typeof item === 'object' ? item.definition : null;
 
-                        {/* Translation / Definition Overlay */}
-                        <div className="absolute inset-0 bg-[#00FF94]/90 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center rounded-lg backdrop-blur-sm">
-                            <span className="text-black font-bold text-sm">
-                                {getHoverText(word)}
+                    return (
+                        <div
+                            key={idx}
+                            className="group relative aspect-square bg-[#111] border border-[#222] rounded-lg hover:border-[#00FF94] transition-all cursor-pointer flex flex-col items-center justify-center p-4 text-center"
+                        >
+                            {/* Word */}
+                            <span className="font-serif text-lg text-white group-hover:scale-110 transition-transform">
+                                {word}
                             </span>
+
+                            {/* Translation / Definition Overlay */}
+                            <div className="absolute inset-0 bg-[#00FF94]/90 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center rounded-lg backdrop-blur-sm p-2">
+                                <span className="text-black font-bold text-sm">
+                                    {definition || getHoverText(word)}
+                                </span>
+                            </div>
                         </div>
-                    </div>
-                ))}
+                    );
+                })}
             </div>
 
             <p className="mt-4 text-center text-xs text-[#666] font-mono">
