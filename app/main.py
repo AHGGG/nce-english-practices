@@ -16,7 +16,8 @@ from app.api.routers import (
     coach,
     voice_lab,
     aui_stream,
-    aui_stream_demo
+    aui_stream_demo,
+    aui_demo_extended
 )
 from app.services.log_collector import setup_logging
 import logging
@@ -69,6 +70,7 @@ app.include_router(aui_debug.router)
 from app.api.routers import aui_stream
 app.include_router(aui_stream.router, prefix="/api", tags=["aui-stream"])
 app.include_router(aui_stream_demo.router, prefix="/api", tags=["aui-stream-demo"])
+app.include_router(aui_demo_extended.router, tags=["aui-demo-extended"])
 
 from app.models.schemas import RemoteLog
 from app.services.log_collector import (

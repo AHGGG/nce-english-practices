@@ -13,9 +13,19 @@ from app.services.aui_events import (
     StreamEndEvent,
     RenderSnapshotEvent,
     TextDeltaEvent,
+    ActivitySnapshotEvent,
+    ActivityDeltaEvent,
+    ToolCallStartEvent,
+    ToolCallArgsEvent,
+    ToolCallEndEvent,
+    ToolCallResultEvent,
+    RunStartedEvent,
+    RunFinishedEvent,
+    RunErrorEvent,
     create_snapshot_event,
     create_text_delta,
     create_state_diff,
+    create_activity_delta,
 )
 
 
@@ -258,6 +268,218 @@ class AUIStreamingService:
                 # Let's just do one transition for simplicity
                 pass
 
+        yield StreamEndEvent(session_id=session_id)
+
+
+    async def stream_long_task_with_progress(
+        self,
+        task_name: str = "Data Processing",
+        total_steps: int = 5
+    ) -> AsyncGenerator[AUIEvent, None]:
+        """
+        Demonstrate Activity Progress events.
+        Simulates a multi-step task with progress updates.
+        
+        Args:
+            task_name: Name of the task
+            total_steps: Number of processing steps
+        
+        Yields:
+            AUIEvent: Activity events showing progress
+        """
+        session_id = str(uuid.uuid4())
+        activity_id = f"activity_{session_id}"
+        
+        yield StreamStartEvent(
+            session_id=session_id,
+            metadata={"activity_type": "long_task"}
+        )
+        
+        # Initial activity snapshot
+        initial_activity = {
+            "name": task_name,
+            "status": "idle",
+            "progress": 0.0,
+            "current_step": None
+        }
+        
+        yield ActivitySnapshotEvent(
+            activity_id=activity_id,
+            name=initial_activity["name"],
+            status=initial_activity["status"],
+            progress=initial_activity["progress"],
+            current_step=initial_activity["current_step"]
+        )
+        
+        await asyncio.sleep(0.5)
+        
+        # Start processing
+        current_activity = initial_activity.copy()
+        new_activity = {**current_activity, "status": "running", "current_step": "Initializing..."}
+        yield create_activity_delta(activity_id, current_activity, new_activity)
+        current_activity = new_activity
+        
+        await asyncio.sleep(0.5)
+        
+        # Process each step
+        for step in range(1, total_steps + 1):
+            progress = step / total_steps
+            new_activity = {
+                **current_activity,
+                "progress": progress,
+                "current_step": f"Step {step}/{total_steps}: Processing batch {step}"
+            }
+            yield create_activity_delta(activity_id, current_activity, new_activity)
+            current_activity = new_activity
+            await asyncio.sleep(0.8)
+        
+        # Complete
+        new_activity = {
+            **current_activity,
+            "status": "completed",
+            "current_step": "Done"
+        }
+        yield create_activity_delta(activity_id, current_activity, new_activity)
+        
+        yield StreamEndEvent(session_id=session_id)
+
+
+    async def stream_tool_execution(
+        self,
+        tool_name: str = "search_vocabulary",
+        tool_args: Optional[Dict[str, Any]] = None
+    ) -> AsyncGenerator[AUIEvent, None]:
+        """
+        Demonstrate Tool Call event chain.
+        Shows complete lifecycle: START -> ARGS -> END -> RESULT
+        
+        Args:
+            tool_name: Name of the tool to execute
+            tool_args: Tool arguments
+        
+        Yields:
+            AUIEvent: Tool call events
+        """
+        session_id = str(uuid.uuid4())
+        tool_call_id = f"tool_{session_id}"
+        
+        if tool_args is None:
+            tool_args = {"query": "apple", "limit": 5}
+        
+        yield StreamStartEvent(
+            session_id=session_id,
+            metadata={"tool_name": tool_name}
+        )
+        
+        # 1. Tool Call Start
+        yield ToolCallStartEvent(
+            tool_call_id=tool_call_id,
+            tool_name=tool_name,
+            description=f"Executing {tool_name} tool"
+        )
+        
+        await asyncio.sleep(0.3)
+        
+        # 2. Streaming Arguments (simulate large args being sent incrementally)
+        for key, value in tool_args.items():
+            yield ToolCallArgsEvent(
+                tool_call_id=tool_call_id,
+                args_delta={key: value}
+            )
+            await asyncio.sleep(0.2)
+        
+        # Simulate execution time
+        await asyncio.sleep(1.0)
+        
+        # 3. Tool Call End
+        duration_ms = 1500.0  # Simulated duration
+        yield ToolCallEndEvent(
+            tool_call_id=tool_call_id,
+            status="success",
+            duration_ms=duration_ms
+        )
+        
+        await asyncio.sleep(0.2)
+        
+        # 4. Tool Call Result
+        result_data = {
+            "words": [
+                {"word": "apple", "definition": "A round fruit with red or green skin"},
+                {"word": "application", "definition": "A formal request or software program"},
+                {"word": "apply", "definition": "To make a formal request or put something to use"}
+            ],
+            "count": 3
+        }
+        
+        yield ToolCallResultEvent(
+            tool_call_id=tool_call_id,
+            result=result_data
+        )
+        
+        yield StreamEndEvent(session_id=session_id)
+
+
+    async def stream_agent_run(
+        self,
+        agent_type: str = "story_generator",
+        task_description: str = "Generate a story about time travel",
+        should_fail: bool = False
+    ) -> AsyncGenerator[AUIEvent, None]:
+        """
+        Demonstrate Run Lifecycle events.
+        Shows complete agent run: RUN_STARTED -> (Activities/Tools) -> RUN_FINISHED/RUN_ERROR
+        
+        Args:
+            agent_type: Type of agent
+            task_description: Description of the task
+            should_fail: Whether to simulate a failure
+        
+        Yields:
+            AUIEvent: Run lifecycle events
+        """
+        session_id = str(uuid.uuid4())
+        run_id = f"run_{session_id}"
+        
+        import time
+        start_time = time.time()
+        
+        yield StreamStartEvent(
+            session_id=session_id,
+            metadata={"agent_type": agent_type}
+        )
+        
+        # 1. Run Started
+        yield RunStartedEvent(
+            run_id=run_id,
+            agent_type=agent_type,
+            task_description=task_description
+        )
+        
+        await asyncio.sleep(0.5)
+        
+        # Simulate some work (could include Activity or Tool Call events here)
+        if should_fail:
+            # Simulate error after some processing
+            await asyncio.sleep(1.5)
+            
+            yield RunErrorEvent(
+                run_id=run_id,
+                error_message="LLM API rate limit exceeded",
+                error_code="RATE_LIMIT",
+                traceback="Traceback (most recent call last):\n  File 'generator.py', line 42\n    ..."
+            )
+        else:
+            # Simulate successful processing
+            await asyncio.sleep(2.0)
+            
+            duration_ms = (time.time() - start_time) * 1000
+            
+            yield RunFinishedEvent(
+                run_id=run_id,
+                outcome=f"Successfully completed {task_description}",
+                duration_ms=duration_ms
+            )
+        
         yield StreamEndEvent(session_id=session_id)
 
 

@@ -1,6 +1,6 @@
 """
 AUI Event System - AG-UI Compatible Events
-Phase 1: Streaming Text Support with backward compatibility
+Supports: Streaming Text, State Sync, Activity Progress, Tool Calls, Run Lifecycle
 """
 
 from enum import Enum
@@ -16,11 +16,26 @@ class AUIEventType(str, Enum):
     # Backward compatible with existing AUIRenderPacket
     RENDER_SNAPSHOT = "aui_render_snapshot"
     
-    # New streaming events (AG-UI inspired)
+    # Streaming events (AG-UI inspired)
     TEXT_DELTA = "aui_text_delta"
     STATE_DELTA = "aui_state_delta"
     
-    # Lifecycle events
+    # Activity Progress Events
+    ACTIVITY_SNAPSHOT = "aui_activity_snapshot"
+    ACTIVITY_DELTA = "aui_activity_delta"
+    
+    # Tool Call Events
+    TOOL_CALL_START = "aui_tool_call_start"
+    TOOL_CALL_ARGS = "aui_tool_call_args"
+    TOOL_CALL_END = "aui_tool_call_end"
+    TOOL_CALL_RESULT = "aui_tool_call_result"
+    
+    # Run Lifecycle Events
+    RUN_STARTED = "aui_run_started"
+    RUN_FINISHED = "aui_run_finished"
+    RUN_ERROR = "aui_run_error"
+    
+    # Stream Lifecycle events
     STREAM_START = "aui_stream_start"
     STREAM_END = "aui_stream_end"
     ERROR = "aui_error"
@@ -92,11 +107,121 @@ class ErrorEvent(BaseAUIEvent):
     details: Optional[Dict[str, Any]] = None
 
 
+# --- Activity Progress Events ---
+
+class ActivitySnapshotEvent(BaseAUIEvent):
+    """
+    Complete activity state snapshot.
+    Shows current state of a long-running task.
+    """
+    type: AUIEventType = AUIEventType.ACTIVITY_SNAPSHOT
+    activity_id: str
+    name: str  # Activity name (e.g. "Generating story")
+    status: str  # "running", "completed", "failed"
+    progress: float = 0.0  # 0.0 to 1.0
+    current_step: Optional[str] = None  # e.g. "Step 2/5: Processing vocabulary"
+    metadata: Optional[Dict[str, Any]] = None
+
+
+class ActivityDeltaEvent(BaseAUIEvent):
+    """
+    Incremental activity update using JSON Patch.
+    Updates specific fields of an activity.
+    """
+    type: AUIEventType = AUIEventType.ACTIVITY_DELTA
+    activity_id: str
+    delta: List[Dict[str, Any]]  # JSON Patch operations
+
+
+# --- Tool Call Events ---
+
+class ToolCallStartEvent(BaseAUIEvent):
+    """
+    Signals start of a tool/function call.
+    """
+    type: AUIEventType = AUIEventType.TOOL_CALL_START
+    tool_call_id: str
+    tool_name: str
+    description: Optional[str] = None
+
+
+class ToolCallArgsEvent(BaseAUIEvent):
+    """
+    Streaming tool arguments (for large/complex args).
+    Can send multiple events to build complete args incrementally.
+    """
+    type: AUIEventType = AUIEventType.TOOL_CALL_ARGS
+    tool_call_id: str
+    args_delta: Dict[str, Any]  # Partial arguments
+
+
+class ToolCallEndEvent(BaseAUIEvent):
+    """
+    Signals tool call execution has finished.
+    """
+    type: AUIEventType = AUIEventType.TOOL_CALL_END
+    tool_call_id: str
+    status: str  # "success", "error"
+    duration_ms: Optional[float] = None
+
+
+class ToolCallResultEvent(BaseAUIEvent):
+    """
+    Tool call result data.
+    """
+    type: AUIEventType = AUIEventType.TOOL_CALL_RESULT
+    tool_call_id: str
+    result: Any  # Tool execution result
+    error: Optional[str] = None
+
+
+# --- Run Lifecycle Events ---
+
+class RunStartedEvent(BaseAUIEvent):
+    """
+    Signals an agent run has started.
+    """
+    type: AUIEventType = AUIEventType.RUN_STARTED
+    run_id: str
+    agent_type: Optional[str] = None  # e.g. "coach", "story_generator"
+    task_description: Optional[str] = None
+
+
+class RunFinishedEvent(BaseAUIEvent):
+    """
+    Signals an agent run has completed successfully.
+    """
+    type: AUIEventType = AUIEventType.RUN_FINISHED
+    run_id: str
+    outcome: Optional[str] = None  # Summary of what was accomplished
+    duration_ms: Optional[float] = None
+
+
+class RunErrorEvent(BaseAUIEvent):
+    """
+    Signals an agent run has failed.
+    """
+    type: AUIEventType = AUIEventType.RUN_ERROR
+    run_id: str
+    error_message: str
+    error_code: Optional[str] = None
+    traceback: Optional[str] = None
+
+
 # Union type for all events
 AUIEvent = Union[
     RenderSnapshotEvent,
     TextDeltaEvent,
     StateDeltaEvent,
+    ActivitySnapshotEvent,
+    ActivityDeltaEvent,
+    ToolCallStartEvent,
+    ToolCallArgsEvent,
+    ToolCallEndEvent,
+    ToolCallResultEvent,
+    RunStartedEvent,
+    RunFinishedEvent,
+    RunErrorEvent,
     StreamStartEvent,
     StreamEndEvent,
     ErrorEvent,
@@ -144,5 +269,23 @@ def create_state_diff(old_state: Dict[str, Any], new_state: Dict[str, Any]) -> S
     patch = jsonpatch.make_patch(old_state, new_state)
     
     return StateDeltaEvent(
+        delta=patch.patch
+    )
+
+
+def create_activity_delta(
+    activity_id: str,
+    old_state: Dict[str, Any],
+    new_state: Dict[str, Any]
+) -> ActivityDeltaEvent:
+    """
+    Helper to create an activity delta using jsonpatch.
+    """
+    import jsonpatch
+    
+    patch = jsonpatch.make_patch(old_state, new_state)
+    
+    return ActivityDeltaEvent(
+        activity_id=activity_id,
         delta=patch.patch
     )

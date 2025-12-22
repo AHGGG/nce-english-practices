@@ -179,6 +179,64 @@
     - [x] `stream_vocabulary_cards()`: Stream vocabulary cards progressively.
     - [x] `stream_vocabulary_flip()`: JSON Patch demo with granular card state updates (2025-12-22).
     - [x] **Bug Fix**: Replaced shallow `.copy()` with `copy.deepcopy()` to prevent state mutation (2025-12-22).
+## 📆 Recent Updates (December 2025)
+
+### ✅ AUI Extended Events Implementation (2025-12-22)
+**完整实现 AG-UI 协议中缺失的事件类型，支持 Activity Progress、Tool Call、Run Lifecycle**
+
+#### Backend Extensions
+- [x] **Event System** (`app/services/aui_events.py`):
+  - 新增 9 个事件类型：`ACTIVITY_SNAPSHOT`, `ACTIVITY_DELTA`, `TOOL_CALL_*` (4个), `RUN_*` (3个)
+  - 新增对应的 Pydantic 事件类和 `create_activity_delta()` 辅助函数
+  
+- [x] **Streaming Services** (`app/services/aui_streaming.py`):
+  - `stream_long_task_with_progress()` - 演示 Activity Progress 事件
+  - `stream_tool_execution()` - 演示完整 Tool Call 生命周期
+  - `stream_agent_run()` - 演示 Agent Run 成功/失败场景
+  
+- [x] **Demo Endpoints** (`app/api/routers/aui_demo_extended.py`):
+  - `/api/aui/demo/stream/activity` - Activity Progress 演示
+  - `/api/aui/demo/stream/tool-call` - Tool Call 演示
+  - `/api/aui/demo/stream/agent-run` - Agent Run 演示（支持 fail 参数）
+
+#### Frontend Extensions
+- [x] **Stream Hydrator** (`frontend/src/components/aui/AUIStreamHydrator.jsx`):
+  - 新增 `activities`, `toolCalls`, `runState` 状态管理
+  - 实现 `aui_activity_snapshot/delta` 事件处理（使用 JSON Patch）
+  - 实现 `aui_tool_call_*` 事件链处理
+  - 实现 `aui_run_*` 生命周期事件处理
+  - **修复**: 添加 `text_delta` 事件处理，支持 Story Stream 文本累积
+  - 创建 3 个内联 UI 组件：
+    - `ActivityProgressBar` - 实时进度条 + 状态徽章
+    - `ToolCallTimeline` - 工具调用时间线（按 ID 分组）
+    - `RunStatusBadge` - Agent 运行状态显示
+  
+- [x] **Component Fixes**:
+  - `FlashCardStack.jsx` - 添加受控模式支持（支持外部 props 控制 `current_index`/`is_flipped`）
+  - `StoryReader.jsx` - 已支持 props 变化响应（无需修改）
+  
+- [x] **Demo Page Refactor** (`frontend/src/views/AUIStreamingDemo.jsx`):
+  - 采用 Playground 风格的左右分栏布局
+  - 8 个演示卡片（2×4 网格）：Story/Vocabulary/State Sync/Vocab Patch + 4个扩展事件
+  - 一键切换演示，选中高亮，实时 URL 显示
+
+#### Testing & Verification
+- [x] **Unit Tests** (26 tests passing):
+  - `tests/test_aui_activity_events.py` (8 tests)
+  - `tests/test_aui_tool_call_events.py` (10 tests)
+  - `tests/test_aui_run_lifecycle.py` (10 tests)
+  
+- [x] **Verification Script**: `scripts/verify_aui_extended.py`
+- [x] **Browser Testing**: ✅ 所有演示功能正常工作
+
+#### Documentation
+- [x] `walkthrough.md` - 完整实现文档
+- [x] `task.md` - 任务追踪（所有阶段完成）
+
+---
+
+## 📊 Historical Milestones-12-22).
+    - [x] **Bug Fix**: Replaced shallow `.copy()` with `copy.deepcopy()` to prevent state mutation (2025-12-22).
 - [x] **SSE API Endpoints**: Added streaming routes (`app/api/routers/aui_stream.py`, `aui_stream_demo.py`).
     - [x] `GET /api/aui/stream/story`: Stream story presentations.
     - [x] `GET /api/aui/stream/vocabulary`: Stream vocabulary cards.

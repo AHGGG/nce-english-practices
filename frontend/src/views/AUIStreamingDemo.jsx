@@ -1,6 +1,7 @@
 /**
- * AUI Component Registry - Test Page
- * Demonstrates SSE streaming with AUIStreamHydrator
+ * AUI Streaming Demo - Test Page
+ * Demonstrates SSE streaming with extended AUI events
+ * Layout inspired by Playground page
  */
 
 import React, { useState } from 'react';
@@ -8,163 +9,158 @@ import AUIStreamHydrator from '../components/aui/AUIStreamHydrator';
 
 const AUIStreamingDemo = () => {
     const [streamUrl, setStreamUrl] = useState('');
-    const [testStory, setTestStory] = useState(
-        'Once upon a time, in a small village, there lived a curious young girl named Emma. ' +
-        'She loved exploring the nearby forest, where she would often discover hidden treasures. ' +
-        'One day, while wandering through the woods, she stumbled upon a mysterious old book.'
-    );
-    const [testWords, setTestWords] = useState('explore,discover,mysterious,treasure,curious');
-    const [userLevel, setUserLevel] = useState(1);
+    const [selectedDemo, setSelectedDemo] = useState('');
 
-    const handleStreamStory = () => {
-        const encodedContent = encodeURIComponent(testStory);
-        // Use relative path with /api prefix - Vite proxy will handle HTTPS
-        const url = `/api/aui/stream/story?content=${encodedContent}&title=Test Story&user_level=${userLevel}&chunk_size=3`;
-        setStreamUrl(url);
-    };
+    // Demo configurations
+    const demos = [
+        {
+            id: 'story',
+            label: 'Story Stream',
+            icon: '📖',
+            description: 'Incremental text streaming',
+            getUrl: () => '/api/aui/stream/story?content=' + encodeURIComponent('Once upon a time, in a small village, there lived a curious young girl named Emma. She loved exploring the nearby forest.') + '&title=Test Story&user_level=1&chunk_size=3'
+        },
+        {
+            id: 'vocab',
+            label: 'Vocabulary',
+            icon: '📚',
+            description: 'Vocabulary cards',
+            getUrl: () => '/api/aui/stream/vocabulary?words=explore,discover,mysterious,treasure,curious&user_level=1'
+        },
+        {
+            id: 'state-sync',
+            label: 'State Sync',
+            icon: '🔄',
+            description: 'JSON Patch updates',
+            getUrl: () => '/api/aui/stream/state-demo'
+        },
+        {
+            id: 'vocab-patch',
+            label: 'Vocab Patch',
+            icon: '🃏',
+            description: 'Card flip animation',
+            getUrl: () => '/api/aui/stream/vocab-patch-demo?level=1'
+        },
+        {
+            id: 'activity',
+            label: 'Activity Progress',
+            icon: '🎯',
+            description: 'Multi-step task progress',
+            getUrl: () => '/api/aui/demo/stream/activity?task=Test%20Data%20Processing&steps=5'
+        },
+        {
+            id: 'tool-call',
+            label: 'Tool Call',
+            icon: '🔧',
+            description: 'Tool execution lifecycle',
+            getUrl: () => '/api/aui/demo/stream/tool-call?tool=search_vocabulary&query=example'
+        },
+        {
+            id: 'agent-success',
+            label: 'Agent Run ✅',
+            icon: '✅',
+            description: 'Successful agent run',
+            getUrl: () => '/api/aui/demo/stream/agent-run?task=Generate%20Test%20Story&fail=false'
+        },
+        {
+            id: 'agent-error',
+            label: 'Agent Run ❌',
+            icon: '❌',
+            description: 'Failed agent run',
+            getUrl: () => '/api/aui/demo/stream/agent-run?task=Generate%20Test%20Story&fail=true'
+        }
+    ];
 
-    const handleStreamVocab = () => {
-        // Use relative path with /api prefix - Vite proxy will handle HTTPS
-        const url = `/api/aui/stream/vocabulary?words=${testWords}&user_level=${userLevel}`;
-        setStreamUrl(url);
+    const handleSelectDemo = (demo) => {
+        setSelectedDemo(demo.id);
+        setStreamUrl(demo.getUrl());
     };
 
     const handleReset = () => {
+        setSelectedDemo('');
         setStreamUrl('');
     };
 
-    const handleStreamVocabPatch = () => {
-        const url = `/api/aui/stream/vocab-patch-demo?level=${userLevel}`;
-        setStreamUrl(url);
-    };
-
     return (
-        <div className="min-h-screen bg-[#0A0A0A] text-white p-8">
-            <div className="max-w-5xl mx-auto">
-                {/* Header */}
-                <div className="mb-8">
-                    <h1 className="font-serif text-3xl mb-2">AUI Streaming Demo</h1>
-                    <p className="text-[#666] font-mono text-sm">
-                        Test SSE-based streaming with AG-UI compatible events
-                    </p>
+        <div className="min-h-screen bg-[#050505] text-[#E0E0E0] p-8 font-mono flex gap-8">
+            {/* Control Panel */}
+            <div className="w-1/3 space-y-6">
+                <header className="mb-8 border-b border-[#333] pb-4">
+                    <h1 className="text-2xl font-serif font-bold text-white">AUI Streaming Demo</h1>
+                    <p className="text-xs text-[#666] mt-2">SSE-based Event Streaming Testbed</p>
+                </header>
+
+                {/* Demo Selection Grid */}
+                <div>
+                    <label className="block text-xs uppercase text-[#666] mb-3">Select Demo</label>
+                    <div className="grid grid-cols-2 gap-2">
+                        {demos.map(demo => (
+                            <button
+                                key={demo.id}
+                                onClick={() => handleSelectDemo(demo)}
+                                className={`p-3 text-left rounded border transition-all ${selectedDemo === demo.id
+                                        ? 'bg-[#00FF94] text-black border-[#00FF94] font-bold'
+                                        : 'bg-[#111] text-[#888] border-[#333] hover:border-[#555] hover:text-white'
+                                    }`}
+                            >
+                                <div className="text-lg mb-1">{demo.icon}</div>
+                                <div className="text-xs font-bold">{demo.label}</div>
+                                <div className="text-[10px] opacity-60 mt-1">{demo.description}</div>
+                            </button>
+                        ))}
+                    </div>
                 </div>
 
                 {/* Controls */}
-                <div className="bg-[#111] border border-[#222] rounded-xl p-6 mb-8">
-                    <h2 className="font-mono text-sm text-neon-cyan mb-4">STREAM CONTROLS</h2>
-
-                    {/* User Level Selection */}
-                    <div className="mb-6">
-                        <label className="block text-sm font-mono mb-2 text-[#999]">
-                            User Level (Scaffolding):
-                        </label>
-                        <div className="flex gap-2">
-                            {[1, 2, 3].map(level => (
-                                <button
-                                    key={level}
-                                    onClick={() => setUserLevel(level)}
-                                    className={`px-4 py-2 rounded border font-mono text-sm ${userLevel === level
-                                        ? 'bg-neon-cyan/20 border-neon-cyan text-neon-cyan'
-                                        : 'bg-[#0A0A0A] border-[#333] text-[#666] hover:border-[#555]'
-                                        }`}
-                                >
-                                    L{level} {level === 1 ? 'Beginner' : level === 2 ? 'Intermediate' : 'Advanced'}
-                                </button>
-                            ))}
-                        </div>
-                    </div>
-
-                    {/* Story Test */}
-                    <div className="mb-6">
-                        <label className="block text-sm font-mono mb-2 text-[#999]">
-                            Test Story Content:
-                        </label>
-                        <textarea
-                            value={testStory}
-                            onChange={(e) => setTestStory(e.target.value)}
-                            className="w-full bg-[#0A0A0A] border border-[#333] rounded px-3 py-2 font-mono text-sm text-white focus:border-neon-cyan focus:outline-none"
-                            rows={4}
-                        />
-                        <button
-                            onClick={handleStreamStory}
-                            className="mt-2 px-4 py-2 bg-neon-cyan/10 border border-neon-cyan hover:bg-neon-cyan/20 rounded font-mono text-sm text-neon-cyan transition-colors"
-                        >
-                            Stream Story (SSE)
-                        </button>
-                    </div>
-
-                    {/* Vocabulary Test */}
-                    <div className="mb-6">
-                        <label className="block text-sm font-mono mb-2 text-[#999]">
-                            Test Vocabulary (comma-separated):
-                        </label>
-                        <input
-                            type="text"
-                            value={testWords}
-                            onChange={(e) => setTestWords(e.target.value)}
-                            className="w-full bg-[#0A0A0A] border border-[#333] rounded px-3 py-2 font-mono text-sm text-white focus:border-neon-cyan focus:outline-none"
-                        />
-                        <button
-                            onClick={handleStreamVocab}
-                            className="mt-2 px-4 py-2 bg-neon-pink/10 border border-neon-pink hover:bg-neon-pink/20 rounded font-mono text-sm text-neon-pink transition-colors"
-                        >
-                            Stream Vocabulary (SSE)
-                        </button>
-                    </div>
-
-                    {/* State Sync Test */}
-                    <div className="mb-6">
-                        <label className="block text-sm font-mono mb-2 text-[#999]">
-                            State Sync (JSON Patch):
-                        </label>
-                        <p className="text-xs text-[#555] mb-2 font-mono">
-                            Simulates a complex process with granular progress/status updates.
-                        </p>
-                        <button
-                            onClick={() => setStreamUrl('/api/aui/stream/state-demo')}
-                            className="px-4 py-2 bg-neon-purple/10 border border-neon-purple hover:bg-neon-purple/20 rounded font-mono text-sm text-neon-purple transition-colors"
-                        >
-                            Test State Sync (System Dashboard)
-                        </button>
-                        <button
-                            onClick={handleStreamVocabPatch}
-                            className="ml-2 px-4 py-2 bg-yellow-500/10 border border-yellow-500 hover:bg-yellow-500/20 rounded font-mono text-sm text-yellow-500 transition-colors"
-                        >
-                            Test Vocab Patch (Card Flip)
-                        </button>
-                    </div>
-
-                    {/* Reset */}
+                <div className="space-y-3">
                     {streamUrl && (
                         <button
                             onClick={handleReset}
-                            className="px-4 py-2 bg-[#222] border border-[#444] hover:bg-[#333] rounded font-mono text-sm text-white transition-colors"
+                            className="w-full bg-[#222] text-white border border-[#444] py-2 rounded hover:bg-[#333] transition text-sm"
                         >
-                            Reset Stream
+                            RESET STREAM
                         </button>
                     )}
                 </div>
 
-                {/* Stream Display */}
-                <div className="bg-[#111] border border-[#222] rounded-xl p-6">
-                    <h2 className="font-mono text-sm text-neon-green mb-4">STREAM OUTPUT</h2>
-
-                    {streamUrl ? (
-                        <AUIStreamHydrator
-                            streamUrl={streamUrl}
-                            onError={(err) => console.error('Stream error:', err)}
-                            onComplete={() => console.log('Stream completed')}
-                        />
-                    ) : (
-                        <div className="text-center text-[#666] font-mono text-sm py-8">
-                            Select a test above to start streaming
+                {/* Current Stream Info */}
+                {streamUrl && (
+                    <div className="mt-8">
+                        <label className="block text-xs uppercase text-[#666] mb-2">Active Stream URL</label>
+                        <div className="bg-black border border-[#333] p-3 text-[10px] text-[#00FF94] rounded break-all font-mono">
+                            {streamUrl}
                         </div>
-                    )}
+                    </div>
+                )}
+            </div>
+
+            {/* Viewport */}
+            <div className="flex-1 bg-[#111] border border-[#333] rounded-lg relative overflow-hidden flex flex-col">
+                <div className="p-4 border-b border-[#333] flex justify-between items-center bg-[#0A0A0A]">
+                    <span className="text-xs uppercase tracking-widest text-[#666]">Stream Output</span>
+                    <div className="flex gap-2">
+                        <span className="w-2 h-2 rounded-full bg-[#FF5F57]"></span>
+                        <span className="w-2 h-2 rounded-full bg-[#FEBC2E]"></span>
+                        <span className="w-2 h-2 rounded-full bg-[#28C840]"></span>
+                    </div>
                 </div>
 
-                {/* Event Log */}
-                <div className="mt-4 text-[#666] font-mono text-xs">
-                    <strong>Current Stream URL:</strong> {streamUrl || 'None'}
+                <div className="flex-1 overflow-auto p-8 flex items-center justify-center bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-[#1a1a1a] to-[#0A0A0A]">
+                    {streamUrl ? (
+                        <div className="w-full max-w-2xl">
+                            <AUIStreamHydrator
+                                streamUrl={streamUrl}
+                                key={streamUrl}
+                                onError={(err) => console.error('Stream error:', err)}
+                                onComplete={() => console.log('Stream completed')}
+                            />
+                        </div>
+                    ) : (
+                        <div className="text-[#333] text-center">
+                            <p className="text-4xl opacity-20 font-serif">AWAITING SIGNAL</p>
+                            <p className="text-xs opacity-10 mt-4">Select a demo to start streaming</p>
+                        </div>
+                    )}
                 </div>
             </div>
         </div>

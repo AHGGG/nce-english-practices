@@ -1,14 +1,34 @@
 import React, { useState } from 'react';
 
-const FlashCardStack = ({ words = [], show_translation = true }) => {
-    const [currentIndex, setCurrentIndex] = useState(0);
-    const [isFlipped, setIsFlipped] = useState(false);
+const FlashCardStack = ({
+    words = [],
+    show_translation = true,
+    current_index, // Controlled prop from JSON Patch
+    is_flipped    // Controlled prop from JSON Patch
+}) => {
+    // Use internal state only if props are not provided (uncontrolled mode)
+    const [internalIndex, setInternalIndex] = useState(0);
+    const [internalFlipped, setInternalFlipped] = useState(false);
+
+    // Use controlled props if available, otherwise use internal state
+    const currentIndex = current_index !== undefined ? current_index : internalIndex;
+    const isFlipped = is_flipped !== undefined ? is_flipped : internalFlipped;
 
     if (!words || words.length === 0) return null;
 
     const handleNext = () => {
-        setIsFlipped(false);
-        setCurrentIndex((prev) => (prev + 1) % words.length);
+        // Only update internal state if in uncontrolled mode
+        if (current_index === undefined && is_flipped === undefined) {
+            setInternalFlipped(false);
+            setInternalIndex((prev) => (prev + 1) % words.length);
+        }
+    };
+
+    const handleFlip = () => {
+        // Only update internal state if in uncontrolled mode
+        if (is_flipped === undefined) {
+            setInternalFlipped(!internalFlipped);
+        }
     };
 
     const currentWord = words[currentIndex];
@@ -17,7 +37,7 @@ const FlashCardStack = ({ words = [], show_translation = true }) => {
         <div className="w-full max-w-sm mx-auto perspective-1000">
             <div
                 className="relative h-48 w-full cursor-pointer group"
-                onClick={() => setIsFlipped(!isFlipped)}
+                onClick={handleFlip}
             >
                 <div className={`
              absolute inset-0 w-full h-full text-center flex flex-col items-center justify-center p-6

@@ -14,6 +14,12 @@ const AUIStreamHydrator = ({ streamUrl, onError, onComplete }) => {
     const [accumulatedText, setAccumulatedText] = useState({});
     const [isStreaming, setIsStreaming] = useState(false);
     const [error, setError] = useState(null);
+
+    // New state for extended events
+    const [activities, setActivities] = useState({}); // Map: activity_id -> activity state
+    const [toolCalls, setToolCalls] = useState([]); // Array of tool call events
+    const [runState, setRunState] = useState(null); // Current run state
+
     const eventSourceRef = useRef(null);
 
     useEffect(() => {
@@ -37,7 +43,6 @@ const AUIStreamHydrator = ({ streamUrl, onError, onComplete }) => {
                         break;
 
                     case 'aui_render_snapshot':
-                        // Backward compatible with AUIRenderPacket
                         setComponentSpec({
                             component: auiEvent.ui.component,
                             props: auiEvent.ui.props,
@@ -47,36 +52,31 @@ const AUIStreamHydrator = ({ streamUrl, onError, onComplete }) => {
                         break;
 
                     case 'aui_text_delta':
-                        // Accumulate text deltas
-                        const { message_id, delta, field_path } = auiEvent;
-
-                        setAccumulatedText(prev => {
-                            const key = `${message_id}.${field_path}`;
-                            return {
-                                ...prev,
-                                [key]: (prev[key] || '') + delta
-                            };
-                        });
-
-                        // Update component props with accumulated text
+                        // Accumulate text deltas into component props
                         setComponentSpec(prev => {
-                            if (!prev) return null;
+                            if (!prev) return prev;
 
-                            const updatedProps = { ...prev.props };
-                            const path = field_path.split('.');
+                            const newProps = structuredClone(prev.props);
+                            const path = auiEvent.field_path || 'content';
+                            const pathParts = path.split('.');
 
-                            // Navigate to nested field (e.g. "story.content")
-                            let current = updatedProps;
-                            for (let i = 0; i < path.length - 1; i++) {
-                                if (!current[path[i]]) current[path[i]] = {};
-                                current = current[path[i]];
+                            // Navigate to the nested property
+                            let current = newProps;
+                            for (let i = 0; i < pathParts.length - 1; i++) {
+                                if (!current[pathParts[i]]) {
+                                    current[pathParts[i]] = {};
+                                }
+                                current = current[pathParts[i]];
                             }
 
-                            // Set accumulated value
-                            const key = `${message_id}.${field_path}`;
-                            current[path[path.length - 1]] = accumulatedText[key] || '';
+                            // Append the delta text
+                            const lastKey = pathParts[pathParts.length - 1];
+                            current[lastKey] = (current[lastKey] || '') + auiEvent.delta;
 
-                            return { ...prev, props: updatedProps };
+                            return {
+                                ...prev,
+                                props: newProps
+                            };
                         });
                         break;
 
@@ -156,6 +156,61 @@ const AUIStreamHydrator = ({ streamUrl, onError, onComplete }) => {
                         if (onError) onError(auiEvent.message);
                         break;
 
+                    // Activity Progress Events
+                    case 'aui_activity_snapshot':
+                        setActivities(prev => ({
+                            ...prev,
+                            [auiEvent.activity_id]: {
+                                id: auiEvent.activity_id,
+                                name: auiEvent.name,
+                                status: auiEvent.status,
+                                progress: auiEvent.progress,
+                                current_step: auiEvent.current_step,
+                                metadata: auiEvent.metadata
+                            }
+                        }));
+                        break;
+
+                    case 'aui_activity_delta':
+                        setActivities(prev => {
+                            const activity = prev[auiEvent.activity_id];
+                            if (!activity) {
+                                console.warn('[AUIStreamHydrator] Activity delta for unknown activity:', auiEvent.activity_id);
+                                return prev;
+                            }
+
+                            try {
+                                // Apply JSON Patch to activity
+                                const activityDoc = structuredClone(activity);
+                                const result = applyPatch(activityDoc, auiEvent.delta);
+                                const newActivity = result.newDocument || activityDoc;
+
+                                return {
+                                    ...prev,
+                                    [auiEvent.activity_id]: newActivity
+                                };
+                            } catch (err) {
+                                console.error('[AUIStreamHydrator] Activity patch failed:', err);
+                                return prev;
+                            }
+                        });
+                        break;
+
+                    // Tool Call Events
+                    case 'aui_tool_call_start':
+                    case 'aui_tool_call_args':
+                    case 'aui_tool_call_end':
+                    case 'aui_tool_call_result':
+                        setToolCalls(prev => [...prev, auiEvent]);
+                        break;
+
+                    // Run Lifecycle Events
+                    case 'aui_run_started':
+                    case 'aui_run_finished':
+                    case 'aui_run_error':
+                        setRunState(auiEvent);
+                        break;
+
                     default:
                         console.warn('[AUIStreamHydrator] Unknown event type:', auiEvent.type);
                 }
@@ -189,7 +244,10 @@ const AUIStreamHydrator = ({ streamUrl, onError, onComplete }) => {
         );
     }
 
-    if (!componentSpec) {
+    // Check if we have any extended events to display
+    const hasExtendedEvents = Object.keys(activities).length > 0 || toolCalls.length > 0 || runState;
+
+    if (!componentSpec && !hasExtendedEvents) {
         return (
             <div className="flex items-center justify-center p-8">
                 <div className="animate-pulse text-[#666] font-mono text-sm">
@@ -209,14 +267,134 @@ const AUIStreamHydrator = ({ streamUrl, onError, onComplete }) => {
                 </div>
             )}
 
-            {/* Render the component dynamically */}
-            <DynamicComponentRenderer
-                component={componentSpec.component}
-                props={componentSpec.props}
-            />
+            {/* Render the component dynamically (if exists) */}
+            {componentSpec && (
+                <DynamicComponentRenderer
+                    component={componentSpec.component}
+                    props={componentSpec.props}
+                />
+            )}
+
+            {/* Render activities if any */}
+            {Object.keys(activities).length > 0 && (
+                <div className="mt-4 space-y-2">
+                    {Object.values(activities).map(activity => (
+                        <ActivityProgressBar key={activity.id} activity={activity} />
+                    ))}
+                </div>
+            )}
+
+            {/* Render tool calls if any */}
+            {toolCalls.length > 0 && (
+                <div className="mt-4">
+                    <ToolCallTimeline toolCalls={toolCalls} />
+                </div>
+            )}
+
+            {/* Render run state if exists */}
+            {runState && (
+                <div className="mt-4">
+                    <RunStatusBadge runState={runState} />
+                </div>
+            )}
         </div>
     );
 };
+
+// Simple UI Components for extended events
+
+const ActivityProgressBar = ({ activity }) => (
+    <div className="bg-canvas-dark border border-ink/20 rounded-lg p-3 font-mono text-sm">
+        <div className="flex items-center justify-between mb-2">
+            <span className="text-ink font-medium">{activity.name}</span>
+            <span className={`text-xs px-2 py-0.5 rounded ${activity.status === 'completed' ? 'bg-green-500/20 text-green-400' :
+                activity.status === 'running' ? 'bg-blue-500/20 text-blue-400' :
+                    activity.status === 'failed' ? 'bg-red-500/20 text-red-400' :
+                        'bg-gray-500/20 text-gray-400'
+                }`}>
+                {activity.status}
+            </span>
+        </div>
+
+        {/* Progress bar */}
+        <div className="relative h-2 bg-ink/10 rounded-full overflow-hidden mb-2">
+            <div
+                className="absolute h-full bg-neon-cyan transition-all duration-300"
+                style={{ width: `${(activity.progress * 100).toFixed(0)}%` }}
+            />
+        </div>
+
+        <div className="flex items-center justify-between text-xs text-ink/60">
+            <span>{activity.current_step || 'Waiting...'}</span>
+            <span>{(activity.progress * 100).toFixed(0)}%</span>
+        </div>
+    </div>
+);
+
+const ToolCallTimeline = ({ toolCalls }) => {
+    // Group by tool_call_id
+    const groupedCalls = toolCalls.reduce((acc, event) => {
+        const id = event.tool_call_id;
+        if (!acc[id]) acc[id] = [];
+        acc[id].push(event);
+        return acc;
+    }, {});
+
+    return (
+        <div className="bg-canvas-dark border border-ink/20 rounded-lg p-3 font-mono text-sm">
+            <div className="text-ink font-medium mb-3">Tool Calls</div>
+            <div className="space-y-3">
+                {Object.entries(groupedCalls).map(([id, events]) => {
+                    const startEvent = events.find(e => e.type === 'aui_tool_call_start');
+                    const endEvent = events.find(e => e.type === 'aui_tool_call_end');
+                    const resultEvent = events.find(e => e.type === 'aui_tool_call_result');
+
+                    return (
+                        <div key={id} className="border-l-2 border-neon-cyan/50 pl-3">
+                            <div className="text-ink">🔧 {startEvent?.tool_name || 'Tool'}</div>
+                            {endEvent && (
+                                <div className="text-xs text-ink/60 mt-1">
+                                    Status: {endEvent.status} ({endEvent.duration_ms?.toFixed(0)}ms)
+                                </div>
+                            )}
+                            {resultEvent && resultEvent.result && (
+                                <div className="text-xs text-neon-cyan mt-1">
+                                    Result: {JSON.stringify(resultEvent.result).substring(0, 50)}...
+                                </div>
+                            )}
+                        </div>
+                    );
+                })}
+            </div>
+        </div>
+    );
+};
+
+const RunStatusBadge = ({ runState }) => (
+    <div className="bg-canvas-dark border border-ink/20 rounded-lg p-3 font-mono text-sm">
+        <div className="flex items-center gap-3">
+            <span className="text-ink/60">Agent Run:</span>
+            {runState.type === 'aui_run_started' && (
+                <>
+                    <span className="text-blue-400">🔄 Running</span>
+                    <span className="text-xs text-ink/60">{runState.task_description}</span>
+                </>
+            )}
+            {runState.type === 'aui_run_finished' && (
+                <>
+                    <span className="text-green-400">✅ Finished</span>
+                    <span className="text-xs text-ink/60">{runState.duration_ms?.toFixed(0)}ms</span>
+                </>
+            )}
+            {runState.type === 'aui_run_error' && (
+                <>
+                    <span className="text-red-400">❌ Error</span>
+                    <span className="text-xs text-red-400/80">{runState.error_message}</span>
+                </>
+            )}
+        </div>
+    </div>
+);
 
 // Props: { streamUrl: string (required), onError?: func, onComplete?: func }
 
