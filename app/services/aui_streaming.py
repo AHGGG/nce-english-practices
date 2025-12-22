@@ -14,6 +14,7 @@ from app.services.aui_events import (
     TextDeltaEvent,
     create_snapshot_event,
     create_text_delta,
+    create_state_diff,
 )
 
 
@@ -150,6 +151,112 @@ class AUIStreamingService:
             target_level=user_level
         )
         
+        yield StreamEndEvent(session_id=session_id)
+
+
+    async def stream_vocabulary_flip(
+        self,
+        words: List[str],
+        user_level: int = 1
+    ) -> AsyncGenerator[AUIEvent, None]:
+        """
+        Demonstrate JSON Patch by flipping a card state.
+        
+        Args:
+            words: List of words
+            user_level: User mastery
+            
+        Yields:
+            AUIEvent: Snapshot then State Delta
+        """
+        session_id = str(uuid.uuid4())
+        message_id = f"vocab_patch_{session_id}"
+        
+        yield StreamStartEvent(
+            session_id=session_id,
+            metadata={"intention": "show_vocabulary", "user_level": user_level}
+        )
+        
+        # 1. Initial State: List of cards, all un-flipped
+        # We need to construct the PROPS structure that matches what VocabGrid expects (or FlashCardStack)
+        # Assuming FlashCardStack for simplicity of "flipping" index 0
+         
+        # Note: Ideally we track state internally. Here we manually construct the "Before" and "After" 
+        # to generate the patch, or manually construct the patch.
+        
+        if user_level <= 1:
+            component = "FlashCardStack"
+            # Initial Props
+            props = {
+                "words": words, 
+                "show_translation": True, 
+                "messageId": message_id,
+                "current_index": 0,
+                "is_flipped": False 
+            }
+        else:
+            component = "VocabGrid"
+            props = {
+                "words": words,
+                "show_translation": False,
+                "messageId": message_id,
+                "expanded_indices": []  # Using this to simulate "flip" or expand
+            }
+
+        # Send Initial Snapshot
+        yield create_snapshot_event(
+            intention="show_vocabulary",
+            ui={"component": component, "props": props},
+            fallback_text="Vocabulary List",
+            target_level=user_level
+        )
+        
+        await asyncio.sleep(1.0) # Wait to show initial state
+        
+        # 2. State Update: Flip the card (or expand item)
+        # We will iterate through words and "flip" them one by one
+        
+        current_props = props.copy()
+        
+        for i in range(len(words)):
+            # New State
+            new_props = current_props.copy()
+            if component == "FlashCardStack":
+                new_props["current_index"] = i
+                new_props["is_flipped"] = True
+            else:
+                # VocabGrid: Add index to expanded list
+                new_props["expanded_indices"] = current_props["expanded_indices"] + [i]
+            
+            # Generate Patch
+            # We must create patch against the FULL ui object structure usually, 
+            # or the hydrator needs to know where to apply it.
+            # The Hydrator applies patch to `{ component, props, intention, target_level }`
+            
+            old_doc = {
+                "component": component,
+                "props": current_props,
+                "intention": "show_vocabulary",
+                "target_level": user_level
+            }
+            
+            new_doc = {
+                "component": component,
+                "props": new_props,
+                "intention": "show_vocabulary",
+                "target_level": user_level
+            }
+            
+            yield create_state_diff(old_doc, new_doc)
+            
+            current_props = new_props
+            await asyncio.sleep(1.0) 
+            
+            if component == "FlashCardStack":
+                # Reset flip for next card (if we were iterating, but FlashCardStack usually shows one)
+                # Let's just do one transition for simplicity
+                pass
+
         yield StreamEndEvent(session_id=session_id)
 
 

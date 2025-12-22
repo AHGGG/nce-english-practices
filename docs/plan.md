@@ -56,9 +56,9 @@
 - [x] Dictionary Fixes: Support `@@@LINK` redirects and relative asset pathing.
 - [x] Testing Infrastructure: Refactored legacy tests into a modern `pytest` suite for voice integration and WebSocket verification.
 - [x] **Mobile Adaptation**:
-    - [x] Responsive Sidebar/Navbar.
-    - [x] HTTPS Configuration for local external access.
-    - [x] Layout optimizations for smaller screens.
+    - [x] `TEXT_DELTA`: Streaming text incremental updates.
+    - [x] `STATE_DELTA`: JSON Patch state updates (Implemented via jsonpatch).
+    - [x] `STREAM_START/END/ERROR`: Lifecycle events.
 - [ ] **Deployment & Architecture Optimization** (New):
     - [x] **Dockerization**: Multi-stage build for React (Vite) + FastAPI.
     - [x] **SPA Serving**: Configure FastAPI to serve React static files (remove Jinja2).

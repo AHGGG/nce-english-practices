@@ -106,22 +106,33 @@ const AUIStreamHydrator = ({ streamUrl, onError, onComplete }) => {
                             // { component, props, intention, target_level }
                             // So we reconstruct that, patch it, and map back.
 
+                            // Deep clone to ensure we don't mutate current state
                             const doc = {
                                 component: prev.component,
-                                props: prev.props,
+                                props: structuredClone(prev.props),
                                 intention: prev.intention,
                                 target_level: prev.targetLevel
                             };
 
                             try {
+                                // fast-json-patch applyPatch modifies in place
                                 const result = applyPatch(doc, auiEvent.delta);
-                                const newDoc = result.newDocument;
+                                // The library might return results array or object depending on version/config
+                                // But since we cloned 'doc', we can blindly use it if it was mutated, 
+                                // OR use result.newDocument if the library returns it (immutable mode).
+                                // Let's rely on the mutated 'doc' (or newDoc if returned) to be safe.
+
+                                // Standard fast-json-patch v3+: applyPatch(doc, patch) returns results array, modifies doc.
+                                // If we want immutable: const newDoc = applyPatch(doc, patch, false, false).newDocument;
+
+                                // Let's check what 'result' is. If it has .newDocument, use it.
+                                const newDoc = result.newDocument || doc;
 
                                 return {
                                     component: newDoc.component,
                                     props: newDoc.props,
                                     intention: newDoc.intention,
-                                    targetLevel: newDoc.target_level
+                                    targetLevel: newDoc.target_level || newDoc.targetLevel
                                 };
                             } catch (err) {
                                 console.error('[AUIStreamHydrator] JSON Patch failed:', err);

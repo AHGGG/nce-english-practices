@@ -177,15 +177,20 @@
 - [x] **Streaming Service**: Implemented `AUIStreamingService` (`app/services/aui_streaming.py`).
     - [x] `stream_story_presentation()`: Stream story with incremental text deltas.
     - [x] `stream_vocabulary_cards()`: Stream vocabulary cards progressively.
+    - [x] `stream_vocabulary_flip()`: JSON Patch demo with granular card state updates (2025-12-22).
 - [x] **SSE API Endpoints**: Added streaming routes (`app/api/routers/aui_stream.py`).
     - [x] `GET /aui/stream/story`: Stream story presentations.
     - [x] `GET /aui/stream/vocabulary`: Stream vocabulary cards.
+    - [x] `GET /api/aui/stream/vocab-patch-demo`: JSON Patch state delta demo (2025-12-22).
 - [x] **Frontend Stream Hydrator**: Created `AUIStreamHydrator.jsx`.
     - [x] EventSource integration for SSE consumption.
     - [x] Text delta accumulation and component state updates.
     - [x] Dynamic component loading from AUI registry.
+    - [x] Deep cloning with `structuredClone` for safe JSON Patch application (2025-12-22).
 - [x] **Testing Page**: Built `AUIStreamingDemo.jsx` with full test UI.
     - [x] User level selection (i+1 Scaffolding).
     - [x] Story and vocabulary streaming tests.
+    - [x] JSON Patch card flip demo button (2025-12-22).
     - [x] Route registered at `/aui-stream-demo`.
 - [x] **Verification**: Confirmed all endpoints functional via curl tests.
+- [x] **Unit Tests**: Created `tests/test_aui_patch.py` for JSON Patch generation logic (2025-12-22).

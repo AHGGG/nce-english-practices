@@ -33,6 +33,11 @@ const AUIStreamingDemo = () => {
         setStreamUrl('');
     };
 
+    const handleStreamVocabPatch = () => {
+        const url = `/api/aui/stream/vocab-patch-demo?level=${userLevel}`;
+        setStreamUrl(url);
+    };
+
     return (
         <div className="min-h-screen bg-[#0A0A0A] text-white p-8">
             <div className="max-w-5xl mx-auto">
@@ -120,6 +125,12 @@ const AUIStreamingDemo = () => {
                             className="px-4 py-2 bg-neon-purple/10 border border-neon-purple hover:bg-neon-purple/20 rounded font-mono text-sm text-neon-purple transition-colors"
                         >
                             Test State Sync (System Dashboard)
+                        </button>
+                        <button
+                            onClick={handleStreamVocabPatch}
+                            className="ml-2 px-4 py-2 bg-yellow-500/10 border border-yellow-500 hover:bg-yellow-500/20 rounded font-mono text-sm text-yellow-500 transition-colors"
+                        >
+                            Test Vocab Patch (Card Flip)
                         </button>
                     </div>
 

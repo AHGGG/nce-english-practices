@@ -9,6 +9,7 @@ from app.services.aui_events import (
     StreamStartEvent,
     StreamEndEvent
 )
+from app.services.aui_streaming import aui_streaming_service
 
 router = APIRouter()
 
@@ -119,5 +120,19 @@ async def stream_state_demo():
         
         # 4. Stream End
         yield f"data: {StreamEndEvent(session_id=session_id).model_dump_json()}\n\n"
+
+    return StreamingResponse(event_generator(), media_type="text/event-stream")
+
+
+@router.get("/aui/stream/vocab-patch-demo")
+async def stream_vocab_patch_demo(level: int = 1):
+    """
+    Simulates a vocabulary list where cards flip individually using JSON Patch.
+    """
+    words = ["Serendipity", "Ephemeral", "Luminous", "Solitude", "Aurora"]
+    
+    async def event_generator():
+        async for event in aui_streaming_service.stream_vocabulary_flip(words, level):
+             yield f"data: {event.model_dump_json()}\n\n"
 
     return StreamingResponse(event_generator(), media_type="text/event-stream")
