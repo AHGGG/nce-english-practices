@@ -262,5 +262,30 @@
     - [x] **Bug Fixes** (2025-12-22):
         - [x] Fixed React hooks violation in `StoryReader.jsx` - moved early return before hooks.
         - [x] Fixed endpoint paths in `AUIStreamingDemo.jsx` - added missing `/api` prefix.
-        - [x] Fixed deep copy bug in `aui_streaming.py` - replaced `.copy()` with `deepcopy()`.
+
+### ✅ AUI Text Message Lifecycle Events Implementation (Phase 1.1) (2025-12-22)
+**实现了消息级生命周期事件，支持并发消息流和多 Agent/工具的文本分段**
+
+#### Backend Extensions
+- [x] **Event System** (`app/services/aui_events.py`):
+  - 新增 `TEXT_MESSAGE_START` 和 `TEXT_MESSAGE_END` 事件类型
+  - 更新 `AUIEvent` Union 类型支持新事件
+- [x] **Streaming Service** (`app/services/aui_streaming.py`):
+  - 新增 `stream_concurrent_messages()` 演示方法，模拟多角色并发对话
+- [x] **Demo Endpoint**:
+  - 新增 `GET /api/aui/demo/stream/multi-messages`
+
+#### Frontend Extensions
+- [x] **Stream Hydrator** (`frontend/src/components/aui/AUIStreamHydrator.jsx`):
+  - 修复 `aui_text_delta` 在并发更新时的闭包/状态竞态问题 (Functional State Update)
+  - 实现消息列表渲染 (`MessageList` 组件)
+  - 支持 `aui_text_message_start` 初始化消息容器
+  - 支持 `aui_text_message_end` 标记消息完成
+- [x] **Demo UI** (`frontend/src/views/AUIStreamingDemo.jsx`):
+  - 新增 "Multi Messages" 演示卡片
+
+#### Testing
+- [x] **Unit Tests**: `tests/test_aui_text_lifecycle.py` (8 tests passing)
+- [x] **Verification**: `scripts/verify_text_lifecycle.py` (Live stream verification)
+
 

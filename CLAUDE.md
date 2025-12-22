@@ -296,6 +296,7 @@ The system supports a streaming UI protocol for real-time Agent updates:
 - **Events**:
   - `aui_render_snapshot`: Full component render (Backward compatible).
   - `aui_text_delta`: Incremental text updates (ChatGPT-style).
+  - `aui_text_message_start/end`: Message lifecycle events for concurrent streams.
   - `aui_state_delta`: granular state updates using **JSON Patch** (RFC 6902).
 - **Architecture**:
   - **Backend**: `app.services.aui_events` generates events; `app.api.routers.aui_stream` serves SSE.

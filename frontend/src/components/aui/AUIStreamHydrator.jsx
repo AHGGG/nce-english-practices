@@ -16,6 +16,7 @@ const AUIStreamHydrator = ({ streamUrl, onError, onComplete }) => {
     const [error, setError] = useState(null);
 
     // New state for extended events
+    const [messages, setMessages] = useState([]); // Array of text messages (for TEXT_MESSAGE lifecycle)
     const [activities, setActivities] = useState({}); // Map: activity_id -> activity state
     const [toolCalls, setToolCalls] = useState([]); // Array of tool call events
     const [runState, setRunState] = useState(null); // Current run state
@@ -51,33 +52,54 @@ const AUIStreamHydrator = ({ streamUrl, onError, onComplete }) => {
                         });
                         break;
 
+
                     case 'aui_text_delta':
-                        // Accumulate text deltas into component props
-                        setComponentSpec(prev => {
-                            if (!prev) return prev;
-
-                            const newProps = structuredClone(prev.props);
-                            const path = auiEvent.field_path || 'content';
-                            const pathParts = path.split('.');
-
-                            // Navigate to the nested property
-                            let current = newProps;
-                            for (let i = 0; i < pathParts.length - 1; i++) {
-                                if (!current[pathParts[i]]) {
-                                    current[pathParts[i]] = {};
-                                }
-                                current = current[pathParts[i]];
+                        // Check if this delta belongs to a specific message (lifecycle)
+                        // Use functional setState to ensure we always work with latest state
+                        setMessages(prev => {
+                            const messageIndex = prev.findIndex(m => m.id === auiEvent.message_id);
+                            if (messageIndex >= 0) {
+                                // Update the tracked message
+                                return prev.map(msg =>
+                                    msg.id === auiEvent.message_id
+                                        ? { ...msg, content: msg.content + auiEvent.delta }
+                                        : msg
+                                );
                             }
-
-                            // Append the delta text
-                            const lastKey = pathParts[pathParts.length - 1];
-                            current[lastKey] = (current[lastKey] || '') + auiEvent.delta;
-
-                            return {
-                                ...prev,
-                                props: newProps
-                            };
+                            // Message not found - return unchanged
+                            return prev;
                         });
+
+                        // If no message found, fall back to legacy component spec accumulation
+                        // We need to check this separately since setState is async
+                        if (messages.findIndex(m => m.id === auiEvent.message_id) < 0) {
+                            // Legacy: Accumulate text deltas into component props
+                            setComponentSpec(prev => {
+                                if (!prev) return prev;
+
+                                const newProps = structuredClone(prev.props);
+                                const path = auiEvent.field_path || 'content';
+                                const pathParts = path.split('.');
+
+                                // Navigate to the nested property
+                                let current = newProps;
+                                for (let i = 0; i < pathParts.length - 1; i++) {
+                                    if (!current[pathParts[i]]) {
+                                        current[pathParts[i]] = {};
+                                    }
+                                    current = current[pathParts[i]];
+                                }
+
+                                // Append the delta text
+                                const lastKey = pathParts[pathParts.length - 1];
+                                current[lastKey] = (current[lastKey] || '') + auiEvent.delta;
+
+                                return {
+                                    ...prev,
+                                    props: newProps
+                                };
+                            });
+                        }
                         break;
 
                     case 'aui_state_delta':
@@ -154,6 +176,29 @@ const AUIStreamHydrator = ({ streamUrl, onError, onComplete }) => {
                         setIsStreaming(false);
                         eventSource.close();
                         if (onError) onError(auiEvent.message);
+                        break;
+
+                    // TEXT_MESSAGE Lifecycle Events
+                    case 'aui_text_message_start':
+                        setMessages(prev => [...prev, {
+                            id: auiEvent.message_id,
+                            role: auiEvent.role,
+                            content: '',
+                            isStreaming: true,
+                            metadata: auiEvent.metadata || {}
+                        }]);
+                        break;
+
+                    case 'aui_text_message_end':
+                        setMessages(prev => prev.map(msg =>
+                            msg.id === auiEvent.message_id
+                                ? {
+                                    ...msg,
+                                    isStreaming: false,
+                                    content: auiEvent.final_content || msg.content
+                                }
+                                : msg
+                        ));
                         break;
 
                     // Activity Progress Events
@@ -245,7 +290,7 @@ const AUIStreamHydrator = ({ streamUrl, onError, onComplete }) => {
     }
 
     // Check if we have any extended events to display
-    const hasExtendedEvents = Object.keys(activities).length > 0 || toolCalls.length > 0 || runState;
+    const hasExtendedEvents = messages.length > 0 || Object.keys(activities).length > 0 || toolCalls.length > 0 || runState;
 
     if (!componentSpec && !hasExtendedEvents) {
         return (
@@ -275,6 +320,13 @@ const AUIStreamHydrator = ({ streamUrl, onError, onComplete }) => {
                 />
             )}
 
+            {/* Render messages if any */}
+            {messages.length > 0 && (
+                <div className="mb-4">
+                    <MessageList messages={messages} />
+                </div>
+            )}
+
             {/* Render activities if any */}
             {Object.keys(activities).length > 0 && (
                 <div className="mt-4 space-y-2">
@@ -302,6 +354,39 @@ const AUIStreamHydrator = ({ streamUrl, onError, onComplete }) => {
 };
 
 // Simple UI Components for extended events
+
+const MessageList = ({ messages }) => (
+    <div className="space-y-4">
+        {messages.map(msg => (
+            <div key={msg.id} className="bg-canvas-dark border border-neon-green/30 rounded-lg p-4 font-mono">
+                <div className="flex items-center gap-2 mb-2">
+                    <span className="text-neon-green text-xs font-semibold uppercase tracking-wider">
+                        {msg.metadata?.type || msg.role}
+                    </span>
+                    {msg.metadata?.title && (
+                        <span className="text-ink/60 text-xs">- {msg.metadata.title}</span>
+                    )}
+                    {msg.metadata?.word && (
+                        <span className="text-ink/60 text-xs">- {msg.metadata.word}</span>
+                    )}
+                    {msg.isStreaming && (
+                        <span className="text-neon-pink text-xs animate-pulse ml-auto">
+                            ● streaming...
+                        </span>
+                    )}
+                    {!msg.isStreaming && (
+                        <span className="text-neon-cyan text-xs ml-auto">
+                            ✓ complete
+                        </span>
+                    )}
+                </div>
+                <div className="text-ink text-sm whitespace-pre-wrap leading-relaxed">
+                    {msg.content || (<span className="text-ink/40 italic">waiting for content...</span>)}
+                </div>
+            </div>
+        ))}
+    </div>
+);
 
 const ActivityProgressBar = ({ activity }) => (
     <div className="bg-canvas-dark border border-ink/20 rounded-lg p-3 font-mono text-sm">

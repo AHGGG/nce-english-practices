@@ -98,3 +98,28 @@ async def demo_agent_run(
             "X-Accel-Buffering": "no"
         }
     )
+
+
+@router.get("/stream/multi-messages")
+async def demo_multi_messages():
+    """
+    Demo TEXT_MESSAGE lifecycle events.
+    Shows multiple concurrent text messages with START/DELTA/END lifecycle.
+    
+    This demonstrates AG-UI's message segmentation mechanism:
+    - START event marks message beginning
+    - DELTA events for incremental content
+    - END event marks message completion
+    """
+    async def event_generator():
+        async for event in aui_streaming_service.stream_concurrent_messages():
+            yield f"data: {event.model_dump_json()}\n\n"
+    
+    return StreamingResponse(
+        event_generator(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "X-Accel-Buffering": "no"
+        }
+    )

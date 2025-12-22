@@ -57,6 +57,7 @@
 - [x] Testing Infrastructure: Refactored legacy tests into a modern `pytest` suite for voice integration and WebSocket verification.
 - [x] **Mobile Adaptation**:
     - [x] `TEXT_DELTA`: Streaming text incremental updates.
+    - [x] `TEXT_MESSAGE_START/END`: Message lifecycle events (Segmentation).
     - [x] `STATE_DELTA`: JSON Patch state updates (Implemented via jsonpatch).
     - [x] `STREAM_START/END/ERROR`: Lifecycle events.
     - [x] **AUI Streaming**: Complete AG-UI compatible streaming system (2025-12-22).

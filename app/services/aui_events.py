@@ -17,7 +17,9 @@ class AUIEventType(str, Enum):
     RENDER_SNAPSHOT = "aui_render_snapshot"
     
     # Streaming events (AG-UI inspired)
+    TEXT_MESSAGE_START = "aui_text_message_start"  # Message lifecycle start
     TEXT_DELTA = "aui_text_delta"
+    TEXT_MESSAGE_END = "aui_text_message_end"  # Message lifecycle end
     STATE_DELTA = "aui_state_delta"
     
     # Activity Progress Events
@@ -65,6 +67,17 @@ class RenderSnapshotEvent(BaseAUIEvent):
     target_level: Optional[int] = None  # i+1 Scaffolding
 
 
+class TextMessageStartEvent(BaseAUIEvent):
+    """
+    Signals the start of a text message stream.
+    Allows frontend to distinguish multiple concurrent text streams.
+    """
+    type: AUIEventType = AUIEventType.TEXT_MESSAGE_START
+    message_id: str  # Unique identifier for this message
+    role: str = "assistant"  # "assistant", "system", "user"
+    metadata: Optional[Dict[str, Any]] = None  # Additional message metadata
+
+
 class TextDeltaEvent(BaseAUIEvent):
     """
     Streaming text update event.
@@ -74,6 +87,16 @@ class TextDeltaEvent(BaseAUIEvent):
     message_id: str  # Links to parent message/component
     delta: str  # Text chunk to append
     field_path: str = "content"  # Which field to update (e.g. "story.content")
+
+
+class TextMessageEndEvent(BaseAUIEvent):
+    """
+    Signals the end of a text message stream.
+    Marks message as complete and no longer streaming.
+    """
+    type: AUIEventType = AUIEventType.TEXT_MESSAGE_END
+    message_id: str  # Links to message started earlier
+    final_content: Optional[str] = None  # Optional complete message content
 
 
 
@@ -211,7 +234,9 @@ class RunErrorEvent(BaseAUIEvent):
 # Union type for all events
 AUIEvent = Union[
     RenderSnapshotEvent,
+    TextMessageStartEvent,
     TextDeltaEvent,
+    TextMessageEndEvent,
     StateDeltaEvent,
     ActivitySnapshotEvent,
     ActivityDeltaEvent,

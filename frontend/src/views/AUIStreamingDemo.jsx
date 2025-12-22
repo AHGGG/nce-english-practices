@@ -68,6 +68,13 @@ const AUIStreamingDemo = () => {
             icon: '❌',
             description: 'Failed agent run',
             getUrl: () => '/api/aui/demo/stream/agent-run?task=Generate%20Test%20Story&fail=true'
+        },
+        {
+            id: 'multi-messages',
+            label: 'Multi Messages',
+            icon: '💬',
+            description: 'Concurrent text streams',
+            getUrl: () => '/api/aui/demo/stream/multi-messages'
         }
     ];
 
@@ -99,8 +106,8 @@ const AUIStreamingDemo = () => {
                                 key={demo.id}
                                 onClick={() => handleSelectDemo(demo)}
                                 className={`p-3 text-left rounded border transition-all ${selectedDemo === demo.id
-                                        ? 'bg-[#00FF94] text-black border-[#00FF94] font-bold'
-                                        : 'bg-[#111] text-[#888] border-[#333] hover:border-[#555] hover:text-white'
+                                    ? 'bg-[#00FF94] text-black border-[#00FF94] font-bold'
+                                    : 'bg-[#111] text-[#888] border-[#333] hover:border-[#555] hover:text-white'
                                     }`}
                             >
                                 <div className="text-lg mb-1">{demo.icon}</div>

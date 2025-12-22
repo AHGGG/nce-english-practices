@@ -12,7 +12,9 @@ from app.services.aui_events import (
     StreamStartEvent,
     StreamEndEvent,
     RenderSnapshotEvent,
+    TextMessageStartEvent,
     TextDeltaEvent,
+    TextMessageEndEvent,
     ActivitySnapshotEvent,
     ActivityDeltaEvent,
     ToolCallStartEvent,
@@ -268,6 +270,92 @@ class AUIStreamingService:
                 # Let's just do one transition for simplicity
                 pass
 
+        yield StreamEndEvent(session_id=session_id)
+
+
+    async def stream_concurrent_messages(
+        self
+    ) -> AsyncGenerator[AUIEvent, None]:
+        """
+        Demonstrate concurrent text message streams.
+        Shows multiple messages streaming simultaneously with proper lifecycle events.
+        
+        Yields:
+            AUIEvent: Stream of TEXT_MESSAGE_START, TEXT_DELTA, TEXT_MESSAGE_END events
+        """
+        session_id = str(uuid.uuid4())
+        
+        # Create unique message IDs
+        story_id = f"msg_story_{uuid.uuid4().hex[:8]}"
+        vocab_id = f"msg_vocab_{uuid.uuid4().hex[:8]}"
+        
+        yield StreamStartEvent(
+            session_id=session_id,
+            metadata={"demo_type": "concurrent_messages"}
+        )
+        
+        # Message 1 - START: Story
+        yield TextMessageStartEvent(
+            message_id=story_id,
+            role="assistant",
+            metadata={"type": "story", "title": "Time Travel"}
+        )
+        
+        await asyncio.sleep(0.1)
+        
+        # Message 2 - START: Vocabulary
+        yield TextMessageStartEvent(
+            message_id=vocab_id,
+            role="assistant",
+            metadata={"type": "vocabulary", "word": "persevere"}
+        )
+        
+        # Prepare content chunks
+        story_chunks = [
+            "Once ", "upon ", "a ", "time, ", "there ", "was ", "a ", "brave ",
+            "knight ", "who ", "discovered ", "a ", "mysterious ", "portal..."
+        ]
+        
+        vocab_chunks = [
+            "Persevere", ": ", "to ", "continue ", "firmly ", "despite ",
+            "difficulties ", "or ", "setbacks. ", "Example: ", "You ",
+            "must ", "persevere ", "to ", "succeed."
+        ]
+        
+        # Interleave streaming both messages
+        max_len = max(len(story_chunks), len(vocab_chunks))
+        
+        for i in range(max_len):
+            # Send story chunk if available
+            if i < len(story_chunks):
+                yield TextDeltaEvent(
+                    message_id=story_id,
+                    delta=story_chunks[i]
+                )
+                await asyncio.sleep(0.15)
+            
+            # Send vocab chunk if available
+            if i < len(vocab_chunks):
+                yield TextDeltaEvent(
+                    message_id=vocab_id,
+                    delta=vocab_chunks[i]
+                )
+                await asyncio.sleep(0.15)
+        
+        # Message 1 - END
+        yield TextMessageEndEvent(
+            message_id=story_id,
+            final_content="Once upon a time, there was a brave knight who discovered a mysterious portal..."
+        )
+        
+        await asyncio.sleep(0.2)
+        
+        # Message 2 - END
+        yield TextMessageEndEvent(
+            message_id=vocab_id,
+            final_content="Persevere: to continue firmly despite difficulties or setbacks. Example: You must persevere to succeed."
+        )
+        
         yield StreamEndEvent(session_id=session_id)
 
 
