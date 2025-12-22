@@ -2,6 +2,9 @@ import React, { useMemo, useEffect, useRef } from 'react';
 import { useDictionary } from '../../context/DictionaryContext';
 
 const StoryReader = ({ story, coachMode = false, highlights = [] }) => {
+    // Early return MUST come before hooks to avoid "Rendered fewer hooks" error
+    if (!story) return null;
+
     const { openDictionary } = useDictionary();
     const containerRef = useRef(null);
 
@@ -11,8 +14,6 @@ const StoryReader = ({ story, coachMode = false, highlights = [] }) => {
             containerRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
         }
     }, [coachMode]);
-
-    if (!story) return null;
 
     const processedContent = useMemo(() => {
         let content = story.content || "";

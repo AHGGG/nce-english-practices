@@ -28,6 +28,8 @@ def has_deepgram_key():
 
 @pytest.fixture
 def has_elevenlabs_key():
+    if not settings.TEST_ELEVENLABS_ENABLED:
+        pytest.skip("ElevenLabs tests disabled (TEST_ELEVENLABS_ENABLED=False)")
     if not settings.ELEVENLABS_API_KEY:
         pytest.skip("ELEVENLABS_API_KEY not configured")
     return True

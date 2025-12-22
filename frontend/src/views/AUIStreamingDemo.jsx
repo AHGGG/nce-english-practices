@@ -18,14 +18,14 @@ const AUIStreamingDemo = () => {
 
     const handleStreamStory = () => {
         const encodedContent = encodeURIComponent(testStory);
-        // Use relative path - Vite proxy will handle HTTPS
-        const url = `/aui/stream/story?content=${encodedContent}&title=Test Story&user_level=${userLevel}&chunk_size=3`;
+        // Use relative path with /api prefix - Vite proxy will handle HTTPS
+        const url = `/api/aui/stream/story?content=${encodedContent}&title=Test Story&user_level=${userLevel}&chunk_size=3`;
         setStreamUrl(url);
     };
 
     const handleStreamVocab = () => {
-        // Use relative path - Vite proxy will handle HTTPS
-        const url = `/aui/stream/vocabulary?words=${testWords}&user_level=${userLevel}`;
+        // Use relative path with /api prefix - Vite proxy will handle HTTPS
+        const url = `/api/aui/stream/vocabulary?words=${testWords}&user_level=${userLevel}`;
         setStreamUrl(url);
     };
 

@@ -178,19 +178,31 @@
     - [x] `stream_story_presentation()`: Stream story with incremental text deltas.
     - [x] `stream_vocabulary_cards()`: Stream vocabulary cards progressively.
     - [x] `stream_vocabulary_flip()`: JSON Patch demo with granular card state updates (2025-12-22).
-- [x] **SSE API Endpoints**: Added streaming routes (`app/api/routers/aui_stream.py`).
-    - [x] `GET /aui/stream/story`: Stream story presentations.
-    - [x] `GET /aui/stream/vocabulary`: Stream vocabulary cards.
-    - [x] `GET /api/aui/stream/vocab-patch-demo`: JSON Patch state delta demo (2025-12-22).
+    - [x] **Bug Fix**: Replaced shallow `.copy()` with `copy.deepcopy()` to prevent state mutation (2025-12-22).
+- [x] **SSE API Endpoints**: Added streaming routes (`app/api/routers/aui_stream.py`, `aui_stream_demo.py`).
+    - [x] `GET /api/aui/stream/story`: Stream story presentations.
+    - [x] `GET /api/aui/stream/vocabulary`: Stream vocabulary cards.
+    - [x] `GET /api/aui/stream/vocab-patch-demo`: JSON Patch state delta demo.
+    - [x] `GET /api/aui/stream/state-demo`: Complex state sync demonstration.
 - [x] **Frontend Stream Hydrator**: Created `AUIStreamHydrator.jsx`.
     - [x] EventSource integration for SSE consumption.
     - [x] Text delta accumulation and component state updates.
     - [x] Dynamic component loading from AUI registry.
     - [x] Deep cloning with `structuredClone` for safe JSON Patch application (2025-12-22).
+    - [x] Fixed endpoint paths to include `/api` prefix (2025-12-22).
 - [x] **Testing Page**: Built `AUIStreamingDemo.jsx` with full test UI.
     - [x] User level selection (i+1 Scaffolding).
     - [x] Story and vocabulary streaming tests.
     - [x] JSON Patch card flip demo button (2025-12-22).
+    - [x] State sync dashboard demo (2025-12-22).
     - [x] Route registered at `/aui-stream-demo`.
-- [x] **Verification**: Confirmed all endpoints functional via curl tests.
-- [x] **Unit Tests**: Created `tests/test_aui_patch.py` for JSON Patch generation logic (2025-12-22).
+- [x] **Verification & Testing**: Comprehensive test coverage (2025-12-22).
+    - [x] **Unit Tests**: Created `tests/test_aui_patch.py` - 8/8 tests passing.
+    - [x] **Verification Script**: `scripts/verify_aui_streaming.py` for automated endpoint testing.
+    - [x] **Manual Browser Testing**: All 4 streaming scenarios verified working.
+    - [x] **Live Testing Results**: State Demo ✅, Vocab Patch Demo ✅, Story Streaming ✅, Vocab Cards ✅.
+    - [x] **Bug Fixes** (2025-12-22):
+        - [x] Fixed React hooks violation in `StoryReader.jsx` - moved early return before hooks.
+        - [x] Fixed endpoint paths in `AUIStreamingDemo.jsx` - added missing `/api` prefix.
+        - [x] Fixed deep copy bug in `aui_streaming.py` - replaced `.copy()` with `deepcopy()`.
+

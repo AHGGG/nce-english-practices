@@ -5,6 +5,7 @@ AUI Streaming Service - Generate streaming events for AUI components
 from typing import AsyncGenerator, Dict, Any, Optional, List
 import asyncio
 import uuid
+import copy
 
 from app.services.aui_events import (
     AUIEvent,
@@ -216,11 +217,11 @@ class AUIStreamingService:
         # 2. State Update: Flip the card (or expand item)
         # We will iterate through words and "flip" them one by one
         
-        current_props = props.copy()
+        current_props = copy.deepcopy(props)
         
         for i in range(len(words)):
-            # New State
-            new_props = current_props.copy()
+            # New State - use deepcopy to avoid mutation
+            new_props = copy.deepcopy(current_props)
             if component == "FlashCardStack":
                 new_props["current_index"] = i
                 new_props["is_flipped"] = True

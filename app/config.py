@@ -30,6 +30,13 @@ class Settings(BaseSettings):
     # Dashscope LLM Settings (OpenAI Compatible)
     DASHSCOPE_COMPATIBLE_BASE_URL: str = "https://dashscope.aliyuncs.com/compatible-mode/v1"
     DASHSCOPE_MODEL_NAME: str = "qwen3-30b-a3b"
+    
+    # Test Configuration - Control which providers to test
+    # Set to False to skip provider tests (useful when credits are low)
+    TEST_ELEVENLABS_ENABLED: bool = False  # Default: skip ElevenLabs tests
+    TEST_DEEPGRAM_ENABLED: bool = True     # Default: run Deepgram tests  
+    TEST_DASHSCOPE_ENABLED: bool = True    # Default: run Dashscope tests
+    TEST_GOOGLE_ENABLED: bool = True       # Default: run Google tests
 
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
 

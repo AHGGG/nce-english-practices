@@ -59,6 +59,10 @@
     - [x] `TEXT_DELTA`: Streaming text incremental updates.
     - [x] `STATE_DELTA`: JSON Patch state updates (Implemented via jsonpatch).
     - [x] `STREAM_START/END/ERROR`: Lifecycle events.
+    - [x] **AUI Streaming**: Complete AG-UI compatible streaming system (2025-12-22).
+        - [x] Backend deep copy bug fixes in `stream_vocabulary_flip()`.
+        - [x] Frontend hooks violation fix in `StoryReader` component.
+        - [x] All 4 streaming scenarios verified working (Story, Vocabulary, State Sync, Vocab Patch).
 - [ ] **Deployment & Architecture Optimization** (New):
     - [x] **Dockerization**: Multi-stage build for React (Vite) + FastAPI.
     - [x] **SPA Serving**: Configure FastAPI to serve React static files (remove Jinja2).
