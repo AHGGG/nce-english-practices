@@ -45,6 +45,9 @@ class AUIEventType(str, Enum):
     STREAM_START = "aui_stream_start"
     STREAM_END = "aui_stream_end"
     ERROR = "aui_error"
+    
+    # Control Flow Events
+    INTERRUPT = "aui_interrupt"
 
 
 class BaseAUIEvent(BaseModel):
@@ -149,6 +152,17 @@ class ErrorEvent(BaseAUIEvent):
     error_code: str
     message: str
     details: Optional[Dict[str, Any]] = None
+
+
+class InterruptEvent(BaseAUIEvent):
+    """
+    Signals an interruption in the flow, requiring user attention or input.
+    Can be used to explicitly pause the agent or request specific user action.
+    """
+    type: AUIEventType = AUIEventType.INTERRUPT
+    reason: str  # e.g. "wait_for_input", "user_request"
+    required_action: Optional[str] = None # e.g. "confirm", "select_option"
+    metadata: Optional[Dict[str, Any]] = None
 
 
 # --- Activity Progress Events ---
@@ -273,6 +287,7 @@ AUIEvent = Union[
     StreamStartEvent,
     StreamEndEvent,
     ErrorEvent,
+    InterruptEvent,
 ]
 
 

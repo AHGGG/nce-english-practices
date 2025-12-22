@@ -303,8 +303,10 @@ The system supports a streaming UI protocol for real-time Agent updates:
   - `aui_activity_snapshot/delta`: Activity progress tracking.
   - `aui_tool_call_*`: Tool call lifecycle (start/args/end/result).
   - `aui_run_*`: Agent run lifecycle (started/finished/error).
+  - `aui_interrupt`: Control flow interruption (e.g. for user input).
 - **Architecture**:
   - **Backend**: `app.services.aui_events` generates events; `app.api.routers.aui_stream` serves SSE.
+  - **Validation**: `app.services.aui_schema` validates component props using Pydantic models.
   - **Frontend**: `AUIStreamHydrator` consumes SSE and applies patches using `fast-json-patch`.
 - **Interactivity (Bi-directional)**:
   - **Downstream**: SSE pushes UI state (buttons/forms).

@@ -70,6 +70,9 @@
         - [x] Backend Input Service & Queue.
         - [x] Interactive UI Components.
         - [x] Human-in-the-Loop Demo.
+    - [x] **AUI Protocol Gaps (Phase 3)**: (2025-12-22)
+        - [x] `INTERRUPT` Event for explicit control flow.
+        - [x] Component Schema Validation (`aui_schema.py`).
 - [ ] **Deployment & Architecture Optimization** (New):
     - [x] **Dockerization**: Multi-stage build for React (Vite) + FastAPI.
     - [x] **SPA Serving**: Configure FastAPI to serve React static files (remove Jinja2).
