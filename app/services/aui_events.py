@@ -5,7 +5,7 @@ Supports: Streaming Text, State Sync, Activity Progress, Tool Calls, Run Lifecyc
 
 from enum import Enum
 from typing import Any, Dict, Optional, Union, List
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict
 import uuid
 from datetime import datetime
 
@@ -49,12 +49,11 @@ class AUIEventType(str, Enum):
 
 class BaseAUIEvent(BaseModel):
     """Base class for all AUI events."""
+    model_config = ConfigDict(use_enum_values=True)
+    
     type: AUIEventType
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     timestamp: str = Field(default_factory=lambda: datetime.utcnow().isoformat())
-    
-    class Config:
-        use_enum_values = True
 
 
 # --- Specific Event Types ---

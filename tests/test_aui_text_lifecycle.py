@@ -160,3 +160,53 @@ def test_text_message_end_optional_content():
         final_content="Complete message"
     )
     assert event2.final_content == "Complete message"
+
+
+# --- MESSAGES_SNAPSHOT Tests ---
+
+def test_messages_snapshot_event_creation():
+    """Test MESSAGES_SNAPSHOT event creation with message history"""
+    from app.services.aui_events import MessagesSnapshotEvent, AUIEventType
+    
+    messages = [
+        {"id": "msg-1", "role": "user", "content": "Hello"},
+        {"id": "msg-2", "role": "assistant", "content": "Hi there!"},
+        {"id": "msg-3", "role": "user", "content": "How are you?"}
+    ]
+    
+    event = MessagesSnapshotEvent(messages=messages)
+    
+    assert event.type == AUIEventType.MESSAGES_SNAPSHOT
+    assert len(event.messages) == 3
+    assert event.messages[0]["role"] == "user"
+    assert event.messages[1]["role"] == "assistant"
+    assert event.id is not None
+    assert event.timestamp is not None
+
+
+def test_messages_snapshot_serialization():
+    """Test MESSAGES_SNAPSHOT serialization to JSON"""
+    from app.services.aui_events import MessagesSnapshotEvent
+    
+    messages = [
+        {"id": "msg-1", "role": "assistant", "content": "Test message"}
+    ]
+    
+    event = MessagesSnapshotEvent(messages=messages)
+    json_dict = event.model_dump()
+    
+    assert json_dict["type"] == "aui_messages_snapshot"
+    assert "messages" in json_dict
+    assert len(json_dict["messages"]) == 1
+    assert json_dict["messages"][0]["content"] == "Test message"
+
+
+def test_messages_snapshot_empty_history():
+    """Test MESSAGES_SNAPSHOT with empty message history"""
+    from app.services.aui_events import MessagesSnapshotEvent
+    
+    event = MessagesSnapshotEvent(messages=[])
+    
+    assert len(event.messages) == 0
+    json_str = event.model_dump_json()
+    assert "aui_messages_snapshot" in json_str
