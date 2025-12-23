@@ -356,3 +356,24 @@
   - `tests/test_aui_schema_extended.py` (12 tests - Passed)
   - `tests/test_aui_snapshot_extended.py` (3 tests - Passed)
 
+### ✅ AG-UI Interrupt Event Enhancement (2025-12-23)
+**Aligned InterruptEvent and RunFinishedEvent with AG-UI draft specification for Human-in-the-Loop flows**
+
+#### Backend Changes
+- [x] **InterruptEvent** (`app/services/aui_events.py`):
+  - Added `interrupt_id` field with auto-generated ID (`int-{uuid}`)
+  - Renamed `metadata` to `payload` for AG-UI semantic alignment
+- [x] **RunFinishedEvent**:
+  - Added `interrupt` field for interrupt payloads
+  - Documented `outcome` values: `"success"`, `"interrupt"`, `"cancelled"`
+
+#### Frontend Changes
+- [x] **AUIStreamHydrator** (`frontend/src/components/aui/AUIStreamHydrator.jsx`):
+  - Added `aui_interrupt` event handler
+  - Added `interruptState` tracking
+  - Created `InterruptBanner` component (amber styling with reason/action/payload display)
+
+#### Verification
+- [x] **Unit Tests**: `tests/test_aui_interrupt.py` (6 tests - All Passed)
+- [x] **Backend Serialization**: Verified `interrupt_id` prefix generation
+

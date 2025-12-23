@@ -73,6 +73,11 @@
     - [x] **AUI Protocol Gaps (Phase 3)**: (2025-12-22)
         - [x] `INTERRUPT` Event for explicit control flow.
         - [x] Component Schema Validation (`aui_schema.py`).
+    - [x] **AG-UI Protocol Alignment (Phase 4)**: (2025-12-23)
+        - [x] Enhanced `InterruptEvent` with `interrupt_id` and `payload` fields.
+        - [x] Enhanced `RunFinishedEvent` with `interrupt` outcome support.
+        - [x] Interactive `InterruptBanner` component with action buttons.
+        - [x] Demo endpoint for Study Plan confirmation flow.
 - [ ] **Deployment & Architecture Optimization** (New):
     - [x] **Dockerization**: Multi-stage build for React (Vite) + FastAPI.
     - [x] **SPA Serving**: Configure FastAPI to serve React static files (remove Jinja2).

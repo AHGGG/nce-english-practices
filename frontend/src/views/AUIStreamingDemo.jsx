@@ -89,6 +89,13 @@ const AUIStreamingDemo = () => {
             icon: '🖱️',
             description: 'Pause & WaitFor Input',
             getUrl: () => '/api/aui/demo/stream/interactive'
+        },
+        {
+            id: 'interrupt',
+            label: 'Study Plan',
+            icon: '📋',
+            description: 'Coach asks for confirmation',
+            getUrl: () => '/api/aui/demo/stream/interrupt?reason=confirmation_required&difficulty=intermediate'
         }
     ];
 

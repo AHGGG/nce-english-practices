@@ -20,6 +20,7 @@ const AUIStreamHydrator = ({ streamUrl, onError, onComplete }) => {
     const [activities, setActivities] = useState({}); // Map: activity_id -> activity state
     const [toolCalls, setToolCalls] = useState([]); // Array of tool call events
     const [runState, setRunState] = useState(null); // Current run state
+    const [interruptState, setInterruptState] = useState(null); // Current interrupt state
 
     const eventSourceRef = useRef(null);
 
@@ -270,6 +271,16 @@ const AUIStreamHydrator = ({ streamUrl, onError, onComplete }) => {
                         setRunState(auiEvent);
                         break;
 
+                    // Interrupt Event (HITL)
+                    case 'aui_interrupt':
+                        setInterruptState({
+                            id: auiEvent.interrupt_id,
+                            reason: auiEvent.reason,
+                            requiredAction: auiEvent.required_action,
+                            payload: auiEvent.payload
+                        });
+                        break;
+
                     default:
                         console.warn('[AUIStreamHydrator] Unknown event type:', auiEvent.type);
                 }
@@ -304,7 +315,7 @@ const AUIStreamHydrator = ({ streamUrl, onError, onComplete }) => {
     }
 
     // Check if we have any extended events to display
-    const hasExtendedEvents = messages.length > 0 || Object.keys(activities).length > 0 || toolCalls.length > 0 || runState;
+    const hasExtendedEvents = messages.length > 0 || Object.keys(activities).length > 0 || toolCalls.length > 0 || runState || interruptState;
 
     if (!componentSpec && !hasExtendedEvents) {
         return (
@@ -361,6 +372,13 @@ const AUIStreamHydrator = ({ streamUrl, onError, onComplete }) => {
             {runState && (
                 <div className="mt-4">
                     <RunStatusBadge runState={runState} />
+                </div>
+            )}
+
+            {/* Render interrupt banner if exists */}
+            {interruptState && (
+                <div className="mt-4">
+                    <InterruptBanner interrupt={interruptState} />
                 </div>
             )}
         </div>
@@ -494,6 +512,135 @@ const RunStatusBadge = ({ runState }) => (
         </div>
     </div>
 );
+
+const InterruptBanner = ({ interrupt, onAction }) => {
+    const [isSubmitting, setIsSubmitting] = React.useState(false);
+    const [submitted, setSubmitted] = React.useState(false);
+    const [selectedAction, setSelectedAction] = React.useState(null);
+
+    const handleAction = async (action) => {
+        setIsSubmitting(true);
+        setSelectedAction(action);
+
+        try {
+            // Send user input to resume the agent
+            const response = await fetch('/api/aui/input', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    session_id: interrupt.id, // Use interrupt_id as session reference
+                    action: action.action,
+                    label: action.label,
+                    interrupt_id: interrupt.id
+                })
+            });
+
+            if (response.ok) {
+                setSubmitted(true);
+                if (onAction) onAction(action);
+            }
+        } catch (err) {
+            console.error('Failed to submit interrupt response:', err);
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
+    // Extract options from payload if available
+    const options = interrupt.payload?.options || [];
+
+    return (
+        <div className={`border rounded-lg p-4 font-mono text-sm transition-all ${submitted
+                ? 'bg-green-900/20 border-green-500/50'
+                : 'bg-amber-900/20 border-amber-500/50'
+            }`}>
+            <div className="flex items-center gap-2 mb-3">
+                <span className="text-lg">{submitted ? '✅' : '⚠️'}</span>
+                <span className={`font-semibold ${submitted ? 'text-green-400' : 'text-amber-400'}`}>
+                    {submitted ? 'Response Submitted' : 'Confirmation Required'}
+                </span>
+                <span className="text-xs text-ink/50 ml-auto">ID: {interrupt.id?.slice(0, 12)}...</span>
+            </div>
+
+            {!submitted && (
+                <>
+                    <div className="text-ink mb-2">
+                        <span className="text-ink/60">Reason: </span>
+                        <span className="text-amber-300">{interrupt.reason}</span>
+                    </div>
+
+                    {interrupt.requiredAction && (
+                        <div className="text-ink mb-3">
+                            <span className="text-ink/60">Action: </span>
+                            <span className="text-amber-200">{interrupt.requiredAction}</span>
+                        </div>
+                    )}
+
+                    {/* Structured payload display (excluding options) */}
+                    {interrupt.payload && (
+                        <div className="mb-4 p-3 bg-canvas-dark/50 rounded text-xs space-y-2">
+                            {interrupt.payload.plan_type && (
+                                <div><span className="text-ink/60">Plan: </span><span className="text-neon-cyan">{interrupt.payload.plan_type}</span></div>
+                            )}
+                            {interrupt.payload.duration_days && (
+                                <div><span className="text-ink/60">Duration: </span><span className="text-ink">{interrupt.payload.duration_days} days</span></div>
+                            )}
+                            {interrupt.payload.daily_commitment_minutes && (
+                                <div><span className="text-ink/60">Daily Time: </span><span className="text-ink">{interrupt.payload.daily_commitment_minutes} minutes</span></div>
+                            )}
+                            {interrupt.payload.focus_areas && (
+                                <div>
+                                    <span className="text-ink/60">Focus Areas:</span>
+                                    <ul className="mt-1 ml-4 space-y-1">
+                                        {interrupt.payload.focus_areas.map((area, i) => (
+                                            <li key={i} className="flex items-center gap-2">
+                                                <span className={`w-2 h-2 rounded-full ${area.priority === 'high' ? 'bg-red-400' : 'bg-yellow-400'}`} />
+                                                <span className="text-ink">{area.skill}</span>
+                                                <span className="text-ink/50">({area.estimated_sessions} sessions)</span>
+                                            </li>
+                                        ))}
+                                    </ul>
+                                </div>
+                            )}
+                            {interrupt.payload.expected_improvement && (
+                                <div><span className="text-ink/60">Expected Improvement: </span><span className="text-green-400">{interrupt.payload.expected_improvement}</span></div>
+                            )}
+                        </div>
+                    )}
+
+                    {/* Action buttons */}
+                    {options.length > 0 && (
+                        <div className="flex flex-wrap gap-2 mt-4">
+                            {options.map((option, i) => (
+                                <button
+                                    key={i}
+                                    onClick={() => handleAction(option)}
+                                    disabled={isSubmitting}
+                                    className={`px-4 py-2 rounded border transition-all text-sm ${isSubmitting && selectedAction?.action === option.action
+                                            ? 'bg-amber-500/30 border-amber-500 text-amber-300 animate-pulse'
+                                            : option.action === 'confirm'
+                                                ? 'bg-green-500/20 border-green-500/50 text-green-400 hover:bg-green-500/30'
+                                                : option.action === 'cancel'
+                                                    ? 'bg-red-500/20 border-red-500/50 text-red-400 hover:bg-red-500/30'
+                                                    : 'bg-ink/10 border-ink/30 text-ink hover:bg-ink/20'
+                                        } ${isSubmitting ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+                                >
+                                    {option.label}
+                                </button>
+                            ))}
+                        </div>
+                    )}
+                </>
+            )}
+
+            {submitted && (
+                <div className="text-green-300 text-sm">
+                    Selected: <span className="font-bold">{selectedAction?.label}</span>
+                </div>
+            )}
+        </div>
+    );
+};
 
 // Props: { streamUrl: string (required), onError?: func, onComplete?: func }
 

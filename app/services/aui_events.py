@@ -160,11 +160,14 @@ class InterruptEvent(BaseAUIEvent):
     """
     Signals an interruption in the flow, requiring user attention or input.
     Can be used to explicitly pause the agent or request specific user action.
+    
+    AG-UI Aligned: Includes interrupt_id for tracking and payload for structured data.
     """
     type: AUIEventType = AUIEventType.INTERRUPT
-    reason: str  # e.g. "wait_for_input", "user_request"
-    required_action: Optional[str] = None # e.g. "confirm", "select_option"
-    metadata: Optional[Dict[str, Any]] = None
+    interrupt_id: str = Field(default_factory=lambda: f"int-{uuid.uuid4()}")
+    reason: str  # e.g. "human_approval", "user_input", "confirmation"
+    required_action: Optional[str] = None  # e.g. "confirm", "select_option"
+    payload: Optional[Dict[str, Any]] = None  # Renamed from metadata for AG-UI alignment
 
 
 # --- Activity Progress Events ---
@@ -249,12 +252,18 @@ class RunStartedEvent(BaseAUIEvent):
 
 class RunFinishedEvent(BaseAUIEvent):
     """
-    Signals an agent run has completed successfully.
+    Signals an agent run has completed.
+    
+    outcome values:
+        - "success": Run completed normally
+        - "interrupt": Run paused awaiting user input (see interrupt field)
+        - "cancelled": Run was cancelled by user or system
     """
     type: AUIEventType = AUIEventType.RUN_FINISHED
     run_id: str
-    outcome: Optional[str] = None  # Summary of what was accomplished
+    outcome: str = "success"  # "success" | "interrupt" | "cancelled"
     duration_ms: Optional[float] = None
+    interrupt: Optional[Dict[str, Any]] = None  # Present when outcome == "interrupt"
 
 
 class RunErrorEvent(BaseAUIEvent):

@@ -312,6 +312,10 @@ The system supports a streaming UI protocol for real-time Agent updates:
   - **Downstream**: SSE pushes UI state (buttons/forms).
   - **Upstream**: Client sends actions via `POST /api/aui/input`.
   - **Backend**: `AUIInputService` pauses agent execution until input is received (In-Memory Queue).
+- **AG-UI Alignment (2025-12-23)**:
+  - `InterruptEvent` now includes `interrupt_id` (auto-generated) and `payload` for structured data.
+  - `RunFinishedEvent` supports `outcome="interrupt"` with associated interrupt details.
+  - `InterruptBanner` component displays interactive action buttons from `payload.options`.
 
 ### Third-Party SDK Debugging: Lessons Learned (2025-12-17)
 

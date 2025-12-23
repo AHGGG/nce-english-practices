@@ -183,3 +183,94 @@ async def demo_interactive_flow():
     )
 
 
+@router.get("/stream/interrupt")
+async def demo_interrupt(
+    reason: str = "confirmation_required",
+    difficulty: str = "intermediate"
+):
+    """
+    Demo Interrupt Event (AG-UI HITL) - English Learning Scenario.
+    
+    Simulates an AI Coach generating a personalized study plan,
+    then pausing for user confirmation before executing.
+    
+    Query Parameters:
+    - reason: Interrupt reason (default: "confirmation_required")
+    - difficulty: Learning difficulty level (default: "intermediate")
+    """
+    from app.services.aui_events import (
+        StreamStartEvent, 
+        StreamEndEvent, 
+        InterruptEvent,
+        TextMessageStartEvent,
+        TextDeltaEvent,
+        TextMessageEndEvent,
+        ActivitySnapshotEvent
+    )
+    import uuid
+    import asyncio
+    
+    async def event_generator():
+        session_id = str(uuid.uuid4())
+        
+        # Start stream
+        yield f"data: {StreamStartEvent(session_id=session_id).model_dump_json()}\n\n"
+        await asyncio.sleep(0.2)
+        
+        # Activity: Analyzing user profile
+        activity_id = f"act-{uuid.uuid4()}"
+        yield f"data: {ActivitySnapshotEvent(activity_id=activity_id, name='Analyzing Learning Profile', status='running', progress=0.3, current_step='Reviewing vocabulary history...').model_dump_json()}\n\n"
+        await asyncio.sleep(0.5)
+        
+        yield f"data: {ActivitySnapshotEvent(activity_id=activity_id, name='Analyzing Learning Profile', status='completed', progress=1.0, current_step='Analysis complete').model_dump_json()}\n\n"
+        await asyncio.sleep(0.3)
+        
+        # Send analysis result message
+        msg_id = f"msg-{uuid.uuid4()}"
+        yield f"data: {TextMessageStartEvent(message_id=msg_id, role='assistant', metadata={'type': 'analysis', 'title': 'Coach Analysis'}).model_dump_json()}\n\n"
+        
+        analysis_text = f"Based on your recent practice sessions, I've identified some areas for improvement. Your tense usage accuracy is at 72%, and vocabulary retention shows room for growth. I recommend a focused {difficulty}-level study plan targeting these weak points."
+        
+        for word in analysis_text.split():
+            yield f"data: {TextDeltaEvent(message_id=msg_id, delta=word + ' ').model_dump_json()}\n\n"
+            await asyncio.sleep(0.03)
+        
+        yield f"data: {TextMessageEndEvent(message_id=msg_id).model_dump_json()}\n\n"
+        await asyncio.sleep(0.5)
+        
+        # Send interrupt - asking for confirmation
+        interrupt = InterruptEvent(
+            reason=reason,
+            required_action="approve_study_plan",
+            payload={
+                "plan_type": "personalized_intensive",
+                "duration_days": 14,
+                "daily_commitment_minutes": 30,
+                "focus_areas": [
+                    {"skill": "Past Perfect Tense", "priority": "high", "estimated_sessions": 5},
+                    {"skill": "Vocabulary: Academic Words", "priority": "medium", "estimated_sessions": 8},
+                    {"skill": "Reading Comprehension", "priority": "medium", "estimated_sessions": 4}
+                ],
+                "expected_improvement": "+15% accuracy",
+                "start_date": "Tomorrow",
+                "options": [
+                    {"label": "✅ Start This Plan", "action": "confirm"},
+                    {"label": "📝 Customize", "action": "customize"},
+                    {"label": "❌ Cancel", "action": "cancel"}
+                ]
+            }
+        )
+        yield f"data: {interrupt.model_dump_json()}\n\n"
+        await asyncio.sleep(0.5)
+        
+        # End stream
+        yield f"data: {StreamEndEvent(session_id=session_id).model_dump_json()}\n\n"
+    
+    return StreamingResponse(
+        event_generator(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "X-Accel-Buffering": "no"
+        }
+    )
