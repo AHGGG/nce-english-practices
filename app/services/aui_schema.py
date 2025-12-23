@@ -36,6 +36,30 @@ class InteractiveDemoProps(BaseModel):
     sessionId: Optional[str] = None
 
 
+class MarkdownMessageProps(BaseModel):
+    content: str
+
+
+class DiffCardProps(BaseModel):
+    original: str
+    corrected: str
+    label: Optional[str] = "Correction"
+
+
+class TenseTimelineProps(BaseModel):
+    tense: str
+    complexity: Optional[str] = "high"  # "high", "medium"
+
+
+class TaskDashboardProps(BaseModel):
+    title: str
+    status: str  # "running", "completed", "idle"
+    progress: float
+    logs: Optional[List[str]] = None
+    metrics: Optional[Dict[str, Any]] = None
+    tasks: Optional[List[Dict[str, Any]]] = None
+
+
 # --- Registry of Schemas ---
 
 COMPONENT_SCHEMAS = {
@@ -43,6 +67,10 @@ COMPONENT_SCHEMAS = {
     "FlashCardStack": FlashCardStackProps,
     "VocabGrid": VocabGridProps,
     "InteractiveDemo": InteractiveDemoProps,
+    "MarkdownMessage": MarkdownMessageProps,
+    "DiffCard": DiffCardProps,
+    "TenseTimeline": TenseTimelineProps,
+    "TaskDashboard": TaskDashboardProps,
 }
 
 # --- Validation Function ---

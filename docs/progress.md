@@ -343,5 +343,16 @@
   - `tests/test_aui_interrupt.py` (Passed)
   - `tests/test_aui_schema.py` (Passed)
 
+### ✅ AUI Schema Extension & Rehydration Support (2025-12-23)
+**Completed full schema coverage and activity rehydration for AG-UI alignment**
 
+#### Backend Extensions
+- [x] **Schema Validation**: Extended `app/services/aui_schema.py` to cover all `registry.js` components:
+  - Added `MarkdownMessageProps`, `DiffCardProps`, `TenseTimelineProps`, `TaskDashboardProps`.
+- [x] **Activity Rehydration**: Added `activities` field to `StateSnapshotEvent` in `aui_events.py` for restoring running tasks on page reload.
+
+#### Verification
+- [x] **Unit Tests**:
+  - `tests/test_aui_schema_extended.py` (12 tests - Passed)
+  - `tests/test_aui_snapshot_extended.py` (3 tests - Passed)
 

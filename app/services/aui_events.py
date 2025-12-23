@@ -110,9 +110,11 @@ class StateSnapshotEvent(BaseAUIEvent):
     """
     Complete state snapshot for recovery/initialization.
     Frontend uses this to set initial state before applying deltas.
+    Includes optional activities for rehydration of long-running tasks.
     """
     type: AUIEventType = AUIEventType.STATE_SNAPSHOT
     state: Dict[str, Any]  # Complete component state
+    activities: Optional[List[Dict[str, Any]]] = None  # Active ActivitySnapshot objects
 
 
 class MessagesSnapshotEvent(BaseAUIEvent):
