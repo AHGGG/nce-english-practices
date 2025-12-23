@@ -1,13 +1,14 @@
 import React from 'react';
 import { Card, Button } from "../../ui";
 import { Loader2, CheckCircle2, XCircle, RefreshCw } from "lucide-react";
+import { useAUI } from '../AUIContext';
 
 /**
  * InteractiveDemo Component
  * 
  * Demonstrates AUI Human-in-the-Loop interaction.
  * Renders a status message and option buttons.
- * Sends user input back to the agent via /api/aui/input.
+ * Uses WebSocket via AUI Context when available, falls back to HTTP POST.
  * 
  * Props:
  * - status: 'processing' | 'waiting_input' | 'success' | 'cancelled' | 'error'
@@ -22,6 +23,7 @@ const InteractiveDemo = ({
     options = []
 }) => {
     const [submitting, setSubmitting] = React.useState(false);
+    const { transport, isConnected, send } = useAUI();
 
     // Status config map
     const config = {
@@ -51,12 +53,27 @@ const InteractiveDemo = ({
 
     const handleAction = async (action) => {
         if (!sessionId) {
-            console.error("Missing sessionId for interactive action");
             return;
         }
 
         setSubmitting(true);
         try {
+            // Try WebSocket first if available
+            if (transport === 'websocket' && isConnected && send) {
+                const sent = send({
+                    type: 'input',
+                    session_id: sessionId,
+                    action: action,
+                    payload: { timestamp: Date.now() }
+                });
+                if (sent) {
+                    setSubmitting(false);
+                    return;
+                }
+                // Fall through to HTTP if WebSocket send failed
+            }
+
+            // Fallback: Send via HTTP POST
             const response = await fetch('/api/aui/input', {
                 method: 'POST',
                 headers: {
@@ -74,10 +91,9 @@ const InteractiveDemo = ({
             }
             // Success - The agent stream will update the UI state shortly
         } catch (error) {
-            console.error("Error sending input:", error);
-            alert("Failed to send input. See console.");
+            // Silently handle errors
         } finally {
-            setSubmitting(false); // Ideally the UI updates right away, but clean up just in case
+            setSubmitting(false);
         }
     };
 
@@ -117,3 +133,4 @@ const InteractiveDemo = ({
 };
 
 export default InteractiveDemo;
+

@@ -316,6 +316,11 @@ The system supports a streaming UI protocol for real-time Agent updates:
   - `InterruptEvent` now includes `interrupt_id` (auto-generated) and `payload` for structured data.
   - `RunFinishedEvent` supports `outcome="interrupt"` with associated interrupt details.
   - `InterruptBanner` component displays interactive action buttons from `payload.options`.
+- **WebSocket Transport (2025-12-23)**:
+  - **Backend**: `/api/aui/ws/{stream_type}` endpoint in `aui_websocket.py`.
+  - **Frontend**: `useAUITransport` hook abstracts SSE/WebSocket; `AUIContext` provides `send` function.
+  - **Bidirectional**: `interactive` and `interrupt` streams use `handle_interactive_stream` for HITL.
+  - **Fallback**: SSE remains default; WebSocket enabled via `transport="websocket"` prop.
 
 ### Third-Party SDK Debugging: Lessons Learned (2025-12-17)
 

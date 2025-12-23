@@ -1,15 +1,27 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { applyPatch } from 'fast-json-patch';
+import { useAUITransport } from '../../hooks/useAUITransport';
+import { AUIProvider } from './AUIContext';
 
 /**
- * AUIStreamHydrator - Handles SSE event streams and renders AUI components
+ * AUIStreamHydrator - Handles streaming events and renders AUI components
+ * 
+ * Supports multiple transport layers:
+ * - SSE (EventSource) - default, unidirectional
+ * - WebSocket - bidirectional, better for HITL scenarios
  * 
  * Compatible with both legacy AUIRenderPacket and new streaming events:
  * - RENDER_SNAPSHOT: Full component spec (backward compatible)
  * - TEXT_DELTA: Incremental text updates
- * - STATE_DELTA: JSON Patch state updates (future)
+ * - STATE_DELTA: JSON Patch state updates
  */
-const AUIStreamHydrator = ({ streamUrl, onError, onComplete }) => {
+const AUIStreamHydrator = ({
+    streamUrl,
+    transport = 'sse',  // 'sse' | 'websocket'
+    params = {},        // WebSocket params (words, level, etc.)
+    onError,
+    onComplete
+}) => {
     const [componentSpec, setComponentSpec] = useState(null);
     const [accumulatedText, setAccumulatedText] = useState({});
     const [isStreaming, setIsStreaming] = useState(false);
@@ -22,289 +34,291 @@ const AUIStreamHydrator = ({ streamUrl, onError, onComplete }) => {
     const [runState, setRunState] = useState(null); // Current run state
     const [interruptState, setInterruptState] = useState(null); // Current interrupt state
 
-    const eventSourceRef = useRef(null);
+    // Track messages ref for closure-safe access
+    const messagesRef = useRef(messages);
+    useEffect(() => {
+        messagesRef.current = messages;
+    }, [messages]);
 
+    /**
+     * Process incoming AUI event (shared between SSE and WebSocket)
+     */
+    const handleEvent = useCallback((auiEvent) => {
+
+        switch (auiEvent.type) {
+            case 'aui_stream_start':
+                // Stream started
+                break;
+
+            case 'aui_render_snapshot':
+                setComponentSpec({
+                    component: auiEvent.ui.component,
+                    props: auiEvent.ui.props,
+                    intention: auiEvent.intention,
+                    targetLevel: auiEvent.target_level
+                });
+                break;
+
+            case 'aui_state_snapshot':
+                // Complete state snapshot - allows recovery/initialization
+                setComponentSpec({
+                    component: auiEvent.state.component,
+                    props: auiEvent.state.props,
+                    intention: auiEvent.state.intention,
+                    targetLevel: auiEvent.state.target_level
+                });
+                break;
+
+
+            case 'aui_text_delta':
+                // Check if this delta belongs to a specific message (lifecycle)
+                // Use functional setState to ensure we always work with latest state
+                setMessages(prev => {
+                    const messageIndex = prev.findIndex(m => m.id === auiEvent.message_id);
+                    if (messageIndex >= 0) {
+                        // Update the tracked message
+                        return prev.map(msg =>
+                            msg.id === auiEvent.message_id
+                                ? { ...msg, content: msg.content + auiEvent.delta }
+                                : msg
+                        );
+                    }
+                    // Message not found - return unchanged
+                    return prev;
+                });
+
+                // If no message found, fall back to legacy component spec accumulation
+                // Use ref for closure-safe check
+                if (messagesRef.current.findIndex(m => m.id === auiEvent.message_id) < 0) {
+                    // Legacy: Accumulate text deltas into component props
+                    setComponentSpec(prev => {
+                        if (!prev) return prev;
+
+                        const newProps = structuredClone(prev.props);
+                        const path = auiEvent.field_path || 'content';
+                        const pathParts = path.split('.');
+
+                        // Navigate to the nested property
+                        let current = newProps;
+                        for (let i = 0; i < pathParts.length - 1; i++) {
+                            if (!current[pathParts[i]]) {
+                                current[pathParts[i]] = {};
+                            }
+                            current = current[pathParts[i]];
+                        }
+
+                        // Append the delta text
+                        const lastKey = pathParts[pathParts.length - 1];
+                        current[lastKey] = (current[lastKey] || '') + auiEvent.delta;
+
+                        return {
+                            ...prev,
+                            props: newProps
+                        };
+                    });
+                }
+                break;
+
+            case 'aui_state_delta':
+                // Apply JSON Patch
+                setComponentSpec(prev => {
+                    if (!prev) {
+                        console.warn('[AUIStreamHydrator] Received state delta but no component spec exists');
+                        return null;
+                    }
+
+                    // Deep clone to ensure we don't mutate current state
+                    const doc = {
+                        component: prev.component,
+                        props: structuredClone(prev.props),
+                        intention: prev.intention,
+                        target_level: prev.targetLevel
+                    };
+
+                    try {
+                        const result = applyPatch(doc, auiEvent.delta);
+                        const newDoc = result.newDocument || doc;
+
+                        return {
+                            component: newDoc.component,
+                            props: newDoc.props,
+                            intention: newDoc.intention,
+                            targetLevel: newDoc.target_level || newDoc.targetLevel
+                        };
+                    } catch (err) {
+                        console.error('[AUIStreamHydrator] JSON Patch failed:', err);
+                        return prev;
+                    }
+                });
+                break;
+
+            case 'aui_stream_end':
+                console.log('[AUIStreamHydrator] Stream ended');
+                setIsStreaming(false);
+                break;
+
+            case 'aui_error':
+                console.error('[AUIStreamHydrator] Stream error:', auiEvent.message);
+                setError(auiEvent.message);
+                setIsStreaming(false);
+                if (onError) onError(auiEvent.message);
+                break;
+
+            // TEXT_MESSAGE Lifecycle Events
+            case 'aui_text_message_start':
+                setMessages(prev => [...prev, {
+                    id: auiEvent.message_id,
+                    role: auiEvent.role,
+                    content: '',
+                    isStreaming: true,
+                    metadata: auiEvent.metadata || {}
+                }]);
+                break;
+
+            case 'aui_text_message_end':
+                setMessages(prev => prev.map(msg =>
+                    msg.id === auiEvent.message_id
+                        ? {
+                            ...msg,
+                            isStreaming: false,
+                            content: auiEvent.final_content || msg.content
+                        }
+                        : msg
+                ));
+                break;
+
+            case 'aui_messages_snapshot':
+                setMessages(auiEvent.messages);
+                break;
+
+            // Activity Progress Events
+            case 'aui_activity_snapshot':
+                setActivities(prev => ({
+                    ...prev,
+                    [auiEvent.activity_id]: {
+                        id: auiEvent.activity_id,
+                        name: auiEvent.name,
+                        status: auiEvent.status,
+                        progress: auiEvent.progress,
+                        current_step: auiEvent.current_step,
+                        metadata: auiEvent.metadata
+                    }
+                }));
+                break;
+
+            case 'aui_activity_delta':
+                setActivities(prev => {
+                    const activity = prev[auiEvent.activity_id];
+                    if (!activity) {
+                        console.warn('[AUIStreamHydrator] Activity delta for unknown activity:', auiEvent.activity_id);
+                        return prev;
+                    }
+
+                    try {
+                        // Apply JSON Patch to activity
+                        const activityDoc = structuredClone(activity);
+                        const result = applyPatch(activityDoc, auiEvent.delta);
+                        const newActivity = result.newDocument || activityDoc;
+
+                        return {
+                            ...prev,
+                            [auiEvent.activity_id]: newActivity
+                        };
+                    } catch (err) {
+                        console.error('[AUIStreamHydrator] Activity patch failed:', err);
+                        return prev;
+                    }
+                });
+                break;
+
+            // Tool Call Events
+            case 'aui_tool_call_start':
+            case 'aui_tool_call_args':
+            case 'aui_tool_call_end':
+            case 'aui_tool_call_result':
+                setToolCalls(prev => [...prev, auiEvent]);
+                break;
+
+            // Run Lifecycle Events
+            case 'aui_run_started':
+            case 'aui_run_finished':
+            case 'aui_run_error':
+                setRunState(auiEvent);
+                break;
+
+            // Interrupt Event (HITL)
+            case 'aui_interrupt':
+                setInterruptState({
+                    id: auiEvent.interrupt_id,
+                    reason: auiEvent.reason,
+                    requiredAction: auiEvent.required_action,
+                    payload: auiEvent.payload
+                });
+                break;
+
+            default:
+                console.warn('[AUIStreamHydrator] Unknown event type:', auiEvent.type);
+        }
+    }, [onError]);
+
+    // Use the transport hook
+    const { connect, disconnect, send, isConnected } = useAUITransport({
+        url: streamUrl,
+        transport,
+        params,
+        onMessage: handleEvent,
+        onError: (err) => {
+            setError('Connection error');
+            setIsStreaming(false);
+            if (onError) onError('Connection error');
+        },
+        onComplete: () => {
+            setIsStreaming(false);
+            if (onComplete) onComplete();
+        }
+    });
+
+    // Connect when streamUrl or transport changes
+    // NOTE: connect/disconnect are STABLE functions (no deps) so we don't include them
     useEffect(() => {
         if (!streamUrl) return;
 
-        console.log('[AUIStreamHydrator] Connecting to:', streamUrl);
         setIsStreaming(true);
         setError(null);
 
-        const eventSource = new EventSource(streamUrl);
-        eventSourceRef.current = eventSource;
+        // Reset state for new stream
+        setComponentSpec(null);
+        setMessages([]);
+        setActivities({});
+        setToolCalls([]);
+        setRunState(null);
+        setInterruptState(null);
 
-        eventSource.onmessage = (event) => {
-            try {
-                const auiEvent = JSON.parse(event.data);
-                console.log('[AUIStreamHydrator] Received event:', auiEvent.type, auiEvent);
+        connect();
 
-                switch (auiEvent.type) {
-                    case 'aui_stream_start':
-                        console.log('[AUIStreamHydrator] Stream started:', auiEvent.session_id);
-                        break;
-
-                    case 'aui_render_snapshot':
-                        setComponentSpec({
-                            component: auiEvent.ui.component,
-                            props: auiEvent.ui.props,
-                            intention: auiEvent.intention,
-                            targetLevel: auiEvent.target_level
-                        });
-                        break;
-
-                    case 'aui_state_snapshot':
-                        // Complete state snapshot - allows recovery/initialization
-                        setComponentSpec({
-                            component: auiEvent.state.component,
-                            props: auiEvent.state.props,
-                            intention: auiEvent.state.intention,
-                            targetLevel: auiEvent.state.target_level
-                        });
-                        break;
-
-
-                    case 'aui_text_delta':
-                        // Check if this delta belongs to a specific message (lifecycle)
-                        // Use functional setState to ensure we always work with latest state
-                        setMessages(prev => {
-                            const messageIndex = prev.findIndex(m => m.id === auiEvent.message_id);
-                            if (messageIndex >= 0) {
-                                // Update the tracked message
-                                return prev.map(msg =>
-                                    msg.id === auiEvent.message_id
-                                        ? { ...msg, content: msg.content + auiEvent.delta }
-                                        : msg
-                                );
-                            }
-                            // Message not found - return unchanged
-                            return prev;
-                        });
-
-                        // If no message found, fall back to legacy component spec accumulation
-                        // We need to check this separately since setState is async
-                        if (messages.findIndex(m => m.id === auiEvent.message_id) < 0) {
-                            // Legacy: Accumulate text deltas into component props
-                            setComponentSpec(prev => {
-                                if (!prev) return prev;
-
-                                const newProps = structuredClone(prev.props);
-                                const path = auiEvent.field_path || 'content';
-                                const pathParts = path.split('.');
-
-                                // Navigate to the nested property
-                                let current = newProps;
-                                for (let i = 0; i < pathParts.length - 1; i++) {
-                                    if (!current[pathParts[i]]) {
-                                        current[pathParts[i]] = {};
-                                    }
-                                    current = current[pathParts[i]];
-                                }
-
-                                // Append the delta text
-                                const lastKey = pathParts[pathParts.length - 1];
-                                current[lastKey] = (current[lastKey] || '') + auiEvent.delta;
-
-                                return {
-                                    ...prev,
-                                    props: newProps
-                                };
-                            });
-                        }
-                        break;
-
-                    case 'aui_state_delta':
-                        // Apply JSON Patch
-                        setComponentSpec(prev => {
-                            if (!prev) {
-                                console.warn('[AUIStreamHydrator] Received state delta but no component spec exists');
-                                return null;
-                            }
-
-                            // Create a deep clone to avoid mutation issues before patching
-                            // The 'ui' object in RenderSnapshotEvent maps to { component:..., props:..., intention:..., targetLevel:... }
-                            // We need to patch the WHOLE object to allow targetLevel changes too, 
-                            // but our state 'componentSpec' is slightly different structure than the raw event 'ui'
-
-                            // Let's assume the backend 'create_state_diff' was run on the WHOLE object structure:
-                            // { component: "...", props: { ... }, intention: "...", target_level: ... }
-
-                            // Our state 'componentSpec' is:
-                            // { component, props, intention, targetLevel }
-
-                            // We need to normalize key names if the backend sends 'target_level' but frontend uses 'targetLevel'.
-                            // Ideally, backend should send exactly what frontend expects, OR frontend state mirrors backend.
-
-                            // For now, let's assume the patch is against the object structure:
-                            // { component, props, intention, target_level }
-                            // So we reconstruct that, patch it, and map back.
-
-                            // Deep clone to ensure we don't mutate current state
-                            const doc = {
-                                component: prev.component,
-                                props: structuredClone(prev.props),
-                                intention: prev.intention,
-                                target_level: prev.targetLevel
-                            };
-
-                            try {
-                                // fast-json-patch applyPatch modifies in place
-                                const result = applyPatch(doc, auiEvent.delta);
-                                // The library might return results array or object depending on version/config
-                                // But since we cloned 'doc', we can blindly use it if it was mutated, 
-                                // OR use result.newDocument if the library returns it (immutable mode).
-                                // Let's rely on the mutated 'doc' (or newDoc if returned) to be safe.
-
-                                // Standard fast-json-patch v3+: applyPatch(doc, patch) returns results array, modifies doc.
-                                // If we want immutable: const newDoc = applyPatch(doc, patch, false, false).newDocument;
-
-                                // Let's check what 'result' is. If it has .newDocument, use it.
-                                const newDoc = result.newDocument || doc;
-
-                                return {
-                                    component: newDoc.component,
-                                    props: newDoc.props,
-                                    intention: newDoc.intention,
-                                    targetLevel: newDoc.target_level || newDoc.targetLevel
-                                };
-                            } catch (err) {
-                                console.error('[AUIStreamHydrator] JSON Patch failed:', err);
-                                return prev;
-                            }
-                        });
-                        break;
-
-                    case 'aui_stream_end':
-                        console.log('[AUIStreamHydrator] Stream ended');
-                        setIsStreaming(false);
-                        eventSource.close();
-                        if (onComplete) onComplete();
-                        break;
-
-                    case 'aui_error':
-                        console.error('[AUIStreamHydrator] Stream error:', auiEvent.message);
-                        setError(auiEvent.message);
-                        setIsStreaming(false);
-                        eventSource.close();
-                        if (onError) onError(auiEvent.message);
-                        break;
-
-                    // TEXT_MESSAGE Lifecycle Events
-                    case 'aui_text_message_start':
-                        setMessages(prev => [...prev, {
-                            id: auiEvent.message_id,
-                            role: auiEvent.role,
-                            content: '',
-                            isStreaming: true,
-                            metadata: auiEvent.metadata || {}
-                        }]);
-                        break;
-
-                    case 'aui_text_message_end':
-                        setMessages(prev => prev.map(msg =>
-                            msg.id === auiEvent.message_id
-                                ? {
-                                    ...msg,
-                                    isStreaming: false,
-                                    content: auiEvent.final_content || msg.content
-                                }
-                                : msg
-                        ));
-                        break;
-
-                    case 'aui_messages_snapshot':
-                        setMessages(auiEvent.messages);
-                        break;
-
-                    // Activity Progress Events
-                    case 'aui_activity_snapshot':
-                        setActivities(prev => ({
-                            ...prev,
-                            [auiEvent.activity_id]: {
-                                id: auiEvent.activity_id,
-                                name: auiEvent.name,
-                                status: auiEvent.status,
-                                progress: auiEvent.progress,
-                                current_step: auiEvent.current_step,
-                                metadata: auiEvent.metadata
-                            }
-                        }));
-                        break;
-
-                    case 'aui_activity_delta':
-                        setActivities(prev => {
-                            const activity = prev[auiEvent.activity_id];
-                            if (!activity) {
-                                console.warn('[AUIStreamHydrator] Activity delta for unknown activity:', auiEvent.activity_id);
-                                return prev;
-                            }
-
-                            try {
-                                // Apply JSON Patch to activity
-                                const activityDoc = structuredClone(activity);
-                                const result = applyPatch(activityDoc, auiEvent.delta);
-                                const newActivity = result.newDocument || activityDoc;
-
-                                return {
-                                    ...prev,
-                                    [auiEvent.activity_id]: newActivity
-                                };
-                            } catch (err) {
-                                console.error('[AUIStreamHydrator] Activity patch failed:', err);
-                                return prev;
-                            }
-                        });
-                        break;
-
-                    // Tool Call Events
-                    case 'aui_tool_call_start':
-                    case 'aui_tool_call_args':
-                    case 'aui_tool_call_end':
-                    case 'aui_tool_call_result':
-                        setToolCalls(prev => [...prev, auiEvent]);
-                        break;
-
-                    // Run Lifecycle Events
-                    case 'aui_run_started':
-                    case 'aui_run_finished':
-                    case 'aui_run_error':
-                        setRunState(auiEvent);
-                        break;
-
-                    // Interrupt Event (HITL)
-                    case 'aui_interrupt':
-                        setInterruptState({
-                            id: auiEvent.interrupt_id,
-                            reason: auiEvent.reason,
-                            requiredAction: auiEvent.required_action,
-                            payload: auiEvent.payload
-                        });
-                        break;
-
-                    default:
-                        console.warn('[AUIStreamHydrator] Unknown event type:', auiEvent.type);
-                }
-            } catch (err) {
-                console.error('[AUIStreamHydrator] Failed to parse event:', err);
-                setError('Failed to parse server event');
-            }
-        };
-
-        eventSource.onerror = (err) => {
-            console.error('[AUIStreamHydrator] EventSource error:', err);
-            setError('Connection error');
-            setIsStreaming(false);
-            eventSource.close();
-            if (onError) onError('Connection error');
-        };
-
-        // Cleanup on unmount
         return () => {
-            if (eventSourceRef.current) {
-                eventSourceRef.current.close();
-            }
+            disconnect();
         };
-    }, [streamUrl]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [streamUrl, transport]);
+
+    // Handle interrupt action with WebSocket support
+    const handleInterruptAction = useCallback(async (action) => {
+        if (transport === 'websocket' && isConnected) {
+            // Send via WebSocket for low-latency HITL
+            // Use session_id from payload (this is what backend waits for)
+            const sessionId = interruptState?.payload?.session_id || interruptState?.id;
+            send({
+                type: 'input',
+                session_id: sessionId,
+                action: action.action,
+                payload: { label: action.label }
+            });
+            return true;
+        }
+        // Fallback to POST (handled in InterruptBanner)
+        return false;
+    }, [transport, isConnected, send, interruptState]);
 
     if (error) {
         return (
@@ -327,61 +341,80 @@ const AUIStreamHydrator = ({ streamUrl, onError, onComplete }) => {
         );
     }
 
+    // Context value for child components
+    const auiContextValue = {
+        transport,
+        isConnected,
+        send,
+    };
+
     // Dynamic component rendering (lazy load from registry)
     return (
-        <div className="aui-stream-container">
-            {isStreaming && (
-                <div className="absolute top-2 right-2 flex items-center gap-2 text-[10px] text-neon-cyan font-mono">
-                    <span className="animate-pulse">●</span>
-                    STREAMING
-                </div>
-            )}
+        <AUIProvider value={auiContextValue}>
+            <div className="aui-stream-container">
+                {isStreaming && (
+                    <div className="absolute top-2 right-2 flex items-center gap-2 text-[10px] font-mono">
+                        <span className="animate-pulse text-neon-cyan">●</span>
+                        <span className="text-neon-cyan">STREAMING</span>
+                        <span className={`px-1.5 py-0.5 rounded text-[8px] uppercase ${transport === 'websocket'
+                            ? 'bg-purple-500/20 text-purple-400 border border-purple-500/30'
+                            : 'bg-blue-500/20 text-blue-400 border border-blue-500/30'
+                            }`}>
+                            {transport === 'websocket' ? 'WS' : 'SSE'}
+                        </span>
+                    </div>
+                )}
 
-            {/* Render the component dynamically (if exists) */}
-            {componentSpec && (
-                <DynamicComponentRenderer
-                    component={componentSpec.component}
-                    props={componentSpec.props}
-                />
-            )}
+                {/* Render the component dynamically (if exists) */}
+                {componentSpec && (
+                    <DynamicComponentRenderer
+                        component={componentSpec.component}
+                        props={componentSpec.props}
+                    />
+                )}
 
-            {/* Render messages if any */}
-            {messages.length > 0 && (
-                <div className="mb-4">
-                    <MessageList messages={messages} />
-                </div>
-            )}
+                {/* Text Messages (Multiple concurrent streams) */}
+                {messages.length > 0 && (
+                    <div className="mt-4">
+                        <MessageList messages={messages} />
+                    </div>
+                )}
 
-            {/* Render activities if any */}
-            {Object.keys(activities).length > 0 && (
-                <div className="mt-4 space-y-2">
-                    {Object.values(activities).map(activity => (
-                        <ActivityProgressBar key={activity.id} activity={activity} />
-                    ))}
-                </div>
-            )}
+                {/* Activities */}
+                {Object.keys(activities).length > 0 && (
+                    <div className="mt-4 space-y-3">
+                        {Object.entries(activities).map(([id, activity]) => (
+                            <ActivityProgressBar key={id} activity={activity} />
+                        ))}
+                    </div>
+                )}
 
-            {/* Render tool calls if any */}
-            {toolCalls.length > 0 && (
-                <div className="mt-4">
-                    <ToolCallTimeline toolCalls={toolCalls} />
-                </div>
-            )}
+                {/* Render tool calls if any */}
+                {toolCalls.length > 0 && (
+                    <div className="mt-4">
+                        <ToolCallTimeline toolCalls={toolCalls} />
+                    </div>
+                )}
 
-            {/* Render run state if exists */}
-            {runState && (
-                <div className="mt-4">
-                    <RunStatusBadge runState={runState} />
-                </div>
-            )}
+                {/* Render run state if exists */}
+                {runState && (
+                    <div className="mt-4">
+                        <RunStatusBadge runState={runState} />
+                    </div>
+                )}
 
-            {/* Render interrupt banner if exists */}
-            {interruptState && (
-                <div className="mt-4">
-                    <InterruptBanner interrupt={interruptState} />
-                </div>
-            )}
-        </div>
+                {/* Render interrupt banner if exists */}
+                {interruptState && (
+                    <div className="mt-4">
+                        <InterruptBanner
+                            interrupt={interruptState}
+                            onAction={handleInterruptAction}
+                            useWebSocket={transport === 'websocket' && isConnected}
+                        />
+                    </div>
+                )}
+            </div>
+        </AUIProvider>
     );
 };
 
@@ -513,7 +546,7 @@ const RunStatusBadge = ({ runState }) => (
     </div>
 );
 
-const InterruptBanner = ({ interrupt, onAction }) => {
+const InterruptBanner = ({ interrupt, onAction, useWebSocket = false }) => {
     const [isSubmitting, setIsSubmitting] = React.useState(false);
     const [submitted, setSubmitted] = React.useState(false);
     const [selectedAction, setSelectedAction] = React.useState(null);
@@ -523,7 +556,18 @@ const InterruptBanner = ({ interrupt, onAction }) => {
         setSelectedAction(action);
 
         try {
-            // Send user input to resume the agent
+            // Try WebSocket first if available
+            if (useWebSocket && onAction) {
+                const sent = await onAction(action);
+                if (sent) {
+                    setSubmitted(true);
+                    setIsSubmitting(false);
+                    return;
+                }
+                // Fall through to HTTP if WebSocket send failed
+            }
+
+            // Fallback: Send user input via HTTP POST
             const response = await fetch('/api/aui/input', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -540,7 +584,7 @@ const InterruptBanner = ({ interrupt, onAction }) => {
                 if (onAction) onAction(action);
             }
         } catch (err) {
-            console.error('Failed to submit interrupt response:', err);
+            // Silently handle errors
         } finally {
             setIsSubmitting(false);
         }
@@ -551,8 +595,8 @@ const InterruptBanner = ({ interrupt, onAction }) => {
 
     return (
         <div className={`border rounded-lg p-4 font-mono text-sm transition-all ${submitted
-                ? 'bg-green-900/20 border-green-500/50'
-                : 'bg-amber-900/20 border-amber-500/50'
+            ? 'bg-green-900/20 border-green-500/50'
+            : 'bg-amber-900/20 border-amber-500/50'
             }`}>
             <div className="flex items-center gap-2 mb-3">
                 <span className="text-lg">{submitted ? '✅' : '⚠️'}</span>
@@ -617,12 +661,12 @@ const InterruptBanner = ({ interrupt, onAction }) => {
                                     onClick={() => handleAction(option)}
                                     disabled={isSubmitting}
                                     className={`px-4 py-2 rounded border transition-all text-sm ${isSubmitting && selectedAction?.action === option.action
-                                            ? 'bg-amber-500/30 border-amber-500 text-amber-300 animate-pulse'
-                                            : option.action === 'confirm'
-                                                ? 'bg-green-500/20 border-green-500/50 text-green-400 hover:bg-green-500/30'
-                                                : option.action === 'cancel'
-                                                    ? 'bg-red-500/20 border-red-500/50 text-red-400 hover:bg-red-500/30'
-                                                    : 'bg-ink/10 border-ink/30 text-ink hover:bg-ink/20'
+                                        ? 'bg-amber-500/30 border-amber-500 text-amber-300 animate-pulse'
+                                        : option.action === 'confirm'
+                                            ? 'bg-green-500/20 border-green-500/50 text-green-400 hover:bg-green-500/30'
+                                            : option.action === 'cancel'
+                                                ? 'bg-red-500/20 border-red-500/50 text-red-400 hover:bg-red-500/30'
+                                                : 'bg-ink/10 border-ink/30 text-ink hover:bg-ink/20'
                                         } ${isSubmitting ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
                                 >
                                     {option.label}

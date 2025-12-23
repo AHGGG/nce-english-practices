@@ -1,6 +1,6 @@
 /**
  * AUI Streaming Demo - Test Page
- * Demonstrates SSE streaming with extended AUI events
+ * Demonstrates SSE and WebSocket streaming with extended AUI events
  * Layout inspired by Playground page
  */
 
@@ -10,6 +10,7 @@ import AUIStreamHydrator from '../components/aui/AUIStreamHydrator';
 const AUIStreamingDemo = () => {
     const [streamUrl, setStreamUrl] = useState('');
     const [selectedDemo, setSelectedDemo] = useState('');
+    const [transport, setTransport] = useState('sse'); // 'sse' | 'websocket'
 
     // Demo configurations
     const demos = [
@@ -115,8 +116,42 @@ const AUIStreamingDemo = () => {
             <div className="w-1/3 space-y-6">
                 <header className="mb-8 border-b border-[#333] pb-4">
                     <h1 className="text-2xl font-serif font-bold text-white">AUI Streaming Demo</h1>
-                    <p className="text-xs text-[#666] mt-2">SSE-based Event Streaming Testbed</p>
+                    <p className="text-xs text-[#666] mt-2">Event Streaming Testbed with Transport Selection</p>
                 </header>
+
+                {/* Transport Layer Toggle */}
+                <div>
+                    <label className="block text-xs uppercase text-[#666] mb-3">Transport Layer</label>
+                    <div className="flex gap-2">
+                        <button
+                            onClick={() => setTransport('sse')}
+                            className={`flex-1 py-3 px-4 rounded border transition-all flex items-center justify-center gap-2 ${transport === 'sse'
+                                    ? 'bg-blue-500/20 text-blue-400 border-blue-500 font-bold'
+                                    : 'bg-[#111] text-[#666] border-[#333] hover:border-[#555] hover:text-white'
+                                }`}
+                        >
+                            <span>📡</span>
+                            <span>SSE</span>
+                            {transport === 'sse' && <span className="text-[10px] opacity-60">(EventSource)</span>}
+                        </button>
+                        <button
+                            onClick={() => setTransport('websocket')}
+                            className={`flex-1 py-3 px-4 rounded border transition-all flex items-center justify-center gap-2 ${transport === 'websocket'
+                                    ? 'bg-purple-500/20 text-purple-400 border-purple-500 font-bold'
+                                    : 'bg-[#111] text-[#666] border-[#333] hover:border-[#555] hover:text-white'
+                                }`}
+                        >
+                            <span>🔌</span>
+                            <span>WebSocket</span>
+                            {transport === 'websocket' && <span className="text-[10px] opacity-60">(Bidirectional)</span>}
+                        </button>
+                    </div>
+                    <p className="text-[10px] text-[#555] mt-2">
+                        {transport === 'sse'
+                            ? 'Using Server-Sent Events (unidirectional, auto-reconnect)'
+                            : 'Using WebSocket (bidirectional, better for HITL demos)'}
+                    </p>
+                </div>
 
                 {/* Demo Selection Grid */}
                 <div>
@@ -154,9 +189,20 @@ const AUIStreamingDemo = () => {
                 {/* Current Stream Info */}
                 {streamUrl && (
                     <div className="mt-8">
-                        <label className="block text-xs uppercase text-[#666] mb-2">Active Stream URL</label>
-                        <div className="bg-black border border-[#333] p-3 text-[10px] text-[#00FF94] rounded break-all font-mono">
-                            {streamUrl}
+                        <label className="block text-xs uppercase text-[#666] mb-2">Active Stream</label>
+                        <div className="bg-black border border-[#333] p-3 rounded space-y-2">
+                            <div className="flex items-center gap-2">
+                                <span className={`px-2 py-0.5 rounded text-[10px] uppercase font-bold ${transport === 'websocket'
+                                        ? 'bg-purple-500/20 text-purple-400 border border-purple-500/30'
+                                        : 'bg-blue-500/20 text-blue-400 border border-blue-500/30'
+                                    }`}>
+                                    {transport === 'websocket' ? '🔌 WS' : '📡 SSE'}
+                                </span>
+                                <span className="text-[10px] text-[#666]">{selectedDemo}</span>
+                            </div>
+                            <div className="text-[10px] text-[#00FF94] break-all font-mono">
+                                {streamUrl}
+                            </div>
                         </div>
                     </div>
                 )}
@@ -166,10 +212,18 @@ const AUIStreamingDemo = () => {
             <div className="flex-1 bg-[#111] border border-[#333] rounded-lg relative overflow-hidden flex flex-col">
                 <div className="p-4 border-b border-[#333] flex justify-between items-center bg-[#0A0A0A]">
                     <span className="text-xs uppercase tracking-widest text-[#666]">Stream Output</span>
-                    <div className="flex gap-2">
-                        <span className="w-2 h-2 rounded-full bg-[#FF5F57]"></span>
-                        <span className="w-2 h-2 rounded-full bg-[#FEBC2E]"></span>
-                        <span className="w-2 h-2 rounded-full bg-[#28C840]"></span>
+                    <div className="flex items-center gap-3">
+                        <span className={`px-2 py-0.5 rounded text-[10px] uppercase ${transport === 'websocket'
+                                ? 'bg-purple-500/20 text-purple-400'
+                                : 'bg-blue-500/20 text-blue-400'
+                            }`}>
+                            {transport.toUpperCase()}
+                        </span>
+                        <div className="flex gap-2">
+                            <span className="w-2 h-2 rounded-full bg-[#FF5F57]"></span>
+                            <span className="w-2 h-2 rounded-full bg-[#FEBC2E]"></span>
+                            <span className="w-2 h-2 rounded-full bg-[#28C840]"></span>
+                        </div>
                     </div>
                 </div>
 
@@ -178,7 +232,8 @@ const AUIStreamingDemo = () => {
                         <div className="w-full max-w-2xl">
                             <AUIStreamHydrator
                                 streamUrl={streamUrl}
-                                key={streamUrl}
+                                transport={transport}
+                                key={`${streamUrl}-${transport}`}
                                 onError={(err) => console.error('Stream error:', err)}
                                 onComplete={() => console.log('Stream completed')}
                             />
@@ -196,3 +251,4 @@ const AUIStreamingDemo = () => {
 };
 
 export default AUIStreamingDemo;
+

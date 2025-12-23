@@ -377,3 +377,75 @@
 - [x] **Unit Tests**: `tests/test_aui_interrupt.py` (6 tests - All Passed)
 - [x] **Backend Serialization**: Verified `interrupt_id` prefix generation
 
+### ✅ AUI ID Generators & Custom Event (2025-12-23)
+**Completed AG-UI aligned ID generator functions and CUSTOM event type for protocol extensibility**
+
+#### Backend Extensions
+- [x] **ID Generators** (`app/services/aui_events.py`):
+  - `generate_message_id()` - Returns `msg-{uuid}`
+  - `generate_run_id()` - Returns `run-{uuid}`
+  - `generate_thread_id()` - Returns `thread-{uuid}`
+  - `generate_tool_call_id()` - Returns `tool-{uuid}`
+  - `generate_activity_id()` - Returns `act-{uuid}`
+- [x] **CustomEvent** (`app/services/aui_events.py`):
+  - New `CUSTOM` event type for protocol extensibility
+  - Supports arbitrary `name` and `value` fields
+
+#### Verification
+- [x] **Unit Tests**:
+  - `tests/test_aui_id_generators.py` (10 tests - Passed)
+  - `tests/test_aui_custom_event.py` (8 tests - Passed)
+- [x] **Regression Test**: All 105 AUI tests passed
+
+### ✅ AUI WebSocket Transport Support (2025-12-23)
+**Added parallel WebSocket transport layer alongside existing SSE for bidirectional HITL scenarios**
+
+#### Backend Implementation
+- [x] **WebSocket Router** (`app/api/routers/aui_websocket.py`):
+  - Unified endpoint `/api/aui/ws/{stream_type}`
+  - Supports all stream types: story, vocabulary, activity, tool-call, agent-run, etc.
+  - Reuses `AUIStreamingService` async generators (no duplication)
+  - Bidirectional HITL message support
+  - Health check endpoint `/api/aui/ws/ping`
+
+#### Frontend Implementation
+- [x] **Transport Hook** (`frontend/src/hooks/useAUITransport.js`):
+  - Abstracts SSE (EventSource) and WebSocket connections
+  - Unified `onMessage` callback interface
+  - Automatic URL conversion (SSE → WebSocket)
+  - Bidirectional `send()` for WebSocket
+- [x] **AUIStreamHydrator** updates:
+  - New `transport` prop (`'sse'` | `'websocket'`)
+  - Transport indicator badge (SSE blue, WS purple)
+- [x] **AUIStreamingDemo** updates:
+  - Transport layer toggle UI (📡 SSE / 🔌 WebSocket)
+  - Transport status display
+
+#### Verification
+- [x] **Unit Tests**: `tests/test_aui_websocket.py` (10 tests - Passed)
+- [x] **Regression Test**: All 116 AUI tests passed
+
+### ✅ AUI WebSocket HITL Improvements (2025-12-23)
+**Fixed bidirectional communication for Human Loop and Study Plan demos**
+
+#### Bug Fixes
+- [x] **Method Name Bug**: Fixed `receive_input` → `submit_input` in `aui_websocket.py`
+- [x] **React StrictMode**: Fixed infinite loop by checking connection instance identity
+- [x] **Stream Type Mapping**: Added URL conversion for SSE → WebSocket endpoint names
+
+#### Study Plan (Interrupt) Improvements
+- [x] **Wait for Input**: `stream_interrupt_demo` now awaits user response via `input_service.wait_for_input()`
+- [x] **Bidirectional Handling**: `interrupt` stream type now uses `handle_interactive_stream`
+- [x] **Session ID in Payload**: InterruptEvent includes `session_id` for proper routing
+- [x] **Response UI**: Different feedback messages for confirm/customize/cancel actions
+
+#### Frontend Improvements
+- [x] **AUIContext**: New React Context for passing WebSocket `send` function to child components
+- [x] **InteractiveDemo**: Uses `useAUI()` hook for WebSocket-first communication
+- [x] **InterruptBanner**: Checks `useWebSocket` prop and uses `onAction` callback
+
+#### Verification
+- [x] **Human Loop Demo**: Button clicks now work via WebSocket
+- [x] **Study Plan Demo**: Confirm/customize/cancel buttons work and show feedback
+- [x] **All 10 WebSocket Tests**: Passed
+

@@ -767,6 +767,253 @@ class AUIStreamingService:
         yield StreamEndEvent(session_id=session_id)
 
 
+    async def stream_interrupt_demo(
+        self,
+        reason: str = "confirmation_required",
+        difficulty: str = "intermediate"
+    ) -> AsyncGenerator[AUIEvent, None]:
+        """
+        Demonstrate Interrupt Event (AG-UI HITL) - English Learning Scenario.
+        
+        Simulates an AI Coach generating a personalized study plan,
+        then pausing for user confirmation before executing.
+        
+        Args:
+            reason: Interrupt reason
+            difficulty: Learning difficulty level
+        
+        Yields:
+            AUIEvent: Stream of events including InterruptEvent
+        """
+        from app.services.aui_events import InterruptEvent
+        
+        session_id = str(uuid.uuid4())
+        
+        # Start stream
+        yield StreamStartEvent(
+            session_id=session_id,
+            metadata={"demo_type": "interrupt", "difficulty": difficulty}
+        )
+        
+        await asyncio.sleep(0.2)
+        
+        # Activity: Analyzing user profile
+        activity_id = f"act-{uuid.uuid4()}"
+        yield ActivitySnapshotEvent(
+            activity_id=activity_id,
+            name='Analyzing Learning Profile',
+            status='running',
+            progress=0.3,
+            current_step='Reviewing vocabulary history...'
+        )
+        await asyncio.sleep(0.5)
+        
+        yield ActivitySnapshotEvent(
+            activity_id=activity_id,
+            name='Analyzing Learning Profile',
+            status='completed',
+            progress=1.0,
+            current_step='Analysis complete'
+        )
+        await asyncio.sleep(0.3)
+        
+        # Send analysis result message
+        msg_id = f"msg-{uuid.uuid4()}"
+        yield TextMessageStartEvent(
+            message_id=msg_id,
+            role='assistant',
+            metadata={'type': 'analysis', 'title': 'Coach Analysis'}
+        )
+        
+        analysis_text = f"Based on your recent practice sessions, I've identified some areas for improvement. Your tense usage accuracy is at 72%, and vocabulary retention shows room for growth. I recommend a focused {difficulty}-level study plan targeting these weak points."
+        
+        for word in analysis_text.split():
+            yield TextDeltaEvent(message_id=msg_id, delta=word + ' ')
+            await asyncio.sleep(0.03)
+        
+        yield TextMessageEndEvent(message_id=msg_id)
+        await asyncio.sleep(0.5)
+        
+        # Send interrupt - asking for confirmation
+        interrupt_id = f"interrupt-{uuid.uuid4()}"
+        interrupt = InterruptEvent(
+            interrupt_id=interrupt_id,
+            reason=reason,
+            required_action="approve_study_plan",
+            payload={
+                "plan_type": "personalized_intensive",
+                "duration_days": 14,
+                "daily_commitment_minutes": 30,
+                "focus_areas": [
+                    {"skill": "Past Perfect Tense", "priority": "high", "estimated_sessions": 5},
+                    {"skill": "Vocabulary: Academic Words", "priority": "medium", "estimated_sessions": 8},
+                    {"skill": "Reading Comprehension", "priority": "medium", "estimated_sessions": 4}
+                ],
+                "expected_improvement": "+15% accuracy",
+                "start_date": "Tomorrow",
+                "options": [
+                    {"label": "✅ Start This Plan", "action": "confirm"},
+                    {"label": "📝 Customize", "action": "customize"},
+                    {"label": "❌ Cancel", "action": "cancel"}
+                ],
+                "session_id": session_id  # Include session_id for HITL
+            }
+        )
+        yield interrupt
+        
+        # Wait for user input (HITL pause point)
+        user_input = await input_service.wait_for_input(session_id, timeout=60.0)
+        
+        if user_input is None:
+            # Timeout
+            yield TextMessageStartEvent(
+                message_id=f"msg-timeout-{uuid.uuid4()}",
+                role='assistant',
+                metadata={'type': 'error'}
+            )
+            yield TextDeltaEvent(message_id=f"msg-timeout-{uuid.uuid4()}", delta="Session timed out. Please try again.")
+            yield TextMessageEndEvent(message_id=f"msg-timeout-{uuid.uuid4()}")
+        elif user_input.action == "confirm":
+            # User confirmed
+            result_msg_id = f"msg-result-{uuid.uuid4()}"
+            yield TextMessageStartEvent(
+                message_id=result_msg_id,
+                role='assistant',
+                metadata={'type': 'success', 'title': 'Plan Activated'}
+            )
+            yield TextDeltaEvent(message_id=result_msg_id, delta="🎉 Great choice! Your personalized study plan has been activated. ")
+            yield TextDeltaEvent(message_id=result_msg_id, delta="We'll start with Past Perfect Tense tomorrow. ")
+            yield TextDeltaEvent(message_id=result_msg_id, delta="Good luck on your learning journey!")
+            yield TextMessageEndEvent(message_id=result_msg_id)
+        elif user_input.action == "customize":
+            # User wants to customize
+            result_msg_id = f"msg-result-{uuid.uuid4()}"
+            yield TextMessageStartEvent(
+                message_id=result_msg_id,
+                role='assistant',
+                metadata={'type': 'info', 'title': 'Customization'}
+            )
+            yield TextDeltaEvent(message_id=result_msg_id, delta="📝 Opening customization options... ")
+            yield TextDeltaEvent(message_id=result_msg_id, delta="You can adjust the schedule, focus areas, and daily commitment.")
+            yield TextMessageEndEvent(message_id=result_msg_id)
+        else:
+            # User cancelled
+            result_msg_id = f"msg-result-{uuid.uuid4()}"
+            yield TextMessageStartEvent(
+                message_id=result_msg_id,
+                role='assistant',
+                metadata={'type': 'cancelled'}
+            )
+            yield TextDeltaEvent(message_id=result_msg_id, delta="❌ Study plan cancelled. ")
+            yield TextDeltaEvent(message_id=result_msg_id, delta="Let me know when you're ready to create a new plan!")
+            yield TextMessageEndEvent(message_id=result_msg_id)
+        
+        await asyncio.sleep(0.3)
+        
+        # End stream
+        yield StreamEndEvent(session_id=session_id)
+
+
+    async def stream_state_dashboard_demo(
+        self
+    ) -> AsyncGenerator[AUIEvent, None]:
+        """
+        Demonstrate JSON Patch differential updates with a TaskDashboard component.
+        
+        Simulates a long-running process with complex state updates.
+        
+        Yields:
+            AUIEvent: Stream of STATE_SNAPSHOT and STATE_DELTA events
+        """
+        from datetime import datetime
+        import random
+        
+        session_id = str(uuid.uuid4())
+        
+        yield StreamStartEvent(
+            session_id=session_id,
+            metadata={"demo_type": "state_dashboard"}
+        )
+        
+        await asyncio.sleep(0.5)
+        
+        # Initial State (Snapshot)
+        current_state = {
+            "component": "TaskDashboard",
+            "props": {
+                "title": "System Initialization",
+                "status": "idle",
+                "progress": 0,
+                "logs": [],
+                "metrics": {
+                    "cpu": 0,
+                    "memory": 0
+                },
+                "tasks": [
+                    {"id": 1, "name": "Load Core", "status": "pending"},
+                    {"id": 2, "name": "Connect DB", "status": "pending"},
+                    {"id": 3, "name": "Sync Assets", "status": "pending"}
+                ]
+            }
+        }
+        
+        # Send initial snapshot
+        yield create_snapshot_event(
+            intention="demonstrate_state_sync",
+            ui=current_state,
+            fallback_text="Initializing system dashboard..."
+        )
+        await asyncio.sleep(1.0)
+        
+        # State Mutations (Differential Updates)
+        
+        # Step 1: Start Processing
+        new_state = copy.deepcopy(current_state)
+        new_state["props"]["status"] = "running"
+        new_state["props"]["logs"].append(f"[{datetime.now().strftime('%H:%M:%S')}] Started process")
+        new_state["props"]["tasks"][0]["status"] = "running"
+        
+        yield create_state_diff(current_state, new_state)
+        current_state = new_state
+        await asyncio.sleep(0.8)
+        
+        # Step 2: Progress Updates & Metrics (Loop)
+        for i in range(1, 6):
+            new_state = copy.deepcopy(current_state)
+            
+            new_state["props"]["progress"] = i * 20
+            new_state["props"]["metrics"]["cpu"] = random.randint(20, 80)
+            new_state["props"]["metrics"]["memory"] = random.randint(100, 500)
+            
+            # Complete tasks based on progress
+            if i == 2:
+                new_state["props"]["tasks"][0]["status"] = "completed"
+                new_state["props"]["tasks"][1]["status"] = "running"
+                new_state["props"]["logs"].append(f"[{datetime.now().strftime('%H:%M:%S')}] Core loaded")
+            elif i == 4:
+                new_state["props"]["tasks"][1]["status"] = "completed"
+                new_state["props"]["tasks"][2]["status"] = "running"
+                new_state["props"]["logs"].append(f"[{datetime.now().strftime('%H:%M:%S')}] DB connected")
+            
+            delta = create_state_diff(current_state, new_state)
+            if delta.delta:  # Only send if there are changes
+                yield delta
+            
+            current_state = new_state
+            await asyncio.sleep(0.8)
+        
+        # Step 3: Completion
+        new_state = copy.deepcopy(current_state)
+        new_state["props"]["status"] = "completed"
+        new_state["props"]["progress"] = 100
+        new_state["props"]["tasks"][2]["status"] = "completed"
+        new_state["props"]["logs"].append(f"[{datetime.now().strftime('%H:%M:%S')}] All systems operational")
+        
+        yield create_state_diff(current_state, new_state)
+        
+        yield StreamEndEvent(session_id=session_id)
+
+
 # Singleton instance
 aui_streaming_service = AUIStreamingService()
 

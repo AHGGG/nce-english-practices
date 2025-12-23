@@ -174,11 +174,12 @@ def test_multiple_runs_different_ids():
 
 
 def test_run_finished_without_outcome():
-    """Test finished event with minimal info"""
+    """Test finished event with minimal info - outcome defaults to 'success' per AG-UI spec"""
     event = RunFinishedEvent(
         run_id="run_minimal_finish"
     )
     
     assert event.run_id == "run_minimal_finish"
-    assert event.outcome is None
+    assert event.outcome == "success"  # AG-UI: default outcome is success
     assert event.duration_ms is None
+

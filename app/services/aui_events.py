@@ -48,6 +48,9 @@ class AUIEventType(str, Enum):
     
     # Control Flow Events
     INTERRUPT = "aui_interrupt"
+    
+    # Extensibility (AG-UI Aligned)
+    CUSTOM = "aui_custom"
 
 
 class BaseAUIEvent(BaseModel):
@@ -168,6 +171,17 @@ class InterruptEvent(BaseAUIEvent):
     reason: str  # e.g. "human_approval", "user_input", "confirmation"
     required_action: Optional[str] = None  # e.g. "confirm", "select_option"
     payload: Optional[Dict[str, Any]] = None  # Renamed from metadata for AG-UI alignment
+
+
+class CustomEvent(BaseAUIEvent):
+    """
+    Protocol extension point for custom events.
+    Allows sending arbitrary named events with custom payloads.
+    AG-UI Aligned: Matches Custom event pattern for extensibility.
+    """
+    type: AUIEventType = AUIEventType.CUSTOM
+    name: str  # Custom event identifier (e.g., "learning_milestone")
+    value: Any = None  # Arbitrary payload
 
 
 # --- Activity Progress Events ---
@@ -299,6 +313,7 @@ AUIEvent = Union[
     StreamEndEvent,
     ErrorEvent,
     InterruptEvent,
+    CustomEvent,
 ]
 
 
@@ -363,3 +378,30 @@ def create_activity_delta(
         activity_id=activity_id,
         delta=patch.patch
     )
+
+
+# --- ID Generator Functions (AG-UI Aligned) ---
+
+def generate_message_id() -> str:
+    """Generate a message ID with semantic prefix for debugging."""
+    return f"msg-{uuid.uuid4()}"
+
+
+def generate_run_id() -> str:
+    """Generate a run ID with semantic prefix for debugging."""
+    return f"run-{uuid.uuid4()}"
+
+
+def generate_thread_id() -> str:
+    """Generate a thread ID with semantic prefix for debugging."""
+    return f"thread-{uuid.uuid4()}"
+
+
+def generate_tool_call_id() -> str:
+    """Generate a tool call ID with semantic prefix for debugging."""
+    return f"tool-{uuid.uuid4()}"
+
+
+def generate_activity_id() -> str:
+    """Generate an activity ID with semantic prefix for debugging."""
+    return f"act-{uuid.uuid4()}"
