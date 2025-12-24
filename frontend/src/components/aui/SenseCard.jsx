@@ -1,7 +1,8 @@
 /**
  * SenseCard - Grouping component for context resources sharing the same meaning
  */
-import React from 'react';
+import React, { useState } from 'react';
+import { Languages } from 'lucide-react';
 
 const SenseCard = ({
     senseIndex,
@@ -11,6 +12,8 @@ const SenseCard = ({
     synonyms = [],
     children
 }) => {
+    const [showCN, setShowCN] = useState(false);
+
     return (
         <div className="border border-ink/10 rounded-lg overflow-hidden bg-canvas/30 mb-4">
             {/* Sense Header */}
@@ -34,11 +37,27 @@ const SenseCard = ({
                             </h4>
                         </div>
 
-                        {/* Chinese Definition */}
+                        {/* Chinese Definition - Hidden by default */}
                         {definitionCn && (
-                            <p className="text-ink/80 text-sm mt-1">
-                                {definitionCn}
-                            </p>
+                            <div className="mt-1">
+                                {showCN ? (
+                                    <p
+                                        className="text-ink/80 text-sm cursor-pointer hover:text-ink transition-colors"
+                                        onClick={() => setShowCN(false)}
+                                        title="Click to hide"
+                                    >
+                                        {definitionCn}
+                                    </p>
+                                ) : (
+                                    <button
+                                        onClick={() => setShowCN(true)}
+                                        className="flex items-center gap-1.5 text-xs text-ink/40 hover:text-ink/70 transition-colors"
+                                    >
+                                        <Languages className="w-3 h-3" />
+                                        <span>Show Meaning</span>
+                                    </button>
+                                )}
+                            </div>
                         )}
 
                         {/* Synonyms */}

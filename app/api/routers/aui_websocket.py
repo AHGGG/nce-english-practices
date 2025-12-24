@@ -143,7 +143,7 @@ async def aui_websocket_stream(
         stream_generator = STREAM_TYPE_MAP[stream_type](params)
         
         # Start bidirectional handling for interactive streams
-        if stream_type in ("interactive", "interrupt"):
+        if stream_type in ("interactive", "interrupt", "contexts"):
             await handle_interactive_stream(websocket, stream_generator, session_id)
         else:
             # Standard unidirectional stream
@@ -195,15 +195,31 @@ async def handle_interactive_stream(websocket: WebSocket, stream_generator, sess
                 data = json.loads(msg)
                 
                 if data.get("type") == "input":
-                    # Forward to input service
-                    from app.services.aui_input import AUIUserInput
-                    user_input = AUIUserInput(
-                        session_id=data.get("session_id", session_id),
-                        action=data.get("action", "unknown"),
-                        payload=data.get("payload", {})
-                    )
-                    await input_service.submit_input(user_input)
-                    logger.info(f"Received HITL input via WebSocket: {user_input.action}")
+                    action = data.get("action", "unknown")
+                    payload = data.get("payload", {})
+                    
+                    # Check if this is a HITL action (has session_id matching expected pattern)
+                    session_id_from_msg = data.get("session_id", session_id)
+                    
+                    # General actions (like status_changed) - just log and ACK
+                    if action in ("status_changed", "audio_played", "view_dictionary"):
+                        logger.info(f"[AUI WS] Action '{action}' received: {payload}")
+                        # Send acknowledgement back to client
+                        await websocket.send_json({
+                            "type": "aui_action_ack",
+                            "action": action,
+                            "status": "acknowledged"
+                        })
+                    else:
+                        # Forward to input service for HITL flows
+                        from app.services.aui_input import AUIUserInput
+                        user_input = AUIUserInput(
+                            session_id=session_id_from_msg,
+                            action=action,
+                            payload=payload
+                        )
+                        await input_service.submit_input(user_input)
+                        logger.info(f"Received HITL input via WebSocket: {user_input.action}")
                     
                 elif data.get("type") == "close":
                     break

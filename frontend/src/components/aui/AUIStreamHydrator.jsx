@@ -324,14 +324,16 @@ const AUIStreamHydrator = ({
     const handleComponentAction = useCallback((action, payload) => {
         console.log('[AUI] Component Action:', action, payload);
 
-        // If interactive (websocket), we could send this back
         if (transport === 'websocket' && isConnected && send) {
+            // WebSocket path - send directly
             send({
                 type: 'input',
                 action: action,
                 payload: payload
             });
         }
+        // SSE mode: action is handled locally by the component (no backend call)
+        // This aligns with AUI philosophy - single transport channel
     }, [transport, isConnected, send]);
 
     if (error) {

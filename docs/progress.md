@@ -529,3 +529,14 @@
 - [x] **Stability**:
   - [x] **Hook Violation Fix**: Resolved `Rendered more hooks than during the previous render` error in `AUIStreamHydrator` by moving `useCallback` to top level.
 
+### 🎯 Context Resources UX Enhancements (2025-12-24)
+- [x] **Translation Toggle**:
+  - [x] `ContextCard.jsx`: Chinese translations hidden by default, click "Show Translation" to reveal
+  - [x] `SenseCard.jsx`: Chinese definitions hidden by default, click "Show Meaning" to reveal
+  - [x] Uses `lucide-react` `Languages` icon for toggle button
+- [x] **AUI Architecture Alignment**:
+  - [x] **Removed `/api/aui/action` endpoint**: Kept single transport channel philosophy
+  - [x] **Simplified `handleComponentAction`**: SSE mode only logs locally, no HTTP POST
+  - [x] **Enabled bidirectional WebSocket** for `contexts` stream type in `aui_websocket.py`
+  - [x] **WebSocket action handler**: Distinguishes HITL vs general actions, logs and ACKs without queueing
+

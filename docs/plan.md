@@ -67,6 +67,7 @@
         - [x] Frontend hooks violation fix in `StoryReader` component.
         - [x] All 4 streaming scenarios verified working (Story, Vocabulary, State Sync, Vocab Patch).
         - [x] **Context Resources**: Grouped by Sense for better clarity (2025-12-24).
+        - [x] **Translation Toggle**: Chinese hidden by default, click to reveal (2025-12-24).
     - [x] **AUI Bi-directional (Phase 2)**: (2025-12-22)
         - [x] Backend Input Service & Queue.
         - [x] Interactive UI Components.

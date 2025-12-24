@@ -5,7 +5,7 @@
  * It should be registered in the AUI registry and rendered by AUIStreamHydrator.
  */
 import React, { useState, useRef, useMemo } from 'react';
-import { Volume2, VolumeX, Check, Loader2, BookOpen } from 'lucide-react';
+import { Volume2, VolumeX, Check, Loader2, BookOpen, Languages } from 'lucide-react';
 
 // Status badge styles
 const STATUS_STYLES = {
@@ -90,6 +90,7 @@ const ContextCard = ({
     const [isLoadingAudio, setIsLoadingAudio] = useState(false);
     // Local state for status - allows UI updates without backend
     const [localStatus, setLocalStatus] = useState(status);
+    const [showTranslation, setShowTranslation] = useState(false);
     const audioRef = useRef(null);
 
     // Play TTS audio
@@ -132,11 +133,19 @@ const ContextCard = ({
         }
     };
 
-    // Handle status change - update local state immediately for UI feedback
+    // Handle status change - update local state and notify parent
     const handleStatusChange = (newStatus) => {
+        const oldStatus = localStatus;
         setLocalStatus(newStatus); // Update local UI immediately
+
+        // Notify parent via callback (parent handles transport dispatch)
         onStatusChange?.(id, newStatus);
-        onAction?.('status_changed', { context_id: id, old_status: localStatus, new_status: newStatus });
+        onAction?.('status_changed', {
+            context_id: id,
+            old_status: oldStatus,
+            new_status: newStatus,
+            word
+        });
     };
 
     // Handle view dictionary
@@ -196,12 +205,28 @@ const ContextCard = ({
                 <HighlightedText text={text_content} word={word} />
             </p>
 
-            {/* Translation (Chinese) */}
+            {/* Translation (Chinese) - Hidden by default */}
             {
                 translation && (
-                    <p className="mt-1.5 text-sm text-ink/80 italic">
-                        {translation}
-                    </p>
+                    <div className="mt-1.5">
+                        {showTranslation ? (
+                            <p
+                                className="text-sm text-ink/80 italic cursor-pointer hover:text-ink transition-colors"
+                                onClick={() => setShowTranslation(false)}
+                                title="Click to hide"
+                            >
+                                {translation}
+                            </p>
+                        ) : (
+                            <button
+                                onClick={() => setShowTranslation(true)}
+                                className="flex items-center gap-1.5 text-xs text-ink/40 hover:text-ink/70 transition-colors mt-1"
+                            >
+                                <Languages className="w-3 h-3" />
+                                <span>Show Translation</span>
+                            </button>
+                        )}
+                    </div>
                 )
             }
 
