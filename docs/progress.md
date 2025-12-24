@@ -539,4 +539,5 @@
   - [x] **Simplified `handleComponentAction`**: SSE mode only logs locally, no HTTP POST
   - [x] **Enabled bidirectional WebSocket** for `contexts` stream type in `aui_websocket.py`
   - [x] **WebSocket action handler**: Distinguishes HITL vs general actions, logs and ACKs without queueing
+  - [x] **Cleanup**: Removed redundant `/playground` route and broken `Playground.jsx` (2025-12-25)
 
