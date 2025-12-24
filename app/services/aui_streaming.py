@@ -1154,7 +1154,13 @@ class AUIStreamingService:
                     "translation": example.translation,
                     "source": f"Collins - {sense.note or 'note'}",
                     "context_type": "dictionary_example",
-                    "status": "unseen"
+                    "status": "unseen",
+                    # Propagate sense metadata to notes too, so they group under the parent sense
+                    "grammar_pattern": example.grammar_pattern,
+                    "definition": sense.definition,
+                    "definition_cn": sense.definition_cn,
+                    "sense_index": sense.index,
+                    "synonyms": sense.synonyms
                 }
                 all_contexts.append(context_obj)
         

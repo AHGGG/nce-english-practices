@@ -512,6 +512,10 @@
   - Grammar pattern badges
   - Sense index (`#1`, `#2`)
   - Collapsible definition & synonyms section
+- [x] **Reorganization (2025-12-24)**:
+  - [x] **Grouping**: Context resources grouped by Sense meaning in `ContextList.jsx`
+  - [x] **Frontend**: Created `SenseCard.jsx` for hierarchical display
+  - [x] **Metadata**: Backend propagates definition/sense-index to all examples
 
 #### Verification
 - [x] **Unit Tests**: `tests/test_collins_parser.py` (14 tests - Passed)

@@ -157,17 +157,12 @@ const ContextCard = ({
       hover:border-ink/20 transition-colors
       ${compact ? 'p-3' : 'p-4'}
     `}>
-            {/* Source, Sense # & Status badges */}
+            {/* Header Row: Source/Grammar + Status */}
             <div className="flex items-center justify-between mb-2 gap-2">
                 <div className="flex items-center gap-2">
                     <span className="text-xs font-mono text-ink/50 uppercase tracking-wider">
                         {source.replace('.mdx', '')}
                     </span>
-                    {sense_index && (
-                        <span className="text-xs px-1.5 py-0.5 rounded bg-ink/5 text-ink/40">
-                            #{sense_index}
-                        </span>
-                    )}
                     {grammar_pattern && (
                         <span className="text-xs px-1.5 py-0.5 rounded bg-neon-cyan/10 text-neon-cyan/70 font-mono">
                             {grammar_pattern}
@@ -175,7 +170,6 @@ const ContextCard = ({
                     )}
                 </div>
 
-                {/* Status badge - clickable to cycle */}
                 <button
                     onClick={() => handleStatusChange(getNextStatus())}
                     className={`
@@ -199,111 +193,74 @@ const ContextCard = ({
             </p>
 
             {/* Translation (Chinese) */}
-            {translation && (
-                <p className="mt-1.5 text-sm text-ink/60 italic">
-                    {translation}
-                </p>
-            )}
-
-            {/* Definition section - collapsible for more details */}
-            {(definition || synonyms?.length > 0) && (
-                <div className="mt-3 pt-2 border-t border-ink/5">
-                    <button
-                        onClick={() => setShowDetails(!showDetails)}
-                        className="text-xs text-ink/40 hover:text-ink/60 transition-colors flex items-center gap-1"
-                    >
-                        <span>{showDetails ? '▼' : '▶'}</span>
-                        <span>Definition & Details</span>
-                    </button>
-
-                    {showDetails && (
-                        <div className="mt-2 space-y-2 text-sm">
-                            {definition && (
-                                <p className="text-ink/70">
-                                    <span className="text-ink/40">EN:</span> {definition}
-                                </p>
-                            )}
-                            {definition_cn && (
-                                <p className="text-ink/60">
-                                    <span className="text-ink/40">中:</span> {definition_cn}
-                                </p>
-                            )}
-                            {synonyms?.length > 0 && (
-                                <div className="flex items-center gap-1 flex-wrap">
-                                    <span className="text-ink/40 text-xs">Synonyms:</span>
-                                    {synonyms.map((syn, i) => (
-                                        <span
-                                            key={i}
-                                            className="text-xs px-1.5 py-0.5 rounded bg-ink/5 text-ink/50"
-                                        >
-                                            {syn}
-                                        </span>
-                                    ))}
-                                </div>
-                            )}
-                        </div>
-                    )}
-                </div>
-            )}
+            {
+                translation && (
+                    <p className="mt-1.5 text-sm text-ink/60 italic">
+                        {translation}
+                    </p>
+                )
+            }
 
             {/* Actions */}
-            {show_actions && (
-                <div className="flex items-center gap-2 mt-3 pt-3 border-t border-ink/5 flex-wrap">
-                    {/* Play audio button */}
-                    <button
-                        onClick={handlePlayAudio}
-                        disabled={isLoadingAudio}
-                        className={`
+            {
+                show_actions && (
+                    <div className="flex items-center gap-2 mt-3 pt-3 border-t border-ink/5 flex-wrap">
+                        {/* Play audio button */}
+                        <button
+                            onClick={handlePlayAudio}
+                            disabled={isLoadingAudio}
+                            className={`
               flex items-center gap-1.5 px-3 py-1.5 rounded
               text-sm font-mono transition-all
               ${isPlaying
-                                ? 'bg-neon-cyan/20 text-neon-cyan border border-neon-cyan/30'
-                                : 'bg-ink/5 text-ink/70 hover:bg-ink/10 hover:text-ink'
-                            }
+                                    ? 'bg-neon-cyan/20 text-neon-cyan border border-neon-cyan/30'
+                                    : 'bg-ink/5 text-ink/70 hover:bg-ink/10 hover:text-ink'
+                                }
               disabled:opacity-50
             `}
-                    >
-                        {isLoadingAudio ? (
-                            <Loader2 className="w-4 h-4 animate-spin" />
-                        ) : isPlaying ? (
-                            <VolumeX className="w-4 h-4" />
-                        ) : (
-                            <Volume2 className="w-4 h-4" />
-                        )}
-                        <span>{isPlaying ? 'Stop' : 'Listen'}</span>
-                    </button>
+                        >
+                            {isLoadingAudio ? (
+                                <Loader2 className="w-4 h-4 animate-spin" />
+                            ) : isPlaying ? (
+                                <VolumeX className="w-4 h-4" />
+                            ) : (
+                                <Volume2 className="w-4 h-4" />
+                            )}
+                            <span>{isPlaying ? 'Stop' : 'Listen'}</span>
+                        </button>
 
-                    {/* View in Dictionary button */}
-                    <button
-                        onClick={handleViewDictionary}
-                        className="
+                        {/* View in Dictionary button */}
+                        <button
+                            onClick={handleViewDictionary}
+                            className="
               flex items-center gap-1.5 px-3 py-1.5 rounded
               text-sm font-mono transition-all
               bg-ink/5 text-ink/70 hover:bg-ink/10 hover:text-ink
             "
-                    >
-                        <BookOpen className="w-4 h-4" />
-                        <span>Dictionary</span>
-                    </button>
+                        >
+                            <BookOpen className="w-4 h-4" />
+                            <span>Dictionary</span>
+                        </button>
 
-                    {/* Quick "mastered" button */}
-                    {status !== 'mastered' && (
-                        <button
-                            onClick={() => handleStatusChange('mastered')}
-                            className="
+                        {/* Quick "mastered" button */}
+                        {status !== 'mastered' && (
+                            <button
+                                onClick={() => handleStatusChange('mastered')}
+                                className="
                 flex items-center gap-1.5 px-3 py-1.5 rounded
                 text-sm font-mono transition-all
                 bg-emerald-500/10 text-emerald-400 
                 hover:bg-emerald-500/20 border border-emerald-500/20
               "
-                        >
-                            <Check className="w-4 h-4" />
-                            <span>Got it</span>
-                        </button>
-                    )}
-                </div>
-            )}
-        </div>
+                            >
+                                <Check className="w-4 h-4" />
+                                <span>Got it</span>
+                            </button>
+                        )}
+                    </div>
+                )
+            }
+        </div >
     );
 };
 

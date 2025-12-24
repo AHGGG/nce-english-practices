@@ -1,12 +1,7 @@
-/**
- * ContextList - AUI-compatible pure presentation component for context resources list
- * 
- * This component receives all data via props and emits actions via callbacks.
- * It should be registered in the AUI registry and rendered by AUIStreamHydrator.
- */
 import React from 'react';
 import { BookOpen, CheckCircle2 } from 'lucide-react';
 import ContextCard from './ContextCard';
+import SenseCard from './SenseCard';
 
 /**
  * ProgressBar - Visual progress indicator
@@ -31,18 +26,6 @@ const ProgressBar = ({ total, mastered, learning }) => {
     );
 };
 
-/**
- * ContextList - Display a list of context resources with progress
- * 
- * @param {Object} props
- * @param {string} props.word - The word these contexts belong to
- * @param {Array} props.contexts - Array of context objects
- * @param {Object} props.progress - Progress stats: { total, mastered, learning, unseen }
- * @param {boolean} props.show_progress - Whether to show progress bar
- * @param {boolean} props.compact - Compact display mode
- * @param {Function} props.onStatusChange - Callback: (id, newStatus) => void
- * @param {Function} props.onAction - AUI action callback: (action, payload) => void
- */
 const ContextList = ({
     word,
     contexts = [],
@@ -80,6 +63,35 @@ const ContextList = ({
             </div>
         );
     }
+
+    // Group contexts by sense_index
+    const groupedContexts = React.useMemo(() => {
+        const groups = {};
+        const noSense = [];
+
+        contexts.forEach(ctx => {
+            if (ctx.sense_index !== undefined && ctx.sense_index !== null) {
+                const key = ctx.sense_index;
+                if (!groups[key]) {
+                    groups[key] = {
+                        senseIndex: ctx.sense_index,
+                        definition: ctx.definition,
+                        definitionCn: ctx.definition_cn,
+                        partOfSpeech: ctx.source?.replace('Collins - ', ''), // Rough extraction
+                        synonyms: ctx.synonyms,
+                        items: []
+                    };
+                }
+                groups[key].items.push(ctx);
+            } else {
+                noSense.push(ctx);
+            }
+        });
+
+        // Convert to array and sort by index
+        const sortedGroups = Object.values(groups).sort((a, b) => a.senseIndex - b.senseIndex);
+        return { sortedGroups, noSense };
+    }, [contexts]);
 
     return (
         <div className="space-y-4">
@@ -120,17 +132,43 @@ const ContextList = ({
                 </div>
             )}
 
-            {/* Context cards */}
-            <div className="space-y-3">
-                {contexts.map((context) => (
-                    <ContextCard
-                        key={context.id}
-                        {...context}
-                        compact={compact}
-                        onStatusChange={handleStatusChange}
-                        onAction={handleAction}
-                    />
+            {/* Grouped Contexts */}
+            <div className="space-y-4">
+                {groupedContexts.sortedGroups.map((group) => (
+                    <SenseCard
+                        key={group.senseIndex}
+                        senseIndex={group.senseIndex}
+                        definition={group.definition}
+                        definitionCn={group.definitionCn}
+                        partOfSpeech={group.items[0]?.source?.includes(' - ') ? group.items[0].source.split(' - ')[1] : null}
+                        synonyms={group.synonyms}
+                    >
+                        {group.items.map(context => (
+                            <ContextCard
+                                key={context.id}
+                                {...context}
+                                compact={compact}
+                                onStatusChange={handleStatusChange}
+                                onAction={handleAction}
+                            />
+                        ))}
+                    </SenseCard>
                 ))}
+
+                {/* Render ungrouped contexts if any */}
+                {groupedContexts.noSense.length > 0 && (
+                    <div className="space-y-3">
+                        {groupedContexts.noSense.map((context) => (
+                            <ContextCard
+                                key={context.id}
+                                {...context}
+                                compact={compact}
+                                onStatusChange={handleStatusChange}
+                                onAction={handleAction}
+                            />
+                        ))}
+                    </div>
+                )}
             </div>
         </div>
     );

@@ -18,7 +18,7 @@ import sys
 class AUIStreamVerifier:
     """Verifies AUI streaming functionality"""
     
-    def __init__(self, base_url: str = "http://localhost:8000"):
+    def __init__(self, base_url: str = "https://localhost:8000"):
         self.base_url = base_url
         self.results = []
     
@@ -33,7 +33,7 @@ class AUIStreamVerifier:
         events_received = []
         
         try:
-            async with httpx.AsyncClient(timeout=30.0) as client:
+            async with httpx.AsyncClient(timeout=30.0, verify=False) as client:
                 async with client.stream("GET", url) as response:
                     if response.status_code != 200:
                         print(f"❌ FAILED: HTTP {response.status_code}")
