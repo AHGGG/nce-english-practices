@@ -36,7 +36,7 @@ const SenseCard = ({
 
                         {/* Chinese Definition */}
                         {definitionCn && (
-                            <p className="text-ink/60 text-sm mt-1">
+                            <p className="text-ink/80 text-sm mt-1">
                                 {definitionCn}
                             </p>
                         )}

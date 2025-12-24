@@ -521,3 +521,11 @@
 - [x] **Unit Tests**: `tests/test_collins_parser.py` (14 tests - Passed)
 - [x] **HTML Fixtures**: 5 sample words (simmer, run, work, hello, beautiful)
 
+### 🐛 UI & Stability Fixes (2025-12-24)
+- [x] **Context Resources UI (Buttons & Visibility)**:
+  - [x] **Local State Management**: `ContextCard.jsx` now uses local state for "Got it" and status toggles, enabling immediate UI feedback without backend roundtrips during testing.
+  - [x] **Visibility Improvement**: Enhanced contrast (`text-ink/80`) for Chinese definitions in `SenseCard` and `ContextCard`.
+  - [x] **Event Propagation**: `AUIStreamHydrator` properly passes `onAction`/`onStatusChange` handlers to dynamic components.
+- [x] **Stability**:
+  - [x] **Hook Violation Fix**: Resolved `Rendered more hooks than during the previous render` error in `AUIStreamHydrator` by moving `useCallback` to top level.
+

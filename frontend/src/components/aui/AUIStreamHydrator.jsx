@@ -320,6 +320,20 @@ const AUIStreamHydrator = ({
         return false;
     }, [transport, isConnected, send, interruptState]);
 
+    // Generic action handler for child components
+    const handleComponentAction = useCallback((action, payload) => {
+        console.log('[AUI] Component Action:', action, payload);
+
+        // If interactive (websocket), we could send this back
+        if (transport === 'websocket' && isConnected && send) {
+            send({
+                type: 'input',
+                action: action,
+                payload: payload
+            });
+        }
+    }, [transport, isConnected, send]);
+
     if (error) {
         return (
             <div className="bg-red-900/20 border border-red-500/50 rounded-lg p-4 text-red-400">
@@ -370,6 +384,8 @@ const AUIStreamHydrator = ({
                     <DynamicComponentRenderer
                         component={componentSpec.component}
                         props={componentSpec.props}
+                        onAction={handleComponentAction}
+                        onStatusChange={(id, status) => handleComponentAction('status_changed', { id, status })}
                     />
                 )}
 
@@ -691,7 +707,7 @@ const InterruptBanner = ({ interrupt, onAction, useWebSocket = false }) => {
 /**
  * DynamicComponentRenderer - Loads and renders components from the AUI registry
  */
-const DynamicComponentRenderer = ({ component, props }) => {
+const DynamicComponentRenderer = ({ component, props, onAction, onStatusChange }) => {
     const [Component, setComponent] = useState(null);
     const [error, setError] = useState(null);
 
@@ -732,7 +748,11 @@ const DynamicComponentRenderer = ({ component, props }) => {
     // Wrap lazy-loaded component in Suspense
     return (
         <React.Suspense fallback={<div className="text-[#666] font-mono text-sm animate-pulse">Rendering {component}...</div>}>
-            <Component {...props} />
+            <Component
+                {...props}
+                onAction={onAction}
+                onStatusChange={onStatusChange}
+            />
         </React.Suspense>
     );
 };

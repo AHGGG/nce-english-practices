@@ -88,7 +88,8 @@ const ContextCard = ({
 }) => {
     const [isPlaying, setIsPlaying] = useState(false);
     const [isLoadingAudio, setIsLoadingAudio] = useState(false);
-    const [showDetails, setShowDetails] = useState(false);
+    // Local state for status - allows UI updates without backend
+    const [localStatus, setLocalStatus] = useState(status);
     const audioRef = useRef(null);
 
     // Play TTS audio
@@ -131,22 +132,25 @@ const ContextCard = ({
         }
     };
 
-    // Handle status change
+    // Handle status change - update local state immediately for UI feedback
     const handleStatusChange = (newStatus) => {
+        setLocalStatus(newStatus); // Update local UI immediately
         onStatusChange?.(id, newStatus);
-        onAction?.('status_changed', { context_id: id, old_status: status, new_status: newStatus });
+        onAction?.('status_changed', { context_id: id, old_status: localStatus, new_status: newStatus });
     };
 
     // Handle view dictionary
     const handleViewDictionary = () => {
         onViewDictionary?.(word);
         onAction?.('view_dictionary', { word, source });
+        // Log for testing purposes
+        console.log('[ContextCard] View Dictionary clicked:', word);
     };
 
     // Get next status in cycle
     const getNextStatus = () => {
         const cycle = ['unseen', 'learning', 'mastered'];
-        const currentIndex = cycle.indexOf(status);
+        const currentIndex = cycle.indexOf(localStatus);
         return cycle[(currentIndex + 1) % cycle.length];
     };
 
@@ -176,11 +180,11 @@ const ContextCard = ({
             text-xs px-2 py-0.5 rounded-full border
             transition-all cursor-pointer
             hover:scale-105 active:scale-95
-            ${STATUS_STYLES[status]}
+            ${STATUS_STYLES[localStatus]}
           `}
-                    title={`Click to change (currently: ${STATUS_LABELS[status]})`}
+                    title={`Click to change (currently: ${STATUS_LABELS[localStatus]})`}
                 >
-                    {STATUS_LABELS[status]}
+                    {STATUS_LABELS[localStatus]}
                 </button>
             </div>
 
@@ -195,7 +199,7 @@ const ContextCard = ({
             {/* Translation (Chinese) */}
             {
                 translation && (
-                    <p className="mt-1.5 text-sm text-ink/60 italic">
+                    <p className="mt-1.5 text-sm text-ink/80 italic">
                         {translation}
                     </p>
                 )
@@ -243,7 +247,7 @@ const ContextCard = ({
                         </button>
 
                         {/* Quick "mastered" button */}
-                        {status !== 'mastered' && (
+                        {localStatus !== 'mastered' && (
                             <button
                                 onClick={() => handleStatusChange('mastered')}
                                 className="
