@@ -1,9 +1,12 @@
-from fastapi import APIRouter, Response, HTTPException
+from fastapi import APIRouter, Response, HTTPException, Query
+from fastapi.concurrency import run_in_threadpool
 from pydantic import BaseModel
 import os
 import mimetypes
 from app.services.dictionary import dict_manager
 from app.services.llm import llm_service
+from app.services.collins_parser import collins_parser
+from app.models.collins_schemas import CollinsWord
 from app.config import MODEL_NAME
 
 router = APIRouter()
@@ -92,3 +95,43 @@ async def api_dict_context(payload: DictionaryContextRequest):
     except Exception as e:
          print(f"AI Error: {e}")
          return {"explanation": "An error occurred while generating explanation."}
+
+
+@router.get("/api/dictionary/collins/{word}", response_model=CollinsWord)
+async def get_collins_word(
+    word: str,
+    include_raw_html: bool = Query(False, description="Include raw HTML for debugging")
+):
+    """
+    Get structured dictionary data for a word from Collins COBUILD.
+    
+    Returns parsed data including:
+    - Headword, pronunciations (UK/US IPA), audio URLs
+    - Word frequency (1-5)
+    - Inflections (forms like simmers, simmered, etc.)
+    - Senses with definitions, examples, translations
+    - Synonyms, phrasal verbs
+    
+    Example: GET /api/dictionary/collins/simmer
+    """
+    try:
+        # Lookup in dictionary (runs in threadpool as it may be slow)
+        results = await run_in_threadpool(dict_manager.lookup, word)
+        
+        # Find Collins dictionary result
+        collins_html = None
+        for result in results:
+            if "collins" in result.get("dictionary", "").lower():
+                collins_html = result.get("definition", "")
+                break
+        
+        if not collins_html:
+            return CollinsWord(word=word, found=False)
+        
+        # Parse the HTML
+        parsed = collins_parser.parse(collins_html, word, include_raw_html=include_raw_html)
+        return parsed
+        
+    except Exception as e:
+        print(f"Collins Lookup Error: {e}")
+        return CollinsWord(word=word, found=False)

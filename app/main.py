@@ -23,6 +23,8 @@ from app.api.routers import (
     elevenlabs_websocket,
     aui_debug,
     aui_websocket,
+    context_router,
+    tts,
 )
 from app.services.log_collector import setup_logging
 import logging
@@ -74,6 +76,8 @@ app.include_router(aui_stream_demo.router, prefix="/api", tags=["aui-stream-demo
 app.include_router(aui_demo_extended.router, tags=["aui-demo-extended"])
 app.include_router(aui_input.router, prefix="/api/aui", tags=["AUI Input"]) # New
 app.include_router(aui_websocket.router, tags=["AUI WebSocket"])  # WebSocket transport
+app.include_router(context_router.router)  # Context resources
+app.include_router(tts.router)  # TTS API
 
 from app.models.schemas import RemoteLog
 from app.services.log_collector import (

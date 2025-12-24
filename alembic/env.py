@@ -13,7 +13,9 @@ from alembic import context
 sys.path.insert(0, os.getcwd())
 
 from app.config import settings
-from app.db_models import Base
+from app.core.db import Base
+# Import all ORM models to register them with Base.metadata
+from app.models import orm  # noqa: F401
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.

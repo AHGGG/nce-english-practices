@@ -75,6 +75,12 @@ STREAM_TYPE_MAP = {
     
     # Additional demos
     "state-demo": lambda params: aui_streaming_service.stream_state_dashboard_demo(),
+    
+    # Context Resources
+    "contexts": lambda params: aui_streaming_service.stream_context_resources(
+        word=params.get("word", "example"),
+        user_level=params.get("user_level", 1)
+    ),
 }
 
 

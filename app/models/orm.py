@@ -145,3 +145,59 @@ class CoachSession(Base):
     ended_at: Mapped[Optional[datetime]] = mapped_column(TIMESTAMP, nullable=True)
     summary: Mapped[Optional[Dict[str, Any]]] = mapped_column(JSON, nullable=True)
     message_count: Mapped[int] = mapped_column(Integer, default=0)
+
+
+class ContextResource(Base):
+    """
+    Unified context resource storage.
+    Supports multiple context types: dictionary examples, stories, audio clips, etc.
+    """
+    __tablename__ = "context_resources"
+    __table_args__ = (
+        Index("idx_context_word", "word"),
+        Index("idx_context_type", "context_type"),
+        Index("idx_context_word_type", "word", "context_type"),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    word: Mapped[str] = mapped_column(Text, index=True)
+    sense_label: Mapped[Optional[str]] = mapped_column(Text, nullable=True)  # e.g., "v. to cook gently"
+    context_type: Mapped[str] = mapped_column(Text)  # "dictionary_example" | "story" | "audio_clip" | "video_clip"
+    
+    text_content: Mapped[str] = mapped_column(Text)
+    source: Mapped[str] = mapped_column(Text)  # "Collins" | "LDOCE" | "ai_generated" | URL
+    
+    story_id: Mapped[Optional[int]] = mapped_column(ForeignKey("stories.id"), nullable=True)
+    audio_url: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    
+    created_at: Mapped[datetime] = mapped_column(TIMESTAMP, server_default=func.now())
+
+    # Relationships
+    story: Mapped[Optional["Story"]] = relationship("Story", backref="contexts")
+    learning_records: Mapped[List["ContextLearningRecord"]] = relationship(
+        "ContextLearningRecord", back_populates="context", cascade="all, delete-orphan"
+    )
+
+
+class ContextLearningRecord(Base):
+    """
+    Tracks user learning progress for each context resource.
+    Supports SRS-style review scheduling.
+    """
+    __tablename__ = "context_learning_records"
+    __table_args__ = (
+        Index("idx_learning_user_context", "user_id", "context_id"),
+        Index("idx_learning_status", "status"),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    context_id: Mapped[int] = mapped_column(ForeignKey("context_resources.id"))
+    user_id: Mapped[str] = mapped_column(Text, default="default_user")
+    
+    status: Mapped[str] = mapped_column(Text, default="unseen")  # unseen / learning / mastered
+    last_practiced_at: Mapped[Optional[datetime]] = mapped_column(TIMESTAMP, nullable=True)
+    practice_count: Mapped[int] = mapped_column(Integer, default=0)
+
+    # Relationship
+    context: Mapped["ContextResource"] = relationship("ContextResource", back_populates="learning_records")
+

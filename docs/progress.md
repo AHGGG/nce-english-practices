@@ -449,3 +449,71 @@
 - [x] **Study Plan Demo**: Confirm/customize/cancel buttons work and show feedback
 - [x] **All 10 WebSocket Tests**: Passed
 
+### 🔧 Context Resource System (2025-12-24)
+**Multi-modal context resources with dictionary extraction, TTS, and learning progress tracking**
+
+#### Backend Implementation
+- [x] **Data Models** (`app/models/context_schemas.py`, `app/models/orm.py`):
+  - `ContextResource` and `ContextLearningRecord` tables
+  - `ContextType` and `LearningStatus` enums
+- [x] **Context Service** (`app/services/context_service.py`):
+  - Dictionary HTML example extraction
+  - TTS generation via edge-tts
+  - Learning progress tracking (unseen/learning/mastered)
+- [x] **REST API** (`app/api/routers/context_router.py`):
+  - `GET /api/context/{word}` - Get contexts for word
+  - `POST /api/context/{word}/extract` - Extract from dictionary
+  - `GET /api/context/{id}/audio` - Stream TTS audio
+  - `POST /api/context/{id}/learn` - Update learning status
+
+#### AUI Streaming Integration
+- [x] **AUI Components** (`frontend/src/components/aui/`):
+  - `ContextCard.jsx` - Pure presentation component with audio playback
+  - `ContextList.jsx` - Context list with progress bar
+- [x] **Stream Endpoint** (`/api/aui/stream/contexts?word=...`):
+  - Progressive loading via STATE_DELTA
+  - WebSocket support added
+- [x] **WebSocket Param Fix** (`frontend/src/hooks/useAUITransport.js`):
+  - Fixed URL conversion to extract query params from SSE URLs
+  - Params now passed to WebSocket via params message
+
+#### Verification
+- [x] **Unit Tests**: `tests/test_context_service.py` (6 tests - Passed)
+- [x] **Demo UI**: Added "Context Resources" button to AUI Streaming Demo
+
+### 📖 Collins Dictionary Parser (2025-12-24)
+**Structured data extraction from Collins COBUILD dictionary HTML**
+
+#### Data Models (`app/models/collins_schemas.py`)
+- [x] `CollinsAudio`: Audio URL pairs (original + API)
+- [x] `CollinsInflection`: Word forms with audio (simmers, simmering, simmered)
+- [x] `CollinsExample`: Example sentences with translations
+- [x] `CollinsSense`: Senses with definition, examples, synonyms
+- [x] `CollinsEntry`: Complete word entry with all metadata
+- [x] `CollinsWord`: API response model
+
+#### Parser (`app/services/collins_parser.py`)
+- [x] Headword, UK/US pronunciations with audio URLs
+- [x] Word frequency (1-5 based on filled circles)
+- [x] Inflected forms with individual audio
+- [x] Multiple senses with definitions (EN/CN)
+- [x] Example sentences with translations and grammar patterns
+- [x] Synonyms and phrasal verbs
+- [x] Unicode icon cleanup (speaker icons)
+
+#### API Endpoint
+- [x] `GET /api/dictionary/collins/{word}` - Structured JSON response
+- [x] `GET /api/tts?text=...` - Direct TTS generation endpoint
+
+#### Context Demo Refactoring
+- [x] **Backend**: `stream_context_resources()` now uses Collins parser
+- [x] **Frontend**: `ContextCard.jsx` enhanced with:
+  - Translation display (Chinese)
+  - Grammar pattern badges
+  - Sense index (`#1`, `#2`)
+  - Collapsible definition & synonyms section
+
+#### Verification
+- [x] **Unit Tests**: `tests/test_collins_parser.py` (14 tests - Passed)
+- [x] **HTML Fixtures**: 5 sample words (simmer, run, work, hello, beautiful)
+

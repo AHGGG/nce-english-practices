@@ -97,6 +97,13 @@ const AUIStreamingDemo = () => {
             icon: '📋',
             description: 'Coach asks for confirmation',
             getUrl: () => '/api/aui/demo/stream/interrupt?reason=confirmation_required&difficulty=intermediate'
+        },
+        {
+            id: 'contexts',
+            label: 'Context Resources',
+            icon: '📝',
+            description: 'Dictionary examples + TTS',
+            getUrl: () => '/api/aui/stream/contexts?word=simmer&user_level=1'
         }
     ];
 
@@ -126,8 +133,8 @@ const AUIStreamingDemo = () => {
                         <button
                             onClick={() => setTransport('sse')}
                             className={`flex-1 py-3 px-4 rounded border transition-all flex items-center justify-center gap-2 ${transport === 'sse'
-                                    ? 'bg-blue-500/20 text-blue-400 border-blue-500 font-bold'
-                                    : 'bg-[#111] text-[#666] border-[#333] hover:border-[#555] hover:text-white'
+                                ? 'bg-blue-500/20 text-blue-400 border-blue-500 font-bold'
+                                : 'bg-[#111] text-[#666] border-[#333] hover:border-[#555] hover:text-white'
                                 }`}
                         >
                             <span>📡</span>
@@ -137,8 +144,8 @@ const AUIStreamingDemo = () => {
                         <button
                             onClick={() => setTransport('websocket')}
                             className={`flex-1 py-3 px-4 rounded border transition-all flex items-center justify-center gap-2 ${transport === 'websocket'
-                                    ? 'bg-purple-500/20 text-purple-400 border-purple-500 font-bold'
-                                    : 'bg-[#111] text-[#666] border-[#333] hover:border-[#555] hover:text-white'
+                                ? 'bg-purple-500/20 text-purple-400 border-purple-500 font-bold'
+                                : 'bg-[#111] text-[#666] border-[#333] hover:border-[#555] hover:text-white'
                                 }`}
                         >
                             <span>🔌</span>
@@ -193,8 +200,8 @@ const AUIStreamingDemo = () => {
                         <div className="bg-black border border-[#333] p-3 rounded space-y-2">
                             <div className="flex items-center gap-2">
                                 <span className={`px-2 py-0.5 rounded text-[10px] uppercase font-bold ${transport === 'websocket'
-                                        ? 'bg-purple-500/20 text-purple-400 border border-purple-500/30'
-                                        : 'bg-blue-500/20 text-blue-400 border border-blue-500/30'
+                                    ? 'bg-purple-500/20 text-purple-400 border border-purple-500/30'
+                                    : 'bg-blue-500/20 text-blue-400 border border-blue-500/30'
                                     }`}>
                                     {transport === 'websocket' ? '🔌 WS' : '📡 SSE'}
                                 </span>
@@ -214,8 +221,8 @@ const AUIStreamingDemo = () => {
                     <span className="text-xs uppercase tracking-widest text-[#666]">Stream Output</span>
                     <div className="flex items-center gap-3">
                         <span className={`px-2 py-0.5 rounded text-[10px] uppercase ${transport === 'websocket'
-                                ? 'bg-purple-500/20 text-purple-400'
-                                : 'bg-blue-500/20 text-blue-400'
+                            ? 'bg-purple-500/20 text-purple-400'
+                            : 'bg-blue-500/20 text-blue-400'
                             }`}>
                             {transport.toUpperCase()}
                         </span>

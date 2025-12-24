@@ -35,12 +35,13 @@ export function useAUITransport({
   });
 
   /**
-   * Convert SSE URL to WebSocket URL
-   * /api/aui/stream/story -> /api/aui/ws/story
+   * Convert SSE URL to WebSocket URL and extract params
+   * /api/aui/stream/story?content=... -> { url: /api/aui/ws/story, params: {content: ...} }
    */
   const getWebSocketUrl = useCallback((sseUrl) => {
     let streamType = 'story';
     
+    // Extract stream type from SSE URL
     const streamMatch = sseUrl.match(/\/api\/aui\/stream\/([^?]+)/);
     if (streamMatch) {
       streamType = streamMatch[1];
@@ -52,20 +53,41 @@ export function useAUITransport({
     }
     
     // Map SSE endpoint names to WebSocket stream types
-    // Some SSE endpoints have different names than WebSocket types
     const streamTypeMap = {
       'vocab-patch-demo': 'vocab-patch',
-      // state-demo now has its own WebSocket endpoint, no mapping needed
     };
     
     if (streamTypeMap[streamType]) {
       streamType = streamTypeMap[streamType];
     }
     
+    // Extract query params from SSE URL
+    const urlParams = {};
+    try {
+      const url = new URL(sseUrl, window.location.origin);
+      for (const [key, value] of url.searchParams.entries()) {
+        // Parse numbers and booleans
+        if (value === 'true') urlParams[key] = true;
+        else if (value === 'false') urlParams[key] = false;
+        else if (!isNaN(Number(value)) && value !== '') urlParams[key] = Number(value);
+        else urlParams[key] = value;
+        
+        // Special handling for comma-separated arrays (e.g., words=a,b,c)
+        if (key === 'words' && typeof urlParams[key] === 'string') {
+          urlParams[key] = urlParams[key].split(',').map(w => w.trim());
+        }
+      }
+    } catch (e) {
+      // Fallback: no params
+    }
+    
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
     const host = window.location.host;
     
-    return `${protocol}//${host}/api/aui/ws/${streamType}`;
+    return {
+      url: `${protocol}//${host}/api/aui/ws/${streamType}`,
+      extractedParams: urlParams
+    };
   }, []);
 
   /**
@@ -130,7 +152,10 @@ export function useAUITransport({
     }
 
     const { url: currentUrl, params: currentParams } = configRef.current;
-    const wsUrl = getWebSocketUrl(currentUrl);
+    const { url: wsUrl, extractedParams } = getWebSocketUrl(currentUrl);
+    
+    // Merge extracted URL params with user-provided params (user params take precedence)
+    const mergedParams = { ...extractedParams, ...currentParams };
     
     const ws = new WebSocket(wsUrl);
     connectionRef.current = ws;
@@ -152,8 +177,9 @@ export function useAUITransport({
       
       setIsConnected(true);
       
-      if (currentParams && Object.keys(currentParams).length > 0) {
-        ws.send(JSON.stringify({ type: 'params', data: currentParams }));
+      // Always send params (including extracted ones from SSE URL)
+      if (mergedParams && Object.keys(mergedParams).length > 0) {
+        ws.send(JSON.stringify({ type: 'params', data: mergedParams }));
       }
     };
 

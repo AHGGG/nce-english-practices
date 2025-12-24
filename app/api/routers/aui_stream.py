@@ -108,3 +108,39 @@ async def stream_vocabulary(
             "X-Accel-Buffering": "no",
         }
     )
+
+
+@router.get("/stream/contexts")
+async def stream_contexts(
+    word: str,
+    user_level: int = 1
+):
+    """
+    Stream context resources for a word with progressive loading.
+    
+    Uses ContextList and ContextCard components for rendering.
+    
+    Args:
+        word: Target vocabulary word
+        user_level: User mastery level (1-3)
+    
+    Returns:
+        StreamingResponse with text/event-stream
+    """
+    if not word:
+        raise HTTPException(status_code=400, detail="Word is required")
+    
+    events = aui_streaming_service.stream_context_resources(
+        word=word,
+        user_level=user_level
+    )
+    
+    return StreamingResponse(
+        event_stream_generator(events),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            "X-Accel-Buffering": "no",
+        }
+    )

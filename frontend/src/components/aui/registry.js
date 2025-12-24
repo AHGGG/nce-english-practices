@@ -9,6 +9,8 @@ const DiffCard = lazy(() => import('./DiffCard'));
 const TenseTimeline = lazy(() => import('./TenseTimeline'));
 const TaskDashboard = lazy(() => import('./TaskDashboard'));
 const InteractiveDemo = lazy(() => import('./interactive/InteractiveDemo'));
+const ContextCard = lazy(() => import('./ContextCard'));
+const ContextList = lazy(() => import('./ContextList'));
 
 
 const COMPONENT_MAP = {
@@ -20,6 +22,8 @@ const COMPONENT_MAP = {
   'TenseTimeline': TenseTimeline,
   'TaskDashboard': TaskDashboard,
   'InteractiveDemo': InteractiveDemo,
+  'ContextCard': ContextCard,
+  'ContextList': ContextList,
 };
 
 export const getComponent = (key) => {

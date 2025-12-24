@@ -1014,6 +1014,205 @@ class AUIStreamingService:
         yield StreamEndEvent(session_id=session_id)
 
 
+    async def stream_context_resources(
+        self,
+        word: str,
+        user_level: int = 1,
+        delay_per_context: float = 0.3
+    ) -> AsyncGenerator[AUIEvent, None]:
+        """
+        Stream context resources for a word using Collins structured dictionary data.
+        
+        Uses the Collins parser to extract high-quality examples with:
+        - Example sentences with translations
+        - Audio URLs for pronunciation
+        - Part of speech and grammar patterns
+        
+        Args:
+            word: Target vocabulary word
+            user_level: User mastery level (1-3)
+            delay_per_context: Delay between context additions for visual effect
+        
+        Yields:
+            AUIEvent: Stream of events (snapshot + deltas for each context)
+        """
+        from app.services.dictionary import dict_manager
+        from app.services.collins_parser import collins_parser
+        from fastapi.concurrency import run_in_threadpool
+        
+        session_id = str(uuid.uuid4())
+        message_id = f"contexts_{session_id}"
+        
+        yield StreamStartEvent(
+            session_id=session_id,
+            metadata={"intention": "show_contexts", "word": word, "user_level": user_level}
+        )
+        
+        # 1. Send initial empty snapshot with ContextList
+        initial_props = {
+            "word": word,
+            "contexts": [],
+            "entry": None,  # Will hold Collins entry data
+            "progress": {"total": 0, "mastered": 0, "learning": 0, "unseen": 0},
+            "show_progress": True,
+            "compact": user_level <= 1,
+            "messageId": message_id
+        }
+        
+        yield create_snapshot_event(
+            intention="show_contexts",
+            ui={"component": "ContextList", "props": initial_props},
+            fallback_text=f"Loading contexts for '{word}'...",
+            target_level=user_level
+        )
+        
+        await asyncio.sleep(0.3)
+        
+        # 2. Lookup word in Collins dictionary using structured parser
+        try:
+            results = await run_in_threadpool(dict_manager.lookup, word)
+            
+            # Find Collins dictionary result
+            collins_html = None
+            for result in results:
+                if "collins" in result.get("dictionary", "").lower():
+                    collins_html = result.get("definition", "")
+                    break
+            
+            if not collins_html:
+                # Fallback: no Collins dictionary found
+                yield create_state_diff(
+                    {"component": "ContextList", "props": initial_props, "intention": "show_contexts", "target_level": user_level},
+                    {"component": "ContextList", "props": {**initial_props, "error": "No Collins dictionary found"}, "intention": "show_contexts", "target_level": user_level}
+                )
+                yield StreamEndEvent(session_id=session_id)
+                return
+            
+            # 3. Parse HTML to structured data
+            parsed = collins_parser.parse(collins_html, word)
+            
+            if not parsed.found or not parsed.entry:
+                yield create_state_diff(
+                    {"component": "ContextList", "props": initial_props, "intention": "show_contexts", "target_level": user_level},
+                    {"component": "ContextList", "props": {**initial_props, "error": f"Could not parse entry for '{word}'"}, "intention": "show_contexts", "target_level": user_level}
+                )
+                yield StreamEndEvent(session_id=session_id)
+                return
+            
+        except Exception as e:
+            yield create_state_diff(
+                {"component": "ContextList", "props": initial_props, "intention": "show_contexts", "target_level": user_level},
+                {"component": "ContextList", "props": {**initial_props, "error": f"Dictionary lookup failed: {str(e)}"}, "intention": "show_contexts", "target_level": user_level}
+            )
+            yield StreamEndEvent(session_id=session_id)
+            return
+        
+        entry = parsed.entry
+        
+        # 4. Build entry metadata
+        entry_data = {
+            "headword": entry.headword,
+            "pronunciation_uk": entry.pronunciation_uk,
+            "pronunciation_us": entry.pronunciation_us,
+            "audio_uk": entry.audio_uk.model_dump() if entry.audio_uk else None,
+            "audio_us": entry.audio_us.model_dump() if entry.audio_us else None,
+            "frequency": entry.frequency,
+            "inflections": [inf.model_dump() for inf in entry.inflections],
+            "phrasal_verbs": entry.phrasal_verbs
+        }
+        
+        # 5. Collect all examples from all senses
+        all_contexts = []
+        context_id = 0
+        
+        for sense in entry.senses:
+            for example in sense.examples:
+                context_id += 1
+                context_obj = {
+                    "id": context_id,
+                    "word": word,
+                    "text_content": example.text,
+                    "translation": example.translation,
+                    "source": f"Collins - {sense.part_of_speech or 'definition'}",
+                    "context_type": "dictionary_example",
+                    "status": "unseen",
+                    "grammar_pattern": example.grammar_pattern,
+                    "definition": sense.definition,
+                    "definition_cn": sense.definition_cn,
+                    "sense_index": sense.index,
+                    "synonyms": sense.synonyms
+                }
+                all_contexts.append(context_obj)
+            
+            # Also add note examples if present
+            for example in sense.note_examples:
+                context_id += 1
+                context_obj = {
+                    "id": context_id,
+                    "word": word,
+                    "text_content": example.text,
+                    "translation": example.translation,
+                    "source": f"Collins - {sense.note or 'note'}",
+                    "context_type": "dictionary_example",
+                    "status": "unseen"
+                }
+                all_contexts.append(context_obj)
+        
+        if not all_contexts:
+            # No examples found
+            empty_props = copy.deepcopy(initial_props)
+            empty_props["entry"] = entry_data
+            empty_props["message"] = f"No example sentences found for '{word}'"
+            
+            yield create_state_diff(
+                {"component": "ContextList", "props": initial_props, "intention": "show_contexts", "target_level": user_level},
+                {"component": "ContextList", "props": empty_props, "intention": "show_contexts", "target_level": user_level}
+            )
+            yield StreamEndEvent(session_id=session_id)
+            return
+        
+        # 6. Stream each context one by one
+        current_state = {
+            "component": "ContextList",
+            "props": {**initial_props, "entry": entry_data},
+            "intention": "show_contexts",
+            "target_level": user_level
+        }
+        
+        # First update with entry data
+        yield create_state_diff(
+            {"component": "ContextList", "props": initial_props, "intention": "show_contexts", "target_level": user_level},
+            current_state
+        )
+        
+        await asyncio.sleep(0.2)
+        
+        for ctx in all_contexts:
+            # Create new state with added context
+            new_props = copy.deepcopy(current_state["props"])
+            new_props["contexts"].append(ctx)
+            new_props["progress"] = {
+                "total": len(new_props["contexts"]),
+                "mastered": 0,
+                "learning": 0,
+                "unseen": len(new_props["contexts"])
+            }
+            
+            new_state = {
+                "component": "ContextList",
+                "props": new_props,
+                "intention": "show_contexts",
+                "target_level": user_level
+            }
+            
+            yield create_state_diff(current_state, new_state)
+            
+            current_state = new_state
+            await asyncio.sleep(delay_per_context)
+        
+        yield StreamEndEvent(session_id=session_id)
+
+
 # Singleton instance
 aui_streaming_service = AUIStreamingService()
 

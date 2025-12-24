@@ -158,6 +158,20 @@ The application supports loading multiple MDX dictionaries simultaneously.
   - Binary assets (images/audio) are served via `/dict-assets/{path}` tunnel.
   - Falls back to MDD cache if file not found on disk.
 
+### Collins Dictionary Parser (NEW)
+
+For high-quality structured data from Collins COBUILD dictionary:
+
+- **Parser**: `app/services/collins_parser.py` extracts structured data from HTML.
+- **Models**: `app/models/collins_schemas.py` (Pydantic models).
+- **API**: `GET /api/dictionary/collins/{word}` returns:
+  - Headword, UK/US pronunciations with audio URLs
+  - Word frequency (1-5)
+  - Inflections with audio
+  - Senses with definitions (EN/CN), examples, translations
+  - Synonyms, phrasal verbs
+- **Usage**: The AUI `stream_context_resources()` uses this parser for context extraction.
+
 ### Coach Service (Agentic)
 - **Role**: Central orchestrator for the "Neural Link" mode.
 - **Pattern**: Tool-Using Agent. The LLM decides *which* UI component to show (Vocab, Story, Drill) by calling tools.
