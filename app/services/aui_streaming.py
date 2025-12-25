@@ -1410,11 +1410,11 @@ class AUIStreamingService:
                         {
                             "word": te.word,
                             "definition": te.definition,
-                            "examples": te.examples[:2]
+                            "examples": te.examples  # All examples
                         }
-                        for te in entry.thesaurus.entries[:6]
+                        for te in entry.thesaurus.entries[:10]
                     ],
-                    "word_sets": entry.thesaurus.word_sets[:15]
+                    "word_sets": entry.thesaurus.word_sets[:20]
                 }
             
             # Collocations
@@ -1425,7 +1425,7 @@ class AUIStreamingService:
                         "part_of_speech": col.part_of_speech,
                         "examples": [
                             {"text": ex.text, "translation": ex.translation}
-                            for ex in col.examples[:2]
+                            for ex in col.examples  # All examples
                         ]
                     }
                     for col in entry.collocations[:10]

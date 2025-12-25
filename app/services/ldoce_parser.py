@@ -716,7 +716,7 @@ class LDOCEParser:
                 collocations.append(LDOCECollocation(
                     pattern=pattern,
                     part_of_speech=current_pos,
-                    examples=examples[:3]  # Limit examples
+                    examples=examples  # All examples
                 ))
         
         # Also process .tail collocations (entry-based)
@@ -750,7 +750,7 @@ class LDOCEParser:
                 collocations.append(LDOCECollocation(
                     pattern=pattern,
                     part_of_speech=None,
-                    examples=examples[:3]
+                    examples=examples  # All examples
                 ))
         
         return collocations
