@@ -79,7 +79,14 @@
         - [x] Enhanced `InterruptEvent` with `interrupt_id` and `payload` fields.
         - [x] Enhanced `RunFinishedEvent` with `interrupt` outcome support.
         - [x] Interactive `InterruptBanner` component with action buttons.
+        - [x] Enhanced `RunFinishedEvent` with `interrupt` outcome support.
+        - [x] Interactive `InterruptBanner` component with action buttons.
         - [x] Demo endpoint for Study Plan confirmation flow.
+    - [x] **AUI Mobile Compatibility (Phase 5)**: (2025-12-25)
+        - [x] Robust Reconnection: Auto-reconnect, Backoff, Visibility handling in `useAUITransport`.
+        - [x] Responsive Layout: `AUIStreamingDemo` stack layout on mobile.
+        - [x] Component Optimization: Touch-friendly sizing for all inline components (`InterruptBanner`, `MessageList`).
+        - [x] UI Fixes: Improved flexbox centering to prevent clipping on overflow.
 - [ ] **Deployment & Architecture Optimization** (New):
     - [x] **Dockerization**: Multi-stage build for React (Vite) + FastAPI.
     - [x] **SPA Serving**: Configure FastAPI to serve React static files (remove Jinja2).

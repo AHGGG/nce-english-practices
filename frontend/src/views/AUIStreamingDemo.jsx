@@ -126,11 +126,11 @@ const AUIStreamingDemo = () => {
     };
 
     return (
-        <div className="min-h-screen bg-[#050505] text-[#E0E0E0] p-8 font-mono flex gap-8">
+        <div className="min-h-screen bg-[#050505] text-[#E0E0E0] p-4 md:p-8 font-mono flex flex-col md:flex-row gap-8">
             {/* Control Panel */}
-            <div className="w-1/3 space-y-6">
-                <header className="mb-8 border-b border-[#333] pb-4">
-                    <h1 className="text-2xl font-serif font-bold text-white">AUI Streaming Demo</h1>
+            <div className="w-full md:w-1/3 space-y-6">
+                <header className="mb-4 md:mb-8 border-b border-[#333] pb-4">
+                    <h1 className="text-xl md:text-2xl font-serif font-bold text-white">AUI Streaming Demo</h1>
                     <p className="text-xs text-[#666] mt-2">Event Streaming Testbed with Transport Selection</p>
                 </header>
 
@@ -176,14 +176,14 @@ const AUIStreamingDemo = () => {
                             <button
                                 key={demo.id}
                                 onClick={() => handleSelectDemo(demo)}
-                                className={`p-3 text-left rounded border transition-all ${selectedDemo === demo.id
+                                className={`p-4 md:p-3 text-left rounded border transition-all active:scale-95 ${selectedDemo === demo.id
                                     ? 'bg-[#00FF94] text-black border-[#00FF94] font-bold'
                                     : 'bg-[#111] text-[#888] border-[#333] hover:border-[#555] hover:text-white'
                                     }`}
                             >
-                                <div className="text-lg mb-1">{demo.icon}</div>
-                                <div className="text-xs font-bold">{demo.label}</div>
-                                <div className="text-[10px] opacity-60 mt-1">{demo.description}</div>
+                                <div className="text-xl md:text-lg mb-1">{demo.icon}</div>
+                                <div className="text-sm md:text-xs font-bold">{demo.label}</div>
+                                <div className="text-[10px] opacity-60 mt-1 hidden md:block">{demo.description}</div>
                             </button>
                         ))}
                     </div>
@@ -224,7 +224,7 @@ const AUIStreamingDemo = () => {
             </div>
 
             {/* Viewport */}
-            <div className="flex-1 bg-[#111] border border-[#333] rounded-lg relative overflow-hidden flex flex-col">
+            <div className="w-full md:flex-1 bg-[#111] border border-[#333] rounded-lg relative overflow-hidden flex flex-col h-[60vh] md:h-auto">
                 <div className="p-4 border-b border-[#333] flex justify-between items-center bg-[#0A0A0A]">
                     <span className="text-xs uppercase tracking-widest text-[#666]">Stream Output</span>
                     <div className="flex items-center gap-3">
@@ -242,23 +242,25 @@ const AUIStreamingDemo = () => {
                     </div>
                 </div>
 
-                <div className="flex-1 overflow-auto p-8 flex items-center justify-center bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-[#1a1a1a] to-[#0A0A0A]">
-                    {streamUrl ? (
-                        <div className="w-full max-w-2xl">
-                            <AUIStreamHydrator
-                                streamUrl={streamUrl}
-                                transport={transport}
-                                key={`${streamUrl}-${transport}`}
-                                onError={(err) => console.error('Stream error:', err)}
-                                onComplete={() => console.log('Stream completed')}
-                            />
-                        </div>
-                    ) : (
-                        <div className="text-[#333] text-center">
-                            <p className="text-4xl opacity-20 font-serif">AWAITING SIGNAL</p>
-                            <p className="text-xs opacity-10 mt-4">Select a demo to start streaming</p>
-                        </div>
-                    )}
+                <div className="flex-1 overflow-auto bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-[#1a1a1a] to-[#0A0A0A]">
+                    <div className="min-h-full w-full p-4 md:p-8 flex items-center justify-center">
+                        {streamUrl ? (
+                            <div className="w-full max-w-2xl">
+                                <AUIStreamHydrator
+                                    streamUrl={streamUrl}
+                                    transport={transport}
+                                    key={`${streamUrl}-${transport}`}
+                                    onError={(err) => console.error('Stream error:', err)}
+                                    onComplete={() => console.log('Stream completed')}
+                                />
+                            </div>
+                        ) : (
+                            <div className="text-[#333] text-center">
+                                <p className="text-4xl opacity-20 font-serif">AWAITING SIGNAL</p>
+                                <p className="text-xs opacity-10 mt-4">Select a demo to start streaming</p>
+                            </div>
+                        )}
+                    </div>
                 </div>
             </div>
         </div>

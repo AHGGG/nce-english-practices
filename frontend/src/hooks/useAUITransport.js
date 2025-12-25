@@ -21,6 +21,11 @@ export function useAUITransport({
   const connectionRef = useRef(null);
   const isMountedRef = useRef(false);
   
+  // Reconnection state
+  const retryCountRef = useRef(0);
+  const retryTimeoutRef = useRef(null);
+  const isIntentionalDisconnectRef = useRef(false);
+  
   // Store all changing values in refs to avoid stale closures and infinite loops
   const configRef = useRef({ url, transport, params });
   const callbacksRef = useRef({ onMessage, onError, onComplete });
@@ -99,16 +104,20 @@ export function useAUITransport({
     }
 
     const { url: currentUrl } = configRef.current;
+    if (!currentUrl) return;
+
     const eventSource = new EventSource(currentUrl);
     connectionRef.current = eventSource;
 
     // Capture the instance for closure comparison
     const thisConnection = eventSource;
+    isIntentionalDisconnectRef.current = false;
 
     eventSource.onopen = () => {
       // Verify this is still the active connection
       if (connectionRef.current !== thisConnection || !isMountedRef.current) return;
       setIsConnected(true);
+      retryCountRef.current = 0; // Reset retry count on success
     };
 
     eventSource.onmessage = (event) => {
@@ -140,80 +149,117 @@ export function useAUITransport({
       setIsConnected(false);
       eventSource.close();
       connectionRef.current = null;
+      
+      // SSE has built-in reconnection, so we generally rely on that,
+      // BUT if it closes completely (like above), we might want to manually reconnect?
+      // For now, respect SSE's native behavior or user's explicit error handling.
     };
   }, []);
 
   /**
-   * Connect using WebSocket
+   * Connect using WebSocket with Auto-Reconnect
    */
   const connectWebSocket = useCallback(() => {
-    if (connectionRef.current || !isMountedRef.current) {
-      return;
+    // Clear any pending retry
+    if (retryTimeoutRef.current) {
+      clearTimeout(retryTimeoutRef.current);
+      retryTimeoutRef.current = null;
     }
 
+    if (connectionRef.current) {
+        // If already connected/connecting, checking readyState might be good
+        return; 
+    }
+    
+    if (!isMountedRef.current) return;
+
     const { url: currentUrl, params: currentParams } = configRef.current;
+    if (!currentUrl) return;
+
     const { url: wsUrl, extractedParams } = getWebSocketUrl(currentUrl);
     
     // Merge extracted URL params with user-provided params (user params take precedence)
     const mergedParams = { ...extractedParams, ...currentParams };
     
-    const ws = new WebSocket(wsUrl);
-    connectionRef.current = ws;
+    try {
+        const ws = new WebSocket(wsUrl);
+        connectionRef.current = ws;
 
-    // Capture the instance for closure comparison
-    // This is CRITICAL for handling StrictMode's async event timing
-    const thisConnection = ws;
+        // Capture the instance for closure comparison
+        const thisConnection = ws;
+        isIntentionalDisconnectRef.current = false;
 
-    ws.onopen = () => {
-      // Verify this is still the active connection
-      if (connectionRef.current !== thisConnection) {
-        ws.close();
-        return;
-      }
-      if (!isMountedRef.current) {
-        ws.close();
-        return;
-      }
-      
-      setIsConnected(true);
-      
-      // Always send params (including extracted ones from SSE URL)
-      if (mergedParams && Object.keys(mergedParams).length > 0) {
-        ws.send(JSON.stringify({ type: 'params', data: mergedParams }));
-      }
-    };
+        ws.onopen = () => {
+            // Verify this is still the active connection
+            if (connectionRef.current !== thisConnection) {
+                ws.close();
+                return;
+            }
+            if (!isMountedRef.current) {
+                ws.close();
+                return;
+            }
+            
+            setIsConnected(true);
+            retryCountRef.current = 0; // Reset retry count on success
+            
+            // Always send params (including extracted ones from SSE URL)
+            if (mergedParams && Object.keys(mergedParams).length > 0) {
+                ws.send(JSON.stringify({ type: 'params', data: mergedParams }));
+            }
+        };
 
-    ws.onmessage = (event) => {
-      // Verify this is still the active connection
-      if (connectionRef.current !== thisConnection || !isMountedRef.current) return;
-      
-      try {
-        const data = JSON.parse(event.data);
-        callbacksRef.current.onMessage?.(data);
-      } catch (e) {
-        // Silently ignore parse errors
-      }
-    };
+        ws.onmessage = (event) => {
+            if (connectionRef.current !== thisConnection || !isMountedRef.current) return;
+            
+            try {
+                const data = JSON.parse(event.data);
+                callbacksRef.current.onMessage?.(data);
+            } catch (e) {
+                // Silently ignore parse errors
+            }
+        };
 
-    ws.onerror = (err) => {
-      // Verify this is still the active connection (CRITICAL for StrictMode)
-      // When the first connection is closed, its error event fires AFTER remount
-      // At that point, connectionRef.current is either null or a new connection
-      if (connectionRef.current !== thisConnection) return;
-      if (!isMountedRef.current) return;
-      
-      callbacksRef.current.onError?.(err);
-    };
+        ws.onerror = (err) => {
+            if (connectionRef.current !== thisConnection) return;
+            // WebSocket errors usually lead to onClose, so we handle logic there mostly
+            // But we can notify default error handler
+             console.error('[AUI] WebSocket Error:', err);
+             // Don't call onError yet, wait for close to decide if we reconnect or fail
+        };
 
-    ws.onclose = () => {
-      // Verify this is still the active connection
-      if (connectionRef.current !== thisConnection) return;
-      if (!isMountedRef.current) return;
-      
-      setIsConnected(false);
-      connectionRef.current = null;
-      callbacksRef.current.onComplete?.();
-    };
+        ws.onclose = () => {
+            if (connectionRef.current !== thisConnection) return;
+            if (!isMountedRef.current) return;
+            
+            setIsConnected(false);
+            connectionRef.current = null;
+            
+            // If intentional disconnect, stop here
+            if (isIntentionalDisconnectRef.current) {
+                return;
+            }
+
+            // Attempt Reconnection (Exponential Backoff)
+            const maxRetries = 5;
+            if (retryCountRef.current < maxRetries) {
+                const delay = Math.pow(2, retryCountRef.current) * 1000; // 1s, 2s, 4s, 8s, 16s
+                console.log(`[AUI] WebSocket disconnected. Reconnecting in ${delay}ms... (Attempt ${retryCountRef.current + 1}/${maxRetries})`);
+                
+                retryTimeoutRef.current = setTimeout(() => {
+                    retryCountRef.current++;
+                    connectWebSocket();
+                }, delay);
+            } else {
+                 console.error('[AUI] WebSocket max reconnections reached.');
+                 callbacksRef.current.onError?.('Connection lost. Max retries reached.');
+                 callbacksRef.current.onComplete?.(); // Treat as stream end?
+            }
+        };
+    } catch (err) {
+        console.error("WebSocket creation failed", err);
+        // Retry logic for immediate immediate failures too?
+    }
   }, [getWebSocketUrl]);
 
   /**
@@ -232,6 +278,13 @@ export function useAUITransport({
    * Disconnect current connection
    */
   const disconnect = useCallback(() => {
+    isIntentionalDisconnectRef.current = true; // Mark as intentional
+    
+    if (retryTimeoutRef.current) {
+        clearTimeout(retryTimeoutRef.current);
+        retryTimeoutRef.current = null;
+    }
+
     if (connectionRef.current) {
       connectionRef.current.close();
       connectionRef.current = null;
@@ -262,12 +315,35 @@ export function useAUITransport({
     
     return () => {
       isMountedRef.current = false;
+      if (retryTimeoutRef.current) {
+          clearTimeout(retryTimeoutRef.current);
+      }
       if (connectionRef.current) {
         connectionRef.current.close();
         connectionRef.current = null;
       }
     };
   }, []);
+
+  // Visibility Change Handling (Reconnect on visibility if dropped)
+  useEffect(() => {
+      const handleVisibilityChange = () => {
+          if (document.visibilityState === 'visible') {
+              // If we expected to be connected but aren't, try reconnecting
+              // Check if we have a config url and NO active connection
+              if (configRef.current.url && !connectionRef.current && !isIntentionalDisconnectRef.current) {
+                   console.log('[AUI] Tab became visible. Attempting reconnection...');
+                   retryCountRef.current = 0; // Reset retries for visibility-triggered reconnect
+                   connect();
+              }
+          }
+      };
+
+      document.addEventListener('visibilitychange', handleVisibilityChange);
+      return () => {
+          document.removeEventListener('visibilitychange', handleVisibilityChange);
+      };
+  }, [connect]);
 
   return {
     connect,

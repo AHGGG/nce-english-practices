@@ -368,19 +368,6 @@ const AUIStreamHydrator = ({
     return (
         <AUIProvider value={auiContextValue}>
             <div className="aui-stream-container">
-                {isStreaming && (
-                    <div className="absolute top-2 right-2 flex items-center gap-2 text-[10px] font-mono">
-                        <span className="animate-pulse text-neon-cyan">●</span>
-                        <span className="text-neon-cyan">STREAMING</span>
-                        <span className={`px-1.5 py-0.5 rounded text-[8px] uppercase ${transport === 'websocket'
-                            ? 'bg-purple-500/20 text-purple-400 border border-purple-500/30'
-                            : 'bg-blue-500/20 text-blue-400 border border-blue-500/30'
-                            }`}>
-                            {transport === 'websocket' ? 'WS' : 'SSE'}
-                        </span>
-                    </div>
-                )}
-
                 {/* Render the component dynamically (if exists) */}
                 {componentSpec && (
                     <DynamicComponentRenderer
@@ -441,29 +428,29 @@ const AUIStreamHydrator = ({
 const MessageList = ({ messages }) => (
     <div className="space-y-4">
         {messages.map(msg => (
-            <div key={msg.id} className="bg-canvas-dark border border-neon-green/30 rounded-lg p-4 font-mono">
-                <div className="flex items-center gap-2 mb-2">
-                    <span className="text-neon-green text-xs font-semibold uppercase tracking-wider">
+            <div key={msg.id} className="bg-canvas-dark border border-neon-green/30 rounded-lg p-6 md:p-4 font-mono">
+                <div className="flex flex-col sm:flex-row sm:items-center gap-2 mb-3">
+                    <span className="text-neon-green text-sm sm:text-xs font-semibold uppercase tracking-wider">
                         {msg.metadata?.type || msg.role}
                     </span>
                     {msg.metadata?.title && (
-                        <span className="text-ink/60 text-xs">- {msg.metadata.title}</span>
+                        <span className="text-ink/60 text-sm sm:text-xs">- {msg.metadata.title}</span>
                     )}
                     {msg.metadata?.word && (
-                        <span className="text-ink/60 text-xs">- {msg.metadata.word}</span>
+                        <span className="text-ink/60 text-sm sm:text-xs">- {msg.metadata.word}</span>
                     )}
                     {msg.isStreaming && (
-                        <span className="text-neon-pink text-xs animate-pulse ml-auto">
+                        <span className="text-neon-pink text-sm sm:text-xs animate-pulse sm:ml-auto">
                             ● streaming...
                         </span>
                     )}
                     {!msg.isStreaming && (
-                        <span className="text-neon-cyan text-xs ml-auto">
+                        <span className="text-neon-cyan text-sm sm:text-xs sm:ml-auto">
                             ✓ complete
                         </span>
                     )}
                 </div>
-                <div className="text-ink text-sm whitespace-pre-wrap leading-relaxed">
+                <div className="text-ink text-base sm:text-sm whitespace-pre-wrap leading-relaxed">
                     {msg.content || (<span className="text-ink/40 italic">waiting for content...</span>)}
                 </div>
             </div>
@@ -472,10 +459,10 @@ const MessageList = ({ messages }) => (
 );
 
 const ActivityProgressBar = ({ activity }) => (
-    <div className="bg-canvas-dark border border-ink/20 rounded-lg p-3 font-mono text-sm">
-        <div className="flex items-center justify-between mb-2">
-            <span className="text-ink font-medium">{activity.name}</span>
-            <span className={`text-xs px-2 py-0.5 rounded ${activity.status === 'completed' ? 'bg-green-500/20 text-green-400' :
+    <div className="bg-canvas-dark border border-ink/20 rounded-lg p-4 sm:p-3 font-mono">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-3">
+            <span className="text-ink font-medium text-base sm:text-sm">{activity.name}</span>
+            <span className={`text-sm sm:text-xs px-3 py-1.5 sm:px-2 sm:py-0.5 rounded self-start sm:self-auto ${activity.status === 'completed' ? 'bg-green-500/20 text-green-400' :
                 activity.status === 'running' ? 'bg-blue-500/20 text-blue-400' :
                     activity.status === 'failed' ? 'bg-red-500/20 text-red-400' :
                         'bg-gray-500/20 text-gray-400'
@@ -485,16 +472,16 @@ const ActivityProgressBar = ({ activity }) => (
         </div>
 
         {/* Progress bar */}
-        <div className="relative h-2 bg-ink/10 rounded-full overflow-hidden mb-2">
+        <div className="relative h-3 sm:h-2 bg-ink/10 rounded-full overflow-hidden mb-2">
             <div
                 className="absolute h-full bg-neon-cyan transition-all duration-300"
                 style={{ width: `${(activity.progress * 100).toFixed(0)}%` }}
             />
         </div>
 
-        <div className="flex items-center justify-between text-xs text-ink/60">
+        <div className="flex items-center justify-between text-sm sm:text-xs text-ink/60">
             <span>{activity.current_step || 'Waiting...'}</span>
-            <span>{(activity.progress * 100).toFixed(0)}%</span>
+            <span className="font-semibold">{(activity.progress * 100).toFixed(0)}%</span>
         </div>
     </div>
 );
@@ -509,8 +496,8 @@ const ToolCallTimeline = ({ toolCalls }) => {
     }, {});
 
     return (
-        <div className="bg-canvas-dark border border-ink/20 rounded-lg p-3 font-mono text-sm">
-            <div className="text-ink font-medium mb-3">Tool Calls</div>
+        <div className="bg-canvas-dark border border-ink/20 rounded-lg p-4 sm:p-3 font-mono">
+            <div className="text-ink font-medium mb-3 text-base sm:text-sm">Tool Calls</div>
             <div className="space-y-3">
                 {Object.entries(groupedCalls).map(([id, events]) => {
                     const startEvent = events.find(e => e.type === 'aui_tool_call_start');
@@ -518,15 +505,15 @@ const ToolCallTimeline = ({ toolCalls }) => {
                     const resultEvent = events.find(e => e.type === 'aui_tool_call_result');
 
                     return (
-                        <div key={id} className="border-l-2 border-neon-cyan/50 pl-3">
-                            <div className="text-ink">🔧 {startEvent?.tool_name || 'Tool'}</div>
+                        <div key={id} className="border-l-2 border-neon-cyan/50 pl-3 sm:pl-2">
+                            <div className="text-ink text-base sm:text-sm">🔧 {startEvent?.tool_name || 'Tool'}</div>
                             {endEvent && (
-                                <div className="text-xs text-ink/60 mt-1">
+                                <div className="text-sm sm:text-xs text-ink/60 mt-1">
                                     Status: {endEvent.status} ({endEvent.duration_ms?.toFixed(0)}ms)
                                 </div>
                             )}
                             {resultEvent && resultEvent.result && (
-                                <div className="text-xs text-neon-cyan mt-1">
+                                <div className="text-sm sm:text-xs text-neon-cyan mt-1 truncate sm:whitespace-normal">
                                     Result: {JSON.stringify(resultEvent.result).substring(0, 50)}...
                                 </div>
                             )}
@@ -539,25 +526,25 @@ const ToolCallTimeline = ({ toolCalls }) => {
 };
 
 const RunStatusBadge = ({ runState }) => (
-    <div className="bg-canvas-dark border border-ink/20 rounded-lg p-3 font-mono text-sm">
-        <div className="flex items-center gap-3">
-            <span className="text-ink/60">Agent Run:</span>
+    <div className="bg-canvas-dark border border-ink/20 rounded-lg p-4 sm:p-3 font-mono">
+        <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
+            <span className="text-ink/60 text-sm">Agent Run:</span>
             {runState.type === 'aui_run_started' && (
                 <>
-                    <span className="text-blue-400">🔄 Running</span>
-                    <span className="text-xs text-ink/60">{runState.task_description}</span>
+                    <span className="text-blue-400 text-base sm:text-sm">🔄 Running</span>
+                    <span className="text-sm sm:text-xs text-ink/60">{runState.task_description}</span>
                 </>
             )}
             {runState.type === 'aui_run_finished' && (
                 <>
-                    <span className="text-green-400">✅ Finished</span>
-                    <span className="text-xs text-ink/60">{runState.duration_ms?.toFixed(0)}ms</span>
+                    <span className="text-green-400 text-base sm:text-sm">✅ Finished</span>
+                    <span className="text-sm sm:text-xs text-ink/60">{runState.duration_ms?.toFixed(0)}ms</span>
                 </>
             )}
             {runState.type === 'aui_run_error' && (
                 <>
-                    <span className="text-red-400">❌ Error</span>
-                    <span className="text-xs text-red-400/80">{runState.error_message}</span>
+                    <span className="text-red-400 text-base sm:text-sm">❌ Error</span>
+                    <span className="text-sm sm:text-xs text-red-400/80">{runState.error_message}</span>
                 </>
             )}
         </div>
@@ -612,27 +599,29 @@ const InterruptBanner = ({ interrupt, onAction, useWebSocket = false }) => {
     const options = interrupt.payload?.options || [];
 
     return (
-        <div className={`border rounded-lg p-4 font-mono text-sm transition-all ${submitted
+        <div className={`border rounded-lg p-5 sm:p-4 font-mono transition-all ${submitted
             ? 'bg-green-900/20 border-green-500/50'
             : 'bg-amber-900/20 border-amber-500/50'
             }`}>
-            <div className="flex items-center gap-2 mb-3">
-                <span className="text-lg">{submitted ? '✅' : '⚠️'}</span>
-                <span className={`font-semibold ${submitted ? 'text-green-400' : 'text-amber-400'}`}>
-                    {submitted ? 'Response Submitted' : 'Confirmation Required'}
-                </span>
-                <span className="text-xs text-ink/50 ml-auto">ID: {interrupt.id?.slice(0, 12)}...</span>
+            <div className="flex flex-col sm:flex-row sm:items-center gap-2 mb-4">
+                <div className="flex items-center gap-2">
+                    <span className="text-xl sm:text-lg">{submitted ? '✅' : '⚠️'}</span>
+                    <span className={`font-semibold text-base sm:text-sm ${submitted ? 'text-green-400' : 'text-amber-400'}`}>
+                        {submitted ? 'Response Submitted' : 'Confirmation Required'}
+                    </span>
+                </div>
+                <span className="text-xs text-ink/50 sm:ml-auto">ID: {interrupt.id?.slice(0, 12)}...</span>
             </div>
 
             {!submitted && (
                 <>
-                    <div className="text-ink mb-2">
+                    <div className="text-ink mb-3 text-base sm:text-sm">
                         <span className="text-ink/60">Reason: </span>
                         <span className="text-amber-300">{interrupt.reason}</span>
                     </div>
 
                     {interrupt.requiredAction && (
-                        <div className="text-ink mb-3">
+                        <div className="text-ink mb-4 text-base sm:text-sm">
                             <span className="text-ink/60">Action: </span>
                             <span className="text-amber-200">{interrupt.requiredAction}</span>
                         </div>
@@ -640,7 +629,7 @@ const InterruptBanner = ({ interrupt, onAction, useWebSocket = false }) => {
 
                     {/* Structured payload display (excluding options) */}
                     {interrupt.payload && (
-                        <div className="mb-4 p-3 bg-canvas-dark/50 rounded text-xs space-y-2">
+                        <div className="mb-4 p-4 sm:p-3 bg-canvas-dark/50 rounded text-sm sm:text-xs space-y-2 max-h-60 overflow-y-auto">
                             {interrupt.payload.plan_type && (
                                 <div><span className="text-ink/60">Plan: </span><span className="text-neon-cyan">{interrupt.payload.plan_type}</span></div>
                             )}
@@ -672,13 +661,13 @@ const InterruptBanner = ({ interrupt, onAction, useWebSocket = false }) => {
 
                     {/* Action buttons */}
                     {options.length > 0 && (
-                        <div className="flex flex-wrap gap-2 mt-4">
+                        <div className="flex flex-col sm:flex-row flex-wrap gap-3 sm:gap-2 mt-4">
                             {options.map((option, i) => (
                                 <button
                                     key={i}
                                     onClick={() => handleAction(option)}
                                     disabled={isSubmitting}
-                                    className={`px-4 py-2 rounded border transition-all text-sm ${isSubmitting && selectedAction?.action === option.action
+                                    className={`w-full sm:w-auto px-6 py-3 sm:px-4 sm:py-2 rounded border transition-all text-base sm:text-sm active:scale-95 ${isSubmitting && selectedAction?.action === option.action
                                         ? 'bg-amber-500/30 border-amber-500 text-amber-300 animate-pulse'
                                         : option.action === 'confirm'
                                             ? 'bg-green-500/20 border-green-500/50 text-green-400 hover:bg-green-500/30'
@@ -696,7 +685,7 @@ const InterruptBanner = ({ interrupt, onAction, useWebSocket = false }) => {
             )}
 
             {submitted && (
-                <div className="text-green-300 text-sm">
+                <div className="text-green-300 text-base sm:text-sm">
                     Selected: <span className="font-bold">{selectedAction?.label}</span>
                 </div>
             )}

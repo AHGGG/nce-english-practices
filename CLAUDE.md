@@ -335,6 +335,10 @@ The system supports a streaming UI protocol for real-time Agent updates:
   - **Frontend**: `useAUITransport` hook abstracts SSE/WebSocket; `AUIContext` provides `send` function.
   - **Bidirectional**: `interactive` and `interrupt` streams use `handle_interactive_stream` for HITL.
   - **Fallback**: SSE remains default; WebSocket enabled via `transport="websocket"` prop.
+- **Mobile Compatibility (2025-12-25)**:
+  - **Frontend**: `useAUITransport.js` supports auto-reconnection with exponential backoff and visibility handling.
+  - **Layout**: Mobile-first designs for `AUIStreamingDemo` and all inline components (`InterruptBanner`, `MessageList`, etc.).
+  - **Touch Targets**: All interactive elements optimized for 48px minimum height.
 
 ### Third-Party SDK Debugging: Lessons Learned (2025-12-17)
 

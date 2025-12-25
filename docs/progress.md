@@ -540,7 +540,7 @@
   - [x] **Enabled bidirectional WebSocket** for `contexts` stream type in `aui_websocket.py`
   - [x] **WebSocket action handler**: Distinguishes HITL vs general actions, logs and ACKs without queueing
   - [x] **Cleanup**: Removed redundant `/playground` route and broken `Playground.jsx` (2025-12-25)
-  - [x] **Logic Unification**: Added Global Translation Toggle to `ContextList` to match `DictionaryResults` behavior (2025-12-25)
+  - [x] **Logic Unification**: Refactored to "Click-to-Reveal" translation toggles for both `ContextList` and `DictionaryResults` (2025-12-25)
 
 
 ### 📖 LDOCE Dictionary Parser (2025-12-25)
@@ -609,4 +609,28 @@
 - [x] **Unit Tests**: `tests/test_ldoce_parser.py` (22 tests - 16 original + 6 extended data)
 - [x] **Diagnostic Script**: `scripts/diagnose_ldoce.py` for parser verification
 - [x] **Browser Testing**: All expandable sections work correctly
+
+### 📱 AUI Mobile Compatibility (2025-12-25)
+**Comprehensive mobile optimization for AUI streaming demos and components**
+
+#### Transport Layer (`useAUITransport.js`)
+- [x] **Auto-Reconnection**: Automatically reconnects WebSocket on close.
+- [x] **Exponential Backoff**: Retries with increasing delays (1s, 2s, 4s...).
+- [x] **Visibility Handling**: Immediate reconnection when tab becomes visible (fixes background disconnects).
+
+#### UI/UX Optimization
+- [x] **Responsive Layout** (`AUIStreamingDemo.jsx`):
+  - Switches to `flex-col` stack layout on mobile.
+  - Fixed flexbox centering causing top content cutoff (switched to `margin-auto` wrapper).
+  - Removed redundant "STREAMING" absolute indicator to prevent overlapping.
+- [x] **Component Adaptation** (`AUIStreamHydrator.jsx`):
+  - **InterruptBanner**: Vertical button stack, 48px touch targets, scrollable payload.
+  - **MessageList**: Responsive typography (16px mobile/14px desktop), optimized padding.
+  - **ActivityProgressBar**: Thicker progress bars, stacked labels.
+  - **ToolCallTimeline/RunStatusBadge**: Adaptive layouts prevents horizontal overflow.
+
+#### Verification
+- [x] **WebSocket Tests**: `tests/test_aui_websocket.py` (Passed).
+- [x] **Manual Testing**: Verified all 14 demos on simulated mobile viewport (iPhone 12).
+
 
