@@ -540,6 +540,8 @@
   - [x] **Enabled bidirectional WebSocket** for `contexts` stream type in `aui_websocket.py`
   - [x] **WebSocket action handler**: Distinguishes HITL vs general actions, logs and ACKs without queueing
   - [x] **Cleanup**: Removed redundant `/playground` route and broken `Playground.jsx` (2025-12-25)
+  - [x] **Logic Unification**: Added Global Translation Toggle to `ContextList` to match `DictionaryResults` behavior (2025-12-25)
+
 
 ### 📖 LDOCE Dictionary Parser (2025-12-25)
 **Structured data extraction from Longman LDOCE6++ dictionary HTML**

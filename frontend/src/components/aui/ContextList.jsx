@@ -1,5 +1,5 @@
 import React from 'react';
-import { BookOpen, CheckCircle2 } from 'lucide-react';
+import { BookOpen, CheckCircle2, Languages } from 'lucide-react';
 import ContextCard from './ContextCard';
 import SenseCard from './SenseCard';
 
@@ -35,6 +35,8 @@ const ContextList = ({
     onStatusChange,
     onAction,
 }) => {
+
+
     // Handle status change from child card
     const handleStatusChange = (contextId, newStatus) => {
         onStatusChange?.(contextId, newStatus);
@@ -95,8 +97,7 @@ const ContextList = ({
 
     return (
         <div className="space-y-4">
-            {/* Header with word */}
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between gap-3">
                 <div className="flex items-center gap-3">
                     <h3 className="text-lg font-semibold text-ink">
                         Contexts for <span className="text-neon-purple">"{word}"</span>

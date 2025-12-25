@@ -13,11 +13,44 @@
  */
 
 import React, { useState } from 'react';
-import { Languages } from 'lucide-react';
+import { Languages, Volume2, ChevronDown, ChevronRight } from 'lucide-react';
+
+const RevealableTranslation = ({ text }) => {
+    const [isVisible, setIsVisible] = useState(false);
+
+    if (!text) return null;
+
+    if (isVisible) {
+        return (
+            <p
+                className="text-[#666] text-xs mt-1 cursor-pointer hover:text-[#888] transition-colors"
+                onClick={(e) => {
+                    e.stopPropagation();
+                    setIsVisible(false);
+                }}
+                title="Click to hide"
+            >
+                {text}
+            </p>
+        );
+    }
+
+    return (
+        <button
+            onClick={(e) => {
+                e.stopPropagation();
+                setIsVisible(true);
+            }}
+            className="flex items-center gap-1.5 text-xs text-[#444] hover:text-[#00FF94] transition-colors mt-1"
+        >
+            <Languages size={12} />
+            <span>Translate</span>
+        </button>
+    );
+};
 
 const DictionaryResults = ({ word, source, entries = [] }) => {
     const [expandedSections, setExpandedSections] = useState({});
-    const [showChinese, setShowChinese] = useState(false);  // Chinese hidden by default
 
     const toggleSection = (entryIdx, section) => {
         const key = `${entryIdx}-${section}`;
@@ -49,17 +82,6 @@ const DictionaryResults = ({ word, source, entries = [] }) => {
                         {source}
                     </span>
                 </div>
-                <button
-                    onClick={() => setShowChinese(!showChinese)}
-                    className={`flex items-center gap-1.5 px-2 py-1 text-xs rounded transition-colors ${showChinese
-                        ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30'
-                        : 'bg-[#222] text-[#666] border border-[#333] hover:text-white'
-                        }`}
-                    title={showChinese ? 'Hide Chinese' : 'Show Chinese'}
-                >
-                    <Languages size={14} />
-                    <span>{showChinese ? '中文' : 'CN'}</span>
-                </button>
             </div>
 
             {/* Entries */}
@@ -95,9 +117,7 @@ const DictionaryResults = ({ word, source, entries = [] }) => {
                                             <span className="text-xs text-[#888] mr-2">{sense.grammar}</span>
                                         )}
                                         <span className="text-white">{sense.definition}</span>
-                                        {showChinese && sense.definition_cn && (
-                                            <span className="block mt-1 text-[#888] text-sm">{sense.definition_cn}</span>
-                                        )}
+                                        <RevealableTranslation text={sense.definition_cn} />
                                     </div>
                                 </div>
 
@@ -107,9 +127,7 @@ const DictionaryResults = ({ word, source, entries = [] }) => {
                                         {sense.examples.map((ex, exIdx) => (
                                             <div key={exIdx} className="pl-3 border-l-2 border-[#333]">
                                                 <p className="text-[#E0E0E0] italic text-sm">{ex.text}</p>
-                                                {showChinese && ex.translation && (
-                                                    <p className="text-[#666] text-xs mt-1">{ex.translation}</p>
-                                                )}
+                                                <RevealableTranslation text={ex.translation} />
                                             </div>
                                         ))}
                                     </div>
@@ -126,9 +144,7 @@ const DictionaryResults = ({ word, source, entries = [] }) => {
                                         <div key={pvIdx} className="p-2 bg-[#111] rounded">
                                             <span className="font-bold text-[#00FF94]">{pv.phrase}</span>
                                             <span className="ml-2 text-[#E0E0E0]">{pv.definition}</span>
-                                            {showChinese && pv.definition_cn && (
-                                                <span className="block text-[#666] text-sm mt-1">{pv.definition_cn}</span>
-                                            )}
+                                            <RevealableTranslation text={pv.definition_cn} />
                                         </div>
                                     ))}
                                 </div>
@@ -321,9 +337,7 @@ const DictionaryResults = ({ word, source, entries = [] }) => {
                                                         {col.examples.map((ex, exIdx) => (
                                                             <div key={exIdx} className="pl-3 border-l-2 border-[#333]">
                                                                 <p className="text-[#E0E0E0] text-sm italic">{ex.text}</p>
-                                                                {showChinese && ex.translation && (
-                                                                    <p className="text-[#666] text-xs mt-1">{ex.translation}</p>
-                                                                )}
+                                                                <RevealableTranslation text={ex.translation} />
                                                             </div>
                                                         ))}
                                                     </div>
