@@ -215,6 +215,20 @@ export function useAUITransport({
             try {
                 const data = JSON.parse(event.data);
                 callbacksRef.current.onMessage?.(data);
+
+                // Handle stream completion events
+                if (data.type === 'aui_stream_end' || data.type === 'aui_error') {
+                    // Mark as intentional to prevent auto-reconnect
+                    isIntentionalDisconnectRef.current = true;
+                    
+                    ws.close(); // This will trigger onclose, but we set the flag above
+                    
+                    if (connectionRef.current === thisConnection) {
+                         connectionRef.current = null;
+                         setIsConnected(false);
+                    }
+                    callbacksRef.current.onComplete?.();
+                }
             } catch (e) {
                 // Silently ignore parse errors
             }
@@ -222,29 +236,26 @@ export function useAUITransport({
 
         ws.onerror = (err) => {
             if (connectionRef.current !== thisConnection) return;
-            // WebSocket errors usually lead to onClose, so we handle logic there mostly
-            // But we can notify default error handler
-             console.error('[AUI] WebSocket Error:', err);
-             // Don't call onError yet, wait for close to decide if we reconnect or fail
+            console.error('[AUI] WebSocket Error:', err);
         };
 
-        ws.onclose = () => {
+        ws.onclose = (event) => {
             if (connectionRef.current !== thisConnection) return;
             if (!isMountedRef.current) return;
             
             setIsConnected(false);
             connectionRef.current = null;
             
-            // If intentional disconnect, stop here
-            if (isIntentionalDisconnectRef.current) {
+            // If intentional disconnect OR Normal Closure (1000), stop here
+            if (isIntentionalDisconnectRef.current || event.code === 1000) {
                 return;
             }
 
             // Attempt Reconnection (Exponential Backoff)
             const maxRetries = 5;
             if (retryCountRef.current < maxRetries) {
-                const delay = Math.pow(2, retryCountRef.current) * 1000; // 1s, 2s, 4s, 8s, 16s
-                console.log(`[AUI] WebSocket disconnected. Reconnecting in ${delay}ms... (Attempt ${retryCountRef.current + 1}/${maxRetries})`);
+                const delay = Math.pow(2, retryCountRef.current) * 1000;
+                console.log(`[AUI] WebSocket disconnected (Code: ${event.code}). Reconnecting in ${delay}ms... (Attempt ${retryCountRef.current + 1}/${maxRetries})`);
                 
                 retryTimeoutRef.current = setTimeout(() => {
                     retryCountRef.current++;
@@ -253,7 +264,7 @@ export function useAUITransport({
             } else {
                  console.error('[AUI] WebSocket max reconnections reached.');
                  callbacksRef.current.onError?.('Connection lost. Max retries reached.');
-                 callbacksRef.current.onComplete?.(); // Treat as stream end?
+                 callbacksRef.current.onComplete?.();
             }
         };
     } catch (err) {
