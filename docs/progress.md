@@ -301,6 +301,10 @@
 - [x] **Event/Demo**:
   - `stream_interactive_flow()` demo in Streaming Service.
   - `GET /api/aui/demo/stream/interactive`.
+  - **Persistence Upgrade (2025-12-25)**:
+    - **PostgreSQL LISTEN/NOTIFY**: Replaced in-memory queue with DB-backed signaling (`AUIInputRecord`).
+    - **Scalability**: Supports multi-process/worker deployments.
+    - **Robustness**: Survives server restarts during "Wait for Input" state.
 
 #### Frontend Extensions
 - [x] **Interactive Component** (`frontend/src/components/aui/interactive/InteractiveDemo.jsx`):

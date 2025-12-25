@@ -69,7 +69,7 @@
         - [x] **Context Resources**: Grouped by Sense for better clarity (2025-12-24).
         - [x] **Translation Toggle**: Chinese hidden by default, click to reveal (2025-12-24).
     - [x] **AUI Bi-directional (Phase 2)**: (2025-12-22)
-        - [x] Backend Input Service & Queue.
+        - [x] Backend Input Service (Postgres Persistent).
         - [x] Interactive UI Components.
         - [x] Human-in-the-Loop Demo.
     - [x] **AUI Protocol Gaps (Phase 3)**: (2025-12-22)

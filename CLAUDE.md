@@ -325,7 +325,8 @@ The system supports a streaming UI protocol for real-time Agent updates:
 - **Interactivity (Bi-directional)**:
   - **Downstream**: SSE pushes UI state (buttons/forms).
   - **Upstream**: Client sends actions via `POST /api/aui/input`.
-  - **Backend**: `AUIInputService` pauses agent execution until input is received (In-Memory Queue).
+  - **Backend**: `AUIInputService` uses **PostgreSQL LISTEN/NOTIFY** to pause execution and signal waiting Agents across processes.
+  - **Persistence**: User inputs are stored in `aui_inputs` table, ensuring HITL flows survive restarts.
 - **AG-UI Alignment (2025-12-23)**:
   - `InterruptEvent` now includes `interrupt_id` (auto-generated) and `payload` for structured data.
   - `RunFinishedEvent` supports `outcome="interrupt"` with associated interrupt details.

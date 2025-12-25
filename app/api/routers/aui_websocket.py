@@ -13,6 +13,7 @@ import json
 
 from app.services.aui_streaming import aui_streaming_service
 from app.services.aui_input import input_service
+from app.core.db import AsyncSessionLocal
 
 logger = logging.getLogger(__name__)
 
@@ -225,7 +226,11 @@ async def handle_interactive_stream(websocket: WebSocket, stream_generator, sess
                             action=action,
                             payload=payload
                         )
-                        await input_service.submit_input(user_input)
+                        
+                        # Create a fresh DB session for this operation
+                        async with AsyncSessionLocal() as db:
+                            await input_service.submit_input(db, user_input)
+                            
                         logger.info(f"Received HITL input via WebSocket: {user_input.action}")
                     
                 elif data.get("type") == "close":

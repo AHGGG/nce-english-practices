@@ -51,8 +51,15 @@ async def lifespan(app: FastAPI):
     print("Startup: Initiating dictionary loading in background...")
     # Run synchronous load_dictionaries in a thread to avoid blocking the event loop
     asyncio.create_task(asyncio.to_thread(dict_manager.load_dictionaries))
+    
+    # Start AUI Input Listener (Postgres LISTEN/NOTIFY)
+    from app.services.aui_input import input_service
+    await input_service.start_listener()
+    
     yield
-    # Cleanup if needed
+    
+    # Cleanup
+    await input_service.stop_listener()
 
 app = FastAPI(title="NCE English Practice", lifespan=lifespan)
 
