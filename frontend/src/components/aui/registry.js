@@ -11,6 +11,7 @@ const TaskDashboard = lazy(() => import('./TaskDashboard'));
 const InteractiveDemo = lazy(() => import('./interactive/InteractiveDemo'));
 const ContextCard = lazy(() => import('./ContextCard'));
 const ContextList = lazy(() => import('./ContextList'));
+const DictionaryResults = lazy(() => import('./DictionaryResults'));
 
 
 const COMPONENT_MAP = {
@@ -24,6 +25,7 @@ const COMPONENT_MAP = {
   'InteractiveDemo': InteractiveDemo,
   'ContextCard': ContextCard,
   'ContextList': ContextList,
+  'DictionaryResults': DictionaryResults,
 };
 
 export const getComponent = (key) => {

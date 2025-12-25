@@ -104,8 +104,16 @@ const AUIStreamingDemo = () => {
             icon: '📝',
             description: 'Dictionary examples + TTS',
             getUrl: () => '/api/aui/stream/contexts?word=simmer&user_level=1'
+        },
+        {
+            id: 'ldoce-dict',
+            label: 'LDOCE Dictionary',
+            icon: '📖',
+            description: 'Structured LDOCE parsing',
+            getUrl: () => '/api/aui/stream/ldoce-demo?word=simmer'
         }
     ];
+
 
     const handleSelectDemo = (demo) => {
         setSelectedDemo(demo.id);

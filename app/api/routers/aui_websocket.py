@@ -81,7 +81,14 @@ STREAM_TYPE_MAP = {
         word=params.get("word", "example"),
         user_level=params.get("user_level", 1)
     ),
+    
+    # LDOCE Dictionary
+    "ldoce-demo": lambda params: aui_streaming_service.stream_ldoce_lookup(
+        word=params.get("word", "simmer"),
+        user_level=params.get("user_level", 1)
+    ),
 }
+
 
 
 @router.websocket("/{stream_type}")

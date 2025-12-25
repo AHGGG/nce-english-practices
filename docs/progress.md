@@ -541,3 +541,70 @@
   - [x] **WebSocket action handler**: Distinguishes HITL vs general actions, logs and ACKs without queueing
   - [x] **Cleanup**: Removed redundant `/playground` route and broken `Playground.jsx` (2025-12-25)
 
+### 📖 LDOCE Dictionary Parser (2025-12-25)
+**Structured data extraction from Longman LDOCE6++ dictionary HTML**
+
+#### Data Models (`app/models/ldoce_schemas.py`)
+- [x] `LDOCEAudio`: Audio URL pairs (BrE/AmE)
+- [x] `LDOCEExample`: Example sentences with translations and audio
+- [x] `LDOCECollocation`: Collocation patterns with examples
+- [x] `LDOCESense`: Senses with definition, grammar, examples, collocations
+- [x] `LDOCEPhrasalVerb`: Phrasal verb entries
+- [x] `LDOCEEntry`: Complete word entry with all metadata
+- [x] `LDOCEWord`: API response model (supports multiple entries per word)
+
+#### Parser (`app/services/ldoce_parser.py`)
+- [x] Headword, hyphenation, homograph numbers (simmer1, simmer2)
+- [x] UK/US pronunciations with audio URLs
+- [x] Multiple entries per word (verb, noun, etc.)
+- [x] Senses with definitions (EN/CN)
+- [x] Grammar patterns (`[intransitive, transitive]`)
+- [x] Example sentences with translations and audio
+- [x] Collocations from corpus
+- [x] Phrasal verbs
+
+#### API Endpoints
+- [x] `GET /api/dictionary/ldoce/{word}` - LDOCE-specific endpoint
+- [x] `GET /api/dictionary/{source}/{word}` - Unified endpoint (source = `collins` | `ldoce`)
+
+#### Verification
+- [x] **Unit Tests**: `tests/test_ldoce_parser.py` (16 tests - Passed)
+- [x] **HTML Fixtures**: 4 sample words (simmer, run, beautiful, hello)
+
+### 📖 LDOCE Extended Parser Features (2025-12-25)
+**Added extraction of extended popup data: Word Origin, Verb Table, Thesaurus, Collocations, Extra Examples**
+
+#### Extended Data Models (`app/models/ldoce_schemas.py`)
+- [x] `LDOCEEtymology`: Word origin (century, origin word, meaning, notes)
+- [x] `LDOCEVerbForm`: Verb conjugation form (tense, person, form, auxiliary)
+- [x] `LDOCEVerbTable`: Complete verb table (simple + continuous forms)
+- [x] `LDOCEExtraExample`: Examples from other dictionaries/corpus
+- [x] `LDOCEThesaurusEntry`: Related word with definition and examples
+- [x] `LDOCEThesaurus`: Topic-based thesaurus entries + word sets
+- [x] Updated `LDOCECollocation` with `part_of_speech` field
+
+#### Extended Parser Methods (`app/services/ldoce_parser.py`)
+- [x] `_find_popup_content()`: Helper to locate popup button content divs
+- [x] `_extract_etymology()`: Parse Word Origin popup
+- [x] `_extract_verb_table()`: Parse Verb Table (Simple + Continuous forms)
+- [x] `_extract_extra_examples()`: Parse Examples from other dictionaries/corpus
+- [x] `_extract_thesaurus()`: Parse Language Activator + Word Sets
+- [x] `_extract_popup_collocations()`: Parse Collocations with POS categorization
+
+#### Frontend Component (`frontend/src/components/aui/DictionaryResults.jsx`)
+- [x] Expandable sections with toggle (▶/▼) for all extended data
+- [x] **📜 Word Origin**: Century badge, origin word, meaning
+- [x] **📝 Verb Table**: Simple forms + Continuous forms grid
+- [x] **📚 Thesaurus**: Expandable entries with nested examples + Word Sets
+- [x] **🔗 Collocations**: Expandable patterns with examples + translations
+- [x] **💬 Extra Examples**: Source-coded (C=Corpus, D=Dictionary) examples
+
+#### Unified SSE/WebSocket Streaming
+- [x] **SSE Endpoint Fix**: Refactored `/api/aui/stream/ldoce-demo` to use `stream_ldoce_lookup()` service
+- [x] **Parity**: Both SSE and WebSocket now use same code path with full extended data
+
+#### Verification
+- [x] **Unit Tests**: `tests/test_ldoce_parser.py` (22 tests - 16 original + 6 extended data)
+- [x] **Diagnostic Script**: `scripts/diagnose_ldoce.py` for parser verification
+- [x] **Browser Testing**: All expandable sections work correctly
+

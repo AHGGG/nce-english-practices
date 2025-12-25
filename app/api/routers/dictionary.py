@@ -135,3 +135,80 @@ async def get_collins_word(
     except Exception as e:
         print(f"Collins Lookup Error: {e}")
         return CollinsWord(word=word, found=False)
+
+
+# Import LDOCE parser and schemas
+from app.services.ldoce_parser import ldoce_parser
+from app.models.ldoce_schemas import LDOCEWord
+from typing import Literal, Union
+
+
+@router.get("/api/dictionary/ldoce/{word}", response_model=LDOCEWord)
+async def get_ldoce_word(
+    word: str,
+    include_raw_html: bool = Query(False, description="Include raw HTML for debugging")
+):
+    """
+    Get structured dictionary data for a word from Longman LDOCE.
+    
+    Returns parsed data including:
+    - Headword, pronunciations (BrE/AmE), audio URLs
+    - Multiple entries (verb, noun, etc.)
+    - Senses with definitions, examples, translations
+    - Collocations, phrasal verbs
+    
+    Example: GET /api/dictionary/ldoce/simmer
+    """
+    try:
+        # Lookup in dictionary
+        results = await run_in_threadpool(dict_manager.lookup, word)
+        
+        # Find LDOCE dictionary result
+        ldoce_html = None
+        for result in results:
+            dict_name = result.get("dictionary", "").upper()
+            if "LDOCE" in dict_name or "LONGMAN" in dict_name:
+                ldoce_html = result.get("definition", "")
+                break
+        
+        if not ldoce_html:
+            return LDOCEWord(word=word, found=False)
+        
+        # Parse the HTML
+        parsed = ldoce_parser.parse(ldoce_html, word, include_raw_html=include_raw_html)
+        return parsed
+        
+    except Exception as e:
+        print(f"LDOCE Lookup Error: {e}")
+        return LDOCEWord(word=word, found=False)
+
+
+@router.get("/api/dictionary/{source}/{word}")
+async def get_dictionary_word(
+    source: Literal["collins", "ldoce"],
+    word: str,
+    include_raw_html: bool = Query(False, description="Include raw HTML for debugging")
+) -> Union[CollinsWord, LDOCEWord]:
+    """
+    Unified dictionary lookup endpoint.
+    
+    Args:
+        source: Dictionary source - "collins" or "ldoce"
+        word: Word to lookup
+        include_raw_html: Include raw HTML for debugging
+    
+    Returns:
+        Structured dictionary data from the specified source.
+    
+    Examples:
+        GET /api/dictionary/collins/simmer
+        GET /api/dictionary/ldoce/simmer
+    """
+    if source == "collins":
+        return await get_collins_word(word, include_raw_html)
+    elif source == "ldoce":
+        return await get_ldoce_word(word, include_raw_html)
+    else:
+        # This shouldn't happen due to Literal type validation
+        return CollinsWord(word=word, found=False)
+

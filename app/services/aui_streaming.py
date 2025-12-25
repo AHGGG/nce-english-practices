@@ -1219,6 +1219,237 @@ class AUIStreamingService:
         yield StreamEndEvent(session_id=session_id)
 
 
+    async def stream_ldoce_lookup(
+        self,
+        word: str,
+        user_level: int = 1
+    ) -> AsyncGenerator[AUIEvent, None]:
+        """
+        Stream LDOCE dictionary lookup results.
+        
+        Demonstrates structured parsing of LDOCE dictionary with:
+        - Multiple entries (verb, noun, etc.)
+        - Senses with definitions and translations
+        - Examples with audio
+        - Phrasal verbs
+        
+        Args:
+            word: Target word to lookup
+            user_level: User mastery level
+        
+        Yields:
+            AUIEvent: Stream of snapshot and delta events
+        """
+        from app.services.dictionary import dict_manager
+        from app.services.ldoce_parser import ldoce_parser
+        from fastapi.concurrency import run_in_threadpool
+        
+        session_id = str(uuid.uuid4())
+        
+        yield StreamStartEvent(
+            session_id=session_id,
+            metadata={"intention": "ldoce_lookup", "word": word}
+        )
+        
+        await asyncio.sleep(0.3)
+        
+        # Lookup word
+        try:
+            results = await run_in_threadpool(dict_manager.lookup, word)
+        except Exception as e:
+            yield create_snapshot_event(
+                intention="dictionary_lookup",
+                ui={
+                    "component": "MarkdownMessage",
+                    "props": {
+                        "content": f"❌ Dictionary lookup failed: {str(e)}"
+                    }
+                },
+                fallback_text=f"Lookup failed for {word}"
+            )
+            yield StreamEndEvent(session_id=session_id)
+            return
+        
+        # Find LDOCE result
+        ldoce_html = None
+        for result in results:
+            dict_name = result.get("dictionary", "").upper()
+            if "LDOCE" in dict_name or "LONGMAN" in dict_name:
+                ldoce_html = result.get("definition", "")
+                break
+        
+        if not ldoce_html:
+            yield create_snapshot_event(
+                intention="dictionary_lookup",
+                ui={
+                    "component": "MarkdownMessage",
+                    "props": {
+                        "content": f"❌ Word **{word}** not found in LDOCE dictionary."
+                    }
+                },
+                fallback_text=f"Word {word} not found"
+            )
+            yield StreamEndEvent(session_id=session_id)
+            return
+        
+        # Parse the HTML
+        parsed = ldoce_parser.parse(ldoce_html, word)
+        
+        if not parsed.found or not parsed.entries:
+            yield create_snapshot_event(
+                intention="dictionary_lookup",
+                ui={
+                    "component": "MarkdownMessage",
+                    "props": {
+                        "content": f"❌ Could not parse **{word}** from LDOCE."
+                    }
+                },
+                fallback_text=f"Parse error for {word}"
+            )
+            yield StreamEndEvent(session_id=session_id)
+            return
+        
+        # Initial state with empty entries
+        current_state = {
+            "component": "DictionaryResults",
+            "props": {
+                "word": word,
+                "source": "LDOCE",
+                "entries": []
+            }
+        }
+        
+        yield create_snapshot_event(
+            intention="dictionary_lookup",
+            ui=current_state,
+            fallback_text=f"Looking up {word}..."
+        )
+        await asyncio.sleep(0.3)
+        
+        # Stream each entry progressively
+        for entry in parsed.entries:
+            prev_state = copy.deepcopy(current_state)
+            
+            # Build entry data
+            entry_data = {
+                "headword": entry.headword,
+                "homnum": entry.homnum,
+                "pos": entry.part_of_speech,
+                "pronunciation": entry.pronunciation,
+                "senses": []
+            }
+            
+            # Add senses (limit to 3 per entry)
+            for sense in entry.senses[:3]:
+                sense_data = {
+                    "index": sense.index,
+                    "definition": sense.definition,
+                    "definition_cn": sense.definition_cn,
+                    "grammar": sense.grammar,
+                    "examples": [
+                        {
+                            "text": ex.text,
+                            "translation": ex.translation
+                        }
+                        for ex in sense.examples[:2]
+                    ]
+                }
+                entry_data["senses"].append(sense_data)
+            
+            # Add phrasal verbs (limit to 2)
+            if entry.phrasal_verbs:
+                entry_data["phrasal_verbs"] = [
+                    {
+                        "phrase": pv.phrase,
+                        "definition": pv.definition,
+                        "definition_cn": pv.definition_cn
+                    }
+                    for pv in entry.phrasal_verbs[:2]
+                ]
+            
+            # ========== EXTENDED DATA ==========
+            
+            # Etymology (Word Origin)
+            if entry.etymology:
+                entry_data["etymology"] = {
+                    "century": entry.etymology.century,
+                    "origin": entry.etymology.origin,
+                    "meaning": entry.etymology.meaning,
+                    "note": entry.etymology.note
+                }
+            
+            # Verb Table
+            if entry.verb_table:
+                entry_data["verb_table"] = {
+                    "lemma": entry.verb_table.lemma,
+                    "simple_forms": [
+                        {
+                            "tense": f.tense,
+                            "person": f.person,
+                            "form": f.form,
+                            "auxiliary": f.auxiliary
+                        }
+                        for f in entry.verb_table.simple_forms[:8]
+                    ],
+                    "continuous_forms": [
+                        {
+                            "tense": f.tense,
+                            "person": f.person,
+                            "form": f.form,
+                            "auxiliary": f.auxiliary
+                        }
+                        for f in entry.verb_table.continuous_forms[:4]
+                    ]
+                }
+            
+            # Thesaurus
+            if entry.thesaurus:
+                entry_data["thesaurus"] = {
+                    "topic": entry.thesaurus.topic,
+                    "entries": [
+                        {
+                            "word": te.word,
+                            "definition": te.definition,
+                            "examples": te.examples[:2]
+                        }
+                        for te in entry.thesaurus.entries[:6]
+                    ],
+                    "word_sets": entry.thesaurus.word_sets[:15]
+                }
+            
+            # Collocations
+            if entry.collocations:
+                entry_data["collocations"] = [
+                    {
+                        "pattern": col.pattern,
+                        "part_of_speech": col.part_of_speech,
+                        "examples": [
+                            {"text": ex.text, "translation": ex.translation}
+                            for ex in col.examples[:2]
+                        ]
+                    }
+                    for col in entry.collocations[:10]
+                ]
+            
+            # Extra Examples
+            if entry.extra_examples:
+                entry_data["extra_examples"] = [
+                    {
+                        "text": ex.text,
+                        "source": ex.source
+                    }
+                    for ex in entry.extra_examples[:10]
+                ]
+            
+            current_state["props"]["entries"].append(entry_data)
+            
+            yield create_state_diff(prev_state, current_state)
+            
+            await asyncio.sleep(0.5)
+        
+        yield StreamEndEvent(session_id=session_id)
+
+
 # Singleton instance
 aui_streaming_service = AUIStreamingService()
 

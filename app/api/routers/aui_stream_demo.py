@@ -136,3 +136,22 @@ async def stream_vocab_patch_demo(level: int = 1):
              yield f"data: {event.model_dump_json()}\n\n"
 
     return StreamingResponse(event_generator(), media_type="text/event-stream")
+
+
+@router.get("/aui/stream/ldoce-demo")
+async def stream_ldoce_demo(word: str = "simmer", user_level: int = 1):
+    """
+    Stream LDOCE dictionary lookup results for demonstration.
+    Shows structured parsing of headword, senses, examples, phrasal verbs,
+    and extended data: etymology, verb table, thesaurus, collocations, extra examples.
+    
+    Uses the same streaming service as WebSocket for consistent behavior.
+    """
+    
+    async def event_generator():
+        async for event in aui_streaming_service.stream_ldoce_lookup(word, user_level):
+             yield f"data: {event.model_dump_json()}\n\n"
+
+    return StreamingResponse(event_generator(), media_type="text/event-stream")
+
+
