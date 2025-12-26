@@ -91,6 +91,7 @@
         - [x] **Cut SSE**: Removed dual transport complexity.
         - [x] **Unified WebSocket**: Standardized all streaming on WebSocket.
         - [x] **Frontend Refactor**: Simplified `useAUITransport` and Hydrator.
+        - [x] **Cleanup**: Removed legacy SDKs (`deepgram-sdk`, `elevenlabs`), SSE scripts, and unused routers.
 - [ ] **Deployment & Architecture Optimization** (New):
     - [x] **Dockerization**: Multi-stage build for React (Vite) + FastAPI.
     - [x] **SPA Serving**: Configure FastAPI to serve React static files (remove Jinja2).

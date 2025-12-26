@@ -60,15 +60,6 @@ export function useAUITransport({
         else if (demoMatch) streamType = demoMatch[1];
     }
     
-    // 2. Map legacy names
-    const streamTypeMap = {
-      'vocab-patch-demo': 'vocab-patch',
-      'state-snapshot': 'state-snapshot', // ensure pass-through
-    };
-    
-    if (streamTypeMap[streamType]) {
-      streamType = streamTypeMap[streamType];
-    }
     
     // 3. Extract query params from input URL
     const urlParams = {};
@@ -91,7 +82,7 @@ export function useAUITransport({
       // Not a valid URL structure, ignore
     }
     
-    // 4. Construct final WebSocket URL
+    // 3. Construct final WebSocket URL
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
     const host = window.location.host;
     

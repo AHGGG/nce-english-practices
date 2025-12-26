@@ -39,7 +39,7 @@ const AUIStreamingDemo = () => {
             label: 'Vocab Patch',
             icon: '🃏',
             description: 'Card flip animation',
-            getUrl: () => '/api/aui/stream/vocab-patch-demo?level=1'
+            getUrl: () => '/api/aui/stream/vocab-patch?level=1'
         },
         {
             id: 'state-snapshot',

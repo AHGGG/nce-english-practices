@@ -4,7 +4,6 @@ from app.api.routers import (
     content,
     practice,
     stats,
-    deepgram,
     coach,
     voice_lab,
     aui_input,

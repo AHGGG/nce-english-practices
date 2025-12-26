@@ -12,7 +12,7 @@ from app.api.routers import (
     content,
     practice,
     stats,
-    deepgram,
+
     coach,
     voice_lab,
     voice_lab,
@@ -69,7 +69,7 @@ app.include_router(practice.router)
 
 app.include_router(stats.router)
 app.include_router(coach.router)
-app.include_router(deepgram.router)
+
 
 app.include_router(voice_lab.router, prefix="/api", tags=["voice-lab"])
 

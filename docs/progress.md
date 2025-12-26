@@ -666,3 +666,8 @@
 #### Verification
 - [x] **Unit Tests**: `test_aui_websocket.py` (10/10 Passed).
 - [x] **Manual Verification**: All demo streams working over WebSocket.
+    - [x] **Legacy Cleanup**:
+        - [x] **SDK Removal**: Verified removal of `deepgram-sdk` and `elevenlabs` from `pyproject.toml`.
+        - [x] **Script Cleanup**: Deleted legacy SSE verification scripts and tests.
+        - [x] **Frontend Refactor**: Cleaned up `useAUITransport` legacy mappings.
+        - [x] **Backend Cleanup**: Removed legacy `deepgram_service.py` and router.
