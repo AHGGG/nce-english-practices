@@ -21,7 +21,6 @@ from app.api.routers import (
     elevenlabs_websocket,
     aui_debug,
     aui_websocket,
-    aui_demo_extended,
     context_router,
     tts,
 )
@@ -77,7 +76,6 @@ app.include_router(voice_lab.router, prefix="/api", tags=["voice-lab"])
 app.include_router(deepgram_websocket.router, tags=["websocket"])
 app.include_router(elevenlabs_websocket.router, tags=["websocket"])
 app.include_router(aui_debug.router)
-app.include_router(aui_demo_extended.router, tags=["aui-demo-extended"])
 app.include_router(aui_input.router, prefix="/api/aui", tags=["AUI Input"]) # New
 app.include_router(aui_websocket.router, tags=["AUI WebSocket"])  # WebSocket transport
 app.include_router(context_router.router)  # Context resources

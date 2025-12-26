@@ -1,9 +1,10 @@
 """
 AUI WebSocket Router - WebSocket transport for AUI streaming events
 
-Provides parallel transport layer alongside SSE endpoints.
+Primary transport layer for all AUI streaming (Action UI).
 Reuses existing AUIStreamingService async generators.
 """
+
 
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Query
 from typing import Optional

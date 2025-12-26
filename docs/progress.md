@@ -650,13 +650,19 @@
   - `AUIStreamHydrator.jsx`: Simplified props interface.
 
 #### Stability Improvements
-- [x] **Log Bridge Fix**:
-  - **Backend**: Switched `threading.Lock` to `threading.RLock` to prevent self-deadlock.
-  - **Frontend**: Switched `fetch` to `navigator.sendBeacon` for non-blocking log transmission.
-  - **Result**: Solved `/api/logs` pending request issues during high-frequency logging.
+- [x] **Stability Improvements**:
+  - [x] **Log Bridge Fix**:
+    - [x] **Backend**: Switched `threading.Lock` to `threading.RLock` to prevent self-deadlock.
+    - [x] **Frontend**: Switched `fetch` to `navigator.sendBeacon` for non-blocking log transmission.
+    - [x] **Result**: Solved `/api/logs` pending request issues during high-frequency logging.
+- [x] **Code Cleanup**:
+  - [x] **Removed Legacy SSE**: Deleted `aui_demo_extended.py` and updated `main.py`.
+  - [x] **Doc Cleanup**: Updated `aui_websocket.py` and frontend hooks to reflect WebSocket-only status.
+  - [x] **Test Cleanup**:
+    - [x] Removed broken import in `app/api/routers/__init__.py`.
+    - [x] Verified deepgram/elevenlabs tests use raw connections (no SDK dependency).
+    - [x] Confirmed `tests/` directory is clean of legacy SSE references.
 
 #### Verification
 - [x] **Unit Tests**: `test_aui_websocket.py` (10/10 Passed).
 - [x] **Manual Verification**: All demo streams working over WebSocket.
-
-

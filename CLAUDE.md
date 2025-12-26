@@ -333,9 +333,9 @@ The system supports a streaming UI protocol for real-time Agent updates:
   - `InterruptBanner` component displays interactive action buttons from `payload.options`.
 - **WebSocket Transport (2025-12-23)**:
   - **Backend**: `/api/aui/ws/{stream_type}` endpoint in `aui_websocket.py`.
-  - **Frontend**: `useAUITransport` hook abstracts SSE/WebSocket; `AUIContext` provides `send` function.
+  - **Frontend**: `useAUITransport` hook (WebSocket-only); `AUIContext` provides `send` function.
   - **Bidirectional**: `interactive` and `interrupt` streams use `handle_interactive_stream` for HITL.
-  - **Unified**: Replaces SSE as the single transport channel.
+  - **Unified**: Replaces legacy SSE as the single transport channel (SSE code removed 2025-12).
 - **Mobile Compatibility (2025-12-25)**:
   - **Frontend**: `useAUITransport.js` supports auto-reconnection with exponential backoff and visibility handling.
   - **Layout**: Mobile-first designs for `AUIStreamingDemo` and all inline components (`InterruptBanner`, `MessageList`, etc.).

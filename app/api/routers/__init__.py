@@ -12,7 +12,6 @@ from app.api.routers import (
     elevenlabs_websocket,
     aui_debug,
     aui_websocket,
-    aui_demo_extended,
     context_router,
     tts,
 )

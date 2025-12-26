@@ -1,9 +1,7 @@
 /**
  * useAUITransport - Unified transport abstraction for AUI streaming
  * 
- * Abstracts SSE (EventSource) and WebSocket connections for AUI streaming.
- * Event format is identical regardless of transport layer.
- * 
+ * Manages WebSocket connections for AUI streaming.
  * Handles React StrictMode double-mount by checking connection instance identity.
  */
 

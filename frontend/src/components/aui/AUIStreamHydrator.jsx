@@ -6,11 +6,9 @@ import { AUIProvider } from './AUIContext';
 /**
  * AUIStreamHydrator - Handles streaming events and renders AUI components
  * 
- * Supports multiple transport layers:
- * - SSE (EventSource) - default, unidirectional
- * - WebSocket - bidirectional, better for HITL scenarios
+ * Uses WebSocket transport for bidirectional streaming.
  * 
- * Compatible with both legacy AUIRenderPacket and new streaming events:
+ * Compatible with AUI streaming events:
  * - RENDER_SNAPSHOT: Full component spec (backward compatible)
  * - TEXT_DELTA: Incremental text updates
  * - STATE_DELTA: JSON Patch state updates
