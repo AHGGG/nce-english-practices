@@ -17,7 +17,6 @@ import { AUIProvider } from './AUIContext';
  */
 const AUIStreamHydrator = ({
     streamUrl,
-    transport = 'sse',  // 'sse' | 'websocket'
     params = {},        // WebSocket params (words, level, etc.)
     onError,
     onComplete
@@ -264,7 +263,6 @@ const AUIStreamHydrator = ({
     // Use the transport hook
     const { connect, disconnect, send, isConnected } = useAUITransport({
         url: streamUrl,
-        transport,
         params,
         onMessage: handleEvent,
         onError: (err) => {
@@ -300,11 +298,11 @@ const AUIStreamHydrator = ({
             disconnect();
         };
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [streamUrl, transport]);
+    }, [streamUrl]);
 
     // Handle interrupt action with WebSocket support
     const handleInterruptAction = useCallback(async (action) => {
-        if (transport === 'websocket' && isConnected) {
+        if (isConnected) {
             // Send via WebSocket for low-latency HITL
             // Use session_id from payload (this is what backend waits for)
             const sessionId = interruptState?.payload?.session_id || interruptState?.id;
@@ -318,13 +316,13 @@ const AUIStreamHydrator = ({
         }
         // Fallback to POST (handled in InterruptBanner)
         return false;
-    }, [transport, isConnected, send, interruptState]);
+    }, [isConnected, send, interruptState]);
 
     // Generic action handler for child components
     const handleComponentAction = useCallback((action, payload) => {
         console.log('[AUI] Component Action:', action, payload);
 
-        if (transport === 'websocket' && isConnected && send) {
+        if (isConnected && send) {
             // WebSocket path - send directly
             send({
                 type: 'input',
@@ -334,7 +332,7 @@ const AUIStreamHydrator = ({
         }
         // SSE mode: action is handled locally by the component (no backend call)
         // This aligns with AUI philosophy - single transport channel
-    }, [transport, isConnected, send]);
+    }, [isConnected, send]);
 
     if (error) {
         return (
@@ -359,7 +357,7 @@ const AUIStreamHydrator = ({
 
     // Context value for child components
     const auiContextValue = {
-        transport,
+        transport: 'websocket',
         isConnected,
         send,
     };
@@ -414,7 +412,7 @@ const AUIStreamHydrator = ({
                         <InterruptBanner
                             interrupt={interruptState}
                             onAction={handleInterruptAction}
-                            useWebSocket={transport === 'websocket' && isConnected}
+                            useWebSocket={isConnected}
                         />
                     </div>
                 )}

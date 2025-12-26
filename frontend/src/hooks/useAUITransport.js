@@ -11,7 +11,6 @@ import { useState, useCallback, useRef, useEffect, useLayoutEffect } from 'react
 
 export function useAUITransport({
   url,
-  transport = 'sse',
   onMessage,
   onError,
   onComplete,
@@ -27,12 +26,12 @@ export function useAUITransport({
   const isIntentionalDisconnectRef = useRef(false);
   
   // Store all changing values in refs to avoid stale closures and infinite loops
-  const configRef = useRef({ url, transport, params });
+  const configRef = useRef({ url, params });
   const callbacksRef = useRef({ onMessage, onError, onComplete });
   
   // Keep refs fresh without triggering re-renders
   useEffect(() => {
-    configRef.current = { url, transport, params };
+    configRef.current = { url, params };
   });
   
   useEffect(() => {
@@ -40,36 +39,44 @@ export function useAUITransport({
   });
 
   /**
-   * Convert SSE URL to WebSocket URL and extract params
-   * /api/aui/stream/story?content=... -> { url: /api/aui/ws/story, params: {content: ...} }
+   * Normalize Stream URL to WebSocket format
+   * Supports inputs like: 
+   * - Full URL: http://localhost/api/aui/ws/story
+   * - Path: /api/aui/ws/story
+   * - Type: story
+   * - API Path: /api/aui/stream/story (Backward compat)
    */
-  const getWebSocketUrl = useCallback((sseUrl) => {
-    let streamType = 'story';
+  const getWebSocketUrl = useCallback((inputUrl) => {
+    // 1. Extract base stream type or path
+    let streamType = inputUrl;
     
-    // Extract stream type from SSE URL
-    const streamMatch = sseUrl.match(/\/api\/aui\/stream\/([^?]+)/);
-    if (streamMatch) {
-      streamType = streamMatch[1];
+    // Check if it looks like a full URL or path
+    if (inputUrl.includes('/')) {
+        // Try to extract known patterns
+        const wsMatch = inputUrl.match(/\/api\/aui\/ws\/([^?]+)/);
+        const streamMatch = inputUrl.match(/\/api\/aui\/stream\/([^?]+)/);
+        const demoMatch = inputUrl.match(/\/api\/aui\/demo\/stream\/([^?]+)/);
+        
+        if (wsMatch) streamType = wsMatch[1];
+        else if (streamMatch) streamType = streamMatch[1];
+        else if (demoMatch) streamType = demoMatch[1];
     }
     
-    const demoMatch = sseUrl.match(/\/api\/aui\/demo\/stream\/([^?]+)/);
-    if (demoMatch) {
-      streamType = demoMatch[1];
-    }
-    
-    // Map SSE endpoint names to WebSocket stream types
+    // 2. Map legacy names
     const streamTypeMap = {
       'vocab-patch-demo': 'vocab-patch',
+      'state-snapshot': 'state-snapshot', // ensure pass-through
     };
     
     if (streamTypeMap[streamType]) {
       streamType = streamTypeMap[streamType];
     }
     
-    // Extract query params from SSE URL
+    // 3. Extract query params from input URL
     const urlParams = {};
     try {
-      const url = new URL(sseUrl, window.location.origin);
+      // Dummy base if relative path
+      const url = new URL(inputUrl, window.location.origin); 
       for (const [key, value] of url.searchParams.entries()) {
         // Parse numbers and booleans
         if (value === 'true') urlParams[key] = true;
@@ -77,15 +84,16 @@ export function useAUITransport({
         else if (!isNaN(Number(value)) && value !== '') urlParams[key] = Number(value);
         else urlParams[key] = value;
         
-        // Special handling for comma-separated arrays (e.g., words=a,b,c)
+        // Special handling for comma-separated arrays
         if (key === 'words' && typeof urlParams[key] === 'string') {
           urlParams[key] = urlParams[key].split(',').map(w => w.trim());
         }
       }
     } catch (e) {
-      // Fallback: no params
+      // Not a valid URL structure, ignore
     }
     
+    // 4. Construct final WebSocket URL
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
     const host = window.location.host;
     
@@ -95,66 +103,7 @@ export function useAUITransport({
     };
   }, []);
 
-  /**
-   * Connect using SSE (EventSource)
-   */
-  const connectSSE = useCallback(() => {
-    if (connectionRef.current || !isMountedRef.current) {
-      return;
-    }
 
-    const { url: currentUrl } = configRef.current;
-    if (!currentUrl) return;
-
-    const eventSource = new EventSource(currentUrl);
-    connectionRef.current = eventSource;
-
-    // Capture the instance for closure comparison
-    const thisConnection = eventSource;
-    isIntentionalDisconnectRef.current = false;
-
-    eventSource.onopen = () => {
-      // Verify this is still the active connection
-      if (connectionRef.current !== thisConnection || !isMountedRef.current) return;
-      setIsConnected(true);
-      retryCountRef.current = 0; // Reset retry count on success
-    };
-
-    eventSource.onmessage = (event) => {
-      // Verify this is still the active connection
-      if (connectionRef.current !== thisConnection || !isMountedRef.current) return;
-      
-      try {
-        const data = JSON.parse(event.data);
-        callbacksRef.current.onMessage?.(data);
-        
-        if (data.type === 'aui_stream_end' || data.type === 'aui_error') {
-          eventSource.close();
-          if (connectionRef.current === thisConnection) {
-            connectionRef.current = null;
-            setIsConnected(false);
-          }
-          callbacksRef.current.onComplete?.();
-        }
-      } catch (e) {
-        // Silently ignore parse errors
-      }
-    };
-
-    eventSource.onerror = (err) => {
-      // Verify this is still the active connection (CRITICAL for StrictMode)
-      if (connectionRef.current !== thisConnection || !isMountedRef.current) return;
-      
-      callbacksRef.current.onError?.(err);
-      setIsConnected(false);
-      eventSource.close();
-      connectionRef.current = null;
-      
-      // SSE has built-in reconnection, so we generally rely on that,
-      // BUT if it closes completely (like above), we might want to manually reconnect?
-      // For now, respect SSE's native behavior or user's explicit error handling.
-    };
-  }, []);
 
   /**
    * Connect using WebSocket with Auto-Reconnect
@@ -274,16 +223,12 @@ export function useAUITransport({
   }, [getWebSocketUrl]);
 
   /**
-   * Connect using the configured transport
+   * Connect using WebSocket (Default and only transport)
    */
   const connect = useCallback(() => {
-    const { transport: currentTransport } = configRef.current;
-    if (currentTransport === 'websocket') {
-      connectWebSocket();
-    } else {
-      connectSSE();
-    }
-  }, [connectSSE, connectWebSocket]);
+    // Just alias to WebSocket connection logic
+    connectWebSocket();
+  }, [connectWebSocket]);
 
   /**
    * Disconnect current connection
@@ -307,10 +252,7 @@ export function useAUITransport({
    * Send data (WebSocket only)
    */
   const send = useCallback((data) => {
-    const { transport: currentTransport } = configRef.current;
-    if (currentTransport !== 'websocket') {
-      return false;
-    }
+    // Always WebSocket
     
     if (connectionRef.current && connectionRef.current.readyState === WebSocket.OPEN) {
       connectionRef.current.send(JSON.stringify(data));
@@ -361,7 +303,7 @@ export function useAUITransport({
     disconnect,
     send,
     isConnected,
-    transport,
+    transport: 'websocket', // Hardcoded for backward compat with consumers checking this
   };
 }
 

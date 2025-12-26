@@ -1,3 +1,18 @@
-from fastapi import APIRouter
-
-router = APIRouter()
+from app.api.routers import (
+    voice,
+    dictionary,
+    content,
+    practice,
+    stats,
+    deepgram,
+    coach,
+    voice_lab,
+    aui_input,
+    deepgram_websocket,
+    elevenlabs_websocket,
+    aui_debug,
+    aui_websocket,
+    aui_demo_extended,
+    context_router,
+    tts,
+)

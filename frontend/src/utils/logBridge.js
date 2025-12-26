@@ -128,22 +128,35 @@ function sendToBackend(level, message, ...args) {
     // Detect category from message
     const category = detectCategory(finalMessage);
 
-    fetch(BRIDGE_ENDPOINT, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
+    // Use Beacon API if available (non-blocking, reliable)
+    if (navigator.sendBeacon) {
+        const blob = new Blob([JSON.stringify({
             level,
             message: finalMessage,
             data,
             category,
             timestamp
-        })
-    }).catch(err => {
-        // Use originalConsole to avoid infinite loops
-        originalConsole.error("[LogBridge] Failed to send log:", err);
-    });
+        })], { type: 'application/json' });
+        navigator.sendBeacon(BRIDGE_ENDPOINT, blob);
+    } else {
+        // Fallback to fetch
+        fetch(BRIDGE_ENDPOINT, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                level,
+                message: finalMessage,
+                data,
+                category,
+                timestamp
+            })
+        }).catch(err => {
+            // Use originalConsole to avoid infinite loops
+            originalConsole.error("[LogBridge] Failed to send log:", err);
+        });
+    }
 }
 
 export function initLogBridge() {

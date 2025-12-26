@@ -199,7 +199,7 @@ A centralized logging system that collects both frontend and backend logs.
 
 **Architecture**:
 - **`app/services/log_collector.py`**: Color-coded terminal output + file logging
-- **`frontend/src/utils/logBridge.js`**: Intercepts `console.log/warn/error` and sends to backend
+- **`frontend/src/utils/logBridge.js`**: Intercepts `console.log` and sends to backend via `navigator.sendBeacon` (non-blocking)
 - **Log File**: `logs/unified.log` (cleared on each server restart)
 
 **Categories** (Generic, not vendor-specific):
@@ -319,11 +319,11 @@ The system supports a streaming UI protocol for real-time Agent updates:
   - `aui_run_*`: Agent run lifecycle (started/finished/error).
   - `aui_interrupt`: Control flow interruption (e.g. for user input).
 - **Architecture**:
-  - **Backend**: `app.services.aui_events` generates events; `app.api.routers.aui_stream` serves SSE.
+  - **Backend**: `app.services.aui_events` generates events; `app.api.routers.aui_websocket` handles streaming.
   - **Validation**: `app.services.aui_schema` validates component props using Pydantic models.
-  - **Frontend**: `AUIStreamHydrator` consumes SSE and applies patches using `fast-json-patch`.
+  - **Frontend**: `AUIStreamHydrator` consumes WebSocket events and applies patches using `fast-json-patch`.
 - **Interactivity (Bi-directional)**:
-  - **Downstream**: SSE pushes UI state (buttons/forms).
+  - **Downstream**: WebSocket pushes UI state (buttons/forms).
   - **Upstream**: Client sends actions via `POST /api/aui/input`.
   - **Backend**: `AUIInputService` uses **PostgreSQL LISTEN/NOTIFY** to pause execution and signal waiting Agents across processes.
   - **Persistence**: User inputs are stored in `aui_inputs` table, ensuring HITL flows survive restarts.
@@ -335,7 +335,7 @@ The system supports a streaming UI protocol for real-time Agent updates:
   - **Backend**: `/api/aui/ws/{stream_type}` endpoint in `aui_websocket.py`.
   - **Frontend**: `useAUITransport` hook abstracts SSE/WebSocket; `AUIContext` provides `send` function.
   - **Bidirectional**: `interactive` and `interrupt` streams use `handle_interactive_stream` for HITL.
-  - **Fallback**: SSE remains default; WebSocket enabled via `transport="websocket"` prop.
+  - **Unified**: Replaces SSE as the single transport channel.
 - **Mobile Compatibility (2025-12-25)**:
   - **Frontend**: `useAUITransport.js` supports auto-reconnection with exponential backoff and visibility handling.
   - **Layout**: Mobile-first designs for `AUIStreamingDemo` and all inline components (`InterruptBanner`, `MessageList`, etc.).

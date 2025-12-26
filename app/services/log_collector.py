@@ -89,7 +89,7 @@ class LogCollector:
     LOG_FILE = "logs/unified.log"
     
     def __init__(self):
-        self._file_lock = threading.Lock()
+        self._file_lock = threading.RLock()
         self._init_log_file()
     
     def _init_log_file(self) -> None:

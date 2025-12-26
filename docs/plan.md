@@ -87,6 +87,10 @@
         - [x] Responsive Layout: `AUIStreamingDemo` stack layout on mobile.
         - [x] Component Optimization: Touch-friendly sizing for all inline components (`InterruptBanner`, `MessageList`).
         - [x] UI Fixes: Improved flexbox centering to prevent clipping on overflow.
+    - [x] **AUI Transport Consolidation (2025-12-26)**:
+        - [x] **Cut SSE**: Removed dual transport complexity.
+        - [x] **Unified WebSocket**: Standardized all streaming on WebSocket.
+        - [x] **Frontend Refactor**: Simplified `useAUITransport` and Hydrator.
 - [ ] **Deployment & Architecture Optimization** (New):
     - [x] **Dockerization**: Multi-stage build for React (Vite) + FastAPI.
     - [x] **SPA Serving**: Configure FastAPI to serve React static files (remove Jinja2).
@@ -99,7 +103,8 @@
     - **Layer 1 (Fast)**: **MDX Support**. Import local dictionary files (e.g., Mdict) for authoritative definitions.
     - **Layer 2 (Context)**: "Explain in Context" AI button for specific sentence nuances.
 - [x] **Log Bridge**:
-    - [x] **Unified Debugging**: Stream frontend logs (console.log) to the backend terminal to allow AI agents to debug full-stack issues in one place.
+    - [x] **Unified Debugging**: Stream frontend logs (console.log) to the backend terminal via `navigator.sendBeacon` (non-blocking).
+    - [x] **RLock Fix**: Fixed backend self-deadlock in `log_collector.py`.
 - [x] **Data Dashboard**:
     - [x] **Visual Stats**: Daily streaks, words encounter counter, practice volume.
     - [x] **Time Tracking**: Record total practice duration per session.

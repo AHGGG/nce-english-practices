@@ -637,4 +637,26 @@
 - [x] **WebSocket Tests**: `tests/test_aui_websocket.py` (Passed).
 - [x] **Manual Testing**: Verified all 14 demos on simulated mobile viewport (iPhone 12).
 
+### ✅ AUI Transport Consolidation (Phase 17) (2025-12-26)
+**Simplified streaming architecture by removing SSE and standardizing on WebSocket**
+
+#### Architecture Changes
+- [x] **Backend Cleanup**:
+  - Deleted `aui_stream.py` and `aui_stream_demo.py` (SSE Routers).
+  - Cleaned up `main.py` imports.
+- [x] **Frontend Refactor**:
+  - `useAUITransport.js`: Hardcoded to WebSocket-only. Removed SSE logic.
+  - `AUIStreamingDemo.jsx`: Removed "Transport Layer" toggle.
+  - `AUIStreamHydrator.jsx`: Simplified props interface.
+
+#### Stability Improvements
+- [x] **Log Bridge Fix**:
+  - **Backend**: Switched `threading.Lock` to `threading.RLock` to prevent self-deadlock.
+  - **Frontend**: Switched `fetch` to `navigator.sendBeacon` for non-blocking log transmission.
+  - **Result**: Solved `/api/logs` pending request issues during high-frequency logging.
+
+#### Verification
+- [x] **Unit Tests**: `test_aui_websocket.py` (10/10 Passed).
+- [x] **Manual Verification**: All demo streams working over WebSocket.
+
 
