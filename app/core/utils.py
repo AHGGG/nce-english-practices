@@ -2,6 +2,11 @@ import json
 import re
 from typing import Dict, List, Union, Any
 
+# Safe Input Regex for user-provided topics, stories, etc.
+# Allows alphanumeric, whitespace, and common punctuation.
+# Blocks HTML tags (<>), script injection characters, and most shell meta-characters.
+SAFE_INPUT_PATTERN = r'^[\w\s\.,!?\'\";:()\-&%+=]+$'
+
 def parse_llm_json(content: str) -> Union[Dict[str, Any], List[Any]]:
     """
     Parses JSON from an LLM response, handling markdown code blocks.
