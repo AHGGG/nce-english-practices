@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { useGlobalState } from '../context/GlobalContext';
 import { fetchSentences } from '../api/client';
 import MatrixGrid from '../components/Drill/MatrixGrid';
@@ -61,14 +61,15 @@ const Drill = () => {
         }
     }, [topic, vocab, currentLayer, sentences, actions, state.loadingLayers]);
 
-    const handleCellClick = (e, aspect, text) => {
+    // OPTIMIZATION: Memoize handler to prevent MatrixGrid re-renders
+    const handleCellClick = useCallback((e, aspect, text) => {
         if (e.shiftKey) {
             navigator.clipboard.writeText(text);
             // Toast?
         } else {
             setQuizState({ isOpen: true, aspect, sentence: text });
         }
-    };
+    }, []);
 
     const closeQuiz = () => setQuizState(prev => ({ ...prev, isOpen: false }));
 

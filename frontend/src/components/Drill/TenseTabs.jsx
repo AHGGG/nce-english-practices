@@ -34,4 +34,5 @@ const TenseTabs = ({ currentLayer, onChange }) => {
     );
 };
 
-export default TenseTabs;
+// OPTIMIZATION: Memoize to prevent re-renders when Drill component updates (e.g. modal)
+export default React.memo(TenseTabs);

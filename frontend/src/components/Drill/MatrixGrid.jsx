@@ -58,4 +58,5 @@ const MatrixGrid = ({ data, onCellClick }) => {
     );
 };
 
-export default MatrixGrid;
+// OPTIMIZATION: Memoize to prevent re-rendering entire grid on modal open
+export default React.memo(MatrixGrid);
