@@ -18,7 +18,11 @@ export const ToastProvider = ({ children }) => {
     return (
         <ToastContext.Provider value={{ addToast }}>
             {children}
-            <div className="fixed bottom-4 right-4 z-50 flex flex-col gap-2 pointer-events-none">
+            <div
+                className="fixed bottom-4 right-4 z-50 flex flex-col gap-2 pointer-events-none"
+                role="region"
+                aria-label="Notifications"
+            >
                 {toasts.map(toast => (
                     <ToastItem key={toast.id} {...toast} onDismiss={() => removeToast(toast.id)} />
                 ))}
@@ -82,6 +86,7 @@ const ToastItem = ({ message, type, duration, onDismiss }) => {
 
     return (
         <div
+            role={type === 'error' ? 'alert' : 'status'}
             className={`
                 pointer-events-auto 
                 flex items-start gap-3 p-4 
@@ -92,13 +97,14 @@ const ToastItem = ({ message, type, duration, onDismiss }) => {
                 ${isVisible ? 'translate-x-0 opacity-100' : 'translate-x-full opacity-0'}
             `}
         >
-            <Icon className={`w-5 h-5 flex-none ${style.text}`} />
+            <Icon className={`w-5 h-5 flex-none ${style.text}`} aria-hidden="true" />
             <div className={`flex-1 font-mono text-sm leading-relaxed text-ink`}>
                 {message}
             </div>
             <button
                 onClick={() => setIsVisible(false)}
                 className="text-ink-muted hover:text-ink transition-colors"
+                aria-label="Dismiss notification"
             >
                 <X size={14} />
             </button>
