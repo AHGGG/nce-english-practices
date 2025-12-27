@@ -38,6 +38,7 @@ const NegotiationInterface = () => {
     // Book selection
     const [books, setBooks] = useState([]);
     const [selectedBook, setSelectedBook] = useState('');
+    const [bookRange, setBookRange] = useState({ start: null, end: null });
 
     // Voices ref to store loaded voices
     const voicesRef = useRef([]);
@@ -77,9 +78,16 @@ const NegotiationInterface = () => {
     }, []);
 
     const getContentUrl = () => {
-        return selectedBook
+        let url = selectedBook
             ? `/api/negotiation/next-content?book=${selectedBook}`
             : '/api/negotiation/next-content';
+
+        if (selectedBook && bookRange.start !== null) {
+            const separator = url.includes('?') ? '&' : '?';
+            url += `${separator}book_start=${bookRange.start}&book_end=${bookRange.end}`;
+        }
+
+        return url;
     };
 
     // Speak function using server-side TTS with caching
@@ -626,20 +634,55 @@ const NegotiationInterface = () => {
 
                 {/* Book Selector */}
                 {books.length > 0 && (
-                    <div className="mb-6 w-full max-w-xs">
-                        <label className="block text-xs uppercase text-zinc-500 mb-2 text-center">Vocabulary Source</label>
-                        <select
-                            value={selectedBook}
-                            onChange={(e) => setSelectedBook(e.target.value)}
-                            className="w-full bg-zinc-800 border-zinc-700 text-zinc-300 p-3 rounded-lg text-sm focus:ring-2 focus:ring-neon-green/50 outline-none transition-all cursor-pointer appearance-none text-center font-mono"
-                        >
-                            <option value="">🔀 Random Mix</option>
-                            {books.map(book => (
-                                <option key={book.code} value={book.code}>
-                                    📖 {book.name}
-                                </option>
-                            ))}
-                        </select>
+                    <div className="mb-6 w-full max-w-xs space-y-4">
+                        <div>
+                            <label className="block text-xs uppercase text-zinc-500 mb-2 text-center">Vocabulary Source</label>
+                            <select
+                                value={selectedBook}
+                                onChange={(e) => {
+                                    setSelectedBook(e.target.value);
+                                    setBookRange({ start: null, end: null });
+                                }}
+                                className="w-full bg-zinc-800 border-zinc-700 text-zinc-300 p-3 rounded-lg text-sm focus:ring-2 focus:ring-neon-green/50 outline-none transition-all cursor-pointer appearance-none text-center font-mono"
+                            >
+                                <option value="">🔀 Random Mix</option>
+                                {books.map(book => (
+                                    <option key={book.code} value={book.code}>
+                                        📖 {book.name}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+
+                        {/* COCA Range Filter */}
+                        {selectedBook === 'coca20000' && (
+                            <div className="animate-in fade-in slide-in-from-top-2">
+                                <label className="block text-xs uppercase text-zinc-500 mb-2 text-center">Frequency Range</label>
+                                <select
+                                    value={bookRange.start !== null ? `${bookRange.start}-${bookRange.end}` : ""}
+                                    onChange={(e) => {
+                                        const value = e.target.value;
+                                        if (value) {
+                                            const [start, end] = value.split('-').map(Number);
+                                            setBookRange({ start, end });
+                                        } else {
+                                            setBookRange({ start: null, end: null });
+                                        }
+                                    }}
+                                    className="w-full bg-zinc-800 border-zinc-700 text-zinc-300 p-3 rounded-lg text-sm focus:ring-2 focus:ring-neon-cyan/50 outline-none transition-all cursor-pointer appearance-none text-center font-mono"
+                                >
+                                    <option value="">All Levels (1-20000)</option>
+                                    <option value="1-1000">Top 1000 (Beginner)</option>
+                                    <option value="1001-2000">1001-2000 (Elementary)</option>
+                                    <option value="2001-3000">2001-3000 (Intermediate)</option>
+                                    <option value="3001-4000">3001-4000 (Intermediate+)</option>
+                                    <option value="4001-5000">4001-5000 (Upper Intermediate)</option>
+                                    <option value="5001-10000">5001-10000 (Advanced)</option>
+                                    <option value="10001-15000">10001-15000 (Proficient)</option>
+                                    <option value="15001-20000">15001-20000 (Expert)</option>
+                                </select>
+                            </div>
+                        )}
                     </div>
                 )}
 

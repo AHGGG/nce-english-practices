@@ -792,3 +792,19 @@
   - **Start Screen**: Added Vocabulary Source dropdown selector.
   - **Logic**: Connected `handleStart` and `fetchNextContent` to dynamic URL.
 
+### ✅ Phase 30: Word List Ranges (Completed 2025-12-27)
+**Implemented frequency range filtering for COCA20000 (e.g., Top 1000, 10001-15000).**
+
+#### Backend Implementation
+- [x] **Word List Service**: Updated `get_next_word` to support `min_sequence` and `max_sequence` filtering.
+- [x] **API Updates**:
+  - `GET /api/books/{code}/next`: Added `start` and `end` query params.
+  - `GET /api/negotiation/next-content`: Added `book_start` and `book_end` query params.
+- [x] **Content Feeder**: Updated to pass range parameters to the service layer.
+
+#### Frontend Implementation
+- [x] **Negotiation Interface**:
+  - Added `bookRange` state.
+  - Added secondary dropdown for COCA20000 to select frequency levels (Beginner to Expert).
+  - Updated `getContentUrl` to append range parameters.
+

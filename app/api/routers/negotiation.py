@@ -30,19 +30,31 @@ async def interact(request: NegotiationRequest):
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.get("/next-content", response_model=FeedContent)
-async def get_next_content(word: str = None, book: str = None):
+async def get_next_content(
+    word: str = None, 
+    book: str = None, 
+    book_start: int = None, 
+    book_end: int = None
+):
     """
     Get the next piece of content from the content feeder.
     
     Args:
         word: Optional specific word to look up.
         book: Optional book code (e.g. 'cet4', 'coca') to select words from.
+        book_start: Optional min sequence number (inclusive)
+        book_end: Optional max sequence number (inclusive)
         
     Returns:
         FeedContent with a real dictionary example.
     """
     try:
-        content = await content_feeder.get_next_content(word, source_book=book)
+        content = await content_feeder.get_next_content(
+            word, 
+            source_book=book,
+            min_sequence=book_start,
+            max_sequence=book_end
+        )
         if content:
             return content
         raise HTTPException(status_code=404, detail="No content available")

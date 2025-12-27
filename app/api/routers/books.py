@@ -36,11 +36,26 @@ async def get_book(code: str, db: AsyncSession = Depends(get_db)):
     return book
 
 @router.get("/{code}/next")
-async def get_next_word(code: str, user_id: str = "default_user", db: AsyncSession = Depends(get_db)):
+async def get_next_word(
+    code: str, 
+    user_id: str = "default_user", 
+    start: Optional[int] = None,
+    end: Optional[int] = None,
+    db: AsyncSession = Depends(get_db)
+):
     """
     Get the next recommended word from the book.
+    Optional query params:
+    - start: min sequence (inclusive)
+    - end: max sequence (inclusive)
     """
-    word = await word_list_service.get_next_word(code, user_id=user_id, db_session=db)
+    word = await word_list_service.get_next_word(
+        code, 
+        user_id=user_id, 
+        db_session=db,
+        min_sequence=start,
+        max_sequence=end
+    )
     if not word:
         # Check if book exists
         book = await word_list_service.get_book_by_code(code, db_session=db)
@@ -48,6 +63,6 @@ async def get_next_word(code: str, user_id: str = "default_user", db: AsyncSessi
              raise HTTPException(status_code=404, detail="Book not found")
         
         # Book exists but no words? Or all mastered?
-        return {"word": None, "message": "No more words to learn in this book or book empty."}
+        return {"word": None, "message": "No more words to learn in this book or range."}
         
     return {"word": word}

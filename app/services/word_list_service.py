@@ -37,18 +37,32 @@ class WordListService:
             result = await session.execute(stmt)
             return result.scalars().first()
 
-    async def get_next_word(self, book_code: str, user_id: str = "default_user", db_session: Optional[AsyncSession] = None) -> Optional[str]:
+    async def get_next_word(
+        self, 
+        book_code: str, 
+        user_id: str = "default_user", 
+        db_session: Optional[AsyncSession] = None,
+        min_sequence: Optional[int] = None,
+        max_sequence: Optional[int] = None
+    ) -> Optional[str]:
         """
         Get the next recommended word from a book for a user.
         Prioritizes words that are NOT in WordProficiency or status != 'mastered'.
         """
         if db_session:
-            return await self._get_next_word_logic(db_session, book_code, user_id)
+            return await self._get_next_word_logic(db_session, book_code, user_id, min_sequence, max_sequence)
 
         async with AsyncSessionLocal() as session:
-            return await self._get_next_word_logic(session, book_code, user_id)
+            return await self._get_next_word_logic(session, book_code, user_id, min_sequence, max_sequence)
 
-    async def _get_next_word_logic(self, session: AsyncSession, book_code: str, user_id: str) -> Optional[str]:
+    async def _get_next_word_logic(
+        self, 
+        session: AsyncSession, 
+        book_code: str, 
+        user_id: str,
+        min_sequence: Optional[int] = None,
+        max_sequence: Optional[int] = None
+    ) -> Optional[str]:
         # 1. Get the book ID
         book_res = await session.execute(select(WordBook).where(WordBook.code == book_code))
         book = book_res.scalars().first()
@@ -70,17 +84,20 @@ class WordListService:
         )
 
         # Query Entries excluding mastered words
-        # For COCA (ordered list), we want the lowest sequence number (highest frequency)
-        # For others, we might want random or sequence. defaulting to sequence for now.
+        filters = [
+            WordBookEntry.book_id == book.id,
+            WordBookEntry.word.not_in(mastered_subquery)
+        ]
+
+        if min_sequence is not None:
+            filters.append(WordBookEntry.sequence >= min_sequence)
         
+        if max_sequence is not None:
+            filters.append(WordBookEntry.sequence <= max_sequence)
+
         stmt = (
             select(WordBookEntry.word)
-            .where(
-                and_(
-                    WordBookEntry.book_id == book.id,
-                    WordBookEntry.word.not_in(mastered_subquery)
-                )
-            )
+            .where(and_(*filters))
             .order_by(WordBookEntry.sequence.asc())
             .limit(1)
         )
