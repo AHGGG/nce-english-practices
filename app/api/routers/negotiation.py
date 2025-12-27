@@ -1,0 +1,99 @@
+from fastapi import APIRouter, HTTPException
+from typing import List
+from pydantic import BaseModel
+from app.models.negotiation_schemas import NegotiationRequest, NegotiationResponse
+from app.services.negotiation_service import negotiation_service
+from app.services.content_feeder import content_feeder, FeedContent
+from app.services.proficiency_service import proficiency_service
+
+router = APIRouter(prefix="/api/negotiation", tags=["negotiation"])
+
+class WordProficiencyResponse(BaseModel):
+    word: str
+    exposure_count: int
+    huh_count: int
+    difficulty_score: float
+    status: str
+
+@router.post("/interact", response_model=NegotiationResponse)
+async def interact(request: NegotiationRequest):
+    """
+    Handle user interaction in the Recursive Negotiation Loop.
+    User sends intention (CONTINUE / HUH), and Server returns the next step and audio.
+    """
+    try:
+        response = await negotiation_service.handle_request(request)
+        return response
+    except Exception as e:
+        # In production log this
+        print(f"Negotiation Error: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.get("/next-content", response_model=FeedContent)
+async def get_next_content(word: str = None):
+    """
+    Get the next piece of content from the content feeder.
+    
+    Args:
+        word: Optional specific word to look up.
+        
+    Returns:
+        FeedContent with a real dictionary example.
+    """
+    try:
+        content = content_feeder.get_next_content(word)
+        if content:
+            return content
+        raise HTTPException(status_code=404, detail="No content available")
+    except Exception as e:
+        print(f"ContentFeeder Error: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.get("/difficult-words", response_model=List[WordProficiencyResponse])
+async def get_difficult_words(limit: int = 20):
+    """
+    Get the user's most difficult words (highest HUH? rate).
+    
+    Returns:
+        List of words sorted by difficulty score.
+    """
+    try:
+        words = await proficiency_service.get_difficult_words(limit=limit)
+        return [
+            WordProficiencyResponse(
+                word=w.word,
+                exposure_count=w.exposure_count,
+                huh_count=w.huh_count,
+                difficulty_score=w.difficulty_score,
+                status=w.status
+            )
+            for w in words
+        ]
+    except Exception as e:
+        print(f"Proficiency Error: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/word-examples")
+async def get_word_examples(word: str):
+    """
+    Get ALL examples for a word, grouped by sense.
+    
+    Args:
+        word: The word to look up.
+        
+    Returns:
+        WordExampleSet with all senses and examples.
+    """
+    from app.models.word_example_schemas import WordExampleSet
+    
+    try:
+        result = content_feeder.get_all_examples(word)
+        if result:
+            return result
+        raise HTTPException(status_code=404, detail=f"No examples found for '{word}'")
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"WordExamples Error: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))

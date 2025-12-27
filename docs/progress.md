@@ -670,4 +670,54 @@
         - [x] **SDK Removal**: Verified removal of `deepgram-sdk` and `elevenlabs` from `pyproject.toml`.
         - [x] **Script Cleanup**: Deleted legacy SSE verification scripts and tests.
         - [x] **Frontend Refactor**: Cleaned up `useAUITransport` legacy mappings.
-        - [x] **Backend Cleanup**: Removed legacy `deepgram_service.py` and router.
+
+## 🧠 Phase 18: Strategic Pivot - The Voice CI Revolution (Current)
+**Goal**: Re-architect the application from a multi-stage toolset into a Unified Voice Interface driven by SLA/CI Theory.
+- [x] **Theoretical Foundation**:
+    - [x] Socratic Dialogue on SLA/ALG vs Learning.
+    - [x] Deep dive into "Comprehensible Input" research (Krashen, Long, Swain).
+    - [x] **Strategy Shift**: Confirmed pivot to "Unified Voice Interface" (Voice-First, Context-Driven).
+- [ ] **Architecture Design (Next)**:
+    - [x] **Core Loop Design**: Defined "Recursive Negotiation Loop" (Explain -> L1 -> Verify).
+    - [x] **Context Engine**: Defined LTM (Proficiency) and STM (Session) memory structures.
+    - [ ] **Ingestion Strategy**: RSS/Podcast pipeline design.
+
+### ✅ Phase 24: Multi-Example Content Feeder (Completed 2025-12-27)
+**Implemented rich dictionary content feeding with multiple examples per word and intuitive navigation.**
+
+#### Backend Implementation
+- [x] **New Schemas** (`app/models/word_example_schemas.py`):
+  - `SenseWithExamples`, `WordEntry`, `WordExampleSet` for structured data.
+- [x] **Content Feeder** (`app/services/content_feeder.py`):
+  - Added `get_all_examples(word)` method.
+  - Integration with `CollinsParser` to extract all senses and examples.
+  - Bug fixes for `grammar_pattern` and `pos` access in Collins schema.
+- [x] **API Endpoint**:
+  - `GET /api/negotiation/word-examples?word={word}`.
+
+#### Frontend Implementation
+- [x] **Navigation UI**:
+  - **Sense Tabs**: Clickable tabs to switch between different dictionary senses.
+  - **Example Navigator**: Left/Right arrows to cycle through examples within a sense.
+  - **Status Indicators**: "Example X/Y" and "Z senses" badges.
+- [x] **Interaction**:
+  - Auto-fetch examples on START and Negotiation (HUH/CONTINUE).
+  - Updates main text, definition, and translation dynamically.
+
+### ✅ Phase 25: Voice UI Enhancements & History (Completed 2025-12-27)
+**Refined the Negotiation Interface with requested UX features and robust state management.**
+
+#### Features
+- [x] **Step History**:
+  - Bi-directional navigation (Back/Forward).
+  - **Bug Fix**: Solved "Cross-Sense Pollution" by resetting history on Sense/Example switch.
+  - **State Restoration**: Fully restores text, step, definition, translation, and indices.
+- [x] **Playback Speed Control**:
+  - Toggle button (Gauge icon) for 1.0x, 0.75x, 0.5x speeds.
+  - Visual feedback for current speed.
+- [x] **Skip Function**:
+  - "SKIP" button to discard current word and fetch a new one immediately.
+- [x] **Layout Optimization**:
+  - Compact "Hero Card" design.
+  - Action buttons (HUH? / SKIP / GOT IT) grid.
+  - Embedded audio controls (Play/Back/Forward/Speed). 

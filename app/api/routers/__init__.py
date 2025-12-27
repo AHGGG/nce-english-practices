@@ -13,4 +13,5 @@ from app.api.routers import (
     aui_websocket,
     context_router,
     tts,
+    negotiation,
 )

@@ -3,7 +3,19 @@
 > **Core Philosophy**: "Active Usage over Passive Memorization."
 > **Strategy**: A 4-Stage Learning Path (Context -> Drill -> Apply -> Speak).
 
-## 1. Stage 0: Context & Concept (The "Learn" Stage)
+## 0. Strategic Pivot (2025-12-27): The Voice-First CI Architecture
+> **New Core Philosophy**: "Unified Contextual Acquisition."
+> **Shift**: Moving away from the discrete 4-stage model (Drill/Apply/Speak) to a **single, unified Voice Interface** that guides the user through the input-intake-acquisition loop using CI principles (i+1, 98% Comprehension, Low Anxiety).
+
+### Core Features (Implemented 2025-12)
+- [x] **Negotiation Loop**: "Huh?" button triggers simplified explanation (L1/L2) -> "Got it" moves to next.
+- [x] **Multi-Example Navigation**: Browse multiple senses and examples for deep context.
+- [x] **Step History**: Back/Forward navigation through the negotiation dialogue.
+- [x] **Scaffolding**: Click-to-reveal definitions and translations.
+- [x] **Playback Control**: Speed adjustment (0.5x, 0.75x, 1.0x) and auto-replay.
+
+## [LEGACY] 1. Stage 0: Context & Concept (The "Learn" Stage)
+*(Note: This 4-stage model is being deprecated in favor of the unified voice flow)*
 *For beginners or starting a new concept.*
 - [x] **Contextual Story Generator**:
     - [x] **Streaming Support**: Real-time story generation for better UX.

@@ -23,6 +23,7 @@ from app.api.routers import (
     aui_websocket,
     context_router,
     tts,
+    negotiation,
 )
 from app.services.log_collector import setup_logging
 import logging
@@ -80,6 +81,7 @@ app.include_router(aui_input.router, prefix="/api/aui", tags=["AUI Input"]) # Ne
 app.include_router(aui_websocket.router, tags=["AUI WebSocket"])  # WebSocket transport
 app.include_router(context_router.router)  # Context resources
 app.include_router(tts.router)  # TTS API
+app.include_router(negotiation.router) # Included negotiation router
 
 from app.models.schemas import RemoteLog
 from app.services.log_collector import (

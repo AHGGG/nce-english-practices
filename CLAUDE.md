@@ -117,6 +117,9 @@ The project follows a modular package structure:
   - `theme.py`, `sentence.py`, `story.py`, `quiz.py`, `scenario.py`
 - **`app/models/`**: Data models package.
   - `schemas.py`: Pydantic models (DTOs) and API schemas.
+  - `collins_schemas.py`: Structured models for Collins dictionary.
+  - `ldoce_schemas.py`: Structured models for LDOCE dictionary.
+  - `word_example_schemas.py`: **NEW** Models for multi-example navigation (`WordExampleSet`).
   - `orm.py`: SQLAlchemy database models.
 - **`app/database.py`**: Database operations and query functions.
 - **`app/database.py`**: Database operations and query functions.
@@ -136,6 +139,12 @@ The `llm_service` singleton in `app/services/llm.py` provides:
 - **Voice Client**: `llm_service.voice_client` (Gemini) for WebSocket voice sessions.
 
 ALL generators and routes use this service rather than creating clients directly.
+
+### Content Feeder Service (Multi-Example)
+- **Role**: Feeds rich content to the Negotiation Interface.
+- **Service**: `app/services/content_feeder.py`.
+- **Method**: `get_all_examples(word)` orchestrates dictionary parsing and structures data for navigation.
+- **Models**: Uses `WordExampleSet` to support hierarchical navigation (Word -> Entry -> Sense -> Example).
 
 ### Frontend Design System ("Cyber-Noir")
 - **Philosophy**: "Mental Gym" - High contrast, information-dense, no distractions.

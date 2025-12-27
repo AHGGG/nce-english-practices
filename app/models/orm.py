@@ -222,3 +222,32 @@ class AUIInputRecord(Base):
     created_at: Mapped[datetime] = mapped_column(TIMESTAMP, server_default=func.now())
     processed_at: Mapped[Optional[datetime]] = mapped_column(TIMESTAMP, nullable=True)
 
+
+class WordProficiency(Base):
+    """
+    Tracks word-level proficiency for the Voice CI Interface.
+    Records HUH? events and calculates difficulty based on interaction history.
+    """
+    __tablename__ = "word_proficiency"
+    __table_args__ = (
+        Index("idx_proficiency_user_word", "user_id", "word"),
+        Index("idx_proficiency_difficulty", "difficulty_score"),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    user_id: Mapped[str] = mapped_column(Text, default="default_user")
+    word: Mapped[str] = mapped_column(Text, index=True)
+    
+    # Interaction stats
+    exposure_count: Mapped[int] = mapped_column(Integer, default=0)  # How many times encountered
+    huh_count: Mapped[int] = mapped_column(Integer, default=0)  # How many times HUH? was clicked
+    continue_count: Mapped[int] = mapped_column(Integer, default=0)  # How many times CONTINUE was clicked
+    
+    # Calculated metrics
+    difficulty_score: Mapped[float] = mapped_column(Integer, default=0.0)  # huh_count / exposure_count
+    status: Mapped[str] = mapped_column(Text, default="new")  # new / learning / mastered
+    
+    # Timestamps
+    first_seen_at: Mapped[datetime] = mapped_column(TIMESTAMP, server_default=func.now())
+    last_seen_at: Mapped[datetime] = mapped_column(TIMESTAMP, server_default=func.now(), onupdate=func.now())
+

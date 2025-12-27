@@ -12,6 +12,8 @@ import Coach from './views/Coach'; // New Coach View
 import VoiceLab from './views/VoiceLab'; // Voice Vendor Test Page
 import AUIStreamingDemo from './views/AUIStreamingDemo'; // AUI Streaming Test
 
+import VoiceMode from './views/VoiceMode'; // New Voice Mode
+
 function App() {
   return (
     <GlobalProvider>
@@ -22,6 +24,7 @@ function App() {
               {/* Coach Mode Route (Standalone) */}
               <Route path="/coach" element={<Coach />} />
               <Route path="/voice-lab" element={<VoiceLab />} />
+              <Route path="/voice" element={<VoiceMode />} />
 
               <Route path="/aui-stream-demo" element={<AUIStreamingDemo />} />
 
