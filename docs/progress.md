@@ -782,3 +782,13 @@
 - [x] **Core Tests**: Unit and integration tests for Word List Service and API.
 - [x] **Data Integrity**: Verified seeding of 8000+ words.
 
+### ✅ Phase 29: Voice Page Word List Integration (Completed 2025-12-27)
+**Integrated Word List selection directly into the Voice Mode interface.**
+
+#### Frontend Implementation
+- [x] **Negotiation Interface**:
+  - Added `books` state and fetching logic.
+  - created `getContentUrl` helper to support filtered endpoints.
+  - **Start Screen**: Added Vocabulary Source dropdown selector.
+  - **Logic**: Connected `handleStart` and `fetchNextContent` to dynamic URL.
+

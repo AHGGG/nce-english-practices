@@ -35,17 +35,39 @@ const NegotiationInterface = () => {
     const [currentSenseIndex, setCurrentSenseIndex] = useState(0);
     const [currentExampleIndex, setCurrentExampleIndex] = useState(0);
 
+    // Book selection
+    const [books, setBooks] = useState([]);
+    const [selectedBook, setSelectedBook] = useState('');
+
     // Voices ref to store loaded voices
     const voicesRef = useRef([]);
 
-    // Load voices on mount
+    // Load voices and books on mount
     useEffect(() => {
         const loadVoices = () => {
             voicesRef.current = window.speechSynthesis.getVoices();
             console.log('Voices loaded:', voicesRef.current.length);
         };
 
+        const fetchBooks = async () => {
+            try {
+                const res = await fetch('/api/books/');
+                if (res.ok) {
+                    const data = await res.json();
+                    setBooks(data);
+                    // Default to first book if available (e.g. CET4), or keep empty for mixed
+                    // If we want "Random Mix" as default, leave it empty.
+                    // If we want to nudge user to a book, select first.
+                    // Let's leave it empty (Random Mix) by default, or better: select nothing
+                }
+            } catch (e) {
+                console.error("Failed to fetch books", e);
+            }
+        };
+
         loadVoices();
+        fetchBooks();
+
         // Chrome requires this event listener
         window.speechSynthesis.onvoiceschanged = loadVoices;
 
@@ -53,6 +75,12 @@ const NegotiationInterface = () => {
             window.speechSynthesis.onvoiceschanged = null;
         };
     }, []);
+
+    const getContentUrl = () => {
+        return selectedBook
+            ? `/api/negotiation/next-content?book=${selectedBook}`
+            : '/api/negotiation/next-content';
+    };
 
     // Speak function using server-side TTS with caching
     const audioRef = useRef(null);
@@ -152,7 +180,7 @@ const NegotiationInterface = () => {
 
         try {
             // Fetch real content from dictionary
-            const contentRes = await fetch('/api/negotiation/next-content');
+            const contentRes = await fetch(getContentUrl());
             let content = { text: "The ubiquity of smartphones has changed how we communicate.", source_word: "ubiquity", definition: "", translation: "" };
 
             if (contentRes.ok) {
@@ -356,7 +384,7 @@ const NegotiationInterface = () => {
     // Fetch real content from the ContentFeeder API
     const fetchNextContent = async () => {
         try {
-            const res = await fetch('/api/negotiation/next-content');
+            const res = await fetch(getContentUrl());
             if (res.ok) {
                 const data = await res.json();
                 setCurrentText(data.text);
@@ -593,8 +621,28 @@ const NegotiationInterface = () => {
     if (!hasStarted) {
         return (
             <div className="flex flex-col h-full bg-canvas text-ink p-4 sm:p-6 max-w-md md:max-w-lg lg:max-w-xl mx-auto items-center justify-center">
-                <Volume2 className="w-24 h-24 mb-8 text-neon-green" />
-                <h2 className="text-2xl font-serif mb-4">Voice Learning Mode</h2>
+                <Volume2 className="w-24 h-24 mb-6 text-neon-green" />
+                <h2 className="text-2xl font-serif mb-2">Voice Learning Mode</h2>
+
+                {/* Book Selector */}
+                {books.length > 0 && (
+                    <div className="mb-6 w-full max-w-xs">
+                        <label className="block text-xs uppercase text-zinc-500 mb-2 text-center">Vocabulary Source</label>
+                        <select
+                            value={selectedBook}
+                            onChange={(e) => setSelectedBook(e.target.value)}
+                            className="w-full bg-zinc-800 border-zinc-700 text-zinc-300 p-3 rounded-lg text-sm focus:ring-2 focus:ring-neon-green/50 outline-none transition-all cursor-pointer appearance-none text-center font-mono"
+                        >
+                            <option value="">🔀 Random Mix</option>
+                            {books.map(book => (
+                                <option key={book.code} value={book.code}>
+                                    📖 {book.name}
+                                </option>
+                            ))}
+                        </select>
+                    </div>
+                )}
+
                 <p className="text-zinc-500 text-center mb-8">
                     Press START to begin listening. <br />
                     Try to understand without looking at the text.
