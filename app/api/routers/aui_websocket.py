@@ -80,8 +80,9 @@ STREAM_TYPE_MAP = {
     
     # Context Resources
     "contexts": lambda params: aui_streaming_service.stream_context_resources(
-        word=params.get("word", "example"),
-        user_level=params.get("user_level", 1)
+        word=params.get("word"),
+        user_level=params.get("user_level", 1),
+        book_code=params.get("book")
     ),
     
     # LDOCE Dictionary

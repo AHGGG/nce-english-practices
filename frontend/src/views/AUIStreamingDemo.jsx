@@ -10,9 +10,35 @@ import AUIStreamHydrator from '../components/aui/AUIStreamHydrator';
 const AUIStreamingDemo = () => {
     const [streamUrl, setStreamUrl] = useState('');
     const [selectedDemo, setSelectedDemo] = useState('');
+    const [books, setBooks] = useState([]);
+    const [selectedBook, setSelectedBook] = useState('');
+
+    // Fetch books on mount
+    React.useEffect(() => {
+        const fetchBooks = async () => {
+            try {
+                const res = await fetch('/api/books/');
+                if (res.ok) {
+                    const data = await res.json();
+                    setBooks(data);
+                    if (data.length > 0) setSelectedBook(data[0].code);
+                }
+            } catch (err) {
+                console.error("Failed to fetch books", err);
+            }
+        };
+        fetchBooks();
+    }, []);
 
     // Demo configurations
     const demos = [
+        {
+            id: 'book-practice',
+            label: 'Book Practice',
+            icon: '📖',
+            description: 'Practice words from selected book',
+            getUrl: () => `/api/aui/stream/contexts?book=${selectedBook}&user_level=1`
+        },
         {
             id: 'story',
             label: 'Story Stream',
@@ -139,6 +165,24 @@ const AUIStreamingDemo = () => {
                         Using WebSocket (bidirectional)
                     </p>
                 </div>
+
+                {/* Book Selector */}
+                {books.length > 0 && (
+                    <div className="bg-[#111] p-3 rounded border border-[#333]">
+                        <label className="block text-xs uppercase text-[#666] mb-2">Select Word Book</label>
+                        <select
+                            value={selectedBook}
+                            onChange={(e) => setSelectedBook(e.target.value)}
+                            className="w-full bg-black border border-[#333] text-white p-2 rounded text-sm"
+                        >
+                            {books.map(book => (
+                                <option key={book.code} value={book.code}>
+                                    {book.name}
+                                </option>
+                            ))}
+                        </select>
+                    </div>
+                )}
 
                 {/* Demo Selection Grid */}
                 <div>

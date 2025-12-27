@@ -14,4 +14,6 @@ from app.api.routers import (
     context_router,
     tts,
     negotiation,
+    books,
+
 )

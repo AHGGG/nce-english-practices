@@ -19,6 +19,7 @@ os.environ["DATABASE_URL"] = TEST_DATABASE_URL
 
 from app.config import settings
 from app.core.db import Base, get_db
+import app.models.orm  # Ensure models are registered with Base
 from app.main import app
 
 

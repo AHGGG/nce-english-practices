@@ -1016,9 +1016,10 @@ class AUIStreamingService:
 
     async def stream_context_resources(
         self,
-        word: str,
+        word: str = None,
         user_level: int = 1,
-        delay_per_context: float = 0.3
+        delay_per_context: float = 0.3,
+        book_code: str = None
     ) -> AsyncGenerator[AUIEvent, None]:
         """
         Stream context resources for a word using Collins structured dictionary data.
@@ -1029,19 +1030,53 @@ class AUIStreamingService:
         - Part of speech and grammar patterns
         
         Args:
-            word: Target vocabulary word
+            word: Target vocabulary word (optional if book_code provided)
             user_level: User mastery level (1-3)
             delay_per_context: Delay between context additions for visual effect
+            book_code: Optional book code to fetch next word from
         
         Yields:
             AUIEvent: Stream of events (snapshot + deltas for each context)
         """
         from app.services.dictionary import dict_manager
         from app.services.collins_parser import collins_parser
+        from app.services.word_list_service import word_list_service
         from fastapi.concurrency import run_in_threadpool
         
         session_id = str(uuid.uuid4())
         message_id = f"contexts_{session_id}"
+
+        # 0. Fetch word from book if needed
+        if not word and book_code:
+            word = await word_list_service.get_next_word(book_code)
+            if not word:
+                yield StreamStartEvent(session_id=session_id, metadata={"intention": "show_contexts", "error": "book_empty"})
+                yield create_snapshot_event(
+                    intention="show_contexts",
+                    ui={
+                        "component": "MarkdownMessage",
+                        "props": {"content": f"No more words available in book **{book_code}**."}
+                    },
+                    fallback_text="Book completed or empty.",
+                    target_level=user_level
+                )
+                yield StreamEndEvent(session_id=session_id)
+                return
+
+        if not word:
+             # No word provided or found
+             yield StreamStartEvent(session_id=session_id, metadata={"intention": "show_contexts", "error": "no_word"})
+             yield create_snapshot_event(
+                intention="show_contexts",
+                ui={
+                    "component": "MarkdownMessage",
+                    "props": {"content": "No word specified."}
+                },
+                fallback_text="No word specified",
+                target_level=user_level
+            )
+             yield StreamEndEvent(session_id=session_id)
+             return
         
         yield StreamStartEvent(
             session_id=session_id,

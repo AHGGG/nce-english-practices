@@ -758,3 +758,27 @@
   - Fetches and displays context scenario automatically on example switch.
   - **Hero Card**: Replaces raw sentence with rich HTML scenario (target sentence highlighted).
 
+### ✅ Phase 28: Word List Recommendations (Completed 2025-12-27)
+**Implemented feature to recommend words from specific vocabulary lists (CET4, CET6, COCA20000).**
+
+#### Backend Implementation
+- [x] **Database Schema**: Added `WordBook` and `WordBookEntry` tables.
+- [x] **Word List Service**: Created `WordListService` to manage books and recommendations.
+- [x] **Data Seeding**: Script to seed CET4, CET6, and COCA lists from trusted sources.
+- [x] **API Enpoints**:
+  - `GET /api/books/`: List available books.
+  - `GET /api/books/{code}`: Get book details.
+  - `GET /api/books/{code}/next`: Get next recommended word.
+  - Updated `/api/negotiation/next-content` to accept `book` parameter.
+- [x] **AUI Integration**: Updated `stream_context_resources` to fetch words from books.
+
+#### Frontend Implementation
+- [x] **AUI Streaming Demo**:
+  - Added Book Selector UI.
+  - Added "Book Practice" demo mode.
+  - Integrated with backend book API.
+
+#### Verification
+- [x] **Core Tests**: Unit and integration tests for Word List Service and API.
+- [x] **Data Integrity**: Verified seeding of 8000+ words.
+

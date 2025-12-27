@@ -43,20 +43,26 @@ class ContentFeeder:
         self._used_examples: set[str] = set()  # Track used examples to avoid repetition
         self._current_index = 0
     
-    def get_next_content(self, target_word: Optional[str] = None) -> Optional[FeedContent]:
+    async def get_next_content(self, target_word: Optional[str] = None, source_book: Optional[str] = None) -> Optional[FeedContent]:
         """
         Get the next piece of content.
         
         Args:
-            target_word: Optional specific word to look up. If None, picks from seed list.
+            target_word: Optional specific word to look up. If None, picks from seed list or book.
+            source_book: Optional book code (e.g. 'cet4', 'coca').
             
         Returns:
             FeedContent with a real dictionary example, or None if not found.
         """
         # Pick a word
-        if target_word:
-            word = target_word
-        else:
+        word = target_word
+        
+        if not word and source_book:
+            from app.services.word_list_service import word_list_service
+            # TODO: Pass user_id from context if available, currently default
+            word = await word_list_service.get_next_word(source_book)
+            
+        if not word:
             # Round-robin through seed words
             word = self.SEED_WORDS[self._current_index % len(self.SEED_WORDS)]
             self._current_index += 1
@@ -89,7 +95,7 @@ class ContentFeeder:
                                 translation=example.translation,
                                 source_word=word,
                                 definition=sense.definition[:100] + "..." if len(sense.definition) > 100 else sense.definition,
-                                source_type="dictionary"
+                                source_type=f"dictionary_{source_book}" if source_book else "dictionary"
                             )
         
         # No suitable example found
