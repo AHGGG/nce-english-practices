@@ -109,7 +109,7 @@ The project follows a modular package structure:
   - `dictionary.py`: MDX/MDD parsing and multi-dictionary management.
   - `chat.py`: Stateful chat session management.
   - `voice.py`: Voice session management (WebSocket).
-  - `negotiation_service.py`: **NEW** Interactive explanation loop (Context-aware).
+  - `negotiation_service.py`: **NEW** Interactive explanation loop with **Real-time Micro-Scenarios**.
   - `coach.py`: **NEW** Agentic Coach service (LLM Tool use).
   - `tts.py`: **NEW** Edge-TTS integration.
   - `voice_lab.py`: **NEW** Multi-vendor integration (Google, ElevenLabs, Deepgram).

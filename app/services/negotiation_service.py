@@ -197,4 +197,26 @@ class NegotiationService:
         response = await llm_service.chat_complete(messages)
         return response.strip()
 
+    async def generate_micro_scenario(self, word: str, definition: str, target_sentence: str) -> str:
+        """
+        Generate a cohesive micro-scenario (2-3 sentences) wrapping the target sentence.
+        Used to provide context for dictionary examples.
+        """
+        prompt = (
+            f"Create a brief 3-sentence scenario (micro-story) that naturally includes the Target Sentence verbatim (or very closely).\n"
+            f"The scenario should clarify the meaning of '{word}' based on the Definition.\n"
+            f"\n"
+            f"Word: {word}\n"
+            f"Definition: {definition}\n"
+            f"Target Sentence: \"{target_sentence}\"\n"
+            f"\n"
+            f"Rules:\n"
+            f"1. Context should be simple (CEFR A2/B1).\n"
+            f"2. The Target Sentence must appear naturally in the middle or end.\n"
+            f"3. Output plain text only. NO markdown, NO asterisks, NO quotes around the whole text.\n"
+        )
+        messages = [{"role": "user", "content": prompt}]
+        response = await llm_service.chat_complete(messages)
+        return response.strip()
+
 negotiation_service = NegotiationService()

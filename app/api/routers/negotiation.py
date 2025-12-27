@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException
 from typing import List
 from pydantic import BaseModel
-from app.models.negotiation_schemas import NegotiationRequest, NegotiationResponse
+from app.models.negotiation_schemas import NegotiationRequest, NegotiationResponse, ContextRequest, ContextResponse
 from app.services.negotiation_service import negotiation_service
 from app.services.content_feeder import content_feeder, FeedContent
 from app.services.proficiency_service import proficiency_service
@@ -96,4 +96,21 @@ async def get_word_examples(word: str):
         raise
     except Exception as e:
         print(f"WordExamples Error: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.post("/context", response_model=ContextResponse)
+async def generate_context(request: ContextRequest):
+    """
+    Generate a micro-scenario for a given word/example.
+    """
+    from app.models.negotiation_schemas import ContextResponse
+    try:
+        scenario = await negotiation_service.generate_micro_scenario(
+            word=request.word,
+            definition=request.definition,
+            target_sentence=request.target_sentence
+        )
+        return ContextResponse(scenario=scenario)
+    except Exception as e:
+        print(f"Context Generation Error: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))

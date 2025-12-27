@@ -16,6 +16,8 @@ const NegotiationInterface = () => {
     const [sourceWord, setSourceWord] = useState('');
     const [definition, setDefinition] = useState('');
     const [translation, setTranslation] = useState('');
+    const [contextScenario, setContextScenario] = useState('');
+    const [isContextLoading, setIsContextLoading] = useState(false);
 
     // Scaffold visibility
     const [showDefinition, setShowDefinition] = useState(false);
@@ -171,6 +173,12 @@ const NegotiationInterface = () => {
             speak(content.text);
             setStep('original');
             setNeedsContext(true); // First interaction needs to pass context
+
+            // Trigger initial context generation
+            setContextScenario('');
+            if (content.source_word && content.definition) {
+                fetchContextScenario(content.source_word, content.definition, content.text);
+            }
 
         } catch (e) {
             console.error(e);
@@ -366,12 +374,44 @@ const NegotiationInterface = () => {
 
                 // Speak the new content
                 speak(data.text);
+
+                // Trigger context generation
+                setContextScenario(''); // Clear previous
+                if (data.source_word && data.definition) {
+                    fetchContextScenario(data.source_word, data.definition, data.text);
+                }
             }
         } catch (e) {
             console.error('Failed to fetch next content:', e);
             // Fallback
             setCurrentText("She has been studying all day.");
         }
+    };
+
+    // Fetch context scenario from backend
+    const fetchContextScenario = async (word, def, sentence) => {
+        if (!word || !def || !sentence) return;
+
+        setIsContextLoading(true);
+        try {
+            const res = await fetch('/api/negotiation/context', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    word: word,
+                    definition: def,
+                    target_sentence: sentence
+                })
+            });
+
+            if (res.ok) {
+                const data = await res.json();
+                setContextScenario(data.scenario);
+            }
+        } catch (e) {
+            console.error("Context fetch failed:", e);
+        }
+        setIsContextLoading(false);
     };
 
     // Fetch all examples for a word
@@ -408,7 +448,12 @@ const NegotiationInterface = () => {
             const example = currentSense.examples[newIndex];
             setCurrentText(example.text);
             setTranslation(example.translation || '');
+            setTranslation(example.translation || '');
             speak(example.text);
+
+            // Trigger context generation
+            setContextScenario('');
+            fetchContextScenario(wordExamples.word, currentSense.definition, example.text);
         } else {
             // Move to next sense if available
             nextSense();
@@ -433,7 +478,12 @@ const NegotiationInterface = () => {
             if (example) {
                 setCurrentText(example.text);
                 setTranslation(example.translation || '');
+                setTranslation(example.translation || '');
                 speak(example.text);
+
+                // Trigger context generation
+                setContextScenario('');
+                fetchContextScenario(wordExamples.word, senses[currentSenseIndex].definition, example.text);
             }
         } else if (currentSenseIndex > 0) {
             // Move to previous sense
@@ -463,6 +513,10 @@ const NegotiationInterface = () => {
                 setCurrentText(example.text);
                 setTranslation(example.translation || '');
                 speak(example.text);
+
+                // Trigger context generation
+                setContextScenario('');
+                fetchContextScenario(wordExamples.word, sense.definition, example.text);
             }
         }
     };
@@ -488,6 +542,10 @@ const NegotiationInterface = () => {
             setCurrentText(example.text);
             setTranslation(example.translation || '');
             speak(example.text);
+
+            // Trigger context generation
+            setContextScenario('');
+            fetchContextScenario(wordExamples.word, sense.definition, example.text);
         }
     };
 
@@ -512,6 +570,10 @@ const NegotiationInterface = () => {
                 setCurrentText(example.text);
                 setTranslation(example.translation || '');
                 speak(example.text);
+
+                // Trigger context generation
+                setContextScenario('');
+                fetchContextScenario(wordExamples.word, sense.definition, example.text);
             }
         }
     };
@@ -575,6 +637,25 @@ const NegotiationInterface = () => {
                     >
                         {currentText}
                     </div>
+
+                    {/* Context Scenario (if available) */}
+                    {(contextScenario || isContextLoading) && isTextVisible && step === 'original' && (
+                        <div className="mt-4 pt-4 border-t border-zinc-700/50 text-base text-zinc-300 font-serif leading-relaxed animate-in fade-in slide-in-from-bottom-2">
+                            {isContextLoading ? (
+                                <span className="flex items-center gap-2 text-zinc-500 italic text-sm">
+                                    <span className="w-2 h-2 bg-neon-cyan rounded-full animate-ping" />
+                                    Thinking of a scenario...
+                                </span>
+                            ) : (
+                                <span dangerouslySetInnerHTML={{
+                                    __html: contextScenario.replace(
+                                        currentText.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), // Escape regex chars
+                                        `<strong class="text-neon-cyan">${currentText}</strong>`
+                                    )
+                                }} />
+                            )}
+                        </div>
+                    )}
 
                     {/* Text Reveal Hint */}
                     {!isTextVisible && (

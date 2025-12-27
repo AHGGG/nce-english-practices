@@ -23,6 +23,7 @@
 *For beginners or starting a new concept.*
 - [x] **Contextual Story Generator**:
     - [x] **Streaming Support**: Real-time story generation for better UX.
+    - [x] **Micro-Scenarios**: Real-time context generation for dictionary examples (2025-12-27).
     - Generates a short, engaging story that naturally uses the target tense/aspect multiple times.
     - **Why**: Primes the brain with pattern recognition before analyzing rules.
 - [ ] **Interactive Explainer**:

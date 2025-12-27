@@ -46,3 +46,13 @@ class NegotiationResponse(BaseModel):
     next_step: NegotiationStep
     should_listen: bool = Field(True, description="Whether to open mic after speaking")
     visual_aids: List[str] = Field(default_factory=list, description="Images or diagrams if available")
+
+class ContextRequest(BaseModel):
+    """Request to generate a micro-scenario context."""
+    word: str
+    definition: str
+    target_sentence: str
+
+class ContextResponse(BaseModel):
+    """Response containing the generated micro-scenario."""
+    scenario: str

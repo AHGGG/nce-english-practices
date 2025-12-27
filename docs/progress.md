@@ -741,3 +741,20 @@
   - Explicitly sends `definition` and `part_of_speech` from `wordExamples` state to backend.
 - [x] **Robustness**:
   - Prevents "Stale Context" where AI explains the previous example after navigation.
+
+### ✅ Phase 27: Real-time Micro-Scenarios (Completed 2025-12-27)
+**Implemented real-time generation of context scenarios for dictionary examples.**
+
+#### Backend Enhancements
+- [x] **Context Service** (`NegotiationService`):
+  - Added `generate_micro_scenario(word, definition, target)` method.
+  - Generates 2-3 sentence stories wrapping the target example using LLM.
+- [x] **API Endpoint**:
+  - `POST /api/negotiation/context` for lazy-loading scenarios.
+
+#### Frontend Enhancements
+- [x] **Negotiation Interface**:
+  - Added "Thinking of a scenario..." loading state.
+  - Fetches and displays context scenario automatically on example switch.
+  - **Hero Card**: Replaces raw sentence with rich HTML scenario (target sentence highlighted).
+
