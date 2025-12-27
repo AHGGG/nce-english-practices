@@ -721,3 +721,23 @@
   - Compact "Hero Card" design.
   - Action buttons (HUH? / SKIP / GOT IT) grid.
   - Embedded audio controls (Play/Back/Forward/Speed). 
+
+### ✅ Phase 26: Negotiation Deep Context (Completed 2025-12-27)
+**Solved "Context is not enough" issue by injecting dictionary definitions into LLM prompts and forcing session synchronization.**
+
+#### Backend Enhancements
+- [x] **Rich Context Schema**:
+  - Updated `NegotiationContext` to include `definition`, `part_of_speech`, and `translation_hint`.
+  - Service logic (`NegotiationService`) now validates session integrity based on context.
+- [x] **Smart Explanation**:
+  - `_generate_explanation` now constructs prompts using specific dictionary sense data.
+  - **TTS Optimization**: Prompts explicitly forbid markdown output for smooth audio.
+- [x] **Testing**:
+  - Added `tests/test_negotiation_context.py` to verify prompt injection logic.
+
+#### Frontend Refactor
+- [x] **Context Synchronization**:
+  - `NegotiationInterface.jsx` forces `session_id` reset on navigation (Next Example/Sense).
+  - Explicitly sends `definition` and `part_of_speech` from `wordExamples` state to backend.
+- [x] **Robustness**:
+  - Prevents "Stale Context" where AI explains the previous example after navigation.

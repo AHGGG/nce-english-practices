@@ -21,6 +21,9 @@ class NegotiationContext(BaseModel):
     source_type: str = Field(..., description="dictionary, rss, podcast, story")
     metadata: Dict[str, Any] = Field(default_factory=dict, description="Extra metadata like original article ID, etc.")
     focus_words: List[str] = Field(default_factory=list, description="Specific words identified as difficult")
+    definition: Optional[str] = Field(None, description="The dictionary definition of the word/sense")
+    part_of_speech: Optional[str] = Field(None, description="The POS tag (e.g. verb, noun)")
+    translation_hint: Optional[str] = Field(None, description="The existing translation for reference")
 
 class NegotiationSessionState(BaseModel):
     """The transient state of the current negotiation loop."""

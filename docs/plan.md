@@ -10,6 +10,10 @@
 ### Core Features (Implemented 2025-12)
 - [x] **Negotiation Loop**: "Huh?" button triggers simplified explanation (L1/L2) -> "Got it" moves to next.
 - [x] **Multi-Example Navigation**: Browse multiple senses and examples for deep context.
+- [x] **Context Enhancement**:
+    - [x] **Rich Context**: Backend uses definition and POS to ground explanations (Fixes "Context is not enough").
+    - [x] **Session Sync**: Navigation resets session to prevent stale context.
+    - [x] **TTS Optimization**: Prompts forbid markdown/asterisks for clean audio.
 - [x] **Step History**: Back/Forward navigation through the negotiation dialogue.
 - [x] **Scaffolding**: Click-to-reveal definitions and translations.
 - [x] **Playback Control**: Speed adjustment (0.5x, 0.75x, 1.0x) and auto-replay.

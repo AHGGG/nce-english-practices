@@ -191,9 +191,18 @@ const NegotiationInterface = () => {
 
             // If we need context (new session after finalize), include it
             if (needsContext) {
+                // Get current sense and example data for rich context
+                const senses = wordExamples?.entries?.flatMap(e => e.senses) || [];
+                const currentSense = senses[currentSenseIndex];
+                const currentExample = currentSense?.examples[currentExampleIndex];
+
                 requestBody.context = {
                     target_content: currentText,
-                    source_type: "dictionary"
+                    source_type: "dictionary",
+                    // Rich context fields
+                    definition: definition || currentSense?.definition || "",
+                    part_of_speech: currentSense?.grammar_pattern || "unknown", // Using grammar_pattern as proxy for POS/Pattern
+                    translation_hint: translation || currentExample?.translation || ""
                 };
                 setNeedsContext(false); // Reset flag
             }
@@ -386,6 +395,11 @@ const NegotiationInterface = () => {
         if (!wordExamples) return;
         // Reset step history when navigating (new context)
         setStepHistory([]); setHistoryIndex(-1);
+        // Reset session for new context
+        setSessionId(`session-${Date.now()}`);
+        setNeedsContext(true);
+        setStep('original');
+
         const senses = wordExamples.entries.flatMap(e => e.senses);
         const currentSense = senses[currentSenseIndex];
         if (currentSense && currentExampleIndex < currentSense.examples.length - 1) {
@@ -406,6 +420,11 @@ const NegotiationInterface = () => {
         if (!wordExamples) return;
         // Reset step history when navigating (new context)
         setStepHistory([]); setHistoryIndex(-1);
+        // Reset session for new context
+        setSessionId(`session-${Date.now()}`);
+        setNeedsContext(true);
+        setStep('original');
+
         if (currentExampleIndex > 0) {
             const newIndex = currentExampleIndex - 1;
             setCurrentExampleIndex(newIndex);
@@ -427,6 +446,11 @@ const NegotiationInterface = () => {
         if (!wordExamples) return;
         // Reset step history when switching sense (new context)
         setStepHistory([]); setHistoryIndex(-1);
+        // Reset session for new context
+        setSessionId(`session-${Date.now()}`);
+        setNeedsContext(true);
+        setStep('original');
+
         const senses = wordExamples.entries.flatMap(e => e.senses);
         if (currentSenseIndex < senses.length - 1) {
             const newIndex = currentSenseIndex + 1;
@@ -448,6 +472,11 @@ const NegotiationInterface = () => {
         if (!wordExamples || currentSenseIndex <= 0) return;
         // Reset step history when switching sense (new context)
         setStepHistory([]); setHistoryIndex(-1);
+        // Reset session for new context
+        setSessionId(`session-${Date.now()}`);
+        setNeedsContext(true);
+        setStep('original');
+
         const newIndex = currentSenseIndex - 1;
         setCurrentSenseIndex(newIndex);
         const senses = wordExamples.entries.flatMap(e => e.senses);
@@ -467,6 +496,11 @@ const NegotiationInterface = () => {
         if (!wordExamples) return;
         // Reset step history when switching sense (new context)
         setStepHistory([]); setHistoryIndex(-1);
+        // Reset session for new context
+        setSessionId(`session-${Date.now()}`);
+        setNeedsContext(true);
+        setStep('original');
+
         const senses = wordExamples.entries.flatMap(e => e.senses);
         if (senseIdx >= 0 && senseIdx < senses.length) {
             setCurrentSenseIndex(senseIdx);

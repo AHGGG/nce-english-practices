@@ -108,7 +108,7 @@ class NegotiationService:
         if session.current_step == NegotiationStep.ORIGINAL:
             # Step 1: Explain in simple English (i+1)
             session.current_step = NegotiationStep.EXPLAIN_EN
-            explanation = await self._generate_explanation(target, "en")
+            explanation = await self._generate_explanation(target, "en", content)
             return NegotiationResponse(
                 audio_text=explanation,
                 display_text=explanation, # Scaffolding
@@ -118,7 +118,7 @@ class NegotiationService:
         elif session.current_step == NegotiationStep.EXPLAIN_EN:
             # Step 2: Fallback to Chinese (L1)
             session.current_step = NegotiationStep.EXPLAIN_CN
-            explanation = await self._generate_explanation(target, "cn")
+            explanation = await self._generate_explanation(target, "cn", content)
             return NegotiationResponse(
                 audio_text=f"In Chinese context: {explanation}",
                 display_text=explanation,
@@ -163,11 +163,28 @@ class NegotiationService:
             should_listen=False # Don't wait for Huh, just play next story chunk
         )
 
-    async def _generate_explanation(self, text: str, lang: str) -> str:
+    async def _generate_explanation(self, text: str, lang: str, context_data: Optional[NegotiationContext] = None) -> str:
+        # Construct context string
+        context_str = ""
+        if context_data:
+            if context_data.part_of_speech:
+                context_str += f" The word acts as a {context_data.part_of_speech}."
+            if context_data.definition:
+                context_str += f" The specific meaning is: '{context_data.definition}'."
+            if context_data.translation_hint and lang == "cn":
+                 context_str += f" (Reference translation: {context_data.translation_hint})"
+
         # Call LLM
-        prompt = f"Explain the following text in simple English (CEFR A2 level): '{text}'"
+        prompt = f"Explain the following text in simple English (CEFR A2 level): '{text}'."
+        prompt += " Output plain text only, optimized for Text-to-Speech. Do NOT use markdown, asterisks, or special formatting."
+        if context_str:
+            prompt += f"\nContext:{context_str}"
+
         if lang == "cn":
-            prompt = f"Translate and explain the nuance of this text in Chinese: '{text}'"
+            prompt = f"Translate and explain the nuance of this text in Chinese: '{text}'."
+            prompt += " Output plain text only. Do NOT use markdown or asterisks."
+            if context_str:
+                prompt += f"\nContext:{context_str}"
             
         messages = [{"role": "user", "content": prompt}]
         response = await llm_service.chat_complete(messages)
@@ -175,6 +192,7 @@ class NegotiationService:
 
     async def _generate_verification(self, text: str) -> str:
         prompt = f"Create a NEW, simple example sentence using the key vocabulary or grammar from: '{text}'. ensure it is i+1 level."
+        prompt += " Output plain text only. Do NOT use markdown."
         messages = [{"role": "user", "content": prompt}]
         response = await llm_service.chat_complete(messages)
         return response.strip()
