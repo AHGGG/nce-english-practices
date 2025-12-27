@@ -18,7 +18,11 @@ export const ToastProvider = ({ children }) => {
     return (
         <ToastContext.Provider value={{ addToast }}>
             {children}
-            <div className="fixed bottom-4 right-4 z-50 flex flex-col gap-2 pointer-events-none">
+            <div
+                className="fixed bottom-4 right-4 z-50 flex flex-col gap-2 pointer-events-none"
+                role="region"
+                aria-label="Notifications"
+            >
                 {toasts.map(toast => (
                     <ToastItem key={toast.id} {...toast} onDismiss={() => removeToast(toast.id)} />
                 ))}
@@ -80,6 +84,11 @@ const ToastItem = ({ message, type, duration, onDismiss }) => {
     const style = variants[type] || variants.info;
     const Icon = style.icon;
 
+    // Determine ARIA role based on type
+    const role = (type === 'error' || type === 'warning') ? 'alert' : 'status';
+    // Assertive for errors (interrupt user), polite for others (wait for pause)
+    const ariaLive = (type === 'error' || type === 'warning') ? 'assertive' : 'polite';
+
     return (
         <div
             className={`
@@ -91,16 +100,19 @@ const ToastItem = ({ message, type, duration, onDismiss }) => {
                 transition-all duration-300 ease-out
                 ${isVisible ? 'translate-x-0 opacity-100' : 'translate-x-full opacity-0'}
             `}
+            role={role}
+            aria-live={ariaLive}
         >
-            <Icon className={`w-5 h-5 flex-none ${style.text}`} />
+            <Icon className={`w-5 h-5 flex-none ${style.text}`} aria-hidden="true" />
             <div className={`flex-1 font-mono text-sm leading-relaxed text-ink`}>
                 {message}
             </div>
             <button
                 onClick={() => setIsVisible(false)}
                 className="text-ink-muted hover:text-ink transition-colors"
+                aria-label="Close notification"
             >
-                <X size={14} />
+                <X size={14} aria-hidden="true" />
             </button>
         </div>
     );
