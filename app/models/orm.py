@@ -56,6 +56,9 @@ class Attempt(Base):
     Previously table 'attempts'.
     """
     __tablename__ = "attempts"
+    __table_args__ = (
+        Index("idx_attempt_topic_tense", "topic", "tense"),
+    )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     activity_type: Mapped[str] = mapped_column(Text, index=True) # 'quiz', 'scenario', 'mission'
@@ -138,6 +141,9 @@ class CoachSession(Base):
     Logs metadata about Coach sessions.
     """
     __tablename__ = "coach_sessions"
+    __table_args__ = (
+        Index("idx_coach_user", "user_id"),
+    )
 
     id: Mapped[str] = mapped_column(String, primary_key=True) # UUID
     user_id: Mapped[str] = mapped_column(Text)
