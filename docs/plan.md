@@ -20,6 +20,8 @@
 - [x] **Word List Focus**: Practice vocabulary from specific books (CET4/6, COCA).
     - [x] **Random Selection**: Uses `func.random()` for variety instead of sequential order.
     - [x] **SKIP Support**: Exclude current word when fetching next (prevents repetition).
+- [/] **Ingestion Strategy**: RSS/Podcast pipeline design.
+    - [x] **RSS Service**: Basic feed parsing and sentence extraction (2025-12-28).
 
 ## [LEGACY] 1. Stage 0: Context & Concept (The "Learn" Stage)
 *(Note: This 4-stage model is being deprecated in favor of the unified voice flow)*

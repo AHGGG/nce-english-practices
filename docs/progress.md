@@ -798,6 +798,21 @@
 #### Backend Implementation
 - [x] **Word List Service**: Updated `get_next_word` to support `min_sequence` and `max_sequence` filtering.
 - [x] **API Updates**:
+  - Updated `/api/negotiation/next-content` to accept `min_sequence` and `max_sequence`.
+  - Updated `/api/books/{code}/next` to accept range parameters.
+
+### ✅ Phase 31: RSS Article Integration (In Progress)
+**Implemented foundational service for fetching and parsing RSS feeds for learning content.**
+
+#### Backend Implementation
+- [x] **RSS Service** (`app/services/rss_service.py`):
+  - Fetches and parses RSS feeds using `feedparser`.
+  - Extracts clean sentences from mixed content (e.g., Chinese/English articles).
+  - Retrieves random content with title, link, and publication date.
+- [x] **Verification**:
+  - Created `tests/verification/verify_rss.py`.
+  - Validated against Economist feed (`https://plink.anyfeeder.com/weixin/Economist_fans`).
+  - Verified sentence cleaning logic (filtering short/garbage text).
   - `GET /api/books/{code}/next`: Added `start` and `end` query params.
   - `GET /api/negotiation/next-content`: Added `book_start` and `book_end` query params.
 - [x] **Content Feeder**: Updated to pass range parameters to the service layer.
