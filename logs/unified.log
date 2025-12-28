@@ -1,18 +1,1 @@
-=== Log session started at 2025-12-26T17:28:05.713682 ===
-2025-12-26 17:28:05.948 [BA] [INFO] [lifecycl] app.api.routers.aui_websocket: WebSocket connected: stream_type=story
-2025-12-26 17:28:06.116 [BA] [INFO] [lifecycl] app.api.routers.aui_websocket: WebSocket connected: stream_type=activity
-2025-12-26 17:28:11.298 [BA] [INFO] [lifecycl] app.api.routers.aui_websocket: WebSocket connected: stream_type=tool-call
-2025-12-26 17:28:13.359 [BA] [INFO] [lifecycl] app.api.routers.aui_websocket: WebSocket connected: stream_type=agent-run
-2025-12-26 17:28:15.984 [BA] [INFO] [lifecycl] app.api.routers.aui_websocket: WebSocket connected: stream_type=multi-messages
-2025-12-26 17:28:20.840 [BA] [INFO] [lifecycl] app.api.routers.aui_websocket: WebSocket connected: stream_type=invalid-type
-2025-12-26 17:28:20.948 [BA] [INFO] [lifecycl] app.api.routers.aui_websocket: WebSocket connected: stream_type=vocabulary
-2025-12-26 17:28:20.949 [BA] [INFO] [network] app.api.routers.aui_websocket: Received params: {'words': ['test', 'example'], 'user_level': 2}
-2025-12-26 17:28:22.472 [BA] [INFO] [lifecycl] app.api.routers.aui_websocket: WebSocket connected: stream_type=activity
-2025-12-26 17:28:22.593 [BA] [INFO] [lifecycl] app.api.routers.aui_websocket: WebSocket connected: stream_type=story
-2025-12-26 17:28:23.379 [BA] [INFO] [network] httpx: HTTP Request: POST http://test/api/quiz "HTTP/1.1 200 OK"
-2025-12-26 17:28:23.958 [BA] [INFO] [network] httpx: HTTP Request: POST http://test/api/scenario/grade "HTTP/1.1 200 OK"
-2025-12-26 17:28:24.529 [BA] [INFO] [network] httpx: HTTP Request: POST http://test/api/chat/start "HTTP/1.1 200 OK"
-2025-12-26 17:28:24.531 [BA] [INFO] [network] httpx: HTTP Request: POST http://test/api/chat/reply "HTTP/1.1 200 OK"
-2025-12-26 17:28:25.114 [BA] [INFO] [network] httpx: HTTP Request: POST http://test/api/grade "HTTP/1.1 200 OK"
-2025-12-26 17:28:25.697 [BA] [INFO] [network] httpx: HTTP Request: POST http://test/api/log_attempt "HTTP/1.1 200 OK"
-2025-12-26 17:28:26.270 [BA] [INFO] [network] httpx: HTTP Request: POST http://test/api/chat/polish "HTTP/1.1 200 OK"
+=== Log session started at 2025-12-28T15:07:10.444272 ===
