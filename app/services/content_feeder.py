@@ -20,6 +20,16 @@ class FeedContent(BaseModel):
     source_word: str = Field(..., description="The word this example came from")
     definition: Optional[str] = Field(None, description="The definition of the word")
     source_type: str = Field(default="dictionary", description="dictionary, rss, podcast, etc.")
+    highlights: List[str] = Field(default_factory=list, description="List of words to highlight in the text")
+    article_title: Optional[str] = Field(None, description="Title of the source article (for RSS)")
+    article_link: Optional[str] = Field(None, description="URL of the source article (for RSS)")
+    # Sequential reading support
+    article_idx: Optional[int] = Field(None, description="Current article index")
+    sentence_idx: Optional[int] = Field(None, description="Current sentence index within article")
+    total_sentences: Optional[int] = Field(None, description="Total sentences in current article")
+    has_next: Optional[bool] = Field(None, description="Whether there's more content to read")
+    # Debug field - full article content for troubleshooting
+    raw_content: Optional[str] = Field(None, description="Full raw article content (for debugging)")
 
 
 class ContentFeeder:
@@ -43,13 +53,69 @@ class ContentFeeder:
         self._used_examples: set[str] = set()  # Track used examples to avoid repetition
         self._current_index = 0
     
+    async def _disambiguate_word_sense(self, word: str, sentence: str, senses: List[dict]) -> int:
+        """
+        Use LLM to determine which sense of a word is being used in the given sentence.
+        
+        Args:
+            word: The word to disambiguate
+            sentence: The sentence containing the word
+            senses: List of sense dicts with 'definition' key
+            
+        Returns:
+            Index of the most appropriate sense (0-based)
+        """
+        if not senses:
+            return 0
+        if len(senses) == 1:
+            return 0
+        
+        try:
+            from app.services.llm import llm_service
+            
+            # Build prompt with numbered senses
+            senses_text = "\n".join([
+                f"{i+1}. {s.get('definition', 'No definition')}" 
+                for i, s in enumerate(senses[:5])  # Limit to first 5 senses
+            ])
+            
+            prompt = f"""Given this sentence: "{sentence}"
+
+The word "{word}" appears with these possible meanings:
+{senses_text}
+
+Which meaning number (1-{min(len(senses), 5)}) best matches how "{word}" is used in the sentence?
+Reply with ONLY the number, nothing else."""
+
+            response = await llm_service.chat_complete(
+                messages=[{"role": "user", "content": prompt}],
+                temperature=0.0
+            )
+            
+            # Parse response - should be just a number
+            try:
+                sense_num = int(response.strip())
+                if 1 <= sense_num <= min(len(senses), 5):
+                    return sense_num - 1  # Convert to 0-based
+            except ValueError:
+                pass
+                
+        except Exception as e:
+            print(f"WSD error for '{word}': {e}")
+        
+        return 0  # Default to first sense
+    
     async def get_next_content(
         self, 
         target_word: Optional[str] = None, 
         source_book: Optional[str] = None,
         min_sequence: Optional[int] = None,
         max_sequence: Optional[int] = None,
-        exclude_word: Optional[str] = None
+        exclude_word: Optional[str] = None,
+        rss_url: Optional[str] = None,
+        epub_file: Optional[str] = None,
+        article_idx: Optional[int] = None,
+        sentence_idx: Optional[int] = None
     ) -> Optional[FeedContent]:
         """
         Get the next piece of content.
@@ -60,6 +126,8 @@ class ContentFeeder:
             min_sequence: Optional min sequence (inclusive).
             max_sequence: Optional max sequence (inclusive).
             exclude_word: Optional word to exclude (for SKIP functionality).
+            rss_url: Optional RSS feed URL for RSS mode.
+            epub_file: Optional EPUB filename for EPUB mode.
             
         Returns:
             FeedContent with a real dictionary example, or None if not found.
@@ -76,6 +144,113 @@ class ContentFeeder:
                 max_sequence=max_sequence,
                 exclude_word=exclude_word
             )
+        
+        # 0. EPUB Mode (Content-Driven from local EPUB files)
+        if epub_file:
+            from app.services.epub_service import epub_service
+            
+            # Load the EPUB file
+            if not epub_service.load_epub(epub_file):
+                return None
+            
+            # Get content - sequential or random based on indices
+            if article_idx is not None and sentence_idx is not None:
+                epub_content = epub_service.get_sequential_content(article_idx, sentence_idx)
+            else:
+                epub_content = epub_service.get_random_content()
+            
+            if epub_content:
+                text = epub_content['text']
+                highlights = []
+                definition = None
+                
+                # Identify words from vocabulary source
+                if source_book:
+                    from app.services.word_list_service import word_list_service
+                    highlights = await word_list_service.identify_words_in_text(text, source_book)
+                
+                # Word Sense Disambiguation for first highlighted word
+                if highlights:
+                    from app.services.dictionary_service import dictionary_service
+                    target_word = highlights[0]
+                    entries = dictionary_service.get_dictionary_entries(target_word)
+                    if entries:
+                        # Flatten all senses from all entries
+                        all_senses = []
+                        for entry in entries:
+                            all_senses.extend(entry.get('senses', []))
+                        
+                        if all_senses:
+                            # Use LLM to disambiguate
+                            best_sense_idx = await self._disambiguate_word_sense(
+                                target_word, text, all_senses
+                            )
+                            best_sense = all_senses[best_sense_idx]
+                            definition = f"{target_word.upper()}: {best_sense.get('definition', '')}"
+                
+                return FeedContent(
+                    text=text,
+                    translation=None,
+                    source_word=highlights[0] if highlights else "reader",
+                    definition=definition,  # Now populated with disambiguated sense
+                    source_type="epub",
+                    highlights=highlights,
+                    article_title=epub_content.get('title'),
+                    article_link=None,  # Local file, no link
+                    article_idx=epub_content.get('article_idx'),
+                    sentence_idx=epub_content.get('sentence_idx'),
+                    total_sentences=epub_content.get('total_sentences'),
+                    has_next=epub_content.get('has_next_sentence') or epub_content.get('has_next_article'),
+                    raw_content=epub_content.get('raw_content')
+                )
+        
+        # 1. RSS Mode (Content-Driven)
+        if rss_url:
+            from app.services.rss_service import rss_service
+            
+            # 1a. Get content - sequential or random based on indices
+            if article_idx is not None and sentence_idx is not None:
+                # Sequential mode
+                rss_content = await rss_service.get_sequential_content(
+                    rss_url, article_idx, sentence_idx
+                )
+            else:
+                # Random mode (legacy/fallback)
+                rss_content = await rss_service.get_random_content(rss_url)
+            
+            if rss_content:
+                text = rss_content['text']
+                highlights = []
+                
+                # DEBUG: Print raw_content status
+                raw_content_value = rss_content.get('raw_content')
+                print(f"DEBUG ContentFeeder: raw_content exists = {raw_content_value is not None}, length = {len(raw_content_value) if raw_content_value else 0}")
+                
+                # 1b. If a book is selected, identify potential learnable words
+                if source_book:
+                     from app.services.word_list_service import word_list_service
+                     highlights = await word_list_service.identify_words_in_text(text, source_book)
+                
+                # 1c. Return enriched content
+                return FeedContent(
+                    text=text,
+                    translation=None, # RSS usually doesn't have translation
+                    source_word=highlights[0] if highlights else "reader",
+                    definition=None, # Will be fetched via negotiation if clicked
+                    source_type="rss",
+                    highlights=highlights,
+                    article_title=rss_content.get('title'),
+                    article_link=rss_content.get('link'),
+                    # Sequential reading metadata
+                    article_idx=rss_content.get('article_idx'),
+                    sentence_idx=rss_content.get('sentence_idx'),
+                    total_sentences=rss_content.get('total_sentences'),
+                    has_next=rss_content.get('has_next_sentence') or rss_content.get('has_next_article'),
+                    # Debug info
+                    raw_content=rss_content.get('raw_content')
+                )
+             
+        # 2. Dictionary Mode (Word-Driven)
             
         if not word:
             # Round-robin through seed words

@@ -3,8 +3,10 @@ import random
 from sqlalchemy import select, func, and_
 from sqlalchemy.orm import selectinload
 from sqlalchemy.ext.asyncio import AsyncSession
+import re
 
 from app.core.db import AsyncSessionLocal
+
 from app.models.orm import WordBook, WordBookEntry, WordProficiency
 
 class WordListService:
@@ -117,5 +119,57 @@ class WordListService:
         word = result.scalars().first()
         
         return word
+
+    async def identify_words_in_text(
+        self,
+        text: str,
+        book_code: str,
+        db_session: Optional[AsyncSession] = None
+    ) -> List[str]:
+        """
+        Identify which words from a specific book appear in the given text.
+        Returns a list of matching words found in the text.
+        """
+        if not text or not book_code:
+            return []
+
+        if db_session:
+            return await self._identify_words_logic(db_session, text, book_code)
+
+        async with AsyncSessionLocal() as session:
+            return await self._identify_words_logic(session, text, book_code)
+
+    async def _identify_words_logic(self, session: AsyncSession, text: str, book_code: str) -> List[str]:
+        # 1. Normalize text to find potential candidates
+        # Split by non-word characters and convert to lowercase
+        # This is a rough tokenization
+        tokens = set(re.findall(r'\b[a-zA-Z]+\b', text.lower()))
+        
+        if not tokens:
+            return []
+
+        # 2. Get book ID
+        book_res = await session.execute(select(WordBook).where(WordBook.code == book_code))
+        book = book_res.scalars().first()
+        if not book:
+            return []
+
+        # 3. Query DB for these tokens within the specific book
+        # This approach avoids loading the entire book into memory
+        stmt = (
+            select(WordBookEntry.word)
+            .where(
+                and_(
+                    WordBookEntry.book_id == book.id,
+                    WordBookEntry.word.in_(tokens)
+                )
+            )
+        )
+        
+        result = await session.execute(stmt)
+        found_words = result.scalars().all()
+        
+        return list(found_words)
+
 
 word_list_service = WordListService()

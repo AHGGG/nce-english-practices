@@ -40,6 +40,23 @@ const NegotiationInterface = () => {
     const [selectedBook, setSelectedBook] = useState('');
     const [bookRange, setBookRange] = useState({ start: null, end: null });
 
+    // RSS Feed
+    const [rssUrl, setRssUrl] = useState('');
+    const [isRssMode, setIsRssMode] = useState(false);
+    // EPUB Mode
+    const [isEpubMode, setIsEpubMode] = useState(false);
+    const [epubFile, setEpubFile] = useState('TheEconomist.2025.12.27.epub');
+    const [highlightedWords, setHighlightedWords] = useState([]); // Array of words to highlight
+    const [articleTitle, setArticleTitle] = useState('');
+    const [articleLink, setArticleLink] = useState('');
+    // Sequential reading state
+    const [rssArticleIdx, setRssArticleIdx] = useState(0);
+    const [rssSentenceIdx, setRssSentenceIdx] = useState(0);
+    const [rssTotalSentences, setRssTotalSentences] = useState(0);
+    const [rssHasNext, setRssHasNext] = useState(false);
+    // Debug: raw article content
+    const [rawContent, setRawContent] = useState('');
+
     // Voices ref to store loaded voices
     const voicesRef = useRef([]);
 
@@ -77,7 +94,7 @@ const NegotiationInterface = () => {
         };
     }, []);
 
-    const getContentUrl = (excludeWord = null) => {
+    const getContentUrl = (excludeWord = null, customIndices = null) => {
         let url = selectedBook
             ? `/api/negotiation/next-content?book=${selectedBook}`
             : '/api/negotiation/next-content';
@@ -91,6 +108,27 @@ const NegotiationInterface = () => {
         if (excludeWord) {
             const separator = url.includes('?') ? '&' : '?';
             url += `${separator}exclude=${encodeURIComponent(excludeWord)}`;
+        }
+
+        // Add EPUB file if in EPUB mode
+        if (isEpubMode && epubFile) {
+            const separator = url.includes('?') ? '&' : '?';
+            url += `${separator}epub_file=${encodeURIComponent(epubFile)}`;
+
+            // Add sequential reading indices
+            const articleIdx = customIndices?.articleIdx ?? rssArticleIdx;
+            const sentenceIdx = customIndices?.sentenceIdx ?? rssSentenceIdx;
+            url += `&article_idx=${articleIdx}&sentence_idx=${sentenceIdx}`;
+        }
+        // Add RSS URL if in RSS mode
+        else if (isRssMode && rssUrl) {
+            const separator = url.includes('?') ? '&' : '?';
+            url += `${separator}rss_url=${encodeURIComponent(rssUrl)}`;
+
+            // Add sequential reading indices
+            const articleIdx = customIndices?.articleIdx ?? rssArticleIdx;
+            const sentenceIdx = customIndices?.sentenceIdx ?? rssSentenceIdx;
+            url += `&article_idx=${articleIdx}&sentence_idx=${sentenceIdx}`;
         }
 
         return url;
@@ -203,9 +241,23 @@ const NegotiationInterface = () => {
                 setSourceWord(content.source_word || '');
                 setDefinition(content.definition || '');
                 setTranslation(content.translation || '');
+                setHighlightedWords(content.highlights || []);
+                setArticleTitle(content.article_title || '');
+                setArticleLink(content.article_link || '');
 
-                // Also fetch all examples for this word
-                if (content.source_word) {
+                // Store sequential reading metadata
+                if (content.article_idx !== undefined) {
+                    setRssArticleIdx(content.article_idx);
+                    setRssSentenceIdx(content.sentence_idx || 0);
+                    setRssTotalSentences(content.total_sentences || 0);
+                    setRssHasNext(content.has_next || false);
+                }
+
+                // Store raw content for debugging
+                setRawContent(content.raw_content || '');
+
+                // Also fetch all examples for this word (only in Dictionary mode or when clicked)
+                if (content.source_word && !isRssMode) {
                     fetchWordExamples(content.source_word);
                 }
             }
@@ -388,6 +440,31 @@ const NegotiationInterface = () => {
         setIsLoading(false);
     };
 
+    // Next sentence in RSS sequential reading
+    const handleNextSentence = async () => {
+        if (!isRssMode) return;
+
+        setIsLoading(true);
+        // Reset for new sentence
+        setStepHistory([]);
+        setHistoryIndex(-1);
+        setStep('original');
+        setIsTextVisible(false);
+        setShowDefinition(false);
+        setShowTranslation(false);
+        setSessionId(`session-${Date.now()}`);
+
+        // Calculate next indices
+        const nextSentenceIdx = rssSentenceIdx + 1;
+        await fetchNextContent(null, {
+            articleIdx: rssArticleIdx,
+            sentenceIdx: nextSentenceIdx
+        });
+
+        setNeedsContext(true);
+        setIsLoading(false);
+    };
+
     // Toggle playback speed
     const toggleSpeed = () => {
         setPlaybackSpeed(prev => {
@@ -398,21 +475,36 @@ const NegotiationInterface = () => {
     };
 
     // Fetch real content from the ContentFeeder API
-    const fetchNextContent = async (excludeWord = null) => {
+    const fetchNextContent = async (excludeWord = null, customIndices = null) => {
         try {
-            const res = await fetch(getContentUrl(excludeWord));
+            const res = await fetch(getContentUrl(excludeWord, customIndices));
             if (res.ok) {
                 const data = await res.json();
                 setCurrentText(data.text);
                 setSourceWord(data.source_word || '');
                 setDefinition(data.definition || '');
                 setTranslation(data.translation || '');
+                setHighlightedWords(data.highlights || []);
+                setArticleTitle(data.article_title || '');
+                setArticleLink(data.article_link || '');
+
+                // Store sequential reading metadata
+                if (data.article_idx !== undefined) {
+                    setRssArticleIdx(data.article_idx);
+                    setRssSentenceIdx(data.sentence_idx || 0);
+                    setRssTotalSentences(data.total_sentences || 0);
+                    setRssHasNext(data.has_next || false);
+                }
+
+                // Store raw content for debugging
+                setRawContent(data.raw_content || '');
+
                 // Reset scaffold visibility
                 setShowDefinition(false);
                 setShowTranslation(false);
 
-                // Also fetch all examples for this word
-                if (data.source_word) {
+                // Also fetch all examples for this word (only in Dictionary mode)
+                if (data.source_word && !isRssMode) {
                     fetchWordExamples(data.source_word);
                 }
 
@@ -644,7 +736,70 @@ const NegotiationInterface = () => {
                 {books.length > 0 && (
                     <div className="mb-6 w-full max-w-xs space-y-4">
                         <div>
-                            <label className="block text-xs uppercase text-zinc-500 mb-2 text-center">Vocabulary Source</label>
+                            <label className="block text-xs uppercase text-zinc-500 mb-2 text-center font-bold">Content Source</label>
+
+                            {/* Toggle between Dictionary, EPUB, and RSS */}
+                            <div className="flex rounded-lg bg-zinc-800 p-1 mb-4">
+                                <button
+                                    onClick={() => { setIsRssMode(false); setIsEpubMode(false); }}
+                                    className={`flex-1 py-1.5 px-2 rounded text-xs font-medium transition-colors ${!isRssMode && !isEpubMode ? 'bg-zinc-700 text-white shadow' : 'text-zinc-500 hover:text-zinc-300'}`}
+                                >
+                                    📖 Dictionary
+                                </button>
+                                <button
+                                    onClick={() => { setIsEpubMode(true); setIsRssMode(false); }}
+                                    className={`flex-1 py-1.5 px-2 rounded text-xs font-medium transition-colors ${isEpubMode ? 'bg-neon-cyan/20 text-neon-cyan shadow' : 'text-zinc-500 hover:text-zinc-300'}`}
+                                >
+                                    📰 EPUB
+                                </button>
+                                <button
+                                    onClick={() => { setIsRssMode(true); setIsEpubMode(false); }}
+                                    className={`flex-1 py-1.5 px-2 rounded text-xs font-medium transition-colors ${isRssMode ? 'bg-zinc-700 text-white shadow' : 'text-zinc-500 hover:text-zinc-300'}`}
+                                >
+                                    🌐 RSS
+                                </button>
+                            </div>
+
+                            {/* EPUB File Selection */}
+                            {isEpubMode && (
+                                <div className="animate-in fade-in slide-in-from-top-2 mb-4 p-3 rounded-lg bg-neon-cyan/5 border border-neon-cyan/20">
+                                    <div className="text-xs text-neon-cyan mb-1 font-mono">📰 Economist EPUB</div>
+                                    <div className="text-xs text-zinc-400">TheEconomist.2025.12.27.epub</div>
+                                    <div className="text-xs text-zinc-600 mt-1">73 articles • Full content</div>
+                                </div>
+                            )}
+
+                            {/* RSS URL Input */}
+                            {isRssMode && (
+                                <div className="animate-in fade-in slide-in-from-top-2 mb-4">
+                                    <label className="block text-xs text-zinc-500 mb-1">RSS URL</label>
+                                    <input
+                                        type="text"
+                                        value={rssUrl}
+                                        onChange={(e) => setRssUrl(e.target.value)}
+                                        placeholder="https://example.com/feed.xml"
+                                        className="w-full bg-zinc-800 border-zinc-700 text-zinc-300 p-2 rounded text-sm focus:ring-2 focus:ring-neon-green/50 outline-none font-mono"
+                                    />
+                                    <div className="flex flex-wrap gap-2 mt-2">
+                                        <button onClick={() => setRssUrl("https://rsshub.rssforever.com/economist/latest?mode=fulltext")} className="text-xs text-neon-cyan hover:underline">
+                                            📰 Economist (全文)
+                                        </button>
+                                        <button onClick={() => setRssUrl("https://rsshub.rssforever.com/nytimes/en?mode=fulltext")} className="text-xs text-neon-cyan hover:underline">
+                                            🗽 NYT (全文)
+                                        </button>
+                                        <button onClick={() => setRssUrl("https://rsshub.pseudoyu.com/economist/latest?mode=fulltext")} className="text-xs text-zinc-500 hover:underline">
+                                            备用: Economist
+                                        </button>
+                                        <button onClick={() => setRssUrl("https://plink.anyfeeder.com/weixin/Economist_fans")} className="text-xs text-zinc-500 hover:underline">
+                                            旧: Economist
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
+
+                            <label className="block text-xs uppercase text-zinc-500 mb-2 text-center mt-4">
+                                {isRssMode ? "Identify Vocabulary From" : "Vocabulary Source"}
+                            </label>
                             <select
                                 value={selectedBook}
                                 onChange={(e) => {
@@ -711,8 +866,25 @@ const NegotiationInterface = () => {
 
     return (
         <div className="flex flex-col min-h-full bg-canvas text-ink p-4 sm:p-6 lg:p-8 max-w-md md:max-w-lg lg:max-w-xl mx-auto lg:justify-center">
-            {/* Source Word Badge - Top */}
-            {sourceWord && (
+            {/* Source Context Badge - Show Article for RSS, Word for Dictionary */}
+            {isRssMode && articleTitle ? (
+                <div className="mb-3 flex flex-col items-center gap-1">
+                    <a
+                        href={articleLink}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="px-3 py-1 rounded-full bg-neon-cyan/10 border border-neon-cyan/30 text-neon-cyan font-mono text-xs hover:bg-neon-cyan/20 transition-colors truncate max-w-[280px]"
+                        title={articleTitle}
+                    >
+                        📰 {articleTitle}
+                    </a>
+                    {rssTotalSentences > 0 && (
+                        <span className="text-xs text-zinc-500 font-mono">
+                            Sentence {rssSentenceIdx + 1} / {rssTotalSentences}
+                        </span>
+                    )}
+                </div>
+            ) : sourceWord && (
                 <div className="mb-3 flex justify-center">
                     <span className="px-3 py-1 rounded-full bg-neon-green/10 border border-neon-green/30 text-neon-green font-mono text-xs">
                         📖 {sourceWord.toUpperCase()}
@@ -734,7 +906,37 @@ const NegotiationInterface = () => {
                         className={`text-xl font-serif leading-relaxed mb-6 cursor-pointer transition-all duration-500 ${isTextVisible ? 'blur-0 opacity-100' : 'blur-md opacity-60'
                             }`}
                     >
-                        {currentText}
+                        {isRssMode && highlightedWords.length > 0 ? (
+                            // Render with clickable highlights
+                            <span>
+                                {currentText.split(/\b/).map((part, i) => {
+                                    const lowerPart = part.toLowerCase();
+                                    const isHighlighted = highlightedWords.some(w => w.toLowerCase() === lowerPart);
+
+                                    if (isHighlighted) {
+                                        return (
+                                            <span
+                                                key={i}
+                                                className="text-neon-yellow font-bold border-b border-neon-yellow/30 hover:bg-neon-yellow/20 cursor-pointer px-0.5 rounded transition-colors"
+                                                onClick={(e) => {
+                                                    e.stopPropagation(); // Prevent toggling text blur
+                                                    speak(part);
+                                                    // Trigger deep study for this word
+                                                    setSourceWord(part);
+                                                    fetchWordExamples(part);
+                                                    // Could also trigger context generation here specifically for this word
+                                                }}
+                                            >
+                                                {part}
+                                            </span>
+                                        );
+                                    }
+                                    return part;
+                                })}
+                            </span>
+                        ) : (
+                            currentText
+                        )}
                     </div>
 
                     {/* Context Scenario (if available) */}
@@ -832,7 +1034,31 @@ const NegotiationInterface = () => {
                     {/* Scaffold Toggle Buttons */}
                     <div className="flex gap-2">
                         <button
-                            onClick={() => { setShowDefinition(!showDefinition); if (!showDefinition) setScaffoldUsed(true); }}
+                            onClick={async () => {
+                                const newShow = !showDefinition;
+                                setShowDefinition(newShow);
+                                if (newShow) {
+                                    setScaffoldUsed(true);
+                                    // In EPUB/RSS mode, fetch definition for first highlighted word if not already loaded
+                                    if ((isEpubMode || isRssMode) && !definition && highlightedWords.length > 0) {
+                                        try {
+                                            const wordToLookup = highlightedWords[0];
+                                            const res = await fetch(`/api/negotiation/word-examples?word=${encodeURIComponent(wordToLookup)}`);
+                                            if (res.ok) {
+                                                const data = await res.json();
+                                                if (data.entries && data.entries.length > 0) {
+                                                    const firstDef = data.entries[0].senses[0]?.definition || '';
+                                                    setDefinition(`${wordToLookup.toUpperCase()}: ${firstDef}`);
+                                                    // Also store examples for navigation
+                                                    setWordExamples(data);
+                                                }
+                                            }
+                                        } catch (e) {
+                                            console.error('Failed to fetch definition:', e);
+                                        }
+                                    }
+                                }
+                            }}
                             className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-xs font-mono transition-all ${showDefinition
                                 ? 'bg-neon-cyan/15 border border-neon-cyan/50 text-neon-cyan'
                                 : 'bg-zinc-800/50 border border-zinc-700 text-zinc-500 hover:text-zinc-300'
@@ -943,14 +1169,25 @@ const NegotiationInterface = () => {
                         <span className="font-mono font-bold text-xs">HUH?</span>
                     </button>
 
-                    <button
-                        onClick={handleSkip}
-                        disabled={isLoading}
-                        className="flex flex-col items-center justify-center gap-1 p-3 rounded-xl bg-zinc-800 hover:bg-zinc-700 active:scale-95 transition-all border border-transparent hover:border-neon-yellow/50 disabled:opacity-50"
-                    >
-                        <SkipForward className="w-5 h-5 text-neon-yellow" />
-                        <span className="font-mono font-bold text-xs">SKIP</span>
-                    </button>
+                    {isRssMode ? (
+                        <button
+                            onClick={handleNextSentence}
+                            disabled={isLoading || !rssHasNext}
+                            className="flex flex-col items-center justify-center gap-1 p-3 rounded-xl bg-zinc-800 hover:bg-zinc-700 active:scale-95 transition-all border border-transparent hover:border-neon-yellow/50 disabled:opacity-50"
+                        >
+                            <ArrowRight className="w-5 h-5 text-neon-yellow" />
+                            <span className="font-mono font-bold text-xs">NEXT</span>
+                        </button>
+                    ) : (
+                        <button
+                            onClick={handleSkip}
+                            disabled={isLoading}
+                            className="flex flex-col items-center justify-center gap-1 p-3 rounded-xl bg-zinc-800 hover:bg-zinc-700 active:scale-95 transition-all border border-transparent hover:border-neon-yellow/50 disabled:opacity-50"
+                        >
+                            <SkipForward className="w-5 h-5 text-neon-yellow" />
+                            <span className="font-mono font-bold text-xs">SKIP</span>
+                        </button>
+                    )}
 
                     <button
                         onClick={() => handleInteraction('continue')}
@@ -968,6 +1205,21 @@ const NegotiationInterface = () => {
                     {stepHistory.length > 0 && ` • ${stepHistory.length} steps`}
                 </div>
             </div>
+
+            {/* === DEBUG PANEL: Raw Article Content === */}
+            {(isRssMode || isEpubMode) && (
+                <div className="mt-6 p-4 rounded-xl bg-zinc-800/50 border border-neon-yellow">
+                    <div className="flex items-center justify-between mb-2">
+                        <span className="text-xs font-mono text-neon-yellow">🐛 DEBUG: Raw Article Content</span>
+                        <span className="text-xs text-zinc-500 font-mono">
+                            {rawContent ? `${rawContent.length} chars` : 'NO DATA'}
+                        </span>
+                    </div>
+                    <div className="max-h-48 overflow-y-auto text-xs text-zinc-400 font-mono whitespace-pre-wrap leading-relaxed">
+                        {rawContent || '⚠️ rawContent is empty or undefined. Check backend response.'}
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

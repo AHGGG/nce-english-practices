@@ -114,6 +114,7 @@ The project follows a modular package structure:
   - `tts.py`: **NEW** Edge-TTS integration.
   - `voice_lab.py`: **NEW** Multi-vendor integration (Google, ElevenLabs, Deepgram).
   - `rss_service.py`: **NEW** Fetches and extracts learnable sentences from RSS feeds.
+  - `epub_service.py`: **NEW** Parses EPUB files for full-article learning content.
   - `dsml_parser.py`: **NEW** Parser for DeepSeek raw XML tool calls.
 - **`app/generators/`**: Content generation logic.
   - `theme.py`, `sentence.py`, `story.py`, `quiz.py`, `scenario.py`

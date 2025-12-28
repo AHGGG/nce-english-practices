@@ -24,6 +24,8 @@ dependencies = [
     "dashscope>=1.20.0",
     "jsonpatch>=1.33",
     "feedparser>=6.0.12",
+    "ebooklib>=0.20",
+    "lxml>=6.0.2",
 ]
 
 [project.optional-dependencies]

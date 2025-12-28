@@ -813,6 +813,22 @@
   - Created `tests/verification/verify_rss.py`.
   - Validated against Economist feed (`https://plink.anyfeeder.com/weixin/Economist_fans`).
   - Verified sentence cleaning logic (filtering short/garbage text).
+- [x] **Content-Driven Logic**:
+  - Implemented `WordListService.identify_words_in_text` to find high-value vocabulary in text.
+  - Updated `ContentFeeder` to mix RSS content with highlighting metadata.
+  - Updated API `/next-content` to accept `rss_url`.
+
+#### Frontend Implementation
+- [x] **NegotiationInterface**:
+  - Added "Content Source" selector (Dictionary vs RSS).
+  - Added RSS URL input field.
+  - Implemented logic to render clickable, highlighted vocabulary within RSS sentences.
+  - Wired "Deep Study" flow (clicking highlighted word triggers negotiation).
+
+#### Bug Fixes (2025-12-28)
+- [x] **Duplicate URL Logic**: Removed duplicate `excludeWord` parameter in `getContentUrl`.
+- [x] **Duplicate State Setters**: Fixed `handleStart` and `fetchNextContent` duplicate calls.
+- [x] **Article Context**: Extended `FeedContent` with `article_title`/`article_link` and added UI badge.
   - `GET /api/books/{code}/next`: Added `start` and `end` query params.
   - `GET /api/negotiation/next-content`: Added `book_start` and `book_end` query params.
 - [x] **Content Feeder**: Updated to pass range parameters to the service layer.
@@ -849,3 +865,46 @@
 - [x] **Browser Testing**: SKIP navigates FINALIST → BANDWAGON → RESCHEDULE.
 - [x] **Browser Testing**: GOT IT navigates RESCHEDULE → EMPHATICALLY → FORAGE → ADEPT.
 - [x] Both buttons now correctly fetch different words from the vocabulary range.
+
+### ✅ Phase 32: EPUB Content Source & Word Sense Disambiguation (2025-12-28)
+**Implemented local EPUB parsing as primary content source (replacing unreliable RSS) with LLM-powered word sense disambiguation.**
+
+#### Context
+- RSS sources proved unreliable: `rsshub.app` blocked by Cloudflare, other feeds returned summaries not full text.
+- Pivoted to local EPUB files (Economist weekly issues) as stable, full-content source.
+
+#### Backend Implementation
+- [x] **EPUB Service** (`app/services/epub_service.py`):
+  - Parses EPUB files using `ebooklib` + `BeautifulSoup`.
+  - Extracts articles with title, sentences, and full text.
+  - Supports sequential reading (article_idx, sentence_idx) and random mode.
+  - Verified with `TheEconomist.2025.12.27.epub`: 73 articles, 107+ sentences per article.
+- [x] **Word Sense Disambiguation** (`app/services/content_feeder.py`):
+  - Added `_disambiguate_word_sense()` method using DeepSeek LLM.
+  - For highlighted vocabulary words, automatically selects contextually correct sense.
+  - Returns pre-disambiguated definition in `FeedContent` response.
+- [x] **ContentFeeder Integration**:
+  - Added `epub_file` parameter to `get_next_content()`.
+  - EPUB mode: vocabulary highlighting + WSD + sequential navigation.
+- [x] **API Updates**:
+  - `/api/negotiation/next-content`: Added `epub_file` query parameter.
+
+#### Frontend Implementation
+- [x] **Source Selector UI** (`NegotiationInterface.jsx`):
+  - Three-tab layout: 📖 Dictionary | 📰 EPUB | 🌐 RSS
+  - EPUB mode shows file info (filename, article count).
+  - Debug panel shows raw article content for both EPUB and RSS modes.
+- [x] **Definition Button Enhancement**:
+  - In EPUB/RSS mode, clicking Definition fetches first highlighted word's definition.
+  - On-demand lookup using `/api/negotiation/word-examples`.
+
+#### Dependencies Added
+- `ebooklib==0.20` - EPUB parsing library
+- `lxml==6.0.2` - XML/HTML parsing (BeautifulSoup backend)
+
+#### RSSHub Investigation (for reference)
+- Found `rsshub.app` protected by Cloudflare Turnstile - returns HTML challenge instead of RSS.
+- Alternative instances tried: `rsshub.rssforever.com`, `rsshub.pseudoyu.com`.
+- `?mode=fulltext` parameter available but still returns summaries from many sources.
+- Conclusion: EPUB provides more reliable, complete content for learning.
+

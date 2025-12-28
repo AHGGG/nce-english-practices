@@ -32,10 +32,14 @@ async def interact(request: NegotiationRequest):
 @router.get("/next-content", response_model=FeedContent)
 async def get_next_content(
     word: str = None, 
-    book: str = None, 
-    book_start: int = None, 
+    book: str = None,
+    book_start: int = None,
     book_end: int = None,
-    exclude: str = None
+    exclude: str = None,
+    rss_url: str = None,
+    epub_file: str = None,
+    article_idx: int = None,
+    sentence_idx: int = None
 ):
     """
     Get the next piece of content from the content feeder.
@@ -46,6 +50,10 @@ async def get_next_content(
         book_start: Optional min sequence number (inclusive)
         book_end: Optional max sequence number (inclusive)
         exclude: Optional word to exclude (for SKIP functionality)
+        rss_url: Optional RSS feed URL (for Reading Mode)
+        epub_file: Optional EPUB filename (for EPUB Mode)
+        article_idx: Optional article index for sequential reading
+        sentence_idx: Optional sentence index within article
         
     Returns:
         FeedContent with a real dictionary example.
@@ -56,7 +64,11 @@ async def get_next_content(
             source_book=book,
             min_sequence=book_start,
             max_sequence=book_end,
-            exclude_word=exclude
+            exclude_word=exclude,
+            rss_url=rss_url,
+            epub_file=epub_file,
+            article_idx=article_idx,
+            sentence_idx=sentence_idx
         )
         if content:
             return content
