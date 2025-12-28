@@ -103,6 +103,8 @@ const CoachFooter = () => {
                             : 'bg-transparent text-[#666] hover:text-[#00FF94] hover:bg-[#111]'
                         }`}
                     title="Toggle Voice Mode"
+                    aria-label={isListening ? "Stop voice mode" : "Start voice mode"}
+                    aria-pressed={isListening}
                 >
                     {isListening ? <Square size={20} /> : <Mic size={20} />}
                 </button>
@@ -119,6 +121,7 @@ const CoachFooter = () => {
                         placeholder={isListening ? "Listening..." : "Enter command or message..."}
                         className="w-full bg-transparent border-none text-[#E0E0E0] px-4 pl-8 py-4 font-mono text-sm focus:outline-none focus:bg-[#111] transition-colors placeholder:text-[#444]"
                         disabled={isLoading}
+                        aria-label="Message input"
                     />
                 </form>
 
@@ -127,6 +130,7 @@ const CoachFooter = () => {
                     onClick={handleSubmit}
                     disabled={!inputText.trim() || isLoading}
                     className="h-14 w-14 flex items-center justify-center border-l border-[#333] hover:bg-[#00FF94] hover:text-black hover:font-bold transition-all text-[#666] disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-[#666]"
+                    aria-label="Send message"
                 >
                     <Send size={18} />
                 </button>
