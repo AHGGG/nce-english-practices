@@ -34,7 +34,8 @@ async def get_next_content(
     word: str = None, 
     book: str = None, 
     book_start: int = None, 
-    book_end: int = None
+    book_end: int = None,
+    exclude: str = None
 ):
     """
     Get the next piece of content from the content feeder.
@@ -44,6 +45,7 @@ async def get_next_content(
         book: Optional book code (e.g. 'cet4', 'coca') to select words from.
         book_start: Optional min sequence number (inclusive)
         book_end: Optional max sequence number (inclusive)
+        exclude: Optional word to exclude (for SKIP functionality)
         
     Returns:
         FeedContent with a real dictionary example.
@@ -53,7 +55,8 @@ async def get_next_content(
             word, 
             source_book=book,
             min_sequence=book_start,
-            max_sequence=book_end
+            max_sequence=book_end,
+            exclude_word=exclude
         )
         if content:
             return content

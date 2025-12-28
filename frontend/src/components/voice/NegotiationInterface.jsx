@@ -77,7 +77,7 @@ const NegotiationInterface = () => {
         };
     }, []);
 
-    const getContentUrl = () => {
+    const getContentUrl = (excludeWord = null) => {
         let url = selectedBook
             ? `/api/negotiation/next-content?book=${selectedBook}`
             : '/api/negotiation/next-content';
@@ -85,6 +85,12 @@ const NegotiationInterface = () => {
         if (selectedBook && bookRange.start !== null) {
             const separator = url.includes('?') ? '&' : '?';
             url += `${separator}book_start=${bookRange.start}&book_end=${bookRange.end}`;
+        }
+
+        // Add exclude parameter for SKIP functionality
+        if (excludeWord) {
+            const separator = url.includes('?') ? '&' : '?';
+            url += `${separator}exclude=${encodeURIComponent(excludeWord)}`;
         }
 
         return url;
@@ -364,6 +370,8 @@ const NegotiationInterface = () => {
     // Skip current sentence, get a new one
     const handleSkip = async () => {
         setIsLoading(true);
+        // Remember current word to exclude
+        const currentWord = sourceWord;
         // Reset history
         setStepHistory([]);
         setHistoryIndex(-1);
@@ -374,8 +382,8 @@ const NegotiationInterface = () => {
         setShowTranslation(false);
         // Generate new session ID
         setSessionId(`session-${Date.now()}`);
-        // Fetch new content
-        await fetchNextContent();
+        // Fetch new content, excluding current word
+        await fetchNextContent(currentWord);
         setNeedsContext(true);
         setIsLoading(false);
     };
@@ -390,9 +398,9 @@ const NegotiationInterface = () => {
     };
 
     // Fetch real content from the ContentFeeder API
-    const fetchNextContent = async () => {
+    const fetchNextContent = async (excludeWord = null) => {
         try {
-            const res = await fetch(getContentUrl());
+            const res = await fetch(getContentUrl(excludeWord));
             if (res.ok) {
                 const data = await res.json();
                 setCurrentText(data.text);

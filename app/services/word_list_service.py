@@ -43,17 +43,22 @@ class WordListService:
         user_id: str = "default_user", 
         db_session: Optional[AsyncSession] = None,
         min_sequence: Optional[int] = None,
-        max_sequence: Optional[int] = None
+        max_sequence: Optional[int] = None,
+        exclude_word: Optional[str] = None
     ) -> Optional[str]:
         """
         Get the next recommended word from a book for a user.
         Prioritizes words that are NOT in WordProficiency or status != 'mastered'.
+        Uses random selection for better variety.
+        
+        Args:
+            exclude_word: Optional word to exclude from results (for SKIP functionality)
         """
         if db_session:
-            return await self._get_next_word_logic(db_session, book_code, user_id, min_sequence, max_sequence)
+            return await self._get_next_word_logic(db_session, book_code, user_id, min_sequence, max_sequence, exclude_word)
 
         async with AsyncSessionLocal() as session:
-            return await self._get_next_word_logic(session, book_code, user_id, min_sequence, max_sequence)
+            return await self._get_next_word_logic(session, book_code, user_id, min_sequence, max_sequence, exclude_word)
 
     async def _get_next_word_logic(
         self, 
@@ -61,7 +66,8 @@ class WordListService:
         book_code: str, 
         user_id: str,
         min_sequence: Optional[int] = None,
-        max_sequence: Optional[int] = None
+        max_sequence: Optional[int] = None,
+        exclude_word: Optional[str] = None
     ) -> Optional[str]:
         # 1. Get the book ID
         book_res = await session.execute(select(WordBook).where(WordBook.code == book_code))
@@ -94,11 +100,16 @@ class WordListService:
         
         if max_sequence is not None:
             filters.append(WordBookEntry.sequence <= max_sequence)
+        
+        # Exclude current word if specified (for SKIP functionality)
+        if exclude_word:
+            filters.append(WordBookEntry.word != exclude_word)
 
+        # Use random order for variety (instead of always picking lowest sequence)
         stmt = (
             select(WordBookEntry.word)
             .where(and_(*filters))
-            .order_by(WordBookEntry.sequence.asc())
+            .order_by(func.random())
             .limit(1)
         )
 

@@ -48,7 +48,8 @@ class ContentFeeder:
         target_word: Optional[str] = None, 
         source_book: Optional[str] = None,
         min_sequence: Optional[int] = None,
-        max_sequence: Optional[int] = None
+        max_sequence: Optional[int] = None,
+        exclude_word: Optional[str] = None
     ) -> Optional[FeedContent]:
         """
         Get the next piece of content.
@@ -58,6 +59,7 @@ class ContentFeeder:
             source_book: Optional book code (e.g. 'cet4', 'coca').
             min_sequence: Optional min sequence (inclusive).
             max_sequence: Optional max sequence (inclusive).
+            exclude_word: Optional word to exclude (for SKIP functionality).
             
         Returns:
             FeedContent with a real dictionary example, or None if not found.
@@ -71,7 +73,8 @@ class ContentFeeder:
             word = await word_list_service.get_next_word(
                 source_book, 
                 min_sequence=min_sequence, 
-                max_sequence=max_sequence
+                max_sequence=max_sequence,
+                exclude_word=exclude_word
             )
             
         if not word:

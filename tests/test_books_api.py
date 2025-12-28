@@ -44,7 +44,8 @@ async def test_get_next_word(client, setup_book_data):
     response = await client.get("/api/books/test_api_book/next")
     assert response.status_code == 200
     data = response.json()
-    assert data["word"] == "hello"
+    # Now uses random selection, so we just check it's one of the valid words
+    assert data["word"] in ["hello", "world"]
 
 @pytest.mark.asyncio
 async def test_get_next_word_not_found(client, setup_book_data):

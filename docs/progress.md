@@ -808,3 +808,29 @@
   - Added secondary dropdown for COCA20000 to select frequency levels (Beginner to Expert).
   - Updated `getContentUrl` to append range parameters.
 
+### ✅ Phase 31: Voice Mode Button Bug Fix (Completed 2025-12-27)
+**Fixed SKIP and GOT IT buttons not fetching new words - both stayed on the same word cycling through examples.**
+
+#### Root Cause
+- `word_list_service.get_next_word()` used `order_by(sequence.asc()).limit(1)` which always returned the same (lowest sequence) word with no randomization.
+- Combined with `content_feeder._used_examples` tracking, subsequent calls cycled through different examples of the same word instead of fetching new words.
+
+#### Backend Fixes
+- [x] **Word List Service** (`app/services/word_list_service.py`):
+  - Changed `order_by(WordBookEntry.sequence.asc())` to **`order_by(func.random())`** for variety.
+  - Added `exclude_word` parameter to explicitly skip the current word (for SKIP functionality).
+- [x] **Content Feeder** (`app/services/content_feeder.py`):
+  - Added `exclude_word` parameter passthrough to `get_next_content()`.
+- [x] **API Endpoint** (`app/api/routers/negotiation.py`):
+  - Added `exclude` query parameter to `/api/negotiation/next-content`.
+
+#### Frontend Fixes
+- [x] **Negotiation Interface** (`frontend/src/components/voice/NegotiationInterface.jsx`):
+  - `getContentUrl(excludeWord)` now accepts and passes `exclude` parameter.
+  - `handleSkip()` captures `sourceWord` before reset and passes it to `fetchNextContent()`.
+  - `fetchNextContent(excludeWord)` passes the exclusion to backend.
+
+#### Verification
+- [x] **Browser Testing**: SKIP navigates FINALIST → BANDWAGON → RESCHEDULE.
+- [x] **Browser Testing**: GOT IT navigates RESCHEDULE → EMPHATICALLY → FORAGE → ADEPT.
+- [x] Both buttons now correctly fetch different words from the vocabulary range.

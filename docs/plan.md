@@ -18,6 +18,8 @@
 - [x] **Scaffolding**: Click-to-reveal definitions and translations.
 - [x] **Playback Control**: Speed adjustment (0.5x, 0.75x, 1.0x) and auto-replay.
 - [x] **Word List Focus**: Practice vocabulary from specific books (CET4/6, COCA).
+    - [x] **Random Selection**: Uses `func.random()` for variety instead of sequential order.
+    - [x] **SKIP Support**: Exclude current word when fetching next (prevents repetition).
 
 ## [LEGACY] 1. Stage 0: Context & Concept (The "Learn" Stage)
 *(Note: This 4-stage model is being deprecated in favor of the unified voice flow)*
