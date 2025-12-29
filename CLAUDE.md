@@ -118,7 +118,7 @@ The project follows a modular package structure:
   - `dsml_parser.py`: Parser for DeepSeek raw XML tool calls.
 - **`app/services/content_providers/`**: **NEW** Pluggable content source providers.
   - `base.py`: `BaseContentProvider` abstract interface.
-  - `epub_provider.py`: Local EPUB file parsing.
+  - `epub_provider.py`: Local EPUB file parsing **with image extraction and serving**.
   - `rss_provider.py`: RSS feed article extraction.
   - `podcast_provider.py`: Podcast RSS with audio enclosures.
   - `plain_text_provider.py`: Simple text segmentation.
@@ -129,7 +129,7 @@ The project follows a modular package structure:
   - `collins_schemas.py`: Structured models for Collins dictionary.
   - `ldoce_schemas.py`: Structured models for LDOCE dictionary.
   - `word_example_schemas.py`: Models for multi-example navigation (`WordExampleSet`).
-  - `content_schemas.py`: **NEW** `ContentBundle`, `ContentSentence`, `SourceType` for Provider Architecture.
+  - `content_schemas.py`: `ContentBundle`, `ContentSentence`, `ContentImage`, `SourceType` for Provider Architecture.
   - `orm.py`: SQLAlchemy database models.
 - **`app/database.py`**: Database operations and query functions.
 - **`app/database.py`**: Database operations and query functions.

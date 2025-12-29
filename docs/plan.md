@@ -29,6 +29,13 @@
         - [x] `BaseContentProvider` abstract interface.
         - [x] 4 Providers implemented: Epub, RSS, Podcast, PlainText.
         - [x] `ContentFeeder` migrated to use `ContentService`.
+    - [x] **EPUB Image Support** (2025-12-29):
+        - [x] Image extraction and in-memory caching in `EpubProvider`.
+        - [x] `/api/reading/epub/image` endpoint for serving images.
+        - [x] `MemoizedImage` component with lazy loading.
+        - [x] `Lightbox` modal with ESC-to-close.
+        - [x] Sentence-image interleaving in Reading Mode.
+        - [x] Mobile inspector panel fixed (z-index, fixed positioning).
 - [ ] **Frontend Mode Separation** (Planned):
     - [ ] Specialized Views: Podcast Mode, Reading Mode, Vocabulary Mode.
     - [ ] Source-Aware Drill-down: Record learning context for each word.

@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useRef, useCallback, memo } from 'react';
-import { BookOpen, ChevronLeft, Volume2, Loader2, X, Zap, Bookmark } from 'lucide-react';
+import React, { useState, useEffect, useRef, useCallback, memo, useMemo } from 'react';
+import { BookOpen, ChevronLeft, Volume2, Loader2, X, Zap, Bookmark, ZoomIn } from 'lucide-react';
 import DictionaryResults from '../components/aui/DictionaryResults';
 
 // --- Constants (hoisted outside component to prevent re-creation) ---
@@ -56,6 +56,119 @@ const MemoizedSentence = memo(function MemoizedSentence({ text, highlightSet, sh
 });
 
 /**
+ * Memoized Image Component - Lazy loading with click-to-zoom
+ */
+const MemoizedImage = memo(function MemoizedImage({ src, alt, caption, onImageClick }) {
+    const [loaded, setLoaded] = useState(false);
+    const [error, setError] = useState(false);
+    const imgRef = useRef(null);
+
+    // Lazy loading with Intersection Observer
+    useEffect(() => {
+        const observer = new IntersectionObserver(
+            ([entry]) => {
+                if (entry.isIntersecting && imgRef.current) {
+                    imgRef.current.src = src;
+                    observer.disconnect();
+                }
+            },
+            { rootMargin: '200px' }
+        );
+
+        if (imgRef.current) {
+            observer.observe(imgRef.current);
+        }
+
+        return () => observer.disconnect();
+    }, [src]);
+
+    if (error) return null;
+
+    return (
+        <figure className="my-8 group">
+            <div
+                className="relative bg-[#111] border border-[#333] overflow-hidden cursor-pointer
+                           hover:border-[#00FF94] transition-colors"
+                onClick={() => onImageClick(src, alt, caption)}
+            >
+                {!loaded && (
+                    <div className="absolute inset-0 flex items-center justify-center bg-[#0A0A0A]">
+                        <Loader2 className="w-6 h-6 animate-spin text-[#666]" />
+                    </div>
+                )}
+                <img
+                    ref={imgRef}
+                    alt={alt || ''}
+                    className={`w-full h-auto transition-opacity duration-300 ${loaded ? 'opacity-100' : 'opacity-0'}`}
+                    onLoad={() => setLoaded(true)}
+                    onError={() => setError(true)}
+                />
+                {/* Zoom icon overlay */}
+                <div className="absolute bottom-2 right-2 p-2 bg-black/50 text-[#00FF94] opacity-0 group-hover:opacity-100 transition-opacity">
+                    <ZoomIn className="w-4 h-4" />
+                </div>
+            </div>
+            {caption && (
+                <figcaption className="mt-2 text-sm text-[#888] font-mono italic px-2">
+                    {caption}
+                </figcaption>
+            )}
+        </figure>
+    );
+});
+
+/**
+ * Lightbox Component - Full-screen image viewer
+ */
+const Lightbox = memo(function Lightbox({ src, alt, caption, onClose }) {
+    // Close on ESC key
+    useEffect(() => {
+        const handleKeyDown = (e) => {
+            if (e.key === 'Escape') onClose();
+        };
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [onClose]);
+
+    return (
+        <div
+            className="fixed inset-0 z-[100] bg-black/95 flex items-center justify-center"
+            onClick={onClose}
+        >
+            {/* Close button */}
+            <button
+                className="absolute top-4 right-4 p-3 text-white/70 hover:text-white border border-white/20 hover:border-white/50 transition-colors"
+                onClick={onClose}
+            >
+                <X className="w-6 h-6" />
+            </button>
+
+            {/* Image container */}
+            <div
+                className="max-w-[90vw] max-h-[90vh] flex flex-col items-center"
+                onClick={(e) => e.stopPropagation()}
+            >
+                <img
+                    src={src}
+                    alt={alt || ''}
+                    className="max-w-full max-h-[80vh] object-contain border border-[#333]"
+                />
+                {caption && (
+                    <p className="mt-4 text-center text-[#888] font-mono text-sm max-w-xl">
+                        {caption}
+                    </p>
+                )}
+            </div>
+
+            {/* Hint */}
+            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 text-[#666] text-xs font-mono">
+                Press ESC or click outside to close
+            </div>
+        </div>
+    );
+});
+
+/**
  * Reading Mode - Premium Article Reader
  * Features:
  * - Immersive Reading Environment (Serif, Dark Mode)
@@ -86,6 +199,9 @@ const ReadingMode = () => {
 
     // Audio
     const audioRef = useRef(null);
+
+    // Lightbox
+    const [lightboxImage, setLightboxImage] = useState(null);
 
     // --- Effects ---
     useEffect(() => {
@@ -404,16 +520,54 @@ const ReadingMode = () => {
                             data-selected-word={selectedWord || ''}
                             onClick={handleArticleClick}
                         >
-                            {/* Progressive loading: only render visibleCount sentences */}
-                            {/* Using MemoizedSentence to prevent re-renders on selectedWord change */}
-                            {selectedArticle.sentences?.slice(0, visibleCount).map((sentence, idx) => (
-                                <MemoizedSentence
-                                    key={idx}
-                                    text={sentence.text}
-                                    highlightSet={selectedArticle.highlightSet}
-                                    showHighlights={showHighlights}
-                                />
-                            ))}
+                            {/* Progressive loading with interleaved images */}
+                            {(() => {
+                                const elements = [];
+                                const images = selectedArticle.images || [];
+                                const imagesByIndex = {};
+
+                                // Group images by sentence_index for O(1) lookup
+                                images.forEach(img => {
+                                    if (!imagesByIndex[img.sentence_index]) {
+                                        imagesByIndex[img.sentence_index] = [];
+                                    }
+                                    imagesByIndex[img.sentence_index].push(img);
+                                });
+
+                                // Build filename for image URL
+                                const filename = selectedArticle.metadata?.filename || '';
+
+                                // Interleave sentences and images
+                                selectedArticle.sentences?.slice(0, visibleCount).forEach((sentence, idx) => {
+                                    // Add sentence
+                                    elements.push(
+                                        <MemoizedSentence
+                                            key={`s-${idx}`}
+                                            text={sentence.text}
+                                            highlightSet={selectedArticle.highlightSet}
+                                            showHighlights={showHighlights}
+                                        />
+                                    );
+
+                                    // Add images that should appear after this sentence
+                                    if (imagesByIndex[idx]) {
+                                        imagesByIndex[idx].forEach((img, imgIdx) => {
+                                            const imgUrl = `/api/reading/epub/image?filename=${encodeURIComponent(filename)}&image_path=${encodeURIComponent(img.path)}`;
+                                            elements.push(
+                                                <MemoizedImage
+                                                    key={`i-${idx}-${imgIdx}`}
+                                                    src={imgUrl}
+                                                    alt={img.alt}
+                                                    caption={img.caption}
+                                                    onImageClick={(src, alt, caption) => setLightboxImage({ src, alt, caption })}
+                                                />
+                                            );
+                                        });
+                                    }
+                                });
+
+                                return elements;
+                            })()}
 
                             {/* Sentinel element for Intersection Observer */}
                             {visibleCount < (selectedArticle.sentences?.length || 0) && (
@@ -432,12 +586,12 @@ const ReadingMode = () => {
                 {/* Inspector Panel - Cyber-Noir Style */}
                 {
                     selectedWord && (
-                        <div className="absolute inset-0 z-30 pointer-events-none flex flex-col justify-end md:justify-center md:items-end md:pr-8 md:pb-0">
+                        <div className="fixed inset-0 z-[60] pointer-events-none flex flex-col justify-end md:justify-center md:items-end md:pr-8">
                             {/* Backdrop for mobile only */}
-                            <div className="absolute inset-0 bg-black/70 md:hidden pointer-events-auto" onClick={() => setSelectedWord(null)}></div>
+                            <div className="absolute inset-0 bg-black/80 md:bg-black/50 pointer-events-auto" onClick={() => setSelectedWord(null)}></div>
 
                             {/* Card - Sharp Industrial Style */}
-                            <div className="pointer-events-auto w-full md:w-[420px] bg-[#0A0A0A] border-t md:border border-[#333] md:shadow-[4px_4px_0px_0px_rgba(0,255,148,0.2)] overflow-hidden flex flex-col max-h-[70vh] md:max-h-[85vh]">
+                            <div className="pointer-events-auto relative w-full md:w-[420px] bg-[#0A0A0A] border-t md:border border-[#333] md:shadow-[4px_4px_0px_0px_rgba(0,255,148,0.2)] overflow-hidden flex flex-col max-h-[80vh] md:max-h-[85vh]">
                                 {/* Header */}
                                 <div className="p-4 border-b border-[#333] flex items-center justify-between bg-[#111] shrink-0">
                                     <div className="flex items-center gap-3">
@@ -492,6 +646,16 @@ const ReadingMode = () => {
                     )
                 }
             </div>
+
+            {/* Lightbox Modal */}
+            {lightboxImage && (
+                <Lightbox
+                    src={lightboxImage.src}
+                    alt={lightboxImage.alt}
+                    caption={lightboxImage.caption}
+                    onClose={() => setLightboxImage(null)}
+                />
+            )}
         </div>
     );
 };

@@ -170,11 +170,19 @@ async def list_epub_articles(filename: str = "TheEconomist.2025.12.27.epub"):
         # Return article list with metadata
         articles = []
         for i, article in enumerate(provider._cached_articles):
+            full_text = article.get("full_text", "")
+            # Use sentence extraction to filter out TOC/navigation pages
+            # These have text but no proper sentences
+            sentences = provider._extract_sentences(full_text)
+            if len(sentences) < 3:
+                continue
+                
             articles.append({
                 "index": i,
                 "title": article.get("title", f"Chapter {i+1}"),
-                "preview": article.get("full_text", "")[:200] + "...",
-                "source_id": f"epub:{filename}:{i}"
+                "preview": sentences[0] if sentences else full_text[:200] + "...",
+                "source_id": f"epub:{filename}:{i}",
+                "sentence_count": len(sentences)
             })
         
         return {
@@ -206,7 +214,7 @@ async def get_article_content(
         min_sequence: Optional min sequence for highlights
         max_sequence: Optional max sequence for highlights
         
-    Returns: Article with title, full_text, sentences, and highlights.
+    Returns: Article with title, full_text, sentences, highlights, and images.
     """
     try:
         # Parse source_id
@@ -229,7 +237,16 @@ async def get_article_content(
             "title": bundle.title,
             "full_text": bundle.full_text,
             "metadata": bundle.metadata,
-            "highlights": []
+            "highlights": [],
+            "images": [
+                {
+                    "path": img.path,
+                    "sentence_index": img.sentence_index,
+                    "alt": img.alt,
+                    "caption": img.caption
+                }
+                for img in bundle.images
+            ]
         }
         
         # Identify highlights if book_code provided
@@ -262,3 +279,37 @@ async def get_article_content(
         raise HTTPException(status_code=404, detail=str(e))
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/api/reading/epub/image")
+async def get_epub_image(filename: str, image_path: str):
+    """
+    Serve an image from an EPUB file.
+    
+    Args:
+        filename: EPUB filename (e.g., 'TheEconomist.2025.12.27.epub')
+        image_path: Path to image within the EPUB
+        
+    Returns: Binary image data with appropriate Content-Type
+    """
+    try:
+        from app.services.content_providers.epub_provider import EpubProvider
+        provider = EpubProvider()
+        
+        result = provider.get_image(filename, image_path)
+        if result is None:
+            raise HTTPException(status_code=404, detail=f"Image not found: {image_path}")
+        
+        image_data, content_type = result
+        return Response(
+            content=image_data,
+            media_type=content_type,
+            headers={
+                "Cache-Control": "public, max-age=86400"  # Cache for 24 hours
+            }
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+

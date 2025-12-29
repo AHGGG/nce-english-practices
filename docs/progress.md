@@ -140,3 +140,22 @@
   - **API Cache**: 500-entry result cache, repeated queries <100ms.
   - **lxml Parser**: Replaced `html.parser` with `lxml` (~5-10x faster).
 
+### ✅ EPUB Image Support (2025-12-29)
+**Inline image display with lightbox zoom for Reading Mode.**
+
+#### Backend
+- **Image Extraction** (`epub_provider.py`):
+  - Scan `ITEM_IMAGE` items from EPUB, cache in memory.
+  - `get_image(filename, image_path)` returns binary + content type.
+  - Map images to sentence indices for positioning.
+- **ContentImage Model** (`content_schemas.py`):
+  - Fields: `path`, `sentence_index`, `alt`, `caption`.
+- **API Endpoint** (`content.py`):
+  - `GET /api/reading/epub/image`: Serves cached images with 24h cache headers.
+
+#### Frontend
+- **MemoizedImage Component**: Lazy loading via Intersection Observer.
+- **Lightbox Component**: ESC-to-close, backdrop click, full-screen view.
+- **Interleaving**: Images rendered after corresponding sentence index.
+- **Mobile Fix**: Inspector panel changed from `absolute` to `fixed`, z-index to 60.
+

@@ -9,6 +9,18 @@ class SourceType(str, Enum):
     RSS = "rss"
     PLAIN_TEXT = "plain_text"
 
+
+class ContentImage(BaseModel):
+    """
+    内容中的图片。
+    Represents an image within the content.
+    """
+    path: str                              # Image path within EPUB/source
+    sentence_index: int                    # Index of the sentence AFTER which this image appears
+    alt: Optional[str] = None              # Alt text
+    caption: Optional[str] = None          # Figure caption if present
+
+
 class ContentSentence(BaseModel):
     """
     单个可学习的句子单元。
@@ -19,6 +31,7 @@ class ContentSentence(BaseModel):
     audio_url: Optional[str] = None        # 句子级音频 (Podcast 片段)
     start_time: Optional[float] = None     # 音频起始时间戳 (秒)
     end_time: Optional[float] = None       # 音频结束时间戳
+
 
 class ContentBundle(BaseModel):
     """
@@ -38,3 +51,5 @@ class ContentBundle(BaseModel):
     full_text: Optional[str] = None         # 完整原文 (用于 EPUB 等长文本)
     source_url: Optional[str] = None        # 原始内容链接 (RSS Link / YT URL)
     metadata: Dict[str, Any] = {}           # 扩展元数据 (作者, 时长, tag等)
+    images: List[ContentImage] = []         # 内容中的图片列表 (EPUB/RSS)
+
