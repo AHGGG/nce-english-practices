@@ -75,7 +75,7 @@ app.include_router(stats.router)
 app.include_router(coach.router)
 
 
-app.include_router(voice_lab.router, prefix="/api", tags=["voice-lab"])
+app.include_router(voice_lab.router)
 
 app.include_router(deepgram_websocket.router, tags=["websocket"])
 app.include_router(elevenlabs_websocket.router, tags=["websocket"])
