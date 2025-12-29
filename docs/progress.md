@@ -117,10 +117,11 @@
   - Mobile-responsive word inspector panel
   - Integrated with `/api/inspect` for source tracking
 - **Routing** (`App.jsx`): Added `/reading` route
-- **Visual Refactor** (2025-12-29):
+- **Visual Refactor** (2025-12-29 ✅):
   - Deep integration of "Cyber-Noir" design system.
-  - Replaced ad-hoc CSS with standard `components/ui` primitives.
-  - Enforced sharp edges, hard shadows, and token-based coloring.
+  - Replaced ad-hoc CSS with standard component primitives with custom styling.
+  - Enforced sharp edges, hard shadows, and token-based coloring (#050505 bg, #00FF94 accent).
+  - Verified via browser preview.
 
 ### ✅ Reading Mode Performance (2025-12-29)
 **Optimized click latency from ~200ms to <50ms.**

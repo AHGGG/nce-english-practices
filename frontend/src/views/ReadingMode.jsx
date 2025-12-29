@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback, memo } from 'react';
-import { BookOpen, ChevronLeft, Volume2, Eye, Loader2, X, Zap, Bookmark, Highlighter } from 'lucide-react';
-import { Button, Card, Select, Tag } from '../components/ui';
+import { BookOpen, ChevronLeft, Volume2, Loader2, X, Zap, Bookmark } from 'lucide-react';
 import DictionaryResults from '../components/aui/DictionaryResults';
 
 // --- Constants (hoisted outside component to prevent re-creation) ---
@@ -43,9 +42,9 @@ const MemoizedSentence = memo(function MemoizedSentence({ text, highlightSet, sh
                         key={i}
                         data-word={clean}
                         data-sentence={text}
-                        className={`reading-word cursor-pointer rounded-sm px-0.5 ${isHighlighted
-                            ? 'text-neon-cyan border-b-2 border-neon-cyan/50'
-                            : 'hover:text-neon-cyan hover:bg-bg-elevated'
+                        className={`reading-word cursor-pointer px-0.5 ${isHighlighted
+                            ? 'text-[#00FF94] border-b border-[#00FF94]/50'
+                            : 'hover:text-[#00FF94] hover:bg-[#00FF94]/10'
                             }`}
                     >
                         {token}
@@ -245,40 +244,80 @@ const ReadingMode = () => {
     // 1. Article List View
     if (!selectedArticle) {
         return (
-            <div className="h-screen flex flex-col bg-bg text-ink font-sans selection:bg-neon-cyan/30">
-                <header className="h-16 border-b border-ink-faint flex items-center justify-between px-6 bg-bg/95 backdrop-blur-md sticky top-0 z-10">
-                    <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 bg-neon-cyan/10 flex items-center justify-center text-neon-cyan border border-neon-cyan/20">
-                            <BookOpen className="w-5 h-5" />
+            <div className="min-h-screen bg-[#050505] text-[#E0E0E0] font-mono selection:bg-[#00FF94] selection:text-black">
+                {/* GLOBAL NOISE TEXTURE OVERLAY */}
+                <div className="fixed inset-0 opacity-[0.03] pointer-events-none z-50 bg-[url('https://grainy-gradients.vercel.app/noise.svg')]"></div>
+
+                {/* HEADER SECTION */}
+                <header className="border-b border-[#333] px-6 md:px-12 py-8 flex justify-between items-end">
+                    <div>
+                        <div className="flex items-center gap-3 mb-2">
+                            <div className="w-6 h-6 bg-[#00FF94] flex items-center justify-center">
+                                <BookOpen size={16} className="text-black" />
+                            </div>
+                            <span className="text-[#00FF94] text-xs font-bold tracking-[0.3em] uppercase">Reading Mode</span>
                         </div>
-                        <h1 className="font-serif text-xl font-bold tracking-tight text-ink">Library</h1>
+                        <h1 className="text-4xl md:text-5xl font-serif font-bold text-white tracking-tight">
+                            Article <span className="italic text-[#333]">/</span> Library
+                        </h1>
+                    </div>
+                    <div className="hidden md:flex items-center gap-3 px-4 py-2 bg-[#111] border border-[#333]">
+                        <BookOpen size={14} className="text-[#666]" />
+                        <div className="flex flex-col">
+                            <span className="text-[10px] text-[#666] uppercase tracking-wider leading-none">Articles</span>
+                            <span className="text-sm font-bold text-white font-mono leading-none mt-1">{articles.length}</span>
+                        </div>
                     </div>
                 </header>
 
-                <main className="flex-1 overflow-y-auto p-6">
+                <main className="px-6 md:px-12 py-12">
                     {isLoading && articles.length === 0 ? (
-                        <div className="flex justify-center py-20"><Loader2 className="animate-spin text-ink-muted" /></div>
+                        <div className="flex justify-center py-20"><Loader2 className="animate-spin text-[#888]" /></div>
                     ) : (
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 max-w-7xl mx-auto">
-                            {articles.map((article, idx) => (
-                                <button
-                                    key={article.source_id}
-                                    onClick={() => loadArticle(article.source_id, selectedOptionIndex)}
-                                    className="group flex flex-col items-start text-left p-6 bg-bg-paper border border-ink-faint hover:border-neon-cyan hover:shadow-hard transition-all duration-200"
-                                >
-                                    <div className="flex items-center gap-2 mb-4 w-full">
-                                        <Tag variant="outline" color="gray">CHAPTER {idx + 1}</Tag>
-                                        <div className="h-px bg-ink-faint flex-1 group-hover:bg-ink-muted transition-colors"></div>
-                                    </div>
-                                    <h3 className="font-serif text-xl font-bold text-ink group-hover:text-neon-cyan transition-colors mb-3 line-clamp-2 leading-snug">
-                                        {article.title}
-                                    </h3>
-                                    <p className="text-sm text-ink-muted line-clamp-3 leading-relaxed font-mono">
-                                        {article.preview}
-                                    </p>
-                                </button>
-                            ))}
-                        </div>
+                        <>
+                            {/* Section Header */}
+                            <h2 className="text-sm font-bold text-[#666] uppercase tracking-[0.2em] mb-8 flex items-center gap-4">
+                                01. Available Articles
+                                <div className="h-[1px] bg-[#333] flex-grow"></div>
+                            </h2>
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-7xl">
+                                {articles.map((article, idx) => (
+                                    <button
+                                        key={article.source_id}
+                                        onClick={() => loadArticle(article.source_id, selectedOptionIndex)}
+                                        className="group relative flex flex-col items-start text-left p-8 bg-[#0A0A0A] border border-[#333] hover:border-[#00FF94] transition-colors duration-300"
+                                    >
+                                        {/* Corner Index */}
+                                        <div className="absolute top-0 right-0 p-2 opacity-50 text-xs font-mono text-[#666]">
+                                            {String(idx + 1).padStart(2, '0')}
+                                        </div>
+
+                                        <div className="flex items-center gap-2 mb-6 w-full">
+                                            <span className="px-2 py-0.5 bg-[#00FF94] text-black text-[10px] font-bold uppercase tracking-wider">
+                                                Chapter {idx + 1}
+                                            </span>
+                                            <div className="h-[1px] bg-[#333] flex-1 group-hover:bg-[#00FF94]/30 transition-colors"></div>
+                                        </div>
+
+                                        <h3 className="text-xl font-serif font-bold text-white group-hover:text-[#00FF94] transition-colors mb-4 line-clamp-2 leading-snug">
+                                            {article.title}
+                                        </h3>
+
+                                        <p className="text-sm text-[#888] line-clamp-3 leading-relaxed font-mono mb-6">
+                                            {article.preview}
+                                        </p>
+
+                                        {/* Footer with action hint */}
+                                        <div className="mt-auto pt-4 border-t border-[#333] w-full flex justify-end">
+                                            <span className="text-[#00FF94] text-xs font-bold uppercase tracking-wider opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1">
+                                                Read Now <ChevronLeft size={12} className="rotate-180" />
+                                            </span>
+                                        </div>
+                                    </button>
+                                ))}
+                            </div>
+                        </>
                     )}
                 </main>
             </div>
@@ -287,60 +326,72 @@ const ReadingMode = () => {
 
     // 2. Reading View
     return (
-        <div className="h-screen flex flex-col bg-bg text-ink font-sans selection:bg-neon-cyan/30">
-            {/* Toolbar */}
-            <header className="h-14 border-b border-ink-faint flex items-center justify-between px-4 bg-bg-paper/95 backdrop-blur shrink-0 z-20">
-                <Button
+        <div className="h-screen flex flex-col bg-[#050505] text-[#E0E0E0] font-mono selection:bg-[#00FF94] selection:text-black">
+            {/* GLOBAL NOISE TEXTURE OVERLAY */}
+            <div className="fixed inset-0 opacity-[0.03] pointer-events-none z-50 bg-[url('https://grainy-gradients.vercel.app/noise.svg')]"></div>
+
+            {/* Toolbar - Industrial Style */}
+            <header className="h-14 border-b border-[#333] flex items-center justify-between px-4 md:px-8 bg-[#0A0A0A] shrink-0 z-20">
+                <button
                     onClick={() => { setSelectedArticle(null); setSelectedWord(null); }}
-                    variant="ghost"
-                    size="sm"
-                    icon={ChevronLeft}
+                    className="flex items-center gap-2 text-[#888] hover:text-[#00FF94] transition-colors group"
                 >
-                    LIBRARY
-                </Button>
+                    <ChevronLeft className="w-4 h-4" />
+                    <span className="text-xs font-bold uppercase tracking-wider">Library</span>
+                </button>
 
                 {/* Highlight Controls */}
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-3">
                     <div className="relative group">
                         <select
                             value={selectedOptionIndex}
                             onChange={(e) => setSelectedOptionIndex(Number(e.target.value))}
-                            className="bg-bg-elevated border border-ink-faint text-ink text-xs font-mono font-bold uppercase py-1.5 pl-3 pr-8 focus:outline-none focus:border-neon-green appearance-none cursor-pointer transition-colors hover:border-ink-muted"
+                            className="bg-[#111] border border-[#333] text-[#E0E0E0] text-xs font-mono font-bold uppercase py-2 pl-3 pr-8 focus:outline-none focus:border-[#00FF94] appearance-none cursor-pointer transition-colors hover:border-[#666]"
                         >
                             {HIGHLIGHT_OPTIONS.map((opt, i) => (
                                 <option key={i} value={i}>{opt.label}</option>
                             ))}
                         </select>
-                        <div className="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none text-ink-muted group-hover:text-neon-green">
+                        <div className="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none text-[#666] group-hover:text-[#00FF94]">
                             <ChevronLeft className="w-3 h-3 rotate-[-90deg]" />
                         </div>
                     </div>
 
                     <button
                         onClick={() => setShowHighlights(!showHighlights)}
-                        className={`p-1.5 border transition-all duration-200 ${showHighlights
-                            ? 'border-neon-cyan text-neon-cyan bg-neon-cyan/10 shadow-[0_0_10px_rgba(6,182,212,0.2)]'
-                            : 'border-ink-faint text-ink-muted hover:text-ink hover:border-ink'}`}
+                        className={`p-2 border transition-all duration-200 ${showHighlights
+                            ? 'border-[#00FF94] text-[#00FF94] bg-[#00FF94]/10'
+                            : 'border-[#333] text-[#666] hover:text-[#E0E0E0] hover:border-[#666]'}`}
                         title="Toggle Highlights"
                     >
                         <Zap className="w-4 h-4 fill-current" />
                     </button>
                 </div>
 
-                <div className="w-20"></div> {/* Spacer */}
+                {/* Right section - Stats */}
+                <div className="hidden md:flex items-center gap-2">
+                    <span className="text-[10px] text-[#666] uppercase tracking-wider">{selectedArticle.sentence_count} Sentences</span>
+                </div>
             </header>
 
             <div className="flex-1 flex overflow-hidden relative">
                 {/* Article Text */}
-                <main ref={mainRef} className="flex-1 overflow-y-auto px-4 md:px-0 py-8 scroll-smooth">
+                <main ref={mainRef} className="flex-1 overflow-y-auto px-4 md:px-0 py-12 scroll-smooth custom-scrollbar">
                     <article className="max-w-2xl mx-auto pb-32">
-                        <header className="mb-10 text-center px-4">
-                            <h1 className="font-serif text-3xl md:text-4xl text-ink mb-4 leading-tight">
+                        {/* Article Header - Cyber-Noir Style */}
+                        <header className="mb-12 px-4">
+                            <div className="flex items-center gap-3 mb-4">
+                                <span className="px-2 py-0.5 bg-[#00FF94] text-black text-[10px] font-bold uppercase tracking-wider">
+                                    Reading
+                                </span>
+                                <div className="h-[1px] bg-[#333] flex-1"></div>
+                            </div>
+                            <h1 className="font-serif text-3xl md:text-4xl text-white mb-4 leading-tight">
                                 {selectedArticle.title}
                             </h1>
-                            <div className="flex items-center justify-center gap-4 text-xs text-ink-muted font-mono">
-                                <span>{selectedArticle.sentence_count} Sentences</span>
-                                <span>•</span>
+                            <div className="flex items-center gap-4 text-xs text-[#666] font-mono">
+                                <span>{selectedArticle.sentence_count} sentences</span>
+                                <span className="text-[#333]">/</span>
                                 <span>{selectedArticle.metadata?.filename?.split('.').slice(0, 2).join(' ')}</span>
                             </div>
                         </header>
@@ -348,7 +399,7 @@ const ReadingMode = () => {
 
                         {/* Event delegation + CSS containment for performance */}
                         <div
-                            className="prose prose-invert prose-lg max-w-none font-serif md:text-xl leading-loose text-ink px-4"
+                            className="prose prose-invert prose-lg max-w-none font-serif md:text-xl leading-loose text-[#CCC] px-4"
                             style={{ contain: 'content' }}
                             data-selected-word={selectedWord || ''}
                             onClick={handleArticleClick}
@@ -368,47 +419,50 @@ const ReadingMode = () => {
                             {visibleCount < (selectedArticle.sentences?.length || 0) && (
                                 <div
                                     ref={sentinelRef}
-                                    className="flex justify-center py-4 text-ink-muted"
+                                    className="flex justify-center py-4 text-[#666]"
                                 >
                                     <Loader2 className="w-5 h-5 animate-spin" />
-                                    <span className="ml-2 text-xs">Loading more...</span>
+                                    <span className="ml-2 text-xs font-mono">Loading more...</span>
                                 </div>
                             )}
                         </div>
                     </article>
                 </main>
 
-                {/* Inspector Panel (Floating Card on Desktop, Bottom Sheet on Mobile) */}
+                {/* Inspector Panel - Cyber-Noir Style */}
                 {
                     selectedWord && (
                         <div className="absolute inset-0 z-30 pointer-events-none flex flex-col justify-end md:justify-center md:items-end md:pr-8 md:pb-0">
                             {/* Backdrop for mobile only */}
-                            <div className="absolute inset-0 bg-black/50 md:hidden pointer-events-auto" onClick={() => setSelectedWord(null)}></div>
+                            <div className="absolute inset-0 bg-black/70 md:hidden pointer-events-auto" onClick={() => setSelectedWord(null)}></div>
 
-                            {/* Card */}
-                            <div className="pointer-events-auto w-full md:w-[420px] bg-bg-paper border-t md:border border-ink-faint shadow-2xl overflow-hidden flex flex-col max-h-[70vh] md:max-h-[85vh]">
+                            {/* Card - Sharp Industrial Style */}
+                            <div className="pointer-events-auto w-full md:w-[420px] bg-[#0A0A0A] border-t md:border border-[#333] md:shadow-[4px_4px_0px_0px_rgba(0,255,148,0.2)] overflow-hidden flex flex-col max-h-[70vh] md:max-h-[85vh]">
                                 {/* Header */}
-                                <div className="p-4 border-b border-ink-faint flex items-center justify-between bg-bg-elevated shrink-0">
+                                <div className="p-4 border-b border-[#333] flex items-center justify-between bg-[#111] shrink-0">
                                     <div className="flex items-center gap-3">
-                                        <span className="text-xl font-serif font-bold text-ink">{selectedWord}</span>
+                                        <span className="text-xl font-serif font-bold text-white">{selectedWord}</span>
                                         <button
                                             onClick={() => playAudio(selectedWord)}
-                                            className="text-neon-green hover:text-white transition-colors"
+                                            className="w-8 h-8 flex items-center justify-center border border-[#333] text-[#00FF94] hover:bg-[#00FF94] hover:text-black transition-colors"
                                         >
-                                            <Volume2 className="w-5 h-5" />
+                                            <Volume2 className="w-4 h-4" />
                                         </button>
                                     </div>
-                                    <button onClick={() => setSelectedWord(null)} className="text-ink-muted hover:text-red-500 transition-colors">
-                                        <X className="w-5 h-5" />
+                                    <button
+                                        onClick={() => setSelectedWord(null)}
+                                        className="w-8 h-8 flex items-center justify-center border border-[#333] text-[#666] hover:border-[#FF0055] hover:text-[#FF0055] transition-colors"
+                                    >
+                                        <X className="w-4 h-4" />
                                     </button>
                                 </div>
 
                                 {/* Content - Using DictionaryResults */}
                                 <div className="flex-1 overflow-y-auto p-4 custom-scrollbar">
                                     {isInspecting ? (
-                                        <div className="flex flex-col items-center justify-center py-8 text-ink-muted space-y-3">
-                                            <Loader2 className="w-6 h-6 animate-spin text-neon-green" />
-                                            <span className="text-xs uppercase tracking-widest">Consulting Dictionary...</span>
+                                        <div className="flex flex-col items-center justify-center py-8 text-[#666] space-y-3">
+                                            <Loader2 className="w-6 h-6 animate-spin text-[#00FF94]" />
+                                            <span className="text-xs uppercase tracking-widest font-mono">Consulting Dictionary...</span>
                                         </div>
                                     ) : inspectorData?.found && inspectorData?.entries?.length > 0 ? (
                                         <DictionaryResults
@@ -417,32 +471,28 @@ const ReadingMode = () => {
                                             entries={inspectorData.entries}
                                         />
                                     ) : inspectorData?.found === false ? (
-                                        <div className="text-ink-muted text-center py-8">
-                                            <p className="text-lg mb-2">Word not found</p>
-                                            <p className="text-sm">"{selectedWord}" is not in LDOCE dictionary.</p>
+                                        <div className="text-[#888] text-center py-8">
+                                            <p className="text-lg mb-2 font-serif">Word not found</p>
+                                            <p className="text-sm font-mono">"{selectedWord}" is not in LDOCE dictionary.</p>
                                         </div>
                                     ) : (
-                                        <div className="text-neon-pink text-center text-sm py-8">Failed to load definition</div>
+                                        <div className="text-[#FF0055] text-center text-sm py-8 font-mono">Failed to load definition</div>
                                     )}
                                 </div>
 
                                 {/* Footer Actions */}
-                                <div className="p-4 border-t border-ink-faint bg-bg-elevated shrink-0">
-                                    <Button
-                                        variant="primary"
-                                        fullWidth
-                                        icon={Bookmark}
-                                        className="shadow-hard"
-                                    >
-                                        ADD TO REVIEW PLAN
-                                    </Button>
+                                <div className="p-4 border-t border-[#333] bg-[#111] shrink-0">
+                                    <button className="w-full bg-[#E0E0E0] text-black py-3 font-mono text-sm font-bold uppercase tracking-wider flex items-center justify-center gap-2 hover:bg-white hover:shadow-[4px_4px_0px_0px_rgba(255,255,255,0.2)] transition-all active:translate-y-[2px]">
+                                        <Bookmark className="w-4 h-4" />
+                                        Add to Review Plan
+                                    </button>
                                 </div>
                             </div>
                         </div>
                     )
                 }
-            </div >
-        </div >
+            </div>
+        </div>
     );
 };
 
