@@ -239,7 +239,8 @@ class DictionaryManager:
         return results
 
     def _process_html(self, html_content: str, dict_name: str, subdir: str) -> str:
-        soup = BeautifulSoup(html_content, "html.parser")
+        # Use lxml parser for ~5-10x faster parsing (vs html.parser)
+        soup = BeautifulSoup(html_content, "lxml")
 
         # Helper to get asset base path
         # If subdir is empty (root), it's /dict-assets/

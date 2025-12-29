@@ -142,6 +142,13 @@ from app.services.ldoce_parser import ldoce_parser
 from app.models.ldoce_schemas import LDOCEWord
 from typing import Literal, Union
 
+# ========== LDOCE RESULT CACHE ==========
+# Cache parsed LDOCEWord results to avoid expensive re-parsing.
+# High-frequency words like "on" take 10+ seconds to parse due to 2MB+ HTML.
+# Cache dramatically improves repeated lookups.
+_ldoce_cache: dict = {}
+_ldoce_cache_max_size = 500
+
 
 @router.get("/api/dictionary/ldoce/{word}", response_model=LDOCEWord)
 async def get_ldoce_word(
@@ -159,6 +166,11 @@ async def get_ldoce_word(
     
     Example: GET /api/dictionary/ldoce/simmer
     """
+    # Check cache first
+    cache_key = (word.lower(), include_raw_html)
+    if cache_key in _ldoce_cache:
+        return _ldoce_cache[cache_key]
+    
     try:
         # Lookup in dictionary
         results = await run_in_threadpool(dict_manager.lookup, word)
@@ -172,10 +184,19 @@ async def get_ldoce_word(
                 break
         
         if not ldoce_html:
-            return LDOCEWord(word=word, found=False)
+            parsed = LDOCEWord(word=word, found=False)
+        else:
+            # Parse the HTML
+            parsed = ldoce_parser.parse(ldoce_html, word, include_raw_html=include_raw_html)
         
-        # Parse the HTML
-        parsed = ldoce_parser.parse(ldoce_html, word, include_raw_html=include_raw_html)
+        # Cache the result
+        if len(_ldoce_cache) >= _ldoce_cache_max_size:
+            # Simple eviction: clear half
+            keys_to_remove = list(_ldoce_cache.keys())[:_ldoce_cache_max_size // 2]
+            for k in keys_to_remove:
+                del _ldoce_cache[k]
+        _ldoce_cache[cache_key] = parsed
+        
         return parsed
         
     except Exception as e:

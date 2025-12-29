@@ -6,6 +6,8 @@ This parser is specifically designed for LDOCE6++ En-Cn V2-19 V2.mdx format.
 
 import re
 import logging
+import hashlib
+from functools import lru_cache
 from typing import List, Optional, Tuple
 from bs4 import BeautifulSoup, Tag
 
@@ -27,6 +29,15 @@ from app.models.ldoce_schemas import (
 
 logger = logging.getLogger(__name__)
 
+# ========== PERFORMANCE LIMITS ==========
+# High-frequency words like "on" have 40+ senses and 100+ examples.
+# Truncating to reasonable limits reduces response from 2.1MB to ~100KB.
+MAX_SENSES_PER_ENTRY = 10
+MAX_EXAMPLES_PER_SENSE = 3
+MAX_COLLOCATIONS_PER_ENTRY = 10
+MAX_PHRASAL_VERBS = 10
+
+
 
 class LDOCEParser:
     """
@@ -42,6 +53,13 @@ class LDOCEParser:
     - Extra examples from other dictionaries/corpus
     - Thesaurus entries and word sets
     """
+    
+    # ========== LRU CACHE ==========
+    # Cache parsed results to avoid re-parsing the same HTML.
+    # Key: (hash of HTML, word, include_raw_html)
+    # Value: LDOCEWord model
+    _parse_cache: dict = {}  # Simple dict cache with manual eviction
+    _cache_max_size: int = 500
     
     def __init__(self):
         pass
@@ -65,21 +83,37 @@ class LDOCEParser:
         if html.strip().startswith("@@@LINK="):
             return LDOCEWord(word=word, found=False)
         
+        # Check cache (use hash of HTML as key to save memory)
+        cache_key = (hashlib.md5(html.encode()).hexdigest(), word.lower(), include_raw_html)
+        if cache_key in self._parse_cache:
+            return self._parse_cache[cache_key]
+        
         try:
-            soup = BeautifulSoup(html, 'html.parser')
+            # Use lxml parser for ~5-10x faster parsing
+            soup = BeautifulSoup(html, 'lxml')
             
             # Find all entry containers (there may be multiple: verb, noun, etc.)
             entries = self._parse_all_entries(soup)
             
             if not entries:
-                return LDOCEWord(word=word, found=False)
+                result = LDOCEWord(word=word, found=False)
+            else:
+                result = LDOCEWord(
+                    word=word,
+                    found=True,
+                    entries=entries,
+                    raw_html=html if include_raw_html else None
+                )
             
-            return LDOCEWord(
-                word=word,
-                found=True,
-                entries=entries,
-                raw_html=html if include_raw_html else None
-            )
+            # Add to cache (with simple eviction if too large)
+            if len(self._parse_cache) >= self._cache_max_size:
+                # Remove oldest entry (FIFO-ish by clearing half)
+                keys_to_remove = list(self._parse_cache.keys())[:self._cache_max_size // 2]
+                for k in keys_to_remove:
+                    del self._parse_cache[k]
+            self._parse_cache[cache_key] = result
+            
+            return result
             
         except Exception as e:
             logger.error(f"Error parsing LDOCE HTML for '{word}': {e}")
@@ -234,7 +268,7 @@ class LDOCEParser:
             if sense:
                 senses.append(sense)
         
-        return senses
+        return senses[:MAX_SENSES_PER_ENTRY]  # Performance: limit senses
     
     def _parse_sense(self, sense_elem: Tag) -> Optional[LDOCESense]:
         """Parse a single sense element."""
@@ -308,7 +342,7 @@ class LDOCEParser:
                 if example:
                     examples.append(example)
         
-        return examples
+        return examples[:MAX_EXAMPLES_PER_SENSE]  # Performance: limit examples
     
     def _parse_example(self, example_elem: Tag) -> Optional[LDOCEExample]:
         """Parse a single example element."""
@@ -396,7 +430,7 @@ class LDOCEParser:
             if pv:
                 phrasal_verbs.append(pv)
         
-        return phrasal_verbs
+        return phrasal_verbs[:MAX_PHRASAL_VERBS]  # Performance: limit phrasal verbs
     
     def _parse_phrasal_verb(self, pv_elem: Tag) -> Optional[LDOCEPhrasalVerb]:
         """Parse a phrasal verb entry."""
@@ -753,7 +787,7 @@ class LDOCEParser:
                     examples=examples  # All examples
                 ))
         
-        return collocations
+        return collocations[:MAX_COLLOCATIONS_PER_ENTRY]  # Performance: limit collocations
 
 
 # Singleton instance

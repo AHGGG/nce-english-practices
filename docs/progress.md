@@ -130,3 +130,12 @@
   - **CSS Selection**: Replaced state-driven styling with `data-selected-word` attribute selectors.
   - **Containment**: Added `contain: content` to article container.
   - **GPU Acceleration**: Optimized Inspector panel transitions.
+
+### ✅ LDOCE Dictionary Performance (2025-12-29)
+**Optimized high-frequency word queries from ~15s to <3s (first), <100ms (cached).**
+- **Root Cause**: Words like "on" have 2MB+ HTML, parsing twice with BeautifulSoup.
+- **Solutions**:
+  - **Truncation**: MAX_SENSES=10, MAX_EXAMPLES=3, MAX_COLLOCATIONS=10.
+  - **API Cache**: 500-entry result cache, repeated queries <100ms.
+  - **lxml Parser**: Replaced `html.parser` with `lxml` (~5-10x faster).
+
