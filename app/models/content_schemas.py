@@ -1,0 +1,40 @@
+from enum import Enum
+from pydantic import BaseModel
+from datetime import datetime
+from typing import Optional, List, Dict, Any
+
+class SourceType(str, Enum):
+    EPUB = "epub"
+    PODCAST = "podcast"
+    RSS = "rss"
+    PLAIN_TEXT = "plain_text"
+
+class ContentSentence(BaseModel):
+    """
+    单个可学习的句子单元。
+    Represents a single learnable sentence unit.
+    """
+    text: str                              # 句子原文
+    translation: Optional[str] = None      # 翻译
+    audio_url: Optional[str] = None        # 句子级音频 (Podcast 片段)
+    start_time: Optional[float] = None     # 音频起始时间戳 (秒)
+    end_time: Optional[float] = None       # 音频结束时间戳
+
+class ContentBundle(BaseModel):
+    """
+    统一内容包 - 所有 Content Provider 的标准输出格式。
+    Unified content bundle - Standard output format for all Content Providers.
+    """
+    id: str                                 # 唯一 ID (Token/Hash)
+    source_type: SourceType                 # 来源类型
+    title: str                              # 标题
+    sentences: List[ContentSentence]        # 句子列表
+    
+    # Optional fields - Provider-dependent
+    language: str = "en"                    # 语言代码 (默认为 English)
+    audio_url: Optional[str] = None         # 整体音频 URL (Podcast/Audiobook)
+    thumbnail_url: Optional[str] = None     # 封面图
+    published_at: Optional[datetime] = None # 发布时间
+    full_text: Optional[str] = None         # 完整原文 (用于 EPUB 等长文本)
+    source_url: Optional[str] = None        # 原始内容链接 (RSS Link / YT URL)
+    metadata: Dict[str, Any] = {}           # 扩展元数据 (作者, 时长, tag等)

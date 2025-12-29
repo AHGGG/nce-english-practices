@@ -109,20 +109,27 @@ The project follows a modular package structure:
   - `dictionary.py`: MDX/MDD parsing and multi-dictionary management.
   - `chat.py`: Stateful chat session management.
   - `voice.py`: Voice session management (WebSocket).
-  - `negotiation_service.py`: **NEW** Interactive explanation loop with **Real-time Micro-Scenarios**.
-  - `coach.py`: **NEW** Agentic Coach service (LLM Tool use).
-  - `tts.py`: **NEW** Edge-TTS integration.
-  - `voice_lab.py`: **NEW** Multi-vendor integration (Google, ElevenLabs, Deepgram).
-  - `rss_service.py`: **NEW** Fetches and extracts learnable sentences from RSS feeds.
-  - `epub_service.py`: **NEW** Parses EPUB files for full-article learning content.
-  - `dsml_parser.py`: **NEW** Parser for DeepSeek raw XML tool calls.
+  - `negotiation_service.py`: Interactive explanation loop with **Real-time Micro-Scenarios**.
+  - `coach.py`: Agentic Coach service (LLM Tool use).
+  - `tts.py`: Edge-TTS integration.
+  - `voice_lab.py`: Multi-vendor integration (Google, ElevenLabs, Deepgram).
+  - `content_service.py`: **NEW** Factory/Registry for Content Providers.
+  - `content_feeder.py`: Orchestrates content for Voice Interface (uses ContentService).
+  - `dsml_parser.py`: Parser for DeepSeek raw XML tool calls.
+- **`app/services/content_providers/`**: **NEW** Pluggable content source providers.
+  - `base.py`: `BaseContentProvider` abstract interface.
+  - `epub_provider.py`: Local EPUB file parsing.
+  - `rss_provider.py`: RSS feed article extraction.
+  - `podcast_provider.py`: Podcast RSS with audio enclosures.
+  - `plain_text_provider.py`: Simple text segmentation.
 - **`app/generators/`**: Content generation logic.
   - `theme.py`, `sentence.py`, `story.py`, `quiz.py`, `scenario.py`
 - **`app/models/`**: Data models package.
   - `schemas.py`: Pydantic models (DTOs) and API schemas.
   - `collins_schemas.py`: Structured models for Collins dictionary.
   - `ldoce_schemas.py`: Structured models for LDOCE dictionary.
-  - `word_example_schemas.py`: **NEW** Models for multi-example navigation (`WordExampleSet`).
+  - `word_example_schemas.py`: Models for multi-example navigation (`WordExampleSet`).
+  - `content_schemas.py`: **NEW** `ContentBundle`, `ContentSentence`, `SourceType` for Provider Architecture.
   - `orm.py`: SQLAlchemy database models.
 - **`app/database.py`**: Database operations and query functions.
 - **`app/database.py`**: Database operations and query functions.

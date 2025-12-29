@@ -24,6 +24,14 @@
     - [x] **RSS Service**: Basic feed parsing and sentence extraction (2025-12-28).
     - [x] **EPUB Service**: Local EPUB parsing with full-text articles (2025-12-28).
     - [x] **Word Sense Disambiguation**: LLM-powered sense selection based on context.
+    - [x] **Content Provider Architecture** (2025-12-29):
+        - [x] `ContentBundle` unified data model for all content sources.
+        - [x] `BaseContentProvider` abstract interface.
+        - [x] 4 Providers implemented: Epub, RSS, Podcast, PlainText.
+        - [x] `ContentFeeder` migrated to use `ContentService`.
+- [ ] **Frontend Mode Separation** (Planned):
+    - [ ] Specialized Views: Podcast Mode, Reading Mode, Vocabulary Mode.
+    - [ ] Source-Aware Drill-down: Record learning context for each word.
 
 ## [LEGACY] 1. Stage 0: Context & Concept (The "Learn" Stage)
 *(Note: This 4-stage model is being deprecated in favor of the unified voice flow)*
