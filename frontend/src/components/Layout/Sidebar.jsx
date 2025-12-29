@@ -60,7 +60,7 @@ const Sidebar = React.memo(({ topic }) => {
                 <NavItem to="/apply" icon={Rocket} label="Scenario (Sim)" disabled={!topic} />
 
                 <div className="mt-8 px-6 mb-2 text-[10px] font-bold text-ink-muted uppercase tracking-widest">Data</div>
-                <NavItem to="/stats" icon={BarChart2} label="Performance" />
+                <NavItem to="/performance" icon={BarChart2} label="Performance" />
             </nav>
 
             <div className="mt-auto p-6 border-t border-ink-faint">

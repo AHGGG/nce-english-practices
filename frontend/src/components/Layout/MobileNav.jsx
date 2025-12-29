@@ -36,7 +36,7 @@ const MobileNav = React.memo(({ topic }) => {
                 <MobileNavItem to="/learn" icon={BookOpen} label="Learn" />
                 <MobileNavItem to="/drill" icon={Terminal} label="Drill" disabled={!topic} />
                 <MobileNavItem to="/apply" icon={Rocket} label="Apply" disabled={!topic} />
-                <MobileNavItem to="/stats" icon={BarChart2} label="Stats" />
+                <MobileNavItem to="/performance" icon={BarChart2} label="Stats" />
             </div>
         </nav>
     );

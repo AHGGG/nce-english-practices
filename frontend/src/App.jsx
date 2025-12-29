@@ -8,6 +8,7 @@ import Learn from './views/Learn';
 import Drill from './views/Drill';
 import Apply from './views/Apply';
 import Stats from './views/Stats';
+import PerformanceReport from './views/PerformanceReport'; // New Performance Page
 import Coach from './views/Coach'; // New Coach View
 import VoiceLab from './views/VoiceLab'; // Voice Vendor Test Page
 import AUIStreamingDemo from './views/AUIStreamingDemo'; // AUI Streaming Test
@@ -27,6 +28,7 @@ function App() {
               <Route path="/voice-lab" element={<VoiceLab />} />
               <Route path="/voice" element={<VoiceMode />} />
               <Route path="/reading" element={<ReadingMode />} />
+              <Route path="/performance" element={<PerformanceReport />} />
 
               <Route path="/aui-stream-demo" element={<AUIStreamingDemo />} />
 
