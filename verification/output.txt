@@ -1,0 +1,9 @@
+Navigating to https://localhost:5173
+Loaded page: https://localhost:5173/
+Page loaded. Checking for toast container...
+Success: Found toast container with role=region and name=Notifications
+Error finding container: name 'aria' is not defined
+Found toast container div via CSS.
+Role: region
+Aria-Label: Notifications
+Aria-Live: polite
