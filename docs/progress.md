@@ -87,3 +87,37 @@
 - `scripts/test_provider_arch.py` - Provider unit tests
 - `scripts/test_feeder_integration.py` - Integration tests
 
+### ✅ Source-Aware Drill-down (Phase 34) (2025-12-29)
+**Vocabulary tracking with source context ("Where did I learn this word?").**
+
+#### Implementation
+- **ORM Model** (`app/models/orm.py`):
+  - `VocabLearningLog`: word, source_type, source_id, context_sentence
+- **API Endpoints** (`app/api/routers/inspect.py`):
+  - `GET /api/inspect`: Lookup word + record learning context
+  - `GET /api/inspect/history`: Query learning history
+- **Frontend** (`NegotiationInterface.jsx`):
+  - `logWordInspection()`: Called on HUH? click
+  - Source detection: EPUB/RSS/Dictionary modes
+
+#### Database
+- Migration `0d3c2471aaff_add_vocab_learning_log_table.py`
+- Table `vocab_learning_logs` with indexes on (user_id, word) and (source_type, source_id)
+
+### ✅ Reading Mode (Phase 35) (2025-12-29)
+**Specialized frontend view for EPUB article reading.**
+
+#### Implementation
+- **Backend Endpoints** (`app/api/routers/content.py`):
+  - `GET /api/reading/epub/list`: List EPUB articles
+  - `GET /api/reading/article`: Get article content
+- **Frontend View** (`frontend/src/views/ReadingMode.jsx`):
+  - Article list with titles and previews
+  - Reader with click-to-inspect words
+  - Mobile-responsive word inspector panel
+  - Integrated with `/api/inspect` for source tracking
+- **Routing** (`App.jsx`): Added `/reading` route
+- **Visual Refactor** (2025-12-29):
+  - Deep integration of "Cyber-Noir" design system.
+  - Replaced ad-hoc CSS with standard `components/ui` primitives.
+  - Enforced sharp edges, hard shadows, and token-based coloring.

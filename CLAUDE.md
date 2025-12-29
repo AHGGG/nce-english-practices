@@ -166,6 +166,7 @@ ALL generators and routes use this service rather than creating clients directly
   - `src/components/ui/`: Core atomic components (Button, Input, Card).
   - `src/index.css`: Global token definitions via Tailwind `@layer base`.
   - `tailwind.config.js`: Central source of truth for design tokens.
+  - **Rule**: ALWAYS prefer using `components/ui` primitives (Button, Card, Tag) over raw Tailwind classes to maintain the "Cyber-Noir" aesthetic (sharp edges, hard shadows).
 
 ### Dictionary Service
 

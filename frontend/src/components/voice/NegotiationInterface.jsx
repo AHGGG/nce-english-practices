@@ -285,6 +285,11 @@ const NegotiationInterface = () => {
     const handleInteraction = async (intention) => {
         setIsLoading(true);
         try {
+            // Log word inspection when user clicks HUH? (Source-Aware Drill-down)
+            if (intention === 'huh' && sourceWord) {
+                logWordInspection(sourceWord, currentText);
+            }
+
             // Build request body
             const requestBody = {
                 session_id: sessionId,
@@ -563,6 +568,42 @@ const NegotiationInterface = () => {
         } catch (e) {
             console.error('Failed to fetch word examples:', e);
             setWordExamples(null);
+        }
+    };
+
+    // Log word inspection to backend (Source-Aware Drill-down)
+    const logWordInspection = async (word, contextSentence) => {
+        if (!word) return;
+
+        // Determine source type and ID based on current mode
+        let sourceType = 'dictionary';
+        let sourceId = null;
+
+        if (isEpubMode) {
+            sourceType = 'epub';
+            sourceId = `epub:${epubFile}:article_${rssArticleIdx}`;
+        } else if (isRssMode) {
+            sourceType = 'rss';
+            sourceId = `rss:${btoa(rssUrl).slice(0, 20)}:article_${rssArticleIdx}`;
+        } else if (selectedBook) {
+            sourceType = 'dictionary';
+            sourceId = `book:${selectedBook}`;
+        }
+
+        try {
+            const params = new URLSearchParams({
+                word: word.toLowerCase().trim(),
+                source_type: sourceType,
+                context: contextSentence || currentText || ''
+            });
+            if (sourceId) params.append('source_id', sourceId);
+
+            // Non-blocking: fire and forget (don't await)
+            fetch(`/api/inspect?${params.toString()}`).catch(e => {
+                console.warn('Failed to log word inspection:', e);
+            });
+        } catch (e) {
+            console.warn('Word inspection logging error:', e);
         }
     };
 

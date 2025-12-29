@@ -114,6 +114,10 @@
         - [x] Enhanced `RunFinishedEvent` with `interrupt` outcome support.
         - [x] Interactive `InterruptBanner` component with action buttons.
         - [x] Demo endpoint for Study Plan confirmation flow.
+    - [x] **Reading Mode Stylization (2025-12-29)**:
+        - [x] Deep refactor of `ReadingMode.jsx` to Cyber-Noir Design System.
+        - [x] Replaced hardcoded styles with `components/ui` primitives (Button, Card, Tag).
+        - [x] Implemented sharp aesthetics (no rounded corners, hard shadows).
     - [x] **AUI Mobile Compatibility (Phase 5)**: (2025-12-25)
         - [x] Robust Reconnection: Auto-reconnect, Backoff, Visibility handling in `useAUITransport`.
         - [x] Responsive Layout: `AUIStreamingDemo` stack layout on mobile.
@@ -163,7 +167,10 @@
     - [x] **App Shell**: Update Sidebar/Navbar to "Cyber-Noir" style.
     - [x] **Story Mode**: Apply Serif typography and high-contrast reading experience.
     - [x] **Drill Matrix**: Apply Monospace data aesthetic and snappy interactions.
+    - [x] **Story Mode**: Apply Serif typography and high-contrast reading experience.
+    - [x] **Drill Matrix**: Apply Monospace data aesthetic and snappy interactions.
     - [x] **Scenario/Chat**: Update message bubbles to "Hard Shape" style.
+    - [x] **Reading Mode**: Refactored to strict Cyber-Noir token usage (2025-12-29).
 
 ## 8. Engineering Excellence (Optimization)
 - [x] **Structure Optimization**: Consolidate models into pp/models/ package.

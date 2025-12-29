@@ -284,3 +284,26 @@ class WordBookEntry(Base):
     book: Mapped["WordBook"] = relationship("WordBook", back_populates="entries")
 
 
+class VocabLearningLog(Base):
+    """
+    Records each word inspection with source context.
+    Enables "Where did I learn this word?" during review.
+    """
+    __tablename__ = "vocab_learning_logs"
+    __table_args__ = (
+        Index("idx_vocab_log_user_word", "user_id", "word"),
+        Index("idx_vocab_log_source", "source_type", "source_id"),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    user_id: Mapped[str] = mapped_column(Text, default="default_user", index=True)
+    word: Mapped[str] = mapped_column(Text, index=True)
+    
+    # Source context
+    source_type: Mapped[str] = mapped_column(Text)  # epub | rss | podcast | plain_text | dictionary
+    source_id: Mapped[Optional[str]] = mapped_column(Text, nullable=True)  # e.g., "epub:economist_2024_01"
+    context_sentence: Mapped[Optional[str]] = mapped_column(Text, nullable=True)  # The sentence where word was encountered
+    audio_timestamp: Mapped[Optional[float]] = mapped_column(Integer, nullable=True)  # For audio sources (seconds)
+    
+    # Timestamps
+    created_at: Mapped[datetime] = mapped_column(TIMESTAMP, server_default=func.now())

@@ -208,13 +208,17 @@ Reply with ONLY the number, nothing else."""
                     
                     # WSD for first word
                     if highlights:
-                        from app.services.dictionary_service import dictionary_service
                         target_word = highlights[0]
-                        entries = dictionary_service.get_dictionary_entries(target_word)
-                        if entries:
+                        # Use existing dict_manager and collins_parser
+                        dict_results = dict_manager.lookup(target_word)
+                        if dict_results:
                             all_senses = []
-                            for entry in entries:
-                                all_senses.extend(entry.get('senses', []))
+                            for r in dict_results:
+                                if "Collins" in r.get("dictionary", ""):
+                                    parsed = collins_parser.parse(r.get("definition", ""), target_word)
+                                    if parsed.found and parsed.entry:
+                                        for sense in parsed.entry.senses:
+                                            all_senses.append({'definition': sense.definition})
                             if all_senses:
                                 best_sense_idx = await self._disambiguate_word_sense(
                                     target_word, text, all_senses

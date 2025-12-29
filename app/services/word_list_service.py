@@ -124,7 +124,9 @@ class WordListService:
         self,
         text: str,
         book_code: str,
-        db_session: Optional[AsyncSession] = None
+        db_session: Optional[AsyncSession] = None,
+        min_sequence: Optional[int] = None,
+        max_sequence: Optional[int] = None
     ) -> List[str]:
         """
         Identify which words from a specific book appear in the given text.
@@ -134,12 +136,19 @@ class WordListService:
             return []
 
         if db_session:
-            return await self._identify_words_logic(db_session, text, book_code)
+            return await self._identify_words_logic(db_session, text, book_code, min_sequence, max_sequence)
 
         async with AsyncSessionLocal() as session:
-            return await self._identify_words_logic(session, text, book_code)
+            return await self._identify_words_logic(session, text, book_code, min_sequence, max_sequence)
 
-    async def _identify_words_logic(self, session: AsyncSession, text: str, book_code: str) -> List[str]:
+    async def _identify_words_logic(
+        self, 
+        session: AsyncSession, 
+        text: str, 
+        book_code: str,
+        min_sequence: Optional[int] = None,
+        max_sequence: Optional[int] = None
+    ) -> List[str]:
         # 1. Normalize text to find potential candidates
         # Split by non-word characters and convert to lowercase
         # This is a rough tokenization
@@ -155,15 +164,20 @@ class WordListService:
             return []
 
         # 3. Query DB for these tokens within the specific book
-        # This approach avoids loading the entire book into memory
+        filters = [
+            WordBookEntry.book_id == book.id,
+            WordBookEntry.word.in_(tokens)
+        ]
+        
+        if min_sequence is not None:
+            filters.append(WordBookEntry.sequence >= min_sequence)
+        
+        if max_sequence is not None:
+            filters.append(WordBookEntry.sequence <= max_sequence)
+            
         stmt = (
             select(WordBookEntry.word)
-            .where(
-                and_(
-                    WordBookEntry.book_id == book.id,
-                    WordBookEntry.word.in_(tokens)
-                )
-            )
+            .where(and_(*filters))
         )
         
         result = await session.execute(stmt)

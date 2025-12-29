@@ -13,6 +13,7 @@ import VoiceLab from './views/VoiceLab'; // Voice Vendor Test Page
 import AUIStreamingDemo from './views/AUIStreamingDemo'; // AUI Streaming Test
 
 import VoiceMode from './views/VoiceMode'; // New Voice Mode
+import ReadingMode from './views/ReadingMode'; // Reading Mode (Phase 2)
 
 function App() {
   return (
@@ -25,6 +26,7 @@ function App() {
               <Route path="/coach" element={<Coach />} />
               <Route path="/voice-lab" element={<VoiceLab />} />
               <Route path="/voice" element={<VoiceMode />} />
+              <Route path="/reading" element={<ReadingMode />} />
 
               <Route path="/aui-stream-demo" element={<AUIStreamingDemo />} />
 

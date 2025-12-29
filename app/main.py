@@ -26,6 +26,7 @@ from app.api.routers import (
     tts,
     negotiation,
     books,
+    inspect,
 )
 from app.services.log_collector import setup_logging
 import logging
@@ -85,6 +86,7 @@ app.include_router(context_router.router)  # Context resources
 app.include_router(tts.router)  # TTS API
 app.include_router(negotiation.router) # Included negotiation router
 app.include_router(books.router, prefix="/api") # Books API
+app.include_router(inspect.router)  # Inspect API (word lookup + learning log)
 
 from app.models.schemas import RemoteLog
 from app.services.log_collector import (

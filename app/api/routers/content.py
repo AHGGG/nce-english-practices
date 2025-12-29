@@ -141,3 +141,124 @@ async def api_generate_sentences(payload: SentenceRequest):
         import traceback
         traceback.print_exc()
         raise HTTPException(status_code=500, detail="Internal Server Error")
+
+
+# ============================================================
+# Reading Mode API Endpoints (Phase 2)
+# ============================================================
+
+from app.services.content_service import content_service
+from app.models.content_schemas import SourceType
+
+
+@router.get("/api/reading/epub/list")
+async def list_epub_articles(filename: str = "TheEconomist.2025.12.27.epub"):
+    """
+    List all articles/chapters in an EPUB file.
+    
+    Returns: List of articles with titles and metadata.
+    """
+    try:
+        # Import epub provider directly to access metadata
+        from app.services.content_providers.epub_provider import EpubProvider
+        provider = EpubProvider()
+        
+        # Load the EPUB
+        if not provider._load_epub(filename):
+            raise HTTPException(status_code=404, detail=f"EPUB not found: {filename}")
+        
+        # Return article list with metadata
+        articles = []
+        for i, article in enumerate(provider._cached_articles):
+            articles.append({
+                "index": i,
+                "title": article.get("title", f"Chapter {i+1}"),
+                "preview": article.get("full_text", "")[:200] + "...",
+                "source_id": f"epub:{filename}:{i}"
+            })
+        
+        return {
+            "filename": filename,
+            "total_articles": len(articles),
+            "articles": articles
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/api/reading/article")
+async def get_article_content(
+    source_id: str,
+    include_sentences: bool = True,
+    book_code: Optional[str] = None,
+    min_sequence: Optional[int] = None,
+    max_sequence: Optional[int] = None
+):
+    """
+    Get full article content by source_id.
+    
+    Args:
+        source_id: Format "epub:{filename}:{chapter_index}"
+        include_sentences: Whether to include sentence segmentation
+        book_code: Optional word book code (e.g., 'coca20000', 'cet4')
+        min_sequence: Optional min sequence for highlights
+        max_sequence: Optional max sequence for highlights
+        
+    Returns: Article with title, full_text, sentences, and highlights.
+    """
+    try:
+        # Parse source_id
+        parts = source_id.split(":")
+        if len(parts) < 3 or parts[0] != "epub":
+            raise HTTPException(status_code=400, detail="Invalid source_id format. Expected: epub:{filename}:{index}")
+        
+        filename = parts[1]
+        chapter_index = int(parts[2])
+        
+        # Use ContentService to fetch
+        bundle = await content_service.get_content(
+            SourceType.EPUB,
+            filename=filename,
+            chapter_index=chapter_index
+        )
+        
+        result = {
+            "id": bundle.id,
+            "title": bundle.title,
+            "full_text": bundle.full_text,
+            "metadata": bundle.metadata,
+            "highlights": []
+        }
+        
+        # Identify highlights if book_code provided
+        if book_code:
+            try:
+                from app.services.word_list_service import word_list_service
+                highlights = await word_list_service.identify_words_in_text(
+                    text=bundle.full_text,
+                    book_code=book_code,
+                    min_sequence=min_sequence,
+                    max_sequence=max_sequence
+                )
+                result["highlights"] = highlights
+            except Exception as e:
+                print(f"Highlight identification failed: {e}")
+                # Continue without highlights
+        
+        if include_sentences:
+            result["sentences"] = [
+                {"index": i, "text": s.text}
+                for i, s in enumerate(bundle.sentences)
+            ]
+            result["sentence_count"] = len(bundle.sentences)
+        
+        return result
+        
+    except (IndexError, ValueError) as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except FileNotFoundError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
