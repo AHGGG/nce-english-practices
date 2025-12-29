@@ -1,1 +1,4 @@
-=== Log session started at 2025-12-27T19:05:44.762483 ===
+=== Log session started at 2025-12-29T15:08:34.073374 ===
+2025-12-29 15:08:34.211 [BA] [INFO] [network] httpx: HTTP Request: GET http://testserver/dict-assets//app/app/config.py "HTTP/1.1 403 Forbidden"
+2025-12-29 15:08:34.217 [BA] [INFO] [network] httpx: HTTP Request: GET http://testserver/dict-assets/..%2F..%2Fapp/config.py "HTTP/1.1 403 Forbidden"
+2025-12-29 15:08:34.227 [BA] [INFO] [network] httpx: HTTP Request: GET http://testserver/dict-assets/test.css "HTTP/1.1 200 OK"

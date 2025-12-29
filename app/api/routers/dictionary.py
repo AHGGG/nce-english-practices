@@ -24,7 +24,14 @@ async def get_dict_asset(file_path: str):
     Unified endpoint for dictionary assets (CSS, JS, Images).
     """
     # 1. Check disk
-    full_path = os.path.join(r"resources/dictionaries", file_path)
+    base_dir = os.path.abspath("resources/dictionaries")
+    # Resolve the full path and normalize it
+    full_path = os.path.abspath(os.path.join(base_dir, file_path))
+
+    # Security check: Ensure the resolved path is within the base directory
+    if os.path.commonpath([base_dir, full_path]) != base_dir:
+        raise HTTPException(status_code=403, detail="Access denied")
+
     if os.path.exists(full_path) and os.path.isfile(full_path):
         media_type, _ = mimetypes.guess_type(full_path)
         with open(full_path, "rb") as f:
