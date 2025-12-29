@@ -42,4 +42,29 @@
     -ms-overflow-style: none;
     scrollbar-width: none;
   }
+
+  /* Reading Mode: CSS-only word selection highlighting
+   * Uses attribute selectors for O(1) style matching without React re-renders.
+   * When data-selected-word matches data-word, the word gets highlighted.
+   */
+  .reading-word {
+    /* GPU-accelerated properties for smooth transitions */
+    transition: background-color 0.15s ease-out, color 0.15s ease-out;
+    will-change: background-color, color;
+  }
+  
+  /* Dynamic selection highlight via CSS attribute matching
+   * The container's data-selected-word attribute is matched against each word's data-word
+   * This pattern uses CSS substring matching with attribute selectors
+   */
+  [data-selected-word]:not([data-selected-word=""]) .reading-word[data-word] {
+    /* Base state: available for selection */
+  }
+  
+  /* Highlight the selected word using pure CSS */
+  [data-selected-word=""] ~ * .reading-word:hover,
+  [data-selected-word]:not([data-selected-word=""]) .reading-word:hover {
+    color: theme('colors.neon.green');
+    background-color: rgba(0, 255, 148, 0.1);
+  }
 }

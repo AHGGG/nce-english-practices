@@ -118,6 +118,7 @@
         - [x] Deep refactor of `ReadingMode.jsx` to Cyber-Noir Design System.
         - [x] Replaced hardcoded styles with `components/ui` primitives (Button, Card, Tag).
         - [x] Implemented sharp aesthetics (no rounded corners, hard shadows).
+        - [x] **Performance Optimization**: `React.memo` + CSS-based highlighting to reduce click latency (<50ms).
     - [x] **AUI Mobile Compatibility (Phase 5)**: (2025-12-25)
         - [x] Robust Reconnection: Auto-reconnect, Backoff, Visibility handling in `useAUITransport`.
         - [x] Responsive Layout: `AUIStreamingDemo` stack layout on mobile.

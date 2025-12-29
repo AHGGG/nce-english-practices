@@ -1,7 +1,60 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, memo } from 'react';
 import { BookOpen, ChevronLeft, Volume2, Eye, Loader2, X, Zap, Bookmark, Highlighter } from 'lucide-react';
 import { Button, Card, Select, Tag } from '../components/ui';
 import DictionaryResults from '../components/aui/DictionaryResults';
+
+// --- Constants (hoisted outside component to prevent re-creation) ---
+const BATCH_SIZE = 20;
+const HIGHLIGHT_OPTIONS = [
+    { label: 'COCA Top 5000', value: 'coca20000', range: [1, 5000] },
+    { label: 'COCA 5k-10k', value: 'coca20000', range: [5001, 10000] },
+    { label: 'COCA 10k-15k', value: 'coca20000', range: [10001, 15000] },
+    { label: 'COCA 15k-20k', value: 'coca20000', range: [15001, 20000] },
+    { label: 'CET-4', value: 'cet4' },
+    { label: 'CET-6', value: 'cet6' },
+    { label: 'QA Vocab', value: 'qa_vocab' }
+];
+
+/**
+ * Memoized Sentence Component - CRITICAL for performance
+ * Only re-renders when text/highlights change, NOT when selectedWord changes.
+ * This prevents expensive re-renders of all sentences on each word click.
+ */
+const MemoizedSentence = memo(function MemoizedSentence({ text, highlightSet, showHighlights }) {
+    if (!text) return null;
+
+    // Split by spaces but keep delimiters to preserve spacing
+    const tokens = text.split(/(\s+|[.,!?;:"'()])/);
+
+    return (
+        <p className="mb-6">
+            {tokens.map((token, i) => {
+                const clean = token.replace(/[^a-zA-Z'-]/g, '').toLowerCase();
+                const isWord = /^[a-zA-Z'-]+$/.test(clean);
+
+                if (!isWord) return <span key={i}>{token}</span>;
+
+                // Highlight based on vocabulary list
+                const isHighlighted = showHighlights && highlightSet?.has(clean);
+
+                // Use data-word for CSS-based selection highlighting (no React re-render)
+                return (
+                    <span
+                        key={i}
+                        data-word={clean}
+                        data-sentence={text}
+                        className={`reading-word cursor-pointer rounded-sm px-0.5 ${isHighlighted
+                            ? 'text-neon-cyan border-b-2 border-neon-cyan/50'
+                            : 'hover:text-neon-cyan hover:bg-bg-elevated'
+                            }`}
+                    >
+                        {token}
+                    </span>
+                );
+            })}
+        </p>
+    );
+});
 
 /**
  * Reading Mode - Premium Article Reader
@@ -12,19 +65,8 @@ import DictionaryResults from '../components/aui/DictionaryResults';
  * - Source Awareness (where did I learn this?)
  */
 const ReadingMode = () => {
-    // --- State ---
-    // Options
-    const HIGHLIGHT_OPTIONS = [
-        { label: 'COCA Top 5000', value: 'coca20000', range: [1, 5000] },
-        { label: 'COCA 5k-10k', value: 'coca20000', range: [5001, 10000] },
-        { label: 'COCA 10k-15k', value: 'coca20000', range: [10001, 15000] },
-        { label: 'COCA 15k-20k', value: 'coca20000', range: [15001, 20000] },
-        { label: 'CET-4', value: 'cet4' },
-        { label: 'CET-6', value: 'cet6' },
-        { label: 'QA Vocab', value: 'qa_vocab' }
-    ];
 
-    // State
+    // --- State ---
     const [articles, setArticles] = useState([]);
     const [selectedArticle, setSelectedArticle] = useState(null);
     const [isLoading, setIsLoading] = useState(false);
@@ -37,6 +79,11 @@ const ReadingMode = () => {
     const [selectedWord, setSelectedWord] = useState(null);
     const [inspectorData, setInspectorData] = useState(null);
     const [isInspecting, setIsInspecting] = useState(false);
+
+    // Progressive loading
+    const [visibleCount, setVisibleCount] = useState(BATCH_SIZE);
+    const sentinelRef = useRef(null);
+    const mainRef = useRef(null);
 
     // Audio
     const audioRef = useRef(null);
@@ -92,6 +139,8 @@ const ReadingMode = () => {
                 // Ensure highlights is a Set for O(1) lookup
                 data.highlightSet = new Set((data.highlights || []).map(w => w.toLowerCase()));
                 setSelectedArticle(data);
+                // Reset visible count for new article
+                setVisibleCount(BATCH_SIZE);
             }
         } catch (e) {
             console.error(e);
@@ -99,14 +148,42 @@ const ReadingMode = () => {
         setIsLoading(false);
     };
 
-    const handleWordClick = useCallback((word, sentenceText) => {
-        const cleanWord = word.replace(/[^a-zA-Z'-]/g, '').toLowerCase();
-        if (!cleanWord || cleanWord.length < 2) return;
+    // Progressive loading: Intersection Observer to load more sentences
+    useEffect(() => {
+        if (!selectedArticle?.sentences) return;
 
-        // Optimistic UI: update selectedWord immediately
+        const observer = new IntersectionObserver(
+            ([entry]) => {
+                if (entry.isIntersecting) {
+                    setVisibleCount(prev =>
+                        Math.min(prev + BATCH_SIZE, selectedArticle.sentences.length)
+                    );
+                }
+            },
+            { rootMargin: '200px' } // Load 200px before reaching sentinel
+        );
+
+        if (sentinelRef.current) {
+            observer.observe(sentinelRef.current);
+        }
+
+        return () => observer.disconnect();
+    }, [selectedArticle?.sentences?.length, BATCH_SIZE]);
+
+    // Event delegation: handle clicks on article container
+    const handleArticleClick = useCallback((e) => {
+        const target = e.target;
+        const word = target.dataset?.word;
+        const sentence = target.dataset?.sentence;
+
+        if (!word) return;
+
+        const cleanWord = word.toLowerCase();
+        if (cleanWord.length < 2) return;
+
         setSelectedWord(cleanWord);
         setInspectorData(null);
-        setCurrentContext(sentenceText || '');
+        setCurrentContext(sentence || '');
     }, []);
 
     // State for context sentence
@@ -160,44 +237,8 @@ const ReadingMode = () => {
     };
 
     // --- Rendering ---
-
-    const renderText = (text) => {
-        if (!text) return null;
-        // Split by spaces but keep delimiters to preserve spacing
-        const tokens = text.split(/(\s+|[.,!?;:"'()])/);
-
-        return tokens.map((token, i) => {
-            const clean = token.replace(/[^a-zA-Z'-]/g, '').toLowerCase();
-            const isWord = /^[a-zA-Z'-]+$/.test(clean);
-
-            if (!isWord) return <span key={i}>{token}</span>;
-
-            // Highlight Logic
-            const isHighlighted = showHighlights && selectedArticle?.highlightSet?.has(clean);
-
-            // Interaction State
-            const isSelected = selectedWord === clean;
-
-            let className = "cursor-pointer rounded-sm px-0.5 transition-all duration-200 ";
-            if (isSelected) {
-                className += "bg-neon-cyan text-black font-semibold shadow-hard ";
-            } else if (isHighlighted) {
-                className += "text-neon-cyan border-b-2 border-neon-cyan/50 ";
-            } else {
-                className += "hover:text-neon-cyan hover:bg-bg-elevated ";
-            }
-
-            return (
-                <span
-                    key={i}
-                    onClick={() => handleWordClick(token, text)}
-                    className={className}
-                >
-                    {token}
-                </span>
-            );
-        });
-    };
+    // NOTE: renderText logic has been moved to MemoizedSentence component
+    // This prevents re-renders of all sentences when selectedWord changes
 
     // --- Views ---
 
@@ -291,7 +332,7 @@ const ReadingMode = () => {
 
             <div className="flex-1 flex overflow-hidden relative">
                 {/* Article Text */}
-                <main className="flex-1 overflow-y-auto px-4 md:px-0 py-8 scroll-smooth">
+                <main ref={mainRef} className="flex-1 overflow-y-auto px-4 md:px-0 py-8 scroll-smooth">
                     <article className="max-w-2xl mx-auto pb-32">
                         <header className="mb-10 text-center px-4">
                             <h1 className="font-serif text-3xl md:text-4xl text-ink mb-4 leading-tight">
@@ -305,12 +346,34 @@ const ReadingMode = () => {
                         </header>
 
 
-                        <div className="prose prose-invert prose-lg max-w-none font-serif md:text-xl leading-loose text-ink px-4">
-                            {selectedArticle.sentences?.map((sentence, idx) => (
-                                <p key={idx} className="mb-6">
-                                    {renderText(sentence.text)}
-                                </p>
+                        {/* Event delegation + CSS containment for performance */}
+                        <div
+                            className="prose prose-invert prose-lg max-w-none font-serif md:text-xl leading-loose text-ink px-4"
+                            style={{ contain: 'content' }}
+                            data-selected-word={selectedWord || ''}
+                            onClick={handleArticleClick}
+                        >
+                            {/* Progressive loading: only render visibleCount sentences */}
+                            {/* Using MemoizedSentence to prevent re-renders on selectedWord change */}
+                            {selectedArticle.sentences?.slice(0, visibleCount).map((sentence, idx) => (
+                                <MemoizedSentence
+                                    key={idx}
+                                    text={sentence.text}
+                                    highlightSet={selectedArticle.highlightSet}
+                                    showHighlights={showHighlights}
+                                />
                             ))}
+
+                            {/* Sentinel element for Intersection Observer */}
+                            {visibleCount < (selectedArticle.sentences?.length || 0) && (
+                                <div
+                                    ref={sentinelRef}
+                                    className="flex justify-center py-4 text-ink-muted"
+                                >
+                                    <Loader2 className="w-5 h-5 animate-spin" />
+                                    <span className="ml-2 text-xs">Loading more...</span>
+                                </div>
+                            )}
                         </div>
                     </article>
                 </main>
