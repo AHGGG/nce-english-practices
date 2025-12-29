@@ -5,6 +5,21 @@ import StoryReader from '../Learn/StoryReader';
 import DrillSingle from '../Drill/DrillSingle';
 import { AUIHydrator } from '../aui/AUIHydrator';
 
+const Container = ({ title, color, children }) => (
+    <div className="h-full flex flex-col p-4 md:p-8 max-w-5xl mx-auto w-full">
+        <div className="flex items-end gap-4 mb-8 border-b border-[#333] pb-4">
+            <h2 className={`text-2xl font-serif font-bold text-white`}>{title}</h2>
+            <div className="flex items-center gap-2 mb-1">
+                <span className={`w-1.5 h-1.5 rounded-full bg-${color === 'pink' ? '[#FF0055]' : color === 'green' ? '[#00FF94]' : '[#E0E0E0]'} animate-pulse`}></span>
+                <span className={`text-[10px] font-mono text-[#666] uppercase tracking-widest`}>Active Protocol</span>
+            </div>
+        </div>
+        <div className="flex-1 overflow-auto custom-scrollbar">
+            {children}
+        </div>
+    </div>
+);
+
 const CoachCanvas = () => {
     const { activeTool, isLoading } = useCoach();
 
@@ -30,21 +45,6 @@ const CoachCanvas = () => {
                 </div>
             );
         }
-
-        const Container = ({ title, color, children }) => (
-            <div className="h-full flex flex-col p-4 md:p-8 max-w-5xl mx-auto w-full">
-                <div className="flex items-end gap-4 mb-8 border-b border-[#333] pb-4">
-                    <h2 className={`text-2xl font-serif font-bold text-white`}>{title}</h2>
-                    <div className="flex items-center gap-2 mb-1">
-                        <span className={`w-1.5 h-1.5 rounded-full bg-${color === 'pink' ? '[#FF0055]' : color === 'green' ? '[#00FF94]' : '[#E0E0E0]'} animate-pulse`}></span>
-                        <span className={`text-[10px] font-mono text-[#666] uppercase tracking-widest`}>Active Protocol</span>
-                    </div>
-                </div>
-                <div className="flex-1 overflow-auto custom-scrollbar">
-                    {children}
-                </div>
-            </div>
-        );
 
         // Check for AUI Protocol Packet
         if (activeTool?.result?.type === 'aui_render') {
