@@ -307,3 +307,25 @@ class VocabLearningLog(Base):
     
     # Timestamps
     created_at: Mapped[datetime] = mapped_column(TIMESTAMP, server_default=func.now())
+
+
+class UserGoal(Base):
+    """
+    User-defined learning goals for gamification.
+    Supports daily targets for new words, reviews, study time, and reading.
+    """
+    __tablename__ = "user_goals"
+    __table_args__ = (
+        Index("idx_user_goals_user", "user_id"),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    user_id: Mapped[str] = mapped_column(Text, default="default_user")
+    
+    # Goal type: 'new_words', 'review_words', 'study_minutes', 'reading_words'
+    goal_type: Mapped[str] = mapped_column(Text)
+    target_value: Mapped[int] = mapped_column(Integer, default=10)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+    
+    created_at: Mapped[datetime] = mapped_column(TIMESTAMP, server_default=func.now())
+    updated_at: Mapped[datetime] = mapped_column(TIMESTAMP, server_default=func.now(), onupdate=func.now())
