@@ -109,43 +109,44 @@ async def get_user_stats() -> Dict[str, Any]:
         try:
             stats = {}
             
-            # Total XP
-            xp_stmt = select(func.sum(Attempt.xp_earned))
-            xp_res = await session.execute(xp_stmt)
-            stats['total_xp'] = xp_res.scalar() or 0
-            
-            # Total Duration
-            dur_stmt = select(func.sum(Attempt.duration_seconds))
-            dur_res = await session.execute(dur_stmt)
-            total_sec = dur_res.scalar() or 0
-            stats['total_minutes'] = round(total_sec / 60)
-            
-            # Breakdown
-            # Select activity_type, count(*), sum(case when is_pass then 1 else 0 end)
-            # This is complex in pure ORM, raw SQL or group_by is easier
-            # Breakdown with duration
+            # Combined Aggregation Query: XP, Duration, Counts per activity
+            # Reduces 3 queries (Total XP, Total Duration, Breakdown) to 1
             stmt = select(
                 Attempt.activity_type,
                 func.count(Attempt.id).label("count"),
                 func.sum(func.cast(Attempt.is_pass, Integer)).label("passed"),
-                func.sum(Attempt.duration_seconds).label("duration")
+                func.sum(Attempt.duration_seconds).label("duration"),
+                func.sum(Attempt.xp_earned).label("xp")
             ).group_by(Attempt.activity_type)
             
             res = await session.execute(stmt)
-            stats['activities'] = [
-                {
+            rows = res.all()
+
+            stats['activities'] = []
+            total_xp = 0
+            total_seconds = 0
+
+            for row in rows:
+                row_xp = row.xp or 0
+                row_duration = row.duration or 0
+
+                total_xp += row_xp
+                total_seconds += row_duration
+
+                stats['activities'].append({
                     "activity_type": row.activity_type, 
                     "count": row.count, 
                     "passed": row.passed or 0,
-                    "duration_seconds": row.duration or 0
-                } 
-                for row in res.all()
-            ]
+                    "duration_seconds": row_duration
+                })
+
+            stats['total_xp'] = total_xp
+            stats['total_minutes'] = round(total_seconds / 60)
             
             # Recent
             recent_stmt = select(Attempt).order_by(desc(Attempt.created_at)).limit(5)
             recent_res = await session.execute(recent_stmt)
-            rows = recent_res.scalars().all()
+            recent_rows = recent_res.scalars().all()
             
             stats['recent'] = [
                 {
@@ -155,7 +156,7 @@ async def get_user_stats() -> Dict[str, Any]:
                     "is_pass": r.is_pass,
                     "duration_seconds": r.duration_seconds,
                     "created_at": r.created_at.isoformat()
-                } for r in rows
+                } for r in recent_rows
             ]
             
             return stats
