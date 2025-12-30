@@ -31,7 +31,7 @@ class DSMLParser:
                 # Try to parse as JSON if it looks like array/dict, else string
                 try:
                     args[param_name] = json.loads(param_value)
-                except:
+                except json.JSONDecodeError:
                     args[param_name] = param_value
             
             tools.append({

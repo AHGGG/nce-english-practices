@@ -117,20 +117,20 @@ async def elevenlabs_live_stt_websocket(websocket: WebSocket):
             # Allow brief drain
             try:
                 await asyncio.wait_for(receiver, timeout=0.5)
-            except:
+            except asyncio.TimeoutError:
                 pass
 
     except Exception as e:
         logger.error(f"ElevenLabs WS Error: {e}")
         try:
             await websocket.send_json({"type": "error", "message": str(e)})
-        except:
+        except Exception:
             pass
     finally:
         logger.info("Connection closed")
         try:
             await websocket.close()
-        except:
+        except Exception:
             pass
 
 
@@ -350,10 +350,10 @@ async def elevenlabs_voice_agent_endpoint(
         logger.error(f"Voice Agent Critical Error: {e}")
         try:
             await websocket.send_json({"type": "error", "message": str(e)})
-        except:
+        except Exception:
             pass
     finally:
         try:
             await websocket.close()
-        except:
+        except Exception:
             pass

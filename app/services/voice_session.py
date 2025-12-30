@@ -73,7 +73,7 @@ class VoiceSession:
             self.client_connected = False
             try:
                 await self.websocket.close()
-            except:
+            except Exception:
                 pass
             print("WS: Cleanup Complete")
 

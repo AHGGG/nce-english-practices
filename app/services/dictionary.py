@@ -91,7 +91,7 @@ class DictionaryManager:
                             k_str = key.decode('utf-8').strip()
                             mdx_cache[k_str] = value
                             count += 1
-                        except:
+                        except UnicodeDecodeError:
                             continue
                     
                     mdd_cache = {}
@@ -145,7 +145,7 @@ class DictionaryManager:
         key_bytes_gbk = None 
         try:
             key_bytes_gbk = key.encode('gbk')
-        except:
+        except UnicodeEncodeError:
             pass
 
         for d in self.dictionaries:
@@ -189,11 +189,11 @@ class DictionaryManager:
                 # Decode
                 try:
                     html_content = definition_bytes.decode('utf-8')
-                except:
+                except UnicodeDecodeError:
                     try:
                         html_content = definition_bytes.decode('gbk')
-                    except:
-                        continue # Skip if decode fails
+                    except UnicodeDecodeError:
+                        continue  # Skip if decode fails
                 
                 html_content = html_content.strip()
 
@@ -218,9 +218,9 @@ class DictionaryManager:
                             # Decode new content
                             try:
                                 html_content = target_bytes.decode('utf-8')
-                            except:
+                            except UnicodeDecodeError:
                                 html_content = target_bytes.decode('gbk')
-                        except:
+                        except UnicodeDecodeError:
                             break
                         
                         html_content = html_content.strip()

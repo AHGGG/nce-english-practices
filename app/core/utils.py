@@ -37,7 +37,7 @@ def parse_llm_json(content: str) -> Union[Dict[str, Any], List[Any]]:
                 if end_idx != -1 and end_idx > start_idx:
                      candidate = cleaned[start_idx : end_idx + 1]
                      return json.loads(candidate)
-        except:
+        except json.JSONDecodeError:
             pass
             
         # Re-raise original error if fallback fails

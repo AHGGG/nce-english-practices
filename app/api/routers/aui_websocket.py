@@ -173,7 +173,7 @@ async def aui_websocket_stream(
                 "message": str(e)
             })
             await websocket.close(code=1011)
-        except:
+        except Exception:
             pass
 
 

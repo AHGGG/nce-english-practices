@@ -143,12 +143,12 @@ async def deepgram_live_stt_websocket(
         logger.error(f"Deepgram WebSocket Error: {e}")
         try:
             await websocket.send_json({"type": "error", "message": str(e)})
-        except:
+        except Exception:
              pass
     finally:
         try:
             await websocket.close()
-        except:
+        except Exception:
             pass
 
 
@@ -259,12 +259,12 @@ async def deepgram_streaming_tts_websocket(
         logger.error(f"Deepgram TTS WebSocket Error: {e}")
         try:
              await websocket.send_json({"type": "error", "message": str(e)})
-        except:
+        except Exception:
              pass
     finally:
         try:
              await websocket.close()
-        except:
+        except Exception:
              pass
 
 
@@ -427,12 +427,12 @@ async def deepgram_voice_agent_websocket(
         logger.error(f"Voice Agent Error: {e}")
         try:
              await websocket.send_json({"type": "error", "message": f"Critical Error: {str(e)}"})
-        except:
+        except Exception:
              pass
     finally:
         try:
             await websocket.close()
-        except:
+        except Exception:
             pass
 
 
@@ -799,7 +799,7 @@ async def deepgram_unified_voice_agent_websocket(
                     logger.info("Client disconnected")
                     try:
                         await dg_ws.send(json.dumps({"type": "CloseStream"}))
-                    except:
+                    except Exception:
                         pass
                 except Exception as e:
                     logger.error(f"Error sending to Deepgram: {e}")
@@ -829,11 +829,11 @@ async def deepgram_unified_voice_agent_websocket(
         logger.error(f"Unified Voice Agent Error: {e}")
         try:
             await websocket.send_json({"type": "error", "message": str(e)})
-        except:
+        except Exception:
             pass
     finally:
         try:
             await websocket.close()
-        except:
+        except Exception:
             pass
 

@@ -111,7 +111,7 @@ class AUIInputService:
                 if conn:
                     try:
                         await conn.close()
-                    except:
+                    except Exception:
                         pass
 
     async def _fetch_and_dispatch(self, session_id: str):
