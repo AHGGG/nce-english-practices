@@ -4,6 +4,9 @@ from sqlalchemy import select
 from app.core.db import AsyncSessionLocal
 from app.models.orm import SRSSchedule
 from app.database import update_srs_schedule
+import logging
+
+logger = logging.getLogger(__name__)
 
 async def process_review_result(note_id: int, quality: int) -> Optional[Dict[str, Any]]:
     """
@@ -18,14 +21,14 @@ async def process_review_result(note_id: int, quality: int) -> Optional[Dict[str
             schedule = result.scalar_one_or_none()
 
             if not schedule:
-                print(f"Error: No schedule found for note {note_id}")
+                logger.error("No schedule found for note %s", note_id)
                 return None
 
             prev_interval = schedule.interval_days
             prev_ease = schedule.ease_factor
             prev_reps = schedule.repetitions
         except Exception as e:
-            print(f"Error fetching schedule: {e}")
+            logger.exception("Error fetching schedule")
             return None
 
     new_interval = 0

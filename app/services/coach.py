@@ -1,5 +1,6 @@
 import json
 import asyncio
+import logging
 from datetime import datetime
 from typing import List, Dict, Any, Optional
 
@@ -11,6 +12,8 @@ from app.database import (
     update_mastery, get_mastery,
     get_session_vocab, get_story
 )
+
+logger = logging.getLogger(__name__)
 
 # Tool Definitions
 COACH_TOOLS = [
@@ -233,7 +236,7 @@ class CoachService:
             }
 
         except Exception as e:
-            print(f"Coach Error: {e}")
+            logger.exception("Coach Error")
             return {"message": "I'm having trouble connecting right now."}
 
     async def _execute_tool(self, user_id: str, name: str, args: Dict[str, Any]) -> Any:
@@ -332,7 +335,7 @@ Format: Return ONLY the story text. Title first on its own line, then the body."
                 "grammar_notes": []
             }
         except Exception as e:
-            print(f"Story Gen Error: {e}")
+            logger.exception("Story Gen Error")
             return None
 
 # Singleton

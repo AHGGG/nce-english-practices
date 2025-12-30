@@ -1,11 +1,14 @@
 from __future__ import annotations
 
 import json
+import logging
 from typing import List
 from app.config import MODEL_NAME
 from app.models.schemas import QuizItem, QuizOption
 from app.services.prompt_manager import prompt_manager
 from app.core.utils import parse_llm_json
+
+logger = logging.getLogger(__name__)
 
 def generate_quiz(client, topic: str, tense: str, aspect: str, correct_sentence: str) -> QuizItem:
     if not client:
@@ -63,7 +66,7 @@ def generate_quiz(client, topic: str, tense: str, aspect: str, correct_sentence:
         )
 
     except Exception as e:
-        print(f"Quiz Generation Error: {e}")
+        logger.exception("Quiz Generation Error")
         # Fallback
         return QuizItem(
             question_context=f"Complete the sentence: {correct_sentence} ...",

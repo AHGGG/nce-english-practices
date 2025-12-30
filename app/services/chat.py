@@ -1,8 +1,11 @@
 import json
+import logging
 from app.config import MODEL_NAME
 from app.database import create_chat_session, get_chat_session, update_chat_history
 from app.services.llm import llm_service
 from app.services.prompt_manager import prompt_manager
+
+logger = logging.getLogger(__name__)
 
 async def start_new_mission(topic: str, tense: str, aspect: str) -> dict:
     if not llm_service.async_client:
@@ -39,7 +42,7 @@ async def start_new_mission(topic: str, tense: str, aspect: str) -> dict:
         }
 
     except Exception as e:
-        print(f"Mission Gen Error: {e}")
+        logger.exception("Mission Gen Error")
         # Fallback
         return {
             "session_id": "error",

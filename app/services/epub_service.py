@@ -12,6 +12,9 @@ from pathlib import Path
 import ebooklib
 from ebooklib import epub
 from bs4 import BeautifulSoup
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class EpubService:
@@ -57,7 +60,7 @@ class EpubService:
             print(f"Loaded EPUB: {filename}, found {len(self._current_articles)} articles")
             return True
         except Exception as e:
-            print(f"Error loading EPUB: {e}")
+            logger.exception("Error loading EPUB")
             return False
     
     def _extract_articles(self):
@@ -99,7 +102,7 @@ class EpubService:
                             'source_file': item.get_name()
                         })
                 except Exception as e:
-                    print(f"Error parsing item {item.get_name()}: {e}")
+                    logger.exception("Error parsing item")
     
     def _extract_sentences(self, text: str) -> List[str]:
         """Extract clean sentences from text."""

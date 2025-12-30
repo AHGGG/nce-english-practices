@@ -4,6 +4,9 @@ import re
 import asyncio
 from typing import Optional, List, Dict
 from functools import lru_cache
+import logging
+
+logger = logging.getLogger(__name__)
 
 class RSSService:
     """
@@ -26,7 +29,7 @@ class RSSService:
         if feed.bozo:
              # feedparser sets bozo=1 if there's an error, but often still returns data.
              # We log but continue if entries exist.
-             print(f"RSS Parse Warning/Error for {url}: {feed.bozo_exception}")
+             logger.warning("RSS Parse Warning/Error for %s: %s", url, feed.bozo_exception)
              if not feed.entries:
                  return None
                  

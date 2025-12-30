@@ -8,6 +8,9 @@ import mimetypes
 
 from app.models.content_schemas import ContentBundle, ContentSentence, ContentImage, SourceType
 from app.services.content_providers.base import BaseContentProvider
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class EpubProvider(BaseContentProvider):
@@ -50,7 +53,7 @@ class EpubProvider(BaseContentProvider):
             self._cached_articles = self._extract_articles(book)
             return True
         except Exception as e:
-            print(f"Error loading EPUB {filename}: {e}")
+            logger.exception("Error loading EPUB %s", filename)
             return False
     
     def _extract_images(self, book: epub.EpubBook) -> Dict[str, bytes]:

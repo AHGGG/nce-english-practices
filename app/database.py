@@ -13,6 +13,10 @@ from app.models.orm import (
     UserGoal, ReadingSession
 )
 
+import logging
+
+logger = logging.getLogger(__name__)
+
 # --- Session / Theme ---
 
 async def log_session(topic: str, vocab_data: Dict[str, Any]):
@@ -22,7 +26,7 @@ async def log_session(topic: str, vocab_data: Dict[str, Any]):
             session.add(new_session)
             await session.commit()
         except Exception as e:
-            print(f"DB Error log_session: {e}")
+            logger.exception("DB Error log_session")
             await session.rollback()
 
 async def get_session_vocab(topic: str) -> Optional[Dict[str, Any]]:
@@ -36,7 +40,7 @@ async def get_session_vocab(topic: str) -> Optional[Dict[str, Any]]:
                 return session_log.vocab_json
             return None
         except Exception as e:
-            print(f"DB Error get_session_vocab: {e}")
+            logger.exception("DB Error get_session_vocab")
             return None
 
 # --- Story ---
@@ -61,7 +65,7 @@ async def log_story(topic: str, tense: str, story_data: Dict[str, Any]):
             session.add(new_story)
             await session.commit()
         except Exception as e:
-            print(f"DB Error log_story: {e}")
+            logger.exception("DB Error log_story")
             await session.rollback()
 
 async def get_story(topic: str, tense: str) -> Optional[Dict[str, Any]]:
@@ -79,7 +83,7 @@ async def get_story(topic: str, tense: str) -> Optional[Dict[str, Any]]:
                 }
             return None
         except Exception as e:
-            print(f"DB Error get_story: {e}")
+            logger.exception("DB Error get_story")
             return None
 
 # --- Attempts / Stats ---
@@ -102,7 +106,7 @@ async def log_attempt(activity_type: str, topic: str, tense: str,
             session.add(attempt)
             await session.commit()
         except Exception as e:
-            print(f"DB Error log_attempt: {e}")
+            logger.exception("DB Error log_attempt")
             await session.rollback()
 
 async def get_user_stats() -> Dict[str, Any]:
@@ -161,7 +165,7 @@ async def get_user_stats() -> Dict[str, Any]:
             
             return stats
         except Exception as e:
-            print(f"DB Error get_stats: {e}")
+            logger.exception("DB Error get_stats")
             return {"total_xp": 0, "total_minutes": 0, "activities": [], "recent": []}
 
 # --- Review / SRS ---
@@ -187,7 +191,7 @@ async def add_review_note(original: str, better: str, note_type: str = "grammar"
             await session.commit()
             return note.id
         except Exception as e:
-            print(f"DB Error add_note: {e}")
+            logger.exception("DB Error add_note")
             await session.rollback()
             return None
 
@@ -219,7 +223,7 @@ async def get_due_reviews(limit: int = 10) -> List[Dict[str, Any]]:
                 output.append(item)
             return output
         except Exception as e:
-            print(f"DB Error get_due: {e}")
+            logger.exception("DB Error get_due")
             return []
 
 async def update_srs_schedule(note_id: int, next_due: datetime, interval: int, ease: float, reps: int):
@@ -234,7 +238,7 @@ async def update_srs_schedule(note_id: int, next_due: datetime, interval: int, e
             await session.execute(stmt)
             await session.commit()
         except Exception as e:
-            print(f"DB Error update_srs: {e}")
+            logger.exception("DB Error update_srs")
             await session.rollback()
 
 # --- Chat Sessions (New Stateless impl) ---
@@ -255,7 +259,7 @@ async def create_chat_session(mission_data: Dict[str, Any], initial_history: Lis
             await session.commit()
             return session_id
         except Exception as e:
-            print(f"DB Error create_chat: {e}")
+            logger.exception("DB Error create_chat")
             await session.rollback()
             return "error"
 
@@ -272,7 +276,7 @@ async def get_chat_session(session_id: str) -> Optional[Dict[str, Any]]:
                 }
             return None
         except Exception as e:
-            print(f"DB Error get_chat: {e}")
+            logger.exception("DB Error get_chat")
             return None
 
 async def update_chat_history(session_id: str, new_history: List[Dict[str, str]]):
@@ -283,7 +287,7 @@ async def update_chat_history(session_id: str, new_history: List[Dict[str, str]]
             await session.execute(stmt)
             await session.commit()
         except Exception as e:
-            print(f"DB Error update_chat: {e}")
+            logger.exception("DB Error update_chat")
             await session.rollback()
 
 # --- Coach Persistence ---
@@ -303,7 +307,7 @@ async def create_coach_session(user_id: str) -> str:
             await session.commit()
             return session_id
         except Exception as e:
-            print(f"DB Error create_coach_session: {e}")
+            logger.exception("DB Error create_coach_session")
             await session.rollback()
             return "error"
 
@@ -313,7 +317,7 @@ async def get_total_coach_messages(session_id: str) -> int:
             result = await session.execute(select(CoachSession.message_count).where(CoachSession.id == session_id))
             return result.scalar() or 0
         except Exception as e:
-            print(f"DB Error get_coach_msg_count: {e}")
+            logger.exception("DB Error get_coach_msg_count")
             return 0
 
 async def increment_coach_message_count(session_id: str):
@@ -323,7 +327,7 @@ async def increment_coach_message_count(session_id: str):
             await session.execute(stmt)
             await session.commit()
         except Exception as e:
-            print(f"DB Error inc_coach_msg: {e}")
+            logger.exception("DB Error inc_coach_msg")
             await session.rollback()
 
 async def end_coach_session(session_id: str, summary: Dict[str, Any] = None):
@@ -337,7 +341,7 @@ async def end_coach_session(session_id: str, summary: Dict[str, Any] = None):
             await session.execute(stmt)
             await session.commit()
         except Exception as e:
-            print(f"DB Error end_coach_session: {e}")
+            logger.exception("DB Error end_coach_session")
             await session.rollback()
 
 # --- Coach Memory ---
@@ -359,7 +363,7 @@ async def remember_fact(user_id: str, key: str, value: Dict[str, Any]):
             
             await session.commit()
         except Exception as e:
-            print(f"DB Error remember_fact: {e}")
+            logger.exception("DB Error remember_fact")
             await session.rollback()
 
 async def recall_fact(user_id: str, key: str) -> Optional[Dict[str, Any]]:
@@ -370,7 +374,7 @@ async def recall_fact(user_id: str, key: str) -> Optional[Dict[str, Any]]:
             memory = result.scalar_one_or_none()
             return memory.value if memory else None
         except Exception as e:
-            print(f"DB Error recall_fact: {e}")
+            logger.exception("DB Error recall_fact")
             return None
 
 async def get_all_memories(user_id: str) -> Dict[str, Any]:
@@ -381,7 +385,7 @@ async def get_all_memories(user_id: str) -> Dict[str, Any]:
             memories = result.scalars().all()
             return {m.key: m.value for m in memories}
         except Exception as e:
-            print(f"DB Error get_all_memories: {e}")
+            logger.exception("DB Error get_all_memories")
             return {}
 
 # --- Coach Progress ---
@@ -418,7 +422,7 @@ async def update_mastery(user_id: str, topic: str, level: int, notes: str = None
             
             await session.commit()
         except Exception as e:
-            print(f"DB Error update_mastery: {e}")
+            logger.exception("DB Error update_mastery")
             await session.rollback()
 
 async def get_mastery(user_id: str, topic: str) -> Optional[Dict[str, Any]]:
@@ -435,7 +439,7 @@ async def get_mastery(user_id: str, topic: str) -> Optional[Dict[str, Any]]:
                 }
             return None
         except Exception as e:
-            print(f"DB Error get_mastery: {e}")
+            logger.exception("DB Error get_mastery")
             return None
 
 
@@ -583,7 +587,7 @@ async def get_performance_data(days: int = 30) -> Dict[str, Any]:
             return result
             
         except Exception as e:
-            print(f"DB Error get_performance_data: {e}")
+            logger.exception("DB Error get_performance_data")
             return {
                 'summary': {'vocab_size': 0, 'mastery_rate': 0, 'comprehension_score': 0, 'total_study_minutes': 0},
                 'vocabulary': {'distribution': {}, 'difficult_words': [], 'recent_words': []},
@@ -604,7 +608,7 @@ async def get_due_reviews_count() -> int:
             result = await session.execute(stmt)
             return result.scalar() or 0
         except Exception as e:
-            print(f"DB Error get_due_reviews_count: {e}")
+            logger.exception("DB Error get_due_reviews_count")
             return 0
 
 
@@ -696,7 +700,7 @@ async def get_milestones(user_id: str = "default_user") -> Dict[str, Any]:
             }
             
         except Exception as e:
-            print(f"DB Error get_milestones: {e}")
+            logger.exception("DB Error get_milestones")
             return {
                 "vocab_size": 0,
                 "current_streak": 0,
@@ -752,7 +756,7 @@ async def get_reading_stats(user_id: str = "default_user") -> Dict[str, Any]:
             }
             
         except Exception as e:
-            print(f"DB Error get_reading_stats: {e}")
+            logger.exception("DB Error get_reading_stats")
             return {
                 "total_words_read": 0,
                 "articles_count": 0,
@@ -805,7 +809,7 @@ async def get_user_goals(user_id: str = "default_user") -> Dict[str, Any]:
                 ]
             }
         except Exception as e:
-            print(f"DB Error get_user_goals: {e}")
+            logger.exception("DB Error get_user_goals")
             return {'goals': []}
 
 
@@ -840,7 +844,7 @@ async def update_user_goals(user_id: str, goals: Dict[str, int]) -> bool:
             await session.commit()
             return True
         except Exception as e:
-            print(f"DB Error update_user_goals: {e}")
+            logger.exception("DB Error update_user_goals")
             await session.rollback()
             return False
 
@@ -920,7 +924,7 @@ async def get_goals_progress(user_id: str = "default_user") -> Dict[str, Any]:
             return {'date': str(today), 'progress': progress}
             
         except Exception as e:
-            print(f"DB Error get_goals_progress: {e}")
+            logger.exception("DB Error get_goals_progress")
             return {'date': str(datetime.utcnow().date()), 'progress': {}}
 
 
@@ -993,7 +997,7 @@ async def get_memory_curve_data(user_id: str = "default_user") -> Dict[str, Any]
             }
             
         except Exception as e:
-            print(f"DB Error get_memory_curve_data: {e}")
+            logger.exception("DB Error get_memory_curve_data")
             return {
                 'actual': [],
                 'ebbinghaus': [],
@@ -1031,7 +1035,7 @@ async def start_reading_session(
             await session.refresh(new_session)
             return new_session.id
         except Exception as e:
-            print(f"DB Error start_reading_session: {e}")
+            logger.exception("DB Error start_reading_session")
             await session.rollback()
             return None
 
@@ -1062,7 +1066,7 @@ async def update_reading_session(
             await session.commit()
             return True
         except Exception as e:
-            print(f"DB Error update_reading_session: {e}")
+            logger.exception("DB Error update_reading_session")
             await session.rollback()
             return False
 
@@ -1084,7 +1088,7 @@ async def increment_word_click(session_id: int) -> bool:
             await session.commit()
             return True
         except Exception as e:
-            print(f"DB Error increment_word_click: {e}")
+            logger.exception("DB Error increment_word_click")
             await session.rollback()
             return False
 
@@ -1180,7 +1184,7 @@ async def end_reading_session(session_id: int, final_data: Dict[str, Any] = None
                 "time_spent_seconds": rs.total_active_seconds
             }
         except Exception as e:
-            print(f"DB Error end_reading_session: {e}")
+            logger.exception("DB Error end_reading_session")
             await session.rollback()
             return {"success": False, "error": str(e)}
 
@@ -1240,7 +1244,7 @@ async def get_reading_stats_v2(user_id: str = "default_user") -> Dict[str, Any]:
             }
             
         except Exception as e:
-            print(f"DB Error get_reading_stats_v2: {e}")
+            logger.exception("DB Error get_reading_stats_v2")
             return {
                 "total_words_read": 0,
                 "articles_count": 0,

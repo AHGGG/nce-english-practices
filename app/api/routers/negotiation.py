@@ -1,3 +1,4 @@
+import logging
 from fastapi import APIRouter, HTTPException
 from typing import List
 from pydantic import BaseModel
@@ -5,6 +6,8 @@ from app.models.negotiation_schemas import NegotiationRequest, NegotiationRespon
 from app.services.negotiation_service import negotiation_service
 from app.services.content_feeder import content_feeder, FeedContent
 from app.services.proficiency_service import proficiency_service
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/negotiation", tags=["negotiation"])
 
@@ -26,7 +29,7 @@ async def interact(request: NegotiationRequest):
         return response
     except Exception as e:
         # In production log this
-        print(f"Negotiation Error: {str(e)}")
+        logger.exception("Negotiation Error")
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.get("/next-content", response_model=FeedContent)
@@ -74,7 +77,7 @@ async def get_next_content(
             return content
         raise HTTPException(status_code=404, detail="No content available")
     except Exception as e:
-        print(f"ContentFeeder Error: {str(e)}")
+        logger.exception("ContentFeeder Error")
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.get("/difficult-words", response_model=List[WordProficiencyResponse])
@@ -98,7 +101,7 @@ async def get_difficult_words(limit: int = 20):
             for w in words
         ]
     except Exception as e:
-        print(f"Proficiency Error: {str(e)}")
+        logger.exception("Proficiency Error")
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -123,7 +126,7 @@ async def get_word_examples(word: str):
     except HTTPException:
         raise
     except Exception as e:
-        print(f"WordExamples Error: {str(e)}")
+        logger.exception("WordExamples Error")
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.post("/context", response_model=ContextResponse)
@@ -140,5 +143,5 @@ async def generate_context(request: ContextRequest):
         )
         return ContextResponse(scenario=scenario)
     except Exception as e:
-        print(f"Context Generation Error: {str(e)}")
+        logger.exception("Context Generation Error")
         raise HTTPException(status_code=500, detail=str(e))

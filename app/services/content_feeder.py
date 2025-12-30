@@ -11,6 +11,9 @@ from pydantic import BaseModel, Field
 from app.services.dictionary import dict_manager
 from app.services.collins_parser import collins_parser
 from app.models.collins_schemas import CollinsExample
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class FeedContent(BaseModel):
@@ -101,7 +104,7 @@ Reply with ONLY the number, nothing else."""
                 pass
                 
         except Exception as e:
-            print(f"WSD error for '{word}': {e}")
+            logger.exception("WSD error for '%s'", word)
         
         return 0  # Default to first sense
     
@@ -250,7 +253,7 @@ Reply with ONLY the number, nothing else."""
                 )
 
             except Exception as e:
-                print(f"ContentFeeder Error: {e}")
+                logger.exception("ContentFeeder Error")
                 return None
              
         # 2. Dictionary Mode (Word-Driven)

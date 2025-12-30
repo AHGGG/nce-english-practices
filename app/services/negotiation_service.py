@@ -1,4 +1,5 @@
 import json
+import logging
 from typing import Optional
 from app.models.negotiation_schemas import (
     NegotiationRequest, NegotiationResponse, NegotiationStep, 
@@ -6,6 +7,8 @@ from app.models.negotiation_schemas import (
 )
 from app.services.llm import llm_service
 from app.services.proficiency_service import proficiency_service
+
+logger = logging.getLogger(__name__)
 
 class NegotiationService:
     def __init__(self):
@@ -30,7 +33,7 @@ class NegotiationService:
                 try:
                     await proficiency_service.record_interaction(source_word, "continue")
                 except Exception as e:
-                    print(f"Proficiency tracking error: {e}")  # Non-blocking
+                    logger.warning("Proficiency tracking error: %s", e)  # Non-blocking
             
             if session.current_step == NegotiationStep.ORIGINAL:
                 return self._finalize_loop(session)
@@ -48,7 +51,7 @@ class NegotiationService:
                 try:
                     await proficiency_service.record_interaction(source_word, "huh")
                 except Exception as e:
-                    print(f"Proficiency tracking error: {e}")  # Non-blocking
+                    logger.warning("Proficiency tracking error: %s", e)  # Non-blocking
             
             return await self._descend_ladder(session)
             

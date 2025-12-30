@@ -6,6 +6,9 @@ from app.services.coach import coach_service
 from app.services.tts import tts_service
 from fastapi.responses import Response
 import base64
+import logging
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/coach", tags=["coach"])
 
@@ -57,6 +60,6 @@ async def text_to_speech(request: TTSRequest):
         audio = await tts_service.generate_audio(request.text)
         return Response(content=audio, media_type="audio/mpeg")
     except Exception as e:
-        print(f"TTS Error: {e}")
+        logger.exception("TTS Error")
         raise HTTPException(status_code=500, detail="TTS generation failed")
 

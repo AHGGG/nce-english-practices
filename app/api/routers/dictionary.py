@@ -8,6 +8,9 @@ from app.services.llm import llm_service
 from app.services.collins_parser import collins_parser
 from app.models.collins_schemas import CollinsWord
 from app.config import MODEL_NAME
+import logging
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
@@ -64,7 +67,7 @@ async def api_dict_lookup(payload: DictionaryLookupRequest):
             "results": results
         }
     except Exception as e:
-        print(f"Dict Lookup Error: {e}")
+        logger.exception("Dict Lookup Error")
         return {"results": [], "error": "Internal Dictionary Error"}
 
 @router.post("/api/dictionary/context")
@@ -93,7 +96,7 @@ async def api_dict_context(payload: DictionaryContextRequest):
 
         return {"explanation": explanation}
     except Exception as e:
-         print(f"AI Error: {e}")
+         logger.exception("AI Error")
          return {"explanation": "An error occurred while generating explanation."}
 
 
@@ -133,7 +136,7 @@ async def get_collins_word(
         return parsed
         
     except Exception as e:
-        print(f"Collins Lookup Error: {e}")
+        logger.exception("Collins Lookup Error")
         return CollinsWord(word=word, found=False)
 
 
@@ -200,7 +203,7 @@ async def get_ldoce_word(
         return parsed
         
     except Exception as e:
-        print(f"LDOCE Lookup Error: {e}")
+        logger.exception("LDOCE Lookup Error")
         return LDOCEWord(word=word, found=False)
 
 
