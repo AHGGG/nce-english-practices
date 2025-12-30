@@ -154,6 +154,16 @@
     - [x] **Visual Stats**: Daily streaks, words encounter counter, practice volume.
     - [x] **Time Tracking**: Record total practice duration per session.
     - [x] **History**: Log of all completed quizzes and missions.
+    - [x] **Performance Report V1-V3** (2025-12-29 ~ 2025-12-30):
+        - [x] V1: KPIs (vocab size, mastery rate, comprehension, study time), activity heatmap, difficult words, source distribution.
+        - [x] V2: Due reviews count, learning streak, reading word count, milestone badges (vocab + streak).
+        - [x] V3: Daily goals (4 types with circular progress), Memory curve (actual vs Ebbinghaus).
+    - [x] **Reading Session Tracking** (2025-12-30):
+        - [x] `ReadingSession` model + `reading_sessions` table.
+        - [x] Mixed-signal quality assessment (time-ratio, scroll-behavior, word-clicks).
+        - [x] Frontend `ReadingTracker.js` with heartbeat, visibility API, sentence IntersectionObserver.
+        - [x] `/api/reading/*` endpoints (start, heartbeat, word-click, end, stats).
+        - [x] `get_reading_stats_v2()` with validated word count (skimmed = 0, low = 30%, medium = 70%, high = 100%).
 - [x] **Voice Vendor Lab**:
     - [x] **Internal Tool**: `/voice-lab` refactored to **Vendor-Centric Layout** (Google, Deepgram, ElevenLabs tabs).
     - [x] **SDK Removal**: Removed ElevenLabs and Deepgram SDKs in favor of raw `httpx` API calls.

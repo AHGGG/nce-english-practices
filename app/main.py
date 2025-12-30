@@ -12,9 +12,7 @@ from app.api.routers import (
     content,
     practice,
     stats,
-
     coach,
-    voice_lab,
     voice_lab,
     aui_input,
     deepgram_websocket,
@@ -23,10 +21,10 @@ from app.api.routers import (
     aui_websocket,
     context_router,
     tts,
-    tts,
     negotiation,
     books,
     inspect,
+    reading,
 )
 from app.services.log_collector import setup_logging
 import logging
@@ -87,6 +85,7 @@ app.include_router(tts.router)  # TTS API
 app.include_router(negotiation.router) # Included negotiation router
 app.include_router(books.router, prefix="/api") # Books API
 app.include_router(inspect.router)  # Inspect API (word lookup + learning log)
+app.include_router(reading.router)  # Reading session tracking
 
 from app.models.schemas import RemoteLog
 from app.services.log_collector import (

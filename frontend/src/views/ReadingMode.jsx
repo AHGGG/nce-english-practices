@@ -1,7 +1,27 @@
 import React, { useState, useEffect, useRef, useCallback, memo, useMemo } from 'react';
 import { BookOpen, ChevronLeft, Volume2, Loader2, X, Zap, Bookmark, ZoomIn } from 'lucide-react';
 import DictionaryResults from '../components/aui/DictionaryResults';
+import ReadingTracker from '../utils/ReadingTracker';
 
+// Simple API helper for ReadingTracker
+const api = {
+    post: async (url, data) => {
+        const res = await fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        });
+        return res.json();
+    },
+    put: async (url, data) => {
+        const res = await fetch(url, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        });
+        return res.json();
+    }
+};
 // --- Constants (hoisted outside component to prevent re-creation) ---
 const BATCH_SIZE = 20;
 const HIGHLIGHT_OPTIONS = [
@@ -203,6 +223,9 @@ const ReadingMode = () => {
     // Lightbox
     const [lightboxImage, setLightboxImage] = useState(null);
 
+    // Reading session tracking
+    const trackerRef = useRef(null);
+
     // --- Effects ---
     useEffect(() => {
         fetchArticleList();
@@ -256,6 +279,18 @@ const ReadingMode = () => {
                 setSelectedArticle(data);
                 // Reset visible count for new article
                 setVisibleCount(BATCH_SIZE);
+
+                // Start reading session tracking
+                if (trackerRef.current) {
+                    await trackerRef.current.end();
+                }
+                trackerRef.current = new ReadingTracker({
+                    id: sourceId,
+                    source_type: 'epub',
+                    title: data.title,
+                    sentences: data.sentences?.map(s => s.text || s) || []
+                }, api);
+                await trackerRef.current.start();
             }
         } catch (e) {
             console.error(e);
@@ -285,6 +320,31 @@ const ReadingMode = () => {
         return () => observer.disconnect();
     }, [selectedArticle?.sentences?.length, BATCH_SIZE]);
 
+    // Track sentence visibility for reading stats
+    useEffect(() => {
+        if (!selectedArticle?.sentences || !trackerRef.current) return;
+
+        const observer = new IntersectionObserver(
+            (entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting && trackerRef.current) {
+                        const idx = parseInt(entry.target.dataset.sentenceIdx, 10);
+                        if (!isNaN(idx)) {
+                            trackerRef.current.onSentenceView(idx);
+                        }
+                    }
+                });
+            },
+            { rootMargin: '0px', threshold: 0.5 }
+        );
+
+        // Observe all sentence elements
+        const sentenceEls = document.querySelectorAll('[data-sentence-idx]');
+        sentenceEls.forEach(el => observer.observe(el));
+
+        return () => observer.disconnect();
+    }, [selectedArticle?.sentences?.length, visibleCount]);
+
     // Event delegation: handle clicks on article container
     const handleArticleClick = useCallback((e) => {
         const target = e.target;
@@ -299,6 +359,11 @@ const ReadingMode = () => {
         setSelectedWord(cleanWord);
         setInspectorData(null);
         setCurrentContext(sentence || '');
+
+        // Track word click for reading quality
+        if (trackerRef.current) {
+            trackerRef.current.onWordClick();
+        }
     }, []);
 
     // State for context sentence
@@ -449,7 +514,16 @@ const ReadingMode = () => {
             {/* Toolbar - Industrial Style */}
             <header className="h-14 border-b border-[#333] flex items-center justify-between px-4 md:px-8 bg-[#0A0A0A] shrink-0 z-20">
                 <button
-                    onClick={() => { setSelectedArticle(null); setSelectedWord(null); }}
+                    onClick={async () => {
+                        // End reading session before going back
+                        if (trackerRef.current) {
+                            const result = await trackerRef.current.end();
+                            console.log('[ReadingMode] Session ended:', result);
+                            trackerRef.current = null;
+                        }
+                        setSelectedArticle(null);
+                        setSelectedWord(null);
+                    }}
                     className="flex items-center gap-2 text-[#888] hover:text-[#00FF94] transition-colors group"
                 >
                     <ChevronLeft className="w-4 h-4" />
@@ -539,14 +613,15 @@ const ReadingMode = () => {
 
                                 // Interleave sentences and images
                                 selectedArticle.sentences?.slice(0, visibleCount).forEach((sentence, idx) => {
-                                    // Add sentence
+                                    // Add sentence wrapper with tracking attribute
                                     elements.push(
-                                        <MemoizedSentence
-                                            key={`s-${idx}`}
-                                            text={sentence.text}
-                                            highlightSet={selectedArticle.highlightSet}
-                                            showHighlights={showHighlights}
-                                        />
+                                        <div key={`s-${idx}`} data-sentence-idx={idx}>
+                                            <MemoizedSentence
+                                                text={sentence.text}
+                                                highlightSet={selectedArticle.highlightSet}
+                                                showHighlights={showHighlights}
+                                            />
+                                        </div>
                                     );
 
                                     // Add images that should appear after this sentence

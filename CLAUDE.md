@@ -132,7 +132,10 @@ The project follows a modular package structure:
   - `content_schemas.py`: `ContentBundle`, `ContentSentence`, `ContentImage`, `SourceType` for Provider Architecture.
   - `orm.py`: SQLAlchemy database models.
 - **`app/database.py`**: Database operations and query functions.
-- **`app/database.py`**: Database operations and query functions.
+  - **Performance Report**: `get_performance_data()`, `get_milestones()`, `get_goals_progress()`, `get_memory_curve_data()`.
+  - **Reading Tracking**: `start_reading_session()`, `end_reading_session()`, `calculate_reading_quality()`, `get_reading_stats_v2()`.
+- **`app/api/routers/reading.py`**: **NEW** Reading session tracking API (`/api/reading/*`).
+- **`frontend/src/utils/ReadingTracker.js`**: **NEW** Client-side reading session tracking with heartbeat.
 
 ### Database Layer
 

@@ -16,4 +16,5 @@ from app.api.routers import (
     negotiation,
     books,
     inspect,
+    reading,
 )

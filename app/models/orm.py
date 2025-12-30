@@ -329,3 +329,43 @@ class UserGoal(Base):
     
     created_at: Mapped[datetime] = mapped_column(TIMESTAMP, server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(TIMESTAMP, server_default=func.now(), onupdate=func.now())
+
+
+class ReadingSession(Base):
+    """
+    Tracks reading sessions with mixed signals for accurate input measurement.
+    Uses time tracking, scroll behavior, and word clicks to validate reading quality.
+    """
+    __tablename__ = "reading_sessions"
+    __table_args__ = (
+        Index("idx_reading_sessions_user", "user_id"),
+        Index("idx_reading_sessions_source", "source_type", "source_id"),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    user_id: Mapped[str] = mapped_column(Text, default="default_user")
+    source_type: Mapped[str] = mapped_column(Text)  # epub, rss
+    source_id: Mapped[str] = mapped_column(Text)    # article identifier
+    
+    # Article metadata (cached at session start)
+    article_title: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    total_word_count: Mapped[int] = mapped_column(Integer, default=0)
+    total_sentences: Mapped[int] = mapped_column(Integer, default=0)
+    
+    # Session lifecycle
+    started_at: Mapped[datetime] = mapped_column(TIMESTAMP, server_default=func.now())
+    ended_at: Mapped[Optional[datetime]] = mapped_column(TIMESTAMP, nullable=True)
+    last_active_at: Mapped[datetime] = mapped_column(TIMESTAMP, server_default=func.now())
+    
+    # Reading progress tracking
+    max_sentence_reached: Mapped[int] = mapped_column(Integer, default=0)
+    
+    # Quality signals
+    total_active_seconds: Mapped[int] = mapped_column(Integer, default=0)
+    total_idle_seconds: Mapped[int] = mapped_column(Integer, default=0)
+    word_click_count: Mapped[int] = mapped_column(Integer, default=0)
+    scroll_jump_count: Mapped[int] = mapped_column(Integer, default=0)
+    
+    # Calculated results
+    reading_quality: Mapped[Optional[str]] = mapped_column(Text, nullable=True)  # high/medium/low/skimmed
+    validated_word_count: Mapped[int] = mapped_column(Integer, default=0)

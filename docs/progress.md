@@ -159,3 +159,74 @@
 - **Interleaving**: Images rendered after corresponding sentence index.
 - **Mobile Fix**: Inspector panel changed from `absolute` to `fixed`, z-index to 60.
 
+### ✅ Performance Report V1-V3 (Phase 36) (2025-12-29 ~ 2025-12-30)
+**Comprehensive learning analytics dashboard with gamification.**
+
+| Version | Features |
+|---------|----------|
+| **V1** | KPIs (vocab, mastery, comprehension, time), activity heatmap, difficult words, source distribution |
+| **V2** | Due reviews count, learning streak, reading word count, milestone badges |
+| **V3** | Daily goals (circular progress), memory curve (actual vs Ebbinghaus) |
+
+#### Implementation
+- **Backend** (`app/database.py`):
+  - `get_performance_data()`: Core metrics aggregation.
+  - `get_due_reviews_count()`, `get_milestones()`, `get_reading_stats()`: V2 functions.
+  - `get_user_goals()`, `get_goals_progress()`, `get_memory_curve_data()`: V3 functions.
+- **API** (`app/api/routers/stats.py`):
+  - `GET /api/performance`: Returns full V3 dashboard data.
+  - `GET/PUT /api/goals`: User goal CRUD.
+- **Frontend** (`frontend/src/views/PerformanceReport.jsx`):
+  - `DueReviewsCard`, `StreakCard`, `ReadingStatsCard`, `MilestoneBadges`: V2 components.
+  - `DailyGoalsPanel`, `MemoryCurveChart`: V3 components.
+- **ORM** (`app/models/orm.py`): Added `UserGoal` model.
+- **Documentation**: `docs/performance-metrics.md` - detailed algorithm documentation.
+
+### ✅ Reading Session Tracking (Phase 37) (2025-12-30)
+**Mixed-signal tracking for accurate reading input measurement.**
+
+#### Problem
+Previous `total_words_read` metric was inaccurate:
+- Only counted context sentences from word clicks.
+- Missed reading without interaction.
+- No way to distinguish quick scrolling vs careful reading.
+
+#### Solution: Mixed-Signal Quality Assessment
+| Signal | Collection | Purpose |
+|--------|------------|---------|
+| Time Ratio | active_seconds / expected_seconds (150 WPM) | Filter fast scrolling |
+| Scroll Behavior | Detect jumps > 5 sentences | Subtract skipped content |
+| Interactions | Word click count | High-confidence reading signal |
+| Visibility | Page Visibility API | Exclude idle/tab-switch time |
+
+#### Quality Levels & Word Multiplier
+| Quality | Conditions | Multiplier |
+|---------|------------|------------|
+| **high** | time≥50% + jumps<20% + has_clicks | 100% |
+| **medium** | time≥30% + jumps<30% | 70% |
+| **low** | time≥10% | 30% |
+| **skimmed** | time<10% or excessive jumps | 0% |
+
+#### Implementation
+- **ORM Model** (`app/models/orm.py`): `ReadingSession` with 15 tracked fields.
+- **Backend** (`app/database.py`):
+  - `start_reading_session()`, `update_reading_session()`, `end_reading_session()`
+  - `calculate_reading_quality()`: Quality algorithm
+  - `get_reading_stats_v2()`: Validated aggregation with legacy fallback
+- **API** (`app/api/routers/reading.py`):
+  - `POST /api/reading/start`: Create session
+  - `PUT /api/reading/heartbeat`: Progress updates (10s interval)
+  - `POST /api/reading/word-click`: Word interaction signal
+  - `POST /api/reading/end`: Finalize with quality calculation
+- **Frontend** (`frontend/src/utils/ReadingTracker.js`):
+  - Class with session lifecycle, heartbeat timer, visibility change handler
+  - Sentence visibility via IntersectionObserver
+- **Integration** (`frontend/src/views/ReadingMode.jsx`):
+  - Session start on article load
+  - Session end on "Library" button click
+  - Word click → `trackerRef.current.onWordClick()`
+
+#### Verification
+- Backend tests: `test_api_stats.py` (2/2 passed)
+- Browser test: Session started (ID=1), word click tracked, ended with quality="medium", validated_word_count=115
+

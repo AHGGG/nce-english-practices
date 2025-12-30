@@ -6,7 +6,7 @@ from app.database import (
     get_performance_data,
     get_due_reviews_count,
     get_milestones,
-    get_reading_stats,
+    get_reading_stats_v2,
     get_user_goals,
     update_user_goals,
     get_goals_progress,
@@ -37,7 +37,7 @@ async def api_get_performance(days: int = Query(30, ge=7, le=365)):
     # Add V2 fields
     data["due_reviews_count"] = await get_due_reviews_count()
     data["milestones"] = await get_milestones()
-    data["reading_stats"] = await get_reading_stats()
+    data["reading_stats"] = await get_reading_stats_v2()
     
     # Add V3 fields (Phase 3-4)
     data["goals_progress"] = await get_goals_progress()
