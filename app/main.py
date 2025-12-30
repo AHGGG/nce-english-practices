@@ -127,7 +127,6 @@ async def receive_remote_log(log: RemoteLog):
         message=log.message,
         data=log.data
     )
-    # TODO: Uncomment after fixing async issue
     # Run sync file I/O in threadpool to avoid blocking event loop
     import asyncio
     await asyncio.to_thread(log_collector.add, entry)

@@ -140,7 +140,7 @@ Reply with ONLY the number, nothing else."""
         
         if not word and source_book:
             from app.services.word_list_service import word_list_service
-            # TODO: Pass user_id from context if available, currently default
+            # Note: Uses default user_id; per-user word tracking is a future enhancement
             word = await word_list_service.get_next_word(
                 source_book, 
                 min_sequence=min_sequence, 
