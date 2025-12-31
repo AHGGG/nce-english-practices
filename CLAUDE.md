@@ -28,6 +28,26 @@ uv run python scripts/generate_cert.py  # Generate self-signed cert
 uv run python -m app.main       # Auto-detects cert.pem/key.pem
 ```
 
+```
+
+## Local Deployment (Docker)
+
+A full local/intranet deployment stack is available in `deploy/`.
+
+```bash
+cd deploy
+# 1. One-click deploy (Check prerequisites first)
+./scripts/deploy.sh
+
+# 2. Maintenance
+./scripts/backup.sh       # Database backup to deploy/backups/
+./scripts/restore.sh list # List backups
+./scripts/logs.sh         # View logs
+./scripts/health-check.sh # System diagnostics
+```
+
+See `docs/plans/2025-12-31-local-deployment-architecture.md` for full architecture details.
+
 ## Shortcuts (Windows)
 ```powershell
 ./scripts/dev.ps1   # Start Server

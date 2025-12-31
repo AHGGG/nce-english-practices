@@ -293,4 +293,23 @@ Two large view components exceeded maintainability thresholds:
 #### Verification
 - `tests/test_api_routers.py`: PASSED (Confirmed routing integrity).
 
+### ✅ Local Deployment Architecture (Phase 41) (2025-12-31)
+**Complete local/intranet deployment stack with Docker and Nginx.**
+
+#### Features
+- **Docker Compose**: Orchestrates Nginx, FastAPI, PostgreSQL, and Backup Cron.
+- **Nginx Reverse Proxy**:
+  - Auto-redirect HTTP → HTTPS.
+  - WebSocket support for Voice features (`/ws/`).
+  - Serving static assets and uploaded files.
+- **Deployment Scripts** (`deploy/scripts/`):
+  - `deploy.sh`: One-command deployment.
+  - `backup.sh` / `restore.sh`: Automated database backup/recovery.
+  - `logs.sh` / `health-check.sh`: Maintenance tools.
+
+#### Verification
+- Manual verification of directory structure and script generation.
+- Backend tests passed.
+
+
 
