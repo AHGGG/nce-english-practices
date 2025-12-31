@@ -199,3 +199,7 @@
     - [x] **AUI Streaming Service**: Split `app/services/aui_streaming.py` into `app/services/aui/` package (story, vocab, demos, renderer).
     - [x] **Deepgram WebSocket Router**: Split `app/api/routers/deepgram_websocket.py` into `app/api/routers/deepgram/` package (live_stt, streaming_tts, voice_agent, unified_agent).
     - [x] **AUI Renderer Migration**: Moved `app/services/aui.py` into the new package as `renderer.py`.
+    - [x] **Frontend Components** (2025-12-31):
+        - [x] `ReadingMode.jsx` (739 lines) → `components/reading/` package (9 files).
+        - [x] `PerformanceReport.jsx` (650 lines) → `components/performance/` package (14 files).
+

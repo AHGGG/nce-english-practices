@@ -187,6 +187,15 @@ ALL generators and routes use this service rather than creating clients directly
   - **Typography**: `Merriweather` (Content/Serif), `JetBrains Mono` (Data/UI).
 - **Architecture**:
   - `src/components/ui/`: Core atomic components (Button, Input, Card).
+  - `src/components/reading/`: **Modularized 2025-12-31** Reading Mode package.
+    - `ReadingMode.jsx`: Main container with view routing.
+    - `ArticleListView.jsx`, `ReaderView.jsx`: View components.
+    - `WordInspector.jsx`, `Lightbox.jsx`: Modal overlays.
+    - `MemoizedSentence.jsx`, `MemoizedImage.jsx`: Performance-optimized components.
+  - `src/components/performance/`: **Modularized 2025-12-31** Performance Report package.
+    - `PerformanceReport.jsx`: Main container.
+    - `cards/`: KPI display components (KPICard, ActionCards, Card).
+    - `widgets/`: Data visualization widgets (Heatmap, Charts, Badges).
   - `src/index.css`: Global token definitions via Tailwind `@layer base`.
   - `tailwind.config.js`: Central source of truth for design tokens.
   - **Rule**: ALWAYS prefer using `components/ui` primitives (Button, Card, Tag) over raw Tailwind classes to maintain the "Cyber-Noir" aesthetic (sharp edges, hard shadows).
