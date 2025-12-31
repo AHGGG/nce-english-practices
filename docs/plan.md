@@ -202,4 +202,7 @@
     - [x] **Frontend Components** (2025-12-31):
         - [x] `ReadingMode.jsx` (739 lines) → `components/reading/` package (9 files).
         - [x] `PerformanceReport.jsx` (650 lines) → `components/performance/` package (14 files).
+    - [x] **Dead Code Removal** (2025-12-31):
+        - [x] Deleted unused services (`rss_service.py`, `epub_service.py`).
+        - [x] Deleted legacy routers (`elevenlabs_websocket.py`).
 

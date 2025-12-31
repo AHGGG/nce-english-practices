@@ -331,7 +331,7 @@ As of 2025-12-19, all voice provider integrations use **raw `httpx` API calls** 
   - **STS**: `POST /v1/speech-to-speech/{voice_id}` with multipart form data.
   - **Header**: `xi-api-key: {API_KEY}`
 
-- **Deepgram** (`app/services/voice_lab.py` + `app/api/routers/deepgram_websocket.py`):
+- **Deepgram** (`app/services/voice_lab.py` + `app/api/routers/deepgram/`):
   - **TTS**: `POST https://api.deepgram.com/v1/speak?model={voice}&encoding=mp3`
   - **STT**: `POST https://api.deepgram.com/v1/listen?model=nova-3&smart_format=true`
   - **Live STT/TTS**: WebSocket proxying via `websockets` library.

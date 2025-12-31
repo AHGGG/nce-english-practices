@@ -295,7 +295,7 @@ async def deepgram_unified_voice_agent_websocket(
                     try:
                          if should_close:
                              await dg_ws.send(json.dumps({"type": "CloseStream"}))
-                    except:
+                    except Exception:
                         pass
 
             await asyncio.gather(

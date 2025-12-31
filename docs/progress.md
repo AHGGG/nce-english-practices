@@ -280,3 +280,17 @@ Two large view components exceeded maintainability thresholds:
 - `npm run build`: PASSED (2241 modules transformed, built in 6.47s).
 - Manual browser testing recommended for Reading Mode and Performance Report.
 
+### ✅ Codebase Cleanup (Phase 40) (2025-12-31)
+**Removal of dead code and legacy service files.**
+
+#### Changes
+- **Dead Code Removal**: Deleted `app/services/rss_service.py`, `app/services/epub_service.py`, and `app/api/routers/elevenlabs_websocket.py`.
+  - Reason: Superceded by `app/services/content_providers/` and `app/services/voice_lab.py`.
+- **Quality Fixes**:
+  - `unified_agent.py`: Fixed bare `except:` block to prevent swallowing `KeyboardInterrupt`.
+  - `ImportError`: Fixed dangling references to `elevenlabs_websocket` in `main.py`.
+
+#### Verification
+- `tests/test_api_routers.py`: PASSED (Confirmed routing integrity).
+
+
