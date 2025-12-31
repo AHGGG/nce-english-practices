@@ -15,6 +15,7 @@ import AUIStreamingDemo from './views/AUIStreamingDemo'; // AUI Streaming Test
 
 import VoiceMode from './views/VoiceMode'; // New Voice Mode
 import ReadingMode from './views/ReadingMode'; // Reading Mode (Phase 2)
+import NavDashboard from './views/NavDashboard'; // New Navigation Dashboard
 
 function App() {
   return (
@@ -28,6 +29,7 @@ function App() {
               <Route path="/voice-lab" element={<VoiceLab />} />
               <Route path="/voice" element={<VoiceMode />} />
               <Route path="/reading" element={<ReadingMode />} />
+              <Route path="/nav" element={<NavDashboard />} />
               <Route path="/performance" element={<PerformanceReport />} />
 
               <Route path="/aui-stream-demo" element={<AUIStreamingDemo />} />

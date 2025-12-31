@@ -142,6 +142,7 @@
     - [x] **Code Cleanup**: Remove legacy `templates/` directory and synchronous DB patterns.
     - [x] **Service Layer Refactor**: Decouple business logic from `voice.py` router.
     - [x] **Local Deployment**: Added `deploy/` with `docker-compose`, Nginx, and management scripts (2025-12-31).
+    - [x] **Navigation Dashboard**: Unified `/nav` page for easy access to all routes (2025-12-31).
 
 ## 6. Tools & Ecosystem (The "Support" Layer)
 *Features that support the learning journey.*
