@@ -32,38 +32,45 @@ async def get_user_stats() -> Dict[str, Any]:
         try:
             stats = {}
             
-            # Total XP
-            xp_stmt = select(func.sum(Attempt.xp_earned))
-            xp_res = await session.execute(xp_stmt)
-            stats['total_xp'] = xp_res.scalar() or 0
+            # Optimization: Combine XP, Duration, and Breakdown into a single query
+            # Previously 3 separate queries:
+            # 1. Total XP (SUM)
+            # 2. Total Duration (SUM)
+            # 3. Breakdown by activity (GROUP BY)
             
-            # Total Duration
-            dur_stmt = select(func.sum(Attempt.duration_seconds))
-            dur_res = await session.execute(dur_stmt)
-            total_sec = dur_res.scalar() or 0
-            stats['total_minutes'] = round(total_sec / 60)
-            
-            # Breakdown
-            # Select activity_type, count(*), sum(case when is_pass then 1 else 0 end)
-            # This is complex in pure ORM, raw SQL or group_by is easier
-            # Breakdown with duration
+            # Now fetching everything grouped by activity and aggregating totals in Python.
             stmt = select(
                 Attempt.activity_type,
                 func.count(Attempt.id).label("count"),
                 func.sum(func.cast(Attempt.is_pass, Integer)).label("passed"),
-                func.sum(Attempt.duration_seconds).label("duration")
+                func.sum(Attempt.duration_seconds).label("duration"),
+                func.sum(Attempt.xp_earned).label("xp")
             ).group_by(Attempt.activity_type)
             
             res = await session.execute(stmt)
-            stats['activities'] = [
-                {
+            all_rows = res.all()
+
+            total_xp = 0
+            total_seconds = 0
+
+            activities_data = []
+            for row in all_rows:
+                duration = row.duration or 0
+                xp = row.xp or 0
+
+                total_seconds += duration
+                total_xp += xp
+
+                activities_data.append({
                     "activity_type": row.activity_type, 
                     "count": row.count, 
                     "passed": row.passed or 0,
-                    "duration_seconds": row.duration or 0
-                } 
-                for row in res.all()
-            ]
+                    "duration_seconds": duration
+                })
+
+            stats['total_xp'] = total_xp
+            stats['total_minutes'] = round(total_seconds / 60)
+            stats['activities'] = activities_data
             
             # Recent
             recent_stmt = select(Attempt).order_by(desc(Attempt.created_at)).limit(5)
