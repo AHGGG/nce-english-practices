@@ -47,36 +47,39 @@ const ArticleListView = ({
                             <div className="h-[1px] bg-[#333] flex-grow"></div>
                         </h2>
 
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-7xl">
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 max-w-[1920px]">
                             {articles.map((article, idx) => (
                                 <button
                                     key={article.source_id}
                                     onClick={() => onArticleClick(article.source_id)}
-                                    className="group relative flex flex-col items-start text-left p-8 bg-[#0A0A0A] border border-[#333] hover:border-[#00FF94] transition-colors duration-300"
+                                    className="group relative flex flex-col items-start text-left p-6 md:p-8 bg-[#0A0A0A] border border-[#333] hover:border-[#00FF94] transition-all duration-300 h-full hover:shadow-[0_0_20px_rgba(0,255,148,0.1)] hover:-translate-y-1"
                                 >
                                     {/* Corner Index */}
-                                    <div className="absolute top-0 right-0 p-2 opacity-50 text-xs font-mono text-[#666]">
+                                    <div className="absolute top-0 right-0 p-3 opacity-30 text-[10px] font-mono text-[#666] group-hover:text-[#00FF94] transition-colors">
                                         {String(idx + 1).padStart(2, '0')}
                                     </div>
 
-                                    <div className="flex items-center gap-2 mb-6 w-full">
-                                        <span className="px-2 py-0.5 bg-[#00FF94] text-black text-[10px] font-bold uppercase tracking-wider">
+                                    <div className="flex items-center gap-2 mb-4 w-full">
+                                        <span className="px-1.5 py-0.5 bg-[#1a1a1a] text-[#00FF94] text-[10px] font-bold uppercase tracking-wider border border-[#00FF94]/20 group-hover:border-[#00FF94] transition-colors">
                                             Chapter {idx + 1}
                                         </span>
                                         <div className="h-[1px] bg-[#333] flex-1 group-hover:bg-[#00FF94]/30 transition-colors"></div>
                                     </div>
 
-                                    <h3 className="text-xl font-serif font-bold text-white group-hover:text-[#00FF94] transition-colors mb-4 line-clamp-2 leading-snug">
+                                    <h3 className="text-xl md:text-2xl font-serif font-bold text-[#E0E0E0] group-hover:text-[#00FF94] transition-colors mb-4 line-clamp-2 leading-tight min-h-[3rem]">
                                         {article.title}
                                     </h3>
 
-                                    <p className="text-sm text-[#888] line-clamp-3 leading-relaxed font-mono mb-6">
+                                    <p className="text-sm text-[#888] line-clamp-3 leading-relaxed font-mono mb-6 flex-grow">
                                         {article.preview}
                                     </p>
 
                                     {/* Footer with action hint */}
-                                    <div className="mt-auto pt-4 border-t border-[#333] w-full flex justify-end">
-                                        <span className="text-[#00FF94] text-xs font-bold uppercase tracking-wider opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1">
+                                    <div className="mt-auto pt-4 border-t border-[#333] w-full flex justify-between items-center group-hover:border-[#00FF94]/30 transition-colors">
+                                        <span className="text-[10px] text-[#444] uppercase tracking-wider font-mono">
+                                            {article.word_count ? `${article.word_count} words` : 'Read Article'}
+                                        </span>
+                                        <span className="text-[#00FF94] text-xs font-bold uppercase tracking-wider opacity-0 group-hover:opacity-100 transition-all transform translate-x-2 group-hover:translate-x-0 flex items-center gap-1">
                                             Read Now <ChevronLeft size={12} className="rotate-180" />
                                         </span>
                                     </div>
