@@ -12,7 +12,7 @@ import logging
 import uuid
 import json
 
-from app.services.aui_streaming import aui_streaming_service
+from app.services.aui import aui_streaming_service
 from app.services.aui_input import input_service
 from app.core.db import AsyncSessionLocal
 

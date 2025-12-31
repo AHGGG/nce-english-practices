@@ -191,7 +191,11 @@
     - [x] **Reading Mode**: Refactored to strict Cyber-Noir token usage (2025-12-29).
 
 ## 8. Engineering Excellence (Optimization)
-- [x] **Structure Optimization**: Consolidate models into pp/models/ package.
+- [x] **Structure Optimization**: Consolidate models into `app/models/` package.
 - [x] **DX**: Scripts for easy startup and testing (scripts/dev.ps1, scripts/test.ps1).
 - [x] **Legacy Cleanup**: Removed expired E2E tests and formalized offline fallback logic.
-
+- [x] **Large File Refactoring** (2025-12-31):
+    - [x] **Database Module**: Split `app/database.py` into `app/database/` package (core, stats, story, review, etc.).
+    - [x] **AUI Streaming Service**: Split `app/services/aui_streaming.py` into `app/services/aui/` package (story, vocab, demos, renderer).
+    - [x] **Deepgram WebSocket Router**: Split `app/api/routers/deepgram_websocket.py` into `app/api/routers/deepgram/` package (live_stt, streaming_tts, voice_agent, unified_agent).
+    - [x] **AUI Renderer Migration**: Moved `app/services/aui.py` into the new package as `renderer.py`.

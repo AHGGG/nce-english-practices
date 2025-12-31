@@ -1,3 +1,12 @@
-=== Log session started at 2025-12-31T07:13:55.217290 ===
-2025-12-31 07:13:55.376 [BA] [INFO] [general] app.services.aui_input: Starting AUI Postgres Listener...
-2025-12-31 07:13:55.465 [BA] [INFO] [general] app.services.aui_input: Listening on channel: aui_input_channel
+=== Log session started at 2025-12-31T12:38:32.726383 ===
+2025-12-31 12:38:32.937 [BA] [INFO] [user_inp] app.api.routers.deepgram.live_stt: Connecting to Deepgram URL: wss://api.deepgram.com/v1/listen?model=nova-3&smart_format=true&interim_results=true&channels=1
+2025-12-31 12:38:40.210 [BA] [INFO] [lifecycl] app.api.routers.deepgram.live_stt: Connected to Deepgram Live: nova-3
+2025-12-31 12:38:48.372 [BA] [INFO] [lifecycl] app.api.routers.deepgram.streaming_tts: Connected to Deepgram TTS: aura-asteria-en
+2025-12-31 12:39:01.919 [BA] [INFO] [agent_ou] app.api.routers.deepgram.unified_agent: Function calling enabled with 4 functions
+2025-12-31 12:39:01.920 [BA] [INFO] [agent_ou] app.api.routers.deepgram.unified_agent: Connecting to Deepgram Agent API: wss://agent.deepgram.com/v1/agent/converse
+2025-12-31 12:39:09.550 [BA] [INFO] [agent_ou] app.api.routers.deepgram.unified_agent: [Deepgram Agent] Welcome: {"type": "Welcome", "request_id": "860ac8f9-b1a9-4426-b48e-a20dd808a1ed"}
+2025-12-31 12:39:10.937 [BA] [INFO] [network] httpx: HTTP Request: POST http://test/api/dictionary/lookup "HTTP/1.1 200 OK"
+2025-12-31 12:39:11.890 [BA] [INFO] [network] httpx: HTTP Request: POST http://test/api/dictionary/context "HTTP/1.1 200 OK"
+2025-12-31 12:39:12.825 [BA] [INFO] [network] httpx: HTTP Request: POST http://test/api/dictionary/context "HTTP/1.1 200 OK"
+2025-12-31 12:39:13.761 [BA] [INFO] [network] httpx: HTTP Request: GET http://test/dict/resource?path=image.png "HTTP/1.1 200 OK"
+2025-12-31 12:39:14.691 [BA] [INFO] [network] httpx: HTTP Request: GET http://test/dict/resource?path=unknown.png "HTTP/1.1 404 Not Found"

@@ -7,7 +7,7 @@ from app.api.routers import (
     coach,
     voice_lab,
     aui_input,
-    deepgram_websocket,
+    deepgram,
     elevenlabs_websocket,
     aui_debug,
     aui_websocket,

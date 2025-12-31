@@ -113,10 +113,16 @@ The project follows a modular package structure:
   - `coach.py`: Agentic Coach service (LLM Tool use).
   - `tts.py`: Edge-TTS integration.
   - `voice_lab.py`: Multi-vendor integration (Google, ElevenLabs, Deepgram).
-  - `content_service.py`: **NEW** Factory/Registry for Content Providers.
+  - `content_service.py`: Factory/Registry for Content Providers.
   - `content_feeder.py`: Orchestrates content for Voice Interface (uses ContentService).
   - `dsml_parser.py`: Parser for DeepSeek raw XML tool calls.
-- **`app/services/content_providers/`**: **NEW** Pluggable content source providers.
+- **`app/services/aui/`**: **Refactored 2025-12-31** AUI Streaming & Rendering package.
+  - `story.py`: Story streaming mixin.
+  - `vocabulary.py`: Vocabulary cards & JSON Patch demos.
+  - `demos/`: Interactive demos (general, interactive, dashboard).
+  - `renderer.py`: AUI Renderer service (intent-based component selection).
+  - `service.py`: Main `AUIStreamingService` composing all mixins.
+- **`app/services/content_providers/`**: Pluggable content source providers.
   - `base.py`: `BaseContentProvider` abstract interface.
   - `epub_provider.py`: Local EPUB file parsing **with image extraction and serving**.
   - `rss_provider.py`: RSS feed article extraction.
@@ -131,10 +137,24 @@ The project follows a modular package structure:
   - `word_example_schemas.py`: Models for multi-example navigation (`WordExampleSet`).
   - `content_schemas.py`: `ContentBundle`, `ContentSentence`, `ContentImage`, `SourceType` for Provider Architecture.
   - `orm.py`: SQLAlchemy database models.
-- **`app/database.py`**: Database operations and query functions.
-  - **Performance Report**: `get_performance_data()`, `get_milestones()`, `get_goals_progress()`, `get_memory_curve_data()`.
-  - **Reading Tracking**: `start_reading_session()`, `end_reading_session()`, `calculate_reading_quality()`, `get_reading_stats_v2()`.
-- **`app/api/routers/reading.py`**: **NEW** Reading session tracking API (`/api/reading/*`).
+- **`app/database/`**: **Refactored 2025-12-31** Database operations package.
+  - `core.py`: Base, engine, AsyncSessionLocal, and ORM model re-exports.
+  - `session_theme.py`: Session logging functions.
+  - `story.py`: Story caching functions.
+  - `stats.py`: User statistics functions.
+  - `review.py`: SRS scheduling functions.
+  - `chat.py`: Chat session functions.
+  - `coach.py`: Coach session & memory functions.
+  - `performance.py`: Performance metrics aggregation.
+  - `reading.py`: Reading session tracking.
+  - `goals.py`: User goal functions.
+- **`app/api/routers/deepgram/`**: **Refactored 2025-12-31** Deepgram WebSocket endpoints.
+  - `live_stt.py`: Real-time STT proxy.
+  - `streaming_tts.py`: Streaming TTS proxy.
+  - `voice_agent.py`: STT-LLM-TTS voice agent pipeline.
+  - `unified_agent.py`: Deepgram Agent API integration.
+  - `router.py`: Main router aggregating all endpoints.
+- **`app/api/routers/reading.py`**: Reading session tracking API (`/api/reading/*`).
 - **`frontend/src/utils/ReadingTracker.js`**: **NEW** Client-side reading session tracking with heartbeat.
 
 ### Database Layer

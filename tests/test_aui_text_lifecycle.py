@@ -57,7 +57,7 @@ def test_text_delta_has_message_id():
 @pytest.mark.asyncio
 async def test_concurrent_messages_stream():  
     """Test stream_concurrent_messages generates correct event sequence"""
-    from app.services.aui_streaming import aui_streaming_service
+    from app.services.aui import aui_streaming_service
     
     events = []
     async for event in aui_streaming_service.stream_concurrent_messages():
@@ -83,7 +83,7 @@ async def test_concurrent_messages_stream():
 @pytest.mark.asyncio
 async def test_message_lifecycle_order():
     """Verify events come in correct order for each message"""
-    from app.services.aui_streaming import aui_streaming_service
+    from app.services.aui import aui_streaming_service
     
     events = []
     async for event in aui_streaming_service.stream_concurrent_messages():
@@ -116,7 +116,7 @@ async def test_message_lifecycle_order():
 @pytest.mark.asyncio
 async def test_multiple_messages_distinct_ids():
     """Ensure different messages have different IDs"""
-    from app.services.aui_streaming import aui_streaming_service
+    from app.services.aui import aui_streaming_service
     
     message_ids = set()
     

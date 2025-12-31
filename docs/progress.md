@@ -230,3 +230,29 @@ Previous `total_words_read` metric was inaccurate:
 - Backend tests: `test_api_stats.py` (2/2 passed)
 - Browser test: Session started (ID=1), word click tracked, ended with quality="medium", validated_word_count=115
 
+### ✅ Large File Refactoring (Phase 38) (2025-12-31)
+**Modular package structure for improved maintainability.**
+
+#### Problem
+Three large files exceeded maintainability thresholds:
+- `app/database.py` (~1500 lines)
+- `app/services/aui_streaming.py` (~1500 lines)
+- `app/api/routers/deepgram_websocket.py` (~850 lines)
+
+#### Solution: Package-Based Modularization
+
+| Original File | New Package | Sub-modules |
+|---------------|-------------|-------------|
+| `app/database.py` | `app/database/` | `core`, `session_theme`, `story`, `stats`, `review`, `chat`, `coach`, `performance`, `reading`, `goals` |
+| `app/services/aui_streaming.py` | `app/services/aui/` | `story`, `vocabulary`, `demos/general`, `demos/interactive`, `demos/dashboard`, `service` |
+| `app/api/routers/deepgram_websocket.py` | `app/api/routers/deepgram/` | `live_stt`, `streaming_tts`, `voice_agent`, `unified_agent`, `router` |
+
+#### Additional Migrations
+- **AUI Renderer**: Moved `app/services/aui.py` → `app/services/aui/renderer.py`.
+- **Exports Updated**: All `__init__.py` files export necessary symbols for backward compatibility.
+- **Imports Fixed**: Updated `app/main.py`, `app/api/routers/__init__.py`, and test files.
+
+#### Verification
+- `tests/test_deepgram_websocket.py`: PASSED (import validation, semantic tests).
+- Manual testing recommended for Voice Lab and Reading Mode.
+
