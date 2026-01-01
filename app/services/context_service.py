@@ -395,31 +395,35 @@ class ContextService:
     ) -> WordContextProgress:
         """
         Get learning progress statistics for a word.
+        Optimized to use a single query with LEFT JOIN.
         """
-        # Get all contexts for the word
-        contexts = await self.get_contexts_for_word(word, db)
-        context_ids = [c.id for c in contexts]
-        
-        if not context_ids:
-            return WordContextProgress(word=word, total=0)
-        
-        # Get learning records
-        result = await db.execute(
-            select(ContextLearningRecord).where(
-                ContextLearningRecord.context_id.in_(context_ids),
-                ContextLearningRecord.user_id == user_id,
+        # Optimized query with LEFT JOIN
+        query = (
+            select(ContextResource, ContextLearningRecord)
+            .outerjoin(
+                ContextLearningRecord,
+                (ContextLearningRecord.context_id == ContextResource.id) &
+                (ContextLearningRecord.user_id == user_id)
             )
+            .where(ContextResource.word == word)
         )
-        records = {r.context_id: r for r in result.scalars().all()}
         
-        # Count statuses
+        result = await db.execute(query)
+        rows = result.all() # list of (ContextResource, ContextLearningRecord | None)
+
+        contexts = []
         stats = {"mastered": 0, "learning": 0, "unseen": 0}
-        for ctx in contexts:
-            record = records.get(ctx.id)
-            if record:
-                status = record.status
+
+        for ctx_row, record_row in rows:
+            # Map to schema using Pydantic's from_attributes
+            ctx_schema = ContextResourceSchema.model_validate(ctx_row)
+            contexts.append(ctx_schema)
+
+            if record_row:
+                status = record_row.status
             else:
                 status = "unseen"
+
             stats[status] = stats.get(status, 0) + 1
         
         return WordContextProgress(
