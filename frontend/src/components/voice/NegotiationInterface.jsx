@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Volume2, HelpCircle, ArrowRight, Eye, EyeOff, Play, BookOpen, Languages, SkipForward, ChevronLeft, ChevronRight, Gauge, Layers } from 'lucide-react';
+import { escapeHtml } from '../../utils/security';
 
 const NegotiationInterface = () => {
     const [sessionId, setSessionId] = useState(`session-${Date.now()}`);
@@ -990,9 +991,9 @@ const NegotiationInterface = () => {
                                 </span>
                             ) : (
                                 <span dangerouslySetInnerHTML={{
-                                    __html: contextScenario.replace(
-                                        currentText.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), // Escape regex chars
-                                        `<strong class="text-neon-cyan">${currentText}</strong>`
+                                    __html: escapeHtml(contextScenario).replace(
+                                        escapeHtml(currentText).replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), // Escape regex chars
+                                        `<strong class="text-neon-cyan">${escapeHtml(currentText)}</strong>`
                                     )
                                 }} />
                             )}
