@@ -81,3 +81,4 @@ Exception: API Error
 2025-12-31 17:20:33.087 [BA] [INFO] [agent_ou] httpx: HTTP Request: POST http://testserver/api/voice-lab/tts "HTTP/1.1 200 OK"
 2025-12-31 17:20:33.112 [BA] [INFO] [user_inp] httpx: HTTP Request: POST http://testserver/api/voice-lab/stt "HTTP/1.1 422 Unprocessable Entity"
 2025-12-31 17:20:35.984 [BA] [INFO] [network] httpx: HTTP Request: POST http://testserver/api/voice/token "HTTP/1.1 200 OK"
+2026-01-01 15:18:32.609 [BA] [INFO] [general] app.services.aui_input: Stopping AUI Postgres Listener...

@@ -780,21 +780,24 @@ const NegotiationInterface = () => {
                             <label className="block text-xs uppercase text-zinc-500 mb-2 text-center font-bold">Content Source</label>
 
                             {/* Toggle between Dictionary, EPUB, and RSS */}
-                            <div className="flex rounded-lg bg-zinc-800 p-1 mb-4">
+                            <div className="flex rounded-lg bg-zinc-800 p-1 mb-4" role="group" aria-label="Content Source">
                                 <button
                                     onClick={() => { setIsRssMode(false); setIsEpubMode(false); }}
+                                    aria-pressed={!isRssMode && !isEpubMode}
                                     className={`flex-1 py-1.5 px-2 rounded text-xs font-medium transition-colors ${!isRssMode && !isEpubMode ? 'bg-zinc-700 text-white shadow' : 'text-zinc-500 hover:text-zinc-300'}`}
                                 >
                                     📖 Dictionary
                                 </button>
                                 <button
                                     onClick={() => { setIsEpubMode(true); setIsRssMode(false); }}
+                                    aria-pressed={isEpubMode}
                                     className={`flex-1 py-1.5 px-2 rounded text-xs font-medium transition-colors ${isEpubMode ? 'bg-neon-cyan/20 text-neon-cyan shadow' : 'text-zinc-500 hover:text-zinc-300'}`}
                                 >
                                     📰 EPUB
                                 </button>
                                 <button
                                     onClick={() => { setIsRssMode(true); setIsEpubMode(false); }}
+                                    aria-pressed={isRssMode}
                                     className={`flex-1 py-1.5 px-2 rounded text-xs font-medium transition-colors ${isRssMode ? 'bg-zinc-700 text-white shadow' : 'text-zinc-500 hover:text-zinc-300'}`}
                                 >
                                     🌐 RSS
@@ -813,8 +816,9 @@ const NegotiationInterface = () => {
                             {/* RSS URL Input */}
                             {isRssMode && (
                                 <div className="animate-in fade-in slide-in-from-top-2 mb-4">
-                                    <label className="block text-xs text-zinc-500 mb-1">RSS URL</label>
+                                    <label htmlFor="rss-url-input" className="block text-xs text-zinc-500 mb-1">RSS URL</label>
                                     <input
+                                        id="rss-url-input"
                                         type="text"
                                         value={rssUrl}
                                         onChange={(e) => setRssUrl(e.target.value)}
@@ -1015,6 +1019,7 @@ const NegotiationInterface = () => {
                                 disabled={historyIndex <= 0}
                                 className="p-2 rounded-full bg-zinc-800 text-zinc-400 hover:text-zinc-200 hover:bg-zinc-700 transition-all disabled:opacity-30"
                                 title="回看上一步"
+                                aria-label="Previous step"
                             >
                                 <ChevronLeft className="w-5 h-5" />
                             </button>
@@ -1026,6 +1031,7 @@ const NegotiationInterface = () => {
                                 onClick={handleGoForward}
                                 className="p-2 rounded-full bg-zinc-800 text-zinc-400 hover:text-zinc-200 hover:bg-zinc-700 transition-all"
                                 title="前进到下一步"
+                                aria-label="Next step"
                             >
                                 <ChevronRight className="w-5 h-5" />
                             </button>
@@ -1052,6 +1058,7 @@ const NegotiationInterface = () => {
                                 : 'bg-zinc-800 text-zinc-400 hover:text-zinc-200'
                                 }`}
                             title={`Speed: ${playbackSpeed}x`}
+                            aria-label={`Playback speed: ${playbackSpeed}x`}
                         >
                             <Gauge className="w-5 h-5" />
                         </button>
@@ -1174,6 +1181,7 @@ const NegotiationInterface = () => {
                             onClick={prevExample}
                             disabled={currentSenseIndex === 0 && currentExampleIndex === 0}
                             className="p-2 rounded-full bg-zinc-700 hover:bg-zinc-600 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+                            aria-label="Previous example"
                         >
                             <ChevronLeft size={16} />
                         </button>
@@ -1193,6 +1201,7 @@ const NegotiationInterface = () => {
                                 currentExampleIndex >= (wordExamples.entries.flatMap(e => e.senses)[currentSenseIndex]?.examples.length || 0) - 1
                             }
                             className="p-2 rounded-full bg-zinc-700 hover:bg-zinc-600 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+                            aria-label="Next example"
                         >
                             <ChevronRight size={16} />
                         </button>
