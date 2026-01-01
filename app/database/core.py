@@ -7,7 +7,7 @@ from sqlalchemy.orm import selectinload
 
 from app.core.db import AsyncSessionLocal, Base, engine
 from app.models.orm import (
-    SessionLog, Story, Attempt, ReviewNote, SRSSchedule, ChatSession,
-    CoachSession, UserMemory, UserProgress, WordProficiency, VocabLearningLog,
+    Attempt, WordProficiency, VocabLearningLog,
     UserGoal, ReadingSession
 )
+

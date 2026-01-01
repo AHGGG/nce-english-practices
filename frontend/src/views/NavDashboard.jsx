@@ -6,9 +6,7 @@ import {
     BarChart2,
     Activity,
     Headphones,
-    Radio,
-    Zap,
-    Layers
+    Radio
 } from 'lucide-react';
 
 const NavCard = ({ title, path, icon: Icon, description, color = "neon-cyan" }) => {
@@ -44,34 +42,6 @@ const NavCard = ({ title, path, icon: Icon, description, color = "neon-cyan" }) 
 const NavDashboard = () => {
     const routes = [
         {
-            title: "Core Learning",
-            path: "/learn",
-            icon: BookOpen,
-            description: "Master English tenses through interactive exercises and structured lessons.",
-            color: "neon-cyan"
-        },
-        {
-            title: "Drill Mode",
-            path: "/drill",
-            icon: Zap,
-            description: "Intensive practice sessions to build muscle memory and speed.",
-            color: "neon-magenta"
-        },
-        {
-            title: "Apply (Chat)",
-            path: "/apply",
-            icon: Layers,
-            description: "Roleplay scenarios to apply grammar in realistic contexts.",
-            color: "neon-cyan"
-        },
-        {
-            title: "Coach Intelligence",
-            path: "/coach",
-            icon: Activity,
-            description: "AI-powered coaching system for personalized guidance and adaptive learning.",
-            color: "neon-lime"
-        },
-        {
             title: "Voice Mode",
             path: "/voice",
             icon: Mic,
@@ -86,10 +56,10 @@ const NavDashboard = () => {
             color: "neon-lime"
         },
         {
-            title: "Voice Lab",
-            path: "/voice-lab",
-            icon: Radio,
-            description: "Experimental lab for testing various voice synthesis providers.",
+            title: "Sentence Study",
+            path: "/sentence-study",
+            icon: BookOpen,
+            description: "Study articles sentence by sentence with Clear/Unclear feedback.",
             color: "neon-cyan"
         },
         {
@@ -100,13 +70,6 @@ const NavDashboard = () => {
             color: "neon-magenta"
         },
         {
-            title: "AUI Stream Demo",
-            path: "/aui-stream-demo",
-            icon: Headphones,
-            description: "Tech demo for the Agentic UI Streaming protocol.",
-            color: "neon-lime"
-        },
-        {
             title: "Proficiency Lab",
             path: "/lab/calibration",
             icon: Activity,
@@ -114,11 +77,18 @@ const NavDashboard = () => {
             color: "neon-cyan"
         },
         {
-            title: "Sentence Study",
-            path: "/sentence-study",
-            icon: BookOpen,
-            description: "Study articles sentence by sentence with Clear/Unclear feedback.",
+            title: "Voice Lab",
+            path: "/voice-lab",
+            icon: Radio,
+            description: "Experimental lab for testing various voice synthesis providers.",
             color: "neon-lime"
+        },
+        {
+            title: "AUI Stream Demo",
+            path: "/aui-stream-demo",
+            icon: Headphones,
+            description: "Tech demo for the Agentic UI Streaming protocol.",
+            color: "neon-magenta"
         }
     ];
 

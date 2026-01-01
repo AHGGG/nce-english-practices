@@ -28,14 +28,9 @@ class StoryMixin:
         
         # 2. Send initial snapshot (empty content)
         initial_ui = {
-            "component": "StoryReader",
+            "component": "MarkdownMessage",
             "props": {
-                "story": {
-                    "title": title,
-                    "content": "",  # Will be filled by deltas
-                    "grammar_notes": [] if user_level > 1 else []
-                },
-                "coachMode": True,
+                "content": f"# {title}\n\n",  # Will be filled by deltas
                 "messageId": message_id  # Important: Frontend needs this to accumulate
             }
         }
@@ -55,7 +50,7 @@ class StoryMixin:
             yield create_text_delta(
                 message_id=message_id,
                 delta=chunk,
-                field_path="story.content"
+                field_path="content"  # MarkdownMessage uses "content" prop
             )
             
             # Simulate realistic streaming delay
@@ -63,3 +58,4 @@ class StoryMixin:
         
         # 4. End stream
         yield StreamEndEvent(session_id=session_id)
+

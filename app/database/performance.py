@@ -4,7 +4,7 @@ import math
 import logging
 from sqlalchemy import select, func, desc, Integer
 
-from app.database.core import AsyncSessionLocal, WordProficiency, Attempt, VocabLearningLog, SRSSchedule, ReadingSession
+from app.database.core import AsyncSessionLocal, WordProficiency, Attempt, VocabLearningLog, ReadingSession
 
 logger = logging.getLogger(__name__)
 
@@ -160,17 +160,8 @@ async def get_performance_data(days: int = 30) -> Dict[str, Any]:
             }
 
 async def get_due_reviews_count() -> int:
-    """Get count of words/notes due for review (SRS)."""
-    async with AsyncSessionLocal() as session:
-        try:
-            stmt = select(func.count()).select_from(SRSSchedule).where(
-                SRSSchedule.next_review_at <= datetime.utcnow()
-            )
-            result = await session.execute(stmt)
-            return result.scalar() or 0
-        except Exception as e:
-            logger.exception("DB Error get_due_reviews_count")
-            return 0
+    """Get count of words/notes due for review (SRS). Deprecated - returns 0."""
+    return 0
 
 
 async def get_milestones(user_id: str = "default_user") -> Dict[str, Any]:

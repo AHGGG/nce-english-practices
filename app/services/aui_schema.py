@@ -8,12 +8,6 @@ from pydantic import BaseModel, Field, ValidationError
 
 # --- Component Prop Models ---
 
-class StoryReaderProps(BaseModel):
-    story: Dict[str, Any]  # Requires {title, content, ...}
-    coachMode: Optional[bool] = False
-    messageId: Optional[str] = None
-    className: Optional[str] = None
-
 class FlashCardStackProps(BaseModel):
     words: List[Any] # Can be strings or objects
     show_translation: Optional[bool] = True
@@ -63,7 +57,6 @@ class TaskDashboardProps(BaseModel):
 # --- Registry of Schemas ---
 
 COMPONENT_SCHEMAS = {
-    "StoryReader": StoryReaderProps,
     "FlashCardStack": FlashCardStackProps,
     "VocabGrid": VocabGridProps,
     "InteractiveDemo": InteractiveDemoProps,

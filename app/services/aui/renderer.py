@@ -103,25 +103,23 @@ class AUIRenderer:
         content = data.get("content", "")
         
         # Level Logic for Story
-        # Level 1: Beginner -> Highlights + Full Notes
-        # Level 2: Intermediate -> Highlights Only
-        # Level 3: Advanced -> Pure Text (No Scaffolding)
+        # Level 1: Beginner -> Full Notes
+        # Level 2/3: Pure content
+        
+        notes = data.get("grammar_notes", []) if level <= 1 else []
+        notes_text = "\n\n".join([f"📝 {n.get('note', '')}: _{n.get('example', '')}_" for n in notes]) if notes else ""
+        
+        markdown_content = f"# {title}\n\n{content}"
+        if notes_text:
+            markdown_content += f"\n\n---\n{notes_text}"
         
         props = {
-            "story": {
-                "title": title, 
-                "content": content,
-                # Notes only for L1
-                "grammar_notes": data.get("grammar_notes", []) if level <= 1 else []
-            },
-            "coachMode": True,
-            # Highlights: All for L1, Key only for L2, None for L3
-            "highlights": data.get("highlights", []) if level < 3 else []
+            "content": markdown_content
         }
         
         return AUIRenderPacket(
             intention="present_story",
-            ui=AUIComponent(component="StoryReader", props=props),
+            ui=AUIComponent(component="MarkdownMessage", props=props),
             fallback_text=f"Story: {title}\n\n{content}"
         )
 

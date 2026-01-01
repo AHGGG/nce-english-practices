@@ -2,57 +2,44 @@ import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { GlobalProvider } from './context/GlobalContext';
 import { DictionaryProvider } from './context/DictionaryContext';
-import { CoachProvider } from './context/CoachContext';
-import Layout from './components/Layout/Layout';
-import Learn from './views/Learn';
-import Drill from './views/Drill';
-import Apply from './views/Apply';
-import Stats from './views/Stats';
-import PerformanceReport from './views/PerformanceReport'; // New Performance Page
-import Coach from './views/Coach'; // New Coach View
-import VoiceLab from './views/VoiceLab'; // Voice Vendor Test Page
-import AUIStreamingDemo from './views/AUIStreamingDemo'; // AUI Streaming Test
+import PerformanceReport from './views/PerformanceReport';
+import VoiceLab from './views/VoiceLab';
+import AUIStreamingDemo from './views/AUIStreamingDemo';
 
-import VoiceMode from './views/VoiceMode'; // New Voice Mode
-import ReadingMode from './views/ReadingMode'; // Reading Mode (Phase 2)
-import NavDashboard from './views/NavDashboard'; // New Navigation Dashboard
-import LabCalibration from './components/lab/LabCalibration'; // Proficiency Lab (Phase 3)
-import SentenceStudy from './components/sentence-study'; // ASL - Sentence Study Mode
+import VoiceMode from './views/VoiceMode';
+import ReadingMode from './views/ReadingMode';
+import NavDashboard from './views/NavDashboard';
+import LabCalibration from './components/lab/LabCalibration';
+import SentenceStudy from './components/sentence-study';
 
 function App() {
   return (
     <GlobalProvider>
       <DictionaryProvider>
-        <CoachProvider>
-          <BrowserRouter>
-            <Routes>
-              {/* Coach Mode Route (Standalone) */}
-              <Route path="/coach" element={<Coach />} />
-              <Route path="/voice-lab" element={<VoiceLab />} />
-              <Route path="/voice" element={<VoiceMode />} />
-              <Route path="/reading" element={<ReadingMode />} />
-              <Route path="/sentence-study" element={<SentenceStudy />} />
-              <Route path="/lab/calibration" element={<LabCalibration />} />
-              <Route path="/nav" element={<NavDashboard />} />
-              <Route path="/performance" element={<PerformanceReport />} />
+        <BrowserRouter>
+          <Routes>
+            {/* Default route */}
+            <Route path="/" element={<Navigate to="/nav" replace />} />
 
-              <Route path="/aui-stream-demo" element={<AUIStreamingDemo />} />
+            {/* Main routes */}
+            <Route path="/voice-lab" element={<VoiceLab />} />
+            <Route path="/voice" element={<VoiceMode />} />
+            <Route path="/reading" element={<ReadingMode />} />
+            <Route path="/sentence-study" element={<SentenceStudy />} />
+            <Route path="/lab/calibration" element={<LabCalibration />} />
+            <Route path="/nav" element={<NavDashboard />} />
+            <Route path="/performance" element={<PerformanceReport />} />
+            <Route path="/aui-stream-demo" element={<AUIStreamingDemo />} />
 
-              {/* Mixed Mode Routes (Legacy/Standard) */}
-              <Route path="/" element={<Layout />}>
-                <Route index element={<Navigate to="/learn" replace />} />
-                <Route path="learn" element={<Learn />} />
-                <Route path="drill" element={<Drill />} />
-                <Route path="apply" element={<Apply />} />
-                <Route path="stats" element={<Stats />} />
-                <Route path="*" element={<Navigate to="/learn" replace />} />
-              </Route>
-            </Routes>
-          </BrowserRouter>
-        </CoachProvider>
+            {/* Fallback */}
+            <Route path="*" element={<Navigate to="/nav" replace />} />
+          </Routes>
+        </BrowserRouter>
       </DictionaryProvider>
     </GlobalProvider>
   );
 }
 
 export default App;
+
+

@@ -19,8 +19,8 @@ class TestStateSnapshotEventCreation:
     def test_state_snapshot_event_creation(self):
         """Event can be created with state dict."""
         state = {
-            "component": "StoryReader",
-            "props": {"story": {"title": "Test", "content": "Hello"}},
+            "component": "MarkdownMessage",
+            "props": {"content": "# Test\n\nHello"},
             "intention": "present_story",
             "target_level": 1
         }
@@ -62,8 +62,8 @@ class TestStateSnapshotSerialization:
     def test_serialization_format(self):
         """Event serializes to expected JSON format."""
         state = {
-            "component": "StoryReader",
-            "props": {"story": {"title": "Test", "content": ""}},
+            "component": "MarkdownMessage",
+            "props": {"content": "# Test\n\n"},
             "intention": "present_story",
             "target_level": 1
         }
@@ -73,7 +73,7 @@ class TestStateSnapshotSerialization:
         
         assert json_data["type"] == "aui_state_snapshot"
         assert "state" in json_data
-        assert json_data["state"]["component"] == "StoryReader"
+        assert json_data["state"]["component"] == "MarkdownMessage"
     
     def test_json_string_output(self):
         """Event can be serialized to JSON string."""
@@ -128,8 +128,8 @@ class TestStreamWithStateSnapshot:
                 break
         
         assert snapshot_event is not None
-        assert snapshot_event.state["component"] == "StoryReader"
-        assert snapshot_event.state["props"]["story"]["title"] == "My Title"
+        assert snapshot_event.state["component"] == "MarkdownMessage"
+        assert "My Title" in snapshot_event.state["props"]["content"]
         assert snapshot_event.state["target_level"] == 2
     
     @pytest.mark.asyncio

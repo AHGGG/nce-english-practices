@@ -4,7 +4,6 @@ from app.api.routers import (
     content,
     practice,
     stats,
-    coach,
     voice_lab,
     aui_input,
     deepgram,
@@ -17,4 +16,7 @@ from app.api.routers import (
     books,
     inspect,
     reading,
+    proficiency,
+    sentence_study,
 )
+

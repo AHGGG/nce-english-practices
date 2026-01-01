@@ -1,23 +1,20 @@
 import pytest
 from pydantic import ValidationError
-from app.services.aui_schema import validate_component_props, StoryReaderProps, FlashCardStackProps
+from app.services.aui_schema import validate_component_props, FlashCardStackProps, MarkdownMessageProps
 
-def test_validate_valid_story_reader():
-    """Test validation of valid StoryReader props."""
+def test_validate_valid_markdown_message():
+    """Test validation of valid MarkdownMessage props."""
     valid_props = {
-        "story": {"title": "Test", "content": "Content"},
-        "coachMode": True,
-        "messageId": "123"
+        "content": "# Hello World"
     }
-    assert validate_component_props("StoryReader", valid_props) == True
+    assert validate_component_props("MarkdownMessage", valid_props) == True
 
-def test_validate_invalid_story_reader_missing_field():
-    """Test that missing required 'story' field raises error."""
-    invalid_props = {
-        "coachMode": True
-    }
+def test_validate_invalid_markdown_message_missing_field():
+    """Test that missing required 'content' field raises error."""
+    invalid_props = {}
     with pytest.raises(ValidationError):
-        validate_component_props("StoryReader", invalid_props)
+        validate_component_props("MarkdownMessage", invalid_props)
+
 
 def test_validate_valid_flash_card_stack():
     """Test validation of valid FlashCardStack props."""

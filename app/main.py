@@ -12,7 +12,6 @@ from app.api.routers import (
     content,
     practice,
     stats,
-    coach,
     voice_lab,
     aui_input,
     deepgram,
@@ -72,24 +71,22 @@ app.include_router(content.router)
 app.include_router(practice.router)
 
 app.include_router(stats.router)
-app.include_router(coach.router)
-
 
 app.include_router(voice_lab.router)
 
 app.include_router(deepgram.router, tags=["websocket"])
 
 app.include_router(aui_debug.router)
-app.include_router(aui_input.router, prefix="/api/aui", tags=["AUI Input"]) # New
-app.include_router(aui_websocket.router, tags=["AUI WebSocket"])  # WebSocket transport
-app.include_router(context_router.router)  # Context resources
-app.include_router(tts.router)  # TTS API
-app.include_router(negotiation.router) # Included negotiation router
-app.include_router(books.router, prefix="/api") # Books API
-app.include_router(inspect.router)  # Inspect API (word lookup + learning log)
-app.include_router(reading.router)  # Reading session tracking
-app.include_router(proficiency.router) # Proficiency & Smart Highlighting
-app.include_router(sentence_study.router)  # ASL - Sentence Study Mode
+app.include_router(aui_input.router, prefix="/api/aui", tags=["AUI Input"])
+app.include_router(aui_websocket.router, tags=["AUI WebSocket"])
+app.include_router(context_router.router)
+app.include_router(tts.router)
+app.include_router(negotiation.router)
+app.include_router(books.router, prefix="/api")
+app.include_router(inspect.router)
+app.include_router(reading.router)
+app.include_router(proficiency.router)
+app.include_router(sentence_study.router)
 
 from app.models.schemas import RemoteLog
 from app.services.log_collector import (

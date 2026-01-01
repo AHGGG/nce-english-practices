@@ -107,8 +107,8 @@ uv run alembic history
 uv run alembic history
 ```
 
-## Coach & TTS
-The new Coach architecture uses **Edge-TTS** for audio.
+## TTS
+The system uses **Edge-TTS** for audio.
 - **Library**: `edge-tts` (Official Microsoft Edge TTS API wrapper).
 - **Voice**: `en-US-AndrewMultilingualNeural`.
 - **Flow**: Backend streams bytes -> Frontend plays Blob via Web Audio API.
@@ -121,21 +121,19 @@ The project follows a modular package structure:
 
 - **`app/main.py`**: Application entry point and API routes.
 - **`app/config.py`**: Settings management using Pydantic Settings.
-- **`app/core/`**: Core business logic.
-  - `practice.py`: Grading and feedback logic.
+- **`app/core/`**: Core utilities.
   - `db.py`: SQLAlchemy session management.
+  - *(Removed in 2026-01-01: `practice.py`)*
 - **`app/services/`**: Infrastructure services.
   - `llm.py`: Unified LLM service (DeepSeek + Gemini clients).
   - `dictionary.py`: MDX/MDD parsing and multi-dictionary management.
-  - `chat.py`: Stateful chat session management.
   - `voice.py`: Voice session management (WebSocket).
   - `negotiation_service.py`: Interactive explanation loop with **Real-time Micro-Scenarios**.
-  - `coach.py`: Agentic Coach service (LLM Tool use).
   - `tts.py`: Edge-TTS integration.
   - `voice_lab.py`: Multi-vendor integration (Google, ElevenLabs, Deepgram).
   - `content_service.py`: Factory/Registry for Content Providers.
   - `content_feeder.py`: Orchestrates content for Voice Interface (uses ContentService).
-  - `dsml_parser.py`: Parser for DeepSeek raw XML tool calls.
+  - *(Removed in 2026-01-01: `chat.py`, `coach.py`, `dsml_parser.py`, `review.py`)*
 - **`app/services/aui/`**: **Refactored 2025-12-31** AUI Streaming & Rendering package.
   - `story.py`: Story streaming mixin.
   - `vocabulary.py`: Vocabulary cards & JSON Patch demos.
@@ -148,8 +146,7 @@ The project follows a modular package structure:
   - `rss_provider.py`: RSS feed article extraction.
   - `podcast_provider.py`: Podcast RSS with audio enclosures.
   - `plain_text_provider.py`: Simple text segmentation.
-- **`app/generators/`**: Content generation logic.
-  - `theme.py`, `sentence.py`, `story.py`, `quiz.py`, `scenario.py`
+- **`app/generators/`**: *(Deprecated - Generators removed in 2026-01-01 cleanup)*
 - **`app/models/`**: Data models package.
   - `schemas.py`: Pydantic models (DTOs) and API schemas.
   - `collins_schemas.py`: Structured models for Collins dictionary.
@@ -157,17 +154,13 @@ The project follows a modular package structure:
   - `word_example_schemas.py`: Models for multi-example navigation (`WordExampleSet`).
   - `content_schemas.py`: `ContentBundle`, `ContentSentence`, `ContentImage`, `SourceType` for Provider Architecture.
   - `orm.py`: SQLAlchemy database models.
-- **`app/database/`**: **Refactored 2025-12-31** Database operations package.
+- **`app/database/`**: **Refactored 2025-12-31, Cleaned 2026-01-01** Database operations package.
   - `core.py`: Base, engine, AsyncSessionLocal, and ORM model re-exports.
-  - `session_theme.py`: Session logging functions.
-  - `story.py`: Story caching functions.
   - `stats.py`: User statistics functions.
-  - `review.py`: SRS scheduling functions.
-  - `chat.py`: Chat session functions.
-  - `coach.py`: Coach session & memory functions.
   - `performance.py`: Performance metrics aggregation.
   - `reading.py`: Reading session tracking.
   - `goals.py`: User goal functions.
+  - *(Removed in 2026-01-01: `session_theme.py`, `story.py`, `review.py`, `chat.py`, `coach.py`)*
 - **`app/api/routers/deepgram/`**: **Refactored 2025-12-31** Deepgram WebSocket endpoints.
   - `live_stt.py`: Real-time STT proxy.
   - `streaming_tts.py`: Streaming TTS proxy.

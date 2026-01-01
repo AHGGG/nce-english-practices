@@ -111,14 +111,9 @@ class DashboardDemosMixin:
         )
         
         initial_state = {
-            "component": "StoryReader",
+            "component": "MarkdownMessage",
             "props": {
-                "story": {
-                    "title": initial_title,
-                    "content": "",
-                    "grammar_notes": []
-                },
-                "coachMode": True
+                "content": f"# {initial_title}\n\n"
             },
             "intention": "present_story",
             "target_level": user_level
@@ -139,7 +134,7 @@ class DashboardDemosMixin:
         
         for part in content_parts:
             new_state = copy.deepcopy(current_state)
-            new_state["props"]["story"]["content"] += part
+            new_state["props"]["content"] += part
             
             yield create_state_diff(current_state, new_state)
             
@@ -147,11 +142,9 @@ class DashboardDemosMixin:
             await asyncio.sleep(0.3)
         
         new_state = copy.deepcopy(current_state)
-        new_state["props"]["story"]["title"] = f"{initial_title} ✓"
-        new_state["props"]["story"]["grammar_notes"] = [
-            {"note": "Past tense narrative style", "example": "there lived"}
-        ]
+        new_state["props"]["content"] += f"\n\n---\n✅ **{initial_title}** completed!"
         
         yield create_state_diff(current_state, new_state)
         
         yield StreamEndEvent(session_id=session_id)
+

@@ -217,4 +217,17 @@
     - [x] **Dead Code Removal** (2025-12-31):
         - [x] Deleted unused services (`rss_service.py`, `epub_service.py`).
         - [x] Deleted legacy routers (`elevenlabs_websocket.py`).
+    - [x] **Legacy Feature Cleanup** (2026-01-01):
+        - [x] **Frontend**: Removed `/learn`, `/drill`, `/apply`, `/coach` pages and all related components.
+            - Deleted Views: `Learn.jsx`, `Drill.jsx`, `Apply.jsx`, `Stats.jsx`, `Coach.jsx`.
+            - Deleted Components: `Learn/`, `Drill/`, `Apply/`, `Layout/`, `Coach/`.
+            - Deleted Context: `CoachContext.jsx`.
+            - Refactored `App.jsx`, `NavDashboard.jsx`, `GlobalContext.jsx`, `client.js`.
+        - [x] **Backend Generators**: Deleted `theme.py`, `sentence.py`, `story.py`, `quiz.py`, `scenario.py`, `coach.py`.
+        - [x] **Backend Services**: Deleted `coach.py`, `chat.py`, `dsml_parser.py`, `review.py`.
+        - [x] **Backend Database Modules**: Deleted `chat.py`, `coach.py`, `story.py`, `session_theme.py`.
+        - [x] **Core Module**: Deleted `core/practice.py`.
+        - [x] **Database Migration**: `8742f3599637_drop_legacy_tables.py` drops 7 unused tables.
+        - [x] **AUI Demo Fix**: Replaced `StoryReader` with `MarkdownMessage` in demos.
+        - [x] **Tests Deleted**: 10 obsolete test files removed.
 
