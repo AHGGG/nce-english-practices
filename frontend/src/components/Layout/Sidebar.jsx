@@ -1,6 +1,6 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
-import { Zap, BookOpen, Terminal, Rocket, BarChart2 } from 'lucide-react';
+import { Zap, BookOpen, Terminal, Rocket, BarChart2, Activity } from 'lucide-react';
 import TopicInput from './TopicInput';
 
 // NavItem is defined outside to prevent recreation on each render
@@ -61,6 +61,7 @@ const Sidebar = React.memo(({ topic }) => {
 
                 <div className="mt-8 px-6 mb-2 text-[10px] font-bold text-ink-muted uppercase tracking-widest">Data</div>
                 <NavItem to="/performance" icon={BarChart2} label="Performance" />
+                <NavItem to="/lab/calibration" icon={Activity} label="Proficiency Lab" />
             </nav>
 
             <div className="mt-auto p-6 border-t border-ink-faint">
@@ -76,4 +77,3 @@ const Sidebar = React.memo(({ topic }) => {
 Sidebar.displayName = 'Sidebar';
 
 export default Sidebar;
-

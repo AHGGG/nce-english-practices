@@ -1,5 +1,5 @@
 import React, { useRef, useEffect, useCallback } from 'react';
-import { ChevronLeft, Zap, Loader2 } from 'lucide-react';
+import { ChevronLeft, Zap, Loader2, CheckCheck } from 'lucide-react';
 import MemoizedSentence from './MemoizedSentence';
 import MemoizedImage from './MemoizedImage';
 import { HIGHLIGHT_OPTIONS, BATCH_SIZE } from './constants';
@@ -19,7 +19,9 @@ const ReaderView = ({
     onWordClick,
     onBackToLibrary,
     onImageClick,
-    trackerRef
+    onSweep,
+    trackerRef,
+    calibrationBanner
 }) => {
     const mainRef = useRef(null);
     const sentinelRef = useRef(null);
@@ -139,6 +141,13 @@ const ReaderView = ({
             {/* GLOBAL NOISE TEXTURE OVERLAY */}
             <div className="fixed inset-0 opacity-[0.03] pointer-events-none z-50 bg-[url('https://grainy-gradients.vercel.app/noise.svg')]"></div>
 
+            {/* Calibration Suggestion Banner */}
+            {calibrationBanner && (
+                <div className="bg-[#00FF94]/10 border-b border-[#00FF94]/30 px-4 py-2 text-center text-xs text-[#00FF94] font-mono">
+                    {calibrationBanner}
+                </div>
+            )}
+
             {/* Toolbar - Industrial Style */}
             <header className="h-14 border-b border-[#333] flex items-center justify-between px-4 md:px-8 bg-[#0A0A0A] shrink-0 z-20">
                 <button
@@ -177,8 +186,18 @@ const ReaderView = ({
                     </button>
                 </div>
 
+                {/* Sweep Button */}
+                <button
+                    onClick={onSweep}
+                    className="ml-2 flex items-center gap-2 px-3 py-1.5 border border-[#333] text-[#666] hover:text-[#00FF94] hover:border-[#00FF94] hover:bg-[#00FF94]/5 transition-all group"
+                    title="Mark Remaining as Known"
+                >
+                    <CheckCheck className="w-4 h-4" />
+                    <span className="hidden md:inline text-[10px] font-bold uppercase tracking-wider">Sweep</span>
+                </button>
+
                 {/* Right section - Stats */}
-                <div className="hidden md:flex items-center gap-2">
+                <div className="hidden md:flex items-center gap-2 ml-auto">
                     <span className="text-[10px] text-[#666] uppercase tracking-wider">{article.sentence_count} Sentences</span>
                 </div>
             </header>

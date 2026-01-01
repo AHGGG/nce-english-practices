@@ -4,7 +4,7 @@ import ArticleListView from './ArticleListView';
 import ReaderView from './ReaderView';
 import WordInspector from './WordInspector';
 import Lightbox from './Lightbox';
-import { HIGHLIGHT_OPTIONS, BATCH_SIZE } from './constants';
+import { HIGHLIGHT_OPTIONS, BATCH_SIZE, mapLevelToOptionIndex } from './constants';
 
 // Simple API helper for ReadingTracker
 const api = {
@@ -62,10 +62,36 @@ const ReadingMode = () => {
     // Reading session tracking
     const trackerRef = useRef(null);
 
+    // Track inspected words for Sweep
+    const inspectedWordsRef = useRef(new Set());
+
+    // Calibration banner state
+    const [calibrationBanner, setCalibrationBanner] = useState(null);
+
     // --- Effects ---
     useEffect(() => {
         fetchArticleList();
+        fetchCalibrationLevel();
     }, []);
+
+    // Fetch user's calibration level and auto-select highlight option
+    const fetchCalibrationLevel = async () => {
+        try {
+            const res = await fetch('/api/proficiency/calibration/level');
+            if (res.ok) {
+                const data = await res.json();
+                if (data.level !== null && data.level !== undefined) {
+                    const optionIndex = mapLevelToOptionIndex(data.level);
+                    setSelectedOptionIndex(optionIndex);
+                    setCalibrationBanner(
+                        `Based on your calibration (Level ${data.level}), we suggest: ${HIGHLIGHT_OPTIONS[optionIndex].label}`
+                    );
+                }
+            }
+        } catch (e) {
+            console.error('Failed to fetch calibration level:', e);
+        }
+    };
 
     // Re-fetch article if option changes
     useEffect(() => {
@@ -169,7 +195,79 @@ const ReadingMode = () => {
         setSelectedWord(word);
         setInspectorData(null);
         setCurrentContext(sentence);
+        inspectedWordsRef.current.add(word.toLowerCase());
     }, []);
+
+    const handleMarkAsKnown = useCallback(async (word) => {
+        // 1. Optimistic Update
+        const lowerWord = word.toLowerCase();
+        if (selectedArticle && selectedArticle.highlightSet) {
+            selectedArticle.highlightSet.delete(lowerWord);
+            // Force re-render of highlights by cloning (not deep cloning set, just reference ref or forceUpdate?)
+            // Actually ReaderView usually re-renders if article prop changes. 
+            // We might need to clone selectedArticle to trigger update.
+            setSelectedArticle(prev => ({
+                ...prev,
+                highlightSet: new Set([...prev.highlightSet].filter(w => w !== lowerWord))
+            }));
+        }
+
+        // 2. Close inspector
+        setSelectedWord(null);
+
+        // 3. API Call
+        try {
+            await api.put('/api/proficiency/word', { word: lowerWord, status: 'mastered' });
+        } catch (e) {
+            console.error("Failed to mark as known", e);
+            // Revert? (Enhancement)
+        }
+    }, [selectedArticle]);
+
+    const handleSweep = useCallback(async () => {
+        if (!selectedArticle || !selectedArticle.highlightSet) return;
+
+        const allHighlights = Array.from(selectedArticle.highlightSet);
+        const inspected = Array.from(inspectedWordsRef.current);
+        const sweptWords = allHighlights.filter(w => !inspectedWordsRef.current.has(w));
+
+        if (sweptWords.length === 0) {
+            alert("No words to sweep!");
+            return;
+        }
+
+        if (!window.confirm(`Mark ${sweptWords.length} remaining highlighted words as Known?`)) {
+            return;
+        }
+
+        // Optimistic clear
+        setSelectedArticle(prev => ({
+            ...prev,
+            highlightSet: new Set()
+        }));
+
+        try {
+            const res = await api.post('/api/proficiency/sweep', {
+                swept_words: sweptWords,
+                inspected_words: inspected
+            });
+
+            // Show recommendation if any
+            if (res.recommendation) {
+                const { bands } = res.recommendation;
+                if (bands && bands.length > 0) {
+                    // Determine range labels
+                    const ranges = bands.map(b => `${b}-${b + 1000}`).join(", ");
+                    if (window.confirm(`Expert Detected! You swept most words in the ${ranges} frequency bands. Mark ALL words in these bands as Mastered?`)) {
+                        // TODO: Call API to master bands (Future Phase)
+                        alert("Global mastery update coming in next phase!");
+                    }
+                }
+            }
+        } catch (e) {
+            console.error("Sweep failed", e);
+        }
+    }, [selectedArticle]);
 
     const handleBackToLibrary = useCallback(async () => {
         if (trackerRef.current) {
@@ -221,7 +319,9 @@ const ReadingMode = () => {
                 onWordClick={handleWordClick}
                 onBackToLibrary={handleBackToLibrary}
                 onImageClick={handleImageClick}
+                onSweep={handleSweep}
                 trackerRef={trackerRef}
+                calibrationBanner={calibrationBanner}
             />
 
             <WordInspector
@@ -230,6 +330,7 @@ const ReadingMode = () => {
                 isInspecting={isInspecting}
                 onClose={() => setSelectedWord(null)}
                 onPlayAudio={playAudio}
+                onMarkAsKnown={handleMarkAsKnown}
             />
 
             {lightboxImage && (

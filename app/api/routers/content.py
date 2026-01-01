@@ -256,6 +256,7 @@ async def get_article_content(
                 highlights = await word_list_service.identify_words_in_text(
                     text=bundle.full_text,
                     book_code=book_code,
+                    user_id="default_user",
                     min_sequence=min_sequence,
                     max_sequence=max_sequence
                 )

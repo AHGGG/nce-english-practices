@@ -10,7 +10,8 @@ const WordInspector = ({
     inspectorData,
     isInspecting,
     onClose,
-    onPlayAudio
+    onPlayAudio,
+    onMarkAsKnown
 }) => {
     if (!selectedWord) return null;
 
@@ -67,10 +68,16 @@ const WordInspector = ({
                 </div>
 
                 {/* Footer Actions */}
-                <div className="p-4 border-t border-[#333] bg-[#111] shrink-0">
-                    <button className="w-full bg-[#E0E0E0] text-black py-3 font-mono text-sm font-bold uppercase tracking-wider flex items-center justify-center gap-2 hover:bg-white hover:shadow-[4px_4px_0px_0px_rgba(255,255,255,0.2)] transition-all active:translate-y-[2px]">
+                <div className="p-4 border-t border-[#333] bg-[#111] shrink-0 flex gap-2">
+                    <button
+                        onClick={() => onMarkAsKnown(selectedWord)}
+                        className="flex-1 bg-[#1A1A1A] border border-[#333] text-[#888] py-3 font-mono text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-2 hover:bg-[#222] hover:text-white transition-all active:translate-y-[1px]"
+                    >
+                        Mark Known
+                    </button>
+                    <button className="flex-[2] bg-[#E0E0E0] text-black py-3 font-mono text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-2 hover:bg-white hover:shadow-[4px_4px_0px_0px_rgba(255,255,255,0.2)] transition-all active:translate-y-[1px]">
                         <Bookmark className="w-4 h-4" />
-                        Add to Review Plan
+                        Add to Review
                     </button>
                 </div>
             </div>
