@@ -101,6 +101,7 @@ const SentenceStudy = () => {
     // Overview state
     const [overview, setOverview] = useState(null);
     const [loadingOverview, setLoadingOverview] = useState(false);
+    const [overviewStreamContent, setOverviewStreamContent] = useState(''); // For streaming display
 
     // Dictionary state (for word click popup)
     const [selectedWord, setSelectedWord] = useState(null);
@@ -265,15 +266,57 @@ const SentenceStudy = () => {
             setWordClicks([]);
             setShowDiagnose(false);
             setSimplifiedText(null);
-
-            // Fetch overview for context
-            const overviewData = await api.getOverview(
-                article.title,
-                article.full_text,
-                article.sentence_count || article.sentences?.length || 0
-            );
-            setOverview(overviewData);
+            setOverviewStreamContent('');
+            setOverview(null);
             setView(VIEW_STATES.OVERVIEW);  // Show overview first
+
+            // Fetch overview with streaming support
+            const res = await fetch('/api/sentence-study/overview', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    title: article.title,
+                    full_text: article.full_text,
+                    total_sentences: article.sentence_count || article.sentences?.length || 0
+                })
+            });
+
+            const contentType = res.headers.get('content-type') || '';
+
+            if (contentType.includes('text/event-stream')) {
+                // Streaming response (first time, not cached)
+                const reader = res.body.getReader();
+                const decoder = new TextDecoder();
+
+                while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) break;
+
+                    const chunk = decoder.decode(value, { stream: true });
+                    const lines = chunk.split('\n');
+
+                    for (const line of lines) {
+                        if (line.startsWith('data: ')) {
+                            try {
+                                const data = JSON.parse(line.slice(6));
+                                if (data.type === 'chunk') {
+                                    setOverviewStreamContent(prev => prev + data.content);
+                                } else if (data.type === 'done') {
+                                    setOverview(data.overview);
+                                } else if (data.type === 'error') {
+                                    console.error('Overview error:', data.message);
+                                }
+                            } catch (e) {
+                                // Ignore parse errors for partial chunks
+                            }
+                        }
+                    }
+                }
+            } else {
+                // JSON response (cached)
+                const overviewData = await res.json();
+                setOverview(overviewData);
+            }
         } catch (e) {
             console.error('Failed to load article:', e);
         } finally {
@@ -635,12 +678,14 @@ const SentenceStudy = () => {
                         {currentArticle?.title}
                     </h1>
 
-                    {loadingOverview ? (
+                    {!overview ? (
                         <div className="flex flex-col items-center justify-center py-12">
                             <Loader2 className="w-8 h-8 animate-spin text-[#00FF94] mb-4" />
-                            <p className="text-[#888] text-sm">Analyzing article...</p>
+                            <p className="text-[#888] text-sm">
+                                {overviewStreamContent ? 'Generating Overview...' : 'Analyzing article...'}
+                            </p>
                         </div>
-                    ) : overview ? (
+                    ) : (
                         <div className="space-y-6">
                             {/* English Summary */}
                             <div className="p-6 border border-[#333] bg-[#0A0A0A]">
@@ -691,16 +736,6 @@ const SentenceStudy = () => {
                                     Start Studying
                                 </button>
                             </div>
-                        </div>
-                    ) : (
-                        <div className="text-center text-[#666]">
-                            <p>Unable to load overview. Click below to start studying.</p>
-                            <button
-                                onClick={startSentenceStudy}
-                                className="mt-4 px-8 py-3 bg-[#00FF94] text-black font-bold uppercase text-sm"
-                            >
-                                Start Anyway
-                            </button>
                         </div>
                     )}
                 </div>

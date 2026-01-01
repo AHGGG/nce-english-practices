@@ -5,15 +5,19 @@ Endpoints for tracking study progress, recording learning results, and generatin
 from fastapi import APIRouter, HTTPException, Depends
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
-from typing import Optional, List
+from typing import Optional, List, Dict
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, Integer, case
+import hashlib
 
 from app.core.db import get_db
 from app.models.orm import SentenceLearningRecord
 from app.services.llm import llm_service
 
 router = APIRouter(prefix="/api/sentence-study", tags=["sentence-study"])
+
+# In-memory cache for article overviews (key: title_hash, value: OverviewResponse dict)
+_overview_cache: Dict[str, dict] = {}
 
 
 # ============================================================
@@ -218,12 +222,27 @@ Return ONLY a simple explanation of the CURRENT sentence, no extra text."""
     )
 
 
-@router.post("/overview", response_model=OverviewResponse)
+@router.post("/overview")
 async def generate_overview(req: OverviewRequest):
     """
     Generate article overview with English summary and Chinese translation.
-    Called before sentence-by-sentence study begins to provide context.
+    First request streams via SSE, subsequent requests return cached JSON.
+    
+    SSE format:
+    - data: {"type": "chunk", "content": "..."} - streaming content
+    - data: {"type": "done", "overview": {...}} - final result with full overview
+    - data: {"type": "cached", "overview": {...}} - cache hit
     """
+    import json
+    
+    # Generate cache key from title
+    cache_key = hashlib.md5(req.title.encode()).hexdigest()
+    
+    # Check cache first - return JSON directly for cache hits
+    if cache_key in _overview_cache:
+        cached = _overview_cache[cache_key]
+        return OverviewResponse(**cached)
+    
     # Truncate to first ~500 words for efficiency
     words = req.full_text.split()
     text_excerpt = " ".join(words[:500]) + ("..." if len(words) > 500 else "")
@@ -246,39 +265,60 @@ Respond in this exact JSON format:
 
 Return ONLY the JSON, no markdown formatting."""
 
-    try:
-        response = await llm_service.async_client.chat.completions.create(
-            model=llm_service.model_name,
-            messages=[{"role": "user", "content": prompt}],
-            max_tokens=500,
-            temperature=0.3
-        )
-        content = response.choices[0].message.content.strip()
-        
-        # Parse JSON response
-        import json
-        # Handle potential markdown code blocks
-        if content.startswith("```"):
-            content = content.split("\n", 1)[1].rsplit("```", 1)[0]
-        
-        data = json.loads(content)
-        
-        return OverviewResponse(
-            summary_en=data.get("summary_en", "Unable to generate summary."),
-            summary_zh=data.get("summary_zh", "无法生成摘要。"),
-            key_topics=data.get("key_topics", []),
-            difficulty_hint=data.get("difficulty_hint", "")
-        )
-    except json.JSONDecodeError:
-        # Fallback if JSON parsing fails
-        return OverviewResponse(
-            summary_en="This article covers various topics. Study the sentences to learn more.",
-            summary_zh="本文涵盖多个主题。通过逐句学习了解更多。",
-            key_topics=[],
-            difficulty_hint="Unable to analyze difficulty."
-        )
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"LLM error: {str(e)}")
+    async def generate():
+        full_content = ""
+        try:
+            stream = await llm_service.async_client.chat.completions.create(
+                model=llm_service.model_name,
+                messages=[{"role": "user", "content": prompt}],
+                max_tokens=500,
+                temperature=0.3,
+                stream=True
+            )
+            
+            async for chunk in stream:
+                if chunk.choices and chunk.choices[0].delta.content:
+                    text = chunk.choices[0].delta.content
+                    full_content += text
+                    yield f"data: {json.dumps({'type': 'chunk', 'content': text})}\n\n"
+            
+            # Parse the accumulated content
+            content = full_content.strip()
+            if content.startswith("```"):
+                content = content.split("\n", 1)[1].rsplit("```", 1)[0]
+            
+            try:
+                data = json.loads(content)
+                result = {
+                    "summary_en": data.get("summary_en", "Unable to generate summary."),
+                    "summary_zh": data.get("summary_zh", "无法生成摘要。"),
+                    "key_topics": data.get("key_topics", []),
+                    "difficulty_hint": data.get("difficulty_hint", "")
+                }
+            except json.JSONDecodeError:
+                result = {
+                    "summary_en": "This article covers various topics. Study the sentences to learn more.",
+                    "summary_zh": "本文涵盖多个主题。通过逐句学习了解更多。",
+                    "key_topics": [],
+                    "difficulty_hint": "Unable to analyze difficulty."
+                }
+            
+            # Cache the result
+            _overview_cache[cache_key] = result
+            
+            yield f"data: {json.dumps({'type': 'done', 'overview': result})}\n\n"
+            
+        except Exception as e:
+            yield f"data: {json.dumps({'type': 'error', 'message': str(e)})}\n\n"
+
+    return StreamingResponse(
+        generate(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+        }
+    )
 
 
 @router.post("/explain-word")
