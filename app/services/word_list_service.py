@@ -124,28 +124,30 @@ class WordListService:
         self,
         text: str,
         book_code: str,
+        user_id: str = "default_user",
         db_session: Optional[AsyncSession] = None,
         min_sequence: Optional[int] = None,
         max_sequence: Optional[int] = None
     ) -> List[str]:
         """
         Identify which words from a specific book appear in the given text.
-        Returns a list of matching words found in the text.
+        Returns a list of matching words found in the text, excluding words mastered by the user.
         """
         if not text or not book_code:
             return []
 
         if db_session:
-            return await self._identify_words_logic(db_session, text, book_code, min_sequence, max_sequence)
+            return await self._identify_words_logic(db_session, text, book_code, user_id, min_sequence, max_sequence)
 
         async with AsyncSessionLocal() as session:
-            return await self._identify_words_logic(session, text, book_code, min_sequence, max_sequence)
+            return await self._identify_words_logic(session, text, book_code, user_id, min_sequence, max_sequence)
 
     async def _identify_words_logic(
         self, 
         session: AsyncSession, 
         text: str, 
         book_code: str,
+        user_id: str,
         min_sequence: Optional[int] = None,
         max_sequence: Optional[int] = None
     ) -> List[str]:
@@ -163,10 +165,17 @@ class WordListService:
         if not book:
             return []
 
-        # 3. Query DB for these tokens within the specific book
+        # 3. Subquery for mastered words
+        mastered_stmt = select(WordProficiency.word).where(
+            WordProficiency.user_id == user_id,
+            WordProficiency.status == "mastered"
+        )
+        
+        # 4. Query DB for these tokens within the specific book
         filters = [
             WordBookEntry.book_id == book.id,
-            WordBookEntry.word.in_(tokens)
+            WordBookEntry.word.in_(tokens),
+            WordBookEntry.word.not_in(mastered_stmt)
         ]
         
         if min_sequence is not None:
