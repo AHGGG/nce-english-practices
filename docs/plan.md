@@ -166,6 +166,16 @@
         - [x] Frontend `ReadingTracker.js` with heartbeat, visibility API, sentence IntersectionObserver.
         - [x] `/api/reading/*` endpoints (start, heartbeat, word-click, end, stats).
         - [x] `get_reading_stats_v2()` with validated word count (skimmed = 0, low = 30%, medium = 70%, high = 100%).
+    - [x] **Sentence Study Mode (ASL)** (2026-01-01):
+        - [x] `SentenceLearningRecord` ORM model + Alembic migration.
+        - [x] `/api/sentence-study/*` endpoints (progress, record, simplify, overview).
+        - [x] Frontend `SentenceStudy.jsx` with article list, sentence view, Clear/Unclear flow.
+        - [x] Difficulty choice modal (Vocabulary/Grammar/Both).
+        - [x] LLM-powered sentence simplification (vocabulary/grammar/context).
+        - [x] **Article Overview**: English summary + Chinese translation before study.
+        - [x] Key topics extraction and difficulty hints.
+        - [ ] SRS integration for unclear sentences (Phase 2).
+        - [ ] User comprehension profile building (Phase 3).
 - [x] **Voice Vendor Lab**:
     - [x] **Internal Tool**: `/voice-lab` refactored to **Vendor-Centric Layout** (Google, Deepgram, ElevenLabs tabs).
     - [x] **SDK Removal**: Removed ElevenLabs and Deepgram SDKs in favor of raw `httpx` API calls.

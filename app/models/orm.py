@@ -369,3 +369,55 @@ class ReadingSession(Base):
     # Calculated results
     reading_quality: Mapped[Optional[str]] = mapped_column(Text, nullable=True)  # high/medium/low/skimmed
     validated_word_count: Mapped[int] = mapped_column(Integer, default=0)
+
+
+class UserCalibration(Base):
+    """
+    Stores user's proficiency calibration level.
+    Links to Reading Mode highlight suggestions.
+    """
+    __tablename__ = "user_calibrations"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    user_id: Mapped[str] = mapped_column(Text, default="default_user", unique=True, index=True)
+    level: Mapped[int] = mapped_column(Integer, default=0)  # 0-11 (12 levels)
+    
+    # Timestamps
+    created_at: Mapped[datetime] = mapped_column(TIMESTAMP, server_default=func.now())
+    updated_at: Mapped[datetime] = mapped_column(TIMESTAMP, server_default=func.now(), onupdate=func.now())
+
+
+class SentenceLearningRecord(Base):
+    """Records user learning progress for each sentence in ASL (Adaptive Sentence Learning) mode."""
+    __tablename__ = "sentence_learning_records"
+    __table_args__ = (
+        Index("idx_slr_user_source", "user_id", "source_type", "source_id"),
+        Index("idx_slr_source_sentence", "source_id", "sentence_index"),
+    )
+    
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    user_id: Mapped[str] = mapped_column(Text, default="default_user")
+    
+    # Sentence location (reference only, not storing full text)
+    source_type: Mapped[str] = mapped_column(Text)  # epub, rss
+    source_id: Mapped[str] = mapped_column(Text)    # e.g., "epub:file.epub:3"
+    sentence_index: Mapped[int] = mapped_column(Integer)
+    
+    # User interaction
+    initial_response: Mapped[str] = mapped_column(Text)  # clear, unclear
+    unclear_choice: Mapped[Optional[str]] = mapped_column(Text, nullable=True)  # vocabulary, grammar, both
+    simplified_response: Mapped[Optional[str]] = mapped_column(Text, nullable=True)  # got_it, still_unclear
+    word_clicks: Mapped[List[str]] = mapped_column(JSON, default=list)
+    dwell_time_ms: Mapped[int] = mapped_column(Integer, default=0)
+    
+    # Diagnosis
+    diagnosed_gap_type: Mapped[Optional[str]] = mapped_column(Text, nullable=True)  # vocabulary, structure, fundamental
+    diagnosed_patterns: Mapped[List[str]] = mapped_column(JSON, default=list)
+    confidence: Mapped[float] = mapped_column(Integer, default=0)  # SQLite doesn't have Float, use Integer
+    
+    # SRS scheduling (Phase 3)
+    scheduled_review: Mapped[Optional[datetime]] = mapped_column(TIMESTAMP, nullable=True)
+    review_count: Mapped[int] = mapped_column(Integer, default=0)
+    
+    created_at: Mapped[datetime] = mapped_column(TIMESTAMP, server_default=func.now())
+    updated_at: Mapped[datetime] = mapped_column(TIMESTAMP, server_default=func.now(), onupdate=func.now())

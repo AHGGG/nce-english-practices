@@ -25,6 +25,8 @@ from app.api.routers import (
     books,
     inspect,
     reading,
+    proficiency,
+    sentence_study,
 )
 from app.services.log_collector import setup_logging
 import logging
@@ -86,6 +88,8 @@ app.include_router(negotiation.router) # Included negotiation router
 app.include_router(books.router, prefix="/api") # Books API
 app.include_router(inspect.router)  # Inspect API (word lookup + learning log)
 app.include_router(reading.router)  # Reading session tracking
+app.include_router(proficiency.router) # Proficiency & Smart Highlighting
+app.include_router(sentence_study.router)  # ASL - Sentence Study Mode
 
 from app.models.schemas import RemoteLog
 from app.services.log_collector import (

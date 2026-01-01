@@ -105,6 +105,20 @@ const NavDashboard = () => {
             icon: Headphones,
             description: "Tech demo for the Agentic UI Streaming protocol.",
             color: "neon-lime"
+        },
+        {
+            title: "Proficiency Lab",
+            path: "/lab/calibration",
+            icon: Activity,
+            description: "Deep diagnostic mission to calibrate your proficiency profile.",
+            color: "neon-cyan"
+        },
+        {
+            title: "Sentence Study",
+            path: "/sentence-study",
+            icon: BookOpen,
+            description: "Study articles sentence by sentence with Clear/Unclear feedback.",
+            color: "neon-lime"
         }
     ];
 

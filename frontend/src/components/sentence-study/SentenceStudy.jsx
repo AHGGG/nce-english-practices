@@ -1,0 +1,584 @@
+/**
+ * SentenceStudy - Adaptive Sentence Learning Mode (ASL)
+ * 
+ * A sentence-by-sentence learning mode that allows users to:
+ * - Study articles one sentence at a time
+ * - Mark sentences as Clear or Unclear
+ * - Get simplified versions when stuck (vocabulary/grammar/both)
+ * - Track progress and learning gaps
+ */
+import React, { useState, useEffect, useCallback } from 'react';
+import { ChevronLeft, CheckCircle, HelpCircle, Loader2, BookOpen, Sparkles, GraduationCap } from 'lucide-react';
+import MemoizedSentence from '../reading/MemoizedSentence';
+import { HIGHLIGHT_OPTIONS, mapLevelToOptionIndex } from '../reading/constants';
+
+// API helpers
+const api = {
+    async getProgress(sourceId) {
+        const res = await fetch(`/api/sentence-study/${encodeURIComponent(sourceId)}/progress`);
+        return res.json();
+    },
+    async recordLearning(data) {
+        const res = await fetch('/api/sentence-study/record', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        });
+        return res.json();
+    },
+    async simplify(data) {
+        const res = await fetch('/api/sentence-study/simplify', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        });
+        return res.json();
+    },
+    async getArticles() {
+        const res = await fetch('/api/reading/epub/list');
+        return res.json();
+    },
+    async getArticle(sourceId, optionIndex) {
+        const opt = HIGHLIGHT_OPTIONS[optionIndex] || HIGHLIGHT_OPTIONS[0];
+        const params = new URLSearchParams({
+            source_id: sourceId,
+            book_code: opt.bookCode || '',
+            min_sequence: opt.minSeq || 0,
+            max_sequence: opt.maxSeq || 99999
+        });
+        const res = await fetch(`/api/reading/article?${params}`);
+        return res.json();
+    },
+    async getCalibration() {
+        const res = await fetch('/api/proficiency/calibration/level');
+        if (!res.ok) return null;
+        return res.json();
+    },
+    async getOverview(title, fullText, totalSentences) {
+        const res = await fetch('/api/sentence-study/overview', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ title, full_text: fullText, total_sentences: totalSentences })
+        });
+        return res.json();
+    }
+};
+
+// View States
+const VIEW_STATES = {
+    ARTICLE_LIST: 'article_list',
+    OVERVIEW: 'overview',  // New: show article overview before studying
+    STUDYING: 'studying'
+};
+
+// Difficulty choice options
+const DIFFICULTY_CHOICES = [
+    { id: 'vocabulary', label: '📖 Vocabulary', desc: 'Hard words' },
+    { id: 'grammar', label: '🔧 Grammar', desc: 'Sentence structure' },
+    { id: 'both', label: '🤷 Both', desc: "I don't understand anything" }
+];
+
+const SentenceStudy = () => {
+    // View state
+    const [view, setView] = useState(VIEW_STATES.ARTICLE_LIST);
+    const [articles, setArticles] = useState([]);
+    const [loading, setLoading] = useState(true);
+
+    // Article & sentence state
+    const [currentArticle, setCurrentArticle] = useState(null);
+    const [currentIndex, setCurrentIndex] = useState(0);
+    const [progress, setProgress] = useState({ studied_count: 0, clear_count: 0, unclear_count: 0 });
+
+    // Interaction state
+    const [wordClicks, setWordClicks] = useState([]);
+    const [startTime, setStartTime] = useState(null);
+    const [showDiagnose, setShowDiagnose] = useState(false);
+    const [simplifiedText, setSimplifiedText] = useState(null);
+    const [simplifyingType, setSimplifyingType] = useState(null);
+    const [isSimplifying, setIsSimplifying] = useState(false);
+
+    // Overview state
+    const [overview, setOverview] = useState(null);
+    const [loadingOverview, setLoadingOverview] = useState(false);
+
+    // Highlight settings (reuse from Reading Mode)
+    const [highlightOptionIndex, setHighlightOptionIndex] = useState(0);
+
+    // Load articles on mount
+    useEffect(() => {
+        const load = async () => {
+            try {
+                const data = await api.getArticles();
+                // Filter out articles with no sentences
+                const filtered = (data.articles || []).filter(a => a.sentence_count > 0);
+                setArticles(filtered);
+
+                // Get calibration level
+                const cal = await api.getCalibration();
+                if (cal?.level !== undefined) {
+                    setHighlightOptionIndex(mapLevelToOptionIndex(cal.level));
+                }
+            } catch (e) {
+                console.error('Failed to load articles:', e);
+            } finally {
+                setLoading(false);
+            }
+        };
+        load();
+    }, []);
+
+    // Load article for studying
+    const startStudying = useCallback(async (sourceId) => {
+        setLoading(true);
+        setLoadingOverview(true);
+        try {
+            const [article, progressData] = await Promise.all([
+                api.getArticle(sourceId, highlightOptionIndex),
+                api.getProgress(sourceId)
+            ]);
+
+            setCurrentArticle(article);
+            setCurrentIndex(progressData.current_index || 0);
+            setProgress(progressData);
+            setWordClicks([]);
+            setShowDiagnose(false);
+            setSimplifiedText(null);
+
+            // Fetch overview for context
+            const overviewData = await api.getOverview(
+                article.title,
+                article.full_text,
+                article.sentence_count || article.sentences?.length || 0
+            );
+            setOverview(overviewData);
+            setView(VIEW_STATES.OVERVIEW);  // Show overview first
+        } catch (e) {
+            console.error('Failed to load article:', e);
+        } finally {
+            setLoading(false);
+            setLoadingOverview(false);
+        }
+    }, [highlightOptionIndex]);
+
+    // Start actual sentence study after overview
+    const startSentenceStudy = useCallback(() => {
+        setStartTime(Date.now());
+        setView(VIEW_STATES.STUDYING);
+    }, []);
+
+    // Handle word click (track for gap analysis)
+    const handleWordClick = useCallback((word) => {
+        if (word && !wordClicks.includes(word)) {
+            setWordClicks(prev => [...prev, word]);
+        }
+    }, [wordClicks]);
+
+    // Handle Clear button
+    const handleClear = useCallback(async () => {
+        const dwellTime = Date.now() - startTime;
+
+        await api.recordLearning({
+            source_type: 'epub',
+            source_id: currentArticle.id,
+            sentence_index: currentIndex,
+            initial_response: 'clear',
+            word_clicks: wordClicks,
+            dwell_time_ms: dwellTime
+        });
+
+        // Move to next sentence
+        advanceToNext();
+    }, [currentArticle, currentIndex, wordClicks, startTime]);
+
+    // Handle Unclear button
+    const handleUnclear = useCallback(() => {
+        setShowDiagnose(true);
+    }, []);
+
+    // Handle difficulty choice selection
+    const handleDifficultyChoice = useCallback(async (choice) => {
+        setIsSimplifying(true);
+        setSimplifyingType(choice);
+
+        const sentences = currentArticle.sentences || [];
+        const currentSentence = sentences[currentIndex]?.text || '';
+        const prevSentence = currentIndex > 0 ? sentences[currentIndex - 1]?.text : null;
+        const nextSentence = currentIndex < sentences.length - 1 ? sentences[currentIndex + 1]?.text : null;
+
+        try {
+            const result = await api.simplify({
+                sentence: currentSentence,
+                simplify_type: choice,
+                prev_sentence: prevSentence,
+                next_sentence: nextSentence
+            });
+            setSimplifiedText(result.simplified);
+        } catch (e) {
+            console.error('Simplify failed:', e);
+            setSimplifiedText('Failed to generate simplified version. Please try again.');
+        } finally {
+            setIsSimplifying(false);
+        }
+    }, [currentArticle, currentIndex]);
+
+    // Handle simplified response
+    const handleSimplifiedResponse = useCallback(async (gotIt) => {
+        const dwellTime = Date.now() - startTime;
+
+        await api.recordLearning({
+            source_type: 'epub',
+            source_id: currentArticle.id,
+            sentence_index: currentIndex,
+            initial_response: 'unclear',
+            unclear_choice: simplifyingType,
+            simplified_response: gotIt ? 'got_it' : 'still_unclear',
+            word_clicks: wordClicks,
+            dwell_time_ms: dwellTime
+        });
+
+        if (gotIt) {
+            advanceToNext();
+        } else {
+            // If still unclear and chose vocab/grammar, try the other one
+            if (simplifyingType === 'vocabulary') {
+                setSimplifiedText(null);
+                handleDifficultyChoice('grammar');
+            } else if (simplifyingType === 'grammar') {
+                setSimplifiedText(null);
+                handleDifficultyChoice('vocabulary');
+            } else {
+                // Both was chosen and still unclear - just advance
+                advanceToNext();
+            }
+        }
+    }, [currentArticle, currentIndex, wordClicks, startTime, simplifyingType, handleDifficultyChoice]);
+
+    // Advance to next sentence
+    const advanceToNext = useCallback(() => {
+        const sentences = currentArticle?.sentences || [];
+        if (currentIndex < sentences.length - 1) {
+            setCurrentIndex(prev => prev + 1);
+            setWordClicks([]);
+            setStartTime(Date.now());
+            setShowDiagnose(false);
+            setSimplifiedText(null);
+            setSimplifyingType(null);
+            setProgress(prev => ({
+                ...prev,
+                studied_count: prev.studied_count + 1,
+                current_index: prev.current_index + 1
+            }));
+        } else {
+            // Finished article!
+            setView(VIEW_STATES.ARTICLE_LIST);
+        }
+    }, [currentArticle, currentIndex]);
+
+    // Back to library
+    const handleBack = useCallback(() => {
+        setView(VIEW_STATES.ARTICLE_LIST);
+        setCurrentArticle(null);
+        setCurrentIndex(0);
+    }, []);
+
+    // Render article list
+    const renderArticleList = () => (
+        <div className="h-screen flex flex-col bg-[#050505] text-[#E0E0E0] font-mono">
+            <header className="h-14 border-b border-[#333] flex items-center px-4 md:px-8 bg-[#0A0A0A]">
+                <GraduationCap className="w-5 h-5 text-[#00FF94] mr-3" />
+                <h1 className="text-sm font-bold uppercase tracking-wider">Sentence Study</h1>
+            </header>
+
+            <main className="flex-1 overflow-y-auto p-4 md:p-8">
+                <div className="max-w-2xl mx-auto">
+                    <p className="text-[#888] text-sm mb-6">
+                        Study articles sentence by sentence. Mark each as Clear or Unclear to build your learning profile.
+                    </p>
+
+                    {loading ? (
+                        <div className="flex items-center justify-center py-12">
+                            <Loader2 className="w-6 h-6 animate-spin text-[#00FF94]" />
+                        </div>
+                    ) : (
+                        <div className="space-y-3">
+                            {articles.map((article, i) => (
+                                <button
+                                    key={i}
+                                    onClick={() => startStudying(article.source_id)}
+                                    className="w-full text-left p-4 border border-[#333] bg-[#0A0A0A] hover:border-[#00FF94] hover:bg-[#00FF94]/5 transition-all group"
+                                >
+                                    <div className="flex items-start justify-between">
+                                        <div className="flex-1 min-w-0">
+                                            <h3 className="font-serif text-lg text-white truncate group-hover:text-[#00FF94]">
+                                                {article.title}
+                                            </h3>
+                                            <p className="text-xs text-[#666] mt-1">
+                                                {article.sentence_count} sentences
+                                            </p>
+                                        </div>
+                                        <BookOpen className="w-4 h-4 text-[#666] group-hover:text-[#00FF94] ml-3 shrink-0" />
+                                    </div>
+                                </button>
+                            ))}
+                        </div>
+                    )}
+                </div>
+            </main>
+        </div>
+    );
+
+    // Render studying view
+    const renderStudying = () => {
+        const sentences = currentArticle?.sentences || [];
+        const currentSentence = sentences[currentIndex];
+        const totalSentences = sentences.length;
+        const progressPercent = totalSentences > 0 ? ((currentIndex) / totalSentences) * 100 : 0;
+
+        return (
+            <div className="h-screen flex flex-col bg-[#050505] text-[#E0E0E0] font-mono">
+                {/* Header */}
+                <header className="h-14 border-b border-[#333] flex items-center justify-between px-4 md:px-8 bg-[#0A0A0A]">
+                    <button
+                        onClick={handleBack}
+                        className="flex items-center gap-2 text-[#888] hover:text-[#00FF94] transition-colors"
+                    >
+                        <ChevronLeft className="w-4 h-4" />
+                        <span className="text-xs font-bold uppercase tracking-wider">Exit</span>
+                    </button>
+
+                    <div className="text-xs text-[#666]">
+                        {currentIndex + 1} / {totalSentences}
+                    </div>
+                </header>
+
+                {/* Progress Bar */}
+                <div className="h-1 bg-[#1A1A1A]">
+                    <div
+                        className="h-full bg-[#00FF94] transition-all duration-300"
+                        style={{ width: `${progressPercent}%` }}
+                    />
+                </div>
+
+                {/* Main Content */}
+                <main className="flex-1 flex flex-col items-center justify-center p-4 md:p-8 overflow-y-auto">
+                    <div className="max-w-2xl w-full">
+                        {/* Current Sentence */}
+                        <div
+                            className="font-serif text-xl md:text-2xl leading-relaxed text-center mb-8 p-6 border border-[#333] bg-[#0A0A0A]"
+                            onClick={(e) => {
+                                const word = e.target.dataset?.word;
+                                if (word) handleWordClick(word.toLowerCase());
+                            }}
+                        >
+                            {currentSentence ? (
+                                <MemoizedSentence
+                                    text={currentSentence.text}
+                                    highlightSet={currentArticle.highlightSet}
+                                    showHighlights={true}
+                                />
+                            ) : (
+                                <span className="text-[#666]">No sentence available</span>
+                            )}
+                        </div>
+
+                        {/* Word clicks indicator */}
+                        {wordClicks.length > 0 && (
+                            <div className="text-center text-xs text-[#666] mb-4">
+                                Looked up: {wordClicks.join(', ')}
+                            </div>
+                        )}
+
+                        {/* Diagnose Mode */}
+                        {showDiagnose && !simplifiedText && !isSimplifying && (
+                            <div className="mb-8 p-4 border border-[#444] bg-[#0A0A0A]">
+                                <p className="text-center text-sm text-[#888] mb-4">
+                                    What's making this tricky?
+                                </p>
+                                <div className="flex flex-wrap justify-center gap-3">
+                                    {DIFFICULTY_CHOICES.map(choice => (
+                                        <button
+                                            key={choice.id}
+                                            onClick={() => handleDifficultyChoice(choice.id)}
+                                            className="px-4 py-3 border border-[#333] hover:border-[#00FF94] hover:bg-[#00FF94]/10 transition-all text-center"
+                                        >
+                                            <div className="text-lg">{choice.label}</div>
+                                            <div className="text-xs text-[#666]">{choice.desc}</div>
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Loading simplified version */}
+                        {isSimplifying && (
+                            <div className="mb-8 p-6 border border-[#00FF94]/30 bg-[#00FF94]/5 text-center">
+                                <Loader2 className="w-6 h-6 animate-spin text-[#00FF94] mx-auto mb-2" />
+                                <p className="text-sm text-[#888]">Generating simplified version...</p>
+                            </div>
+                        )}
+
+                        {/* Simplified version */}
+                        {simplifiedText && (
+                            <div className="mb-8 p-6 border border-[#00FF94]/30 bg-[#00FF94]/5">
+                                <div className="flex items-center gap-2 mb-3">
+                                    <Sparkles className="w-4 h-4 text-[#00FF94]" />
+                                    <span className="text-xs text-[#00FF94] uppercase tracking-wider">
+                                        {simplifyingType === 'vocabulary' ? 'Simpler Words' :
+                                            simplifyingType === 'grammar' ? 'Simpler Structure' :
+                                                'Simplified'}
+                                    </span>
+                                </div>
+                                <p className="font-serif text-lg leading-relaxed text-[#CCC]">
+                                    {simplifiedText}
+                                </p>
+
+                                {/* Response buttons */}
+                                <div className="flex justify-center gap-4 mt-6">
+                                    <button
+                                        onClick={() => handleSimplifiedResponse(true)}
+                                        className="flex items-center gap-2 px-6 py-3 bg-[#00FF94] text-black font-bold uppercase text-sm hover:bg-[#00CC77] transition-colors"
+                                    >
+                                        <CheckCircle className="w-4 h-4" />
+                                        Got it!
+                                    </button>
+                                    <button
+                                        onClick={() => handleSimplifiedResponse(false)}
+                                        className="flex items-center gap-2 px-6 py-3 border border-[#666] text-[#888] hover:text-white hover:border-white transition-colors"
+                                    >
+                                        <HelpCircle className="w-4 h-4" />
+                                        Still Unclear
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Main action buttons (when not in diagnose mode) */}
+                        {!showDiagnose && (
+                            <div className="flex justify-center gap-4">
+                                <button
+                                    onClick={handleClear}
+                                    className="flex items-center gap-2 px-8 py-4 bg-[#00FF94] text-black font-bold uppercase text-sm hover:bg-[#00CC77] transition-colors"
+                                >
+                                    <CheckCircle className="w-5 h-5" />
+                                    Clear
+                                </button>
+                                <button
+                                    onClick={handleUnclear}
+                                    className="flex items-center gap-2 px-8 py-4 border border-[#666] text-[#888] hover:text-white hover:border-white transition-colors"
+                                >
+                                    <HelpCircle className="w-5 h-5" />
+                                    Unclear
+                                </button>
+                            </div>
+                        )}
+                    </div>
+                </main>
+            </div>
+        );
+    };
+
+    // Render overview (context before studying)
+    const renderOverview = () => (
+        <div className="h-screen flex flex-col bg-[#050505] text-[#E0E0E0] font-mono">
+            {/* Header */}
+            <header className="h-14 border-b border-[#333] flex items-center justify-between px-4 md:px-8 bg-[#0A0A0A]">
+                <button
+                    onClick={handleBack}
+                    className="flex items-center gap-2 text-[#888] hover:text-[#00FF94] transition-colors"
+                >
+                    <ChevronLeft className="w-4 h-4" />
+                    <span className="text-xs font-bold uppercase tracking-wider">Back</span>
+                </button>
+                <div className="text-xs text-[#666]">
+                    {currentArticle?.sentence_count || currentArticle?.sentences?.length || 0} sentences
+                </div>
+            </header>
+
+            {/* Main Content */}
+            <main className="flex-1 flex flex-col items-center justify-center p-4 md:p-8 overflow-y-auto">
+                <div className="max-w-2xl w-full">
+                    {/* Article Title */}
+                    <h1 className="font-serif text-2xl md:text-3xl text-white text-center mb-8">
+                        {currentArticle?.title}
+                    </h1>
+
+                    {loadingOverview ? (
+                        <div className="flex flex-col items-center justify-center py-12">
+                            <Loader2 className="w-8 h-8 animate-spin text-[#00FF94] mb-4" />
+                            <p className="text-[#888] text-sm">Analyzing article...</p>
+                        </div>
+                    ) : overview ? (
+                        <div className="space-y-6">
+                            {/* English Summary */}
+                            <div className="p-6 border border-[#333] bg-[#0A0A0A]">
+                                <div className="flex items-center gap-2 mb-3">
+                                    <BookOpen className="w-4 h-4 text-[#00FF94]" />
+                                    <span className="text-xs text-[#00FF94] uppercase tracking-wider">Overview</span>
+                                </div>
+                                <p className="font-serif text-lg leading-relaxed text-[#CCC]">
+                                    {overview.summary_en}
+                                </p>
+                            </div>
+
+                            {/* Chinese Translation */}
+                            <div className="p-6 border border-[#444] bg-[#0A0A0A]/50">
+                                <div className="flex items-center gap-2 mb-3">
+                                    <span className="text-xs text-[#888] uppercase tracking-wider">中文概要</span>
+                                </div>
+                                <p className="text-base leading-relaxed text-[#AAA]">
+                                    {overview.summary_zh}
+                                </p>
+                            </div>
+
+                            {/* Key Topics */}
+                            {overview.key_topics?.length > 0 && (
+                                <div className="flex flex-wrap gap-2 justify-center">
+                                    {overview.key_topics.map((topic, i) => (
+                                        <span key={i} className="px-3 py-1 text-xs bg-[#1A1A1A] border border-[#333] text-[#888]">
+                                            {topic}
+                                        </span>
+                                    ))}
+                                </div>
+                            )}
+
+                            {/* Difficulty Hint */}
+                            {overview.difficulty_hint && (
+                                <p className="text-center text-xs text-[#666]">
+                                    💡 {overview.difficulty_hint}
+                                </p>
+                            )}
+
+                            {/* Start Button */}
+                            <div className="flex justify-center pt-4">
+                                <button
+                                    onClick={startSentenceStudy}
+                                    className="flex items-center gap-3 px-10 py-4 bg-[#00FF94] text-black font-bold uppercase text-sm hover:bg-[#00CC77] transition-colors"
+                                >
+                                    <GraduationCap className="w-5 h-5" />
+                                    Start Studying
+                                </button>
+                            </div>
+                        </div>
+                    ) : (
+                        <div className="text-center text-[#666]">
+                            <p>Unable to load overview. Click below to start studying.</p>
+                            <button
+                                onClick={startSentenceStudy}
+                                className="mt-4 px-8 py-3 bg-[#00FF94] text-black font-bold uppercase text-sm"
+                            >
+                                Start Anyway
+                            </button>
+                        </div>
+                    )}
+                </div>
+            </main>
+        </div>
+    );
+
+    // Main render
+    if (view === VIEW_STATES.ARTICLE_LIST) return renderArticleList();
+    if (view === VIEW_STATES.OVERVIEW) return renderOverview();
+    return renderStudying();
+};
+
+export default SentenceStudy;
