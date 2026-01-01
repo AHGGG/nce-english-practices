@@ -3,6 +3,7 @@ Sentence Study API Router for Adaptive Sentence Learning (ASL) mode.
 Endpoints for tracking study progress, recording learning results, and generating simplifications.
 """
 from fastapi import APIRouter, HTTPException, Depends
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 from typing import Optional, List
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -65,6 +66,14 @@ class OverviewResponse(BaseModel):
     summary_zh: str      # Chinese translation
     key_topics: List[str]  # 3-5 key topics/themes
     difficulty_hint: str   # e.g. "Advanced vocabulary, complex sentences"
+
+
+class ExplainWordRequest(BaseModel):
+    """Request to explain a word in its sentence context via streaming LLM."""
+    word: str
+    sentence: str
+    prev_sentence: Optional[str] = None
+    next_sentence: Optional[str] = None
 
 # ============================================================
 # Endpoints
@@ -270,3 +279,59 @@ Return ONLY the JSON, no markdown formatting."""
         )
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"LLM error: {str(e)}")
+
+
+@router.post("/explain-word")
+async def explain_word_in_context(req: ExplainWordRequest):
+    """
+    Stream LLM explanation of a word in its sentence context.
+    Returns Server-Sent Events with text chunks.
+    """
+    # Build context with surrounding sentences
+    context_parts = []
+    if req.prev_sentence:
+        context_parts.append(f'Previous: "{req.prev_sentence}"')
+    context_parts.append(f'Current: "{req.sentence}"')
+    if req.next_sentence:
+        context_parts.append(f'Next: "{req.next_sentence}"')
+    context = "\n".join(context_parts)
+    
+    prompt = f"""Explain the word "{req.word}" as it is used in the following sentence context. 
+The explanation should be in English, clear and concise (2-3 sentences max).
+Focus on what the word means IN THIS SPECIFIC CONTEXT, not a general dictionary definition.
+
+Context:
+{context}
+
+The word to explain: "{req.word}"
+
+Give only the explanation, no preamble or labels."""
+
+    async def generate():
+        try:
+            stream = await llm_service.async_client.chat.completions.create(
+                model=llm_service.model_name,
+                messages=[{"role": "user", "content": prompt}],
+                max_tokens=150,
+                temperature=0.3,
+                stream=True
+            )
+            
+            async for chunk in stream:
+                if chunk.choices and chunk.choices[0].delta.content:
+                    text = chunk.choices[0].delta.content
+                    yield f"data: {text}\n\n"
+            
+            yield "data: [DONE]\n\n"
+        except Exception as e:
+            yield f"data: [ERROR] {str(e)}\n\n"
+
+    return StreamingResponse(
+        generate(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+        }
+    )
+

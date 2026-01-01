@@ -1,9 +1,10 @@
 import React from 'react';
-import { Volume2, X, Bookmark, Loader2 } from 'lucide-react';
+import { Volume2, X, Bookmark, Loader2, Sparkles } from 'lucide-react';
 import DictionaryResults from '../aui/DictionaryResults';
 
 /**
  * Word Inspector Panel - Shows dictionary definition for selected word
+ * Optionally shows streaming LLM context explanation
  */
 const WordInspector = ({
     selectedWord,
@@ -11,7 +12,10 @@ const WordInspector = ({
     isInspecting,
     onClose,
     onPlayAudio,
-    onMarkAsKnown
+    onMarkAsKnown,
+    // New props for streaming context explanation
+    contextExplanation = '',
+    isExplaining = false
 }) => {
     if (!selectedWord) return null;
 
@@ -46,6 +50,24 @@ const WordInspector = ({
 
                 {/* Content - Using DictionaryResults */}
                 <div className="flex-1 overflow-y-auto p-4 custom-scrollbar">
+                    {/* Streaming Context Explanation Section */}
+                    {(contextExplanation || isExplaining) && (
+                        <div className="mb-4 p-3 border border-[#00FF94]/30 bg-[#00FF94]/5 rounded">
+                            <div className="flex items-center gap-2 mb-2">
+                                <Sparkles className="w-4 h-4 text-[#00FF94]" />
+                                <span className="text-xs text-[#00FF94] uppercase tracking-wider font-mono">
+                                    In This Context
+                                </span>
+                                {isExplaining && (
+                                    <Loader2 className="w-3 h-3 animate-spin text-[#00FF94] ml-auto" />
+                                )}
+                            </div>
+                            <p className="text-sm text-[#CCC] leading-relaxed font-serif">
+                                {contextExplanation || 'Analyzing...'}
+                            </p>
+                        </div>
+                    )}
+
                     {isInspecting ? (
                         <div className="flex flex-col items-center justify-center py-8 text-[#666] space-y-3">
                             <Loader2 className="w-6 h-6 animate-spin text-[#00FF94]" />
@@ -86,3 +108,4 @@ const WordInspector = ({
 };
 
 export default WordInspector;
+

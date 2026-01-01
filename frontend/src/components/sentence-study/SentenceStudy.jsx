@@ -7,9 +7,10 @@
  * - Get simplified versions when stuck (vocabulary/grammar/both)
  * - Track progress and learning gaps
  */
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { ChevronLeft, CheckCircle, HelpCircle, Loader2, BookOpen, Sparkles, GraduationCap } from 'lucide-react';
 import MemoizedSentence from '../reading/MemoizedSentence';
+import WordInspector from '../reading/WordInspector';
 import { HIGHLIGHT_OPTIONS, mapLevelToOptionIndex } from '../reading/constants';
 
 // API helpers
@@ -101,6 +102,19 @@ const SentenceStudy = () => {
     const [overview, setOverview] = useState(null);
     const [loadingOverview, setLoadingOverview] = useState(false);
 
+    // Dictionary state (for word click popup)
+    const [selectedWord, setSelectedWord] = useState(null);
+    const [inspectorData, setInspectorData] = useState(null);
+    const [isInspecting, setIsInspecting] = useState(false);
+    const [currentSentenceContext, setCurrentSentenceContext] = useState('');
+
+    // Streaming context explanation
+    const [contextExplanation, setContextExplanation] = useState('');
+    const [isExplaining, setIsExplaining] = useState(false);
+
+    // Audio ref
+    const audioRef = useRef(null);
+
     // Highlight settings (reuse from Reading Mode)
     const [highlightOptionIndex, setHighlightOptionIndex] = useState(0);
 
@@ -125,6 +139,114 @@ const SentenceStudy = () => {
             }
         };
         load();
+    }, []);
+
+    // Fetch dictionary data when selectedWord changes
+    useEffect(() => {
+        if (!selectedWord) return;
+
+        let cancelled = false;
+        setIsInspecting(true);
+
+        const fetchData = async () => {
+            try {
+                const res = await fetch(`/api/dictionary/ldoce/${encodeURIComponent(selectedWord)}`);
+                if (!cancelled && res.ok) {
+                    const data = await res.json();
+                    setInspectorData(data);
+                }
+            } catch (e) {
+                console.error('Dictionary fetch error:', e);
+            } finally {
+                if (!cancelled) setIsInspecting(false);
+            }
+        };
+
+        fetchData();
+        return () => { cancelled = true; };
+    }, [selectedWord]);
+
+    // Stream context explanation when selectedWord changes
+    useEffect(() => {
+        if (!selectedWord || !currentSentenceContext) return;
+
+        let cancelled = false;
+        setIsExplaining(true);
+        setContextExplanation('');
+
+        const sentences = currentArticle?.sentences || [];
+        const prevSentence = currentIndex > 0 ? sentences[currentIndex - 1]?.text : null;
+        const nextSentence = currentIndex < sentences.length - 1 ? sentences[currentIndex + 1]?.text : null;
+
+        const streamExplanation = async () => {
+            try {
+                const res = await fetch('/api/sentence-study/explain-word', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        word: selectedWord,
+                        sentence: currentSentenceContext,
+                        prev_sentence: prevSentence,
+                        next_sentence: nextSentence
+                    })
+                });
+
+                if (!res.ok) throw new Error('Failed to fetch');
+
+                const reader = res.body.getReader();
+                const decoder = new TextDecoder();
+
+                while (true) {
+                    const { done, value } = await reader.read();
+                    if (done || cancelled) break;
+
+                    const chunk = decoder.decode(value, { stream: true });
+                    const lines = chunk.split('\n');
+
+                    for (const line of lines) {
+                        if (line.startsWith('data: ')) {
+                            const text = line.slice(6);
+                            if (text === '[DONE]') {
+                                break;
+                            } else if (text.startsWith('[ERROR]')) {
+                                console.error('Stream error:', text);
+                                break;
+                            } else {
+                                if (!cancelled) {
+                                    setContextExplanation(prev => prev + text);
+                                }
+                            }
+                        }
+                    }
+                }
+            } catch (e) {
+                console.error('Stream error:', e);
+            } finally {
+                if (!cancelled) setIsExplaining(false);
+            }
+        };
+
+        streamExplanation();
+        return () => { cancelled = true; };
+    }, [selectedWord, currentSentenceContext, currentArticle, currentIndex]);
+
+    // Play audio
+    const playAudio = useCallback((text) => {
+        if (!text) return;
+        if (audioRef.current) {
+            audioRef.current.pause();
+        }
+        const url = `/api/tts?text=${encodeURIComponent(text)}`;
+        const audio = new Audio(url);
+        audioRef.current = audio;
+        audio.play().catch(e => console.error(e));
+    }, []);
+
+    // Close inspector
+    const handleCloseInspector = useCallback(() => {
+        setSelectedWord(null);
+        setInspectorData(null);
+        setContextExplanation('');
     }, []);
 
     // Load article for studying
@@ -166,11 +288,22 @@ const SentenceStudy = () => {
         setView(VIEW_STATES.STUDYING);
     }, []);
 
-    // Handle word click (track for gap analysis)
-    const handleWordClick = useCallback((word) => {
-        if (word && !wordClicks.includes(word)) {
-            setWordClicks(prev => [...prev, word]);
+    // Handle word click (track for gap analysis + show dictionary + stream explanation)
+    const handleWordClick = useCallback((word, sentence) => {
+        if (!word) return;
+        const cleanWord = word.toLowerCase();
+        if (cleanWord.length < 2) return;
+
+        // Track for gap analysis
+        if (!wordClicks.includes(cleanWord)) {
+            setWordClicks(prev => [...prev, cleanWord]);
         }
+
+        // Trigger dictionary lookup
+        setSelectedWord(cleanWord);
+        setInspectorData(null);
+        setCurrentSentenceContext(sentence || '');
+        setContextExplanation('');
     }, [wordClicks]);
 
     // Handle Clear button
@@ -367,7 +500,7 @@ const SentenceStudy = () => {
                             className="font-serif text-xl md:text-2xl leading-relaxed text-center mb-8 p-6 border border-[#333] bg-[#0A0A0A]"
                             onClick={(e) => {
                                 const word = e.target.dataset?.word;
-                                if (word) handleWordClick(word.toLowerCase());
+                                if (word) handleWordClick(word.toLowerCase(), currentSentence?.text || '');
                             }}
                         >
                             {currentSentence ? (
@@ -576,9 +709,30 @@ const SentenceStudy = () => {
     );
 
     // Main render
-    if (view === VIEW_STATES.ARTICLE_LIST) return renderArticleList();
-    if (view === VIEW_STATES.OVERVIEW) return renderOverview();
-    return renderStudying();
+    const content = view === VIEW_STATES.ARTICLE_LIST
+        ? renderArticleList()
+        : view === VIEW_STATES.OVERVIEW
+            ? renderOverview()
+            : renderStudying();
+
+    return (
+        <>
+            {content}
+            {/* Word Inspector - shows dictionary + streaming context explanation */}
+            {selectedWord && (
+                <WordInspector
+                    selectedWord={selectedWord}
+                    inspectorData={inspectorData}
+                    isInspecting={isInspecting}
+                    onClose={handleCloseInspector}
+                    onPlayAudio={playAudio}
+                    onMarkAsKnown={handleCloseInspector}
+                    contextExplanation={contextExplanation}
+                    isExplaining={isExplaining}
+                />
+            )}
+        </>
+    );
 };
 
 export default SentenceStudy;
