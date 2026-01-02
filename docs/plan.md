@@ -234,4 +234,16 @@
         - [x] **Database Migration**: `8742f3599637_drop_legacy_tables.py` drops 7 unused tables.
         - [x] **AUI Demo Fix**: Replaced `StoryReader` with `MarkdownMessage` in demos.
         - [x] **Tests Deleted**: 10 obsolete test files removed.
+    - [x] **Dashboard Simplification** (2026-01-02):
+        - [x] Removed 11 unused metrics: vocab_size, mastery_rate, comprehension, daily_goals, heatmap, badges, streak, sources, recent_words, difficult_words, due_reviews.
+        - [x] Retained only: study_time (with Sentence Study + Reading), reading_stats, memory_curve.
+        - [x] Deleted 9 frontend widget/card components.
+        - [x] New B-scheme layout: 3 KPI cards + Memory Curve chart.
+    - [x] **Legacy Practice Cleanup** (2026-01-02):
+        - [x] Deleted `app/api/routers/practice.py` (log_attempt API).
+        - [x] Deleted `app/database/stats.py` (Attempt-based functions).
+        - [x] Removed Attempt and UserGoal from ORM imports.
+        - [x] Database Migration: `9c5d07931690_drop_attempts_and_user_goals_tables.py` drops `attempts` and `user_goals` tables.
+        - [x] Updated frontend `client.js` to remove `logAttempt`, `fetchStats`.
+        - [x] Updated tests in `test_api_stats.py`.
 

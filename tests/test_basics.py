@@ -14,10 +14,10 @@ async def test_legacy_root_removed(client: AsyncClient):
     assert response.status_code == 404
 
 @pytest.mark.asyncio
-async def test_stats_empty_db(client: AsyncClient):
-    # This verifies the DB is connected (even if empty)
-    response = await client.get("/api/stats")
+async def test_performance_endpoint(client: AsyncClient):
+    # Verify /api/performance is reachable
+    response = await client.get("/api/performance")
     assert response.status_code == 200
     data = response.json()
-    assert "total_xp" in data
-    assert data["total_xp"] == 0
+    assert "study_time" in data
+    assert "reading_stats" in data

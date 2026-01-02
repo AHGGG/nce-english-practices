@@ -154,13 +154,12 @@ The project follows a modular package structure:
   - `word_example_schemas.py`: Models for multi-example navigation (`WordExampleSet`).
   - `content_schemas.py`: `ContentBundle`, `ContentSentence`, `ContentImage`, `SourceType` for Provider Architecture.
   - `orm.py`: SQLAlchemy database models.
-- **`app/database/`**: **Refactored 2025-12-31, Cleaned 2026-01-01** Database operations package.
+- **`app/database/`**: **Refactored 2025-12-31, Cleaned 2026-01-02** Database operations package.
   - `core.py`: Base, engine, AsyncSessionLocal, and ORM model re-exports.
-  - `stats.py`: User statistics functions.
-  - `performance.py`: Performance metrics aggregation.
+  - `performance.py`: Simplified performance metrics (study_time with Sentence Study + Reading, reading_stats, memory_curve).
   - `reading.py`: Reading session tracking.
-  - `goals.py`: User goal functions.
   - *(Removed in 2026-01-01: `session_theme.py`, `story.py`, `review.py`, `chat.py`, `coach.py`)*
+  - *(Removed in 2026-01-02: `stats.py`, `goals.py`)*
 - **`app/api/routers/deepgram/`**: **Refactored 2025-12-31** Deepgram WebSocket endpoints.
   - `live_stt.py`: Real-time STT proxy.
   - `streaming_tts.py`: Streaming TTS proxy.

@@ -7,7 +7,6 @@ from sqlalchemy.orm import selectinload
 
 from app.core.db import AsyncSessionLocal, Base, engine
 from app.models.orm import (
-    Attempt, WordProficiency, VocabLearningLog,
-    UserGoal, ReadingSession
+    WordProficiency, VocabLearningLog,
+    ReadingSession, SentenceLearningRecord
 )
-

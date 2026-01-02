@@ -334,5 +334,35 @@ Two large view components exceeded maintainability thresholds:
 - **Frontend State Management**: Refactored `SentenceStudy.jsx` to cleaner state model, removing obsolete legacy code.
 - **Dependencies**: Added `react-markdown` to frontend stack.
 
+### ✅ Dashboard Simplification & Legacy Cleanup (Phase 44) (2026-01-02)
+**Streamlined performance dashboard to focus on practical metrics; removed legacy practice code.**
 
+#### Dashboard Simplification
+- **Problem**: Dashboard contained many "vanity metrics" (vocab_size, mastery_rate, comprehension, etc.) that were buggy (e.g., 101% mastery) or not meaningful.
+- **Solution**: Simplified to 3 core KPIs + Memory Curve.
+
+| Retained | Removed |
+|----------|---------|
+| Study Time (Sentence Study + Reading) | Vocabulary Size, Mastery Rate, Comprehension Score |
+| Reading Word Count | Daily Goals, Activity Heatmap, Milestone Badges |
+| Articles Count | Streak, Source Distribution, Recent Words, Difficult Words, Due Reviews |
+| Memory Curve | - |
+
+#### Frontend Changes
+- **Deleted Widgets**: `ActivityHeatmap`, `DailyGoalsPanel`, `DifficultWords`, `MilestoneBadges`, `RecentWords`, `SourceDistribution`, `VocabDistribution`.
+- **Deleted Cards**: `KPICard`, `ActionCards`.
+- **New Layout** (`PerformanceReport.jsx`): 3 KPI cards (Study Time, Reading Words, Articles) + Memory Curve chart (B-scheme).
+
+#### Legacy Practice Code Removal
+- **Deleted Files**:
+  - `app/api/routers/practice.py` (log_attempt API)
+  - `app/database/stats.py` (Attempt-based functions)
+- **Updated Files**: Removed `Attempt`, `UserGoal` from `core.py`, `__init__.py`, `main.py`, `routers/__init__.py`.
+- **Frontend**: Removed `logAttempt`, `fetchStats` from `client.js`.
+- **Database Migration**: `9c5d07931690_drop_attempts_and_user_goals_tables.py` drops `attempts` and `user_goals` tables.
+
+#### Verification
+- Backend tests: `test_api_stats.py` (1/1 passed).
+- Database migration: Successfully executed.
+- Browser verification: Dashboard renders correctly with new layout.
 

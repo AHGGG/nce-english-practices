@@ -10,7 +10,6 @@ from app.api.routers import (
     voice,
     dictionary,
     content,
-    practice,
     stats,
     voice_lab,
     aui_input,
@@ -68,8 +67,6 @@ app = FastAPI(title="NCE English Practice", lifespan=lifespan)
 app.include_router(voice.router)
 app.include_router(dictionary.router)
 app.include_router(content.router)
-app.include_router(practice.router)
-
 app.include_router(stats.router)
 
 app.include_router(voice_lab.router)

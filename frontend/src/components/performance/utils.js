@@ -21,12 +21,3 @@ export const formatWordCount = (count) => {
     return `${Math.round(count / 1000)}k`;
 };
 
-/**
- * Get the next unachieved milestone
- */
-export const getNextMilestone = (milestones) => {
-    if (!milestones) return '—';
-    const next = milestones.vocab_milestones?.find(m => !m.achieved);
-    if (next) return `${next.icon} ${next.threshold} 词`;
-    return '🏆 全部达成!';
-};

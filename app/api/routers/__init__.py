@@ -2,7 +2,6 @@ from app.api.routers import (
     voice,
     dictionary,
     content,
-    practice,
     stats,
     voice_lab,
     aui_input,

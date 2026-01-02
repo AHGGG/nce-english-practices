@@ -1,40 +1,13 @@
 import React, { useEffect, useState } from 'react';
-import {
-    BookOpen,
-    Brain,
-    Lightbulb,
-    Clock,
-    AlertTriangle,
-    TrendingUp,
-    FileText,
-    BookMarked,
-    Search,
-    Award,
-    Target
-} from 'lucide-react';
+import { Clock, BookOpen, FileText, Brain } from 'lucide-react';
 import api from '../../api/client';
-
-// Cards
-import { KPICard } from './cards/KPICard';
-import { DueReviewsCard, StreakCard, ReadingStatsCard } from './cards/ActionCards';
 import Card from './cards/Card';
-
-// Widgets
-import MilestoneBadges from './widgets/MilestoneBadges';
-import VocabDistribution from './widgets/VocabDistribution';
-import ActivityHeatmap from './widgets/ActivityHeatmap';
-import DifficultWords from './widgets/DifficultWords';
-import SourceDistribution from './widgets/SourceDistribution';
-import RecentWords from './widgets/RecentWords';
-import DailyGoalsPanel from './widgets/DailyGoalsPanel';
 import MemoryCurveChart from './widgets/MemoryCurveChart';
-
-// Utils
-import { formatDuration, getNextMilestone } from './utils';
+import { formatDuration, formatWordCount } from './utils';
 
 /**
- * Performance Report Page
- * Business-aligned metrics for English learning progress.
+ * Simplified Performance Report Page
+ * Shows: Study Time, Reading Stats, Memory Curve
  */
 const PerformanceReport = () => {
     const [data, setData] = useState(null);
@@ -71,7 +44,7 @@ const PerformanceReport = () => {
         );
     }
 
-    const { summary, vocabulary, activity, sources, due_reviews_count, milestones, reading_stats, goals_progress, memory_curve } = data;
+    const { study_time, reading_stats, memory_curve } = data;
 
     return (
         <section className="h-full w-full bg-bg overflow-y-auto p-4 md:p-8 pb-24 md:pb-8">
@@ -102,111 +75,72 @@ const PerformanceReport = () => {
                 </div>
             </header>
 
-            {/* Main KPI Cards + V2 Action Cards */}
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-                <KPICard
-                    icon={BookOpen}
-                    value={summary.vocab_size}
-                    label="词汇量"
-                    sublabel="正在学习/已掌握"
-                    color="neon-cyan"
-                />
-                <KPICard
-                    icon={Brain}
-                    value={`${Math.round(summary.mastery_rate * 100)}%`}
-                    label="掌握率"
-                    sublabel="mastered / total"
-                    color="neon-green"
-                />
-                <KPICard
-                    icon={Lightbulb}
-                    value={`${Math.round(summary.comprehension_score * 100)}%`}
-                    label="理解力"
-                    sublabel="首次就懂的比例"
-                    color="neon-purple"
-                />
-                <KPICard
-                    icon={Clock}
-                    value={formatDuration(summary.total_study_minutes)}
-                    label="学习时长"
-                    sublabel="累计投入"
-                    color="neon-pink"
-                />
-            </div>
-
-            {/* V2: Action Cards Row */}
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-                <DueReviewsCard count={due_reviews_count || 0} />
-                <StreakCard streak={milestones?.current_streak || 0} />
-                <ReadingStatsCard stats={reading_stats} />
-                <div className="bg-bg-paper border border-ink-faint p-4 md:p-6 shadow-hard relative flex flex-col justify-center items-center text-center">
-                    <div className="text-sm font-mono text-ink-muted mb-1">下一里程碑</div>
-                    <div className="text-lg font-mono font-bold text-neon-cyan">
-                        {getNextMilestone(milestones)}
+            {/* KPI Cards Row */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+                {/* Study Time Card */}
+                <div className="bg-bg-paper border border-ink-faint p-6 shadow-hard relative group hover:border-neon-cyan transition-colors">
+                    <div className="absolute top-0 right-0 w-6 h-6 border-t-2 border-r-2 border-neon-cyan/30"></div>
+                    <div className="flex items-start justify-between mb-2">
+                        <Clock className="text-neon-cyan opacity-70" size={20} />
+                    </div>
+                    <div className="text-3xl font-mono font-bold text-neon-cyan mb-1">
+                        {formatDuration(study_time?.total_minutes || 0)}
+                    </div>
+                    <div className="text-sm font-serif text-ink">总学习时长</div>
+                    <div className="text-xs font-mono text-ink-muted mt-2 space-y-1">
+                        {study_time?.breakdown?.sentence_study > 0 && (
+                            <div>句子学习: {formatDuration(Math.round(study_time.breakdown.sentence_study / 60))}</div>
+                        )}
+                        {study_time?.breakdown?.reading > 0 && (
+                            <div>阅读: {formatDuration(Math.round(study_time.breakdown.reading / 60))}</div>
+                        )}
                     </div>
                 </div>
+
+                {/* Reading Words Card */}
+                <div className="bg-bg-paper border border-ink-faint p-6 shadow-hard relative group hover:border-neon-green transition-colors">
+                    <div className="absolute top-0 right-0 w-6 h-6 border-t-2 border-r-2 border-neon-green/30"></div>
+                    <div className="flex items-start justify-between mb-2">
+                        <BookOpen className="text-neon-green opacity-70" size={20} />
+                    </div>
+                    <div className="text-3xl font-mono font-bold text-neon-green mb-1">
+                        {formatWordCount(reading_stats?.total_words || 0)}
+                    </div>
+                    <div className="text-sm font-serif text-ink">阅读字数</div>
+                    <div className="text-xs font-mono text-ink-muted mt-1">validated words</div>
+                </div>
+
+                {/* Articles Count Card */}
+                <div className="bg-bg-paper border border-ink-faint p-6 shadow-hard relative group hover:border-neon-purple transition-colors">
+                    <div className="absolute top-0 right-0 w-6 h-6 border-t-2 border-r-2 border-neon-purple/30"></div>
+                    <div className="flex items-start justify-between mb-2">
+                        <FileText className="text-neon-purple opacity-70" size={20} />
+                    </div>
+                    <div className="text-3xl font-mono font-bold text-neon-purple mb-1">
+                        {reading_stats?.articles_count || 0}
+                    </div>
+                    <div className="text-sm font-serif text-ink">已读文章</div>
+                    <div className="text-xs font-mono text-ink-muted mt-1">{reading_stats?.sessions_count || 0} sessions</div>
+                </div>
             </div>
 
-
-            {/* V2: Milestones Section */}
-            {milestones && (
-                <div className="mb-8">
-                    <Card title="成就徽章" icon={Award}>
-                        <MilestoneBadges milestones={milestones} />
-                    </Card>
-                </div>
-            )}
-
-            {/* V3: Daily Goals Progress */}
-            {goals_progress && (
-                <div className="mb-8">
-                    <Card title="今日目标" icon={Target}>
-                        <DailyGoalsPanel progress={goals_progress.progress} />
-                    </Card>
-                </div>
-            )}
-
-            {/* V3: Memory Curve */}
+            {/* Memory Curve Section */}
             {memory_curve && memory_curve.total_words_analyzed > 0 && (
-                <div className="mb-8">
-                    <Card title="记忆曲线" icon={Brain}>
-                        <MemoryCurveChart data={memory_curve} />
-                    </Card>
-                </div>
+                <Card title="记忆曲线" icon={Brain}>
+                    <MemoryCurveChart data={memory_curve} />
+                </Card>
             )}
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                {/* Left Column */}
-                <div className="space-y-8">
-                    {/* Vocabulary Distribution */}
-                    <Card title="词汇进度" icon={TrendingUp}>
-                        <VocabDistribution distribution={vocabulary.distribution} />
-                    </Card>
-
-                    {/* Activity Heatmap */}
-                    <Card title="活动热力图" icon={FileText}>
-                        <ActivityHeatmap dailyCounts={activity.daily_counts} days={days} />
-                    </Card>
-                </div>
-
-                {/* Right Column */}
-                <div className="space-y-8">
-                    {/* Difficult Words */}
-                    <Card title="难词榜" icon={AlertTriangle}>
-                        <DifficultWords words={vocabulary.difficult_words} />
-                    </Card>
-
-                    {/* Learning Sources */}
-                    <Card title="学习来源" icon={BookMarked}>
-                        <SourceDistribution sources={sources.distribution} />
-                    </Card>
-
-                    {/* Recent Words */}
-                    <Card title="最近学习" icon={Search}>
-                        <RecentWords words={vocabulary.recent_words} />
-                    </Card>
-                </div>
-            </div>
+            {/* Empty State for Memory Curve */}
+            {(!memory_curve || memory_curve.total_words_analyzed === 0) && (
+                <Card title="记忆曲线" icon={Brain}>
+                    <div className="text-center py-12 text-ink-muted font-mono">
+                        <Brain className="mx-auto mb-4 opacity-30" size={48} />
+                        <div>暂无足够数据</div>
+                        <div className="text-xs mt-2">多学习一些单词后，这里会显示你的记忆曲线</div>
+                    </div>
+                </Card>
+            )}
         </section>
     );
 };
