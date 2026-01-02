@@ -314,7 +314,9 @@ class SentenceLearningRecord(Base):
     unclear_choice: Mapped[Optional[str]] = mapped_column(Text, nullable=True)  # vocabulary, grammar, both
     simplified_response: Mapped[Optional[str]] = mapped_column(Text, nullable=True)  # got_it, still_unclear
     word_clicks: Mapped[List[str]] = mapped_column(JSON, default=list)
+    phrase_clicks: Mapped[List[str]] = mapped_column(JSON, default=list)  # Collocation/phrase clicks
     dwell_time_ms: Mapped[int] = mapped_column(Integer, default=0)
+    word_count: Mapped[int] = mapped_column(Integer, default=0)  # Words in the sentence
     
     # Diagnosis
     diagnosed_gap_type: Mapped[Optional[str]] = mapped_column(Text, nullable=True)  # vocabulary, structure, fundamental
@@ -327,3 +329,39 @@ class SentenceLearningRecord(Base):
     
     created_at: Mapped[datetime] = mapped_column(TIMESTAMP, server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(TIMESTAMP, server_default=func.now(), onupdate=func.now())
+
+
+class VoiceSession(Base):
+    """
+    Tracks voice learning sessions in VoiceMode/NegotiationInterface.
+    Similar to ReadingSession but for voice practice.
+    """
+    __tablename__ = "voice_sessions"
+    __table_args__ = (
+        Index("idx_vs_user_started", "user_id", "started_at"),
+    )
+    
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    user_id: Mapped[str] = mapped_column(Text, default="default_user")
+    
+    # Session timing
+    started_at: Mapped[datetime] = mapped_column(TIMESTAMP, server_default=func.now())
+    ended_at: Mapped[Optional[datetime]] = mapped_column(TIMESTAMP, nullable=True)
+    total_active_seconds: Mapped[int] = mapped_column(Integer, default=0)
+    
+    # Content source (if studying from specific content)
+    source_type: Mapped[Optional[str]] = mapped_column(Text, nullable=True)  # epub, rss, wordbook
+    source_id: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    
+    # Interaction metrics
+    word_lookup_count: Mapped[int] = mapped_column(Integer, default=0)  # HUH? button clicks
+    words_looked_up: Mapped[List[str]] = mapped_column(JSON, default=list)
+    got_it_count: Mapped[int] = mapped_column(Integer, default=0)  # Got It button clicks
+    example_navigation_count: Mapped[int] = mapped_column(Integer, default=0)  # Arrow navigation
+    
+    # Audio metrics
+    audio_play_count: Mapped[int] = mapped_column(Integer, default=0)  # TTS plays
+    
+    # Session state
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+

@@ -366,3 +366,31 @@ Two large view components exceeded maintainability thresholds:
 - Database migration: Successfully executed.
 - Browser verification: Dashboard renders correctly with new layout.
 
+### ✅ Data Tracking Enhancements (Phase 45) (2026-01-02)
+**Comprehensive user behavior tracking for Sentence Study and Voice Mode.**
+
+#### Features
+- **Sentence Study Word Count**:
+  - `SentenceLearningRecord` now tracks `word_count`.
+  - Merged into `reading_stats.total_words` (unified Reading + Sentence Study metric).
+- **Phrase Click Tracking**:
+  - `phrase_clicks` distinguishes collocation clicks from single word clicks.
+  - Enables granular analysis of user dictionary usage.
+- **Voice Session Tracking**:
+  - New `VoiceSession` model for Negotiation Interface (Voice Mode).
+  - Tracks: active time, HUH? usage, Got It count, example navigation, audio plays.
+  - Frontend `VoiceSessionTracker` for reliable heartbeat and event logging.
+
+#### Implementation
+- **ORM** (`app/models/orm.py`): Added `VoiceSession` class and `phrase_clicks` column.
+- **Backend API**:
+  - `POST /api/voice-session/start|end`
+  - `PUT /api/voice-session/heartbeat`
+  - Integrated into `performance.py` study time aggregation.
+- **Frontend**:
+  - `utils/VoiceSessionTracker.js`: Utility for session management.
+  - `NegotiationInterface.jsx`: Full integration of voice tracking.
+
+#### Verification
+- `test_sentence_study_api.py`, `test_api_stats.py`: PASSED (11/11).
+- Frontend Build: PASSED.

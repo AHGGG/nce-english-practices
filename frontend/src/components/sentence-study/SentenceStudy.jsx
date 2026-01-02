@@ -93,6 +93,7 @@ const SentenceStudy = () => {
 
     // Interaction state
     const [wordClicks, setWordClicks] = useState([]);
+    const [phraseClicks, setPhraseClicks] = useState([]);  // Collocation/phrase clicks
     const [startTime, setStartTime] = useState(null);
     const [showDiagnose, setShowDiagnose] = useState(false);
     const [simplifiedText, setSimplifiedText] = useState(null);
@@ -398,9 +399,17 @@ const SentenceStudy = () => {
         // DEBUG: Log phrase detection
         console.log('[handleWordClick] word:', JSON.stringify(cleanWord), 'hasSpace:', hasMultipleWords, 'charCodes:', [...cleanWord].map(c => c.charCodeAt(0)));
 
-        // Track for gap analysis (only single words)
-        if (!hasMultipleWords && !wordClicks.includes(cleanWord)) {
-            setWordClicks(prev => [...prev, cleanWord]);
+        // Track for gap analysis
+        if (hasMultipleWords) {
+            // Phrase click
+            if (!phraseClicks.includes(cleanWord)) {
+                setPhraseClicks(prev => [...prev, cleanWord]);
+            }
+        } else {
+            // Single word click
+            if (!wordClicks.includes(cleanWord)) {
+                setWordClicks(prev => [...prev, cleanWord]);
+            }
         }
 
         // IMPORTANT: Set isPhrase BEFORE selectedWord to ensure useEffect sees correct state
@@ -418,6 +427,9 @@ const SentenceStudy = () => {
     // Handle Clear button
     const handleClear = useCallback(async () => {
         const dwellTime = Date.now() - startTime;
+        const sentences = currentArticle?.sentences || [];
+        const currentSentence = sentences[currentIndex];
+        const wordCount = currentSentence?.text?.split(/\s+/).filter(w => w.length > 0).length || 0;
 
         await api.recordLearning({
             source_type: 'epub',
@@ -425,12 +437,14 @@ const SentenceStudy = () => {
             sentence_index: currentIndex,
             initial_response: 'clear',
             word_clicks: wordClicks,
-            dwell_time_ms: dwellTime
+            phrase_clicks: phraseClicks,
+            dwell_time_ms: dwellTime,
+            word_count: wordCount
         });
 
         // Move to next sentence
         advanceToNext();
-    }, [currentArticle, currentIndex, wordClicks, startTime]);
+    }, [currentArticle, currentIndex, wordClicks, phraseClicks, startTime]);
 
     // Handle Unclear button
     const handleUnclear = useCallback(() => {
@@ -466,6 +480,9 @@ const SentenceStudy = () => {
     // Handle simplified response
     const handleSimplifiedResponse = useCallback(async (gotIt) => {
         const dwellTime = Date.now() - startTime;
+        const sentences = currentArticle?.sentences || [];
+        const currentSentence = sentences[currentIndex];
+        const wordCount = currentSentence?.text?.split(/\s+/).filter(w => w.length > 0).length || 0;
 
         await api.recordLearning({
             source_type: 'epub',
@@ -475,7 +492,9 @@ const SentenceStudy = () => {
             unclear_choice: simplifyingType,
             simplified_response: gotIt ? 'got_it' : 'still_unclear',
             word_clicks: wordClicks,
-            dwell_time_ms: dwellTime
+            phrase_clicks: phraseClicks,
+            dwell_time_ms: dwellTime,
+            word_count: wordCount
         });
 
         if (gotIt) {
@@ -493,7 +512,7 @@ const SentenceStudy = () => {
                 advanceToNext();
             }
         }
-    }, [currentArticle, currentIndex, wordClicks, startTime, simplifyingType, handleDifficultyChoice]);
+    }, [currentArticle, currentIndex, wordClicks, phraseClicks, startTime, simplifyingType, handleDifficultyChoice]);
 
     // Advance to next sentence
     const advanceToNext = useCallback(() => {
@@ -501,6 +520,7 @@ const SentenceStudy = () => {
         if (currentIndex < sentences.length - 1) {
             setCurrentIndex(prev => prev + 1);
             setWordClicks([]);
+            setPhraseClicks([]);
             setStartTime(Date.now());
             setShowDiagnose(false);
             setSimplifiedText(null);

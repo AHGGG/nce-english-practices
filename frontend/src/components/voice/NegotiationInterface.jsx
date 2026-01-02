@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Volume2, HelpCircle, ArrowRight, Eye, EyeOff, Play, BookOpen, Languages, SkipForward, ChevronLeft, ChevronRight, Gauge, Layers } from 'lucide-react';
 import { escapeHtml } from '../../utils/security';
+import VoiceSessionTracker from '../../utils/VoiceSessionTracker';
+import * as api from '../../api/client';
 
 const NegotiationInterface = () => {
     const [sessionId, setSessionId] = useState(`session-${Date.now()}`);
@@ -61,8 +63,14 @@ const NegotiationInterface = () => {
     // Voices ref to store loaded voices
     const voicesRef = useRef([]);
 
+    // Session Tracker
+    const trackerRef = useRef(null);
+
     // Load voices and books on mount
     useEffect(() => {
+        // Initialize tracker
+        trackerRef.current = new VoiceSessionTracker(api);
+
         const loadVoices = () => {
             voicesRef.current = window.speechSynthesis.getVoices();
             console.log('Voices loaded:', voicesRef.current.length);
@@ -92,6 +100,10 @@ const NegotiationInterface = () => {
 
         return () => {
             window.speechSynthesis.onvoiceschanged = null;
+            // End session on unmount
+            if (trackerRef.current) {
+                trackerRef.current.end();
+            }
         };
     }, []);
 
@@ -194,6 +206,11 @@ const NegotiationInterface = () => {
 
             await audio.play();
 
+            // Track audio play
+            if (trackerRef.current) {
+                trackerRef.current.onAudioPlay();
+            }
+
         } catch (e) {
             console.error('TTS error:', e);
             setIsSpeaking(false);
@@ -226,12 +243,27 @@ const NegotiationInterface = () => {
         window.speechSynthesis.speak(utterance);
     };
 
-    // Start button handler - this is the USER GESTURE that unlocks audio
     const handleStart = async () => {
         setHasStarted(true);
         setIsLoading(true);
 
         try {
+            // Start tracking session
+            if (trackerRef.current) {
+                let sourceType = 'dictionary';
+                let sourceId = selectedBook || 'mixed';
+
+                if (isEpubMode) {
+                    sourceType = 'epub';
+                    sourceId = epubFile;
+                } else if (isRssMode) {
+                    sourceType = 'rss';
+                    sourceId = rssUrl;
+                }
+
+                trackerRef.current.start({ sourceType, sourceId });
+            }
+
             // Fetch real content from dictionary
             const contentRes = await fetch(getContentUrl());
             let content = { text: "The ubiquity of smartphones has changed how we communicate.", source_word: "ubiquity", definition: "", translation: "" };
@@ -287,8 +319,11 @@ const NegotiationInterface = () => {
         setIsLoading(true);
         try {
             // Log word inspection when user clicks HUH? (Source-Aware Drill-down)
-            if (intention === 'huh' && sourceWord) {
-                logWordInspection(sourceWord, currentText);
+            if (intention === 'huh') {
+                if (trackerRef.current) trackerRef.current.onWordLookup(sourceWord);
+                if (sourceWord) logWordInspection(sourceWord, currentText);
+            } else if (intention === 'got_it') {
+                if (trackerRef.current) trackerRef.current.onGotIt();
             }
 
             // Build request body
@@ -610,6 +645,7 @@ const NegotiationInterface = () => {
 
     // Navigate to next example within current sense
     const nextExample = () => {
+        if (trackerRef.current) trackerRef.current.onExampleNav();
         if (!wordExamples) return;
         // Reset step history when navigating (new context)
         setStepHistory([]); setHistoryIndex(-1);

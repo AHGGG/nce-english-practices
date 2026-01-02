@@ -40,7 +40,9 @@ class RecordRequest(BaseModel):
     unclear_choice: Optional[str] = None  # vocabulary, grammar, both
     simplified_response: Optional[str] = None  # got_it, still_unclear
     word_clicks: List[str] = []
+    phrase_clicks: List[str] = []  # Collocation/phrase clicks
     dwell_time_ms: int = 0
+    word_count: int = 0  # Number of words in the sentence
 
 
 class SimplifyRequest(BaseModel):
@@ -141,7 +143,9 @@ async def record_learning(
         unclear_choice=req.unclear_choice,
         simplified_response=req.simplified_response,
         word_clicks=req.word_clicks,
-        dwell_time_ms=req.dwell_time_ms
+        phrase_clicks=req.phrase_clicks,
+        dwell_time_ms=req.dwell_time_ms,
+        word_count=req.word_count
     )
     
     # Diagnose gap type based on responses

@@ -17,5 +17,5 @@ from app.api.routers import (
     reading,
     proficiency,
     sentence_study,
+    voice_session,
 )
-

@@ -8,7 +8,9 @@ import math
 import logging
 from sqlalchemy import select, func
 
+
 from app.database.core import AsyncSessionLocal, ReadingSession, SentenceLearningRecord, WordProficiency
+from app.models.orm import VoiceSession
 
 logger = logging.getLogger(__name__)
 
@@ -39,18 +41,27 @@ async def get_performance_data(days: int = 30) -> Dict[str, Any]:
             reading_time_res = await session.execute(reading_time_stmt)
             reading_seconds = reading_time_res.scalar() or 0
             
-            total_study_seconds = sentence_seconds + reading_seconds
+            # From VoiceSession (Voice mode)
+            voice_time_stmt = select(func.sum(VoiceSession.total_active_seconds)).where(
+                VoiceSession.started_at >= cutoff
+            )
+            voice_time_res = await session.execute(voice_time_stmt)
+            voice_seconds = voice_time_res.scalar() or 0
+            
+            total_study_seconds = sentence_seconds + reading_seconds + voice_seconds
             
             result['study_time'] = {
                 'total_seconds': total_study_seconds,
                 'total_minutes': round(total_study_seconds / 60),
                 'breakdown': {
                     'sentence_study': sentence_seconds,
-                    'reading': reading_seconds
+                    'reading': reading_seconds,
+                    'voice': voice_seconds
                 }
             }
             
             # --- Reading Stats ---
+            # From ReadingSession (Reading Mode)
             reading_stmt = select(
                 func.sum(ReadingSession.validated_word_count),
                 func.count(ReadingSession.id),
@@ -62,10 +73,31 @@ async def get_performance_data(days: int = 30) -> Dict[str, Any]:
             reading_res = await session.execute(reading_stmt)
             row = reading_res.first()
             
+            reading_words = row[0] or 0
+            reading_sessions = row[1] or 0
+            reading_articles = row[2] or 0
+            
+            # From SentenceLearningRecord (Sentence Study Mode)
+            sentence_stmt = select(
+                func.sum(SentenceLearningRecord.word_count),
+                func.count(func.distinct(SentenceLearningRecord.source_id))
+            ).where(
+                SentenceLearningRecord.created_at >= cutoff
+            )
+            sentence_res = await session.execute(sentence_stmt)
+            sentence_row = sentence_res.first()
+            
+            sentence_words = sentence_row[0] or 0
+            sentence_articles = sentence_row[1] or 0
+            
             result['reading_stats'] = {
-                'total_words': row[0] or 0,
-                'sessions_count': row[1] or 0,
-                'articles_count': row[2] or 0
+                'total_words': reading_words + sentence_words,
+                'sessions_count': reading_sessions,
+                'articles_count': reading_articles + sentence_articles,
+                'breakdown': {
+                    'reading_mode': reading_words,
+                    'sentence_study': sentence_words
+                }
             }
             
             return result
