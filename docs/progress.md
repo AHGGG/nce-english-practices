@@ -320,5 +320,19 @@ Two large view components exceeded maintainability thresholds:
 - **UX**: "Command Center" aesthetic with hover effects and descriptions.
 - **Access**: Provides links to Learn, Drill, Apply, Coach, Voice, Reading, Voice Lab, Performance, and AUI Demo.
 
+### ✅ Sentence Study UX Enhancements (Phase 43) (2026-01-02)
+**Major detailed improvements to the Sentence Study mode.**
+
+#### Features
+- **Collocation Highlighting**: AI-powered phrase detection. Highlighted units are clickable for phrase-level explanations.
+- **Progressive Explanations**: 3-tier explanation system (Default -> Simple -> Chinese Deep Dive) catering to different proficiency levels.
+- **Rich Markdown Rendering**: Integrated `react-markdown` for beautifully formatted explanations (lists, bolding, code blocks) in the Cyber-Noir theme.
+- **UX Refinement**: Removed floating buttons in favor of more stable, integrated UI controls.
+
+#### Engineering
+- **Blocking I/O Fix**: Identified and fixed synchronous blocking in async FastAPI endpoints (`list_epub_articles`, `get_epub_image`), resolving "hanging request" issues.
+- **Frontend State Management**: Refactored `SentenceStudy.jsx` to cleaner state model, removing obsolete legacy code.
+- **Dependencies**: Added `react-markdown` to frontend stack.
+
 
 

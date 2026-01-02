@@ -1,3 +1,4 @@
+// Force rebuild: 639029600000000000 - Progressive Explanations
 /**
  * SentenceStudy - Adaptive Sentence Learning Mode (ASL)
  * 
@@ -104,17 +105,26 @@ const SentenceStudy = () => {
     const [overviewStreamContent, setOverviewStreamContent] = useState(''); // For streaming display
 
     // Dictionary state (for word click popup)
-    const [selectedWord, setSelectedWord] = useState(null);
+    const [selectedWord, setSelectedWord] = useState(null);  // Can be word or phrase
+    const [isPhrase, setIsPhrase] = useState(false);  // True when selection is a phrase
     const [inspectorData, setInspectorData] = useState(null);
     const [isInspecting, setIsInspecting] = useState(false);
     const [currentSentenceContext, setCurrentSentenceContext] = useState('');
 
+    // Collocations detected in current sentence
+    const [collocations, setCollocations] = useState([]);
+    const [isLoadingCollocations, setIsLoadingCollocations] = useState(false);
+
     // Streaming context explanation
     const [contextExplanation, setContextExplanation] = useState('');
     const [isExplaining, setIsExplaining] = useState(false);
+    const [explainStyle, setExplainStyle] = useState('default'); // default, simple, chinese_deep
 
     // Audio ref
     const audioRef = useRef(null);
+
+    // Sentence container ref (for click handling)
+    const sentenceContainerRef = useRef(null);
 
     // Highlight settings (reuse from Reading Mode)
     const [highlightOptionIndex, setHighlightOptionIndex] = useState(0);
@@ -142,9 +152,16 @@ const SentenceStudy = () => {
         load();
     }, []);
 
-    // Fetch dictionary data when selectedWord changes
+    // Fetch dictionary data when selectedWord changes (only for single words, not phrases)
     useEffect(() => {
-        if (!selectedWord) return;
+        // Check for phrase directly here - more reliable than depending on isPhrase state
+        const wordIsPhrase = selectedWord?.includes(' ') || false;
+
+        if (!selectedWord || wordIsPhrase) {
+            setInspectorData(null);
+            setIsInspecting(false);
+            return;
+        }
 
         let cancelled = false;
         setIsInspecting(true);
@@ -165,7 +182,7 @@ const SentenceStudy = () => {
 
         fetchData();
         return () => { cancelled = true; };
-    }, [selectedWord]);
+    }, [selectedWord]);  // Only depend on selectedWord - check phrase inline
 
     // Stream context explanation when selectedWord changes
     useEffect(() => {
@@ -185,10 +202,11 @@ const SentenceStudy = () => {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        word: selectedWord,
+                        text: selectedWord,  // Use new 'text' field to support phrases
                         sentence: currentSentenceContext,
                         prev_sentence: prevSentence,
-                        next_sentence: nextSentence
+                        next_sentence: nextSentence,
+                        style: explainStyle
                     })
                 });
 
@@ -229,7 +247,44 @@ const SentenceStudy = () => {
 
         streamExplanation();
         return () => { cancelled = true; };
-    }, [selectedWord, currentSentenceContext, currentArticle, currentIndex]);
+    }, [selectedWord, currentSentenceContext, currentArticle, currentIndex, explainStyle]);
+
+    // Fetch collocations when sentence changes
+    useEffect(() => {
+        const sentences = currentArticle?.sentences || [];
+        const currentSentenceText = sentences[currentIndex]?.text;
+
+        if (!currentSentenceText || view !== VIEW_STATES.STUDYING) {
+            setCollocations([]);
+            return;
+        }
+
+        let cancelled = false;
+        setIsLoadingCollocations(true);
+
+        const fetchCollocations = async () => {
+            try {
+                const res = await fetch('/api/sentence-study/detect-collocations', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ sentence: currentSentenceText })
+                });
+
+                if (!cancelled && res.ok) {
+                    const data = await res.json();
+                    setCollocations(data.collocations || []);
+                }
+            } catch (e) {
+                console.error('Failed to detect collocations:', e);
+                if (!cancelled) setCollocations([]);
+            } finally {
+                if (!cancelled) setIsLoadingCollocations(false);
+            }
+        };
+
+        fetchCollocations();
+        return () => { cancelled = true; };
+    }, [currentArticle, currentIndex, view]);
 
     // Play audio
     const playAudio = useCallback((text) => {
@@ -334,19 +389,30 @@ const SentenceStudy = () => {
     // Handle word click (track for gap analysis + show dictionary + stream explanation)
     const handleWordClick = useCallback((word, sentence) => {
         if (!word) return;
-        const cleanWord = word.toLowerCase();
+        const cleanWord = word.toLowerCase().trim();
         if (cleanWord.length < 2) return;
 
-        // Track for gap analysis
-        if (!wordClicks.includes(cleanWord)) {
+        // Detect if it's a phrase (multiple words)
+        const hasMultipleWords = cleanWord.includes(' ');
+
+        // DEBUG: Log phrase detection
+        console.log('[handleWordClick] word:', JSON.stringify(cleanWord), 'hasSpace:', hasMultipleWords, 'charCodes:', [...cleanWord].map(c => c.charCodeAt(0)));
+
+        // Track for gap analysis (only single words)
+        if (!hasMultipleWords && !wordClicks.includes(cleanWord)) {
             setWordClicks(prev => [...prev, cleanWord]);
         }
 
-        // Trigger dictionary lookup
-        setSelectedWord(cleanWord);
+        // IMPORTANT: Set isPhrase BEFORE selectedWord to ensure useEffect sees correct state
+        // This prevents race condition where dictionary fetch triggers before isPhrase updates
+        setIsPhrase(hasMultipleWords);
         setInspectorData(null);
         setCurrentSentenceContext(sentence || '');
         setContextExplanation('');
+        setExplainStyle('default'); // Reset style for new word
+
+        // Set selectedWord last to trigger the effects with correct isPhrase value
+        setSelectedWord(cleanWord);
     }, [wordClicks]);
 
     // Handle Clear button
@@ -540,7 +606,8 @@ const SentenceStudy = () => {
                     <div className="max-w-2xl w-full">
                         {/* Current Sentence */}
                         <div
-                            className="font-serif text-xl md:text-2xl leading-relaxed text-center mb-8 p-6 border border-[#333] bg-[#0A0A0A]"
+                            ref={sentenceContainerRef}
+                            className="font-serif text-xl md:text-2xl leading-relaxed text-center mb-8 p-6 border border-[#333] bg-[#0A0A0A] select-text"
                             onClick={(e) => {
                                 const word = e.target.dataset?.word;
                                 if (word) handleWordClick(word.toLowerCase(), currentSentence?.text || '');
@@ -551,6 +618,7 @@ const SentenceStudy = () => {
                                     text={currentSentence.text}
                                     highlightSet={currentArticle.highlightSet}
                                     showHighlights={true}
+                                    collocations={collocations}
                                 />
                             ) : (
                                 <span className="text-[#666]">No sentence available</span>
@@ -671,8 +739,8 @@ const SentenceStudy = () => {
             </header>
 
             {/* Main Content */}
-            <main className="flex-1 flex flex-col items-center justify-center p-4 md:p-8 overflow-y-auto">
-                <div className="max-w-2xl w-full">
+            <main className="flex-1 overflow-y-auto p-4 md:p-8">
+                <div className="max-w-2xl w-full mx-auto">
                     {/* Article Title */}
                     <h1 className="font-serif text-2xl md:text-3xl text-white text-center mb-8">
                         {currentArticle?.title}
@@ -753,6 +821,7 @@ const SentenceStudy = () => {
     return (
         <>
             {content}
+
             {/* Word Inspector - shows dictionary + streaming context explanation */}
             {selectedWord && (
                 <WordInspector
@@ -764,6 +833,9 @@ const SentenceStudy = () => {
                     onMarkAsKnown={handleCloseInspector}
                     contextExplanation={contextExplanation}
                     isExplaining={isExplaining}
+                    isPhrase={isPhrase}
+                    onExplainStyle={setExplainStyle}
+                    currentStyle={explainStyle}
                 />
             )}
         </>

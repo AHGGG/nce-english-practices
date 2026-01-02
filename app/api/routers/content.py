@@ -18,7 +18,7 @@ from app.models.content_schemas import SourceType
 
 
 @router.get("/api/reading/epub/list")
-async def list_epub_articles(filename: str = "TheEconomist.2025.12.27.epub"):
+def list_epub_articles(filename: str = "TheEconomist.2025.12.27.epub"):
     """
     List all articles/chapters in an EPUB file.
     
@@ -149,7 +149,7 @@ async def get_article_content(
 
 
 @router.get("/api/reading/epub/image")
-async def get_epub_image(filename: str, image_path: str):
+def get_epub_image(filename: str, image_path: str):
     """
     Serve an image from an EPUB file.
     

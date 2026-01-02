@@ -73,11 +73,13 @@ class OverviewResponse(BaseModel):
 
 
 class ExplainWordRequest(BaseModel):
-    """Request to explain a word in its sentence context via streaming LLM."""
-    word: str
+    """Request to explain a word or phrase in its sentence context via streaming LLM."""
+    word: Optional[str] = None  # Deprecated, use 'text' instead
+    text: Optional[str] = None  # The word or phrase to explain
     sentence: str
     prev_sentence: Optional[str] = None
     next_sentence: Optional[str] = None
+    style: str = "default"  # default, simple, chinese_deep
 
 # ============================================================
 # Endpoints
@@ -336,14 +338,66 @@ async def explain_word_in_context(req: ExplainWordRequest):
         context_parts.append(f'Next: "{req.next_sentence}"')
     context = "\n".join(context_parts)
     
-    prompt = f"""Explain the word "{req.word}" as it is used in the following sentence context. 
+    # Support both 'text' (new) and 'word' (deprecated) fields
+    text_to_explain = req.text or req.word
+    if not text_to_explain:
+        from fastapi import HTTPException
+        raise HTTPException(status_code=400, detail="Either 'text' or 'word' must be provided")
+    
+    # Detect if it's a phrase (multiple words) to adjust the prompt
+    is_phrase = ' ' in text_to_explain.strip()
+    
+    if req.style == "simple":
+        prompt = f"""Explain the {"phrase" if is_phrase else "word"} "{text_to_explain}" in the context of the sentence below.
+Explanation must be in SIMPLE ENGLISH, suitable for a beginner learner.
+Use simple vocabulary and short sentences.
+
+Context:
+{context}
+
+Target: "{text_to_explain}"
+
+Give only the explanation, no preamble."""
+
+    elif req.style == "chinese_deep":
+        prompt = f"""请详细讲解句子中“{text_to_explain}”这个{"短语" if is_phrase else "单词"}的含义和用法。
+结合以下上下文进行全方位的中文讲解：
+
+上下文：
+{context}
+
+讲解要求：
+1. 解释在当前语境下的确切含义
+2. 分析语法结构或搭配用法
+3. 如果有引申义或特殊语气，请指出
+4. 使用中文回答，讲解要深入浅出
+
+目标词汇："{text_to_explain}"
+
+直接给出讲解内容，不要有多余的开场白。"""
+
+    else:  # default
+        if is_phrase:
+            prompt = f"""Explain the phrase/expression "{text_to_explain}" as it is used in the following sentence context.
+The explanation should be in English, clear and concise (2-3 sentences max).
+Focus on what this phrase/collocation means IN THIS SPECIFIC CONTEXT.
+If it's an idiomatic expression or common collocation, briefly mention that.
+
+Context:
+{context}
+
+The phrase to explain: "{text_to_explain}"
+
+Give only the explanation, no preamble or labels."""
+        else:
+            prompt = f"""Explain the word "{text_to_explain}" as it is used in the following sentence context. 
 The explanation should be in English, clear and concise (2-3 sentences max).
 Focus on what the word means IN THIS SPECIFIC CONTEXT, not a general dictionary definition.
 
 Context:
 {context}
 
-The word to explain: "{req.word}"
+The word to explain: "{text_to_explain}"
 
 Give only the explanation, no preamble or labels."""
 
@@ -352,7 +406,7 @@ Give only the explanation, no preamble or labels."""
             stream = await llm_service.async_client.chat.completions.create(
                 model=llm_service.model_name,
                 messages=[{"role": "user", "content": prompt}],
-                max_tokens=150,
+                max_tokens=1000,
                 temperature=0.3,
                 stream=True
             )
@@ -375,3 +429,94 @@ Give only the explanation, no preamble or labels."""
         }
     )
 
+
+# ============================================================
+# Collocation Detection
+# ============================================================
+
+class DetectCollocationsRequest(BaseModel):
+    """Request to detect collocations/phrases in a sentence."""
+    sentence: str
+
+
+class CollocationItem(BaseModel):
+    """A detected collocation/phrase."""
+    text: str  # The collocation text, e.g. "sit down"
+    start_word_idx: int  # Start word index (0-based)
+    end_word_idx: int  # End word index (inclusive)
+
+
+class DetectCollocationsResponse(BaseModel):
+    """Response with detected collocations."""
+    collocations: List[CollocationItem]
+
+
+# Simple cache for collocation detection (sentence hash -> collocations)
+_collocation_cache: Dict[str, List[dict]] = {}
+
+
+@router.post("/detect-collocations", response_model=DetectCollocationsResponse)
+async def detect_collocations(req: DetectCollocationsRequest):
+    """
+    Detect common collocations/phrases in a sentence using LLM.
+    Results are cached for efficiency.
+    """
+    import json
+    
+    # Check cache
+    cache_key = hashlib.md5(req.sentence.encode()).hexdigest()
+    if cache_key in _collocation_cache:
+        return DetectCollocationsResponse(collocations=_collocation_cache[cache_key])
+    
+    # Tokenize sentence to get word list with indices
+    words = req.sentence.split()
+    
+    prompt = f"""Analyze this sentence and identify ALL common English collocations, phrasal verbs, and fixed expressions.
+
+Sentence: "{req.sentence}"
+
+Word list with indices:
+{chr(10).join([f'{i}: {w}' for i, w in enumerate(words)])}
+
+Return a JSON array of detected collocations. For each, provide:
+- "text": the exact collocation text
+- "start_word_idx": starting word index
+- "end_word_idx": ending word index (inclusive)
+
+Examples of collocations to detect:
+- Phrasal verbs: "sit down", "give up", "look forward to"
+- Fixed expressions: "in terms of", "as a result", "take advantage of"
+- Common combinations: "make a decision", "pay attention", "climate change"
+
+Return ONLY the JSON array, no explanation. If no collocations found, return [].
+Example output: [{{"text": "sit down", "start_word_idx": 2, "end_word_idx": 3}}]"""
+
+    try:
+        response = await llm_service.async_client.chat.completions.create(
+            model=llm_service.model_name,
+            messages=[{"role": "user", "content": prompt}],
+            max_tokens=300,
+            temperature=0.1  # Low temp for consistent detection
+        )
+        content = response.choices[0].message.content.strip()
+        
+        # Parse JSON response
+        if content.startswith("```"):
+            content = content.split("\n", 1)[1].rsplit("```", 1)[0]
+        
+        collocations = json.loads(content)
+        
+        # Validate and clean up results
+        valid_collocations = []
+        for c in collocations:
+            if all(k in c for k in ["text", "start_word_idx", "end_word_idx"]):
+                valid_collocations.append(CollocationItem(**c))
+        
+        # Cache results
+        _collocation_cache[cache_key] = [c.model_dump() for c in valid_collocations]
+        
+        return DetectCollocationsResponse(collocations=valid_collocations)
+        
+    except Exception as e:
+        # On error, return empty list (graceful degradation)
+        return DetectCollocationsResponse(collocations=[])

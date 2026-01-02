@@ -300,6 +300,7 @@ To support multiple dictionaries (e.g., Collins + LDOCE) in one view:
 
 ### 3. Async/Sync Hybrid
 - **API Routes**: Use `async def` and run blocking LLM calls in thread pools via `run_in_threadpool`.
+- **CRITICAL RULE**: Do NOT use `async def` for CPU-bound or blocking I/O operations (like `time.sleep`, heavy file parsing) unless you `await` them. If you can't await them, use `def` (sync) so FastAPI runs them in a thread pool. Mixing blocking code in `async def` will freeze the entire event loop.
 - **Database**: All DB operations are async using `AsyncSessionLocal`.
 - **Tests**: Use `pytest-asyncio` with function-scoped fixtures for isolation.
 
@@ -399,8 +400,8 @@ The system supports a streaming UI protocol for real-time Agent updates:
 - **Interactivity (Bi-directional)**:
   - **Downstream**: WebSocket pushes UI state (buttons/forms).
   - **Upstream**: Client sends actions via `POST /api/aui/input`.
-  - **Backend**: `AUIInputService` uses **PostgreSQL LISTEN/NOTIFY** to pause execution and signal waiting Agents across processes.
-  - **Persistence**: User inputs are stored in `aui_inputs` table, ensuring HITL flows survive restarts.
+   - **Backend**: `AUIInputService` uses **PostgreSQL LISTEN/NOTIFY** to pause execution and signal waiting Agents across processes.
+   - **Persistence**: User inputs are stored in `aui_inputs` table, ensuring HITL flows survive restarts.
 - **AG-UI Alignment (2025-12-23)**:
   - `InterruptEvent` now includes `interrupt_id` (auto-generated) and `payload` for structured data.
   - `RunFinishedEvent` supports `outcome="interrupt"` with associated interrupt details.

@@ -174,6 +174,10 @@
         - [x] LLM-powered sentence simplification (vocabulary/grammar/context).
         - [x] **Article Overview**: English summary + Chinese translation before study.
         - [x] Key topics extraction and difficulty hints.
+        - [x] **UX Enhancements** (2026-01-02):
+            - [x] **Collocation Highlighting**: AI-based phrase detection & clickable units.
+            - [x] **Progressive Explanations**: Default -> Simple -> Chinese Deep Dive workflow.
+            - [x] **Rich Text**: Markdown rendering for explanations.
         - [ ] SRS integration for unclear sentences (Phase 2).
         - [ ] User comprehension profile building (Phase 3).
 - [x] **Voice Vendor Lab**:

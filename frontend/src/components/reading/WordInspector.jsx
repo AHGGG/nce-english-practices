@@ -1,6 +1,7 @@
 import React from 'react';
 import { Volume2, X, Bookmark, Loader2, Sparkles } from 'lucide-react';
 import DictionaryResults from '../aui/DictionaryResults';
+import ReactMarkdown from 'react-markdown';
 
 /**
  * Word Inspector Panel - Shows dictionary definition for selected word
@@ -15,7 +16,10 @@ const WordInspector = ({
     onMarkAsKnown,
     // New props for streaming context explanation
     contextExplanation = '',
-    isExplaining = false
+    isExplaining = false,
+    isPhrase = false,  // True when showing a phrase instead of a single word
+    onExplainStyle = () => { }, // Handle style change request
+    currentStyle = 'default'   // default, simple, chinese_deep
 }) => {
     if (!selectedWord) return null;
 
@@ -56,36 +60,77 @@ const WordInspector = ({
                             <div className="flex items-center gap-2 mb-2">
                                 <Sparkles className="w-4 h-4 text-[#00FF94]" />
                                 <span className="text-xs text-[#00FF94] uppercase tracking-wider font-mono">
-                                    In This Context
+                                    {isPhrase ? 'Phrase Explanation' : 'In This Context'}
                                 </span>
                                 {isExplaining && (
                                     <Loader2 className="w-3 h-3 animate-spin text-[#00FF94] ml-auto" />
                                 )}
                             </div>
-                            <p className="text-sm text-[#CCC] leading-relaxed font-serif">
-                                {contextExplanation || 'Analyzing...'}
-                            </p>
+                            <div className="text-sm text-[#CCC] leading-relaxed font-serif">
+                                {contextExplanation ? (
+                                    <ReactMarkdown
+                                        components={{
+                                            p: ({ children }) => <p className="mb-2 last:mb-0">{children}</p>,
+                                            ul: ({ children }) => <ul className="list-disc pl-4 mb-2 space-y-1">{children}</ul>,
+                                            ol: ({ children }) => <ol className="list-decimal pl-4 mb-2 space-y-1">{children}</ol>,
+                                            li: ({ children }) => <li className="pl-1 marker:text-[#00FF94]">{children}</li>,
+                                            strong: ({ children }) => <strong className="text-[#00FF94] font-bold">{children}</strong>,
+                                            em: ({ children }) => <em className="text-[#FFD700] not-italic">{children}</em>,
+                                            code: ({ children }) => <code className="bg-[#1A1A1A] px-1 rounded text-[#00FF94] font-mono text-xs">{children}</code>
+                                        }}
+                                    >
+                                        {contextExplanation}
+                                    </ReactMarkdown>
+                                ) : 'Analyzing...'}
+                            </div>
+
+                            {/* Progressive Actions */}
+                            {!isExplaining && contextExplanation && (
+                                <div className="mt-3 flex gap-2 border-t border-[#00FF94]/20 pt-2">
+                                    {currentStyle !== 'simple' && (
+                                        <button
+                                            onClick={() => onExplainStyle('simple')}
+                                            className="flex-1 py-1.5 text-xs font-mono text-[#00FF94] border border-[#00FF94]/30 hover:bg-[#00FF94]/10 transition-colors uppercase flex items-center justify-center gap-1"
+                                        >
+                                            <span>Simpler please</span>
+                                        </button>
+                                    )}
+                                    {currentStyle !== 'chinese_deep' && (
+                                        <button
+                                            onClick={() => onExplainStyle('chinese_deep')}
+                                            className="flex-1 py-1.5 text-xs font-mono text-[#FFD700] border border-[#FFD700]/30 hover:bg-[#FFD700]/10 transition-colors uppercase flex items-center justify-center gap-1"
+                                        >
+                                            <span>🇨🇳 Chinese Deep Dive</span>
+                                        </button>
+                                    )}
+                                </div>
+                            )}
                         </div>
                     )}
 
-                    {isInspecting ? (
-                        <div className="flex flex-col items-center justify-center py-8 text-[#666] space-y-3">
-                            <Loader2 className="w-6 h-6 animate-spin text-[#00FF94]" />
-                            <span className="text-xs uppercase tracking-widest font-mono">Consulting Dictionary...</span>
-                        </div>
-                    ) : inspectorData?.found && inspectorData?.entries?.length > 0 ? (
-                        <DictionaryResults
-                            word={selectedWord}
-                            source="LDOCE"
-                            entries={inspectorData.entries}
-                        />
-                    ) : inspectorData?.found === false ? (
-                        <div className="text-[#888] text-center py-8">
-                            <p className="text-lg mb-2 font-serif">Word not found</p>
-                            <p className="text-sm font-mono">"{selectedWord}" is not in LDOCE dictionary.</p>
-                        </div>
-                    ) : (
-                        <div className="text-[#FF0055] text-center text-sm py-8 font-mono">Failed to load definition</div>
+                    {/* Dictionary section - only show for single words, not phrases */}
+                    {!isPhrase && (
+                        <>
+                            {isInspecting ? (
+                                <div className="flex flex-col items-center justify-center py-8 text-[#666] space-y-3">
+                                    <Loader2 className="w-6 h-6 animate-spin text-[#00FF94]" />
+                                    <span className="text-xs uppercase tracking-widest font-mono">Consulting Dictionary...</span>
+                                </div>
+                            ) : inspectorData?.found && inspectorData?.entries?.length > 0 ? (
+                                <DictionaryResults
+                                    word={selectedWord}
+                                    source="LDOCE"
+                                    entries={inspectorData.entries}
+                                />
+                            ) : inspectorData?.found === false ? (
+                                <div className="text-[#888] text-center py-8">
+                                    <p className="text-lg mb-2 font-serif">Word not found</p>
+                                    <p className="text-sm font-mono">"{selectedWord}" is not in LDOCE dictionary.</p>
+                                </div>
+                            ) : (
+                                <div className="text-[#FF0055] text-center text-sm py-8 font-mono">Failed to load definition</div>
+                            )}
+                        </>
                     )}
                 </div>
 
