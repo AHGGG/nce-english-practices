@@ -1,4 +1,5 @@
 import React from 'react';
+import { escapeHtml } from '../../utils/security';
 
 const MarkdownMessage = ({ content }) => {
     if (!content) return null;
@@ -6,7 +7,11 @@ const MarkdownMessage = ({ content }) => {
     // Simple replacement for bold/italic/code basics without a heavy lib
     // In production, use react-markdown
     const processText = (text) => {
-        return text
+        // First escape HTML to prevent XSS
+        const safeText = escapeHtml(text);
+
+        // Then apply markdown formatting to the safe text
+        return safeText
             .replace(/\*\*(.*?)\*\*/g, '<strong class="text-neon-green">$1</strong>')
             .replace(/`([^`]+)`/g, '<code class="bg-[#111] border border-[#333] px-1 rounded text-neon-pink font-mono text-xs">$1</code>')
             .replace(/\n/g, '<br/>');
