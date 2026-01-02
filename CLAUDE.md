@@ -146,6 +146,9 @@ The project follows a modular package structure:
   - `rss_provider.py`: RSS feed article extraction.
   - `podcast_provider.py`: Podcast RSS with audio enclosures.
   - `plain_text_provider.py`: Simple text segmentation.
+- **`app/api/routers/content.py`**: **UPDATED 2026-01-02** Content management endpoints:
+  - `GET /api/reading/epub/books`: List all available EPUB books.
+  - `GET /api/reading/epub/list`: List chapters/articles for a file (supports `filename` param).
 - **`app/generators/`**: *(Deprecated - Generators removed in 2026-01-01 cleanup)*
 - **`app/models/`**: Data models package.
   - `schemas.py`: Pydantic models (DTOs) and API schemas.

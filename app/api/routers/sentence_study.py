@@ -83,9 +83,35 @@ class ExplainWordRequest(BaseModel):
     next_sentence: Optional[str] = None
     style: str = "default"  # default, simple, chinese_deep
 
+class LastSessionResponse(BaseModel):
+    source_id: str
+    source_type: str
+    last_studied_at: str  # ISO format string
+
+
 # ============================================================
 # Endpoints
 # ============================================================
+
+@router.get("/last-session", response_model=Optional[LastSessionResponse])
+async def get_last_session(db: AsyncSession = Depends(get_db)):
+    """Get the user's last studied article/session."""
+    # Find the most recent learning record
+    result = await db.execute(
+        select(SentenceLearningRecord)
+        .order_by(SentenceLearningRecord.created_at.desc())
+        .limit(1)
+    )
+    record = result.scalar_one_or_none()
+    
+    if not record:
+        return None
+        
+    return LastSessionResponse(
+        source_id=record.source_id,
+        source_type=record.source_type,
+        last_studied_at=record.created_at.isoformat()
+    )
 
 @router.get("/{source_id:path}/progress", response_model=StudyProgressResponse)
 async def get_study_progress(

@@ -36,8 +36,16 @@ const api = {
         });
         return res.json();
     },
-    async getArticles() {
-        const res = await fetch('/api/reading/epub/list');
+    async getBooks() {
+        const res = await fetch('/api/reading/epub/books');
+        return res.json();
+    },
+    async getArticles(filename) {
+        const url = new URL('/api/reading/epub/list', window.location.origin);
+        if (filename) {
+            url.searchParams.append('filename', filename);
+        }
+        const res = await fetch(url);
         return res.json();
     },
     async getArticle(sourceId, optionIndex) {
@@ -63,11 +71,17 @@ const api = {
             body: JSON.stringify({ title, full_text: fullText, total_sentences: totalSentences })
         });
         return res.json();
+    },
+    async getLastSession() {
+        const res = await fetch('/api/sentence-study/last-session');
+        if (!res.ok) return null;
+        return res.json();
     }
 };
 
 // View States
 const VIEW_STATES = {
+    BOOK_SHELF: 'book_shelf',
     ARTICLE_LIST: 'article_list',
     OVERVIEW: 'overview',  // New: show article overview before studying
     STUDYING: 'studying'
@@ -82,7 +96,9 @@ const DIFFICULTY_CHOICES = [
 
 const SentenceStudy = () => {
     // View state
-    const [view, setView] = useState(VIEW_STATES.ARTICLE_LIST);
+    const [view, setView] = useState(VIEW_STATES.BOOK_SHELF);
+    const [books, setBooks] = useState([]);
+    const [selectedBook, setSelectedBook] = useState(null);
     const [articles, setArticles] = useState([]);
     const [loading, setLoading] = useState(true);
 
@@ -131,21 +147,70 @@ const SentenceStudy = () => {
     const [highlightOptionIndex, setHighlightOptionIndex] = useState(0);
 
     // Load articles on mount
+    const selectBook = async (book) => {
+        setLoading(true);
+        setSelectedBook(book);
+        try {
+            const data = await api.getArticles(book.filename);
+            const filtered = (data.articles || []).filter(a => a.sentence_count > 0);
+            setArticles(filtered);
+            setView(VIEW_STATES.ARTICLE_LIST);
+        } catch (e) {
+            console.error('Failed to load articles for book:', e);
+        } finally {
+            setLoading(false);
+        }
+    };
+
     useEffect(() => {
         const load = async () => {
             try {
-                const data = await api.getArticles();
-                // Filter out articles with no sentences
-                const filtered = (data.articles || []).filter(a => a.sentence_count > 0);
-                setArticles(filtered);
+                const [booksData, calibrationData, lastSession] = await Promise.all([
+                    api.getBooks(),
+                    api.getCalibration(),
+                    api.getLastSession()
+                ]);
+
+                setBooks(booksData.books || []);
 
                 // Get calibration level
-                const cal = await api.getCalibration();
-                if (cal?.level !== undefined) {
-                    setHighlightOptionIndex(mapLevelToOptionIndex(cal.level));
+                if (calibrationData?.level !== undefined) {
+                    setHighlightOptionIndex(mapLevelToOptionIndex(calibrationData.level));
+                }
+
+                // Auto-load last session if available
+                if (lastSession && lastSession.source_id && lastSession.source_id.startsWith('epub:')) {
+                    // Extract filename from source_id: epub:{filename}:{index}
+                    const parts = lastSession.source_id.split(':');
+                    if (parts.length >= 3) {
+                        const filename = parts[1];
+                        console.log('Restoring last session:', lastSession.source_id, filename);
+
+                        // Select book and load articles
+                        const book = (booksData.books || []).find(b => b.filename === filename);
+                        if (book) {
+                            setSelectedBook(book);
+                        } else {
+                            // If book not found in list, still try to use filename
+                            setSelectedBook({ filename, title: filename });
+                        }
+
+                        // Load articles for this book
+                        const articlesData = await api.getArticles(filename);
+                        const filtered = (articlesData.articles || []).filter(a => a.sentence_count > 0);
+                        setArticles(filtered);
+
+                        // Check if article exists
+                        if (filtered.find(a => a.source_id === lastSession.source_id)) {
+                            await startStudying(lastSession.source_id);
+                        } else {
+                            // If specific article not found, go to article list for this book
+                            setView(VIEW_STATES.ARTICLE_LIST);
+                        }
+                    }
                 }
             } catch (e) {
-                console.error('Failed to load articles:', e);
+                console.error('Failed to load initial data:', e);
             } finally {
                 setLoading(false);
             }
@@ -536,27 +601,41 @@ const SentenceStudy = () => {
         }
     }, [currentArticle, currentIndex]);
 
-    // Back to library
+    // Back navigation
     const handleBack = useCallback(() => {
-        setView(VIEW_STATES.ARTICLE_LIST);
-        setCurrentArticle(null);
-        setCurrentIndex(0);
-    }, []);
+        if (view === VIEW_STATES.STUDYING || view === VIEW_STATES.OVERVIEW) {
+            // From Study/Overview -> Article List
+            setView(VIEW_STATES.ARTICLE_LIST);
+            setCurrentArticle(null);
+            setCurrentIndex(0);
+        } else if (view === VIEW_STATES.ARTICLE_LIST) {
+            // From Article List -> Book Shelf
+            setView(VIEW_STATES.BOOK_SHELF);
+            setSelectedBook(null);
+            setArticles([]);
+        }
+    }, [view]);
 
     // Render article list
     const renderArticleList = () => (
         <div className="h-screen flex flex-col bg-[#050505] text-[#E0E0E0] font-mono">
             <header className="h-14 border-b border-[#333] flex items-center px-4 md:px-8 bg-[#0A0A0A]">
-                <GraduationCap className="w-5 h-5 text-[#00FF94] mr-3" />
-                <h1 className="text-sm font-bold uppercase tracking-wider">Sentence Study</h1>
+                <button
+                    onClick={handleBack}
+                    className="flex items-center gap-2 text-[#888] hover:text-[#00FF94] transition-colors mr-3"
+                >
+                    <ChevronLeft className="w-4 h-4" />
+                </button>
+                <div className="flex flex-col">
+                    <h1 className="text-sm font-bold uppercase tracking-wider text-white">
+                        {selectedBook?.title || 'Unknown Book'}
+                    </h1>
+                    <span className="text-[10px] text-[#666] uppercase tracking-wider">Chapter List</span>
+                </div>
             </header>
 
             <main className="flex-1 overflow-y-auto p-4 md:p-8">
                 <div className="max-w-2xl mx-auto">
-                    <p className="text-[#888] text-sm mb-6">
-                        Study articles sentence by sentence. Mark each as Clear or Unclear to build your learning profile.
-                    </p>
-
                     {loading ? (
                         <div className="flex items-center justify-center py-12">
                             <Loader2 className="w-6 h-6 animate-spin text-[#00FF94]" />
@@ -582,6 +661,55 @@ const SentenceStudy = () => {
                                     </div>
                                 </button>
                             ))}
+                        </div>
+                    )}
+                </div>
+            </main>
+        </div>
+    );
+
+    // Render Book Shelf
+    const renderBookShelf = () => (
+        <div className="h-screen flex flex-col bg-[#050505] text-[#E0E0E0] font-mono">
+            <header className="h-14 border-b border-[#333] flex items-center px-4 md:px-8 bg-[#0A0A0A]">
+                <GraduationCap className="w-5 h-5 text-[#00FF94] mr-3" />
+                <h1 className="text-sm font-bold uppercase tracking-wider">Sentence Study Library</h1>
+            </header>
+
+            <main className="flex-1 overflow-y-auto p-4 md:p-8">
+                <div className="max-w-2xl mx-auto">
+                    <p className="text-[#888] text-sm mb-6">
+                        Select a book to start studying.
+                    </p>
+
+                    {loading ? (
+                        <div className="flex items-center justify-center py-12">
+                            <Loader2 className="w-6 h-6 animate-spin text-[#00FF94]" />
+                        </div>
+                    ) : (
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            {books.map((book, i) => (
+                                <button
+                                    key={i}
+                                    onClick={() => selectBook(book)}
+                                    className="text-left p-6 border border-[#333] bg-[#0A0A0A] hover:border-[#00FF94] hover:bg-[#00FF94]/5 transition-all group flex flex-col h-full"
+                                >
+                                    <BookOpen className="w-8 h-8 text-[#444] group-hover:text-[#00FF94] mb-4" />
+                                    <h3 className="font-serif text-xl text-white group-hover:text-[#00FF94] mb-2 line-clamp-2">
+                                        {book.title}
+                                    </h3>
+                                    <div className="mt-auto pt-4 flex items-center justify-between text-xs text-[#666]">
+                                        <span>EPUB</span>
+                                        <span>{(book.size_bytes / 1024 / 1024).toFixed(1)} MB</span>
+                                    </div>
+                                </button>
+                            ))}
+
+                            {books.length === 0 && (
+                                <div className="col-span-full text-center py-12 text-[#666]">
+                                    No books found in library.
+                                </div>
+                            )}
                         </div>
                     )}
                 </div>
@@ -692,15 +820,13 @@ const SentenceStudy = () => {
                                                 'Simplified'}
                                     </span>
                                 </div>
-                                <p className="font-serif text-lg leading-relaxed text-[#CCC]">
+                                <p className="font-serif text-lg leading-relaxed text-[#00FF94]">
                                     {simplifiedText}
                                 </p>
-
-                                {/* Response buttons */}
-                                <div className="flex justify-center gap-4 mt-6">
+                                <div className="mt-6 flex justify-center gap-4">
                                     <button
                                         onClick={() => handleSimplifiedResponse(true)}
-                                        className="flex items-center gap-2 px-6 py-3 bg-[#00FF94] text-black font-bold uppercase text-sm hover:bg-[#00CC77] transition-colors"
+                                        className="flex items-center gap-2 px-6 py-3 bg-[#00FF94] text-black font-bold uppercase text-xs hover:bg-[#00CC77] transition-colors"
                                     >
                                         <CheckCircle className="w-4 h-4" />
                                         Got it!
@@ -832,11 +958,13 @@ const SentenceStudy = () => {
     );
 
     // Main render
-    const content = view === VIEW_STATES.ARTICLE_LIST
-        ? renderArticleList()
-        : view === VIEW_STATES.OVERVIEW
-            ? renderOverview()
-            : renderStudying();
+    const content = view === VIEW_STATES.BOOK_SHELF
+        ? renderBookShelf()
+        : view === VIEW_STATES.ARTICLE_LIST
+            ? renderArticleList()
+            : view === VIEW_STATES.OVERVIEW
+                ? renderOverview()
+                : renderStudying();
 
     return (
         <>

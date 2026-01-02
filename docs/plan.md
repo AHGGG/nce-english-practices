@@ -178,6 +178,10 @@
             - [x] **Collocation Highlighting**: AI-based phrase detection & clickable units.
             - [x] **Progressive Explanations**: Default -> Simple -> Chinese Deep Dive workflow.
             - [x] **Rich Text**: Markdown rendering for explanations.
+        - [x] **Book Shelf Navigation** (2026-01-02):
+            - [x] **Hierarchical Navigation**: Library -> Book -> Chapter List -> Study Mode.
+            - [x] **Context Restoration**: Auto-resume last studied book/chapter on return.
+            - [x] **Library API**: `/api/reading/epub/books` endpoint.
         - [ ] SRS integration for unclear sentences (Phase 2).
         - [ ] User comprehension profile building (Phase 3).
 - [x] **Voice Vendor Lab**:

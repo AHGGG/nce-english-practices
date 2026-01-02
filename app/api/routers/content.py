@@ -15,10 +15,36 @@ router = APIRouter()
 
 from app.services.content_service import content_service
 from app.models.content_schemas import SourceType
+import os
+from pathlib import Path
+
+
+@router.get("/api/reading/epub/books")
+def list_epub_books():
+    """
+    List all available EPUB books in the resources directory.
+    """
+    try:
+        from app.services.content_providers.epub_provider import EpubProvider
+        
+        books = []
+        epub_dir = EpubProvider.EPUB_DIR
+        
+        if epub_dir.exists():
+            for f in epub_dir.glob("*.epub"):
+                books.append({
+                    "filename": f.name,
+                    "title": f.stem.replace(".", " ").replace("_", " ").replace("-", " ").title(),
+                    "size_bytes": f.stat().st_size
+                })
+        
+        return {"books": books}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.get("/api/reading/epub/list")
-def list_epub_articles(filename: str = "TheEconomist.2025.12.27.epub"):
+def list_epub_articles(filename: str):
     """
     List all articles/chapters in an EPUB file.
     
