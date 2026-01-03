@@ -1,6 +1,32 @@
 import json
 import re
-from typing import Dict, List, Union, Any
+from typing import Dict, List, Union, Any, Optional
+from fastapi import HTTPException
+
+# Safe Input Patterns
+# Allows alphanumeric, common punctuation, and some symbols.
+# Added: / (dates, urls), $ (money), @ (emails), * (emphasis), [] (brackets), # (hashtags), ~ (approx)
+# Blocks HTML tags <>, shell metachars like `|`, `>` (redirection), `backtick`.
+SAFE_INPUT_PATTERN = r'^[\w\s\.,!?\'\";:()\-&%+=/@$*\[\]#~]+$'
+
+# Safe ID Pattern
+# Strict alphanumeric and dashes for IDs (e.g., voice IDs, book codes)
+SAFE_ID_PATTERN = r'^[\w\-]+$'
+
+def validate_input(value: str, pattern: str = SAFE_INPUT_PATTERN, field_name: str = "Input") -> str:
+    """
+    Validates string input against a regex pattern.
+    Raises HTTPException(400) if validation fails.
+    """
+    if not value:
+        return value
+
+    if not re.match(pattern, value):
+        raise HTTPException(
+            status_code=400,
+            detail=f"Invalid format for {field_name}. Contains illegal characters."
+        )
+    return value
 
 def parse_llm_json(content: str) -> Union[Dict[str, Any], List[Any]]:
     """
