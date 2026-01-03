@@ -174,19 +174,23 @@ The project follows a modular package structure:
 - **`app/api/routers/sentence_study.py`**: **UPDATED 2026-01-03** Sentence Study (ASL) API endpoints:
   - `GET /api/sentence-study/{source_id}/progress`: Get study progress for an article.
   - `POST /api/sentence-study/record`: Record sentence learning result with gap diagnosis.
-  - `POST /api/sentence-study/simplify`: **Streaming SSE** with 3-stage progressive simplification (cached).
-  - `POST /api/sentence-study/overview`: Generate article overview (cached).
-  - `POST /api/sentence-study/explain-word`: **Streaming SSE** word/phrase explanation (cached).
-  - `POST /api/sentence-study/detect-collocations`: AI collocation detection (cached).
+  - `POST /api/sentence-study/simplify`: **Streaming SSE** with 3-stage progressive simplification (in-memory cached).
+  - `POST /api/sentence-study/overview`: Generate article overview (**DB-persisted cache**).
+  - `POST /api/sentence-study/explain-word`: **Streaming SSE** word/phrase explanation (in-memory cached, fixed SSE line-by-line for multi-line content).
+  - `POST /api/sentence-study/detect-collocations`: AI collocation detection (**DB-persisted cache**).
+  - `POST /api/sentence-study/prefetch-collocations`: **NEW 2026-01-03** Background prefetch for lookahead (up to 5 sentences, uses `asyncio.create_task`).
   - `GET /api/sentence-study/queue`: Get review queue (SRS).
   - `POST /api/sentence-study/review`: Complete a review.
   - `GET /api/sentence-study/profile`: User profile stats.
-  - **Caching**: In-memory caches for `overview`, `simplify`, `explain-word`, `collocations` by hash key.
+  - **Caching**: `overview` and `collocations` use two-tier cache (in-memory + PostgreSQL), surviving server restarts. `simplify` and `explain-word` use in-memory only.
+  - **New DB Tables**: `article_overview_cache`, `sentence_collocation_cache` (migration: `552a79d1e801`).
 - **`app/api/routers/voice_session.py`**: **NEW 2026-01-02** Voice Session API:
   - `POST /start`, `PUT /heartbeat`, `POST /end`.
-- **`frontend/src/components/sentence-study/SentenceStudy.jsx`**: **UPDATED** Sentence-by-sentence learning UI with:
-  - 3-stage progressive simplification with stage indicator.
-  - Streaming text display for explanations.
+- **`frontend/src/components/sentence-study/SentenceStudy.jsx`**: **UPDATED 2026-01-03** Sentence-by-sentence learning UI with:
+  - 3-stage progressive simplification with stage indicator and ReactMarkdown rendering.
+  - Streaming text display for explanations with request ID pattern (race condition fix).
+  - On-demand lookahead prefetching (auto-prefetch next 3 sentences' collocations).
+  - Max-height scrollable content for long explanations.
   - Mobile-optimized touch targets and responsive layout.
 - **`frontend/src/utils/VoiceSessionTracker.js`**: **NEW** Frontend voice session analytics.
 

@@ -10,6 +10,7 @@
  */
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { ChevronLeft, CheckCircle, HelpCircle, Loader2, BookOpen, Sparkles, GraduationCap } from 'lucide-react';
+import ReactMarkdown from 'react-markdown';
 import MemoizedSentence from '../reading/MemoizedSentence';
 import WordInspector from '../reading/WordInspector';
 import { HIGHLIGHT_OPTIONS, mapLevelToOptionIndex } from '../reading/constants';
@@ -76,6 +77,15 @@ const api = {
         const res = await fetch('/api/sentence-study/last-session');
         if (!res.ok) return null;
         return res.json();
+    },
+    // Prefetch collocations for upcoming sentences (fire-and-forget)
+    prefetchCollocations(sentences) {
+        if (!sentences || sentences.length === 0) return;
+        fetch('/api/sentence-study/prefetch-collocations', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ sentences: sentences.slice(0, 5) })
+        }).catch(() => { }); // Ignore errors, this is best-effort
     }
 };
 
@@ -143,6 +153,9 @@ const SentenceStudy = () => {
 
     // Sentence container ref (for click handling)
     const sentenceContainerRef = useRef(null);
+
+    // Request ID ref for cancelling stale streaming requests
+    const explainRequestIdRef = useRef(0);
 
     // Highlight settings (reuse from Reading Mode)
     const [highlightOptionIndex, setHighlightOptionIndex] = useState(0);
@@ -252,10 +265,13 @@ const SentenceStudy = () => {
     }, [selectedWord]);  // Only depend on selectedWord - check phrase inline
 
     // Stream context explanation when selectedWord changes
+    // Uses request ID pattern to prevent race conditions when switching styles quickly
     useEffect(() => {
         if (!selectedWord || !currentSentenceContext) return;
 
-        let cancelled = false;
+        // Increment request ID - any previous request becomes stale
+        const currentRequestId = ++explainRequestIdRef.current;
+
         setIsExplaining(true);
         setContextExplanation('');
 
@@ -265,6 +281,9 @@ const SentenceStudy = () => {
 
         const streamExplanation = async () => {
             try {
+                // DEBUG: Log the style being requested
+                console.log('[explain-word] Requesting with style:', explainStyle, 'requestId:', currentRequestId);
+
                 const res = await fetch('/api/sentence-study/explain-word', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -277,6 +296,9 @@ const SentenceStudy = () => {
                     })
                 });
 
+                // Check if this request is still current
+                if (explainRequestIdRef.current !== currentRequestId) return;
+
                 if (!res.ok) throw new Error('Failed to fetch');
 
                 const reader = res.body.getReader();
@@ -284,12 +306,22 @@ const SentenceStudy = () => {
 
                 while (true) {
                     const { done, value } = await reader.read();
-                    if (done || cancelled) break;
+
+                    // Check if this request is still current before processing
+                    if (explainRequestIdRef.current !== currentRequestId) {
+                        reader.cancel();  // Cancel the stream
+                        return;
+                    }
+
+                    if (done) break;
 
                     const chunk = decoder.decode(value, { stream: true });
                     const lines = chunk.split('\n');
 
                     for (const line of lines) {
+                        // Re-check on each line to prevent stale updates
+                        if (explainRequestIdRef.current !== currentRequestId) return;
+
                         if (line.startsWith('data: ')) {
                             const text = line.slice(6);
                             if (text === '[DONE]') {
@@ -298,9 +330,7 @@ const SentenceStudy = () => {
                                 console.error('Stream error:', text);
                                 break;
                             } else {
-                                if (!cancelled) {
-                                    setContextExplanation(prev => prev + text);
-                                }
+                                setContextExplanation(prev => prev + text);
                             }
                         }
                     }
@@ -308,12 +338,15 @@ const SentenceStudy = () => {
             } catch (e) {
                 console.error('Stream error:', e);
             } finally {
-                if (!cancelled) setIsExplaining(false);
+                // Only update loading state if still current request
+                if (explainRequestIdRef.current === currentRequestId) {
+                    setIsExplaining(false);
+                }
             }
         };
 
         streamExplanation();
-        return () => { cancelled = true; };
+        // No cleanup needed - request ID pattern handles staleness synchronously
     }, [selectedWord, currentSentenceContext, currentArticle, currentIndex, explainStyle]);
 
     // Fetch collocations when sentence changes
@@ -351,6 +384,16 @@ const SentenceStudy = () => {
         };
 
         fetchCollocations();
+
+        // Prefetch next 3 sentences in background (on-demand lookahead)
+        const upcomingSentences = sentences
+            .slice(currentIndex + 1, currentIndex + 4)
+            .map(s => s?.text)
+            .filter(Boolean);
+        if (upcomingSentences.length > 0) {
+            api.prefetchCollocations(upcomingSentences);
+        }
+
         return () => { cancelled = true; };
     }, [currentArticle, currentIndex, view]);
 
@@ -866,8 +909,22 @@ const SentenceStudy = () => {
                                         Stage {simplifyStage}/3
                                     </span>
                                 </div>
-                                <div className="font-serif text-lg leading-relaxed text-[#00FF94] whitespace-pre-wrap">
-                                    {simplifiedText}
+                                <div className="font-serif text-base leading-relaxed text-[#00FF94] max-h-[40vh] overflow-y-auto custom-scrollbar">
+                                    <ReactMarkdown
+                                        components={{
+                                            p: ({ children }) => <p className="mb-3 last:mb-0">{children}</p>,
+                                            ul: ({ children }) => <ul className="list-disc pl-5 mb-3 space-y-1">{children}</ul>,
+                                            ol: ({ children }) => <ol className="list-decimal pl-5 mb-3 space-y-1">{children}</ol>,
+                                            li: ({ children }) => <li className="pl-1">{children}</li>,
+                                            strong: ({ children }) => <strong className="text-white font-bold">{children}</strong>,
+                                            em: ({ children }) => <em className="text-[#FFD700] not-italic">{children}</em>,
+                                            h1: ({ children }) => <h1 className="text-xl font-bold mb-2 text-white">{children}</h1>,
+                                            h2: ({ children }) => <h2 className="text-lg font-bold mb-2 text-white">{children}</h2>,
+                                            h3: ({ children }) => <h3 className="text-base font-bold mb-2 text-white">{children}</h3>,
+                                        }}
+                                    >
+                                        {simplifiedText}
+                                    </ReactMarkdown>
                                 </div>
                                 <div className="mt-6 flex flex-wrap justify-center gap-3">
                                     <button

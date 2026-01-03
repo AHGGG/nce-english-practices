@@ -207,6 +207,20 @@
             - [x] **LLM Caching**: `/simplify` and `/explain-word` cache results by hash key.
             - [x] **Mobile UI**: Larger touch targets (py-4), flex-wrap, touch-manipulation.
             - [x] **Bugfix**: Collocations cleared immediately on sentence change.
+            - [x] **LLM Cache Persistence** (2026-01-03):
+                - `ArticleOverviewCache` and `SentenceCollocationCache` ORM models.
+                - Alembic migration `552a79d1e801_add_llm_cache_tables.py`.
+                - Two-tier cache: in-memory + PostgreSQL for `overview` and `collocations`.
+                - Cache survives server restarts.
+            - [x] **Collocation Prefetching** (2026-01-03):
+                - `/prefetch-collocations` endpoint for background lookahead.
+                - Frontend auto-prefetches next 3 sentences when viewing current.
+                - Uses `asyncio.create_task()` for non-blocking background generation.
+            - [x] **Bug Fixes** (2026-01-03):
+                - Fixed SSE cache truncation (multi-line content now sent line-by-line).
+                - Fixed streaming race condition with request ID pattern.
+                - Added ReactMarkdown rendering for simplified content.
+                - Added max-height scroll for long explanations.
 - [x] **Voice Vendor Lab**:
     - [x] **Internal Tool**: `/voice-lab` refactored to **Vendor-Centric Layout** (Google, Deepgram, ElevenLabs tabs).
     - [x] **SDK Removal**: Removed ElevenLabs and Deepgram SDKs in favor of raw `httpx` API calls.

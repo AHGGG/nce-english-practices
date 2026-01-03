@@ -2,7 +2,7 @@
 Sentence Study API Router for Adaptive Sentence Learning (ASL) mode.
 Endpoints for tracking study progress, recording learning results, and generating simplifications.
 """
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, HTTPException, Depends, BackgroundTasks
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 from typing import Optional, List, Dict, Any
@@ -12,7 +12,7 @@ import hashlib
 from datetime import datetime, timedelta
 
 from app.core.db import get_db
-from app.models.orm import SentenceLearningRecord, UserComprehensionProfile, WordProficiency
+from app.models.orm import SentenceLearningRecord, UserComprehensionProfile, WordProficiency, ArticleOverviewCache, SentenceCollocationCache
 from app.services.llm import llm_service
 
 router = APIRouter(prefix="/api/sentence-study", tags=["sentence-study"])
@@ -387,9 +387,10 @@ Keep explanations in simple English. Format:
 
 
 @router.post("/overview")
-async def generate_overview(req: OverviewRequest):
+async def generate_overview(req: OverviewRequest, db: AsyncSession = Depends(get_db)):
     """
     Generate article overview with English summary and Chinese translation.
+    Cache priority: in-memory -> DB -> LLM generation.
     First request streams via SSE, subsequent requests return cached JSON.
     
     SSE format:
@@ -402,11 +403,27 @@ async def generate_overview(req: OverviewRequest):
     # Generate cache key from title
     cache_key = hashlib.md5(req.title.encode()).hexdigest()
     
-    # Check cache first - return JSON directly for cache hits
+    # 1. Check in-memory cache first (hot path)
     if cache_key in _overview_cache:
         cached = _overview_cache[cache_key]
         return OverviewResponse(**cached)
     
+    # 2. Check DB cache
+    db_result = await db.execute(
+        select(ArticleOverviewCache).where(ArticleOverviewCache.title_hash == cache_key)
+    )
+    db_cache = db_result.scalar_one_or_none()
+    if db_cache:
+        cached = {
+            "summary_en": db_cache.summary_en,
+            "summary_zh": db_cache.summary_zh,
+            "key_topics": db_cache.key_topics,
+            "difficulty_hint": db_cache.difficulty_hint
+        }
+        _overview_cache[cache_key] = cached  # Warm in-memory cache
+        return OverviewResponse(**cached)
+    
+    # 3. Generate via LLM (streaming)
     # Truncate to first ~500 words for efficiency
     words = req.full_text.split()
     text_excerpt = " ".join(words[:500]) + ("..." if len(words) > 500 else "")
@@ -467,8 +484,22 @@ Return ONLY the JSON, no markdown formatting."""
                     "difficulty_hint": "Unable to analyze difficulty."
                 }
             
-            # Cache the result
+            # Cache in-memory
             _overview_cache[cache_key] = result
+            
+            # Persist to DB
+            try:
+                db.add(ArticleOverviewCache(
+                    title_hash=cache_key,
+                    title=req.title,
+                    summary_en=result["summary_en"],
+                    summary_zh=result["summary_zh"],
+                    key_topics=result["key_topics"],
+                    difficulty_hint=result["difficulty_hint"]
+                ))
+                await db.commit()
+            except Exception:
+                await db.rollback()  # Ignore duplicate key errors
             
             yield f"data: {json.dumps({'type': 'done', 'overview': result})}\n\n"
             
@@ -483,6 +514,7 @@ Return ONLY the JSON, no markdown formatting."""
             "Connection": "keep-alive",
         }
     )
+
 
 
 @router.post("/explain-word")
@@ -570,7 +602,12 @@ Give only the explanation, no preamble or labels."""
     if explain_cache_key in _explain_cache:
         cached_text = _explain_cache[explain_cache_key]
         async def cached_explain():
-            yield f"data: {cached_text}\n\n"
+            # Send cached content line-by-line to match streaming format
+            # This prevents frontend parser from truncating at newlines
+            for line in cached_text.split('\n'):
+                yield f"data: {line}\n\n"
+                # Also yield the newline as a separate event to preserve formatting
+                yield "data: \n\n"
             yield "data: [DONE]\n\n"
         return StreamingResponse(
             cached_explain(),
@@ -638,18 +675,30 @@ _collocation_cache: Dict[str, List[dict]] = {}
 
 
 @router.post("/detect-collocations", response_model=DetectCollocationsResponse)
-async def detect_collocations(req: DetectCollocationsRequest):
+async def detect_collocations(req: DetectCollocationsRequest, db: AsyncSession = Depends(get_db)):
     """
     Detect common collocations/phrases in a sentence using LLM.
+    Cache priority: in-memory -> DB -> LLM generation.
     Results are cached for efficiency.
     """
     import json
     
-    # Check cache
     cache_key = hashlib.md5(req.sentence.encode()).hexdigest()
+    
+    # 1. Check in-memory cache (hot path)
     if cache_key in _collocation_cache:
         return DetectCollocationsResponse(collocations=_collocation_cache[cache_key])
     
+    # 2. Check DB cache
+    db_result = await db.execute(
+        select(SentenceCollocationCache).where(SentenceCollocationCache.sentence_hash == cache_key)
+    )
+    db_cache = db_result.scalar_one_or_none()
+    if db_cache:
+        _collocation_cache[cache_key] = db_cache.collocations  # Warm in-memory cache
+        return DetectCollocationsResponse(collocations=db_cache.collocations)
+    
+    # 3. Generate via LLM
     # Tokenize sentence to get word list with indices
     words = req.sentence.split()
     
@@ -694,18 +743,135 @@ Example output: [{{"text": "sit down", "start_word_idx": 2, "end_word_idx": 3}}]
             if all(k in c for k in ["text", "start_word_idx", "end_word_idx"]):
                 valid_collocations.append(CollocationItem(**c))
         
-        # Cache results
-        _collocation_cache[cache_key] = [c.model_dump() for c in valid_collocations]
+        collocations_data = [c.model_dump() for c in valid_collocations]
+        
+        # Cache in-memory
+        _collocation_cache[cache_key] = collocations_data
+        
+        # Persist to DB
+        try:
+            db.add(SentenceCollocationCache(
+                sentence_hash=cache_key,
+                sentence_preview=req.sentence[:100],
+                collocations=collocations_data
+            ))
+            await db.commit()
+        except Exception:
+            await db.rollback()  # Ignore duplicate key errors
         
         return DetectCollocationsResponse(collocations=valid_collocations)
         
-    except Exception as e:
+    except Exception:
         # On error, return empty list (graceful degradation)
         return DetectCollocationsResponse(collocations=[])
+
+
+# ============================================================
+# Prefetch Endpoint (On-demand Lookahead)
+# ============================================================
+
+class PrefetchCollocationsRequest(BaseModel):
+    """Request to prefetch collocations for upcoming sentences."""
+    sentences: List[str]  # Up to 5 sentences to prefetch
+
+
+async def _generate_and_cache_collocations(sentence: str, db: AsyncSession) -> None:
+    """Helper to generate collocations for a single sentence and cache to DB."""
+    import json
+    
+    cache_key = hashlib.md5(sentence.encode()).hexdigest()
+    
+    # Skip if already in memory cache
+    if cache_key in _collocation_cache:
+        return
+        
+    # Skip if already in DB
+    db_result = await db.execute(
+        select(SentenceCollocationCache).where(SentenceCollocationCache.sentence_hash == cache_key)
+    )
+    if db_result.scalar_one_or_none():
+        return
+    
+    # Generate via LLM
+    words = sentence.split()
+    prompt = f"""Analyze this sentence and identify ALL common English collocations, phrasal verbs, and fixed expressions.
+
+Sentence: "{sentence}"
+
+Word list with indices:
+{chr(10).join([f'{i}: {w}' for i, w in enumerate(words)])}
+
+Return a JSON array of detected collocations. For each, provide:
+- "text": the exact collocation text
+- "start_word_idx": starting word index
+- "end_word_idx": ending word index (inclusive)
+
+Return ONLY the JSON array, no explanation. If no collocations found, return []."""
+
+    try:
+        response = await llm_service.async_client.chat.completions.create(
+            model=llm_service.model_name,
+            messages=[{"role": "user", "content": prompt}],
+            max_tokens=300,
+            temperature=0.1
+        )
+        content = response.choices[0].message.content.strip()
+        
+        if content.startswith("```"):
+            content = content.split("\n", 1)[1].rsplit("```", 1)[0]
+        
+        collocations = json.loads(content)
+        valid_collocations = [
+            {"text": c["text"], "start_word_idx": c["start_word_idx"], "end_word_idx": c["end_word_idx"]}
+            for c in collocations
+            if all(k in c for k in ["text", "start_word_idx", "end_word_idx"])
+        ]
+        
+        # Cache in-memory
+        _collocation_cache[cache_key] = valid_collocations
+        
+        # Persist to DB
+        db.add(SentenceCollocationCache(
+            sentence_hash=cache_key,
+            sentence_preview=sentence[:100],
+            collocations=valid_collocations
+        ))
+        await db.commit()
+    except Exception:
+        await db.rollback()
+
+
+@router.post("/prefetch-collocations")
+async def prefetch_collocations(req: PrefetchCollocationsRequest):
+    """
+    Background prefetch collocations for upcoming sentences (lookahead).
+    Called by frontend when user reaches sentence N to prefetch N+1, N+2.
+    Limited to 5 sentences per request.
+    """
+    import asyncio
+    from app.core.db import AsyncSessionLocal
+    
+    sentences_to_prefetch = req.sentences[:5]  # Limit to 5
+    
+    async def _prefetch():
+        async with AsyncSessionLocal() as new_db:
+            for sentence in sentences_to_prefetch:
+                try:
+                    await _generate_and_cache_collocations(sentence, new_db)
+                except Exception:
+                    pass  # Ignore errors, best-effort prefetch
+    
+    # Use asyncio.create_task to run in background without blocking
+    # This works because we're already in the async event loop
+    asyncio.create_task(_prefetch())
+    
+    return {"status": "prefetching", "count": len(sentences_to_prefetch)}
+
 
 # ============================================================
 # SRS (Spaced Repetition) Scheduling
 # ============================================================
+
 
 def _calculate_review_interval(review_count: int, gap_type: str = None) -> timedelta:
     """

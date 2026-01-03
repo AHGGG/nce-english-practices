@@ -400,3 +400,35 @@ class VoiceSession(Base):
     # Session state
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
 
+
+class ArticleOverviewCache(Base):
+    """Cached article overviews (persisted across restarts)."""
+    __tablename__ = "article_overview_cache"
+    __table_args__ = (Index("idx_overview_hash", "title_hash", unique=True),)
+    
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    title_hash: Mapped[str] = mapped_column(String(32), unique=True, index=True)  # MD5 hash
+    title: Mapped[str] = mapped_column(Text)  # Original title for debugging
+    
+    # Cached content
+    summary_en: Mapped[str] = mapped_column(Text)
+    summary_zh: Mapped[str] = mapped_column(Text)
+    key_topics: Mapped[List[str]] = mapped_column(JSON, default=list)
+    difficulty_hint: Mapped[str] = mapped_column(Text)
+    
+    created_at: Mapped[datetime] = mapped_column(TIMESTAMP, server_default=func.now())
+
+
+class SentenceCollocationCache(Base):
+    """Cached collocation detection results per sentence."""
+    __tablename__ = "sentence_collocation_cache"
+    __table_args__ = (Index("idx_collocation_hash", "sentence_hash", unique=True),)
+    
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    sentence_hash: Mapped[str] = mapped_column(String(32), unique=True, index=True)  # MD5 hash
+    sentence_preview: Mapped[str] = mapped_column(Text)  # First 100 chars for debugging
+    
+    # Cached collocations as JSON array
+    collocations: Mapped[List[Dict]] = mapped_column(JSON, default=list)
+    
+    created_at: Mapped[datetime] = mapped_column(TIMESTAMP, server_default=func.now())
