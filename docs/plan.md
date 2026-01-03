@@ -198,6 +198,15 @@
                 - Insights and recommendations.
             - [x] Fixed diagnosis logic: phrase clicks always override to 'collocation'.
             - [x] Fixed UI: Correct Tailwind color classes for progress bars.
+        - [x] **UX Optimizations** (2026-01-03):
+            - [x] **3-Stage Progressive Simplification**:
+                - Stage 1: English simplification (vocab/grammar/both).
+                - Stage 2: Detailed breakdown with examples.
+                - Stage 3: 中文深度解释 (Chinese deep dive).
+            - [x] **Streaming LLM**: `/simplify` returns SSE for real-time text.
+            - [x] **LLM Caching**: `/simplify` and `/explain-word` cache results by hash key.
+            - [x] **Mobile UI**: Larger touch targets (py-4), flex-wrap, touch-manipulation.
+            - [x] **Bugfix**: Collocations cleared immediately on sentence change.
 - [x] **Voice Vendor Lab**:
     - [x] **Internal Tool**: `/voice-lab` refactored to **Vendor-Centric Layout** (Google, Deepgram, ElevenLabs tabs).
     - [x] **SDK Removal**: Removed ElevenLabs and Deepgram SDKs in favor of raw `httpx` API calls.

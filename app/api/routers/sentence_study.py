@@ -20,6 +20,12 @@ router = APIRouter(prefix="/api/sentence-study", tags=["sentence-study"])
 # In-memory cache for article overviews (key: title_hash, value: OverviewResponse dict)
 _overview_cache: Dict[str, dict] = {}
 
+# Cache for sentence simplifications (key: hash(sentence+type+stage), value: simplified text)
+_simplify_cache: Dict[str, str] = {}
+
+# Cache for word/phrase explanations (key: hash(word+sentence+style), value: explanation text)
+_explain_cache: Dict[str, str] = {}
+
 
 # ============================================================
 # Request/Response Models
@@ -45,6 +51,7 @@ class RecordRequest(BaseModel):
     phrase_clicks: List[str] = []  # Collocation/phrase clicks
     dwell_time_ms: int = 0
     word_count: int = 0  # Number of words in the sentence
+    max_simplify_stage: Optional[int] = None  # 1=English, 2=Detailed, 3=Chinese
     user_id: str = "default_user"  # Added field
     
     # Detailed interaction log (e.g. sequence of "lookup_word", "req_simple_english")
@@ -55,6 +62,7 @@ class RecordRequest(BaseModel):
 class SimplifyRequest(BaseModel):
     sentence: str
     simplify_type: str  # vocabulary, grammar, both
+    stage: int = 1  # 1=English, 2=Detailed English with examples, 3=Chinese deep dive
     # Optional context for "both" mode
     prev_sentence: Optional[str] = None
     next_sentence: Optional[str] = None
@@ -64,6 +72,8 @@ class SimplifyResponse(BaseModel):
     original: str
     simplified: str
     simplify_type: str
+    stage: int
+    has_next_stage: bool  # True if stage < 3
 
 
 class OverviewRequest(BaseModel):
@@ -206,7 +216,8 @@ async def record_learning(
         phrase_clicks=alias_phrase_clicks,
         interactions=req.interaction_events or [],
         dwell_ms=req.dwell_time_ms,
-        word_count=req.word_count
+        word_count=req.word_count,
+        max_simplify_stage=req.max_simplify_stage  # NEW: Pass stage depth
     )
 
     record.diagnosed_gap_type = diagnosis_result["gap_type"]
@@ -241,54 +252,137 @@ async def record_learning(
     }
 
 
-@router.post("/simplify", response_model=SimplifyResponse)
+@router.post("/simplify")
 async def simplify_sentence(req: SimplifyRequest):
-    """Generate simplified version of a sentence using LLM."""
-    if req.simplify_type == "vocabulary":
-        prompt = f"""Rewrite this sentence using simpler vocabulary (COCA 0-3000 most common words), 
+    """Generate simplified version of a sentence using streaming LLM.
+    
+    Returns Server-Sent Events (SSE) for real-time streaming display.
+    Supports 3 progressive stages:
+    - Stage 1: English simplification (simpler words or shorter sentences)
+    - Stage 2: Detailed English explanation with examples
+    - Stage 3: Chinese deep dive explanation (中文深度解释)
+    
+    SSE format:
+    - data: {"type": "chunk", "content": "..."}
+    - data: {"type": "done", "stage": 1, "has_next_stage": true}
+    - data: {"type": "error", "message": "..."}
+    """
+    import json
+    from starlette.responses import StreamingResponse
+    
+    stage = max(1, min(3, req.stage))  # Clamp to 1-3
+    
+    context_parts = []
+    if req.prev_sentence:
+        context_parts.append(f'Previous sentence: "{req.prev_sentence}"')
+    context_parts.append(f'Current sentence: "{req.sentence}"')
+    if req.next_sentence:
+        context_parts.append(f'Next sentence: "{req.next_sentence}"')
+    context = "\n".join(context_parts)
+    
+    if stage == 1:
+        # Stage 1: English simplification based on type
+        if req.simplify_type == "vocabulary":
+            prompt = f"""Rewrite this sentence using simpler vocabulary (COCA 0-3000 most common words), 
 but keep the exact grammatical structure unchanged:
 "{req.sentence}"
 
 Return ONLY the simplified sentence, no explanation."""
-    
-    elif req.simplify_type == "grammar":
-        prompt = f"""Break this sentence into 2-3 shorter, simpler sentences 
+        elif req.simplify_type == "grammar":
+            prompt = f"""Break this sentence into 2-3 shorter, simpler sentences 
 while keeping the same vocabulary words:
 "{req.sentence}"
 
 Return ONLY the simplified sentences, no explanation."""
-    
-    else:  # "both" - full context mode
-        context_parts = []
-        if req.prev_sentence:
-            context_parts.append(f'Previous: "{req.prev_sentence}"')
-        context_parts.append(f'Current: "{req.sentence}"')
-        if req.next_sentence:
-            context_parts.append(f'Next: "{req.next_sentence}"')
-        context = "\n".join(context_parts)
-        
-        prompt = f"""Explain this sentence in the simplest possible English (A1 level).
-Consider the context:
-
+        else:  # "both"
+            prompt = f"""Explain this sentence in the simplest possible English (A1 level).
+Context:
 {context}
 
 Return ONLY a simple explanation of the CURRENT sentence, no extra text."""
     
-    try:
-        response = await llm_service.async_client.chat.completions.create(
-            model=llm_service.model_name,
-            messages=[{"role": "user", "content": prompt}],
-            max_tokens=300,
-            temperature=0.3
-        )
-        simplified = response.choices[0].message.content.strip()
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"LLM error: {str(e)}")
+    elif stage == 2:
+        # Stage 2: Detailed English with examples
+        prompt = f"""The learner still doesn't understand this sentence after a simple explanation.
+Please provide a MORE DETAILED explanation with:
+1. Break down the key phrases/idioms
+2. Explain the grammar structure
+3. Give a similar example sentence
+
+Context:
+{context}
+
+Keep explanations in simple English. Format:
+📖 Key phrases: ...
+🔧 Structure: ...
+💡 Similar example: ..."""
     
-    return SimplifyResponse(
-        original=req.sentence,
-        simplified=simplified,
-        simplify_type=req.simplify_type
+    else:  # stage == 3
+        # Stage 3: Chinese deep dive
+        prompt = f"""学习者经过两次解释仍然不理解这个句子，请用中文提供深度解释：
+
+句子："{req.sentence}"
+
+上下文：
+{context}
+
+请提供：
+1. 句子的完整中文翻译
+2. 语法结构分析
+3. 关键词组/搭配的解释
+4. 为什么这个表达对中国学习者可能困难
+
+用中文回答。"""
+    
+    # Generate cache key
+    cache_key = hashlib.md5(f"{req.sentence}|{req.simplify_type}|{stage}".encode()).hexdigest()
+    
+    # Check cache first - return cached result as single SSE chunk
+    if cache_key in _simplify_cache:
+        cached_text = _simplify_cache[cache_key]
+        async def cached_stream():
+            yield f"data: {json.dumps({'type': 'chunk', 'content': cached_text})}\n\n"
+            yield f"data: {json.dumps({'type': 'done', 'stage': stage, 'has_next_stage': stage < 3, 'cached': True})}\n\n"
+        return StreamingResponse(
+            cached_stream(),
+            media_type="text/event-stream",
+            headers={"Cache-Control": "no-cache", "Connection": "keep-alive", "X-Accel-Buffering": "no"}
+        )
+    
+    async def generate_stream():
+        full_text = ""  # Collect for caching
+        try:
+            stream = await llm_service.async_client.chat.completions.create(
+                model=llm_service.model_name,
+                messages=[{"role": "user", "content": prompt}],
+                max_tokens=500 if stage > 1 else 300,
+                temperature=0.3,
+                stream=True
+            )
+            
+            async for chunk in stream:
+                if chunk.choices and chunk.choices[0].delta.content:
+                    content = chunk.choices[0].delta.content
+                    full_text += content
+                    yield f"data: {json.dumps({'type': 'chunk', 'content': content})}\n\n"
+            
+            # Cache the result
+            _simplify_cache[cache_key] = full_text
+            
+            # Send completion message
+            yield f"data: {json.dumps({'type': 'done', 'stage': stage, 'has_next_stage': stage < 3})}\n\n"
+            
+        except Exception as e:
+            yield f"data: {json.dumps({'type': 'error', 'message': str(e)})}\n\n"
+    
+    return StreamingResponse(
+        generate_stream(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            "X-Accel-Buffering": "no"  # Disable nginx buffering for mobile
+        }
     )
 
 
@@ -469,7 +563,23 @@ The word to explain: "{text_to_explain}"
 
 Give only the explanation, no preamble or labels."""
 
+    # Generate cache key for word explanations
+    explain_cache_key = hashlib.md5(f"{text_to_explain}|{req.sentence}|{req.style}".encode()).hexdigest()
+    
+    # Check cache - return instantly if cached
+    if explain_cache_key in _explain_cache:
+        cached_text = _explain_cache[explain_cache_key]
+        async def cached_explain():
+            yield f"data: {cached_text}\n\n"
+            yield "data: [DONE]\n\n"
+        return StreamingResponse(
+            cached_explain(),
+            media_type="text/event-stream",
+            headers={"Cache-Control": "no-cache", "Connection": "keep-alive"}
+        )
+
     async def generate():
+        full_text = ""  # Collect for caching
         try:
             stream = await llm_service.async_client.chat.completions.create(
                 model=llm_service.model_name,
@@ -482,7 +592,11 @@ Give only the explanation, no preamble or labels."""
             async for chunk in stream:
                 if chunk.choices and chunk.choices[0].delta.content:
                     text = chunk.choices[0].delta.content
+                    full_text += text
                     yield f"data: {text}\n\n"
+            
+            # Cache the result
+            _explain_cache[explain_cache_key] = full_text
             
             yield "data: [DONE]\n\n"
         except Exception as e:
@@ -877,11 +991,12 @@ async def _perform_deep_diagnosis(
     phrase_clicks: List[str],
     interactions: List[Dict],
     dwell_ms: int,
-    word_count: int
+    word_count: int,
+    max_simplify_stage: Optional[int] = None  # NEW: Track how deep they went in explanations
 ) -> Dict[str, Any]:
     """
     Comprehensive diagnosis logic combining explicit choices, implicit behaviors,
-    reading speed, history, and interaction patterns.
+    reading speed, history, interaction patterns, and simplification depth.
     """
     gap_type = None
     confidence = 0.0
@@ -939,6 +1054,17 @@ async def _perform_deep_diagnosis(
             patterns.append("deep_dive_needed")
         elif gap_type == "vocabulary":
             patterns.append("nuance_confusion")
+    
+    # E. Simplification Stage Depth (NEW): How many stages of explanation did they need?
+    if max_simplify_stage is not None:
+        if max_simplify_stage >= 3:
+            # Needed Chinese explanation - strong signal of difficulty
+            patterns.append("chinese_dive_needed")
+            confidence = min(1.0, confidence * 1.2)  # Boost confidence in diagnosis
+        elif max_simplify_stage == 2:
+            # Needed detailed explanation
+            patterns.append("detailed_explanation_needed")
+            confidence = min(1.0, confidence * 1.1)
 
     # --- 3. Historical & Structural Analysis ---
     if gap_type == "fundamental" or choice == "both":

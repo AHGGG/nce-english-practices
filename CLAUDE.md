@@ -174,14 +174,20 @@ The project follows a modular package structure:
 - **`app/api/routers/sentence_study.py`**: **UPDATED 2026-01-03** Sentence Study (ASL) API endpoints:
   - `GET /api/sentence-study/{source_id}/progress`: Get study progress for an article.
   - `POST /api/sentence-study/record`: Record sentence learning result with gap diagnosis.
-  - `POST /api/sentence-study/simplify`: LLM sentence simplification.
-  - `POST /api/sentence-study/overview`: Generate article overview.
+  - `POST /api/sentence-study/simplify`: **Streaming SSE** with 3-stage progressive simplification (cached).
+  - `POST /api/sentence-study/overview`: Generate article overview (cached).
+  - `POST /api/sentence-study/explain-word`: **Streaming SSE** word/phrase explanation (cached).
+  - `POST /api/sentence-study/detect-collocations`: AI collocation detection (cached).
   - `GET /api/sentence-study/queue`: Get review queue (SRS).
   - `POST /api/sentence-study/review`: Complete a review.
   - `GET /api/sentence-study/profile`: User profile stats.
+  - **Caching**: In-memory caches for `overview`, `simplify`, `explain-word`, `collocations` by hash key.
 - **`app/api/routers/voice_session.py`**: **NEW 2026-01-02** Voice Session API:
   - `POST /start`, `PUT /heartbeat`, `POST /end`.
-- **`frontend/src/components/sentence-study/SentenceStudy.jsx`**: **NEW** Sentence-by-sentence learning UI with phrase tracking.
+- **`frontend/src/components/sentence-study/SentenceStudy.jsx`**: **UPDATED** Sentence-by-sentence learning UI with:
+  - 3-stage progressive simplification with stage indicator.
+  - Streaming text display for explanations.
+  - Mobile-optimized touch targets and responsive layout.
 - **`frontend/src/utils/VoiceSessionTracker.js`**: **NEW** Frontend voice session analytics.
 
 

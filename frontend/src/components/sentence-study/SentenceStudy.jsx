@@ -114,6 +114,7 @@ const SentenceStudy = () => {
     const [showDiagnose, setShowDiagnose] = useState(false);
     const [simplifiedText, setSimplifiedText] = useState(null);
     const [simplifyingType, setSimplifyingType] = useState(null);
+    const [simplifyStage, setSimplifyStage] = useState(1);  // 1=English, 2=Detailed, 3=Chinese
     const [isSimplifying, setIsSimplifying] = useState(false);
 
     // Overview state
@@ -326,6 +327,7 @@ const SentenceStudy = () => {
         }
 
         let cancelled = false;
+        setCollocations([]);  // Clear immediately to avoid showing stale data
         setIsLoadingCollocations(true);
 
         const fetchCollocations = async () => {
@@ -516,10 +518,12 @@ const SentenceStudy = () => {
         setShowDiagnose(true);
     }, []);
 
-    // Handle difficulty choice selection
-    const handleDifficultyChoice = useCallback(async (choice) => {
+    // Handle difficulty choice selection (with stage support + streaming)
+    const handleDifficultyChoice = useCallback(async (choice, stage = 1) => {
         setIsSimplifying(true);
         setSimplifyingType(choice);
+        setSimplifyStage(stage);
+        setSimplifiedText('');  // Clear for streaming
 
         const sentences = currentArticle.sentences || [];
         const currentSentence = sentences[currentIndex]?.text || '';
@@ -527,13 +531,51 @@ const SentenceStudy = () => {
         const nextSentence = currentIndex < sentences.length - 1 ? sentences[currentIndex + 1]?.text : null;
 
         try {
-            const result = await api.simplify({
-                sentence: currentSentence,
-                simplify_type: choice,
-                prev_sentence: prevSentence,
-                next_sentence: nextSentence
+            const res = await fetch('/api/sentence-study/simplify', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    sentence: currentSentence,
+                    simplify_type: choice,
+                    stage: stage,
+                    prev_sentence: prevSentence,
+                    next_sentence: nextSentence
+                })
             });
-            setSimplifiedText(result.simplified);
+
+            if (!res.ok) throw new Error('Simplify request failed');
+
+            const reader = res.body.getReader();
+            const decoder = new TextDecoder();
+            let streamedText = '';
+
+            while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
+
+                const chunk = decoder.decode(value, { stream: true });
+                const lines = chunk.split('\n');
+
+                for (const line of lines) {
+                    if (line.startsWith('data: ')) {
+                        try {
+                            const data = JSON.parse(line.slice(6));
+                            if (data.type === 'chunk') {
+                                streamedText += data.content;
+                                setSimplifiedText(streamedText);
+                            } else if (data.type === 'done') {
+                                // Streaming complete
+                                setSimplifyStage(data.stage);
+                            } else if (data.type === 'error') {
+                                console.error('Stream error:', data.message);
+                                setSimplifiedText('Failed to generate. Please try again.');
+                            }
+                        } catch (parseErr) {
+                            // Ignore parse errors for partial chunks
+                        }
+                    }
+                }
+            }
         } catch (e) {
             console.error('Simplify failed:', e);
             setSimplifiedText('Failed to generate simplified version. Please try again.');
@@ -542,7 +584,7 @@ const SentenceStudy = () => {
         }
     }, [currentArticle, currentIndex]);
 
-    // Handle simplified response
+    // Handle simplified response (with progressive stage support)
     const handleSimplifiedResponse = useCallback(async (gotIt) => {
         const dwellTime = Date.now() - startTime;
         const sentences = currentArticle?.sentences || [];
@@ -559,25 +601,23 @@ const SentenceStudy = () => {
             word_clicks: wordClicks,
             phrase_clicks: phraseClicks,
             dwell_time_ms: dwellTime,
-            word_count: wordCount
+            word_count: wordCount,
+            max_simplify_stage: simplifyStage  // Track how deep they went
         });
 
         if (gotIt) {
             advanceToNext();
         } else {
-            // If still unclear and chose vocab/grammar, try the other one
-            if (simplifyingType === 'vocabulary') {
+            // Progressive escalation: Stage 1 -> 2 -> 3 -> advance
+            if (simplifyStage < 3) {
                 setSimplifiedText(null);
-                handleDifficultyChoice('grammar');
-            } else if (simplifyingType === 'grammar') {
-                setSimplifiedText(null);
-                handleDifficultyChoice('vocabulary');
+                handleDifficultyChoice(simplifyingType, simplifyStage + 1);
             } else {
-                // Both was chosen and still unclear - just advance
+                // Already at stage 3 (Chinese), just advance
                 advanceToNext();
             }
         }
-    }, [currentArticle, currentIndex, wordClicks, phraseClicks, startTime, simplifyingType, handleDifficultyChoice]);
+    }, [currentArticle, currentIndex, wordClicks, phraseClicks, startTime, simplifyingType, simplifyStage, handleDifficultyChoice]);
 
     // Advance to next sentence
     const advanceToNext = useCallback(() => {
@@ -590,6 +630,7 @@ const SentenceStudy = () => {
             setShowDiagnose(false);
             setSimplifiedText(null);
             setSimplifyingType(null);
+            setSimplifyStage(1);  // Reset stage for new sentence
             setProgress(prev => ({
                 ...prev,
                 studied_count: prev.studied_count + 1,
@@ -812,31 +853,36 @@ const SentenceStudy = () => {
                         {/* Simplified version */}
                         {simplifiedText && (
                             <div className="mb-8 p-6 border border-[#00FF94]/30 bg-[#00FF94]/5">
-                                <div className="flex items-center gap-2 mb-3">
-                                    <Sparkles className="w-4 h-4 text-[#00FF94]" />
-                                    <span className="text-xs text-[#00FF94] uppercase tracking-wider">
-                                        {simplifyingType === 'vocabulary' ? 'Simpler Words' :
-                                            simplifyingType === 'grammar' ? 'Simpler Structure' :
-                                                'Simplified'}
+                                <div className="flex items-center justify-between mb-3">
+                                    <div className="flex items-center gap-2">
+                                        <Sparkles className="w-4 h-4 text-[#00FF94]" />
+                                        <span className="text-xs text-[#00FF94] uppercase tracking-wider">
+                                            {simplifyStage === 1 ? 'Simple Explanation' :
+                                                simplifyStage === 2 ? 'Detailed Breakdown' :
+                                                    '中文深度解释'}
+                                        </span>
+                                    </div>
+                                    <span className="text-xs text-[#666]">
+                                        Stage {simplifyStage}/3
                                     </span>
                                 </div>
-                                <p className="font-serif text-lg leading-relaxed text-[#00FF94]">
+                                <div className="font-serif text-lg leading-relaxed text-[#00FF94] whitespace-pre-wrap">
                                     {simplifiedText}
-                                </p>
-                                <div className="mt-6 flex justify-center gap-4">
+                                </div>
+                                <div className="mt-6 flex flex-wrap justify-center gap-3">
                                     <button
                                         onClick={() => handleSimplifiedResponse(true)}
-                                        className="flex items-center gap-2 px-6 py-3 bg-[#00FF94] text-black font-bold uppercase text-xs hover:bg-[#00CC77] transition-colors"
+                                        className="flex items-center justify-center gap-2 min-w-[140px] px-6 py-4 bg-[#00FF94] text-black font-bold uppercase text-sm hover:bg-[#00CC77] active:scale-95 transition-all touch-manipulation"
                                     >
-                                        <CheckCircle className="w-4 h-4" />
-                                        Got it!
+                                        <CheckCircle className="w-5 h-5" />
+                                        {simplifyStage === 3 ? '明白了!' : 'Got it!'}
                                     </button>
                                     <button
                                         onClick={() => handleSimplifiedResponse(false)}
-                                        className="flex items-center gap-2 px-6 py-3 border border-[#666] text-[#888] hover:text-white hover:border-white transition-colors"
+                                        className="flex items-center justify-center gap-2 min-w-[140px] px-6 py-4 border border-[#666] text-[#888] hover:text-white hover:border-white active:scale-95 transition-all touch-manipulation"
                                     >
-                                        <HelpCircle className="w-4 h-4" />
-                                        Still Unclear
+                                        <HelpCircle className="w-5 h-5" />
+                                        {simplifyStage < 3 ? 'Still Unclear' : '还是不懂'}
                                     </button>
                                 </div>
                             </div>
@@ -844,17 +890,17 @@ const SentenceStudy = () => {
 
                         {/* Main action buttons (when not in diagnose mode) */}
                         {!showDiagnose && (
-                            <div className="flex justify-center gap-4">
+                            <div className="flex flex-wrap justify-center gap-3">
                                 <button
                                     onClick={handleClear}
-                                    className="flex items-center gap-2 px-8 py-4 bg-[#00FF94] text-black font-bold uppercase text-sm hover:bg-[#00CC77] transition-colors"
+                                    className="flex items-center justify-center gap-2 min-w-[140px] px-8 py-4 bg-[#00FF94] text-black font-bold uppercase text-sm hover:bg-[#00CC77] active:scale-95 transition-all touch-manipulation"
                                 >
                                     <CheckCircle className="w-5 h-5" />
                                     Clear
                                 </button>
                                 <button
                                     onClick={handleUnclear}
-                                    className="flex items-center gap-2 px-8 py-4 border border-[#666] text-[#888] hover:text-white hover:border-white transition-colors"
+                                    className="flex items-center justify-center gap-2 min-w-[140px] px-8 py-4 border border-[#666] text-[#888] hover:text-white hover:border-white active:scale-95 transition-all touch-manipulation"
                                 >
                                     <HelpCircle className="w-5 h-5" />
                                     Unclear

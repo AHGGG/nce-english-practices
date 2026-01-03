@@ -1,61 +1,11 @@
-=== Log session started at 2026-01-03T11:24:45.703710 ===
-2026-01-03 11:24:46.818 [BA] [INFO] [network] httpx: HTTP Request: GET http://test/api/performance?days=30 "HTTP/1.1 200 OK"
-2026-01-03 11:24:47.661 [BA] [INFO] [network] httpx: HTTP Request: POST http://test/api/voice/token "HTTP/1.1 200 OK"
-2026-01-03 11:24:52.687 [BA] [INFO] [lifecycl] app.services.aui_input: Using direct memory dispatch for session test-session-1 (Fallback/Test)
-2026-01-03 11:24:52.687 [BA] [INFO] [lifecycl] app.services.aui_input: Persisted input for session test-session-1
-2026-01-03 11:24:52.806 [BA] [WARN] [lifecycl] app.services.aui_input: Timeout waiting for input on session test-session-timeout
-2026-01-03 11:24:53.789 [BA] [INFO] [lifecycl] app.services.aui_input: Using direct memory dispatch for session session-1 (Fallback/Test)
-2026-01-03 11:24:53.789 [BA] [INFO] [lifecycl] app.services.aui_input: Persisted input for session session-1
-2026-01-03 11:24:53.892 [BA] [WARN] [lifecycl] app.services.aui_input: Timeout waiting for input on session session-2
-2026-01-03 11:25:11.795 [BA] [INFO] [lifecycl] app.api.routers.aui_websocket: WebSocket connected: stream_type=story
-2026-01-03 11:25:11.991 [BA] [INFO] [lifecycl] app.api.routers.aui_websocket: WebSocket connected: stream_type=activity
-2026-01-03 11:25:17.164 [BA] [INFO] [lifecycl] app.api.routers.aui_websocket: WebSocket connected: stream_type=tool-call
-2026-01-03 11:25:19.210 [BA] [INFO] [lifecycl] app.api.routers.aui_websocket: WebSocket connected: stream_type=agent-run
-2026-01-03 11:25:21.828 [BA] [INFO] [lifecycl] app.api.routers.aui_websocket: WebSocket connected: stream_type=multi-messages
-2026-01-03 11:25:26.729 [BA] [INFO] [lifecycl] app.api.routers.aui_websocket: WebSocket connected: stream_type=invalid-type
-2026-01-03 11:25:26.851 [BA] [INFO] [lifecycl] app.api.routers.aui_websocket: WebSocket connected: stream_type=vocabulary
-2026-01-03 11:25:26.852 [BA] [INFO] [network] app.api.routers.aui_websocket: Received params: {'words': ['test', 'example'], 'user_level': 2}
-2026-01-03 11:25:28.378 [BA] [INFO] [lifecycl] app.api.routers.aui_websocket: WebSocket connected: stream_type=activity
-2026-01-03 11:25:28.486 [BA] [INFO] [lifecycl] app.api.routers.aui_websocket: WebSocket connected: stream_type=story
-2026-01-03 11:25:29.533 [BA] [INFO] [network] httpx: HTTP Request: GET http://test/docs "HTTP/1.1 200 OK"
-2026-01-03 11:25:30.370 [BA] [INFO] [network] httpx: HTTP Request: GET http://test/ "HTTP/1.1 404 Not Found"
-2026-01-03 11:25:31.222 [BA] [INFO] [network] httpx: HTTP Request: GET http://test/api/performance "HTTP/1.1 200 OK"
-2026-01-03 11:25:32.079 [BA] [INFO] [network] httpx: HTTP Request: GET http://test/api/books/ "HTTP/1.1 200 OK"
-2026-01-03 11:25:32.930 [BA] [INFO] [network] httpx: HTTP Request: GET http://test/api/books/test_api_book "HTTP/1.1 200 OK"
-2026-01-03 11:25:33.776 [BA] [INFO] [network] httpx: HTTP Request: GET http://test/api/books/test_api_book/next "HTTP/1.1 200 OK"
-2026-01-03 11:25:34.620 [BA] [INFO] [network] httpx: HTTP Request: GET http://test/api/books/unknown_book/next "HTTP/1.1 404 Not Found"
-2026-01-03 11:25:36.110 [BA] [INFO] [network] httpx: HTTP Request: POST https://api.deepseek.com/v1/chat/completions "HTTP/1.1 200 OK"
-2026-01-03 11:25:41.059 [BA] [INFO] [user_inp] app.api.routers.deepgram.live_stt: Connecting to Deepgram URL: wss://api.deepgram.com/v1/listen?model=nova-3&smart_format=true&interim_results=true&channels=1
-2026-01-03 11:25:49.333 [BA] [INFO] [lifecycl] app.api.routers.deepgram.live_stt: Connected to Deepgram Live: nova-3
-2026-01-03 11:25:57.652 [BA] [INFO] [lifecycl] app.api.routers.deepgram.streaming_tts: Connected to Deepgram TTS: aura-asteria-en
-2026-01-03 11:26:10.967 [BA] [INFO] [agent_ou] app.api.routers.deepgram.unified_agent: Function calling enabled with 4 functions
-2026-01-03 11:26:10.968 [BA] [INFO] [agent_ou] app.api.routers.deepgram.unified_agent: Connecting to Deepgram Agent API: wss://agent.deepgram.com/v1/agent/converse
-2026-01-03 11:26:17.905 [BA] [INFO] [agent_ou] app.api.routers.deepgram.unified_agent: [Deepgram Agent] Welcome: {"type": "Welcome", "request_id": "d62c3959-a4b9-4257-938d-abadafde4fcd"}
-2026-01-03 11:26:18.844 [BA] [INFO] [network] httpx: HTTP Request: POST http://test/api/dictionary/lookup "HTTP/1.1 200 OK"
-2026-01-03 11:26:19.707 [BA] [INFO] [network] httpx: HTTP Request: POST http://test/api/dictionary/context "HTTP/1.1 200 OK"
-2026-01-03 11:26:20.569 [BA] [INFO] [network] httpx: HTTP Request: POST http://test/api/dictionary/context "HTTP/1.1 200 OK"
-2026-01-03 11:26:21.420 [BA] [INFO] [network] httpx: HTTP Request: GET http://test/dict/resource?path=image.png "HTTP/1.1 200 OK"
-2026-01-03 11:26:22.303 [BA] [INFO] [network] httpx: HTTP Request: GET http://test/dict/resource?path=unknown.png "HTTP/1.1 404 Not Found"
-2026-01-03 11:26:23.160 [BA] [INFO] [network] httpx: HTTP Request: GET http://test/api/reading/epub/books "HTTP/1.1 200 OK"
-2026-01-03 11:26:24.008 [BA] [INFO] [network] httpx: HTTP Request: GET http://test/api/reading/epub/books "HTTP/1.1 200 OK"
-2026-01-03 11:26:53.796 [BA] [INFO] [network] httpx: HTTP Request: GET http://test/api/negotiation/next-content?book=test_int_book "HTTP/1.1 200 OK"
-2026-01-03 11:26:54.659 [BA] [INFO] [network] httpx: HTTP Request: GET http://test/api/negotiation/next-content "HTTP/1.1 200 OK"
-2026-01-03 11:26:55.651 [BA] [INFO] [network] httpx: HTTP Request: POST http://test/api/sentence-study/record "HTTP/1.1 200 OK"
-2026-01-03 11:26:56.524 [BA] [INFO] [network] httpx: HTTP Request: POST http://test/api/sentence-study/record "HTTP/1.1 200 OK"
-2026-01-03 11:26:57.397 [BA] [INFO] [network] httpx: HTTP Request: POST http://test/api/sentence-study/record "HTTP/1.1 200 OK"
-2026-01-03 11:26:58.267 [BA] [INFO] [network] httpx: HTTP Request: POST http://test/api/sentence-study/record "HTTP/1.1 200 OK"
-2026-01-03 11:26:59.133 [BA] [INFO] [network] httpx: HTTP Request: POST http://test/api/sentence-study/record "HTTP/1.1 200 OK"
-2026-01-03 11:26:59.967 [BA] [INFO] [network] httpx: HTTP Request: GET http://test/api/sentence-study/epub:empty-test.epub:1/progress "HTTP/1.1 200 OK"
-2026-01-03 11:27:00.835 [BA] [INFO] [network] httpx: HTTP Request: POST http://test/api/sentence-study/record "HTTP/1.1 200 OK"
-2026-01-03 11:27:00.840 [BA] [INFO] [network] httpx: HTTP Request: POST http://test/api/sentence-study/record "HTTP/1.1 200 OK"
-2026-01-03 11:27:00.845 [BA] [INFO] [network] httpx: HTTP Request: POST http://test/api/sentence-study/record "HTTP/1.1 200 OK"
-2026-01-03 11:27:00.849 [BA] [INFO] [network] httpx: HTTP Request: GET http://test/api/sentence-study/epub:progress-test.epub:1/progress "HTTP/1.1 200 OK"
-2026-01-03 11:27:10.306 [BA] [INFO] [audio] httpx: HTTP Request: POST https://api.deepgram.com/v1/speak?model=aura-asteria-en&encoding=mp3 "HTTP/1.1 200 OK"
-2026-01-03 11:27:12.341 [BA] [INFO] [network] httpx: HTTP Request: POST https://api.deepgram.com/v1/listen?model=nova-3&smart_format=true&punctuate=true&utterances=true&language=en-US "HTTP/1.1 200 OK"
-2026-01-03 11:27:24.856 [BA] [INFO] [network] httpx: HTTP Request: POST https://api.deepgram.com/v1/listen?model=nova-3&smart_format=true&punctuate=true&utterances=true&language=en-US "HTTP/1.1 200 OK"
-2026-01-03 11:27:24.869 [BA] [INFO] [network] httpx: HTTP Request: GET http://testserver/api/voice-lab/config "HTTP/1.1 200 OK"
-2026-01-03 11:27:24.873 [BA] [INFO] [agent_ou] app.api.routers.voice_lab: TTS Request: deepgram - aura-asteria-en
-2026-01-03 11:27:26.843 [BA] [INFO] [audio] httpx: HTTP Request: POST https://api.deepgram.com/v1/speak?model=aura-asteria-en&encoding=mp3 "HTTP/1.1 200 OK"
-2026-01-03 11:27:26.888 [BA] [INFO] [agent_ou] httpx: HTTP Request: POST http://testserver/api/voice-lab/tts "HTTP/1.1 200 OK"
-2026-01-03 11:27:26.912 [BA] [INFO] [user_inp] httpx: HTTP Request: POST http://testserver/api/voice-lab/stt "HTTP/1.1 422 Unprocessable Entity"
-2026-01-03 11:27:30.465 [BA] [INFO] [network] httpx: HTTP Request: POST http://testserver/api/voice/token "HTTP/1.1 200 OK"
+=== Log session started at 2026-01-03T12:24:36.357031 ===
+2026-01-03 12:24:37.380 [BA] [INFO] [network] httpx: HTTP Request: POST http://test/api/sentence-study/record "HTTP/1.1 200 OK"
+2026-01-03 12:24:38.252 [BA] [INFO] [network] httpx: HTTP Request: POST http://test/api/sentence-study/record "HTTP/1.1 200 OK"
+2026-01-03 12:24:39.123 [BA] [INFO] [network] httpx: HTTP Request: POST http://test/api/sentence-study/record "HTTP/1.1 200 OK"
+2026-01-03 12:24:39.993 [BA] [INFO] [network] httpx: HTTP Request: POST http://test/api/sentence-study/record "HTTP/1.1 200 OK"
+2026-01-03 12:24:40.869 [BA] [INFO] [network] httpx: HTTP Request: POST http://test/api/sentence-study/record "HTTP/1.1 200 OK"
+2026-01-03 12:24:41.713 [BA] [INFO] [network] httpx: HTTP Request: GET http://test/api/sentence-study/epub:empty-test.epub:1/progress "HTTP/1.1 200 OK"
+2026-01-03 12:24:42.554 [BA] [INFO] [network] httpx: HTTP Request: POST http://test/api/sentence-study/record "HTTP/1.1 200 OK"
+2026-01-03 12:24:42.559 [BA] [INFO] [network] httpx: HTTP Request: POST http://test/api/sentence-study/record "HTTP/1.1 200 OK"
+2026-01-03 12:24:42.563 [BA] [INFO] [network] httpx: HTTP Request: POST http://test/api/sentence-study/record "HTTP/1.1 200 OK"
+2026-01-03 12:24:42.568 [BA] [INFO] [network] httpx: HTTP Request: GET http://test/api/sentence-study/epub:progress-test.epub:1/progress "HTTP/1.1 200 OK"
