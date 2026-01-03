@@ -5,13 +5,14 @@ Endpoints for tracking study progress, recording learning results, and generatin
 from fastapi import APIRouter, HTTPException, Depends
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
-from typing import Optional, List, Dict
+from typing import Optional, List, Dict, Any
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, Integer, case
 import hashlib
+from datetime import datetime, timedelta
 
 from app.core.db import get_db
-from app.models.orm import SentenceLearningRecord
+from app.models.orm import SentenceLearningRecord, UserComprehensionProfile, WordProficiency
 from app.services.llm import llm_service
 
 router = APIRouter(prefix="/api/sentence-study", tags=["sentence-study"])
@@ -36,6 +37,7 @@ class RecordRequest(BaseModel):
     source_type: str
     source_id: str
     sentence_index: int
+    sentence_text: Optional[str] = None  # Store for review display
     initial_response: str  # clear, unclear
     unclear_choice: Optional[str] = None  # vocabulary, grammar, both
     simplified_response: Optional[str] = None  # got_it, still_unclear
@@ -43,6 +45,11 @@ class RecordRequest(BaseModel):
     phrase_clicks: List[str] = []  # Collocation/phrase clicks
     dwell_time_ms: int = 0
     word_count: int = 0  # Number of words in the sentence
+    user_id: str = "default_user"  # Added field
+    
+    # Detailed interaction log (e.g. sequence of "lookup_word", "req_simple_english")
+    # Format: [{"action": "lookup", "target": "foo", "timestamp": 123}, ...]
+    interaction_events: List[Dict] = []
 
 
 class SimplifyRequest(BaseModel):
@@ -161,46 +168,77 @@ async def record_learning(
     db: AsyncSession = Depends(get_db)
 ):
     """Record a sentence learning result."""
+    
+    # Deduplicate clicks while preserving order
+    unique_word_clicks = list(dict.fromkeys(req.word_clicks))
+    unique_phrase_clicks = list(dict.fromkeys(req.phrase_clicks))
+
     record = SentenceLearningRecord(
         source_type=req.source_type,
         source_id=req.source_id,
         sentence_index=req.sentence_index,
+        sentence_text=req.sentence_text,  # Store for review display
         initial_response=req.initial_response,
         unclear_choice=req.unclear_choice,
         simplified_response=req.simplified_response,
-        word_clicks=req.word_clicks,
-        phrase_clicks=req.phrase_clicks,
+        word_clicks=unique_word_clicks,
+        phrase_clicks=unique_phrase_clicks,
         dwell_time_ms=req.dwell_time_ms,
-        word_count=req.word_count
+        word_count=req.word_count,
+        interaction_log=req.interaction_events or []
     )
     
-    # Diagnose gap type based on responses
-    if req.initial_response == "clear":
-        if req.word_clicks:
-            record.diagnosed_gap_type = "vocabulary"
-            record.confidence = 0.7
-        else:
-            record.diagnosed_gap_type = None  # No gap
-            record.confidence = 1.0
-    elif req.unclear_choice == "vocabulary" and req.simplified_response == "got_it":
-        record.diagnosed_gap_type = "vocabulary"
-        record.confidence = 0.9
-    elif req.unclear_choice == "grammar" and req.simplified_response == "got_it":
-        record.diagnosed_gap_type = "structure"
-        record.confidence = 0.9
-    elif req.unclear_choice == "both":
-        record.diagnosed_gap_type = "fundamental"
-        record.confidence = 0.7
-    elif req.unclear_choice and req.simplified_response == "still_unclear":
-        # User still unclear after simplification - mixed problem
-        record.diagnosed_gap_type = "mixed"
-        record.confidence = 0.6
+    # ============================================================
+    # Deep Diagnosis & Profile Update
+    # ============================================================
     
+    # Use the new comprehensive diagnosis engine
+    alias_word_clicks = list(dict.fromkeys(req.word_clicks))
+    alias_phrase_clicks = list(dict.fromkeys(req.phrase_clicks))
+
+    diagnosis_result = await _perform_deep_diagnosis(
+        db=db,
+        user_id=req.user_id,
+        initial=req.initial_response,
+        choice=req.unclear_choice,
+        simplified=req.simplified_response,
+        word_clicks=alias_word_clicks,
+        phrase_clicks=alias_phrase_clicks,
+        interactions=req.interaction_events or [],
+        dwell_ms=req.dwell_time_ms,
+        word_count=req.word_count
+    )
+
+    record.diagnosed_gap_type = diagnosis_result["gap_type"]
+    record.diagnosed_patterns = diagnosis_result["patterns"]
+    record.confidence = diagnosis_result["confidence"]
+    
+    # --- SRS Scheduling ---
+    # Set scheduled_review for sentences with gaps
+    if diagnosis_result["gap_type"] is not None:
+        record.scheduled_review = datetime.utcnow() + _calculate_review_interval(0)  # First review
+        record.review_count = 0
+
     db.add(record)
+    
+    # --- Update UserComprehensionProfile (Deep Integration) ---
+    await _update_user_profile_deep(
+        db, 
+        req.user_id, 
+        diagnosis_result, 
+        alias_word_clicks
+    )
+
     await db.commit()
     await db.refresh(record)
     
-    return {"status": "ok", "record_id": record.id}
+    return {
+        "status": "ok", 
+        "record_id": record.id, 
+        "diagnosed_gap": diagnosis_result["gap_type"],
+        "confidence": diagnosis_result["confidence"],
+        "patterns": diagnosis_result["patterns"]
+    }
 
 
 @router.post("/simplify", response_model=SimplifyResponse)
@@ -550,3 +588,436 @@ Example output: [{{"text": "sit down", "start_word_idx": 2, "end_word_idx": 3}}]
     except Exception as e:
         # On error, return empty list (graceful degradation)
         return DetectCollocationsResponse(collocations=[])
+
+# ============================================================
+# SRS (Spaced Repetition) Scheduling
+# ============================================================
+
+def _calculate_review_interval(review_count: int, gap_type: str = None) -> timedelta:
+    """
+    Smart SRS interval based on review count and gap type.
+    Collocations are harder to remember, use shorter intervals.
+    """
+    base_intervals = [1, 3, 7, 14, 30]  # days
+    
+    # Collocation gaps get shorter intervals (harder to retain)
+    if gap_type and 'collocation' in gap_type:
+        base_intervals = [1, 2, 4, 7, 14]  
+    
+    idx = min(review_count, len(base_intervals) - 1)
+    return timedelta(days=base_intervals[idx])
+
+
+class ReviewQueueItem(BaseModel):
+    """Item in the review queue."""
+    record_id: int
+    source_type: str
+    source_id: str
+    sentence_index: int
+    sentence_text: Optional[str]  # The actual sentence for display
+    diagnosed_gap_type: Optional[str]
+    scheduled_review: str  # ISO format
+    review_count: int
+
+
+class ReviewRequest(BaseModel):
+    """Request to complete a review."""
+    record_id: int
+    result: str  # "clear" or "unclear"
+
+
+class WordToReview(BaseModel):
+    """A word that needs practice."""
+    word: str
+    difficulty_score: float
+    exposure_count: int
+
+
+class ProfileResponse(BaseModel):
+    """User comprehension profile stats."""
+    user_id: str
+    # Study Stats
+    total_sentences_studied: int
+    clear_count: int
+    unclear_count: int
+    clear_rate: float  # 0-1
+    # Gap Breakdown
+    vocab_gap_count: int
+    grammar_gap_count: int
+    collocation_gap_count: int
+    # Words needing practice (from WordProficiency)
+    words_to_review: List[WordToReview]
+    # Learning Insights (translated patterns)
+    insights: List[str]
+    # Next action recommendation
+    recommendation: Optional[str] = None
+
+
+@router.get("/queue", response_model=List[ReviewQueueItem])
+async def get_review_queue(
+    user_id: str = "default_user",
+    db: AsyncSession = Depends(get_db)
+):
+    """Get sentences due for review (scheduled_review <= now)."""
+    now = datetime.utcnow()
+    result = await db.execute(
+        select(SentenceLearningRecord)
+        .where(
+            SentenceLearningRecord.user_id == user_id,
+            SentenceLearningRecord.scheduled_review <= now,
+            SentenceLearningRecord.diagnosed_gap_type.isnot(None)
+        )
+        .order_by(SentenceLearningRecord.scheduled_review.asc())
+        .limit(50)
+    )
+    records = result.scalars().all()
+    
+    return [
+        ReviewQueueItem(
+            record_id=r.id,
+            source_type=r.source_type,
+            source_id=r.source_id,
+            sentence_index=r.sentence_index,
+            sentence_text=r.sentence_text,
+            diagnosed_gap_type=r.diagnosed_gap_type,
+            scheduled_review=r.scheduled_review.isoformat() if r.scheduled_review else "",
+            review_count=r.review_count or 0
+        )
+        for r in records
+    ]
+
+
+@router.post("/review")
+async def complete_review(
+    req: ReviewRequest,
+    db: AsyncSession = Depends(get_db)
+):
+    """Complete a review and reschedule the sentence."""
+    result = await db.execute(
+        select(SentenceLearningRecord).where(SentenceLearningRecord.id == req.record_id)
+    )
+    record = result.scalar_one_or_none()
+    
+    if not record:
+        raise HTTPException(status_code=404, detail="Record not found")
+    
+    if req.result == "clear":
+        # User understood -> schedule further out
+        record.review_count = (record.review_count or 0) + 1
+        record.scheduled_review = datetime.utcnow() + _calculate_review_interval(
+            record.review_count, record.diagnosed_gap_type
+        )
+    else:
+        # User still unclear -> reset to short interval (keep gap type for next calculation)
+        record.scheduled_review = datetime.utcnow() + _calculate_review_interval(0, record.diagnosed_gap_type)
+        # Don't reset review_count to preserve history
+    
+    await db.commit()
+    
+    return {
+        "status": "ok",
+        "next_review": record.scheduled_review.isoformat(),
+        "review_count": record.review_count
+    }
+
+
+@router.get("/profile", response_model=ProfileResponse)
+async def get_user_profile(
+    user_id: str = "default_user",
+    db: AsyncSession = Depends(get_db)
+):
+    """Get user comprehension profile with actionable stats."""
+    
+    # 1. Get study stats from SentenceLearningRecord
+    stats_result = await db.execute(
+        select(
+            func.count(SentenceLearningRecord.id).label("total"),
+            func.sum(case((SentenceLearningRecord.initial_response == "clear", 1), else_=0)).label("clear"),
+            func.sum(case((SentenceLearningRecord.diagnosed_gap_type == "vocabulary", 1), else_=0)).label("vocab"),
+            func.sum(case((SentenceLearningRecord.diagnosed_gap_type == "structure", 1), else_=0)).label("grammar"),
+            func.sum(case((SentenceLearningRecord.diagnosed_gap_type == "collocation", 1), else_=0)).label("collocation"),
+        ).where(SentenceLearningRecord.user_id == user_id)
+    )
+    stats = stats_result.one()
+    total = stats.total or 0
+    clear = stats.clear or 0
+    unclear = total - clear
+    
+    # 2. Get words needing practice from WordProficiency
+    words_result = await db.execute(
+        select(WordProficiency)
+        .where(
+            WordProficiency.user_id == user_id,
+            WordProficiency.difficulty_score > 0.3
+        )
+        .order_by(WordProficiency.difficulty_score.desc())
+        .limit(15)
+    )
+    difficult_words = words_result.scalars().all()
+    
+    # 3. Generate insights from patterns
+    profile_result = await db.execute(
+        select(UserComprehensionProfile).where(UserComprehensionProfile.user_id == user_id)
+    )
+    profile = profile_result.scalar_one_or_none()
+    
+    insights = []
+    if profile and profile.common_grammar_gaps:
+        pattern_translations = {
+            'slow_reading': '阅读速度较慢，建议多练习限时阅读',
+            'phrase_lookup': '固定搭配是弱项，建议专项练习 collocations',
+            'multi_word_query': '多词表达查询频繁，注意积累短语',
+            'deep_dive_needed': '需要深入解释才能理解，语境理解能力待提升',
+            'long_sentence_struggle': '长句理解困难，建议练习句子结构拆解',
+        }
+        from collections import Counter
+        counts = Counter(profile.common_grammar_gaps)
+        for pattern, count in counts.most_common(3):
+            if pattern in pattern_translations and count >= 2:
+                insights.append(pattern_translations[pattern])
+    
+    # 4. Generate recommendation
+    recommendation = None
+    if total == 0:
+        recommendation = "开始你的第一次句子学习之旅"
+    elif unclear > clear:
+        recommendation = "多练习! 试试选择较简单的文章开始"
+    elif len(difficult_words) > 5:
+        recommendation = f"有 {len(difficult_words)} 个词汇需要加强（见下方列表）"
+    elif stats.collocation and stats.collocation > stats.vocab:
+        recommendation = "固定搭配是主要弱点，多关注短语积累"
+    else:
+        recommendation = "继续保持! 挑战更难的文章吧"
+    
+    return ProfileResponse(
+        user_id=user_id,
+        total_sentences_studied=total,
+        clear_count=clear,
+        unclear_count=unclear,
+        clear_rate=round(clear / max(total, 1), 2),
+        vocab_gap_count=stats.vocab or 0,
+        grammar_gap_count=stats.grammar or 0,
+        collocation_gap_count=stats.collocation or 0,
+        words_to_review=[
+            WordToReview(word=w.word, difficulty_score=round(w.difficulty_score, 2), exposure_count=w.exposure_count)
+            for w in difficult_words
+        ],
+        insights=insights,
+        recommendation=recommendation
+    )
+
+
+# ============================================================
+# Diagnosis Utilities
+# ============================================================
+
+async def _analyze_user_history(db: AsyncSession, user_id: str = "default_user") -> Dict[str, str]:
+    """
+    Analyze recent user history to find patterns in learning gaps.
+    Returns a dict with 'common_gap': 'vocabulary' | 'structure' | 'mixed' | None
+    """
+    try:
+        # Get last 20 records where user had trouble
+        result = await db.execute(
+            select(SentenceLearningRecord)
+            .where(
+                SentenceLearningRecord.user_id == user_id,
+                SentenceLearningRecord.initial_response == "unclear"
+            )
+            .order_by(SentenceLearningRecord.created_at.desc())
+            .limit(20)
+        )
+        records = result.scalars().all()
+        
+        if not records:
+            return {"common_gap": None}
+            
+        vocab_count = 0
+        structure_count = 0
+        
+        for r in records:
+            if r.diagnosed_gap_type == "vocabulary":
+                vocab_count += 1
+            elif r.diagnosed_gap_type == "structure":
+                structure_count += 1
+                
+        total = len(records)
+        if vocab_count / total > 0.6:
+            return {"common_gap": "vocabulary"}
+        elif structure_count / total > 0.4:
+            return {"common_gap": "structure"}
+            
+        # Optimization: Check for length correlation
+        long_sentence_fail_count = 0
+        for r in records:
+             if r.word_count > 20:
+                 long_sentence_fail_count += 1
+        
+        if long_sentence_fail_count / total > 0.5:
+             # User consistently fails long sentences -> likely a parsing/structure endurance issue
+             return {"common_gap": "structure"} # Bias towards structure for long sentences
+
+        return {"common_gap": "mixed"}
+        
+    except Exception:
+        return {"common_gap": None}
+
+
+# ============================================================
+# Deep Diagnosis Engine
+# ============================================================
+
+async def _perform_deep_diagnosis(
+    db: AsyncSession,
+    user_id: str,
+    initial: str,
+    choice: Optional[str],
+    simplified: Optional[str],
+    word_clicks: List[str],
+    phrase_clicks: List[str],
+    interactions: List[Dict],
+    dwell_ms: int,
+    word_count: int
+) -> Dict[str, Any]:
+    """
+    Comprehensive diagnosis logic combining explicit choices, implicit behaviors,
+    reading speed, history, and interaction patterns.
+    """
+    gap_type = None
+    confidence = 0.0
+    patterns = []
+    
+    # --- 1. Base Diagnosis (Explicit Choice) ---
+    if initial == "clear":
+        gap_type = None
+        confidence = 1.0 # Tentative, reviewed below
+    elif choice == "vocabulary":
+        gap_type = "vocabulary"
+        confidence = 0.9 if simplified == "got_it" else 0.7
+    elif choice == "grammar":
+        gap_type = "structure"
+        confidence = 0.9 if simplified == "got_it" else 0.7
+    elif choice == "collocation":
+        gap_type = "collocation"
+        confidence = 0.9
+    elif choice == "both":
+        gap_type = "fundamental"
+        confidence = 0.7
+        
+    # --- 2. Implicit Signals Overrides ---
+    
+    # A. Phrase Clicks -> Strong Collocation Signal
+    # If user clicked on phrases, they're struggling with collocations regardless of initial choice
+    if phrase_clicks:
+        gap_type = "collocation"
+        confidence = 0.85
+        patterns.append("phrase_lookup")
+
+    # B. Multi-word Lookups -> Collocation Signal
+    for event in interactions:
+        target = event.get("text") or event.get("word")
+        if target and isinstance(target, str) and " " in target.strip():
+            if gap_type != "collocation":
+                gap_type = "collocation"
+                confidence = 0.8
+                patterns.append("multi_word_query")
+            break
+
+    # C. Speed Analysis (The "False Clear" Detector)
+    if word_count > 0:
+        ms_per_word = dwell_ms / word_count
+        if ms_per_word > 800 and initial == "clear": 
+            confidence = 0.6
+            patterns.append("slow_reading")
+            
+    # D. Interaction Depth (The "Confusion" Detector)
+    deep_dive_count = sum(1 for e in interactions if e.get("style") in ["chinese_deep", "simple"])
+    if deep_dive_count > 0:
+        if gap_type is None:
+            gap_type = "vocabulary"
+            confidence = 0.6
+            patterns.append("deep_dive_needed")
+        elif gap_type == "vocabulary":
+            patterns.append("nuance_confusion")
+
+    # --- 3. Historical & Structural Analysis ---
+    if gap_type == "fundamental" or choice == "both":
+        history = await _analyze_user_history(db, user_id)
+        if history["common_gap"]:
+            patterns.append(f"history_{history['common_gap']}")
+            if history["common_gap"] == "vocabulary":
+                gap_type = "fundamental (vocab-heavy)"
+            elif history["common_gap"] == "structure":
+                gap_type = "fundamental (structure-heavy)"
+
+    # --- 4. Length Bias (Structure Endurance) ---
+    if word_count > 25 and gap_type in ["fundamental", "fundamental (structure-heavy)"]:
+        patterns.append("long_sentence_struggle")
+        gap_type = "structure"
+        confidence = 0.8
+
+    return {
+        "gap_type": gap_type,
+        "confidence": confidence,
+        "patterns": patterns
+    }
+
+
+async def _update_user_profile_deep(
+    db: AsyncSession, 
+    user_id: str, 
+    diagnosis: Dict[str, Any], 
+    word_clicks: List[str]
+):
+    """
+    Updates profile with granular insights from the deep diagnosis.
+    """
+    profile_result = await db.execute(select(UserComprehensionProfile).where(UserComprehensionProfile.user_id == user_id))
+    profile = profile_result.scalar_one_or_none()
+    
+    if not profile:
+        profile = UserComprehensionProfile(user_id=user_id)
+        db.add(profile)
+        
+    gap = diagnosis["gap_type"]
+    patterns = diagnosis["patterns"]
+    
+    # 1. Update Scores (handle None values)
+    if gap == "vocabulary" or gap == "collocation":
+        current_vocab = float(profile.vocabulary_score or 0.0)
+        profile.vocabulary_score = max(0.0, current_vocab - 0.1)
+    elif gap == "structure":
+        current_grammar = float(profile.grammar_score or 0.0)
+        profile.grammar_score = max(0.0, current_grammar - 0.1)
+    elif gap is None:
+        current_overall = float(profile.overall_score or 0.0)
+        profile.overall_score = current_overall + 0.01
+
+    # 2. Update Weak Topics (Vocabulary / Collocations)
+    if word_clicks:
+        current_weak_topics = list(profile.weak_vocabulary_topics) if profile.weak_vocabulary_topics else []
+        for word in word_clicks:
+            if word not in current_weak_topics:
+                current_weak_topics.append(word)
+        profile.weak_vocabulary_topics = current_weak_topics[-50:]
+        
+        # Word Proficiency Logic
+        for word in word_clicks:
+            wp_result = await db.execute(select(WordProficiency).where(WordProficiency.user_id == user_id, WordProficiency.word == word))
+            wp = wp_result.scalar_one_or_none()
+            if wp:
+                wp.exposure_count += 1
+                wp.huh_count += 1
+                wp.last_seen_at = func.now()
+                wp.difficulty_score = float(wp.huh_count) / max(1, wp.exposure_count)
+                if wp.difficulty_score > 0.3: 
+                    wp.status = "learning"
+            else:
+                db.add(WordProficiency(user_id=user_id, word=word, exposure_count=1, huh_count=1, difficulty_score=1.0, status="new"))
+
+    # 3. Update Common Gaps (Grammar/Patterns)
+    if patterns:
+        current_gaps = list(profile.common_grammar_gaps) if profile.common_grammar_gaps else []
+        for p in patterns:
+            current_gaps.append(p)
+        profile.common_grammar_gaps = current_gaps[-20:]

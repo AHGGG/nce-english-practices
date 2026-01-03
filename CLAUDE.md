@@ -171,11 +171,14 @@ The project follows a modular package structure:
   - `router.py`: Main router aggregating all endpoints.
 - **`app/api/routers/reading.py`**: Reading session tracking API (`/api/reading/*`).
 - **`frontend/src/utils/ReadingTracker.js`**: **NEW** Client-side reading session tracking with heartbeat.
-- **`app/api/routers/sentence_study.py`**: **NEW 2026-01-01** Sentence Study (ASL) API endpoints:
+- **`app/api/routers/sentence_study.py`**: **UPDATED 2026-01-03** Sentence Study (ASL) API endpoints:
   - `GET /api/sentence-study/{source_id}/progress`: Get study progress for an article.
   - `POST /api/sentence-study/record`: Record sentence learning result with gap diagnosis.
   - `POST /api/sentence-study/simplify`: LLM sentence simplification.
   - `POST /api/sentence-study/overview`: Generate article overview.
+  - `GET /api/sentence-study/queue`: Get review queue (SRS).
+  - `POST /api/sentence-study/review`: Complete a review.
+  - `GET /api/sentence-study/profile`: User profile stats.
 - **`app/api/routers/voice_session.py`**: **NEW 2026-01-02** Voice Session API:
   - `POST /start`, `PUT /heartbeat`, `POST /end`.
 - **`frontend/src/components/sentence-study/SentenceStudy.jsx`**: **NEW** Sentence-by-sentence learning UI with phrase tracking.

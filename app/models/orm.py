@@ -1,7 +1,7 @@
 import json
 from datetime import datetime
 from typing import Any, Dict, List, Optional
-from sqlalchemy import String, Integer, Text, Boolean, TIMESTAMP, ForeignKey, JSON, Index
+from sqlalchemy import String, Integer, Text, Boolean, TIMESTAMP, ForeignKey, JSON, Index, Float
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.sql import func
 from app.core.db import Base
@@ -215,6 +215,39 @@ class VocabLearningLog(Base):
     created_at: Mapped[datetime] = mapped_column(TIMESTAMP, server_default=func.now())
 
 
+class UserComprehensionProfile(Base):
+    """
+    Stores a user's overall comprehension profile, derived from various learning activities.
+    This profile can be used to personalize content difficulty, highlight suggestions,
+    and diagnose learning gaps.
+    """
+    __tablename__ = "user_comprehension_profiles"
+    __table_args__ = (
+        Index("idx_comprehension_user", "user_id", unique=True),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    user_id: Mapped[str] = mapped_column(Text, default="default_user")
+    
+    # Overall proficiency scores (e.g., CEFR level, internal score)
+    overall_score: Mapped[float] = mapped_column(Float, default=0.0)
+    cefr_level: Mapped[Optional[str]] = mapped_column(Text, nullable=True) # A1, A2, B1, B2, C1, C2
+
+    # Detailed skill scores (e.g., grammar, vocabulary, listening, reading)
+    grammar_score: Mapped[float] = mapped_column(Float, default=0.0)
+    vocabulary_score: Mapped[float] = mapped_column(Float, default=0.0)
+    reading_speed_wpm: Mapped[int] = mapped_column(Integer, default=0)
+    listening_comprehension_score: Mapped[float] = mapped_column(Float, default=0.0)
+
+    # Learning gap indicators (e.g., common grammar errors, weak vocabulary areas)
+    common_grammar_gaps: Mapped[List[str]] = mapped_column(JSON, default=list)
+    weak_vocabulary_topics: Mapped[List[str]] = mapped_column(JSON, default=list)
+    
+    # Timestamps
+    created_at: Mapped[datetime] = mapped_column(TIMESTAMP, server_default=func.now())
+    updated_at: Mapped[datetime] = mapped_column(TIMESTAMP, server_default=func.now(), onupdate=func.now())
+
+
 class UserGoal(Base):
     """
     User-defined learning goals for gamification.
@@ -308,6 +341,7 @@ class SentenceLearningRecord(Base):
     source_type: Mapped[str] = mapped_column(Text)  # epub, rss
     source_id: Mapped[str] = mapped_column(Text)    # e.g., "epub:file.epub:3"
     sentence_index: Mapped[int] = mapped_column(Integer)
+    sentence_text: Mapped[Optional[str]] = mapped_column(Text, nullable=True)  # Store for review display
     
     # User interaction
     initial_response: Mapped[str] = mapped_column(Text)  # clear, unclear
@@ -321,6 +355,7 @@ class SentenceLearningRecord(Base):
     # Diagnosis
     diagnosed_gap_type: Mapped[Optional[str]] = mapped_column(Text, nullable=True)  # vocabulary, structure, fundamental
     diagnosed_patterns: Mapped[List[str]] = mapped_column(JSON, default=list)
+    interaction_log: Mapped[List[Dict[str, Any]]] = mapped_column(JSON, default=list) # Added for storing detailed events
     confidence: Mapped[float] = mapped_column(Integer, default=0)  # SQLite doesn't have Float, use Integer
     
     # SRS scheduling (Phase 3)

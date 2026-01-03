@@ -11,6 +11,8 @@ import ReadingMode from './views/ReadingMode';
 import NavDashboard from './views/NavDashboard';
 import LabCalibration from './components/lab/LabCalibration';
 import SentenceStudy from './components/sentence-study';
+import ReviewQueue from './views/ReviewQueue';
+import ProfileStats from './views/ProfileStats';
 
 function App() {
   return (
@@ -30,6 +32,8 @@ function App() {
             <Route path="/nav" element={<NavDashboard />} />
             <Route path="/performance" element={<PerformanceReport />} />
             <Route path="/aui-stream-demo" element={<AUIStreamingDemo />} />
+            <Route path="/review-queue" element={<ReviewQueue />} />
+            <Route path="/profile-stats" element={<ProfileStats />} />
 
             {/* Fallback */}
             <Route path="*" element={<Navigate to="/nav" replace />} />

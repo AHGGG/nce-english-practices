@@ -182,8 +182,22 @@
             - [x] **Hierarchical Navigation**: Library -> Book -> Chapter List -> Study Mode.
             - [x] **Context Restoration**: Auto-resume last studied book/chapter on return.
             - [x] **Library API**: `/api/reading/epub/books` endpoint.
-        - [ ] SRS integration for unclear sentences (Phase 2).
-        - [ ] User comprehension profile building (Phase 3).
+        - [x] **SRS Integration** (2026-01-02~03):
+            - [x] `scheduled_review` and `review_count` fields in `SentenceLearningRecord`.
+            - [x] Smart interval calculation (gap-type aware: collocations get shorter intervals).
+            - [x] `GET /queue`: Review queue endpoint.
+            - [x] `POST /review`: Review completion endpoint.
+            - [x] `ReviewQueue.jsx` frontend with sentence display.
+        - [x] **User Comprehension Profile** (2026-01-02~03):
+            - [x] `UserComprehensionProfile` ORM model + migration.
+            - [x] `GET /profile`: Profile stats endpoint.
+            - [x] `ProfileStats.jsx` frontend with actionable metrics:
+                - Study summary (sentences studied, clear/unclear counts, pass rate).
+                - Gap breakdown (vocab/grammar/collocation distribution).
+                - Words to review (from `WordProficiency` difficulty > 0.3).
+                - Insights and recommendations.
+            - [x] Fixed diagnosis logic: phrase clicks always override to 'collocation'.
+            - [x] Fixed UI: Correct Tailwind color classes for progress bars.
 - [x] **Voice Vendor Lab**:
     - [x] **Internal Tool**: `/voice-lab` refactored to **Vendor-Centric Layout** (Google, Deepgram, ElevenLabs tabs).
     - [x] **SDK Removal**: Removed ElevenLabs and Deepgram SDKs in favor of raw `httpx` API calls.
