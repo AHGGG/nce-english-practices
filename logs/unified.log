@@ -1,1 +1,95 @@
 === Log session started at 2026-01-04T17:38:05.746145 ===
+2026-01-04 11:40:11.010 [FR] [INFO] [general] Voices loaded:
+  DATA: {'arg0': '0'}
+2026-01-04 11:40:11.013 [FR] [INFO] [general] Voices loaded:
+  DATA: {'arg0': '0'}
+2026-01-04 11:40:11.018 [FR] [INFO] [general] Voices loaded:
+  DATA: {'arg0': '25'}
+2026-01-04 11:40:12.867 [FR] [INFO] [general] Voices loaded:
+  DATA: {'arg0': '25'}
+2026-01-04 11:40:12.865 [FR] [INFO] [general] Voices loaded:
+  DATA: {'arg0': '25'}
+2026-01-04 11:42:46.648 [FR] [DEBU] [general] [vite]
+  DATA: {'arg0': 'hot updated: /src/views/VoiceMode.jsx'}
+2026-01-04 11:42:46.650 [FR] [DEBU] [general] [vite]
+  DATA: {'arg0': 'hot updated: /src/index.css'}
+2026-01-04 11:42:46.659 [FR] [DEBU] [general] [vite]
+  DATA: {'arg0': 'hot updated: /src/views/VoiceMode.jsx'}
+2026-01-04 11:42:46.660 [FR] [DEBU] [general] [vite]
+  DATA: {'arg0': 'hot updated: /src/index.css'}
+2026-01-04 11:42:48.740 [FR] [DEBU] [general] [vite]
+  DATA: {'arg0': 'hot updated: /src/views/AUIStreamingDemo.jsx'}
+2026-01-04 11:42:48.740 [FR] [DEBU] [general] [vite]
+  DATA: {'arg0': 'hot updated: /src/views/AUIStreamingDemo.jsx'}
+2026-01-04 11:42:48.744 [FR] [DEBU] [general] [vite]
+  DATA: {'arg0': 'hot updated: /src/index.css'}
+2026-01-04 11:42:48.752 [FR] [DEBU] [general] [vite]
+  DATA: {'arg0': 'hot updated: /src/index.css'}
+2026-01-04 11:43:21.504 [FR] [DEBU] [general] [vite]
+  DATA: {'arg0': 'hot updated: /src/views/AUIStreamingDemo.jsx'}
+2026-01-04 11:43:21.505 [FR] [DEBU] [general] [vite]
+  DATA: {'arg0': 'hot updated: /src/index.css'}
+2026-01-04 11:43:21.505 [FR] [DEBU] [general] [vite]
+  DATA: {'arg0': 'hot updated: /src/views/AUIStreamingDemo.jsx'}
+2026-01-04 11:43:21.506 [FR] [DEBU] [general] [vite]
+  DATA: {'arg0': 'hot updated: /src/index.css'}
+2026-01-04 11:43:47.959 [FR] [DEBU] [general] [vite]
+  DATA: {'arg0': 'hot updated: /src/views/VoiceLab.jsx'}
+2026-01-04 11:43:47.960 [FR] [DEBU] [general] [vite]
+  DATA: {'arg0': 'hot updated: /src/views/VoiceLab.jsx'}
+2026-01-04 11:43:47.959 [FR] [DEBU] [general] [vite]
+  DATA: {'arg0': 'hot updated: /src/index.css'}
+2026-01-04 11:43:47.961 [FR] [DEBU] [general] [vite]
+  DATA: {'arg0': 'hot updated: /src/index.css'}
+2026-01-04 11:44:09.448 [FR] [DEBU] [general] [vite]
+  DATA: {'arg0': 'hot updated: /src/views/VoiceLab.jsx'}
+2026-01-04 11:44:09.449 [FR] [DEBU] [general] [vite]
+  DATA: {'arg0': 'hot updated: /src/index.css'}
+2026-01-04 11:44:09.467 [FR] [DEBU] [general] [vite]
+  DATA: {'arg0': 'hot updated: /src/views/VoiceLab.jsx'}
+2026-01-04 11:44:09.468 [FR] [DEBU] [general] [vite]
+  DATA: {'arg0': 'hot updated: /src/index.css'}
+2026-01-04 11:44:33.129 [FR] [DEBU] [general] [vite]
+  DATA: {'arg0': 'hot updated: /src/index.css'}
+2026-01-04 11:44:33.128 [FR] [DEBU] [general] [vite]
+  DATA: {'arg0': 'hot updated: /src/index.css'}
+2026-01-04 11:44:33.128 [FR] [DEBU] [general] [vite]
+  DATA: {'arg0': 'hot updated: /src/components/reading/ArticleListView.jsx'}
+2026-01-04 11:44:33.127 [FR] [DEBU] [general] [vite]
+  DATA: {'arg0': 'hot updated: /src/components/reading/ArticleListView.jsx'}
+2026-01-04 11:45:14.843 [FR] [DEBU] [general] [vite]
+  DATA: {'arg0': 'hot updated: /src/components/sentence-study/SentenceStudy.jsx'}
+2026-01-04 11:45:14.844 [FR] [DEBU] [general] [vite]
+  DATA: {'arg0': 'hot updated: /src/index.css'}
+2026-01-04 11:45:14.858 [FR] [DEBU] [general] [vite]
+  DATA: {'arg0': 'hot updated: /src/components/sentence-study/SentenceStudy.jsx'}
+2026-01-04 11:45:14.860 [FR] [DEBU] [general] [vite]
+  DATA: {'arg0': 'hot updated: /src/index.css'}
+2026-01-04 11:45:36.395 [FR] [DEBU] [general] [vite]
+  DATA: {'arg0': 'hot updated: /src/components/lab/LabCalibration.jsx'}
+2026-01-04 11:45:36.396 [FR] [DEBU] [general] [vite]
+  DATA: {'arg0': 'hot updated: /src/index.css'}
+2026-01-04 11:45:36.399 [FR] [DEBU] [general] [vite]
+  DATA: {'arg0': 'hot updated: /src/components/lab/LabCalibration.jsx'}
+2026-01-04 11:45:36.401 [FR] [DEBU] [general] [vite]
+  DATA: {'arg0': 'hot updated: /src/index.css'}
+2026-01-04 11:47:56.636 [FR] [INFO] [lifecycl] Log Bridge initialized. Logs are now streaming to backend.
+2026-01-04 11:47:56.637 [FR] [INFO] [lifecycl] LogBridge Connection Test: Initialized successfully
+2026-01-04 11:47:58.689 [FR] [INFO] [general] Voices loaded:
+  DATA: {'arg0': '0'}
+2026-01-04 11:47:58.692 [FR] [INFO] [general] Voices loaded:
+  DATA: {'arg0': '0'}
+2026-01-04 11:47:58.695 [FR] [INFO] [general] Voices loaded:
+  DATA: {'arg0': '25'}
+2026-01-04 11:48:03.726 [FR] [INFO] [lifecycl] Restoring last session:
+  DATA: {'arg0': 'epub:TheEconomist.2025.12.27.epub:8', 'arg1': 'TheEconomist.2025.12.27.epub'}
+2026-01-04 11:48:03.738 [FR] [INFO] [lifecycl] Restoring last session:
+  DATA: {'arg0': 'epub:TheEconomist.2025.12.27.epub:8', 'arg1': 'TheEconomist.2025.12.27.epub'}
+2026-01-04 19:48:25.110 [BA] [INFO] [network] httpx: HTTP Request: POST https://api.deepseek.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-01-04 19:48:29.431 [BA] [INFO] [network] httpx: HTTP Request: POST https://api.deepseek.com/v1/chat/completions "HTTP/1.1 200 OK"
+2026-01-04 11:49:18.102 [FR] [ERRO] [network] The play() request was interrupted by a call to pause(). https://goo.gl/LdLk22
+2026-01-04 19:49:19.224 [BA] [INFO] [audio] httpx: HTTP Request: POST https://api.deepgram.com/v1/speak?model=aura-asteria-en&encoding=mp3 "HTTP/1.1 200 OK"
+2026-01-04 19:49:21.513 [BA] [INFO] [audio] httpx: HTTP Request: POST https://api.deepgram.com/v1/speak?model=aura-asteria-en&encoding=mp3 "HTTP/1.1 200 OK"
+2026-01-04 19:49:32.254 [BA] [INFO] [audio] httpx: HTTP Request: POST https://api.deepgram.com/v1/speak?model=aura-asteria-en&encoding=mp3 "HTTP/1.1 200 OK"
+2026-01-04 11:50:38.425 [FR] [INFO] [lifecycl] Log Bridge initialized. Logs are now streaming to backend.
+2026-01-04 11:50:38.428 [FR] [INFO] [lifecycl] LogBridge Connection Test: Initialized successfully

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Card, Button, Tag } from '../components/ui';
 
 import TTSPanel from '../components/VoiceLab/TTSPanel';
@@ -10,9 +11,10 @@ import DeepgramUnified from '../components/VoiceLab/DeepgramUnified';
 import ConversationLoop from '../components/VoiceLab/ConversationLoop';
 import ElevenLabsLive from '../components/VoiceLab/ElevenLabsLive';
 import ElevenLabsVoiceAgent from '../components/VoiceLab/ElevenLabsVoiceAgent';
-import { Mic, Volume2, Radio, Server, Beaker, GraduationCap, Cloud, Zap, Globe, Cpu, Bot, TestTube2, RefreshCw } from 'lucide-react';
+import { Mic, Volume2, Radio, Server, Beaker, GraduationCap, Cloud, Zap, Globe, Cpu, Bot, TestTube2, RefreshCw, ChevronLeft } from 'lucide-react';
 
 const VoiceLab = () => {
+    const navigate = useNavigate();
     const [activeTab, setActiveTab] = useState('loop');
     const [deepgramSubTab, setDeepgramSubTab] = useState('live');
     const [config, setConfig] = useState(null);
@@ -57,10 +59,18 @@ const VoiceLab = () => {
                 {/* Header */}
                 <div className="flex justify-between items-start">
                     <div>
-                        <h1 className="text-3xl font-serif font-bold text-ink mb-2 flex items-center gap-3">
+                        <div className="flex items-center gap-3 mb-2">
+                            <button
+                                onClick={() => navigate('/nav')}
+                                className="text-[#888] hover:text-[#00FF94] transition-colors"
+                            >
+                                <ChevronLeft className="w-5 h-5" />
+                            </button>
                             <Beaker className="text-neon-pink" size={32} />
-                            Voice Vendor Lab
-                        </h1>
+                            <h1 className="text-3xl font-serif font-bold text-ink">
+                                Voice Vendor Lab
+                            </h1>
+                        </div>
                         <p className="text-ink-muted font-mono max-w-2xl">
                             Vendor-specific integration testing for TTS, STT, and Streaming capabilities.
                         </p>

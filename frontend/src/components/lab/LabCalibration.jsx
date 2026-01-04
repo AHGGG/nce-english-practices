@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Check, X, ArrowRight, Brain, Zap, HelpCircle, BookOpen } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { Check, X, ArrowRight, Brain, Zap, HelpCircle, BookOpen, ChevronLeft } from 'lucide-react';
 import WordInspector from '../reading/WordInspector';
 import MemoizedSentence from '../reading/MemoizedSentence';
 
@@ -8,6 +9,7 @@ import MemoizedSentence from '../reading/MemoizedSentence';
  * "The Placement Test" tailored as a mission.
  */
 const LabCalibration = () => {
+    const navigate = useNavigate();
     // --- State ---
     const [step, setStep] = useState('intro'); // intro, reading, complete
     const [sentences, setSentences] = useState([]);
@@ -190,6 +192,14 @@ const LabCalibration = () => {
     if (step === 'intro') {
         return (
             <div className="flex flex-col items-center justify-center min-h-screen bg-[#050505] text-white p-6">
+                {/* Back Button */}
+                <button
+                    onClick={() => navigate('/nav')}
+                    className="absolute top-4 left-4 flex items-center gap-2 text-[#888] hover:text-[#00FF94] transition-colors"
+                >
+                    <ChevronLeft className="w-4 h-4" />
+                </button>
+
                 <div className="max-w-md text-center space-y-6">
                     <div className="w-16 h-16 bg-[#00FF94]/10 rounded-full flex items-center justify-center mx-auto mb-4">
                         <Brain className="w-8 h-8 text-[#00FF94]" />

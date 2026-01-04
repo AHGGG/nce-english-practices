@@ -1,4 +1,5 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { BookOpen, ChevronLeft, Loader2, Check, Clock, BookOpenCheck } from 'lucide-react';
 
 /**
@@ -49,6 +50,7 @@ const ArticleListView = ({
     isLoading,
     onArticleClick
 }) => {
+    const navigate = useNavigate();
     // Separate completed and non-completed articles
     const completedArticles = articles.filter(a => a.status === 'completed');
     const nonCompletedArticles = articles.filter(a => a.status !== 'completed');
@@ -122,6 +124,12 @@ const ArticleListView = ({
             <header className="border-b border-[#333] px-6 md:px-12 py-8 flex justify-between items-end">
                 <div>
                     <div className="flex items-center gap-3 mb-2">
+                        <button
+                            onClick={() => navigate('/nav')}
+                            className="text-[#888] hover:text-[#00FF94] transition-colors"
+                        >
+                            <ChevronLeft className="w-5 h-5" />
+                        </button>
                         <div className="w-6 h-6 bg-[#00FF94] flex items-center justify-center">
                             <BookOpen size={16} className="text-black" />
                         </div>

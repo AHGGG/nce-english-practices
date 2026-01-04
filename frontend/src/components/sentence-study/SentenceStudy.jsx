@@ -9,6 +9,7 @@
  * - Track progress and learning gaps
  */
 import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { ChevronLeft, CheckCircle, HelpCircle, Loader2, BookOpen, Sparkles, GraduationCap, BookMarked } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import MemoizedSentence from '../reading/MemoizedSentence';
@@ -112,6 +113,7 @@ const DIFFICULTY_CHOICES = [
 ];
 
 const SentenceStudy = () => {
+    const navigate = useNavigate();
     // View state
     const [view, setView] = useState(VIEW_STATES.BOOK_SHELF);
     const [books, setBooks] = useState([]);
@@ -833,6 +835,12 @@ const SentenceStudy = () => {
     const renderBookShelf = () => (
         <div className="h-screen flex flex-col bg-[#050505] text-[#E0E0E0] font-mono">
             <header className="h-14 border-b border-[#333] flex items-center px-4 md:px-8 bg-[#0A0A0A]">
+                <button
+                    onClick={() => navigate('/nav')}
+                    className="flex items-center gap-2 text-[#888] hover:text-[#00FF94] transition-colors mr-3"
+                >
+                    <ChevronLeft className="w-4 h-4" />
+                </button>
                 <GraduationCap className="w-5 h-5 text-[#00FF94] mr-3" />
                 <h1 className="text-sm font-bold uppercase tracking-wider">Sentence Study Library</h1>
             </header>
