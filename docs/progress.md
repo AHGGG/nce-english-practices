@@ -520,3 +520,15 @@ ReviewItem created when user:
 - **Backend Tests**: 8/8 passed (`test_sentence_study_api.py`).
 - **Browser Test**: Cross-mode navigation verified with recording.
 
+### ✅ Unified Library UI & Status Indicators (Phase 50) (2026-01-04)
+**Visual status tracking for Reading Mode library.**
+
+#### features
+- **Status Badges**: Distinct visual indicators for "Completed" (Green), "In Progress" (Yellow), and "Read" (Grey) articles.
+- **Sectioning**: Library automatically separates "To Read" and "Completed" articles.
+- **Progress Stats**: Header displays completion count (e.g., "3/10 Completed").
+- **Smart Actions**: Card footer action changes contextually ("Read Now" vs "Review").
+- **Implementation**: Enhanced `ArticleListView.jsx` with mapped status configs and lucide icons.
+
+#### Verification
+- **Browser Test**: Verified correct rendering of all status states and badge styling.

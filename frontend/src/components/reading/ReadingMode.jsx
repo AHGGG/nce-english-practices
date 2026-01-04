@@ -155,7 +155,33 @@ const ReadingMode = () => {
             const res = await fetch('/api/reading/epub/list');
             if (res.ok) {
                 const data = await res.json();
-                setArticles(data.articles || []);
+                const articlesData = data.articles || [];
+
+                // Fetch article status to get completion info
+                if (data.filename && articlesData.length > 0) {
+                    try {
+                        const statusRes = await fetch(`/api/content/article-status?filename=${encodeURIComponent(data.filename)}`);
+                        if (statusRes.ok) {
+                            const statusData = await statusRes.json();
+                            // Merge status into articles
+                            const statusMap = new Map(
+                                statusData.articles?.map(a => [a.source_id, a]) || []
+                            );
+                            articlesData.forEach(article => {
+                                const status = statusMap.get(article.source_id);
+                                if (status) {
+                                    article.status = status.status;
+                                    article.study_progress = status.study_progress;
+                                    article.reading_sessions = status.reading_sessions;
+                                }
+                            });
+                        }
+                    } catch (statusErr) {
+                        console.warn('Could not fetch article status:', statusErr);
+                    }
+                }
+
+                setArticles(articlesData);
             }
         } catch (e) {
             console.error(e);
