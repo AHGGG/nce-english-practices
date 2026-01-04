@@ -181,7 +181,7 @@ The project follows a modular package structure:
   - `POST /api/sentence-study/prefetch-collocations`: **NEW 2026-01-03** Background prefetch for lookahead (up to 5 sentences, uses `asyncio.create_task`).
   - `GET /api/sentence-study/queue`: Get review queue (SRS).
   - `POST /api/sentence-study/review`: Complete a review.
-  - `GET /api/sentence-study/profile`: User profile stats.
+  - `GET /api/sentence-study/profile`: User profile stats (Consumed by PerformanceReport).
   - **Caching**: `overview` and `collocations` use two-tier cache (in-memory + PostgreSQL), surviving server restarts. `simplify` and `explain-word` use in-memory only.
   - **New DB Tables**: `article_overview_cache`, `sentence_collocation_cache` (migration: `552a79d1e801`).
 - **`app/api/routers/voice_session.py`**: **NEW 2026-01-02** Voice Session API:
@@ -200,11 +200,11 @@ The project follows a modular package structure:
   - On-demand lookahead prefetching (auto-prefetch next 3 sentences' collocations).
   - Max-height scrollable content for long explanations.
   - Mobile-optimized touch targets and responsive layout.
-- **`frontend/src/views/ReviewQueue.jsx`**: **UPDATED 2026-01-04** SM-2 Review UI:
-  - Card-based review with highlighted lookup words.
-  - 3 rating buttons: 忘了/想起来了/太简单.
-  - Empty state with refresh option.
-- **`frontend/src/utils/VoiceSessionTracker.js`**: **NEW** Frontend voice session analytics.
+- **`frontend/src/views/ReviewQueue.jsx`**: **UPDATED 2026-01-04** SM-2 Review UI.
+- **`frontend/src/components/performance/PerformanceReport.jsx`**: **UPDATED 2026-01-04** Consolidated Dashboard:
+  - Merged Profile Stats (Clear Rate, Gap Breakdown, Words to Review).
+  - Added Memory Curve Visualization (SM-2 data).
+  - 4 Main KPI Cards + Insights.
 
 
 

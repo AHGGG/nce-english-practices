@@ -446,3 +446,22 @@ ReviewItem created when user:
 - Frontend build: PASSED
 - Manual testing: Review flow works end-to-end
 
+### ✅ Memory Curve & Dashboard Consolidation (Phase 47) (2026-01-04)
+**Consolidated separate profile/stats views into a single unified analytics dashboard.**
+
+#### Dashboard Consolidation
+- **Problem**: `ProfileStats` and `PerformanceReport` had overlapping metrics and separate navigation entries.
+- **Solution**: Merged all distinct features into `PerformanceReport`.
+  - **KPIs**: Study Time, Reading Word Count, Articles Count, **Clear Rate** (New).
+  - **Insights**: Added Gap Breakdown (Vocab/Grammar/Collocation) and "Words to Review" from ProfileStats.
+  - **Navigation**: Removed `/profile-stats` route (redirects to `/performance`) and NavDashboard entry.
+
+#### Memory Curve Visualization
+- **Backend Update**: Updated `get_memory_curve_data()` in `performance.py` to use `ReviewLog` data (SM-2) instead of legacy `WordProficiency`.
+- **Frontend**: Enabled `MemoryCurveChart` in `PerformanceReport` to display actual retention rates vs Ebbinghaus curve.
+- **Data Source**: Real-time accurate retention rates based on `forgot/remembered/easy` feedback.
+
+#### Verification
+- **Frontend Build**: PASSED.
+- **Manual Check**: Dashboard displays all new sections correctly; Redirect works.
+

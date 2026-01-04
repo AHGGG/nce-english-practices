@@ -112,51 +112,56 @@ async def get_performance_data(days: int = 30) -> Dict[str, Any]:
 
 async def get_memory_curve_data(user_id: str = "default_user") -> Dict[str, Any]:
     """
-    Calculate retention rate at different time intervals.
+    Calculate retention rate at different time intervals using SM-2 review logs.
     Compares actual user performance vs theoretical Ebbinghaus curve.
+    
+    Uses ReviewLog data from the SM-2 spaced repetition system for accurate tracking.
     """
+    from app.models.orm import ReviewItem, ReviewLog
+    
     async with AsyncSessionLocal() as session:
         try:
-            now = datetime.utcnow()
+            # Time buckets and their interval ranges
+            # Bucket name -> (min_interval, max_interval)
+            bucket_ranges = {
+                1: (0, 2),
+                3: (2, 5),
+                7: (5, 10),
+                14: (10, 21),
+                30: (21, 45)
+            }
             
-            # Get words with their first_seen and last_seen dates
-            stmt = select(WordProficiency).where(
-                WordProficiency.user_id == user_id,
-                WordProficiency.exposure_count > 1  # Need multiple exposures
-            )
-            result = await session.execute(stmt)
-            words = result.scalars().all()
-            
-            # Calculate retention for each time bucket (days since first seen)
-            buckets = {1: [], 3: [], 7: [], 14: [], 30: []}
-            
-            for word in words:
-                days_since_first = (word.last_seen_at - word.first_seen_at).days
-                
-                # Calculate retention: 1 if remembered (continue_count > 0), else check huh ratio
-                if word.exposure_count > 0:
-                    retention = 1 - (word.huh_count / word.exposure_count)
-                else:
-                    retention = 1.0
-                
-                # Assign to nearest bucket
-                for bucket in sorted(buckets.keys()):
-                    if days_since_first <= bucket:
-                        buckets[bucket].append(retention)
-                        break
-            
-            # Calculate average retention per bucket
             actual_curve = []
-            for day in sorted(buckets.keys()):
-                values = buckets[day]
-                if values:
-                    avg_retention = sum(values) / len(values)
+            total_reviews = 0
+            successful_reviews = 0
+            
+            for day, (min_interval, max_interval) in bucket_ranges.items():
+                # Query reviews where interval_at_review falls within this bucket
+                stmt = (
+                    select(ReviewLog)
+                    .join(ReviewItem)
+                    .where(ReviewItem.user_id == user_id)
+                    .where(ReviewLog.interval_at_review >= min_interval)
+                    .where(ReviewLog.interval_at_review < max_interval)
+                )
+                result = await session.execute(stmt)
+                logs = result.scalars().all()
+                
+                if logs:
+                    # Success = quality >= 3 (remembered or easy)
+                    successes = sum(1 for log in logs if log.quality >= 3)
+                    retention = successes / len(logs)
+                    
+                    total_reviews += len(logs)
+                    successful_reviews += successes
                 else:
-                    avg_retention = None
+                    # No data for this bucket
+                    retention = None
+                
                 actual_curve.append({
                     'day': day,
-                    'retention': round(avg_retention, 2) if avg_retention is not None else None,
-                    'sample_size': len(values)
+                    'retention': round(retention, 2) if retention is not None else None,
+                    'sample_size': len(logs)
                 })
             
             # Ebbinghaus theoretical curve: R = e^(-t/S) where S is stability
@@ -170,7 +175,8 @@ async def get_memory_curve_data(user_id: str = "default_user") -> Dict[str, Any]
             return {
                 'actual': actual_curve,
                 'ebbinghaus': ebbinghaus_curve,
-                'total_words_analyzed': len(words)
+                'total_words_analyzed': total_reviews,  # Now tracks review count
+                'successful_reviews': successful_reviews
             }
             
         except Exception as e:
@@ -180,3 +186,4 @@ async def get_memory_curve_data(user_id: str = "default_user") -> Dict[str, Any]
                 'ebbinghaus': [],
                 'total_words_analyzed': 0
             }
+

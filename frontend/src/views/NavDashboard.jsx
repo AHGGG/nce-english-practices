@@ -98,13 +98,6 @@ const NavDashboard = () => {
             icon: Clock,
             description: "Spaced repetition queue for sentences due for review.",
             color: "neon-cyan"
-        },
-        {
-            title: "Profile Stats",
-            path: "/profile-stats",
-            icon: User,
-            description: "Your comprehension profile with scores and weak areas.",
-            color: "neon-lime"
         }
     ];
 
