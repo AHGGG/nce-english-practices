@@ -221,6 +221,12 @@
                 - Fixed streaming race condition with request ID pattern.
                 - Added ReactMarkdown rendering for simplified content.
                 - Added max-height scroll for long explanations.
+            - [x] **SM-2 Review System** (2026-01-04):
+                - `ReviewItem` and `ReviewLog` ORM models with SM-2 parameters.
+                - Alembic migration `4f0adbca8a15_add_review_system_tables.py`.
+                - New `/api/review/*` router with SM-2 algorithm (queue, complete, create, stats, memory-curve).
+                - Auto-creation of ReviewItems in `record_learning` when user marks unclear or looks up words.
+                - Updated `ReviewQueue.jsx` with card-based 3-button rating UI (忘了/想起来了/太简单).
 - [x] **Voice Vendor Lab**:
     - [x] **Internal Tool**: `/voice-lab` refactored to **Vendor-Centric Layout** (Google, Deepgram, ElevenLabs tabs).
     - [x] **SDK Removal**: Removed ElevenLabs and Deepgram SDKs in favor of raw `httpx` API calls.

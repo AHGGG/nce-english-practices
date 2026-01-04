@@ -12,7 +12,7 @@ import hashlib
 from datetime import datetime, timedelta
 
 from app.core.db import get_db
-from app.models.orm import SentenceLearningRecord, UserComprehensionProfile, WordProficiency, ArticleOverviewCache, SentenceCollocationCache
+from app.models.orm import SentenceLearningRecord, UserComprehensionProfile, WordProficiency, ArticleOverviewCache, SentenceCollocationCache, ReviewItem
 from app.services.llm import llm_service
 
 router = APIRouter(prefix="/api/sentence-study", tags=["sentence-study"])
@@ -239,6 +239,52 @@ async def record_learning(
         diagnosis_result, 
         alias_word_clicks
     )
+    
+    # --- Create ReviewItem for SM-2 based spaced repetition ---
+    # Entry conditions per design doc:
+    # 1. User clicked "Unclear"
+    # 2. User clicked "Clear" but looked up words/phrases
+    should_create_review = (
+        req.initial_response == "unclear" or 
+        (req.initial_response == "clear" and (alias_word_clicks or alias_phrase_clicks))
+    )
+    
+    review_item_id = None
+    if should_create_review and req.sentence_text:
+        # Check if review item already exists for this sentence
+        existing_review = await db.execute(
+            select(ReviewItem)
+            .where(ReviewItem.user_id == req.user_id)
+            .where(ReviewItem.source_id == req.source_id)
+            .where(ReviewItem.sentence_index == req.sentence_index)
+        )
+        existing = existing_review.scalar_one_or_none()
+        
+        if existing:
+            # Update highlighted items
+            current_items = set(existing.highlighted_items or [])
+            current_items.update(alias_word_clicks)
+            current_items.update(alias_phrase_clicks)
+            existing.highlighted_items = list(current_items)
+            review_item_id = existing.id
+        else:
+            # Create new review item
+            highlighted = list(set(alias_word_clicks + alias_phrase_clicks))
+            review_item = ReviewItem(
+                user_id=req.user_id,
+                source_id=req.source_id,
+                sentence_index=req.sentence_index,
+                sentence_text=req.sentence_text,
+                highlighted_items=highlighted,
+                difficulty_type=diagnosis_result.get("gap_type") or req.unclear_choice or "vocabulary",
+                easiness_factor=2.5,
+                interval_days=1.0,
+                repetition=0,
+                next_review_at=datetime.utcnow()  # Available immediately for first review
+            )
+            db.add(review_item)
+            await db.flush()  # Get ID before commit
+            review_item_id = review_item.id
 
     await db.commit()
     await db.refresh(record)
@@ -248,7 +294,8 @@ async def record_learning(
         "record_id": record.id, 
         "diagnosed_gap": diagnosis_result["gap_type"],
         "confidence": diagnosis_result["confidence"],
-        "patterns": diagnosis_result["patterns"]
+        "patterns": diagnosis_result["patterns"],
+        "review_item_id": review_item_id  # NEW: Return review item ID if created
     }
 
 

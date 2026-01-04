@@ -545,6 +545,7 @@ const SentenceStudy = () => {
             source_type: 'epub',
             source_id: currentArticle.id,
             sentence_index: currentIndex,
+            sentence_text: currentSentence?.text,  // Required for review system
             initial_response: 'clear',
             word_clicks: wordClicks,
             phrase_clicks: phraseClicks,
@@ -638,6 +639,7 @@ const SentenceStudy = () => {
             source_type: 'epub',
             source_id: currentArticle.id,
             sentence_index: currentIndex,
+            sentence_text: currentSentence?.text,  // Required for review system
             initial_response: 'unclear',
             unclear_choice: simplifyingType,
             simplified_response: gotIt ? 'got_it' : 'still_unclear',

@@ -186,13 +186,26 @@ The project follows a modular package structure:
   - **New DB Tables**: `article_overview_cache`, `sentence_collocation_cache` (migration: `552a79d1e801`).
 - **`app/api/routers/voice_session.py`**: **NEW 2026-01-02** Voice Session API:
   - `POST /start`, `PUT /heartbeat`, `POST /end`.
+- **`app/api/routers/review.py`**: **NEW 2026-01-04** SM-2 Spaced Repetition Review API:
+  - `GET /api/review/queue`: Get items due for review.
+  - `POST /api/review/complete`: Submit review result (quality: 1=forgot, 3=remembered, 5=easy).
+  - `POST /api/review/create`: Create review item (used internally by sentence_study).
+  - `GET /api/review/memory-curve`: Memory curve statistics for visualization.
+  - `GET /api/review/stats`: Overall review statistics.
+  - **Integration**: `sentence_study.py` auto-creates `ReviewItem` when user marks "Unclear" or looks up words.
+  - **New DB Tables**: `review_items`, `review_logs` (migration: `4f0adbca8a15`).
 - **`frontend/src/components/sentence-study/SentenceStudy.jsx`**: **UPDATED 2026-01-03** Sentence-by-sentence learning UI with:
   - 3-stage progressive simplification with stage indicator and ReactMarkdown rendering.
   - Streaming text display for explanations with request ID pattern (race condition fix).
   - On-demand lookahead prefetching (auto-prefetch next 3 sentences' collocations).
   - Max-height scrollable content for long explanations.
   - Mobile-optimized touch targets and responsive layout.
+- **`frontend/src/views/ReviewQueue.jsx`**: **UPDATED 2026-01-04** SM-2 Review UI:
+  - Card-based review with highlighted lookup words.
+  - 3 rating buttons: 忘了/想起来了/太简单.
+  - Empty state with refresh option.
 - **`frontend/src/utils/VoiceSessionTracker.js`**: **NEW** Frontend voice session analytics.
+
 
 
 ### Database Layer

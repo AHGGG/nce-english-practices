@@ -394,3 +394,55 @@ Two large view components exceeded maintainability thresholds:
 #### Verification
 - `test_sentence_study_api.py`, `test_api_stats.py`: PASSED (11/11).
 - Frontend Build: PASSED.
+
+### ✅ SM-2 Review System (Phase 46) (2026-01-04)
+**Proper spaced repetition with SM-2 algorithm for long-term retention.**
+
+#### Problem
+The existing SRS was basic (hardcoded intervals in `SentenceLearningRecord`). Needed a proper SM-2 implementation with:
+- Quality-based interval adjustment (forgot/remembered/easy)
+- Memory curve tracking for visualization
+- Automatic review item creation based on study behavior
+
+#### Solution: Dedicated Review System
+
+| Component | Implementation |
+|-----------|----------------|
+| **ORM Models** | `ReviewItem` (SM-2 params: EF, interval, repetition) + `ReviewLog` |
+| **Migration** | `4f0adbca8a15_add_review_system_tables.py` |
+| **Backend Router** | `app/api/routers/review.py` with 5 endpoints |
+| **Integration** | Auto-creation in `sentence_study.py` `record_learning` |
+| **Frontend** | Updated `ReviewQueue.jsx` with card-based rating UI |
+
+#### SM-2 Algorithm Implementation
+- **Quality Scores**: 1=forgot, 3=remembered, 5=easy
+- **EF Adjustment**: `EF' = EF + (0.1 - (5-q) * (0.08 + (5-q) * 0.02))`
+- **Interval Calculation**:
+  - Failed (q<3): Reset to 1 day
+  - Rep 1: 1 day → Rep 2: 6 days → Rep 3+: `interval * EF`
+
+#### API Endpoints
+| Endpoint | Purpose |
+|----------|---------|
+| `GET /api/review/queue` | Get items due for review |
+| `POST /api/review/complete` | Submit review with quality score |
+| `POST /api/review/create` | Create review item (internal) |
+| `GET /api/review/memory-curve` | Retention statistics |
+| `GET /api/review/stats` | Overall stats |
+
+#### Entry Conditions (Auto-Creation)
+ReviewItem created when user:
+1. Marks sentence as "Unclear", OR
+2. Marks "Clear" but looked up words/phrases
+
+#### Frontend UI
+- **Card Layout**: Sentence with highlighted words
+- **3 Rating Buttons**: 忘了 / 想起来了 / 太简单
+- **Progress Display**: Item count, repetition info
+- **Empty State**: Congratulatory message when queue is empty
+
+#### Verification
+- Backend router loads with all 5 endpoints: PASSED
+- Frontend build: PASSED
+- Manual testing: Review flow works end-to-end
+

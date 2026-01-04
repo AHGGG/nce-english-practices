@@ -26,6 +26,7 @@ from app.api.routers import (
     proficiency,
     sentence_study,
     voice_session,
+    review,
 )
 from app.services.log_collector import setup_logging
 import logging
@@ -86,6 +87,7 @@ app.include_router(reading.router)
 app.include_router(proficiency.router)
 app.include_router(sentence_study.router)
 app.include_router(voice_session.router)
+app.include_router(review.router)
 
 from app.models.schemas import RemoteLog
 from app.services.log_collector import (

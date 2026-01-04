@@ -1,5 +1,5 @@
 /**
- * ReviewQueue View - SM-2 Spaced Repetition Review System
+ * ReviewView - SM-2 Spaced Repetition Review System
  * 
  * A card-based review interface that implements the SM-2 algorithm.
  * Features:
@@ -8,7 +8,6 @@
  * - Progress tracking and empty state
  */
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
 import {
     ChevronLeft,
     RotateCcw,
@@ -20,7 +19,7 @@ import {
     Clock
 } from 'lucide-react';
 
-// API helpers for SM-2 review system
+// API helpers
 const api = {
     async getQueue(userId = 'default_user', limit = 20) {
         const res = await fetch(`/api/review/queue?user_id=${userId}&limit=${limit}`);
@@ -43,7 +42,7 @@ const api = {
     }
 };
 
-// Rating options per design spec (SM-2 quality scores)
+// Rating options per design spec
 const RATING_OPTIONS = [
     {
         quality: 1,
@@ -108,8 +107,7 @@ const HighlightedSentence = ({ text, highlights = [] }) => {
     );
 };
 
-const ReviewQueue = () => {
-    const navigate = useNavigate();
+const ReviewView = ({ onBack }) => {
     const [queue, setQueue] = useState([]);
     const [stats, setStats] = useState({ total_items: 0, due_items: 0, total_reviews: 0 });
     const [loading, setLoading] = useState(true);
@@ -336,7 +334,7 @@ const ReviewQueue = () => {
             {/* Header */}
             <header className="h-14 border-b border-[#333] flex items-center px-4 md:px-8 bg-[#0A0A0A]">
                 <button
-                    onClick={() => navigate('/nav')}
+                    onClick={onBack}
                     className="flex items-center gap-2 text-[#888] hover:text-[#00FF94] transition-colors mr-3"
                 >
                     <ChevronLeft className="w-4 h-4" />
@@ -374,4 +372,4 @@ const ReviewQueue = () => {
     );
 };
 
-export default ReviewQueue;
+export default ReviewView;
