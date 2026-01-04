@@ -1,11 +1,1 @@
-=== Log session started at 2026-01-03T12:24:36.357031 ===
-2026-01-03 12:24:37.380 [BA] [INFO] [network] httpx: HTTP Request: POST http://test/api/sentence-study/record "HTTP/1.1 200 OK"
-2026-01-03 12:24:38.252 [BA] [INFO] [network] httpx: HTTP Request: POST http://test/api/sentence-study/record "HTTP/1.1 200 OK"
-2026-01-03 12:24:39.123 [BA] [INFO] [network] httpx: HTTP Request: POST http://test/api/sentence-study/record "HTTP/1.1 200 OK"
-2026-01-03 12:24:39.993 [BA] [INFO] [network] httpx: HTTP Request: POST http://test/api/sentence-study/record "HTTP/1.1 200 OK"
-2026-01-03 12:24:40.869 [BA] [INFO] [network] httpx: HTTP Request: POST http://test/api/sentence-study/record "HTTP/1.1 200 OK"
-2026-01-03 12:24:41.713 [BA] [INFO] [network] httpx: HTTP Request: GET http://test/api/sentence-study/epub:empty-test.epub:1/progress "HTTP/1.1 200 OK"
-2026-01-03 12:24:42.554 [BA] [INFO] [network] httpx: HTTP Request: POST http://test/api/sentence-study/record "HTTP/1.1 200 OK"
-2026-01-03 12:24:42.559 [BA] [INFO] [network] httpx: HTTP Request: POST http://test/api/sentence-study/record "HTTP/1.1 200 OK"
-2026-01-03 12:24:42.563 [BA] [INFO] [network] httpx: HTTP Request: POST http://test/api/sentence-study/record "HTTP/1.1 200 OK"
-2026-01-03 12:24:42.568 [BA] [INFO] [network] httpx: HTTP Request: GET http://test/api/sentence-study/epub:progress-test.epub:1/progress "HTTP/1.1 200 OK"
+=== Log session started at 2026-01-04T17:38:05.746145 ===

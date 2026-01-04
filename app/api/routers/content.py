@@ -44,9 +44,12 @@ def list_epub_books():
 
 
 @router.get("/api/reading/epub/list")
-def list_epub_articles(filename: str):
+def list_epub_articles(filename: Optional[str] = None):
     """
     List all articles/chapters in an EPUB file.
+    
+    Args:
+        filename: EPUB filename. If not provided, uses the first available EPUB.
     
     Returns: List of articles with titles and metadata.
     """
@@ -54,6 +57,18 @@ def list_epub_articles(filename: str):
         # Import epub provider directly to access metadata
         from app.services.content_providers.epub_provider import EpubProvider
         provider = EpubProvider()
+        
+        # If no filename provided, use first available EPUB
+        if not filename:
+            epub_dir = EpubProvider.EPUB_DIR
+            if epub_dir.exists():
+                epub_files = list(epub_dir.glob("*.epub"))
+                if epub_files:
+                    filename = epub_files[0].name
+                else:
+                    return {"filename": None, "total_articles": 0, "articles": []}
+            else:
+                return {"filename": None, "total_articles": 0, "articles": []}
         
         # Load the EPUB
         if not provider._load_epub(filename):
@@ -94,7 +109,8 @@ async def get_article_content(
     include_sentences: bool = True,
     book_code: Optional[str] = None,
     min_sequence: Optional[int] = None,
-    max_sequence: Optional[int] = None
+    max_sequence: Optional[int] = None,
+    user_id: str = "default_user"
 ):
     """
     Get full article content by source_id.
@@ -105,8 +121,9 @@ async def get_article_content(
         book_code: Optional word book code (e.g., 'coca20000', 'cet4')
         min_sequence: Optional min sequence for highlights
         max_sequence: Optional max sequence for highlights
+        user_id: User ID for fetching study-based highlights
         
-    Returns: Article with title, full_text, sentences, highlights, and images.
+    Returns: Article with title, full_text, sentences, highlights, study_highlights, and images.
     """
     try:
         # Parse source_id
@@ -130,6 +147,7 @@ async def get_article_content(
             "full_text": bundle.full_text,
             "metadata": bundle.metadata,
             "highlights": [],
+            "study_highlights": [],  # NEW: Words looked up during Sentence Study
             "images": [
                 {
                     "path": img.path,
@@ -141,14 +159,14 @@ async def get_article_content(
             ]
         }
         
-        # Identify highlights if book_code provided
+        # Identify vocabulary highlights if book_code provided
         if book_code:
             try:
                 from app.services.word_list_service import word_list_service
                 highlights = await word_list_service.identify_words_in_text(
                     text=bundle.full_text,
                     book_code=book_code,
-                    user_id="default_user",
+                    user_id=user_id,
                     min_sequence=min_sequence,
                     max_sequence=max_sequence
                 )
@@ -156,6 +174,38 @@ async def get_article_content(
             except Exception as e:
                 print(f"Highlight identification failed: {e}")
                 # Continue without highlights
+        
+        # Fetch study-based highlights (words/phrases looked up during Sentence Study)
+        try:
+            from app.core.db import AsyncSessionLocal
+            from sqlalchemy import select
+            
+            async with AsyncSessionLocal() as db:
+                # Fetch all learning records for this article
+                stmt = (
+                    select(SentenceLearningRecord.word_clicks, SentenceLearningRecord.phrase_clicks)
+                    .where(SentenceLearningRecord.user_id == user_id)
+                    .where(SentenceLearningRecord.source_id == source_id)
+                )
+                records = await db.execute(stmt)
+                
+                # Extract all words and phrases from JSON arrays
+                all_words = set()
+                all_phrases = set()
+                for row in records.fetchall():
+                    word_clicks, phrase_clicks = row
+                    if word_clicks:
+                        all_words.update(word_clicks)
+                    if phrase_clicks:
+                        all_phrases.update(phrase_clicks)
+                
+                # Combine and return
+                result["study_highlights"] = list(all_words | all_phrases)
+        except Exception as e:
+            import traceback
+            traceback.print_exc()
+            print(f"Study highlights fetch failed: {e}")
+            # Continue without study highlights
         
         if include_sentences:
             result["sentences"] = [
@@ -205,4 +255,136 @@ def get_epub_image(filename: str, image_path: str):
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+# ============================================================
+# Unified Article Status API (Cross-Mode Integration)
+# ============================================================
+
+from app.core.db import get_db
+from sqlalchemy import select, func
+from app.models.orm import ReadingSession, SentenceLearningRecord, ReviewItem
+
+
+@router.get("/api/content/article-status")
+async def get_article_status(
+    filename: str,
+    user_id: str = "default_user"
+):
+    """
+    Get combined reading and study status for all articles in an EPUB.
+    
+    Returns unified status for each article:
+    - reading_sessions: number of reading sessions
+    - last_read: timestamp of last reading session
+    - study_progress: { current_index, total, clear_count, unclear_count }
+    - has_review_items: whether article has active review items
+    - status: "new" | "read" | "in_progress" | "completed"
+    """
+    try:
+        from app.services.content_providers.epub_provider import EpubProvider
+        from app.core.db import AsyncSessionLocal
+        provider = EpubProvider()
+        
+        # Load the EPUB to get articles
+        if not provider._load_epub(filename):
+            raise HTTPException(status_code=404, detail=f"EPUB not found: {filename}")
+        
+        async with AsyncSessionLocal() as db:
+            articles = []
+            
+            for i, article in enumerate(provider._cached_articles):
+                full_text = article.get("full_text", "")
+                sentences = provider._extract_sentences(full_text)
+                if len(sentences) < 3:
+                    continue
+                
+                source_id = f"epub:{filename}:{i}"
+                
+                # Get reading session count
+                reading_result = await db.execute(
+                    select(func.count(ReadingSession.id))
+                    .where(ReadingSession.user_id == user_id)
+                    .where(ReadingSession.source_id == source_id)
+                )
+                reading_sessions = reading_result.scalar() or 0
+                
+                # Get last read time
+                last_read_result = await db.execute(
+                    select(ReadingSession.ended_at)
+                    .where(ReadingSession.user_id == user_id)
+                    .where(ReadingSession.source_id == source_id)
+                    .order_by(ReadingSession.ended_at.desc())
+                    .limit(1)
+                )
+                last_read = last_read_result.scalar()
+                
+                # Get study progress
+                study_result = await db.execute(
+                    select(
+                        func.count(SentenceLearningRecord.id),
+                        func.count(SentenceLearningRecord.id).filter(SentenceLearningRecord.initial_response == 'clear'),
+                        func.count(SentenceLearningRecord.id).filter(SentenceLearningRecord.initial_response == 'unclear'),
+                        func.max(SentenceLearningRecord.sentence_index)
+                    )
+                    .where(SentenceLearningRecord.user_id == user_id)
+                    .where(SentenceLearningRecord.source_id == source_id)
+                )
+                study_row = study_result.one()
+                studied_count = study_row[0] or 0
+                clear_count = study_row[1] or 0
+                unclear_count = study_row[2] or 0
+                max_index = study_row[3]
+                current_index = (max_index + 1) if max_index is not None else 0
+                
+                # Check for review items
+                review_result = await db.execute(
+                    select(func.count(ReviewItem.id))
+                    .where(ReviewItem.user_id == user_id)
+                    .where(ReviewItem.source_id == source_id)
+                )
+                review_count = review_result.scalar() or 0
+                
+                # Determine status
+                total_sentences = len(sentences)
+                if current_index >= total_sentences and studied_count > 0:
+                    status = "completed"
+                elif studied_count > 0:
+                    status = "in_progress"
+                elif reading_sessions > 0:
+                    status = "read"
+                else:
+                    status = "new"
+                
+                articles.append({
+                    "index": i,
+                    "title": article.get("title", f"Chapter {i+1}"),
+                    "source_id": source_id,
+                    "sentence_count": total_sentences,
+                    "reading_sessions": reading_sessions,
+                    "last_read": last_read.isoformat() if last_read else None,
+                    "study_progress": {
+                        "current_index": current_index,
+                        "total": total_sentences,
+                        "studied_count": studied_count,
+                        "clear_count": clear_count,
+                        "unclear_count": unclear_count
+                    },
+                    "has_review_items": review_count > 0,
+                    "status": status
+                })
+            
+            return {
+                "filename": filename,
+                "user_id": user_id,
+                "articles": articles
+            }
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
+
 

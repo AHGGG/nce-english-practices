@@ -231,6 +231,11 @@
                 - [x] **COMPLETED View**: Replaces redirect-to-list when article finishes.
                 - [x] **Highlighting**: Shows full text with words/phrases looked up during study.
                 - [x] **Stats**: Study summary (Clear Rate, Words Looked Up).
+            - [x] **Reading-SentenceStudy Integration** (2026-01-04):
+                - [x] **Cross-Mode Navigation**: URL params + "Deep Study" / "Read Full Article" buttons.
+                - [x] **Unified Article Status API**: `/api/content/article-status` with combined progress.
+                - [x] **Study Highlights in Reading Mode**: Words looked up during Sentence Study shown in amber.
+                - [x] **ReviewItem Auto-Creation**: Reading Mode word lookups (2+) create SM-2 items.
 - [x] **Voice Vendor Lab**:
     - [x] **Internal Tool**: `/voice-lab` refactored to **Vendor-Centric Layout** (Google, Deepgram, ElevenLabs tabs).
     - [x] **SDK Removal**: Removed ElevenLabs and Deepgram SDKs in favor of raw `httpx` API calls.

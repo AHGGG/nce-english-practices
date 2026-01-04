@@ -6,10 +6,12 @@ import React, { memo } from 'react';
  * This prevents expensive re-renders of all sentences on each word click.
  * 
  * Collocations are rendered as grouped units with special styling.
+ * Study highlights (from Sentence Study) shown in amber.
  */
 const MemoizedSentence = memo(function MemoizedSentence({
     text,
     highlightSet,
+    studyHighlightSet,  // NEW: Words looked up during Sentence Study (shown in amber)
     showHighlights,
     collocations = []  // Array of {text, start_word_idx, end_word_idx}
 }) {
@@ -107,16 +109,28 @@ const MemoizedSentence = memo(function MemoizedSentence({
         if (!isWord) {
             rendered.push(<span key={`tok-${i}`}>{token}</span>);
         } else {
-            const isHighlighted = showHighlights && highlightSet?.has(clean);
+            const isVocabHighlighted = showHighlights && highlightSet?.has(clean);
+            const isStudyHighlighted = showHighlights && studyHighlightSet?.has(clean);
+
+            // Priority: Study highlight (amber) > Vocab highlight (green) > Normal
+            let className = 'reading-word cursor-pointer px-0.5 ';
+            if (isStudyHighlighted) {
+                // Amber for words looked up during Sentence Study
+                className += 'text-amber-400 border-b border-amber-400/50 bg-amber-400/10';
+            } else if (isVocabHighlighted) {
+                // Green for vocabulary highlights
+                className += 'text-[#00FF94] border-b border-[#00FF94]/50';
+            } else {
+                className += 'hover:text-[#00FF94] hover:bg-[#00FF94]/10';
+            }
+
             rendered.push(
                 <span
                     key={`word-${i}`}
                     data-word={clean}
                     data-sentence={text}
-                    className={`reading-word cursor-pointer px-0.5 ${isHighlighted
-                        ? 'text-[#00FF94] border-b border-[#00FF94]/50'
-                        : 'hover:text-[#00FF94] hover:bg-[#00FF94]/10'
-                        }`}
+                    className={className}
+                    title={isStudyHighlighted ? '📚 You looked this up during study' : undefined}
                 >
                     {token}
                 </span>

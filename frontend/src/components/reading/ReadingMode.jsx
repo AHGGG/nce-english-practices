@@ -70,7 +70,19 @@ const ReadingMode = () => {
 
     // --- Effects ---
     useEffect(() => {
-        fetchArticleList();
+        // Check URL params for cross-mode navigation
+        const urlParams = new URLSearchParams(window.location.search);
+        const urlSourceId = urlParams.get('source_id');
+
+        if (urlSourceId) {
+            // Direct article load from URL parameter
+            console.log('Cross-mode navigation to:', urlSourceId);
+            loadArticle(urlSourceId, selectedOptionIndex);
+            // Clear URL params to avoid re-triggering on refresh
+            window.history.replaceState({}, '', window.location.pathname);
+        } else {
+            fetchArticleList();
+        }
         fetchCalibrationLevel();
     }, []);
 
@@ -169,7 +181,10 @@ const ReadingMode = () => {
             const res = await fetch(url);
             if (res.ok) {
                 const data = await res.json();
+                // Vocabulary highlights (COCA, CET-4, etc.)
                 data.highlightSet = new Set((data.highlights || []).map(w => w.toLowerCase()));
+                // Study highlights (words looked up during Sentence Study) - shown in a different color
+                data.studyHighlightSet = new Set((data.study_highlights || []).map(w => w.toLowerCase()));
                 setSelectedArticle(data);
                 setVisibleCount(BATCH_SIZE);
 

@@ -1,5 +1,5 @@
 import React, { useRef, useEffect, useCallback } from 'react';
-import { ChevronLeft, Zap, Loader2, CheckCheck } from 'lucide-react';
+import { ChevronLeft, Zap, Loader2, CheckCheck, GraduationCap } from 'lucide-react';
 import MemoizedSentence from './MemoizedSentence';
 import MemoizedImage from './MemoizedImage';
 import { HIGHLIGHT_OPTIONS, BATCH_SIZE } from './constants';
@@ -112,6 +112,7 @@ const ReaderView = ({
                     <MemoizedSentence
                         text={sentence.text}
                         highlightSet={article.highlightSet}
+                        studyHighlightSet={article.studyHighlightSet}
                         showHighlights={showHighlights}
                     />
                 </div>
@@ -194,6 +195,18 @@ const ReaderView = ({
                 >
                     <CheckCheck className="w-4 h-4" />
                     <span className="hidden md:inline text-[10px] font-bold uppercase tracking-wider">Sweep</span>
+                </button>
+
+                {/* Deep Study Button - Cross-mode navigation */}
+                <button
+                    onClick={() => {
+                        window.location.href = `/sentence-study?source_id=${encodeURIComponent(article.id)}`;
+                    }}
+                    className="ml-2 flex items-center gap-2 px-3 py-1.5 border border-[#333] text-[#666] hover:text-[#00FF94] hover:border-[#00FF94] hover:bg-[#00FF94]/5 transition-all group"
+                    title="Study this article sentence by sentence"
+                >
+                    <GraduationCap className="w-4 h-4" />
+                    <span className="hidden md:inline text-[10px] font-bold uppercase tracking-wider">Deep Study</span>
                 </button>
 
                 {/* Right section - Stats */}

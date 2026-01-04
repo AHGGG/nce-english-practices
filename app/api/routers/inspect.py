@@ -85,11 +85,56 @@ async def inspect_word(
     db.add(log_entry)
     await db.commit()
     
-    # 3. Return combined response
+    # 3. Check if this word should be added to review queue (Phase 3: Deep Integration)
+    # If user looks up same word 2+ times in EPUB sources, it means they're struggling
+    review_item_created = False
+    if source_type == "epub" and source_id:
+        from sqlalchemy import select, func
+        from app.models.orm import ReviewItem
+        from datetime import datetime, UTC
+        
+        # Count previous lookups of this word in any EPUB
+        lookup_count_result = await db.execute(
+            select(func.count(VocabLearningLog.id))
+            .where(VocabLearningLog.user_id == user_id)
+            .where(VocabLearningLog.word == word.lower().strip())
+            .where(VocabLearningLog.source_type == "epub")
+        )
+        lookup_count = lookup_count_result.scalar() or 0
+        
+        # If looked up 2+ times, create ReviewItem (if not already exists)
+        if lookup_count >= 2:
+            existing_review = await db.execute(
+                select(ReviewItem)
+                .where(ReviewItem.user_id == user_id)
+                .where(ReviewItem.source_id == source_id)
+                .where(ReviewItem.sentence_text.contains(word))  # Approximate match
+            )
+            if not existing_review.scalar():
+                # Create a new review item for this word
+                review_item = ReviewItem(
+                    user_id=user_id,
+                    source_id=source_id,
+                    sentence_index=-1,  # -1 indicates word-level review, not sentence
+                    sentence_text=context or word,  # Use context if available
+                    highlighted_items=[word.lower().strip()],
+                    difficulty_type="vocabulary",
+                    easiness_factor=2.5,
+                    interval_days=1.0,
+                    repetition=0,
+                    next_review_at=datetime.now(UTC),
+                    created_at=datetime.now(UTC)
+                )
+                db.add(review_item)
+                await db.commit()
+                review_item_created = True
+    
+    # 4. Return combined response
     return {
         "word": word,
         "logged": True,
         "log_id": log_entry.id,
+        "review_item_created": review_item_created,
         "collins": collins_data.model_dump() if collins_data else None,
         "ldoce": ldoce_data.model_dump() if ldoce_data else None,
         "raw_results": results  # Fallback for other dictionaries

@@ -486,3 +486,37 @@ ReviewItem created when user:
 - **Test**: `test_get_study_highlights` in `test_sentence_study_api.py` (PASSED).
 - **Manual**: Verified flow from study -> finish -> review view.
 
+### ✅ Reading-SentenceStudy Integration (Phase 49) (2026-01-04)
+**Seamless cross-mode navigation between Reading Mode and Sentence Study.**
+
+#### Features
+- **Cross-Mode Navigation**:
+  - URL parameter support (`?source_id=xxx`) for direct article linking.
+  - "Deep Study" button in Reading Mode toolbar (graduation cap icon).
+  - "Read Full Article" button in Sentence Study COMPLETED view.
+- **Unified Article Status API**:
+  - `GET /api/content/article-status`: Combined reading/study progress per article.
+  - Status values: "new", "read", "in_progress", "completed".
+- **Study Highlights in Reading Mode**:
+  - Words looked up during Sentence Study shown in amber color.
+  - Backend fetches study lookups from `SentenceLearningRecord`.
+  - Frontend `MemoizedSentence` renders with `studyHighlightSet`.
+- **Deep Data Integration**:
+  - Reading Mode word lookups (2+ times) auto-create SM-2 `ReviewItem`.
+  - Shared `ArticleCard.jsx` component for unified library display.
+
+#### Implementation
+- **Backend**:
+  - `app/api/routers/content.py`: Added `/api/content/article-status`, extended `/api/reading/article` with `study_highlights`.
+  - `app/api/routers/inspect.py`: Added SM-2 ReviewItem creation for repeated lookups.
+- **Frontend**:
+  - `SentenceStudy.jsx`: URL param parsing + "Read Full Article" button.
+  - `ReadingMode.jsx`: URL param parsing + `studyHighlightSet`.
+  - `ReaderView.jsx`: "Deep Study" button.
+  - `MemoizedSentence.jsx`: Amber highlighting for study lookups.
+  - `components/shared/ArticleCard.jsx`: Unified article display component.
+
+#### Verification
+- **Backend Tests**: 8/8 passed (`test_sentence_study_api.py`).
+- **Browser Test**: Cross-mode navigation verified with recording.
+

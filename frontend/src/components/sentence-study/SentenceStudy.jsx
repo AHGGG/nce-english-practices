@@ -9,7 +9,7 @@
  * - Track progress and learning gaps
  */
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { ChevronLeft, CheckCircle, HelpCircle, Loader2, BookOpen, Sparkles, GraduationCap } from 'lucide-react';
+import { ChevronLeft, CheckCircle, HelpCircle, Loader2, BookOpen, Sparkles, GraduationCap, BookMarked } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import MemoizedSentence from '../reading/MemoizedSentence';
 import WordInspector from '../reading/WordInspector';
@@ -189,6 +189,11 @@ const SentenceStudy = () => {
     useEffect(() => {
         const load = async () => {
             try {
+                // Check URL params first for cross-mode navigation
+                const urlParams = new URLSearchParams(window.location.search);
+                const urlSourceId = urlParams.get('source_id');
+                const urlSentence = urlParams.get('sentence');
+
                 const [booksData, calibrationData, lastSession] = await Promise.all([
                     api.getBooks(),
                     api.getCalibration(),
@@ -202,7 +207,44 @@ const SentenceStudy = () => {
                     setHighlightOptionIndex(mapLevelToOptionIndex(calibrationData.level));
                 }
 
-                // Auto-load last session if available
+                // Priority 1: URL parameter - direct navigation from Reading Mode
+                if (urlSourceId && urlSourceId.startsWith('epub:')) {
+                    const parts = urlSourceId.split(':');
+                    if (parts.length >= 3) {
+                        const filename = parts[1];
+                        console.log('Cross-mode navigation to:', urlSourceId);
+
+                        // Select book
+                        const book = (booksData.books || []).find(b => b.filename === filename);
+                        if (book) {
+                            setSelectedBook(book);
+                        } else {
+                            setSelectedBook({ filename, title: filename });
+                        }
+
+                        // Load articles
+                        const articlesData = await api.getArticles(filename);
+                        const filtered = (articlesData.articles || []).filter(a => a.sentence_count > 0);
+                        setArticles(filtered);
+
+                        // Start studying the article
+                        await startStudying(urlSourceId);
+
+                        // If sentence param provided, jump to that sentence (future enhancement)
+                        if (urlSentence) {
+                            const sentenceIdx = parseInt(urlSentence, 10);
+                            if (!isNaN(sentenceIdx)) {
+                                setCurrentIndex(sentenceIdx);
+                            }
+                        }
+
+                        // Clear URL params to avoid re-triggering on refresh
+                        window.history.replaceState({}, '', window.location.pathname);
+                        return; // Skip last session logic
+                    }
+                }
+
+                // Priority 2: Auto-load last session if available
                 if (lastSession && lastSession.source_id && lastSession.source_id.startsWith('epub:')) {
                     // Extract filename from source_id: epub:{filename}:{index}
                     const parts = lastSession.source_id.split(':');
@@ -1208,6 +1250,15 @@ const SentenceStudy = () => {
 
                         {/* Action Buttons */}
                         <div className="flex flex-wrap justify-center gap-4 mt-8">
+                            <button
+                                onClick={() => {
+                                    window.location.href = `/reading?source_id=${encodeURIComponent(currentArticle.id)}`;
+                                }}
+                                className="flex items-center gap-2 px-6 py-3 bg-[#00FF94] text-black font-bold hover:bg-[#00FF94]/80 transition-colors"
+                            >
+                                <BookMarked className="w-4 h-4" />
+                                Read Full Article
+                            </button>
                             <button
                                 onClick={handleBack}
                                 className="px-6 py-3 border border-[#666] text-[#888] hover:text-white hover:border-white transition-colors"
