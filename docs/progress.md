@@ -465,3 +465,24 @@ ReviewItem created when user:
 - **Frontend Build**: PASSED.
 - **Manual Check**: Dashboard displays all new sections correctly; Redirect works.
 
+### ✅ Sentence Study Completion & Review (Phase 48) (2026-01-04)
+**Full article review with contextual highlighting upon completion.**
+
+#### Features
+- **COMPLETED View**: Replaced the "No sentence available" empty state when finishing an article.
+- **Contextual Highlighting**: Shows the full article text with **highlighted words/phrases** that were looked up during the study session.
+- **Interactive Review**: Clicking highlighted words opens the Word Inspector for deeper review.
+- **Stats Display**: Shows studied sentence count, clear rate, and total words looked up.
+
+#### Implementation
+- **Backend API** (`app/api/routers/sentence_study.py`):
+  - `GET /api/sentence-study/{source_id}/study-highlights`: Returns aggregated `word_clicks` and `phrase_clicks` for the entire article.
+- **Frontend** (`SentenceStudy.jsx`):
+  - Added `VIEW_STATES.COMPLETED`.
+  - Added `renderCompleted()` with `HighlightedText` component.
+  - Modified flow to detect `current_index >= total_sentences` and transition to completed view.
+
+#### Verification
+- **Test**: `test_get_study_highlights` in `test_sentence_study_api.py` (PASSED).
+- **Manual**: Verified flow from study -> finish -> review view.
+

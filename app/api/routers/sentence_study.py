@@ -106,6 +106,16 @@ class LastSessionResponse(BaseModel):
     last_studied_at: str  # ISO format string
 
 
+class StudyHighlightsResponse(BaseModel):
+    """All words/phrases looked up during study of an article."""
+    source_id: str
+    word_clicks: List[str]     # All unique words clicked across all sentences
+    phrase_clicks: List[str]   # All unique phrases clicked across all sentences
+    studied_count: int         # Number of sentences studied
+    clear_count: int           # Number of sentences marked clear
+    is_complete: bool          # True if all sentences have been studied
+
+
 # ============================================================
 # Endpoints
 # ============================================================
@@ -169,6 +179,51 @@ async def get_study_progress(
         clear_count=clear,
         unclear_count=studied - clear,
         current_index=current_index
+    )
+
+
+@router.get("/{source_id:path}/study-highlights", response_model=StudyHighlightsResponse)
+async def get_study_highlights(
+    source_id: str,
+    total_sentences: int = 0,  # Total sentences in the article (from frontend)
+    db: AsyncSession = Depends(get_db)
+):
+    """Get all words/phrases looked up during study of an article.
+    
+    Used for the 'COMPLETED' view to highlight all looked-up items in the full article.
+    """
+    # Fetch all learning records for this article
+    result = await db.execute(
+        select(SentenceLearningRecord)
+        .where(SentenceLearningRecord.source_id == source_id)
+        .order_by(SentenceLearningRecord.sentence_index)
+    )
+    records = result.scalars().all()
+    
+    # Aggregate all word/phrase clicks
+    all_word_clicks = set()
+    all_phrase_clicks = set()
+    clear_count = 0
+    
+    for record in records:
+        if record.word_clicks:
+            all_word_clicks.update(record.word_clicks)
+        if record.phrase_clicks:
+            all_phrase_clicks.update(record.phrase_clicks)
+        if record.initial_response == "clear":
+            clear_count += 1
+    
+    studied_count = len(records)
+    # Determine if complete: all sentences studied (based on total_sentences from frontend)
+    is_complete = studied_count >= total_sentences > 0
+    
+    return StudyHighlightsResponse(
+        source_id=source_id,
+        word_clicks=list(all_word_clicks),
+        phrase_clicks=list(all_phrase_clicks),
+        studied_count=studied_count,
+        clear_count=clear_count,
+        is_complete=is_complete
     )
 
 

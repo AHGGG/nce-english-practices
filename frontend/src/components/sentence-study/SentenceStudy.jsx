@@ -86,6 +86,12 @@ const api = {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ sentences: sentences.slice(0, 5) })
         }).catch(() => { }); // Ignore errors, this is best-effort
+    },
+    // Get all words/phrases looked up during study (for COMPLETED view)
+    async getStudyHighlights(sourceId, totalSentences) {
+        const res = await fetch(`/api/sentence-study/${encodeURIComponent(sourceId)}/study-highlights?total_sentences=${totalSentences}`);
+        if (!res.ok) return { word_clicks: [], phrase_clicks: [], is_complete: false };
+        return res.json();
     }
 };
 
@@ -94,7 +100,8 @@ const VIEW_STATES = {
     BOOK_SHELF: 'book_shelf',
     ARTICLE_LIST: 'article_list',
     OVERVIEW: 'overview',  // New: show article overview before studying
-    STUDYING: 'studying'
+    STUDYING: 'studying',
+    COMPLETED: 'completed' // New: show full article with highlights after completion
 };
 
 // Difficulty choice options
@@ -131,6 +138,9 @@ const SentenceStudy = () => {
     const [overview, setOverview] = useState(null);
     const [loadingOverview, setLoadingOverview] = useState(false);
     const [overviewStreamContent, setOverviewStreamContent] = useState(''); // For streaming display
+
+    // Study highlights state (for COMPLETED view)
+    const [studyHighlights, setStudyHighlights] = useState({ word_clicks: [], phrase_clicks: [] });
 
     // Dictionary state (for word click popup)
     const [selectedWord, setSelectedWord] = useState(null);  // Can be word or phrase
@@ -427,13 +437,27 @@ const SentenceStudy = () => {
             ]);
 
             setCurrentArticle(article);
-            setCurrentIndex(progressData.current_index || 0);
             setProgress(progressData);
             setWordClicks([]);
             setShowDiagnose(false);
             setSimplifiedText(null);
             setOverviewStreamContent('');
             setOverview(null);
+
+            // Check if article is already complete
+            const totalSentences = article.sentence_count || article.sentences?.length || 0;
+            if (progressData.current_index >= totalSentences && totalSentences > 0) {
+                // Article is complete - go to COMPLETED view
+                const highlights = await api.getStudyHighlights(sourceId, totalSentences);
+                setStudyHighlights(highlights);
+                setCurrentIndex(0);  // Reset for full article display
+                setView(VIEW_STATES.COMPLETED);
+                setLoading(false);
+                setLoadingOverview(false);
+                return;
+            }
+
+            setCurrentIndex(progressData.current_index || 0);
             setView(VIEW_STATES.OVERVIEW);  // Show overview first
 
             // Fetch overview with streaming support
@@ -665,7 +689,7 @@ const SentenceStudy = () => {
     }, [currentArticle, currentIndex, wordClicks, phraseClicks, startTime, simplifyingType, simplifyStage, handleDifficultyChoice]);
 
     // Advance to next sentence
-    const advanceToNext = useCallback(() => {
+    const advanceToNext = useCallback(async () => {
         const sentences = currentArticle?.sentences || [];
         if (currentIndex < sentences.length - 1) {
             setCurrentIndex(prev => prev + 1);
@@ -682,18 +706,27 @@ const SentenceStudy = () => {
                 current_index: prev.current_index + 1
             }));
         } else {
-            // Finished article!
-            setView(VIEW_STATES.ARTICLE_LIST);
+            // Finished article! Show COMPLETED view with highlights
+            const totalSentences = sentences.length;
+            const highlights = await api.getStudyHighlights(currentArticle.id, totalSentences);
+            setStudyHighlights(highlights);
+            setProgress(prev => ({
+                ...prev,
+                studied_count: prev.studied_count + 1,
+                current_index: prev.current_index + 1
+            }));
+            setView(VIEW_STATES.COMPLETED);
         }
     }, [currentArticle, currentIndex]);
 
     // Back navigation
     const handleBack = useCallback(() => {
-        if (view === VIEW_STATES.STUDYING || view === VIEW_STATES.OVERVIEW) {
-            // From Study/Overview -> Article List
+        if (view === VIEW_STATES.STUDYING || view === VIEW_STATES.OVERVIEW || view === VIEW_STATES.COMPLETED) {
+            // From Study/Overview/Completed -> Article List
             setView(VIEW_STATES.ARTICLE_LIST);
             setCurrentArticle(null);
             setCurrentIndex(0);
+            setStudyHighlights({ word_clicks: [], phrase_clicks: [] });
         } else if (view === VIEW_STATES.ARTICLE_LIST) {
             // From Article List -> Book Shelf
             setView(VIEW_STATES.BOOK_SHELF);
@@ -1062,6 +1095,132 @@ const SentenceStudy = () => {
         </div>
     );
 
+    // Highlight words in sentence (for COMPLETED view)
+    const HighlightedText = ({ text, highlights = [] }) => {
+        if (!highlights || highlights.length === 0) {
+            return <span>{text}</span>;
+        }
+
+        // Build regex pattern from highlights (escape special chars)
+        const pattern = highlights
+            .map(w => w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
+            .join('|');
+        const regex = new RegExp(`\\b(${pattern})\\b`, 'gi');
+        const parts = text.split(regex);
+
+        return (
+            <>
+                {parts.map((part, i) => {
+                    const isHighlight = highlights.some(
+                        h => h.toLowerCase() === part.toLowerCase()
+                    );
+                    return isHighlight ? (
+                        <mark
+                            key={i}
+                            className="bg-amber-500/30 text-amber-200 px-0.5 rounded cursor-pointer hover:bg-amber-500/50"
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                handleWordClick(part, text);
+                            }}
+                        >
+                            {part}
+                        </mark>
+                    ) : (
+                        <span key={i}>{part}</span>
+                    );
+                })}
+            </>
+        );
+    };
+
+    // Render completed view (full article with highlights)
+    const renderCompleted = () => {
+        const sentences = currentArticle?.sentences || [];
+        const allHighlights = [
+            ...(studyHighlights.word_clicks || []),
+            ...(studyHighlights.phrase_clicks || [])
+        ];
+        const clearRate = progress.studied_count > 0
+            ? Math.round((progress.clear_count / progress.studied_count) * 100)
+            : 0;
+
+        return (
+            <div className="h-screen flex flex-col bg-[#050505] text-[#E0E0E0] font-mono">
+                {/* Header */}
+                <header className="h-14 border-b border-[#333] flex items-center justify-between px-4 md:px-8 bg-[#0A0A0A]">
+                    <button
+                        onClick={handleBack}
+                        className="flex items-center gap-2 text-[#888] hover:text-[#00FF94] transition-colors"
+                    >
+                        <ChevronLeft className="w-4 h-4" />
+                        <span className="text-xs font-bold uppercase tracking-wider">Back</span>
+                    </button>
+                    <div className="flex items-center gap-3">
+                        <CheckCircle className="w-5 h-5 text-[#00FF94]" />
+                        <span className="text-xs text-[#00FF94] uppercase tracking-wider font-bold">Completed</span>
+                    </div>
+                </header>
+
+                {/* Main Content */}
+                <main className="flex-1 overflow-y-auto p-4 md:p-8">
+                    <div className="max-w-3xl mx-auto">
+                        {/* Article Title */}
+                        <h1 className="font-serif text-2xl md:text-3xl text-white text-center mb-6">
+                            {currentArticle?.title}
+                        </h1>
+
+                        {/* Stats */}
+                        <div className="flex justify-center gap-6 mb-8">
+                            <div className="text-center">
+                                <div className="text-2xl font-bold text-[#00FF94]">{progress.studied_count}</div>
+                                <div className="text-xs text-[#666]">Sentences</div>
+                            </div>
+                            <div className="text-center">
+                                <div className="text-2xl font-bold text-[#00FF94]">{clearRate}%</div>
+                                <div className="text-xs text-[#666]">Clear Rate</div>
+                            </div>
+                            <div className="text-center">
+                                <div className="text-2xl font-bold text-amber-400">{allHighlights.length}</div>
+                                <div className="text-xs text-[#666]">Words Looked Up</div>
+                            </div>
+                        </div>
+
+                        {/* Hint */}
+                        {allHighlights.length > 0 && (
+                            <p className="text-center text-sm text-[#888] mb-6">
+                                🔍 Click highlighted words to review their meanings
+                            </p>
+                        )}
+
+                        {/* Full Article with Highlights */}
+                        <div className="p-6 border border-[#333] bg-[#0A0A0A]">
+                            <div className="font-serif text-base md:text-lg leading-relaxed space-y-4">
+                                {sentences.map((sentence, idx) => (
+                                    <p key={idx} className="text-[#CCC]">
+                                        <HighlightedText
+                                            text={sentence.text}
+                                            highlights={allHighlights}
+                                        />
+                                    </p>
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* Action Buttons */}
+                        <div className="flex flex-wrap justify-center gap-4 mt-8">
+                            <button
+                                onClick={handleBack}
+                                className="px-6 py-3 border border-[#666] text-[#888] hover:text-white hover:border-white transition-colors"
+                            >
+                                Back to Chapter List
+                            </button>
+                        </div>
+                    </div>
+                </main>
+            </div>
+        );
+    };
+
     // Main render
     const content = view === VIEW_STATES.BOOK_SHELF
         ? renderBookShelf()
@@ -1069,7 +1228,9 @@ const SentenceStudy = () => {
             ? renderArticleList()
             : view === VIEW_STATES.OVERVIEW
                 ? renderOverview()
-                : renderStudying();
+                : view === VIEW_STATES.COMPLETED
+                    ? renderCompleted()
+                    : renderStudying();
 
     return (
         <>

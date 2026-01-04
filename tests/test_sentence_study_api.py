@@ -125,3 +125,46 @@ async def test_get_progress_with_records(client: AsyncClient):
     assert data["clear_count"] == 2
     assert data["unclear_count"] == 1
     assert data["current_index"] == 3  # Next sentence to study
+
+
+@pytest.mark.asyncio
+async def test_get_study_highlights(client: AsyncClient):
+    """Test fetching all study highlights (word/phrase clicks) for an article."""
+    source_id = "epub:highlight-test.epub:1"
+    
+    # Record some sentences with word and phrase clicks
+    await client.post("/api/sentence-study/record", json={
+        "source_type": "epub",
+        "source_id": source_id,
+        "sentence_index": 0,
+        "initial_response": "unclear",
+        "unclear_choice": "vocabulary",
+        "word_clicks": ["unprecedented", "surge"],
+        "phrase_clicks": ["take advantage of"]
+    })
+    await client.post("/api/sentence-study/record", json={
+        "source_type": "epub",
+        "source_id": source_id,
+        "sentence_index": 1,
+        "initial_response": "clear",
+        "word_clicks": ["remarkable"],  # Clear but still looked up a word
+        "phrase_clicks": []
+    })
+    
+    # Fetch highlights with total_sentences=2 (to test is_complete)
+    response = await client.get(f"/api/sentence-study/{source_id}/study-highlights?total_sentences=2")
+    assert response.status_code == 200
+    data = response.json()
+    
+    # Verify aggregated word clicks
+    assert "unprecedented" in data["word_clicks"]
+    assert "surge" in data["word_clicks"]
+    assert "remarkable" in data["word_clicks"]
+    
+    # Verify aggregated phrase clicks
+    assert "take advantage of" in data["phrase_clicks"]
+    
+    # Verify counts
+    assert data["studied_count"] == 2
+    assert data["clear_count"] == 1
+    assert data["is_complete"] is True
