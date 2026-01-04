@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from typing import Dict, List, Optional
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 # --- Existing Dataclasses (Kept for backward compatibility with TUI/Legacy) ---
 
@@ -153,7 +153,17 @@ class ChatState(BaseModel):
 class RemoteLog(BaseModel):
     """Log entry from frontend"""
     level: str
-    message: str
+    message: str = Field(..., max_length=10000, description="Log message limited to 10k chars")
     data: Optional[Dict] = None
     timestamp: Optional[str] = None
     category: Optional[str] = None  # Optional category hint from frontend
+
+    @field_validator('data')
+    @classmethod
+    def check_data_size(cls, v: Optional[Dict]) -> Optional[Dict]:
+        if v:
+            # Approximate size check (JSON string length)
+            # Limit to ~50KB to prevent DoS via data payload
+            if len(str(v)) > 50000:
+                raise ValueError('Data payload too large (max 50KB)')
+        return v
