@@ -1,95 +1,53 @@
-=== Log session started at 2026-01-04T17:38:05.746145 ===
-2026-01-04 11:40:11.010 [FR] [INFO] [general] Voices loaded:
-  DATA: {'arg0': '0'}
-2026-01-04 11:40:11.013 [FR] [INFO] [general] Voices loaded:
-  DATA: {'arg0': '0'}
-2026-01-04 11:40:11.018 [FR] [INFO] [general] Voices loaded:
-  DATA: {'arg0': '25'}
-2026-01-04 11:40:12.867 [FR] [INFO] [general] Voices loaded:
-  DATA: {'arg0': '25'}
-2026-01-04 11:40:12.865 [FR] [INFO] [general] Voices loaded:
-  DATA: {'arg0': '25'}
-2026-01-04 11:42:46.648 [FR] [DEBU] [general] [vite]
-  DATA: {'arg0': 'hot updated: /src/views/VoiceMode.jsx'}
-2026-01-04 11:42:46.650 [FR] [DEBU] [general] [vite]
-  DATA: {'arg0': 'hot updated: /src/index.css'}
-2026-01-04 11:42:46.659 [FR] [DEBU] [general] [vite]
-  DATA: {'arg0': 'hot updated: /src/views/VoiceMode.jsx'}
-2026-01-04 11:42:46.660 [FR] [DEBU] [general] [vite]
-  DATA: {'arg0': 'hot updated: /src/index.css'}
-2026-01-04 11:42:48.740 [FR] [DEBU] [general] [vite]
-  DATA: {'arg0': 'hot updated: /src/views/AUIStreamingDemo.jsx'}
-2026-01-04 11:42:48.740 [FR] [DEBU] [general] [vite]
-  DATA: {'arg0': 'hot updated: /src/views/AUIStreamingDemo.jsx'}
-2026-01-04 11:42:48.744 [FR] [DEBU] [general] [vite]
-  DATA: {'arg0': 'hot updated: /src/index.css'}
-2026-01-04 11:42:48.752 [FR] [DEBU] [general] [vite]
-  DATA: {'arg0': 'hot updated: /src/index.css'}
-2026-01-04 11:43:21.504 [FR] [DEBU] [general] [vite]
-  DATA: {'arg0': 'hot updated: /src/views/AUIStreamingDemo.jsx'}
-2026-01-04 11:43:21.505 [FR] [DEBU] [general] [vite]
-  DATA: {'arg0': 'hot updated: /src/index.css'}
-2026-01-04 11:43:21.505 [FR] [DEBU] [general] [vite]
-  DATA: {'arg0': 'hot updated: /src/views/AUIStreamingDemo.jsx'}
-2026-01-04 11:43:21.506 [FR] [DEBU] [general] [vite]
-  DATA: {'arg0': 'hot updated: /src/index.css'}
-2026-01-04 11:43:47.959 [FR] [DEBU] [general] [vite]
-  DATA: {'arg0': 'hot updated: /src/views/VoiceLab.jsx'}
-2026-01-04 11:43:47.960 [FR] [DEBU] [general] [vite]
-  DATA: {'arg0': 'hot updated: /src/views/VoiceLab.jsx'}
-2026-01-04 11:43:47.959 [FR] [DEBU] [general] [vite]
-  DATA: {'arg0': 'hot updated: /src/index.css'}
-2026-01-04 11:43:47.961 [FR] [DEBU] [general] [vite]
-  DATA: {'arg0': 'hot updated: /src/index.css'}
-2026-01-04 11:44:09.448 [FR] [DEBU] [general] [vite]
-  DATA: {'arg0': 'hot updated: /src/views/VoiceLab.jsx'}
-2026-01-04 11:44:09.449 [FR] [DEBU] [general] [vite]
-  DATA: {'arg0': 'hot updated: /src/index.css'}
-2026-01-04 11:44:09.467 [FR] [DEBU] [general] [vite]
-  DATA: {'arg0': 'hot updated: /src/views/VoiceLab.jsx'}
-2026-01-04 11:44:09.468 [FR] [DEBU] [general] [vite]
-  DATA: {'arg0': 'hot updated: /src/index.css'}
-2026-01-04 11:44:33.129 [FR] [DEBU] [general] [vite]
-  DATA: {'arg0': 'hot updated: /src/index.css'}
-2026-01-04 11:44:33.128 [FR] [DEBU] [general] [vite]
-  DATA: {'arg0': 'hot updated: /src/index.css'}
-2026-01-04 11:44:33.128 [FR] [DEBU] [general] [vite]
-  DATA: {'arg0': 'hot updated: /src/components/reading/ArticleListView.jsx'}
-2026-01-04 11:44:33.127 [FR] [DEBU] [general] [vite]
-  DATA: {'arg0': 'hot updated: /src/components/reading/ArticleListView.jsx'}
-2026-01-04 11:45:14.843 [FR] [DEBU] [general] [vite]
-  DATA: {'arg0': 'hot updated: /src/components/sentence-study/SentenceStudy.jsx'}
-2026-01-04 11:45:14.844 [FR] [DEBU] [general] [vite]
-  DATA: {'arg0': 'hot updated: /src/index.css'}
-2026-01-04 11:45:14.858 [FR] [DEBU] [general] [vite]
-  DATA: {'arg0': 'hot updated: /src/components/sentence-study/SentenceStudy.jsx'}
-2026-01-04 11:45:14.860 [FR] [DEBU] [general] [vite]
-  DATA: {'arg0': 'hot updated: /src/index.css'}
-2026-01-04 11:45:36.395 [FR] [DEBU] [general] [vite]
-  DATA: {'arg0': 'hot updated: /src/components/lab/LabCalibration.jsx'}
-2026-01-04 11:45:36.396 [FR] [DEBU] [general] [vite]
-  DATA: {'arg0': 'hot updated: /src/index.css'}
-2026-01-04 11:45:36.399 [FR] [DEBU] [general] [vite]
-  DATA: {'arg0': 'hot updated: /src/components/lab/LabCalibration.jsx'}
-2026-01-04 11:45:36.401 [FR] [DEBU] [general] [vite]
-  DATA: {'arg0': 'hot updated: /src/index.css'}
-2026-01-04 11:47:56.636 [FR] [INFO] [lifecycl] Log Bridge initialized. Logs are now streaming to backend.
-2026-01-04 11:47:56.637 [FR] [INFO] [lifecycl] LogBridge Connection Test: Initialized successfully
-2026-01-04 11:47:58.689 [FR] [INFO] [general] Voices loaded:
-  DATA: {'arg0': '0'}
-2026-01-04 11:47:58.692 [FR] [INFO] [general] Voices loaded:
-  DATA: {'arg0': '0'}
-2026-01-04 11:47:58.695 [FR] [INFO] [general] Voices loaded:
-  DATA: {'arg0': '25'}
-2026-01-04 11:48:03.726 [FR] [INFO] [lifecycl] Restoring last session:
-  DATA: {'arg0': 'epub:TheEconomist.2025.12.27.epub:8', 'arg1': 'TheEconomist.2025.12.27.epub'}
-2026-01-04 11:48:03.738 [FR] [INFO] [lifecycl] Restoring last session:
-  DATA: {'arg0': 'epub:TheEconomist.2025.12.27.epub:8', 'arg1': 'TheEconomist.2025.12.27.epub'}
-2026-01-04 19:48:25.110 [BA] [INFO] [network] httpx: HTTP Request: POST https://api.deepseek.com/v1/chat/completions "HTTP/1.1 200 OK"
-2026-01-04 19:48:29.431 [BA] [INFO] [network] httpx: HTTP Request: POST https://api.deepseek.com/v1/chat/completions "HTTP/1.1 200 OK"
-2026-01-04 11:49:18.102 [FR] [ERRO] [network] The play() request was interrupted by a call to pause(). https://goo.gl/LdLk22
-2026-01-04 19:49:19.224 [BA] [INFO] [audio] httpx: HTTP Request: POST https://api.deepgram.com/v1/speak?model=aura-asteria-en&encoding=mp3 "HTTP/1.1 200 OK"
-2026-01-04 19:49:21.513 [BA] [INFO] [audio] httpx: HTTP Request: POST https://api.deepgram.com/v1/speak?model=aura-asteria-en&encoding=mp3 "HTTP/1.1 200 OK"
-2026-01-04 19:49:32.254 [BA] [INFO] [audio] httpx: HTTP Request: POST https://api.deepgram.com/v1/speak?model=aura-asteria-en&encoding=mp3 "HTTP/1.1 200 OK"
-2026-01-04 11:50:38.425 [FR] [INFO] [lifecycl] Log Bridge initialized. Logs are now streaming to backend.
-2026-01-04 11:50:38.428 [FR] [INFO] [lifecycl] LogBridge Connection Test: Initialized successfully
+=== Log session started at 2026-01-04T15:06:29.677079 ===
+2026-01-04 15:06:29.965 [BA] [INFO] [general] app.services.aui_input: Starting AUI Postgres Listener...
+2026-01-04 15:06:29.975 [BA] [ERRO] [network] app.services.aui_input: Error in AUI listener loop: Multiple exceptions: [Errno 111] Connect call failed ('::1', 5432, 0, 0), [Errno 111] Connect call failed ('127.0.0.1', 5432)
+2026-01-04 15:06:34.979 [BA] [ERRO] [network] app.services.aui_input: Error in AUI listener loop: Multiple exceptions: [Errno 111] Connect call failed ('::1', 5432, 0, 0), [Errno 111] Connect call failed ('127.0.0.1', 5432)
+2026-01-04 15:06:39.985 [BA] [ERRO] [network] app.services.aui_input: Error in AUI listener loop: Multiple exceptions: [Errno 111] Connect call failed ('::1', 5432, 0, 0), [Errno 111] Connect call failed ('127.0.0.1', 5432)
+2026-01-04 15:06:44.992 [BA] [ERRO] [network] app.services.aui_input: Error in AUI listener loop: Multiple exceptions: [Errno 111] Connect call failed ('::1', 5432, 0, 0), [Errno 111] Connect call failed ('127.0.0.1', 5432)
+2026-01-04 15:06:49.998 [BA] [ERRO] [network] app.services.aui_input: Error in AUI listener loop: Multiple exceptions: [Errno 111] Connect call failed ('::1', 5432, 0, 0), [Errno 111] Connect call failed ('127.0.0.1', 5432)
+2026-01-04 15:06:55.001 [BA] [ERRO] [network] app.services.aui_input: Error in AUI listener loop: Multiple exceptions: [Errno 111] Connect call failed ('::1', 5432, 0, 0), [Errno 111] Connect call failed ('127.0.0.1', 5432)
+2026-01-04 15:07:00.006 [BA] [ERRO] [network] app.services.aui_input: Error in AUI listener loop: Multiple exceptions: [Errno 111] Connect call failed ('::1', 5432, 0, 0), [Errno 111] Connect call failed ('127.0.0.1', 5432)
+2026-01-04 15:07:05.010 [BA] [ERRO] [network] app.services.aui_input: Error in AUI listener loop: Multiple exceptions: [Errno 111] Connect call failed ('::1', 5432, 0, 0), [Errno 111] Connect call failed ('127.0.0.1', 5432)
+2026-01-04 15:07:10.014 [BA] [ERRO] [network] app.services.aui_input: Error in AUI listener loop: Multiple exceptions: [Errno 111] Connect call failed ('::1', 5432, 0, 0), [Errno 111] Connect call failed ('127.0.0.1', 5432)
+2026-01-04 15:07:15.018 [BA] [ERRO] [network] app.services.aui_input: Error in AUI listener loop: Multiple exceptions: [Errno 111] Connect call failed ('::1', 5432, 0, 0), [Errno 111] Connect call failed ('127.0.0.1', 5432)
+2026-01-04 15:07:20.025 [BA] [ERRO] [network] app.services.aui_input: Error in AUI listener loop: Multiple exceptions: [Errno 111] Connect call failed ('::1', 5432, 0, 0), [Errno 111] Connect call failed ('127.0.0.1', 5432)
+2026-01-04 15:07:23.607 [FR] [INFO] [lifecycl] Log Bridge initialized. Logs are now streaming to backend.
+2026-01-04 15:07:23.626 [FR] [INFO] [lifecycl] LogBridge Connection Test: Initialized successfully
+2026-01-04 15:07:25.029 [BA] [ERRO] [network] app.services.aui_input: Error in AUI listener loop: Multiple exceptions: [Errno 111] Connect call failed ('::1', 5432, 0, 0), [Errno 111] Connect call failed ('127.0.0.1', 5432)
+2026-01-04 15:07:30.034 [BA] [ERRO] [network] app.services.aui_input: Error in AUI listener loop: Multiple exceptions: [Errno 111] Connect call failed ('::1', 5432, 0, 0), [Errno 111] Connect call failed ('127.0.0.1', 5432)
+2026-01-04 15:07:35.038 [BA] [ERRO] [network] app.services.aui_input: Error in AUI listener loop: Multiple exceptions: [Errno 111] Connect call failed ('::1', 5432, 0, 0), [Errno 111] Connect call failed ('127.0.0.1', 5432)
+2026-01-04 15:07:40.043 [BA] [ERRO] [network] app.services.aui_input: Error in AUI listener loop: Multiple exceptions: [Errno 111] Connect call failed ('::1', 5432, 0, 0), [Errno 111] Connect call failed ('127.0.0.1', 5432)
+2026-01-04 15:07:45.046 [BA] [ERRO] [network] app.services.aui_input: Error in AUI listener loop: Multiple exceptions: [Errno 111] Connect call failed ('::1', 5432, 0, 0), [Errno 111] Connect call failed ('127.0.0.1', 5432)
+2026-01-04 15:07:50.051 [BA] [ERRO] [network] app.services.aui_input: Error in AUI listener loop: Multiple exceptions: [Errno 111] Connect call failed ('::1', 5432, 0, 0), [Errno 111] Connect call failed ('127.0.0.1', 5432)
+2026-01-04 15:07:55.056 [BA] [ERRO] [network] app.services.aui_input: Error in AUI listener loop: Multiple exceptions: [Errno 111] Connect call failed ('::1', 5432, 0, 0), [Errno 111] Connect call failed ('127.0.0.1', 5432)
+2026-01-04 15:08:00.060 [BA] [ERRO] [network] app.services.aui_input: Error in AUI listener loop: Multiple exceptions: [Errno 111] Connect call failed ('::1', 5432, 0, 0), [Errno 111] Connect call failed ('127.0.0.1', 5432)
+2026-01-04 15:08:05.065 [BA] [ERRO] [network] app.services.aui_input: Error in AUI listener loop: Multiple exceptions: [Errno 111] Connect call failed ('::1', 5432, 0, 0), [Errno 111] Connect call failed ('127.0.0.1', 5432)
+2026-01-04 15:08:10.069 [BA] [ERRO] [network] app.services.aui_input: Error in AUI listener loop: Multiple exceptions: [Errno 111] Connect call failed ('::1', 5432, 0, 0), [Errno 111] Connect call failed ('127.0.0.1', 5432)
+2026-01-04 15:08:15.073 [BA] [ERRO] [network] app.services.aui_input: Error in AUI listener loop: Multiple exceptions: [Errno 111] Connect call failed ('::1', 5432, 0, 0), [Errno 111] Connect call failed ('127.0.0.1', 5432)
+2026-01-04 15:08:20.076 [BA] [ERRO] [network] app.services.aui_input: Error in AUI listener loop: Multiple exceptions: [Errno 111] Connect call failed ('::1', 5432, 0, 0), [Errno 111] Connect call failed ('127.0.0.1', 5432)
+2026-01-04 15:08:25.080 [BA] [ERRO] [network] app.services.aui_input: Error in AUI listener loop: Multiple exceptions: [Errno 111] Connect call failed ('::1', 5432, 0, 0), [Errno 111] Connect call failed ('127.0.0.1', 5432)
+2026-01-04 15:08:30.084 [BA] [ERRO] [network] app.services.aui_input: Error in AUI listener loop: Multiple exceptions: [Errno 111] Connect call failed ('::1', 5432, 0, 0), [Errno 111] Connect call failed ('127.0.0.1', 5432)
+2026-01-04 15:08:35.089 [BA] [ERRO] [network] app.services.aui_input: Error in AUI listener loop: Multiple exceptions: [Errno 111] Connect call failed ('::1', 5432, 0, 0), [Errno 111] Connect call failed ('127.0.0.1', 5432)
+2026-01-04 15:08:40.094 [BA] [ERRO] [network] app.services.aui_input: Error in AUI listener loop: Multiple exceptions: [Errno 111] Connect call failed ('::1', 5432, 0, 0), [Errno 111] Connect call failed ('127.0.0.1', 5432)
+2026-01-04 15:08:45.098 [BA] [ERRO] [network] app.services.aui_input: Error in AUI listener loop: Multiple exceptions: [Errno 111] Connect call failed ('::1', 5432, 0, 0), [Errno 111] Connect call failed ('127.0.0.1', 5432)
+2026-01-04 15:08:50.102 [BA] [ERRO] [network] app.services.aui_input: Error in AUI listener loop: Multiple exceptions: [Errno 111] Connect call failed ('::1', 5432, 0, 0), [Errno 111] Connect call failed ('127.0.0.1', 5432)
+2026-01-04 15:08:55.107 [BA] [ERRO] [network] app.services.aui_input: Error in AUI listener loop: Multiple exceptions: [Errno 111] Connect call failed ('::1', 5432, 0, 0), [Errno 111] Connect call failed ('127.0.0.1', 5432)
+2026-01-04 15:09:00.111 [BA] [ERRO] [network] app.services.aui_input: Error in AUI listener loop: Multiple exceptions: [Errno 111] Connect call failed ('::1', 5432, 0, 0), [Errno 111] Connect call failed ('127.0.0.1', 5432)
+2026-01-04 15:09:05.115 [BA] [ERRO] [network] app.services.aui_input: Error in AUI listener loop: Multiple exceptions: [Errno 111] Connect call failed ('::1', 5432, 0, 0), [Errno 111] Connect call failed ('127.0.0.1', 5432)
+2026-01-04 15:09:10.121 [BA] [ERRO] [network] app.services.aui_input: Error in AUI listener loop: Multiple exceptions: [Errno 111] Connect call failed ('::1', 5432, 0, 0), [Errno 111] Connect call failed ('127.0.0.1', 5432)
+2026-01-04 15:09:15.126 [BA] [ERRO] [network] app.services.aui_input: Error in AUI listener loop: Multiple exceptions: [Errno 111] Connect call failed ('::1', 5432, 0, 0), [Errno 111] Connect call failed ('127.0.0.1', 5432)
+2026-01-04 15:09:20.130 [BA] [ERRO] [network] app.services.aui_input: Error in AUI listener loop: Multiple exceptions: [Errno 111] Connect call failed ('::1', 5432, 0, 0), [Errno 111] Connect call failed ('127.0.0.1', 5432)
+2026-01-04 15:09:25.134 [BA] [ERRO] [network] app.services.aui_input: Error in AUI listener loop: Multiple exceptions: [Errno 111] Connect call failed ('::1', 5432, 0, 0), [Errno 111] Connect call failed ('127.0.0.1', 5432)
+2026-01-04 15:09:30.139 [BA] [ERRO] [network] app.services.aui_input: Error in AUI listener loop: Multiple exceptions: [Errno 111] Connect call failed ('::1', 5432, 0, 0), [Errno 111] Connect call failed ('127.0.0.1', 5432)
+2026-01-04 15:09:35.143 [BA] [ERRO] [network] app.services.aui_input: Error in AUI listener loop: Multiple exceptions: [Errno 111] Connect call failed ('::1', 5432, 0, 0), [Errno 111] Connect call failed ('127.0.0.1', 5432)
+2026-01-04 15:09:40.149 [BA] [ERRO] [network] app.services.aui_input: Error in AUI listener loop: Multiple exceptions: [Errno 111] Connect call failed ('::1', 5432, 0, 0), [Errno 111] Connect call failed ('127.0.0.1', 5432)
+2026-01-04 15:09:45.156 [BA] [ERRO] [network] app.services.aui_input: Error in AUI listener loop: Multiple exceptions: [Errno 111] Connect call failed ('::1', 5432, 0, 0), [Errno 111] Connect call failed ('127.0.0.1', 5432)
+2026-01-04 15:09:50.165 [BA] [ERRO] [network] app.services.aui_input: Error in AUI listener loop: Multiple exceptions: [Errno 111] Connect call failed ('::1', 5432, 0, 0), [Errno 111] Connect call failed ('127.0.0.1', 5432)
+2026-01-04 15:09:55.171 [BA] [ERRO] [network] app.services.aui_input: Error in AUI listener loop: Multiple exceptions: [Errno 111] Connect call failed ('::1', 5432, 0, 0), [Errno 111] Connect call failed ('127.0.0.1', 5432)
+2026-01-04 15:10:00.176 [BA] [ERRO] [network] app.services.aui_input: Error in AUI listener loop: Multiple exceptions: [Errno 111] Connect call failed ('::1', 5432, 0, 0), [Errno 111] Connect call failed ('127.0.0.1', 5432)
+2026-01-04 15:10:05.179 [BA] [ERRO] [network] app.services.aui_input: Error in AUI listener loop: Multiple exceptions: [Errno 111] Connect call failed ('::1', 5432, 0, 0), [Errno 111] Connect call failed ('127.0.0.1', 5432)
+2026-01-04 15:10:10.184 [BA] [ERRO] [network] app.services.aui_input: Error in AUI listener loop: Multiple exceptions: [Errno 111] Connect call failed ('::1', 5432, 0, 0), [Errno 111] Connect call failed ('127.0.0.1', 5432)
+2026-01-04 15:10:15.189 [BA] [ERRO] [network] app.services.aui_input: Error in AUI listener loop: Multiple exceptions: [Errno 111] Connect call failed ('::1', 5432, 0, 0), [Errno 111] Connect call failed ('127.0.0.1', 5432)
+2026-01-04 15:10:20.194 [BA] [ERRO] [network] app.services.aui_input: Error in AUI listener loop: Multiple exceptions: [Errno 111] Connect call failed ('::1', 5432, 0, 0), [Errno 111] Connect call failed ('127.0.0.1', 5432)
+2026-01-04 15:10:25.200 [BA] [ERRO] [network] app.services.aui_input: Error in AUI listener loop: Multiple exceptions: [Errno 111] Connect call failed ('::1', 5432, 0, 0), [Errno 111] Connect call failed ('127.0.0.1', 5432)
+2026-01-04 15:10:28.445 [BA] [INFO] [general] app.services.aui_input: Stopping AUI Postgres Listener...
