@@ -37,7 +37,16 @@ class EpubProvider(BaseContentProvider):
         if self._current_filename == filename and self._current_book:
             return True
         
-        filepath = self.EPUB_DIR / filename
+        # Resolve and validate path to prevent traversal
+        try:
+            filepath = (self.EPUB_DIR / filename).resolve()
+            if not filepath.is_relative_to(self.EPUB_DIR.resolve()):
+                logger.warning("Path traversal attempt detected: %s", filename)
+                return False
+        except (ValueError, RuntimeError):
+            # Path resolution failed
+            return False
+
         if not filepath.exists():
             return False
         

@@ -1,1 +1,2 @@
-=== Log session started at 2026-01-05T12:18:26.786173 ===
+=== Log session started at 2026-01-05T15:03:49.340560 ===
+2026-01-05 15:03:49.443 [BA] [WARN] [general] app.services.content_providers.epub_provider: Path traversal attempt detected: ../../secret.txt

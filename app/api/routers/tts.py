@@ -43,4 +43,7 @@ async def text_to_speech(
             }
         )
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"TTS generation failed: {str(e)}")
+        # Log the full error but don't expose internal details
+        import logging
+        logging.getLogger(__name__).error("TTS generation failed", exc_info=True)
+        raise HTTPException(status_code=500, detail="TTS generation failed")
