@@ -30,9 +30,33 @@ const MemoizedSentence = memo(function MemoizedSentence({
         }
     });
 
+    // Filter out overlapping collocations - keep first one encountered, skip later overlaps
+    // This prevents bugs where overlapping collocations cause words to be skipped
+    const usedWordIndices = new Set();
+    const filteredCollocations = [];
+
+    for (const coll of collocations) {
+        // Check if any word in this collocation is already used
+        let hasOverlap = false;
+        for (let i = coll.start_word_idx; i <= coll.end_word_idx; i++) {
+            if (usedWordIndices.has(i)) {
+                hasOverlap = true;
+                break;
+            }
+        }
+
+        if (!hasOverlap) {
+            filteredCollocations.push(coll);
+            // Mark all words as used
+            for (let i = coll.start_word_idx; i <= coll.end_word_idx; i++) {
+                usedWordIndices.add(i);
+            }
+        }
+    }
+
     // Build a map of which word indices are part of which collocation
     const wordToCollocation = {};
-    collocations.forEach(coll => {
+    filteredCollocations.forEach(coll => {
         for (let i = coll.start_word_idx; i <= coll.end_word_idx; i++) {
             wordToCollocation[i] = coll;
         }

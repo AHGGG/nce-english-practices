@@ -821,6 +821,9 @@ Examples of collocations to detect:
 - Fixed expressions: "in terms of", "as a result", "take advantage of"
 - Common combinations: "make a decision", "pay attention", "climate change"
 
+IMPORTANT: Do NOT return overlapping collocations. If a word is part of multiple potential collocations, choose the longest or most meaningful one.
+For example, "a barrage of" is better than separate "a barrage" and "barrage of".
+
 Return ONLY the JSON array, no explanation. If no collocations found, return [].
 Example output: [{{"text": "sit down", "start_word_idx": 2, "end_word_idx": 3}}]"""
 
@@ -907,6 +910,8 @@ Return a JSON array of detected collocations. For each, provide:
 - "text": the exact collocation text
 - "start_word_idx": starting word index
 - "end_word_idx": ending word index (inclusive)
+
+IMPORTANT: Do NOT return overlapping collocations. If a word is part of multiple potential collocations, choose the longest or most meaningful one.
 
 Return ONLY the JSON array, no explanation. If no collocations found, return []."""
 
