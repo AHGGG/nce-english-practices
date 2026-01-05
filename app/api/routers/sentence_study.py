@@ -1,6 +1,8 @@
 """
 Sentence Study API Router for Adaptive Sentence Learning (ASL) mode.
 Endpoints for tracking study progress, recording learning results, and generating simplifications.
+
+Refactored: Business logic delegated to sentence_study_service.
 """
 from fastapi import APIRouter, HTTPException, Depends, BackgroundTasks
 from fastapi.responses import StreamingResponse
@@ -9,22 +11,21 @@ from typing import Optional, List, Dict, Any
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, Integer, case
 import hashlib
+import json
 from datetime import datetime, timedelta
 
 from app.core.db import get_db
 from app.models.orm import SentenceLearningRecord, UserComprehensionProfile, WordProficiency, ArticleOverviewCache, SentenceCollocationCache, ReviewItem
 from app.services.llm import llm_service
+from app.services.sentence_study_service import (
+    sentence_study_service,
+    _simplify_cache,
+    _explain_cache,
+    _overview_cache,
+    _collocation_cache
+)
 
 router = APIRouter(prefix="/api/sentence-study", tags=["sentence-study"])
-
-# In-memory cache for article overviews (key: title_hash, value: OverviewResponse dict)
-_overview_cache: Dict[str, dict] = {}
-
-# Cache for sentence simplifications (key: hash(sentence+type+stage), value: simplified text)
-_simplify_cache: Dict[str, str] = {}
-
-# Cache for word/phrase explanations (key: hash(word+sentence+style), value: explanation text)
-_explain_cache: Dict[str, str] = {}
 
 
 # ============================================================
@@ -369,121 +370,23 @@ async def simplify_sentence(req: SimplifyRequest):
     - data: {"type": "done", "stage": 1, "has_next_stage": true}
     - data: {"type": "error", "message": "..."}
     """
-    import json
-    from starlette.responses import StreamingResponse
-    
-    stage = max(1, min(3, req.stage))  # Clamp to 1-3
-    
-    context_parts = []
-    if req.prev_sentence:
-        context_parts.append(f'Previous sentence: "{req.prev_sentence}"')
-    context_parts.append(f'Current sentence: "{req.sentence}"')
-    if req.next_sentence:
-        context_parts.append(f'Next sentence: "{req.next_sentence}"')
-    context = "\n".join(context_parts)
-    
-    if stage == 1:
-        # Stage 1: English simplification based on type
-        if req.simplify_type == "vocabulary":
-            prompt = f"""Rewrite this sentence using simpler vocabulary (COCA 0-3000 most common words), 
-but keep the exact grammatical structure unchanged:
-"{req.sentence}"
-
-Return ONLY the simplified sentence, no explanation."""
-        elif req.simplify_type == "grammar":
-            prompt = f"""Break this sentence into 2-3 shorter, simpler sentences 
-while keeping the same vocabulary words:
-"{req.sentence}"
-
-Return ONLY the simplified sentences, no explanation."""
-        else:  # "both"
-            prompt = f"""Explain this sentence in the simplest possible English (A1 level).
-Context:
-{context}
-
-Return ONLY a simple explanation of the CURRENT sentence, no extra text."""
-    
-    elif stage == 2:
-        # Stage 2: Detailed English with examples
-        prompt = f"""The learner still doesn't understand this sentence after a simple explanation.
-Please provide a MORE DETAILED explanation with:
-1. Break down the key phrases/idioms
-2. Explain the grammar structure
-3. Give a similar example sentence
-
-Context:
-{context}
-
-Keep explanations in simple English. Format:
-📖 Key phrases: ...
-🔧 Structure: ...
-💡 Similar example: ..."""
-    
-    else:  # stage == 3
-        # Stage 3: Chinese deep dive
-        prompt = f"""学习者经过两次解释仍然不理解这个句子，请用中文提供深度解释：
-
-句子："{req.sentence}"
-
-上下文：
-{context}
-
-请提供：
-1. 句子的完整中文翻译
-2. 语法结构分析
-3. 关键词组/搭配的解释
-4. 为什么这个表达对中国学习者可能困难
-
-用中文回答。"""
-    
-    # Generate cache key
-    cache_key = hashlib.md5(f"{req.sentence}|{req.simplify_type}|{stage}".encode()).hexdigest()
-    
-    # Check cache first - return cached result as single SSE chunk
-    if cache_key in _simplify_cache:
-        cached_text = _simplify_cache[cache_key]
-        async def cached_stream():
-            yield f"data: {json.dumps({'type': 'chunk', 'content': cached_text})}\n\n"
-            yield f"data: {json.dumps({'type': 'done', 'stage': stage, 'has_next_stage': stage < 3, 'cached': True})}\n\n"
-        return StreamingResponse(
-            cached_stream(),
-            media_type="text/event-stream",
-            headers={"Cache-Control": "no-cache", "Connection": "keep-alive", "X-Accel-Buffering": "no"}
-        )
-    
-    async def generate_stream():
-        full_text = ""  # Collect for caching
-        try:
-            stream = await llm_service.async_client.chat.completions.create(
-                model=llm_service.model_name,
-                messages=[{"role": "user", "content": prompt}],
-                max_tokens=500 if stage > 1 else 300,
-                temperature=0.3,
-                stream=True
-            )
-            
-            async for chunk in stream:
-                if chunk.choices and chunk.choices[0].delta.content:
-                    content = chunk.choices[0].delta.content
-                    full_text += content
-                    yield f"data: {json.dumps({'type': 'chunk', 'content': content})}\n\n"
-            
-            # Cache the result
-            _simplify_cache[cache_key] = full_text
-            
-            # Send completion message
-            yield f"data: {json.dumps({'type': 'done', 'stage': stage, 'has_next_stage': stage < 3})}\n\n"
-            
-        except Exception as e:
-            yield f"data: {json.dumps({'type': 'error', 'message': str(e)})}\n\n"
+    async def generate():
+        async for chunk_json in sentence_study_service.stream_simplification(
+            sentence=req.sentence,
+            simplify_type=req.simplify_type,
+            stage=req.stage,
+            prev_sentence=req.prev_sentence,
+            next_sentence=req.next_sentence
+        ):
+            yield f"data: {chunk_json}\n\n"
     
     return StreamingResponse(
-        generate_stream(),
+        generate(),
         media_type="text/event-stream",
         headers={
             "Cache-Control": "no-cache",
             "Connection": "keep-alive",
-            "X-Accel-Buffering": "no"  # Disable nginx buffering for mobile
+            "X-Accel-Buffering": "no"
         }
     )
 
@@ -625,122 +528,22 @@ async def explain_word_in_context(req: ExplainWordRequest):
     Stream LLM explanation of a word in its sentence context.
     Returns Server-Sent Events with text chunks.
     """
-    # Build context with surrounding sentences
-    context_parts = []
-    if req.prev_sentence:
-        context_parts.append(f'Previous: "{req.prev_sentence}"')
-    context_parts.append(f'Current: "{req.sentence}"')
-    if req.next_sentence:
-        context_parts.append(f'Next: "{req.next_sentence}"')
-    context = "\n".join(context_parts)
-    
     # Support both 'text' (new) and 'word' (deprecated) fields
     text_to_explain = req.text or req.word
     if not text_to_explain:
-        from fastapi import HTTPException
         raise HTTPException(status_code=400, detail="Either 'text' or 'word' must be provided")
     
-    # Detect if it's a phrase (multiple words) to adjust the prompt
-    is_phrase = ' ' in text_to_explain.strip()
-    
-    if req.style == "simple":
-        prompt = f"""Explain the {"phrase" if is_phrase else "word"} "{text_to_explain}" in the context of the sentence below.
-Explanation must be in SIMPLE ENGLISH, suitable for a beginner learner.
-Use simple vocabulary and short sentences.
-
-Context:
-{context}
-
-Target: "{text_to_explain}"
-
-Give only the explanation, no preamble."""
-
-    elif req.style == "chinese_deep":
-        prompt = f"""请详细讲解句子中“{text_to_explain}”这个{"短语" if is_phrase else "单词"}的含义和用法。
-结合以下上下文进行全方位的中文讲解：
-
-上下文：
-{context}
-
-讲解要求：
-1. 解释在当前语境下的确切含义
-2. 分析语法结构或搭配用法
-3. 如果有引申义或特殊语气，请指出
-4. 使用中文回答，讲解要深入浅出
-
-目标词汇："{text_to_explain}"
-
-直接给出讲解内容，不要有多余的开场白。"""
-
-    else:  # default
-        if is_phrase:
-            prompt = f"""Explain the phrase/expression "{text_to_explain}" as it is used in the following sentence context.
-The explanation should be in English, clear and concise (2-3 sentences max).
-Focus on what this phrase/collocation means IN THIS SPECIFIC CONTEXT.
-If it's an idiomatic expression or common collocation, briefly mention that.
-
-Context:
-{context}
-
-The phrase to explain: "{text_to_explain}"
-
-Give only the explanation, no preamble or labels."""
-        else:
-            prompt = f"""Explain the word "{text_to_explain}" as it is used in the following sentence context. 
-The explanation should be in English, clear and concise (2-3 sentences max).
-Focus on what the word means IN THIS SPECIFIC CONTEXT, not a general dictionary definition.
-
-Context:
-{context}
-
-The word to explain: "{text_to_explain}"
-
-Give only the explanation, no preamble or labels."""
-
-    # Generate cache key for word explanations
-    explain_cache_key = hashlib.md5(f"{text_to_explain}|{req.sentence}|{req.style}".encode()).hexdigest()
-    
-    # Check cache - return instantly if cached
-    if explain_cache_key in _explain_cache:
-        cached_text = _explain_cache[explain_cache_key]
-        async def cached_explain():
-            # Send cached content line-by-line to match streaming format
-            # This prevents frontend parser from truncating at newlines
-            for line in cached_text.split('\n'):
-                yield f"data: {line}\n\n"
-                # Also yield the newline as a separate event to preserve formatting
-                yield "data: \n\n"
-            yield "data: [DONE]\n\n"
-        return StreamingResponse(
-            cached_explain(),
-            media_type="text/event-stream",
-            headers={"Cache-Control": "no-cache", "Connection": "keep-alive"}
-        )
-
     async def generate():
-        full_text = ""  # Collect for caching
-        try:
-            stream = await llm_service.async_client.chat.completions.create(
-                model=llm_service.model_name,
-                messages=[{"role": "user", "content": prompt}],
-                max_tokens=1000,
-                temperature=0.3,
-                stream=True
-            )
-            
-            async for chunk in stream:
-                if chunk.choices and chunk.choices[0].delta.content:
-                    text = chunk.choices[0].delta.content
-                    full_text += text
-                    yield f"data: {text}\n\n"
-            
-            # Cache the result
-            _explain_cache[explain_cache_key] = full_text
-            
-            yield "data: [DONE]\n\n"
-        except Exception as e:
-            yield f"data: [ERROR] {str(e)}\n\n"
-
+        async for chunk in sentence_study_service.stream_word_explanation(
+            text=text_to_explain,
+            sentence=req.sentence,
+            style=req.style,
+            prev_sentence=req.prev_sentence,
+            next_sentence=req.next_sentence
+        ):
+            yield f"data: {chunk}\n\n"
+        yield "data: [DONE]\n\n"
+    
     return StreamingResponse(
         generate(),
         media_type="text/event-stream",

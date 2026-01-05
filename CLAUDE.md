@@ -346,7 +346,10 @@ To support multiple dictionaries (e.g., Collins + LDOCE) in one view:
 
 **Source Code**:
 - `app/` - Main application package
+  - `services/` - Business logic (sentence_study_service.py, llm.py, etc.)
+  - `api/routers/` - FastAPI routers
 
+- `frontend/src/components/sentence-study/` - Sentence Study views & components
 - `templates/` - Jinja2 HTML templates
 - `resources/dictionaries/` - MDX/MDD dictionary files
 - `alembic/` - Database migrations

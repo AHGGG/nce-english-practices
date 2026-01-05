@@ -533,7 +533,7 @@ ReviewItem created when user:
 #### Verification
 - **Browser Test**: Verified correct rendering of all status states and badge styling.
 
-### ‚ú?EPUB Content Refactor & Sentence Study Fixes (Phase 51) (2026-01-04 ~ 2026-01-05)
+### ÔøΩ?EPUB Content Refactor & Sentence Study Fixes (Phase 51) (2026-01-04 ~ 2026-01-05)
 **Major structural upgrade to content extraction and rendering pipeline.**
 
 #### EPUB Structured Extraction
@@ -569,7 +569,7 @@ ReviewItem created when user:
   - **Validation**: Fixed 422 errors in heartbeat by adding null-coercion validators to HeartbeatRequest.
 - **Status**: All 11 tests passed (3 integration, 8 API); Browser verification successful.
 
-### ÈâÅ?LDOCE Collocation Spacing Fix (2026-01-05)
+### LDOCE Collocation Spacing Fix (2026-01-05)
 **Fixed missing spaces in collocation example sentences.**
 
 #### Problem
@@ -583,5 +583,6 @@ ReviewItem created when user:
 - **Tests**: Ran `tests/test_ldoce_parser.py` (All 22 passed).
 - **Ad-hoc**: Verified correct spacing on `simmer` examples.
 
-|   * * 1 0 .   R e f a c t o r * *   |   U n i f i e d   W o r d   E x p l a i n e r   ( H o o k ) ,   R e a d i n g   M o d e   C o n t e x t   E x p l a n a t i o n .  
- 
+| **10. Refactor** | Unified Word Explainer (Hook), Reading Mode Context Explanation.
+
+| **11. Refactor** | **SentenceStudy Module**: Split frontend (1344 lines) into 5 views; created backend service layer for LLM/SRS logic. |

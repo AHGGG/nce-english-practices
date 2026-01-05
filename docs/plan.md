@@ -246,6 +246,10 @@
             - [x] **Critical Bug Fixes** (2026-01-05):
                 - [x] **First Sentence Issue**: Fixed bug where first sentence was skipped in Study Mode due to legacy filtering.
                 - [x] **Block-Based Model**: Migrated frontend to use structured `ContentBlock`s for accurate rendering.
+    - [x] **SentenceStudy Refactoring** (2026-01-06):
+        - [x] **Frontend Split**: Extracted `SentenceStudy.jsx` (1344 lines) into 5 focused views (`ArticleListView`, `StudyingView`, etc.) in `frontend/src/components/sentence-study/views/`.
+        - [x] **Service Layer**: Created `sentence_study_service.py` for LLM streaming, caching, and SRS logic.
+        - [x] **Router Slimming**: Reduced `sentence_study.py` router by ~14% (delegate to service).
 - [x] **Voice Vendor Lab**:
     - [x] **Internal Tool**: `/voice-lab` refactored to **Vendor-Centric Layout** (Google, Deepgram, ElevenLabs tabs).
     - [x] **SDK Removal**: Removed ElevenLabs and Deepgram SDKs in favor of raw `httpx` API calls.
