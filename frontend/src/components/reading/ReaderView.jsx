@@ -91,8 +91,75 @@ const ReaderView = ({
         }
     }, [onWordClick, trackerRef]);
 
-    // Build elements for rendering
+    // Build elements for rendering - now uses blocks for proper ordering
     const renderContent = () => {
+        const filename = article.metadata?.filename || '';
+
+        // Use new blocks structure if available (preserves DOM order)
+        if (article.blocks && article.blocks.length > 0) {
+            return article.blocks.map((block, blockIdx) => {
+                switch (block.type) {
+                    case 'heading': {
+                        // Dynamic heading level (h1-h4)
+                        const level = block.level || 2;
+                        const className = level === 1
+                            ? "text-3xl font-serif text-white mt-10 mb-6"
+                            : level === 2
+                                ? "text-2xl font-serif text-white mt-8 mb-4"
+                                : "text-xl font-serif text-[#AAA] mt-6 mb-3";
+                        return (
+                            <div key={`h-${blockIdx}`} className={className}>
+                                {block.text}
+                            </div>
+                        );
+                    }
+
+                    case 'image': {
+                        const imgUrl = `/api/reading/epub/image?filename=${encodeURIComponent(filename)}&image_path=${encodeURIComponent(block.image_path)}`;
+                        return (
+                            <MemoizedImage
+                                key={`i-${blockIdx}`}
+                                src={imgUrl}
+                                alt={block.alt}
+                                caption={block.caption}
+                                onImageClick={onImageClick}
+                            />
+                        );
+                    }
+
+                    case 'paragraph': {
+                        return (
+                            <div key={`p-${blockIdx}`} className="mb-4">
+                                {block.sentences.map((sentence, sentIdx) => (
+                                    <span key={`${blockIdx}-${sentIdx}`} data-sentence-idx={`${blockIdx}-${sentIdx}`}>
+                                        <MemoizedSentence
+                                            text={sentence}
+                                            highlightSet={article.highlightSet}
+                                            studyHighlightSet={article.studyHighlightSet}
+                                            showHighlights={showHighlights}
+                                        />
+                                        {' '}
+                                    </span>
+                                ))}
+                            </div>
+                        );
+                    }
+
+                    case 'subtitle': {
+                        return (
+                            <div key={`sub-${blockIdx}`} className="text-lg italic text-[#888] mb-4 font-serif">
+                                {block.text}
+                            </div>
+                        );
+                    }
+
+                    default:
+                        return null;
+                }
+            });
+        }
+
+        // Legacy fallback for old data without blocks
         const elements = [];
         const images = article.images || [];
         const imagesByIndex = {};
@@ -103,8 +170,6 @@ const ReaderView = ({
             }
             imagesByIndex[img.sentence_index].push(img);
         });
-
-        const filename = article.metadata?.filename || '';
 
         article.sentences?.slice(0, visibleCount).forEach((sentence, idx) => {
             elements.push(

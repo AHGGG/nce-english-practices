@@ -142,7 +142,7 @@ The project follows a modular package structure:
   - `service.py`: Main `AUIStreamingService` composing all mixins.
 - **`app/services/content_providers/`**: Pluggable content source providers.
   - `base.py`: `BaseContentProvider` abstract interface.
-  - `epub_provider.py`: Local EPUB file parsing **with image extraction and serving**.
+  - `epub_provider.py`: Local EPUB parsing with **structured block extraction** and image serving.
   - `rss_provider.py`: RSS feed article extraction.
   - `podcast_provider.py`: Podcast RSS with audio enclosures.
   - `plain_text_provider.py`: Simple text segmentation.
@@ -155,7 +155,7 @@ The project follows a modular package structure:
   - `collins_schemas.py`: Structured models for Collins dictionary.
   - `ldoce_schemas.py`: Structured models for LDOCE dictionary.
   - `word_example_schemas.py`: Models for multi-example navigation (`WordExampleSet`).
-  - `content_schemas.py`: `ContentBundle`, `ContentSentence`, `ContentImage`, `SourceType` for Provider Architecture.
+  - `content_schemas.py`: `ContentBundle`, `ContentBlock`, `ContentSentence`, `ContentImage`, `SourceType` for Provider Architecture.
   - `orm.py`: SQLAlchemy database models.
 - **`app/database/`**: **Refactored 2025-12-31, Cleaned 2026-01-02** Database operations package.
   - `core.py`: Base, engine, AsyncSessionLocal, and ORM model re-exports.

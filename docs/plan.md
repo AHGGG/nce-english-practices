@@ -23,6 +23,7 @@
 - [x] **Ingestion Strategy**: Content-driven learning from external sources.
     - [x] **RSS Service**: Basic feed parsing and sentence extraction (2025-12-28).
     - [x] **EPUB Service**: Local EPUB parsing with full-text articles (2025-12-28).
+        - [x] **Structured Parsing**: Block-level extraction (Headings, Paragraphs, Images) for better layout preservation (2026-01-04).
     - [x] **Word Sense Disambiguation**: LLM-powered sense selection based on context.
     - [x] **Content Provider Architecture** (2025-12-29):
         - [x] `ContentBundle` unified data model for all content sources.
@@ -236,6 +237,9 @@
                 - [x] **Unified Article Status API**: `/api/content/article-status` with combined progress.
                 - [x] **Study Highlights in Reading Mode**: Words looked up during Sentence Study shown in amber.
                 - [x] **ReviewItem Auto-Creation**: Reading Mode word lookups (2+) create SM-2 items.
+            - [x] **Critical Bug Fixes** (2026-01-05):
+                - [x] **First Sentence Issue**: Fixed bug where first sentence was skipped in Study Mode due to legacy filtering.
+                - [x] **Block-Based Model**: Migrated frontend to use structured `ContentBlock`s for accurate rendering.
 - [x] **Voice Vendor Lab**:
     - [x] **Internal Tool**: `/voice-lab` refactored to **Vendor-Centric Layout** (Google, Deepgram, ElevenLabs tabs).
     - [x] **SDK Removal**: Removed ElevenLabs and Deepgram SDKs in favor of raw `httpx` API calls.

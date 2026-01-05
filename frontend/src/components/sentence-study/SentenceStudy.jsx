@@ -8,7 +8,7 @@
  * - Get simplified versions when stuck (vocabulary/grammar/both)
  * - Track progress and learning gaps
  */
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ChevronLeft, CheckCircle, HelpCircle, Loader2, BookOpen, Sparkles, GraduationCap, BookMarked } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
@@ -112,6 +112,24 @@ const DIFFICULTY_CHOICES = [
     { id: 'both', label: '🤷 Both', desc: "I don't understand anything" }
 ];
 
+// Helper: Extract flat list of sentences from blocks
+const extractSentencesFromBlocks = (blocks) => {
+    if (!blocks || blocks.length === 0) return [];
+    const sentences = [];
+    blocks.forEach((block, blockIdx) => {
+        if (block.type === 'paragraph' && block.sentences) {
+            block.sentences.forEach((sentence, sentIdx) => {
+                sentences.push({
+                    text: sentence,
+                    blockIndex: blockIdx,
+                    sentenceIndex: sentIdx
+                });
+            });
+        }
+    });
+    return sentences;
+};
+
 const SentenceStudy = () => {
     const navigate = useNavigate();
     // View state
@@ -171,6 +189,20 @@ const SentenceStudy = () => {
 
     // Highlight settings (reuse from Reading Mode)
     const [highlightOptionIndex, setHighlightOptionIndex] = useState(0);
+
+    // Compute flat sentence list from blocks or legacy sentences
+    // This allows the rest of the component to use flatSentences[currentIndex]
+    const flatSentences = useMemo(() => {
+        if (currentArticle?.blocks?.length > 0) {
+            return extractSentencesFromBlocks(currentArticle.blocks);
+        }
+        // Legacy: wrap in same shape for compatibility
+        return (currentArticle?.sentences || []).map((s, idx) => ({
+            text: s.text || s,
+            blockIndex: 0,
+            sentenceIndex: idx
+        }));
+    }, [currentArticle]);
 
     // Load articles on mount
     const selectBook = async (book) => {
@@ -329,9 +361,8 @@ const SentenceStudy = () => {
         setIsExplaining(true);
         setContextExplanation('');
 
-        const sentences = currentArticle?.sentences || [];
-        const prevSentence = currentIndex > 0 ? sentences[currentIndex - 1]?.text : null;
-        const nextSentence = currentIndex < sentences.length - 1 ? sentences[currentIndex + 1]?.text : null;
+        const prevSentence = currentIndex > 0 ? flatSentences[currentIndex - 1]?.text : null;
+        const nextSentence = currentIndex < flatSentences.length - 1 ? flatSentences[currentIndex + 1]?.text : null;
 
         const streamExplanation = async () => {
             try {
@@ -405,8 +436,7 @@ const SentenceStudy = () => {
 
     // Fetch collocations when sentence changes
     useEffect(() => {
-        const sentences = currentArticle?.sentences || [];
-        const currentSentenceText = sentences[currentIndex]?.text;
+        const currentSentenceText = flatSentences[currentIndex]?.text;
 
         if (!currentSentenceText || view !== VIEW_STATES.STUDYING) {
             setCollocations([]);
@@ -440,7 +470,7 @@ const SentenceStudy = () => {
         fetchCollocations();
 
         // Prefetch next 3 sentences in background (on-demand lookahead)
-        const upcomingSentences = sentences
+        const upcomingSentences = flatSentences
             .slice(currentIndex + 1, currentIndex + 4)
             .map(s => s?.text)
             .filter(Boolean);
@@ -605,8 +635,7 @@ const SentenceStudy = () => {
     // Handle Clear button
     const handleClear = useCallback(async () => {
         const dwellTime = Date.now() - startTime;
-        const sentences = currentArticle?.sentences || [];
-        const currentSentence = sentences[currentIndex];
+        const currentSentence = flatSentences[currentIndex];
         const wordCount = currentSentence?.text?.split(/\s+/).filter(w => w.length > 0).length || 0;
 
         await api.recordLearning({
@@ -637,10 +666,9 @@ const SentenceStudy = () => {
         setSimplifyStage(stage);
         setSimplifiedText('');  // Clear for streaming
 
-        const sentences = currentArticle.sentences || [];
-        const currentSentence = sentences[currentIndex]?.text || '';
-        const prevSentence = currentIndex > 0 ? sentences[currentIndex - 1]?.text : null;
-        const nextSentence = currentIndex < sentences.length - 1 ? sentences[currentIndex + 1]?.text : null;
+        const currentSentence = flatSentences[currentIndex]?.text || '';
+        const prevSentence = currentIndex > 0 ? flatSentences[currentIndex - 1]?.text : null;
+        const nextSentence = currentIndex < flatSentences.length - 1 ? flatSentences[currentIndex + 1]?.text : null;
 
         try {
             const res = await fetch('/api/sentence-study/simplify', {
@@ -699,8 +727,7 @@ const SentenceStudy = () => {
     // Handle simplified response (with progressive stage support)
     const handleSimplifiedResponse = useCallback(async (gotIt) => {
         const dwellTime = Date.now() - startTime;
-        const sentences = currentArticle?.sentences || [];
-        const currentSentence = sentences[currentIndex];
+        const currentSentence = flatSentences[currentIndex];
         const wordCount = currentSentence?.text?.split(/\s+/).filter(w => w.length > 0).length || 0;
 
         await api.recordLearning({
@@ -734,8 +761,7 @@ const SentenceStudy = () => {
 
     // Advance to next sentence
     const advanceToNext = useCallback(async () => {
-        const sentences = currentArticle?.sentences || [];
-        if (currentIndex < sentences.length - 1) {
+        if (currentIndex < flatSentences.length - 1) {
             setCurrentIndex(prev => prev + 1);
             setWordClicks([]);
             setPhraseClicks([]);
@@ -888,9 +914,9 @@ const SentenceStudy = () => {
 
     // Render studying view
     const renderStudying = () => {
-        const sentences = currentArticle?.sentences || [];
-        const currentSentence = sentences[currentIndex];
-        const totalSentences = sentences.length;
+        // Use flatSentences (computed from blocks) instead of legacy currentArticle.sentences
+        const currentSentence = flatSentences[currentIndex];
+        const totalSentences = flatSentences.length;
         const progressPercent = totalSentences > 0 ? ((currentIndex) / totalSentences) * 100 : 0;
 
         return (

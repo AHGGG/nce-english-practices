@@ -6,7 +6,7 @@ from bs4 import BeautifulSoup
 from ebooklib import epub
 import mimetypes
 
-from app.models.content_schemas import ContentBundle, ContentSentence, ContentImage, SourceType
+from app.models.content_schemas import ContentBundle, ContentSentence, ContentImage, ContentBlock, BlockType, SourceType
 from app.services.content_providers.base import BaseContentProvider
 import logging
 
@@ -139,7 +139,8 @@ class EpubProvider(BaseContentProvider):
                         'title': title,
                         'full_text': text,
                         'source_id': item.get_name(),
-                        'raw_images': images  # Store for later position mapping
+                        'raw_images': images,
+                        'raw_html': str(soup)  # Store for structured parsing
                     })
                 except Exception:
                     continue
@@ -163,6 +164,123 @@ class EpubProvider(BaseContentProvider):
                 return text
         
         return None
+
+    def _is_metadata_text(self, text: str) -> bool:
+        """
+        Check if text is metadata (date, author, etc.) rather than content.
+        """
+        # Date patterns: "Dec 19, 2025 12:54 AM", "January 1, 2025", etc.
+        date_patterns = [
+            r'^[A-Z][a-z]{2,8}\s+\d{1,2},?\s+\d{4}',  # "Dec 19, 2025" or "December 19, 2025"
+            r'^\d{1,2}[/-]\d{1,2}[/-]\d{2,4}',         # "12/19/2025"
+            r'^\d{1,2}:\d{2}\s*(AM|PM)',              # "12:54 AM"
+        ]
+        for pattern in date_patterns:
+            if re.match(pattern, text, re.IGNORECASE):
+                return True
+        
+        # Very short text that looks like metadata
+        if len(text) < 30:
+            # Check if it's mostly a date/time string
+            if re.search(r'\d{4}.*\d{1,2}:\d{2}', text):  # Contains year and time
+                return True
+        
+        return False
+
+    def _extract_structured_blocks(self, soup: BeautifulSoup) -> List[ContentBlock]:
+        """
+        Traverse DOM in order, extracting content blocks.
+        Preserves original positions of images, paragraphs, and headings.
+        """
+        blocks = []
+        body = soup.find('body') or soup
+        seen_texts = set()  # Deduplicate repeated content
+        
+        for element in body.descendants:
+            # Skip NavigableString and other non-tag elements
+            if not hasattr(element, 'name') or element.name is None:
+                continue
+                
+            if element.name in ['h1', 'h2', 'h3', 'h4']:
+                text = element.get_text(strip=True)
+                if text and len(text) >= 3 and text not in seen_texts:
+                    seen_texts.add(text)
+                    blocks.append(ContentBlock(
+                        type=BlockType.HEADING,
+                        text=text,
+                        level=int(element.name[1])
+                    ))
+            elif element.name == 'p':
+                # Use separator to preserve whitespace between spans
+                text = ' '.join(element.get_text(separator=' ').split())
+                if text and len(text) >= 10 and text not in seen_texts:
+                    # Filter out date/metadata paragraphs
+                    if self._is_metadata_text(text):
+                        continue
+                    seen_texts.add(text)
+                    sentences = self._split_sentences_lenient(text)
+                    if sentences:
+                        # Check if this looks like a subtitle (short, no period, before main content)
+                        if len(blocks) < 3 and len(text) < 100 and not text.endswith('.'):
+                            blocks.append(ContentBlock(
+                                type=BlockType.SUBTITLE,
+                                text=text
+                            ))
+                        else:
+                            blocks.append(ContentBlock(
+                                type=BlockType.PARAGRAPH,
+                                text=text,
+                                sentences=sentences
+                            ))
+            elif element.name in ['img', 'image']:
+                src = element.get('src') or element.get('xlink:href') or element.get('href')
+                if src:
+                    # Normalize path
+                    if src.startswith('../'):
+                        src = src[3:]
+                    elif src.startswith('./'):
+                        src = src[2:]
+                    if src not in seen_texts:  # Dedupe images too
+                        seen_texts.add(src)
+                        blocks.append(ContentBlock(
+                            type=BlockType.IMAGE,
+                            image_path=src,
+                            alt=element.get('alt', ''),
+                            caption=self._find_caption(element)
+                        ))
+            elif element.name == 'figure':
+                # Handle figure with nested img
+                img = element.find(['img', 'image'])
+                if img:
+                    src = img.get('src') or img.get('xlink:href') or img.get('href')
+                    if src:
+                        if src.startswith('../'):
+                            src = src[3:]
+                        elif src.startswith('./'):
+                            src = src[2:]
+                        if src not in seen_texts:
+                            seen_texts.add(src)
+                            blocks.append(ContentBlock(
+                                type=BlockType.IMAGE,
+                                image_path=src,
+                                alt=img.get('alt', ''),
+                                caption=self._find_caption(element)
+                            ))
+        
+        return blocks
+
+    def _split_sentences_lenient(self, text: str) -> List[str]:
+        """Split text into sentences with minimal filtering."""
+        # Normalize whitespace
+        text = re.sub(r'\s+', ' ', text).strip()
+        
+        # Fix drop-cap issue: single letter + space + uppercase letters at start
+        # Pattern: "T HE BIG" -> "THE BIG", "A NOTHER" -> "ANOTHER"
+        text = re.sub(r'^([A-Z])\s+([A-Z]+)', r'\1\2', text)
+        
+        sentences = re.split(r'(?<=[.!?])\s+', text)
+        # Only filter trivially invalid content
+        return [s.strip() for s in sentences if len(s.strip()) >= 5]
 
     def _extract_sentences(self, text: str) -> List[str]:
         """Text cleanup and segmentation."""
@@ -234,14 +352,22 @@ class EpubProvider(BaseContentProvider):
             raise IndexError(f"Chapter index {chapter_index} out of range (Total: {len(self._cached_articles)})")
             
         article = self._cached_articles[chapter_index]
-        clean_sentences = self._extract_sentences(article['full_text'])
         
-        # Convert to ContentSentence objects
+        # Parse HTML to extract structured blocks (new approach)
+        raw_html = article.get('raw_html', '')
+        if raw_html:
+            soup = BeautifulSoup(raw_html, 'html.parser')
+            blocks = self._extract_structured_blocks(soup)
+        else:
+            blocks = []
+        
+        # Legacy: also extract flat sentences for backward compatibility
+        clean_sentences = self._extract_sentences(article['full_text'])
         content_sentences = [
             ContentSentence(text=s) for s in clean_sentences
         ]
         
-        # Map images to sentences
+        # Legacy image mapping (retained for backward compatibility)
         content_images = self._map_images_to_sentences(
             clean_sentences,
             article.get('raw_images', [])
@@ -257,6 +383,7 @@ class EpubProvider(BaseContentProvider):
             sentences=content_sentences,
             full_text=article['full_text'],
             images=content_images,
+            blocks=blocks,  # NEW: structured content blocks
             metadata={
                 "filename": filename,
                 "chapter_index": chapter_index,

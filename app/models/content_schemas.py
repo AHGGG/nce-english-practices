@@ -10,6 +10,34 @@ class SourceType(str, Enum):
     PLAIN_TEXT = "plain_text"
 
 
+class BlockType(str, Enum):
+    """Content block types for structured EPUB parsing."""
+    PARAGRAPH = "paragraph"
+    IMAGE = "image"
+    HEADING = "heading"
+    SUBTITLE = "subtitle"
+
+
+class ContentBlock(BaseModel):
+    """
+    A single content block in an article.
+    Preserves DOM order for accurate rendering.
+    """
+    type: BlockType
+    
+    # For PARAGRAPH/HEADING/SUBTITLE
+    text: Optional[str] = None
+    sentences: List[str] = []  # Paragraph split into sentences
+    
+    # For IMAGE
+    image_path: Optional[str] = None
+    alt: Optional[str] = None
+    caption: Optional[str] = None
+    
+    # For HEADING (1=h1, 2=h2, etc.)
+    level: Optional[int] = None
+
+
 class ContentImage(BaseModel):
     """
     内容中的图片。
@@ -52,4 +80,5 @@ class ContentBundle(BaseModel):
     source_url: Optional[str] = None        # 原始内容链接 (RSS Link / YT URL)
     metadata: Dict[str, Any] = {}           # 扩展元数据 (作者, 时长, tag等)
     images: List[ContentImage] = []         # 内容中的图片列表 (EPUB/RSS)
+    blocks: List[ContentBlock] = []          # 有序内容块 (新结构，用于保留DOM顺序)
 

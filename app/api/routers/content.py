@@ -156,6 +156,19 @@ async def get_article_content(
                     "caption": img.caption
                 }
                 for img in bundle.images
+            ],
+            # NEW: Structured content blocks for correct image/text ordering
+            "blocks": [
+                {
+                    "type": b.type.value,
+                    "text": b.text,
+                    "sentences": b.sentences,
+                    "image_path": b.image_path,
+                    "alt": b.alt,
+                    "caption": b.caption,
+                    "level": b.level
+                }
+                for b in bundle.blocks
             ]
         }
         

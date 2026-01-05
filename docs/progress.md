@@ -532,3 +532,30 @@ ReviewItem created when user:
 
 #### Verification
 - **Browser Test**: Verified correct rendering of all status states and badge styling.
+
+### âœ?EPUB Content Refactor & Sentence Study Fixes (Phase 51) (2026-01-04 ~ 2026-01-05)
+**Major structural upgrade to content extraction and rendering pipeline.**
+
+#### EPUB Structured Extraction
+- **Problem**: Previous flat text extraction lost document structure (headings, subtitles) and broke sentence ordering.
+- **Solution**: Implemented `ContentBlock` model hierarchy.
+  - **Backend**: `EpubProvider` now traverses DOM to create ordered blocks (`HEADING`, `PARAGRAPH`, `IMAGE`, `SUBTITLE`).
+  - **Lenient Parsing**: `_split_sentences_lenient` ensures no content is lost during segmentation.
+  - **API**: `/api/reading/article` returns `blocks` array preserving exact document order.
+
+#### Sentence Study Fixes
+- **Critical Bug**: First sentence of articles was consistently missing in Study Mode.
+- **Root Cause**: Frontend `SentenceStudy.jsx` was falling back to a legacy `sentences` array which had overly strict filtering, while the new `blocks` data was correct but unused in the main render loop.
+- **Fix**:
+  - Migrated `renderStudying` to use `flatSentences` computed directly from `blocks`.
+  - Implemented 2D indexing (`blockIndex`, `sentenceIndex`) for precise navigation.
+  - Verified fix: "THE BIG noise..." now correctly appears as the first sentence.
+
+#### Implementation
+- **Backend**: `app/models/content_schemas.py` (Added `ContentBlock`, `BlockType`), `epub_provider.py`.
+- **Frontend**: `SentenceStudy.jsx` (Deep refactor of data loading and rendering), `ReaderView.jsx`.
+- **Database**: Created `scripts/reset_sentence_data.py` to clear incompatible cached records.
+
+#### Verification
+- **Manual**: Validated identifying first sentences in _The Economist_ articles.
+- **Visual**: Confirmed distinct rendering of headings, subtitles, and images in Reading Mode.
