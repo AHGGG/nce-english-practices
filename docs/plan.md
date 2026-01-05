@@ -237,7 +237,12 @@
                 - [x] **Cross-Mode Navigation**: URL params + "Deep Study" / "Read Full Article" buttons.
                 - [x] **Unified Article Status API**: `/api/content/article-status` with combined progress.
                 - [x] **Study Highlights in Reading Mode**: Words looked up during Sentence Study shown in amber.
+                - [x] **Study Highlights in Reading Mode**: Words looked up during Sentence Study shown in amber.
                 - [x] **ReviewItem Auto-Creation**: Reading Mode word lookups (2+) create SM-2 items.
+                - [x] **Unified Word Explanation** (2026-01-05):
+                    - [x] Shared `useWordExplainer` hook.
+                    - [x] Streaming LLM Context Explanation in Reading Mode.
+                    - [x] Progressive Styles ("Simpler please", "Chinese Deep Dive") in Reading Mode.
             - [x] **Critical Bug Fixes** (2026-01-05):
                 - [x] **First Sentence Issue**: Fixed bug where first sentence was skipped in Study Mode due to legacy filtering.
                 - [x] **Block-Based Model**: Migrated frontend to use structured `ContentBlock`s for accurate rendering.

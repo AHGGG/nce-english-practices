@@ -5,6 +5,7 @@ import ReaderView from './ReaderView';
 import WordInspector from './WordInspector';
 import Lightbox from './Lightbox';
 import { HIGHLIGHT_OPTIONS, BATCH_SIZE, mapLevelToOptionIndex } from './constants';
+import useWordExplainer from '../../hooks/useWordExplainer';
 
 // Simple API helper for ReadingTracker
 const api = {
@@ -44,11 +45,19 @@ const ReadingMode = () => {
     const [selectedOptionIndex, setSelectedOptionIndex] = useState(0);
     const [showHighlights, setShowHighlights] = useState(true);
 
-    // Inspection
-    const [selectedWord, setSelectedWord] = useState(null);
-    const [inspectorData, setInspectorData] = useState(null);
-    const [isInspecting, setIsInspecting] = useState(false);
-    const [currentContext, setCurrentContext] = useState('');
+    // Word explanation (shared hook)
+    const {
+        selectedWord,
+        isPhrase,
+        inspectorData,
+        isInspecting,
+        contextExplanation,
+        isExplaining,
+        explainStyle,
+        handleWordClick: hookHandleWordClick,
+        closeInspector,
+        changeExplainStyle
+    } = useWordExplainer();
 
     // Progressive loading
     const [visibleCount, setVisibleCount] = useState(BATCH_SIZE);
@@ -113,40 +122,6 @@ const ReadingMode = () => {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [selectedOptionIndex]);
 
-    // Fetch dictionary data when selectedWord changes
-    useEffect(() => {
-        if (!selectedWord) return;
-
-        let cancelled = false;
-        setIsInspecting(true);
-
-        const fetchData = async () => {
-            try {
-                // 1. Log to inspect endpoint (fire-and-forget for source tracking)
-                const logParams = new URLSearchParams({
-                    word: selectedWord,
-                    source_type: 'epub',
-                    source_id: selectedArticle?.id || '',
-                    context: currentContext
-                });
-                fetch(`/api/inspect?${logParams.toString()}`).catch(() => { });
-
-                // 2. Fetch full dictionary data from LDOCE
-                const res = await fetch(`/api/dictionary/ldoce/${encodeURIComponent(selectedWord)}`);
-                if (!cancelled && res.ok) {
-                    const data = await res.json();
-                    setInspectorData(data);
-                }
-            } catch (e) {
-                console.error('Dictionary fetch error:', e);
-            } finally {
-                if (!cancelled) setIsInspecting(false);
-            }
-        };
-
-        fetchData();
-        return () => { cancelled = true; };
-    }, [selectedWord, selectedArticle?.id, currentContext]);
 
     // --- Actions ---
     const fetchArticleList = async () => {
@@ -233,11 +208,9 @@ const ReadingMode = () => {
     };
 
     const handleWordClick = useCallback((word, sentence) => {
-        setSelectedWord(word);
-        setInspectorData(null);
-        setCurrentContext(sentence);
+        hookHandleWordClick(word, sentence);
         inspectedWordsRef.current.add(word.toLowerCase());
-    }, []);
+    }, [hookHandleWordClick]);
 
     const handleMarkAsKnown = useCallback(async (word) => {
         // 1. Optimistic Update
@@ -254,7 +227,7 @@ const ReadingMode = () => {
         }
 
         // 2. Close inspector
-        setSelectedWord(null);
+        closeInspector();
 
         // 3. API Call
         try {
@@ -263,7 +236,7 @@ const ReadingMode = () => {
             console.error("Failed to mark as known", e);
             // Revert? (Enhancement)
         }
-    }, [selectedArticle]);
+    }, [selectedArticle, closeInspector]);
 
     const handleSweep = useCallback(async () => {
         if (!selectedArticle || !selectedArticle.highlightSet) return;
@@ -369,9 +342,14 @@ const ReadingMode = () => {
                 selectedWord={selectedWord}
                 inspectorData={inspectorData}
                 isInspecting={isInspecting}
-                onClose={() => setSelectedWord(null)}
+                onClose={closeInspector}
                 onPlayAudio={playAudio}
                 onMarkAsKnown={handleMarkAsKnown}
+                contextExplanation={contextExplanation}
+                isExplaining={isExplaining}
+                isPhrase={isPhrase}
+                onExplainStyle={changeExplainStyle}
+                currentStyle={explainStyle}
             />
 
             {lightboxImage && (

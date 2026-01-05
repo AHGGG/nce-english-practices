@@ -583,3 +583,5 @@ ReviewItem created when user:
 - **Tests**: Ran `tests/test_ldoce_parser.py` (All 22 passed).
 - **Ad-hoc**: Verified correct spacing on `simmer` examples.
 
+|   * * 1 0 .   R e f a c t o r * *   |   U n i f i e d   W o r d   E x p l a i n e r   ( H o o k ) ,   R e a d i n g   M o d e   C o n t e x t   E x p l a n a t i o n .  
+ 
