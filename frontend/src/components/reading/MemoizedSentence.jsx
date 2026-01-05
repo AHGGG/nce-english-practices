@@ -99,14 +99,23 @@ const MemoizedSentence = memo(function MemoizedSentence({
 
             const collocationText = collocationTokens.join('');
 
+            // Check if this collocation/phrase was looked up during Sentence Study
+            const phraseText = collocInfo.text.toLowerCase();
+            const isStudiedPhrase = showHighlights && studyHighlightSet?.has(phraseText);
+
+            // Amber for studied phrases, yellow dashed border for detected but not studied
+            const phraseClassName = isStudiedPhrase
+                ? 'reading-word cursor-pointer px-0.5 text-amber-400 border-b-2 border-amber-400 bg-amber-400/10'
+                : 'reading-word cursor-pointer px-0.5 border-b-2 border-dashed border-[#FFD700] hover:bg-[#FFD700]/10 hover:text-[#FFD700]';
+
             rendered.push(
                 <span
                     key={`coll-${collocInfo.start_word_idx}`}
-                    data-word={collocInfo.text.toLowerCase()}
+                    data-word={phraseText}
                     data-sentence={text}
                     data-collocation="true"
-                    className="reading-word cursor-pointer px-0.5 border-b-2 border-dashed border-[#FFD700] hover:bg-[#FFD700]/10 hover:text-[#FFD700]"
-                    title={`Phrase: ${collocInfo.text}`}
+                    className={phraseClassName}
+                    title={isStudiedPhrase ? `📚 You looked this up: ${collocInfo.text}` : `Phrase: ${collocInfo.text}`}
                 >
                     {collocationText}
                 </span>
