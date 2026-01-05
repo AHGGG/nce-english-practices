@@ -412,9 +412,11 @@ class LDOCEParser:
     
     def _parse_collocation_example(self, example_elem: Tag) -> Optional[LDOCEExample]:
         """Parse a collocation example (simpler structure)."""
-        text = example_elem.get_text(strip=True)
-        # Remove leading bullet
+        # Use separator=' ' to preserve spaces between HTML tags
+        text = example_elem.get_text(separator=' ')
+        # Normalize: remove leading bullet, collapse multiple spaces, strip edges
         text = re.sub(r'^[·•\s]+', '', text)
+        text = re.sub(r'\s+', ' ', text).strip()
         
         if not text or len(text) < 5:
             return None
@@ -742,8 +744,11 @@ class LDOCEParser:
                 content = colloc_elem.select_one('div.content')
                 if content:
                     for ex_elem in content.select('span.example'):
-                        ex_text = ex_elem.get_text(strip=True)
+                        # Use separator=' ' to preserve spaces between HTML tags (e.g., <span class="colloinexa">)
+                        ex_text = ex_elem.get_text(separator=' ')
+                        # Normalize: remove leading bullets, collapse multiple spaces, strip edges
                         ex_text = re.sub(r'^[·•\s]+', '', ex_text)
+                        ex_text = re.sub(r'\s+', ' ', ex_text).strip()
                         if ex_text and len(ex_text) > 5:
                             examples.append(LDOCEExample(text=ex_text, translation=None))
                 
@@ -772,10 +777,13 @@ class LDOCEParser:
                         # Try to get exaen for better text
                         exaen = ex_elem.select_one('exaen')
                         if exaen:
-                            ex_text = exaen.get_text(strip=True)
+                            # Use separator=' ' to preserve spaces between HTML tags
+                            ex_text = exaen.get_text(separator=' ')
                         else:
-                            ex_text = ex_elem.get_text(strip=True)
+                            ex_text = ex_elem.get_text(separator=' ')
+                        # Normalize: remove leading bullets, collapse multiple spaces, strip edges
                         ex_text = re.sub(r'^[·•\s]+', '', ex_text)
+                        ex_text = re.sub(r'\s+', ' ', ex_text).strip()
                         if ex_text and len(ex_text) > 5:
                             trans_elem = ex_elem.select_one('example')
                             translation = trans_elem.get_text(strip=True) if trans_elem else None

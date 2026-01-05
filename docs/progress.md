@@ -568,3 +568,18 @@ ReviewItem created when user:
   - **Frontend**: Updated ReaderView.jsx to use global sentence indexing for correct ReadingTracker integration.
   - **Validation**: Fixed 422 errors in heartbeat by adding null-coercion validators to HeartbeatRequest.
 - **Status**: All 11 tests passed (3 integration, 8 API); Browser verification successful.
+
+### 鉁?LDOCE Collocation Spacing Fix (2026-01-05)
+**Fixed missing spaces in collocation example sentences.**
+
+#### Problem
+- Examples extracted using `get_text(strip=True)` merged words around HTML tags (e.g., `tosi mmer down`).
+
+#### Solution
+- Updated `ldoce_parser.py` to use `get_text(separator=' ')` and normalize whitespace.
+- Applied fix to `_extract_popup_collocations` and `_parse_collocation_example`.
+
+#### Verification
+- **Tests**: Ran `tests/test_ldoce_parser.py` (All 22 passed).
+- **Ad-hoc**: Verified correct spacing on `simmer` examples.
+
