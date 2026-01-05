@@ -644,7 +644,7 @@ const SentenceStudy = () => {
         });
 
         // Move to next sentence
-        advanceToNext();
+        advanceToNext('clear');
     }, [currentArticle, currentIndex, wordClicks, phraseClicks, startTime]);
 
     // Handle Unclear button
@@ -739,7 +739,7 @@ const SentenceStudy = () => {
         });
 
         if (gotIt) {
-            advanceToNext();
+            advanceToNext('unclear');
         } else {
             // Progressive escalation: Stage 1 -> 2 -> 3 -> advance
             if (simplifyStage < 3) {
@@ -747,13 +747,27 @@ const SentenceStudy = () => {
                 handleDifficultyChoice(simplifyingType, simplifyStage + 1);
             } else {
                 // Already at stage 3 (Chinese), just advance
-                advanceToNext();
+                advanceToNext('unclear');
             }
         }
     }, [currentArticle, currentIndex, wordClicks, phraseClicks, startTime, simplifyingType, simplifyStage, handleDifficultyChoice]);
 
     // Advance to next sentence
-    const advanceToNext = useCallback(async () => {
+    const advanceToNext = useCallback(async (result) => {
+        const updateProgress = (prev) => {
+            const newProgress = {
+                ...prev,
+                studied_count: prev.studied_count + 1,
+                current_index: prev.current_index + 1
+            };
+            if (result === 'clear') {
+                newProgress.clear_count = (prev.clear_count || 0) + 1;
+            } else if (result === 'unclear') {
+                newProgress.unclear_count = (prev.unclear_count || 0) + 1;
+            }
+            return newProgress;
+        };
+
         if (currentIndex < flatSentences.length - 1) {
             setCurrentIndex(prev => prev + 1);
             setWordClicks([]);
@@ -763,21 +777,13 @@ const SentenceStudy = () => {
             setSimplifiedText(null);
             setSimplifyingType(null);
             setSimplifyStage(1);  // Reset stage for new sentence
-            setProgress(prev => ({
-                ...prev,
-                studied_count: prev.studied_count + 1,
-                current_index: prev.current_index + 1
-            }));
+            setProgress(updateProgress);
         } else {
             // Finished article! Show COMPLETED view with highlights
             const totalSentences = flatSentences.length;
             const highlights = await api.getStudyHighlights(currentArticle.id, totalSentences);
             setStudyHighlights(highlights);
-            setProgress(prev => ({
-                ...prev,
-                studied_count: prev.studied_count + 1,
-                current_index: prev.current_index + 1
-            }));
+            setProgress(updateProgress);
             setView(VIEW_STATES.COMPLETED);
         }
     }, [currentArticle, currentIndex]);
