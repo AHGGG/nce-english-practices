@@ -3,7 +3,7 @@ Reading Session API Router
 Tracks reading behavior with mixed signals for accurate input measurement.
 """
 from fastapi import APIRouter
-from pydantic import BaseModel
+from pydantic import BaseModel, model_validator
 from typing import Optional
 from app.database import (
     start_reading_session,
@@ -26,18 +26,38 @@ class StartSessionRequest(BaseModel):
 
 class HeartbeatRequest(BaseModel):
     session_id: int
-    max_sentence_reached: int
-    total_active_seconds: int
-    total_idle_seconds: int
-    scroll_jump_count: int
+    max_sentence_reached: Optional[int] = 0
+    total_active_seconds: Optional[int] = 0
+    total_idle_seconds: Optional[int] = 0
+    scroll_jump_count: Optional[int] = 0
+    
+    @model_validator(mode='before')
+    @classmethod
+    def coerce_nulls(cls, values):
+        """Convert null values to 0 for numeric fields."""
+        if isinstance(values, dict):
+            for field in ['max_sentence_reached', 'total_active_seconds', 'total_idle_seconds', 'scroll_jump_count']:
+                if values.get(field) is None:
+                    values[field] = 0
+        return values
 
 
 class EndSessionRequest(BaseModel):
     session_id: int
-    max_sentence_reached: int
-    total_active_seconds: int
-    total_idle_seconds: int
-    scroll_jump_count: int
+    max_sentence_reached: Optional[int] = 0
+    total_active_seconds: Optional[int] = 0
+    total_idle_seconds: Optional[int] = 0
+    scroll_jump_count: Optional[int] = 0
+    
+    @model_validator(mode='before')
+    @classmethod
+    def coerce_nulls(cls, values):
+        """Convert null values to 0 for numeric fields."""
+        if isinstance(values, dict):
+            for field in ['max_sentence_reached', 'total_active_seconds', 'total_idle_seconds', 'scroll_jump_count']:
+                if values.get(field) is None:
+                    values[field] = 0
+        return values
 
 
 class WordClickRequest(BaseModel):

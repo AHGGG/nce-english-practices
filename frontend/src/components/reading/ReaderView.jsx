@@ -26,15 +26,20 @@ const ReaderView = ({
     const mainRef = useRef(null);
     const sentinelRef = useRef(null);
 
+    // Compute total content count (from blocks or legacy sentences)
+    const totalContentCount = article?.blocks?.length > 0
+        ? article.blocks.reduce((acc, b) => acc + (b.type === 'paragraph' ? b.sentences?.length || 0 : 1), 0)
+        : article?.sentences?.length || 0;
+
     // Progressive loading: Intersection Observer to load more sentences
     useEffect(() => {
-        if (!article?.sentences) return;
+        if (!article?.sentences && !article?.blocks) return;
 
         const observer = new IntersectionObserver(
             ([entry]) => {
                 if (entry.isIntersecting) {
                     setVisibleCount(prev =>
-                        Math.min(prev + BATCH_SIZE, article.sentences.length)
+                        Math.min(prev + BATCH_SIZE, totalContentCount)
                     );
                 }
             },
@@ -46,18 +51,18 @@ const ReaderView = ({
         }
 
         return () => observer.disconnect();
-    }, [article?.sentences?.length, setVisibleCount]);
+    }, [totalContentCount, setVisibleCount]);
 
     // Track sentence visibility for reading stats
     useEffect(() => {
-        if (!article?.sentences || !trackerRef?.current) return;
+        if ((!article?.sentences && !article?.blocks) || !trackerRef?.current) return;
 
         const observer = new IntersectionObserver(
             (entries) => {
                 entries.forEach(entry => {
                     if (entry.isIntersecting && trackerRef.current) {
-                        const idx = parseInt(entry.target.dataset.sentenceIdx, 10);
-                        if (!isNaN(idx)) {
+                        const idx = entry.target.dataset.sentenceIdx;
+                        if (idx) {
                             trackerRef.current.onSentenceView(idx);
                         }
                     }
@@ -70,7 +75,7 @@ const ReaderView = ({
         sentenceEls.forEach(el => observer.observe(el));
 
         return () => observer.disconnect();
-    }, [article?.sentences?.length, visibleCount, trackerRef]);
+    }, [totalContentCount, visibleCount, trackerRef]);
 
     // Event delegation: handle clicks on article container
     const handleArticleClick = useCallback((e) => {
@@ -97,6 +102,8 @@ const ReaderView = ({
 
         // Use new blocks structure if available (preserves DOM order)
         if (article.blocks && article.blocks.length > 0) {
+            let globalSentenceIndex = 0;  // Track global sentence index for reading tracker
+
             return article.blocks.map((block, blockIdx) => {
                 switch (block.type) {
                     case 'heading': {
@@ -128,19 +135,25 @@ const ReaderView = ({
                     }
 
                     case 'paragraph': {
+                        const startIdx = globalSentenceIndex;
+                        globalSentenceIndex += block.sentences.length;
+
                         return (
                             <div key={`p-${blockIdx}`} className="mb-4">
-                                {block.sentences.map((sentence, sentIdx) => (
-                                    <span key={`${blockIdx}-${sentIdx}`} data-sentence-idx={`${blockIdx}-${sentIdx}`}>
-                                        <MemoizedSentence
-                                            text={sentence}
-                                            highlightSet={article.highlightSet}
-                                            studyHighlightSet={article.studyHighlightSet}
-                                            showHighlights={showHighlights}
-                                        />
-                                        {' '}
-                                    </span>
-                                ))}
+                                {block.sentences.map((sentence, sentIdx) => {
+                                    const globalIdx = startIdx + sentIdx;
+                                    return (
+                                        <span key={`s-${globalIdx}`} data-sentence-idx={globalIdx}>
+                                            <MemoizedSentence
+                                                text={sentence}
+                                                highlightSet={article.highlightSet}
+                                                studyHighlightSet={article.studyHighlightSet}
+                                                showHighlights={showHighlights}
+                                            />
+                                            {' '}
+                                        </span>
+                                    );
+                                })}
                             </div>
                         );
                     }
@@ -159,47 +172,8 @@ const ReaderView = ({
             });
         }
 
-        // Legacy fallback for old data without blocks
-        const elements = [];
-        const images = article.images || [];
-        const imagesByIndex = {};
-
-        images.forEach(img => {
-            if (!imagesByIndex[img.sentence_index]) {
-                imagesByIndex[img.sentence_index] = [];
-            }
-            imagesByIndex[img.sentence_index].push(img);
-        });
-
-        article.sentences?.slice(0, visibleCount).forEach((sentence, idx) => {
-            elements.push(
-                <div key={`s-${idx}`} data-sentence-idx={idx}>
-                    <MemoizedSentence
-                        text={sentence.text}
-                        highlightSet={article.highlightSet}
-                        studyHighlightSet={article.studyHighlightSet}
-                        showHighlights={showHighlights}
-                    />
-                </div>
-            );
-
-            if (imagesByIndex[idx]) {
-                imagesByIndex[idx].forEach((img, imgIdx) => {
-                    const imgUrl = `/api/reading/epub/image?filename=${encodeURIComponent(filename)}&image_path=${encodeURIComponent(img.path)}`;
-                    elements.push(
-                        <MemoizedImage
-                            key={`i-${idx}-${imgIdx}`}
-                            src={imgUrl}
-                            alt={img.alt}
-                            caption={img.caption}
-                            onImageClick={onImageClick}
-                        />
-                    );
-                });
-            }
-        });
-
-        return elements;
+        // No blocks available - return empty
+        return null;
     };
 
     return (
@@ -312,7 +286,7 @@ const ReaderView = ({
                             {renderContent()}
 
                             {/* Sentinel element for Intersection Observer */}
-                            {visibleCount < (article.sentences?.length || 0) && (
+                            {visibleCount < totalContentCount && (
                                 <div
                                     ref={sentinelRef}
                                     className="flex justify-center py-4 text-[#666]"

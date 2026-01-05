@@ -190,18 +190,11 @@ const SentenceStudy = () => {
     // Highlight settings (reuse from Reading Mode)
     const [highlightOptionIndex, setHighlightOptionIndex] = useState(0);
 
-    // Compute flat sentence list from blocks or legacy sentences
+    // Compute flat sentence list from blocks
     // This allows the rest of the component to use flatSentences[currentIndex]
     const flatSentences = useMemo(() => {
-        if (currentArticle?.blocks?.length > 0) {
-            return extractSentencesFromBlocks(currentArticle.blocks);
-        }
-        // Legacy: wrap in same shape for compatibility
-        return (currentArticle?.sentences || []).map((s, idx) => ({
-            text: s.text || s,
-            blockIndex: 0,
-            sentenceIndex: idx
-        }));
+        if (!currentArticle?.blocks?.length) return [];
+        return extractSentencesFromBlocks(currentArticle.blocks);
     }, [currentArticle]);
 
     // Load articles on mount
@@ -777,7 +770,7 @@ const SentenceStudy = () => {
             }));
         } else {
             // Finished article! Show COMPLETED view with highlights
-            const totalSentences = sentences.length;
+            const totalSentences = flatSentences.length;
             const highlights = await api.getStudyHighlights(currentArticle.id, totalSentences);
             setStudyHighlights(highlights);
             setProgress(prev => ({

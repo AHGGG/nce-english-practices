@@ -142,7 +142,7 @@ The project follows a modular package structure:
   - `service.py`: Main `AUIStreamingService` composing all mixins.
 - **`app/services/content_providers/`**: Pluggable content source providers.
   - `base.py`: `BaseContentProvider` abstract interface.
-  - `epub_provider.py`: Local EPUB parsing with **structured block extraction** and image serving.
+  - `epub_provider.py`: Local EPUB parsing with **structured block extraction** (legacy sentence mode removed 2026-01-05).
   - `rss_provider.py`: RSS feed article extraction.
   - `podcast_provider.py`: Podcast RSS with audio enclosures.
   - `plain_text_provider.py`: Simple text segmentation.

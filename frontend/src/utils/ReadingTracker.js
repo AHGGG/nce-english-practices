@@ -52,12 +52,23 @@ export default class ReadingTracker {
      */
     async start() {
         try {
-            // Calculate article stats
-            const sentences = this.article.sentences || [];
-            const totalWords = sentences.reduce((sum, s) => sum + s.split(/\s+/).length, 0);
+            // Calculate article stats - support both blocks and legacy sentences
+            let sentences = [];
+            if (this.article.blocks && this.article.blocks.length > 0) {
+                // Extract sentences from blocks
+                this.article.blocks.forEach(block => {
+                    if (block.type === 'paragraph' && block.sentences) {
+                        sentences.push(...block.sentences);
+                    }
+                });
+            } else if (this.article.sentences) {
+                sentences = this.article.sentences.map(s => s.text || s);
+            }
+            
+            const totalWords = sentences.reduce((sum, s) => sum + (s.split ? s.split(/\s+/).length : 0), 0);
             
             const response = await this.api.post('/api/reading/start', {
-                source_type: this.article.source_type || 'rss',
+                source_type: this.article.source_type || 'epub',
                 source_id: this.article.id || this.article.source_id,
                 article_title: this.article.title || '',
                 total_word_count: totalWords,
@@ -90,17 +101,19 @@ export default class ReadingTracker {
      * Called when a sentence becomes visible
      */
     onSentenceView(idx) {
-        if (idx === this.lastSentenceIdx) return;
+        // Parse idx as integer (may be string from dataset)
+        const parsedIdx = typeof idx === 'string' ? parseInt(idx, 10) : idx;
+        if (isNaN(parsedIdx) || parsedIdx === this.lastSentenceIdx) return;
         
-        const delta = Math.abs(idx - this.lastSentenceIdx);
+        const delta = Math.abs(parsedIdx - this.lastSentenceIdx);
         
         if (delta > JUMP_THRESHOLD) {
             this.jumpCount++;
-            console.log('[ReadingTracker] Jump detected:', this.lastSentenceIdx, '->', idx);
+            console.log('[ReadingTracker] Jump detected:', this.lastSentenceIdx, '->', parsedIdx);
         }
         
-        this.lastSentenceIdx = idx;
-        this.maxSentenceReached = Math.max(this.maxSentenceReached, idx);
+        this.lastSentenceIdx = parsedIdx;
+        this.maxSentenceReached = Math.max(this.maxSentenceReached, parsedIdx);
         
         this.recordActiveTime();
         this.resetIdleTimer();

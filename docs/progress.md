@@ -559,3 +559,12 @@ ReviewItem created when user:
 #### Verification
 - **Manual**: Validated identifying first sentences in _The Economist_ articles.
 - **Visual**: Confirmed distinct rendering of headings, subtitles, and images in Reading Mode.
+
+### 2026-01-05: EPUB Refactor Finalization & Legacy Cleanup
+- **Objective**: Complete the migration to ContentBlock based parsing and remove all legacy sentence/image array logic.
+- **Changes**:
+  - **Legacy Removal**: Removed _extract_sentences and _map_images_to_sentences from epub_provider.py.
+  - **API Update**: Removed images array from ContentBundle response; now exclusively uses locks.
+  - **Frontend**: Updated ReaderView.jsx to use global sentence indexing for correct ReadingTracker integration.
+  - **Validation**: Fixed 422 errors in heartbeat by adding null-coercion validators to HeartbeatRequest.
+- **Status**: All 11 tests passed (3 integration, 8 API); Browser verification successful.

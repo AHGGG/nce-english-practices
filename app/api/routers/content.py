@@ -78,9 +78,8 @@ def list_epub_articles(filename: Optional[str] = None):
         articles = []
         for i, article in enumerate(provider._cached_articles):
             full_text = article.get("full_text", "")
-            # Use sentence extraction to filter out TOC/navigation pages
-            # These have text but no proper sentences
-            sentences = provider._extract_sentences(full_text)
+            # Use lenient sentence splitting to filter out TOC/navigation pages
+            sentences = provider._split_sentences_lenient(full_text)
             if len(sentences) < 3:
                 continue
                 
@@ -147,17 +146,8 @@ async def get_article_content(
             "full_text": bundle.full_text,
             "metadata": bundle.metadata,
             "highlights": [],
-            "study_highlights": [],  # NEW: Words looked up during Sentence Study
-            "images": [
-                {
-                    "path": img.path,
-                    "sentence_index": img.sentence_index,
-                    "alt": img.alt,
-                    "caption": img.caption
-                }
-                for img in bundle.images
-            ],
-            # NEW: Structured content blocks for correct image/text ordering
+            "study_highlights": [],  # Words looked up during Sentence Study
+            # Structured content blocks (preserves DOM order for correct image/text placement)
             "blocks": [
                 {
                     "type": b.type.value,
@@ -221,11 +211,20 @@ async def get_article_content(
             # Continue without study highlights
         
         if include_sentences:
-            result["sentences"] = [
-                {"index": i, "text": s.text}
-                for i, s in enumerate(bundle.sentences)
-            ]
-            result["sentence_count"] = len(bundle.sentences)
+            # For EPUB, extract sentences from blocks; for other providers, use bundle.sentences
+            if bundle.blocks:
+                sentences = []
+                for block in bundle.blocks:
+                    if block.type.value == 'paragraph' and block.sentences:
+                        sentences.extend([{"index": len(sentences) + i, "text": s} for i, s in enumerate(block.sentences)])
+                result["sentences"] = sentences
+                result["sentence_count"] = len(sentences)
+            else:
+                result["sentences"] = [
+                    {"index": i, "text": s.text}
+                    for i, s in enumerate(bundle.sentences)
+                ]
+                result["sentence_count"] = len(bundle.sentences)
         
         return result
         
@@ -308,7 +307,7 @@ async def get_article_status(
             
             for i, article in enumerate(provider._cached_articles):
                 full_text = article.get("full_text", "")
-                sentences = provider._extract_sentences(full_text)
+                sentences = provider._split_sentences_lenient(full_text)
                 if len(sentences) < 3:
                     continue
                 

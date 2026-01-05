@@ -69,7 +69,10 @@ class ContentBundle(BaseModel):
     id: str                                 # 唯一 ID (Token/Hash)
     source_type: SourceType                 # 来源类型
     title: str                              # 标题
-    sentences: List[ContentSentence]        # 句子列表
+    
+    # Content - at least one should be populated
+    blocks: List[ContentBlock] = []         # 有序内容块 (EPUB uses this)
+    sentences: List[ContentSentence] = []   # 句子列表 (Podcast/RSS uses this)
     
     # Optional fields - Provider-dependent
     language: str = "en"                    # 语言代码 (默认为 English)
@@ -79,6 +82,5 @@ class ContentBundle(BaseModel):
     full_text: Optional[str] = None         # 完整原文 (用于 EPUB 等长文本)
     source_url: Optional[str] = None        # 原始内容链接 (RSS Link / YT URL)
     metadata: Dict[str, Any] = {}           # 扩展元数据 (作者, 时长, tag等)
-    images: List[ContentImage] = []         # 内容中的图片列表 (EPUB/RSS)
-    blocks: List[ContentBlock] = []          # 有序内容块 (新结构，用于保留DOM顺序)
+    images: List[ContentImage] = []         # 内容中的图片列表 (legacy, deprecated)
 

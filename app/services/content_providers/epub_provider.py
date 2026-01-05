@@ -6,7 +6,7 @@ from bs4 import BeautifulSoup
 from ebooklib import epub
 import mimetypes
 
-from app.models.content_schemas import ContentBundle, ContentSentence, ContentImage, ContentBlock, BlockType, SourceType
+from app.models.content_schemas import ContentBundle, ContentBlock, BlockType, SourceType
 from app.services.content_providers.base import BaseContentProvider
 import logging
 
@@ -282,58 +282,6 @@ class EpubProvider(BaseContentProvider):
         # Only filter trivially invalid content
         return [s.strip() for s in sentences if len(s.strip()) >= 5]
 
-    def _extract_sentences(self, text: str) -> List[str]:
-        """Text cleanup and segmentation."""
-        # Simple regex segmentation (ported from legacy service)
-        text = re.sub(r'\s+', ' ', text)
-        raw_sentences = re.split(r'(?<=[.!?])\s+', text)
-        
-        clean = []
-        for s in raw_sentences:
-            s = s.strip()
-            if s and 20 <= len(s) <= 400 and s[0].isupper():
-                if not re.match(r'^(Chapter|Section|Part|\d+\.|•|\*)', s):
-                    clean.append(s)
-        return clean
-    
-    def _map_images_to_sentences(
-        self, 
-        sentences: List[str], 
-        raw_images: List[Dict]
-    ) -> List[ContentImage]:
-        """
-        Map images to sentence indices.
-        Since we lose exact positions when extracting text, we distribute images
-        evenly across the content. For better accuracy, EPUB HTML parsing could
-        be enhanced to track character offsets.
-        """
-        if not raw_images or not sentences:
-            return []
-        
-        content_images = []
-        total_sentences = len(sentences)
-        
-        for i, img in enumerate(raw_images):
-            # Distribute images evenly across sentences
-            # Each image appears after a proportionally distributed sentence
-            if total_sentences > 1:
-                # Place images at roughly even intervals
-                sentence_idx = min(
-                    int((i + 1) * total_sentences / (len(raw_images) + 1)),
-                    total_sentences - 1
-                )
-            else:
-                sentence_idx = 0
-            
-            content_images.append(ContentImage(
-                path=img['path'],
-                sentence_index=sentence_idx,
-                alt=img.get('alt'),
-                caption=img.get('caption')
-            ))
-        
-        return content_images
-
     async def fetch(self, filename: str, chapter_index: int = 0, **kwargs: Any) -> ContentBundle:
         """
         Fetch a specific chapter from an EPUB.
@@ -353,25 +301,13 @@ class EpubProvider(BaseContentProvider):
             
         article = self._cached_articles[chapter_index]
         
-        # Parse HTML to extract structured blocks (new approach)
+        # Parse HTML to extract structured blocks
         raw_html = article.get('raw_html', '')
         if raw_html:
             soup = BeautifulSoup(raw_html, 'html.parser')
             blocks = self._extract_structured_blocks(soup)
         else:
             blocks = []
-        
-        # Legacy: also extract flat sentences for backward compatibility
-        clean_sentences = self._extract_sentences(article['full_text'])
-        content_sentences = [
-            ContentSentence(text=s) for s in clean_sentences
-        ]
-        
-        # Legacy image mapping (retained for backward compatibility)
-        content_images = self._map_images_to_sentences(
-            clean_sentences,
-            article.get('raw_images', [])
-        )
         
         # Construct ID: filename:chapter_index
         bundle_id = f"epub:{filename}:{chapter_index}"
@@ -380,13 +316,12 @@ class EpubProvider(BaseContentProvider):
             id=bundle_id,
             source_type=SourceType.EPUB,
             title=article['title'],
-            sentences=content_sentences,
             full_text=article['full_text'],
-            images=content_images,
-            blocks=blocks,  # NEW: structured content blocks
+            blocks=blocks,
             metadata={
                 "filename": filename,
                 "chapter_index": chapter_index,
                 "total_chapters": len(self._cached_articles)
             }
         )
+
