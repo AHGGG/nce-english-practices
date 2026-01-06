@@ -17,6 +17,7 @@ const ReaderView = ({
     setShowHighlights,
     selectedWord,
     onWordClick,
+    onSentenceClick,   // NEW: Handle unclear sentence clicks
     onBackToLibrary,
     onImageClick,
     onSweep,
@@ -80,6 +81,27 @@ const ReaderView = ({
     // Event delegation: handle clicks on article container
     const handleArticleClick = useCallback((e) => {
         const target = e.target;
+
+        // Check if clicking on an unclear sentence (not on a word)
+        // Walk up the tree to find if we clicked inside an unclear sentence
+        let el = target;
+        while (el && el !== e.currentTarget) {
+            if (el.dataset?.unclearSentence === 'true') {
+                // Only trigger sentence click if we didn't click on a word
+                if (!target.dataset?.word) {
+                    const sentenceText = el.dataset.sentenceText;
+                    const unclearChoice = el.dataset.unclearChoice;
+                    if (sentenceText && onSentenceClick) {
+                        onSentenceClick(sentenceText, { unclear_choice: unclearChoice });
+                    }
+                    return;
+                }
+                break;
+            }
+            el = el.parentElement;
+        }
+
+        // Handle word click (existing logic)
         const word = target.dataset?.word;
         const sentence = target.dataset?.sentence;
 
@@ -94,7 +116,7 @@ const ReaderView = ({
         if (trackerRef?.current) {
             trackerRef.current.onWordClick();
         }
-    }, [onWordClick, trackerRef]);
+    }, [onWordClick, onSentenceClick, trackerRef]);
 
     // Build elements for rendering - now uses blocks for proper ordering
     const renderContent = () => {
@@ -149,6 +171,7 @@ const ReaderView = ({
                                                 highlightSet={article.highlightSet}
                                                 studyHighlightSet={article.studyHighlightSet}
                                                 showHighlights={showHighlights}
+                                                unclearInfo={article.unclearSentenceMap?.[globalIdx]}
                                             />
                                             {' '}
                                         </span>

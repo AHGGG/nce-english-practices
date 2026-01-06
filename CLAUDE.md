@@ -182,7 +182,7 @@ The project follows a modular package structure:
   - `POST /api/sentence-study/explain-word`: **Streaming SSE** word/phrase explanation (in-memory cached, fixed SSE line-by-line for multi-line content).
   - `POST /api/sentence-study/detect-collocations`: AI collocation detection (**DB-persisted cache**).
   - `POST /api/sentence-study/prefetch-collocations`: **NEW 2026-01-03** Background prefetch for lookahead (up to 5 sentences, uses `asyncio.create_task`).
-  - `GET /api/sentence-study/{source_id}/study-highlights`: **NEW 2026-01-04** Get aggregated lookups for completed view.
+  - `GET /api/sentence-study/{source_id}/study-highlights`: **NEW 2026-01-04** Get aggregated lookups and unclear sentences (`unclear_sentences`).
   - `GET /api/sentence-study/queue`: Get review queue (SRS).
   - `POST /api/sentence-study/review`: Complete a review.
   - `GET /api/sentence-study/profile`: User profile stats (Consumed by PerformanceReport).
@@ -245,7 +245,7 @@ ALL generators and routes use this service rather than creating clients directly
   - `src/components/reading/`: **Modularized 2025-12-31** Reading Mode package.
     - `ReadingMode.jsx`: Main container with view routing.
     - `ArticleListView.jsx`, `ReaderView.jsx`: View components.
-    - `WordInspector.jsx`, `Lightbox.jsx`: Modal overlays.
+    - `WordInspector.jsx`, `SentenceInspector.jsx`, `Lightbox.jsx`: Modal overlays.
     - `MemoizedSentence.jsx`, `MemoizedImage.jsx`: Performance-optimized components.
   - `src/components/performance/`: **Modularized 2025-12-31** Performance Report package.
     - `PerformanceReport.jsx`: Main container.

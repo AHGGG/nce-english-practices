@@ -207,6 +207,10 @@
                 - Stage 1: English simplification (vocab/grammar/both).
                 - Stage 2: Detailed breakdown with examples.
                 - Stage 3: 中文深度解释 (Chinese deep dive).
+            - [x] **Unclear Sentence Features** (2026-01-06):
+                - [x] **Review Highlighting**: Unclear sentences highlighted in Completed View and Reading Mode.
+                - [x] **Color Coding**: Orange (Vocab) / Blue (Grammar) / Red (Both).
+                - [x] **Sentence Inspector**: Inline panel for progressive explanations (Stage 1-3).
             - [x] **Streaming LLM**: `/simplify` returns SSE for real-time text.
             - [x] **LLM Caching**: `/simplify` and `/explain-word` cache results by hash key.
             - [x] **Mobile UI**: Larger touch targets (py-4), flex-wrap, touch-manipulation.

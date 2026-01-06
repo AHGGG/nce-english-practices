@@ -107,11 +107,19 @@ class LastSessionResponse(BaseModel):
     last_studied_at: str  # ISO format string
 
 
+class UnclearSentenceInfo(BaseModel):
+    """Info about an unclear sentence for highlighting."""
+    sentence_index: int
+    unclear_choice: Optional[str] = None  # vocabulary, grammar, both
+    max_simplify_stage: int = 0           # Highest stage reached (1-3)
+
+
 class StudyHighlightsResponse(BaseModel):
     """All words/phrases looked up during study of an article."""
     source_id: str
     word_clicks: List[str]     # All unique words clicked across all sentences
     phrase_clicks: List[str]   # All unique phrases clicked across all sentences
+    unclear_sentences: List[UnclearSentenceInfo] = []  # Sentences marked unclear
     studied_count: int         # Number of sentences studied
     clear_count: int           # Number of sentences marked clear
     is_complete: bool          # True if all sentences have been studied
@@ -201,9 +209,10 @@ async def get_study_highlights(
     )
     records = result.scalars().all()
     
-    # Aggregate all word/phrase clicks
+    # Aggregate all word/phrase clicks and collect unclear sentences
     all_word_clicks = set()
     all_phrase_clicks = set()
+    unclear_sentences = []
     clear_count = 0
     
     for record in records:
@@ -213,6 +222,21 @@ async def get_study_highlights(
             all_phrase_clicks.update(record.phrase_clicks)
         if record.initial_response == "clear":
             clear_count += 1
+        else:
+            # Record is unclear - collect info for highlighting
+            # Determine max_simplify_stage from interaction_log if available
+            max_stage = 0
+            if record.interaction_log:
+                for event in record.interaction_log:
+                    if event.get("action") == "simplify_stage":
+                        stage = event.get("stage", 0)
+                        if stage > max_stage:
+                            max_stage = stage
+            unclear_sentences.append(UnclearSentenceInfo(
+                sentence_index=record.sentence_index,
+                unclear_choice=record.unclear_choice,
+                max_simplify_stage=max_stage
+            ))
     
     studied_count = len(records)
     # Determine if complete: all sentences studied (based on total_sentences from frontend)
@@ -222,6 +246,7 @@ async def get_study_highlights(
         source_id=source_id,
         word_clicks=list(all_word_clicks),
         phrase_clicks=list(all_phrase_clicks),
+        unclear_sentences=unclear_sentences,
         studied_count=studied_count,
         clear_count=clear_count,
         is_complete=is_complete

@@ -3,6 +3,7 @@ import ReadingTracker from '../../utils/ReadingTracker';
 import ArticleListView from './ArticleListView';
 import ReaderView from './ReaderView';
 import WordInspector from './WordInspector';
+import SentenceInspector from './SentenceInspector';
 import Lightbox from './Lightbox';
 import { HIGHLIGHT_OPTIONS, BATCH_SIZE, mapLevelToOptionIndex } from './constants';
 import useWordExplainer from '../../hooks/useWordExplainer';
@@ -76,6 +77,10 @@ const ReadingMode = () => {
 
     // Calibration banner state
     const [calibrationBanner, setCalibrationBanner] = useState(null);
+
+    // Sentence Inspector state (for unclear sentences)
+    const [selectedSentence, setSelectedSentence] = useState(null);
+    const [selectedSentenceInfo, setSelectedSentenceInfo] = useState(null);
 
     // --- Effects ---
     useEffect(() => {
@@ -186,6 +191,11 @@ const ReadingMode = () => {
                 data.highlightSet = new Set((data.highlights || []).map(w => w.toLowerCase()));
                 // Study highlights (words looked up during Sentence Study) - shown in a different color
                 data.studyHighlightSet = new Set((data.study_highlights || []).map(w => w.toLowerCase()));
+                // Unclear sentence map (sentence_index -> unclear info)
+                data.unclearSentenceMap = {};
+                (data.unclear_sentences || []).forEach(info => {
+                    data.unclearSentenceMap[info.sentence_index] = info;
+                });
                 setSelectedArticle(data);
                 setVisibleCount(BATCH_SIZE);
 
@@ -331,6 +341,10 @@ const ReadingMode = () => {
                 setShowHighlights={setShowHighlights}
                 selectedWord={selectedWord}
                 onWordClick={handleWordClick}
+                onSentenceClick={(sentence, info) => {
+                    setSelectedSentence(sentence);
+                    setSelectedSentenceInfo(info);
+                }}
                 onBackToLibrary={handleBackToLibrary}
                 onImageClick={handleImageClick}
                 onSweep={handleSweep}
@@ -360,6 +374,16 @@ const ReadingMode = () => {
                     onClose={() => setLightboxImage(null)}
                 />
             )}
+
+            <SentenceInspector
+                sentence={selectedSentence}
+                unclearInfo={selectedSentenceInfo}
+                isOpen={!!selectedSentence}
+                onClose={() => {
+                    setSelectedSentence(null);
+                    setSelectedSentenceInfo(null);
+                }}
+            />
         </>
     );
 };

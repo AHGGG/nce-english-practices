@@ -609,3 +609,25 @@ ReviewItem created when user:
 - **Security**: Added Nginx HTTP Basic Auth support (optional) for protecting dev deployments.
   - Script: `deploy/scripts/generate_htpasswd.sh`
   - Config: Mounted `nginx/conf.d` volume.
+
+### ✅ Unclear Sentence Features (2026-01-06)
+**Enhanced review capabilities for difficult sentences.**
+
+#### Features
+- **Visual Highlighting**: Sentences marked "Unclear" during study are highlighted in Completed View and Reading Mode.
+- **Color Coding**: 
+  - 🟠 Vocabulary (Orange)
+  - 🔵 Grammar (Blue)
+  - 🔴 Both (Red)
+- **Sentence Inspector**: Clicking an unclear sentence opens a dedicated panel (similar to Word Inspector) showing the 3-stage progressive explanation.
+
+#### Implementation
+- **Backend**: Extended `get_study_highlights` and `get_article_content` to return `unclear_sentences` metadata.
+- **Frontend Components**:
+  - `SentenceInspector.jsx`: New component for fetching and displaying sentence explanations.
+  - `MemoizedSentence.jsx`: Added colored border styling and click handlers.
+  - `ReaderView/CompletedView`: Integrated click handling and Inspector rendering.
+
+#### Verification
+- **Tests**: 8/8 backend tests passed (`test_sentence_study_api.py`).
+- **Manual**: Verified flow in browser (highlighting + inspector).

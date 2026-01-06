@@ -1,9 +1,25 @@
 /**
  * CompletedView - Article completion summary
- * Shows stats and full article with highlighted lookups
+ * Shows stats and full article with highlighted lookups and unclear sentences
+ * Clicking unclear sentences opens SentenceInspector for explanations
  */
-import React from 'react';
-import { ChevronLeft, CheckCircle, BookMarked } from 'lucide-react';
+import React, { useState } from 'react';
+import { ChevronLeft, CheckCircle, BookMarked, AlertCircle } from 'lucide-react';
+import SentenceInspector from '../../reading/SentenceInspector';
+
+// Get border/bg class based on unclear type
+const getUnclearSentenceStyle = (unclearChoice) => {
+    switch (unclearChoice) {
+        case 'vocabulary':
+            return 'border-l-4 border-orange-400 bg-orange-500/10 pl-3';
+        case 'grammar':
+            return 'border-l-4 border-blue-400 bg-blue-500/10 pl-3';
+        case 'both':
+            return 'border-l-4 border-red-400 bg-red-500/10 pl-3';
+        default:
+            return 'border-l-4 border-yellow-400 bg-yellow-500/10 pl-3';
+    }
+};
 
 // HighlightedText subcomponent
 const HighlightedText = ({ text, highlights = [], onWordClick }) => {
@@ -11,7 +27,6 @@ const HighlightedText = ({ text, highlights = [], onWordClick }) => {
         return <span>{text}</span>;
     }
 
-    // Build regex pattern from highlights (escape special chars)
     const pattern = highlights
         .map(w => w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
         .join('|');
@@ -46,19 +61,42 @@ const HighlightedText = ({ text, highlights = [], onWordClick }) => {
 const CompletedView = ({
     article,
     sentences = [],
-    studyHighlights = { word_clicks: [], phrase_clicks: [] },
+    studyHighlights = { word_clicks: [], phrase_clicks: [], unclear_sentences: [] },
     progress = { studied_count: 0, clear_count: 0 },
     onBack,
     onWordClick
 }) => {
+    // Sentence Inspector state
+    const [selectedSentence, setSelectedSentence] = useState(null);
+    const [selectedSentenceInfo, setSelectedSentenceInfo] = useState(null);
+
     const allHighlights = [
         ...(studyHighlights.word_clicks || []),
         ...(studyHighlights.phrase_clicks || [])
     ];
 
+    // Build a map of sentence index -> unclear info for quick lookup
+    const unclearMap = {};
+    (studyHighlights.unclear_sentences || []).forEach(info => {
+        unclearMap[info.sentence_index] = info;
+    });
+
+    const unclearCount = studyHighlights.unclear_sentences?.length || 0;
+
     const clearRate = progress.studied_count > 0
         ? Math.round((progress.clear_count / progress.studied_count) * 100)
         : 0;
+
+    // Handle sentence click for unclear sentences
+    const handleSentenceClick = (sentence, unclearInfo) => {
+        setSelectedSentence(sentence);
+        setSelectedSentenceInfo(unclearInfo);
+    };
+
+    const closeSentenceInspector = () => {
+        setSelectedSentence(null);
+        setSelectedSentenceInfo(null);
+    };
 
     return (
         <div className="h-screen flex flex-col bg-[#050505] text-[#E0E0E0] font-mono">
@@ -86,7 +124,7 @@ const CompletedView = ({
                     </h1>
 
                     {/* Stats */}
-                    <div className="flex justify-center gap-6 mb-8">
+                    <div className="flex justify-center gap-6 mb-6">
                         <div className="text-center">
                             <div className="text-2xl font-bold text-[#00FF94]">{progress.studied_count}</div>
                             <div className="text-xs text-[#666]">Sentences</div>
@@ -97,29 +135,66 @@ const CompletedView = ({
                         </div>
                         <div className="text-center">
                             <div className="text-2xl font-bold text-amber-400">{allHighlights.length}</div>
-                            <div className="text-xs text-[#666]">Words Looked Up</div>
+                            <div className="text-xs text-[#666]">Looked Up</div>
                         </div>
+                        {unclearCount > 0 && (
+                            <div className="text-center">
+                                <div className="text-2xl font-bold text-red-400">{unclearCount}</div>
+                                <div className="text-xs text-[#666]">Unclear</div>
+                            </div>
+                        )}
                     </div>
 
+                    {/* Legend for unclear sentence colors */}
+                    {unclearCount > 0 && (
+                        <div className="flex flex-wrap justify-center gap-4 mb-6 text-xs text-[#888]">
+                            <div className="flex items-center gap-1">
+                                <span className="inline-block w-3 h-3 border-l-4 border-orange-400 bg-orange-500/20"></span>
+                                <span>Vocabulary</span>
+                            </div>
+                            <div className="flex items-center gap-1">
+                                <span className="inline-block w-3 h-3 border-l-4 border-blue-400 bg-blue-500/20"></span>
+                                <span>Grammar</span>
+                            </div>
+                            <div className="flex items-center gap-1">
+                                <span className="inline-block w-3 h-3 border-l-4 border-red-400 bg-red-500/20"></span>
+                                <span>Both</span>
+                            </div>
+                        </div>
+                    )}
+
                     {/* Hint */}
-                    {allHighlights.length > 0 && (
+                    {(allHighlights.length > 0 || unclearCount > 0) && (
                         <p className="text-center text-sm text-[#888] mb-6">
-                            🔍 Click highlighted words to review their meanings
+                            🔍 Click highlighted words to review | Click colored sentences to see explanations
                         </p>
                     )}
 
                     {/* Full Article with Highlights */}
                     <div className="p-6 border border-[#333] bg-[#0A0A0A]">
                         <div className="font-serif text-base md:text-lg leading-relaxed space-y-4">
-                            {sentences.map((sentence, idx) => (
-                                <p key={idx} className="text-[#CCC]">
-                                    <HighlightedText
-                                        text={sentence.text}
-                                        highlights={allHighlights}
-                                        onWordClick={onWordClick}
-                                    />
-                                </p>
-                            ))}
+                            {sentences.map((sentence, idx) => {
+                                const unclearInfo = unclearMap[idx];
+                                const isUnclear = !!unclearInfo;
+                                const sentenceClass = isUnclear
+                                    ? `text-[#CCC] py-1 cursor-pointer hover:bg-opacity-30 ${getUnclearSentenceStyle(unclearInfo.unclear_choice)}`
+                                    : 'text-[#CCC]';
+
+                                return (
+                                    <p
+                                        key={idx}
+                                        className={sentenceClass}
+                                        onClick={isUnclear ? () => handleSentenceClick(sentence.text, unclearInfo) : undefined}
+                                        title={isUnclear ? '❓ Click to see explanation' : undefined}
+                                    >
+                                        <HighlightedText
+                                            text={sentence.text}
+                                            highlights={allHighlights}
+                                            onWordClick={onWordClick}
+                                        />
+                                    </p>
+                                );
+                            })}
                         </div>
                     </div>
 
@@ -143,6 +218,14 @@ const CompletedView = ({
                     </div>
                 </div>
             </main>
+
+            {/* Sentence Inspector */}
+            <SentenceInspector
+                sentence={selectedSentence}
+                unclearInfo={selectedSentenceInfo}
+                isOpen={!!selectedSentence}
+                onClose={closeSentenceInspector}
+            />
         </div>
     );
 };

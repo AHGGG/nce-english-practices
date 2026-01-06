@@ -186,28 +186,55 @@ async def get_article_content(
             async with AsyncSessionLocal() as db:
                 # Fetch all learning records for this article
                 stmt = (
-                    select(SentenceLearningRecord.word_clicks, SentenceLearningRecord.phrase_clicks)
+                    select(
+                        SentenceLearningRecord.sentence_index,
+                        SentenceLearningRecord.word_clicks, 
+                        SentenceLearningRecord.phrase_clicks,
+                        SentenceLearningRecord.initial_response,
+                        SentenceLearningRecord.unclear_choice,
+                        SentenceLearningRecord.interaction_log
+                    )
                     .where(SentenceLearningRecord.user_id == user_id)
                     .where(SentenceLearningRecord.source_id == source_id)
                 )
                 records = await db.execute(stmt)
                 
-                # Extract all words and phrases from JSON arrays
+                # Extract all words, phrases, and unclear sentences
                 all_words = set()
                 all_phrases = set()
+                unclear_sentences = []
+                
                 for row in records.fetchall():
-                    word_clicks, phrase_clicks = row
+                    sentence_index, word_clicks, phrase_clicks, initial_response, unclear_choice, interaction_log = row
                     if word_clicks:
                         all_words.update(word_clicks)
                     if phrase_clicks:
                         all_phrases.update(phrase_clicks)
+                    
+                    # Collect unclear sentences
+                    if initial_response == "unclear":
+                        # Determine max_simplify_stage from interaction_log if available
+                        max_stage = 0
+                        if interaction_log:
+                            for event in interaction_log:
+                                if event.get("action") == "simplify_stage":
+                                    stage = event.get("stage", 0)
+                                    if stage > max_stage:
+                                        max_stage = stage
+                        unclear_sentences.append({
+                            "sentence_index": sentence_index,
+                            "unclear_choice": unclear_choice,
+                            "max_simplify_stage": max_stage
+                        })
                 
                 # Combine and return
                 result["study_highlights"] = list(all_words | all_phrases)
+                result["unclear_sentences"] = unclear_sentences
         except Exception as e:
             import traceback
             traceback.print_exc()
             print(f"Study highlights fetch failed: {e}")
+            result["unclear_sentences"] = []  # Ensure the field exists even on error
             # Continue without study highlights
         
         if include_sentences:

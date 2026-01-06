@@ -7,13 +7,31 @@ import React, { memo } from 'react';
  * 
  * Collocations are rendered as grouped units with special styling.
  * Study highlights (from Sentence Study) shown in amber.
+ * Unclear sentences (from Sentence Study) shown with colored left borders.
  */
+
+// Get sentence container class based on unclear type
+const getUnclearSentenceClass = (unclearInfo) => {
+    if (!unclearInfo) return '';
+    switch (unclearInfo.unclear_choice) {
+        case 'vocabulary':
+            return 'border-l-4 border-orange-400 bg-orange-500/5 pl-2 -ml-2';
+        case 'grammar':
+            return 'border-l-4 border-blue-400 bg-blue-500/5 pl-2 -ml-2';
+        case 'both':
+            return 'border-l-4 border-red-400 bg-red-500/5 pl-2 -ml-2';
+        default:
+            return 'border-l-4 border-yellow-400 bg-yellow-500/5 pl-2 -ml-2';
+    }
+};
+
 const MemoizedSentence = memo(function MemoizedSentence({
     text,
     highlightSet,
-    studyHighlightSet,  // NEW: Words looked up during Sentence Study (shown in amber)
+    studyHighlightSet,  // Words looked up during Sentence Study (shown in amber)
     showHighlights,
-    collocations = []  // Array of {text, start_word_idx, end_word_idx}
+    collocations = [],  // Array of {text, start_word_idx, end_word_idx}
+    unclearInfo = null  // {sentence_index, unclear_choice, max_simplify_stage} if sentence was unclear
 }) {
     if (!text) return null;
 
@@ -174,7 +192,22 @@ const MemoizedSentence = memo(function MemoizedSentence({
         i++;
     }
 
-    return <p className="mb-6">{rendered}</p>;
+    // Determine sentence container class based on unclear status
+    const sentenceClass = unclearInfo
+        ? `mb-6 cursor-pointer hover:bg-opacity-20 ${getUnclearSentenceClass(unclearInfo)}`
+        : 'mb-6';
+
+    return (
+        <p
+            className={sentenceClass}
+            title={unclearInfo ? `❓ Click to see explanation (${unclearInfo.unclear_choice || 'unclear'})` : undefined}
+            data-unclear-sentence={unclearInfo ? 'true' : undefined}
+            data-sentence-text={unclearInfo ? text : undefined}
+            data-unclear-choice={unclearInfo?.unclear_choice}
+        >
+            {rendered}
+        </p>
+    );
 });
 
 export default MemoizedSentence;
