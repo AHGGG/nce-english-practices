@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { parseTextSSEStream } from '../utils/sseParser';
 
 /**
  * useWordExplainer - Shared hook for word/phrase explanation functionality
@@ -16,6 +17,9 @@ export function useWordExplainer() {
     const [inspectorData, setInspectorData] = useState(null);
     const [isInspecting, setIsInspecting] = useState(false);
     const [currentSentenceContext, setCurrentSentenceContext] = useState('');
+    
+    // Extra context for enhanced explanations (prev/next sentences)
+    const [extraContext, setExtraContext] = useState({ prevSentence: null, nextSentence: null });
     
     // Streaming explanation state
     const [contextExplanation, setContextExplanation] = useState('');
@@ -73,6 +77,8 @@ export function useWordExplainer() {
                     body: JSON.stringify({
                         text: selectedWord,
                         sentence: currentSentenceContext,
+                        prev_sentence: extraContext.prevSentence,
+                        next_sentence: extraContext.nextSentence,
                         style: explainStyle
                     })
                 });
@@ -80,38 +86,16 @@ export function useWordExplainer() {
                 if (explainRequestIdRef.current !== currentRequestId) return;
                 if (!res.ok) throw new Error('Failed to fetch');
 
-                const reader = res.body.getReader();
-                const decoder = new TextDecoder();
-
-                while (true) {
-                    const { done, value } = await reader.read();
-
-                    if (explainRequestIdRef.current !== currentRequestId) {
-                        reader.cancel();
-                        return;
-                    }
-
-                    if (done) break;
-
-                    const chunk = decoder.decode(value, { stream: true });
-                    const lines = chunk.split('\n');
-
-                    for (const line of lines) {
-                        if (explainRequestIdRef.current !== currentRequestId) return;
-
-                        if (line.startsWith('data: ')) {
-                            const text = line.slice(6);
-                            if (text === '[DONE]') {
-                                break;
-                            } else if (text.startsWith('[ERROR]')) {
-                                console.error('Stream error:', text);
-                                break;
-                            } else {
-                                setContextExplanation(prev => prev + text);
-                            }
+                await parseTextSSEStream(res, {
+                    onText: (text) => {
+                        if (explainRequestIdRef.current === currentRequestId) {
+                            setContextExplanation(prev => prev + text);
                         }
-                    }
-                }
+                    },
+                    onError: (err) => console.error('Stream error:', err)
+                }, {
+                    abortCheck: () => explainRequestIdRef.current !== currentRequestId
+                });
             } catch (e) {
                 console.error('Stream error:', e);
             } finally {
@@ -122,7 +106,7 @@ export function useWordExplainer() {
         };
 
         streamExplanation();
-    }, [selectedWord, currentSentenceContext, explainStyle]);
+    }, [selectedWord, currentSentenceContext, explainStyle, extraContext]);
 
     // Handle word/phrase click
     const handleWordClick = useCallback((word, sentence) => {
@@ -169,7 +153,8 @@ export function useWordExplainer() {
         handleWordClick,
         closeInspector,
         changeExplainStyle,
-        setCurrentSentenceContext  // For SentenceStudy's extra context needs
+        setCurrentSentenceContext,
+        setExtraContext  // For SentenceStudy's prev/next sentence context
     };
 }
 

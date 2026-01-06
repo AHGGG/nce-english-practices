@@ -179,7 +179,7 @@ The project follows a modular package structure:
   - `POST /api/sentence-study/record`: Record sentence learning result with gap diagnosis.
   - `POST /api/sentence-study/simplify`: **Streaming SSE** with 3-stage progressive simplification (in-memory cached).
   - `POST /api/sentence-study/overview`: Generate article overview (**DB-persisted cache**).
-  - `POST /api/sentence-study/explain-word`: **Streaming SSE** word/phrase explanation (in-memory cached, fixed SSE line-by-line for multi-line content).
+  - `POST /api/sentence-study/explain-word`: **Streaming SSE** word/phrase explanation (in-memory cached, uses text stream format).
   - `POST /api/sentence-study/detect-collocations`: AI collocation detection (**DB-persisted cache**).
   - `POST /api/sentence-study/prefetch-collocations`: **NEW 2026-01-03** Background prefetch for lookahead (up to 5 sentences, uses `asyncio.create_task`).
   - `GET /api/sentence-study/{source_id}/study-highlights`: **NEW 2026-01-04** Get aggregated lookups and unclear sentences (`unclear_sentences`).
@@ -204,6 +204,9 @@ The project follows a modular package structure:
   - On-demand lookahead prefetching (auto-prefetch next 3 sentences' collocations).
   - Max-height scrollable content for long explanations.
   - Mobile-optimized touch targets and responsive layout.
+  - **Refactored 2026-01-06**: Integrated `useWordExplainer` hook for unified dictionary/LLM logic; Uses `sseParser` utility.
+- **`frontend/src/components/sentence-study/views/OverviewView.jsx`**: **UPDATED 2026-01-06** Article Overview UI:
+  - Supports **Streaming JSON** parsing for progressive UI rendering (no more raw JSON display).
 - **`frontend/src/views/ReviewQueue.jsx`**: **UPDATED 2026-01-04** SM-2 Review UI.
 - **`frontend/src/components/performance/PerformanceReport.jsx`**: **UPDATED 2026-01-04** Consolidated Dashboard:
   - Merged Profile Stats (Clear Rate, Gap Breakdown, Words to Review).
@@ -253,7 +256,9 @@ ALL generators and routes use this service rather than creating clients directly
     - `cards/`: KPI display components (KPICard, ActionCards, Card).
     - `widgets/`: Data visualization widgets (Heatmap, Charts, Badges).
   - `src/hooks/`: Shared logic hooks.
-    - `useWordExplainer.js`: Unified dictionary + LLM context explanation logic (Shared by Reading/SentenceStudy).
+    - `useWordExplainer.js`: Unified dictionary + LLM context explanation logic (Shared by Reading/SentenceStudy). **Updated 2026-01-06** to support prev/next sentence context.
+  - `src/utils/`: Shared utilities.
+    - `sseParser.js`: **NEW 2026-01-06** Unified SSE stream parser supporting both JSON (chunks) and Text (raw) streams.
   - `src/index.css`: Global token definitions via Tailwind `@layer base`.
   - `tailwind.config.js`: Central source of truth for design tokens.
   - **Rule**: ALWAYS prefer using `components/ui` primitives (Button, Card, Tag) over raw Tailwind classes to maintain the "Cyber-Noir" aesthetic (sharp edges, hard shadows).

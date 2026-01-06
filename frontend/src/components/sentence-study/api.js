@@ -9,6 +9,7 @@ const BASE_URL = '';
 export const sentenceStudyApi = {
     async getProgress(sourceId) {
         const res = await fetch(`${BASE_URL}/api/sentence-study/${encodeURIComponent(sourceId)}/progress`);
+        if (!res.ok) throw new Error(`Failed to get progress: ${res.statusText}`);
         return res.json();
     },
 
@@ -18,6 +19,7 @@ export const sentenceStudyApi = {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(data)
         });
+        if (!res.ok) throw new Error(`Failed to record learning: ${res.statusText}`);
         return res.json();
     },
 
@@ -27,11 +29,13 @@ export const sentenceStudyApi = {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(data)
         });
+        if (!res.ok) throw new Error(`Failed to simplify: ${res.statusText}`);
         return res.json();
     },
 
     async getBooks() {
         const res = await fetch(`${BASE_URL}/api/reading/epub/books`);
+        if (!res.ok) throw new Error(`Failed to get books: ${res.statusText}`);
         return res.json();
     },
 
@@ -41,6 +45,7 @@ export const sentenceStudyApi = {
             url.searchParams.append('filename', filename);
         }
         const res = await fetch(url);
+        if (!res.ok) throw new Error(`Failed to get articles: ${res.statusText}`);
         return res.json();
     },
 
@@ -53,6 +58,7 @@ export const sentenceStudyApi = {
             max_sequence: opt.maxSeq || 99999
         });
         const res = await fetch(`${BASE_URL}/api/reading/article?${params}`);
+        if (!res.ok) throw new Error(`Failed to get article: ${res.statusText}`);
         return res.json();
     },
 

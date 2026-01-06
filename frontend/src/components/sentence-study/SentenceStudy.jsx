@@ -12,6 +12,8 @@ import sentenceStudyApi from './api';
 import { VIEW_STATES, DIFFICULTY_CHOICES, extractSentencesFromBlocks } from './constants';
 import { HIGHLIGHT_OPTIONS, mapLevelToOptionIndex } from '../reading/constants';
 import WordInspector from '../reading/WordInspector';
+import useWordExplainer from '../../hooks/useWordExplainer';
+import { parseJSONSSEStream, isSSEResponse } from '../../utils/sseParser';
 
 // View components
 import {
@@ -55,26 +57,28 @@ const SentenceStudy = () => {
     // Study highlights state (for COMPLETED view)
     const [studyHighlights, setStudyHighlights] = useState({ word_clicks: [], phrase_clicks: [] });
 
-    // Dictionary state
-    const [selectedWord, setSelectedWord] = useState(null);
-    const [isPhrase, setIsPhrase] = useState(false);
-    const [inspectorData, setInspectorData] = useState(null);
-    const [isInspecting, setIsInspecting] = useState(false);
-    const [currentSentenceContext, setCurrentSentenceContext] = useState('');
+    // Word/phrase explanation (shared hook - replaces duplicate dictionary/explanation code)
+    const {
+        selectedWord,
+        isPhrase,
+        inspectorData,
+        isInspecting,
+        contextExplanation,
+        isExplaining,
+        explainStyle,
+        handleWordClick: baseHandleWordClick,
+        closeInspector,
+        changeExplainStyle,
+        setExtraContext
+    } = useWordExplainer();
 
     // Collocations
     const [collocations, setCollocations] = useState([]);
     const [isLoadingCollocations, setIsLoadingCollocations] = useState(false);
 
-    // Streaming explanation
-    const [contextExplanation, setContextExplanation] = useState('');
-    const [isExplaining, setIsExplaining] = useState(false);
-    const [explainStyle, setExplainStyle] = useState('default');
-
     // Refs
     const audioRef = useRef(null);
     const sentenceContainerRef = useRef(null);
-    const explainRequestIdRef = useRef(0);
 
     // Highlight settings
     const [highlightOptionIndex, setHighlightOptionIndex] = useState(0);
@@ -172,89 +176,14 @@ const SentenceStudy = () => {
         load();
     }, []);
 
-    // === Dictionary Effect ===
+    // Update extra context for explain-word API when sentence changes
     useEffect(() => {
-        const wordIsPhrase = selectedWord?.includes(' ') || false;
-        if (!selectedWord || wordIsPhrase) {
-            setInspectorData(null);
-            setIsInspecting(false);
-            return;
-        }
-
-        let cancelled = false;
-        setIsInspecting(true);
-
-        const fetchData = async () => {
-            try {
-                const data = await sentenceStudyApi.getDictionary(selectedWord);
-                if (!cancelled && data) setInspectorData(data);
-            } catch (e) {
-                console.error('Dictionary fetch error:', e);
-            } finally {
-                if (!cancelled) setIsInspecting(false);
-            }
-        };
-
-        fetchData();
-        return () => { cancelled = true; };
-    }, [selectedWord]);
-
-    // === Stream Explanation Effect ===
-    useEffect(() => {
-        if (!selectedWord || !currentSentenceContext) return;
-
-        const currentRequestId = ++explainRequestIdRef.current;
-        setIsExplaining(true);
-        setContextExplanation('');
-
         const prevSentence = currentIndex > 0 ? flatSentences[currentIndex - 1]?.text : null;
         const nextSentence = currentIndex < flatSentences.length - 1 ? flatSentences[currentIndex + 1]?.text : null;
+        setExtraContext({ prevSentence, nextSentence });
+    }, [currentIndex, flatSentences, setExtraContext]);
 
-        const streamExplanation = async () => {
-            try {
-                const res = await sentenceStudyApi.streamExplainWord({
-                    text: selectedWord,
-                    sentence: currentSentenceContext,
-                    prev_sentence: prevSentence,
-                    next_sentence: nextSentence,
-                    style: explainStyle
-                });
 
-                if (explainRequestIdRef.current !== currentRequestId) return;
-                if (!res.ok) throw new Error('Failed to fetch');
-
-                const reader = res.body.getReader();
-                const decoder = new TextDecoder();
-
-                while (true) {
-                    const { done, value } = await reader.read();
-                    if (explainRequestIdRef.current !== currentRequestId) {
-                        reader.cancel();
-                        return;
-                    }
-                    if (done) break;
-
-                    const chunk = decoder.decode(value, { stream: true });
-                    for (const line of chunk.split('\n')) {
-                        if (explainRequestIdRef.current !== currentRequestId) return;
-                        if (line.startsWith('data: ')) {
-                            const text = line.slice(6);
-                            if (text === '[DONE]' || text.startsWith('[ERROR]')) break;
-                            setContextExplanation(prev => prev + text);
-                        }
-                    }
-                }
-            } catch (e) {
-                console.error('Stream error:', e);
-            } finally {
-                if (explainRequestIdRef.current === currentRequestId) {
-                    setIsExplaining(false);
-                }
-            }
-        };
-
-        streamExplanation();
-    }, [selectedWord, currentSentenceContext, currentIndex, explainStyle, flatSentences]);
 
     // === Collocations Effect ===
     useEffect(() => {
@@ -289,19 +218,12 @@ const SentenceStudy = () => {
         return () => { cancelled = true; };
     }, [currentIndex, view, flatSentences]);
 
-    // === Handlers ===
     const playAudio = useCallback((text) => {
         if (!text) return;
         if (audioRef.current) audioRef.current.pause();
         const audio = new Audio(`/api/tts?text=${encodeURIComponent(text)}`);
         audioRef.current = audio;
         audio.play().catch(console.error);
-    }, []);
-
-    const handleCloseInspector = useCallback(() => {
-        setSelectedWord(null);
-        setInspectorData(null);
-        setContextExplanation('');
     }, []);
 
     const startStudying = useCallback(async (sourceId) => {
@@ -340,25 +262,11 @@ const SentenceStudy = () => {
                 totalSentences
             );
 
-            const contentType = res.headers.get('content-type') || '';
-            if (contentType.includes('text/event-stream')) {
-                const reader = res.body.getReader();
-                const decoder = new TextDecoder();
-
-                while (true) {
-                    const { done, value } = await reader.read();
-                    if (done) break;
-
-                    for (const line of decoder.decode(value, { stream: true }).split('\n')) {
-                        if (line.startsWith('data: ')) {
-                            try {
-                                const data = JSON.parse(line.slice(6));
-                                if (data.type === 'chunk') setOverviewStreamContent(prev => prev + data.content);
-                                else if (data.type === 'done') setOverview(data.overview);
-                            } catch (e) { /* ignore */ }
-                        }
-                    }
-                }
+            if (isSSEResponse(res)) {
+                await parseJSONSSEStream(res, {
+                    onChunk: (content) => setOverviewStreamContent(prev => prev + content),
+                    onDone: (data) => setOverview(data.overview)
+                });
             } else {
                 setOverview(await res.json());
             }
@@ -375,6 +283,7 @@ const SentenceStudy = () => {
         setView(VIEW_STATES.STUDYING);
     }, []);
 
+    // Track word/phrase clicks and delegate to hook
     const handleWordClick = useCallback((word, sentence) => {
         if (!word) return;
         const cleanWord = word.toLowerCase().trim();
@@ -382,19 +291,16 @@ const SentenceStudy = () => {
 
         const hasMultipleWords = cleanWord.includes(' ');
 
+        // Track for study metrics
         if (hasMultipleWords) {
             if (!phraseClicks.includes(cleanWord)) setPhraseClicks(prev => [...prev, cleanWord]);
         } else {
             if (!wordClicks.includes(cleanWord)) setWordClicks(prev => [...prev, cleanWord]);
         }
 
-        setIsPhrase(hasMultipleWords);
-        setInspectorData(null);
-        setCurrentSentenceContext(sentence || '');
-        setContextExplanation('');
-        setExplainStyle('default');
-        setSelectedWord(cleanWord);
-    }, [wordClicks, phraseClicks]);
+        // Delegate to shared hook for inspector logic
+        baseHandleWordClick(cleanWord, sentence || flatSentences[currentIndex]?.text || '');
+    }, [wordClicks, phraseClicks, baseHandleWordClick, flatSentences, currentIndex]);
 
     const handleClear = useCallback(async () => {
         const dwellTime = Date.now() - startTime;
@@ -443,28 +349,14 @@ const SentenceStudy = () => {
 
             if (!res.ok) throw new Error('Simplify request failed');
 
-            const reader = res.body.getReader();
-            const decoder = new TextDecoder();
             let streamedText = '';
-
-            while (true) {
-                const { done, value } = await reader.read();
-                if (done) break;
-
-                for (const line of decoder.decode(value, { stream: true }).split('\n')) {
-                    if (line.startsWith('data: ')) {
-                        try {
-                            const data = JSON.parse(line.slice(6));
-                            if (data.type === 'chunk') {
-                                streamedText += data.content;
-                                setSimplifiedText(streamedText);
-                            } else if (data.type === 'done') {
-                                setSimplifyStage(data.stage);
-                            }
-                        } catch (e) { /* ignore */ }
-                    }
-                }
-            }
+            await parseJSONSSEStream(res, {
+                onChunk: (content) => {
+                    streamedText += content;
+                    setSimplifiedText(streamedText);
+                },
+                onDone: (data) => setSimplifyStage(data.stage)
+            });
         } catch (e) {
             console.error('Simplify failed:', e);
             setSimplifiedText('Failed to generate. Please try again.');
@@ -630,13 +522,13 @@ const SentenceStudy = () => {
                     selectedWord={selectedWord}
                     inspectorData={inspectorData}
                     isInspecting={isInspecting}
-                    onClose={handleCloseInspector}
+                    onClose={closeInspector}
                     onPlayAudio={playAudio}
-                    onMarkAsKnown={handleCloseInspector}
+                    onMarkAsKnown={closeInspector}
                     contextExplanation={contextExplanation}
                     isExplaining={isExplaining}
                     isPhrase={isPhrase}
-                    onExplainStyle={setExplainStyle}
+                    onExplainStyle={changeExplainStyle}
                     currentStyle={explainStyle}
                 />
             )}
