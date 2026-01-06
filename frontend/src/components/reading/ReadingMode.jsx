@@ -290,7 +290,7 @@ const ReadingMode = () => {
             trackerRef.current = null;
         }
         setSelectedArticle(null);
-        setSelectedWord(null);
+        closeInspector();
     }, []);
 
     const playAudio = useCallback((text) => {
