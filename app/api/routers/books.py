@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, status
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 from typing import List, Optional
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -15,8 +15,7 @@ class WordBookResponse(BaseModel):
     name: str
     description: Optional[str]
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 @router.get("/", response_model=List[WordBookResponse])
 async def get_books(db: AsyncSession = Depends(get_db)):

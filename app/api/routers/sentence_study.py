@@ -283,22 +283,18 @@ async def record_learning(
     # Deep Diagnosis & Profile Update
     # ============================================================
     
-    # Use the new comprehensive diagnosis engine
-    alias_word_clicks = list(dict.fromkeys(req.word_clicks))
-    alias_phrase_clicks = list(dict.fromkeys(req.phrase_clicks))
-
     diagnosis_result = await _perform_deep_diagnosis(
         db=db,
         user_id=req.user_id,
         initial=req.initial_response,
         choice=req.unclear_choice,
         simplified=req.simplified_response,
-        word_clicks=alias_word_clicks,
-        phrase_clicks=alias_phrase_clicks,
+        word_clicks=unique_word_clicks,
+        phrase_clicks=unique_phrase_clicks,
         interactions=req.interaction_events or [],
         dwell_ms=req.dwell_time_ms,
         word_count=req.word_count,
-        max_simplify_stage=req.max_simplify_stage  # NEW: Pass stage depth
+        max_simplify_stage=req.max_simplify_stage
     )
 
     record.diagnosed_gap_type = diagnosis_result["gap_type"]
@@ -318,7 +314,7 @@ async def record_learning(
         db, 
         req.user_id, 
         diagnosis_result, 
-        alias_word_clicks
+        unique_word_clicks
     )
     
     # --- Create ReviewItem for SM-2 based spaced repetition ---
@@ -327,7 +323,7 @@ async def record_learning(
     # 2. User clicked "Clear" but looked up words/phrases
     should_create_review = (
         req.initial_response == "unclear" or 
-        (req.initial_response == "clear" and (alias_word_clicks or alias_phrase_clicks))
+        (req.initial_response == "clear" and (unique_word_clicks or unique_phrase_clicks))
     )
     
     review_item_id = None
@@ -344,13 +340,13 @@ async def record_learning(
         if existing:
             # Update highlighted items
             current_items = set(existing.highlighted_items or [])
-            current_items.update(alias_word_clicks)
-            current_items.update(alias_phrase_clicks)
+            current_items.update(unique_word_clicks)
+            current_items.update(unique_phrase_clicks)
             existing.highlighted_items = list(current_items)
             review_item_id = existing.id
         else:
             # Create new review item
-            highlighted = list(set(alias_word_clicks + alias_phrase_clicks))
+            highlighted = list(set(unique_word_clicks + unique_phrase_clicks))
             review_item = ReviewItem(
                 user_id=req.user_id,
                 source_id=req.source_id,
@@ -428,7 +424,6 @@ async def generate_overview(req: OverviewRequest, db: AsyncSession = Depends(get
     - data: {"type": "done", "overview": {...}} - final result with full overview
     - data: {"type": "cached", "overview": {...}} - cache hit
     """
-    import json
     
     # Generate cache key from title
     cache_key = hashlib.md5(req.title.encode()).hexdigest()
@@ -600,8 +595,7 @@ class DetectCollocationsResponse(BaseModel):
     collocations: List[CollocationItem]
 
 
-# Simple cache for collocation detection (sentence hash -> collocations)
-_collocation_cache: Dict[str, List[dict]] = {}
+# Note: _collocation_cache is imported from sentence_study_service
 
 
 @router.post("/detect-collocations", response_model=DetectCollocationsResponse)
@@ -611,7 +605,6 @@ async def detect_collocations(req: DetectCollocationsRequest, db: AsyncSession =
     Cache priority: in-memory -> DB -> LLM generation.
     Results are cached for efficiency.
     """
-    import json
     
     cache_key = hashlib.md5(req.sentence.encode()).hexdigest()
     
@@ -710,7 +703,6 @@ class PrefetchCollocationsRequest(BaseModel):
 
 async def _generate_and_cache_collocations(sentence: str, db: AsyncSession) -> None:
     """Helper to generate collocations for a single sentence and cache to DB."""
-    import json
     
     cache_key = hashlib.md5(sentence.encode()).hexdigest()
     
