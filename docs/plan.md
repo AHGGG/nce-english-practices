@@ -145,6 +145,7 @@
     - [x] **Service Layer Refactor**: Decouple business logic from `voice.py` router.
     - [x] **Local Deployment**: Added `deploy/` with `docker-compose`, Nginx, and management scripts (2025-12-31).
         - [x] **Fixes (2026-01-06)**: Fixed alembic inclusion, static file serving, and build caching.
+        - [x] **Security (2026-01-06)**: Added HTTP Basic Auth and migration stability fixes.
     - [x] **Navigation Dashboard**: Unified `/nav` page for easy access to all routes (2025-12-31).
 
 ## 6. Tools & Ecosystem (The "Support" Layer)

@@ -39,6 +39,7 @@ cd deploy
 # 1. One-click deploy (Check prerequisites first)
 #   - Cleans up old artifacts (docker system prune)
 #   - Builds with --no-cache
+#   - (Optional) ./scripts/generate_htpasswd.sh admin password
 ./scripts/deploy.sh
 
 # 2. Maintenance

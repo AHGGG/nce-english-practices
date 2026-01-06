@@ -138,13 +138,30 @@ async def receive_remote_log(log: RemoteLog):
 # --- Static File Serving for Frontend SPA ---
 # Must be mounted AFTER all API routes to avoid shadowing them
 from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 
-frontend_dist = os.path.join(os.path.dirname(__file__), "..", "frontend", "dist")
+frontend_dist = os.path.normpath(os.path.join(os.path.dirname(__file__), "..", "frontend", "dist"))
+index_html = os.path.join(frontend_dist, "index.html")
+
 if os.path.exists(frontend_dist):
-    app.mount("/", StaticFiles(directory=frontend_dist, html=True), name="static")
+    # Mount static assets (JS, CSS, images)
+    app.mount("/assets", StaticFiles(directory=os.path.join(frontend_dist, "assets")), name="assets")
+    
+    # Serve other static files at root (favicon, etc.)
+    @app.get("/{full_path:path}")
+    async def serve_spa(full_path: str):
+        """SPA fallback: serve index.html for all non-API routes."""
+        # Try to serve static file first
+        file_path = os.path.join(frontend_dist, full_path)
+        if os.path.isfile(file_path):
+            return FileResponse(file_path)
+        # Fallback to index.html for SPA routing
+        return FileResponse(index_html)
+    
     logger.info(f"Serving frontend from: {frontend_dist}")
 else:
     logger.warning(f"Frontend dist not found at: {frontend_dist}")
+
 
 
 if __name__ == "__main__":

@@ -600,3 +600,12 @@ ReviewItem created when user:
 | **10. Refactor** | Unified Word Explainer (Hook), Reading Mode Context Explanation.
 
 | **11. Refactor** | **SentenceStudy Module**: Split frontend (1344 lines) into 5 views; created backend service layer for LLM/SRS logic. |
+
+### ✅ Deployment Security & Stability (2026-01-06)
+**Hardening the deployment pipeline for production.**
+
+#### Fixes & Features
+- **Migration Stability**: Updated `72f20468f2be` migration to use `DROP COLUMN IF EXISTS` to support fresh database deployments.
+- **Security**: Added Nginx HTTP Basic Auth support (optional) for protecting dev deployments.
+  - Script: `deploy/scripts/generate_htpasswd.sh`
+  - Config: Mounted `nginx/conf.d` volume.
