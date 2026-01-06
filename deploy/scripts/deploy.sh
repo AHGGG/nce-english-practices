@@ -47,7 +47,7 @@ done
 
 # 4. Run Migrations
 echo -e "\n${YELLOW}4. Running database migrations...${NC}"
-docker compose exec app uv run alembic upgrade head
+docker compose exec app alembic upgrade head
 
 # 5. Status
 echo -e "\n${GREEN}✅ Deployment complete!${NC}"
