@@ -72,12 +72,12 @@ const StudyingView = ({
             </div>
 
             {/* Main Content */}
-            <main className="flex-1 flex flex-col items-center justify-center p-4 md:p-8 overflow-y-auto">
+            <main className="flex-1 flex flex-col items-center justify-start pt-4 p-4 md:p-8 overflow-y-auto">
                 <div className="max-w-2xl w-full">
                     {/* Current Sentence */}
                     <div
                         ref={sentenceContainerRef}
-                        className="font-serif text-xl md:text-2xl leading-relaxed text-center mb-8 p-6 border border-[#333] bg-[#0A0A0A] select-text"
+                        className="font-serif text-xl md:text-2xl leading-relaxed text-center mb-4 p-6 border border-[#333] bg-[#0A0A0A] select-text"
                         onClick={(e) => {
                             const word = e.target.dataset?.word;
                             if (word) onWordClick(word.toLowerCase(), currentSentence?.text || '');
