@@ -631,3 +631,33 @@ ReviewItem created when user:
 #### Verification
 - **Tests**: 8/8 backend tests passed (`test_sentence_study_api.py`).
 - **Manual**: Verified flow in browser (highlighting + inspector).
+
+### ✅ Review Helper Feature (2026-01-06)
+**Multi-stage explanation system for the Review Queue when users forget an item.**
+
+#### Problem
+When users clicked "忘了" (Forgot) during review, they got no help understanding the content - just moved to the next item.
+
+#### Solution: 3-Stage Progressive Hints
+| Stage | Content | Quality Score |
+|-------|---------|---------------|
+| **1** | Brief hint (explain-word: brief style) | — |
+| **2** | Detailed explanation | — |
+| **3** | Full Chinese deep dive | — |
+| **Remembered after help** | — | 2 |
+| **Skip or Stage 3 exhausted** | — | 1 |
+
+#### Implementation
+- **Frontend** (`ReviewQueue.jsx`):
+  - Added `showHelpPanel`, `helpStage`, `helpContent`, `isLoadingHelp` state.
+  - Streaming explanation via SSE reusing `/api/sentence-study/explain-word` and `/api/sentence-study/simplify`.
+  - Stage indicator UI with progress bar.
+  - Dynamic content: highlights → explain-word, no highlights → simplify.
+- **Backend** (`review.py`):
+  - Extended quality validation to accept `quality=2` (remembered after help).
+  - Updated comments and docstrings.
+
+#### Verification
+- **Browser Test**: Full flow verified (Forgot → Stage 1 → Stage 2 → Remembered → Next item).
+- **Design Doc**: `docs/plans/2026-01-06-review-helper-design.md`.
+

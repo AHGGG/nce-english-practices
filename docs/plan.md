@@ -235,6 +235,11 @@
                 - New `/api/review/*` router with SM-2 algorithm (queue, complete, create, stats, memory-curve).
                 - Auto-creation of ReviewItems in `record_learning` when user marks unclear or looks up words.
                 - Updated `ReviewQueue.jsx` with card-based 3-button rating UI (忘了/想起来了/太简单).
+            - [x] **Review Helper** (2026-01-06):
+                - Multi-stage explanation when clicking "忘了" (Forgot) in review.
+                - Streaming LLM explanations reusing `explain-word` and `simplify` APIs.
+                - Quality=2 for "remembered after help" (better than forgot, worse than remembered).
+                - 3-stage progressive hints with visual stage indicator.
             - [x] **Full Article Review** (2026-01-04):
                 - [x] **COMPLETED View**: Replaces redirect-to-list when article finishes.
                 - [x] **Highlighting**: Shows full text with words/phrases looked up during study.

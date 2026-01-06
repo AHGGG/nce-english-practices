@@ -196,6 +196,9 @@ location /api/ {
 
     # File upload limit (for audio files)
     client_max_body_size 50M;
+
+    # Disable buffering for SSE/Streaming (LLM)
+    proxy_buffering off;
 }
 
 location /dict-assets/ {

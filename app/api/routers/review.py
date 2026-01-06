@@ -45,7 +45,7 @@ class ReviewQueueResponse(BaseModel):
 class CompleteReviewRequest(BaseModel):
     """Request to complete a review."""
     item_id: int
-    quality: int  # 1=forgot, 3=remembered, 5=easy
+    quality: int  # 1=forgot, 2=remembered after help, 3=remembered, 5=easy
 
 
 class CompleteReviewResponse(BaseModel):
@@ -199,9 +199,9 @@ async def complete_review(
     db: AsyncSession = Depends(get_db)
 ):
     """Complete a review and update SM-2 scheduling parameters."""
-    # Validate quality
-    if req.quality not in (1, 3, 5):
-        raise HTTPException(status_code=400, detail="Quality must be 1, 3, or 5")
+    # Validate quality: 1=forgot, 2=remembered after help, 3=remembered, 5=easy
+    if req.quality not in (1, 2, 3, 5):
+        raise HTTPException(status_code=400, detail="Quality must be 1, 2, 3, or 5")
     
     # Get the review item
     stmt = select(ReviewItem).where(ReviewItem.id == req.item_id)

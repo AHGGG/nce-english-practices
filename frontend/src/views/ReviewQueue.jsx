@@ -17,8 +17,12 @@ import {
     Loader2,
     BookOpen,
     RefreshCw,
-    Clock
+    Clock,
+    Lightbulb,
+    ArrowRight,
+    SkipForward
 } from 'lucide-react';
+import ReactMarkdown from 'react-markdown';
 
 // API helpers for SM-2 review system
 const api = {
@@ -117,6 +121,13 @@ const ReviewQueue = () => {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [lastResult, setLastResult] = useState(null);
 
+    // Help panel state
+    const [showHelpPanel, setShowHelpPanel] = useState(false);
+    const [helpStage, setHelpStage] = useState(1);
+    const [helpContent, setHelpContent] = useState('');
+    const [isLoadingHelp, setIsLoadingHelp] = useState(false);
+    const helpRequestIdRef = useRef(0);
+
     // Audio ref
     const audioRef = useRef(null);
 
@@ -164,6 +175,11 @@ const ReviewQueue = () => {
             const result = await api.complete(currentItem.id, quality);
             setLastResult(result);
 
+            // Reset help panel state
+            setShowHelpPanel(false);
+            setHelpStage(1);
+            setHelpContent('');
+
             // Move to next item or finish
             if (currentIndex < queue.length - 1) {
                 setCurrentIndex(prev => prev + 1);
@@ -179,6 +195,117 @@ const ReviewQueue = () => {
             setIsSubmitting(false);
         }
     }, [currentItem, currentIndex, queue.length, isSubmitting]);
+
+    // Stream explanation content
+    const streamExplanation = useCallback(async (stage) => {
+        if (!currentItem) return;
+
+        const currentRequestId = ++helpRequestIdRef.current;
+        setIsLoadingHelp(true);
+        setHelpContent('');
+        setHelpStage(stage);
+
+        const hasHighlights = currentItem.highlighted_items?.length > 0;
+
+        try {
+            let res;
+            if (hasHighlights) {
+                // Explain highlighted items in sentence context
+                const text = currentItem.highlighted_items.join(', ');
+                res = await fetch('/api/sentence-study/explain-word', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        text,
+                        sentence: currentItem.sentence_text,
+                        style: stage === 1 ? 'brief' : stage === 2 ? 'default' : 'detailed'
+                    })
+                });
+            } else {
+                // Explain whole sentence
+                res = await fetch('/api/sentence-study/simplify', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        sentence: currentItem.sentence_text,
+                        simplify_type: 'meaning',
+                        stage
+                    })
+                });
+            }
+
+            if (helpRequestIdRef.current !== currentRequestId) return;
+            if (!res.ok) throw new Error('Failed to fetch explanation');
+
+            const reader = res.body.getReader();
+            const decoder = new TextDecoder();
+            let streamedText = '';
+
+            while (true) {
+                const { done, value } = await reader.read();
+                if (helpRequestIdRef.current !== currentRequestId) {
+                    reader.cancel();
+                    return;
+                }
+                if (done) break;
+
+                const chunk = decoder.decode(value, { stream: true });
+                for (const line of chunk.split('\n')) {
+                    if (helpRequestIdRef.current !== currentRequestId) return;
+                    if (line.startsWith('data: ')) {
+                        const data = line.slice(6);
+                        if (data === '[DONE]' || data.startsWith('[ERROR]')) break;
+                        // Handle both JSON and plain text formats
+                        try {
+                            const parsed = JSON.parse(data);
+                            if (parsed.type === 'chunk') {
+                                streamedText += parsed.content;
+                                setHelpContent(streamedText);
+                            }
+                        } catch {
+                            // Plain text format from explain-word
+                            streamedText += data;
+                            setHelpContent(streamedText);
+                        }
+                    }
+                }
+            }
+        } catch (e) {
+            console.error('Stream explanation error:', e);
+            if (helpRequestIdRef.current === currentRequestId) {
+                setHelpContent('加载失败，请重试');
+            }
+        } finally {
+            if (helpRequestIdRef.current === currentRequestId) {
+                setIsLoadingHelp(false);
+            }
+        }
+    }, [currentItem]);
+
+    // Handle "Forgot" button - open help panel
+    const handleForgot = useCallback(() => {
+        setShowHelpPanel(true);
+        streamExplanation(1);
+    }, [streamExplanation]);
+
+    // Handle help response (remembered or still unclear)
+    const handleHelpResponse = useCallback(async (remembered) => {
+        if (remembered) {
+            // User remembered after help - quality 2
+            await handleRating(2);
+        } else if (helpStage < 3) {
+            // Show next stage
+            streamExplanation(helpStage + 1);
+        } else {
+            // Stage 3 exhausted - quality 1
+            await handleRating(1);
+        }
+    }, [helpStage, handleRating, streamExplanation]);
+
+    // Handle skip (don't want help)
+    const handleSkipHelp = useCallback(async () => {
+        await handleRating(1);
+    }, [handleRating]);
 
     // Refresh queue
     const refreshQueue = useCallback(async () => {
@@ -289,36 +416,110 @@ const ReviewQueue = () => {
                     </div>
                 </div>
 
-                {/* Rating buttons */}
-                <div className="mt-6 grid grid-cols-3 gap-3">
-                    {RATING_OPTIONS.map(option => {
-                        const Icon = option.icon;
-                        return (
+                {/* Help Panel (shown when user clicks 'Forgot') */}
+                {showHelpPanel ? (
+                    <div className="mt-6 border border-[#333] bg-[#0A0A0A]">
+                        {/* Stage indicator */}
+                        <div className="px-4 py-2 border-b border-[#222] flex items-center gap-2">
+                            <Lightbulb className="w-4 h-4 text-amber-400" />
+                            <span className="text-xs text-amber-400 font-mono">
+                                STAGE {helpStage} / 3
+                            </span>
+                            <div className="flex-1 h-1 bg-[#222] rounded-full ml-2">
+                                <div
+                                    className="h-full bg-amber-400 rounded-full transition-all"
+                                    style={{ width: `${(helpStage / 3) * 100}%` }}
+                                />
+                            </div>
+                        </div>
+
+                        {/* Explanation content */}
+                        <div className="p-4 min-h-[120px] max-h-[200px] overflow-y-auto">
+                            {isLoadingHelp && !helpContent ? (
+                                <div className="flex items-center gap-2 text-[#666]">
+                                    <Loader2 className="w-4 h-4 animate-spin" />
+                                    <span className="text-sm">正在生成解释...</span>
+                                </div>
+                            ) : (
+                                <div className="prose prose-invert prose-sm max-w-none text-[#CCC]">
+                                    <ReactMarkdown>{helpContent}</ReactMarkdown>
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Response buttons */}
+                        <div className="px-4 py-3 border-t border-[#222] space-y-2">
+                            <div className="grid grid-cols-2 gap-3">
+                                <button
+                                    onClick={() => handleHelpResponse(true)}
+                                    disabled={isSubmitting || isLoadingHelp}
+                                    className="flex items-center justify-center gap-2 p-3 
+                                        border border-green-500/30 bg-green-500/10 hover:bg-green-500/20
+                                        text-green-400 transition-all disabled:opacity-50"
+                                >
+                                    <CheckCircle className="w-5 h-5" />
+                                    <span className="text-sm">想起来了</span>
+                                </button>
+                                <button
+                                    onClick={() => handleHelpResponse(false)}
+                                    disabled={isSubmitting || isLoadingHelp}
+                                    className="flex items-center justify-center gap-2 p-3 
+                                        border border-amber-500/30 bg-amber-500/10 hover:bg-amber-500/20
+                                        text-amber-400 transition-all disabled:opacity-50"
+                                >
+                                    <ArrowRight className="w-5 h-5" />
+                                    <span className="text-sm">
+                                        {helpStage < 3 ? '还是不懂' : '继续'}
+                                    </span>
+                                </button>
+                            </div>
                             <button
-                                key={option.quality}
-                                onClick={() => handleRating(option.quality)}
+                                onClick={handleSkipHelp}
                                 disabled={isSubmitting}
-                                className={`
-                                    flex flex-col items-center gap-2 p-4 min-h-[80px]
-                                    border ${option.borderColor} ${option.bgColor} ${option.hoverBg}
-                                    transition-all disabled:opacity-50
-                                    active:scale-95
-                                `}
+                                className="w-full flex items-center justify-center gap-2 p-2
+                                    text-[#666] hover:text-[#888] transition-colors text-xs"
                             >
-                                {isSubmitting ? (
-                                    <Loader2 className="w-6 h-6 animate-spin text-[#666]" />
-                                ) : (
-                                    <>
-                                        <Icon className={`w-6 h-6 ${option.color}`} />
-                                        <span className={`text-sm ${option.color}`}>
-                                            {option.label}
-                                        </span>
-                                    </>
-                                )}
+                                <SkipForward className="w-3 h-3" />
+                                <span>跳过，下一个</span>
                             </button>
-                        );
-                    })}
-                </div>
+                        </div>
+                    </div>
+                ) : (
+                    /* Rating buttons (normal state) */
+                    <div className="mt-6 grid grid-cols-3 gap-3">
+                        {RATING_OPTIONS.map(option => {
+                            const Icon = option.icon;
+                            // Override "Forgot" button to trigger help panel
+                            const handleClick = option.quality === 1
+                                ? handleForgot
+                                : () => handleRating(option.quality);
+                            return (
+                                <button
+                                    key={option.quality}
+                                    onClick={handleClick}
+                                    disabled={isSubmitting}
+                                    className={`
+                                        flex flex-col items-center gap-2 p-4 min-h-[80px]
+                                        border ${option.borderColor} ${option.bgColor} ${option.hoverBg}
+                                        transition-all disabled:opacity-50
+                                        active:scale-95
+                                    `}
+                                >
+                                    {isSubmitting ? (
+                                        <Loader2 className="w-6 h-6 animate-spin text-[#666]" />
+                                    ) : (
+                                        <>
+                                            <Icon className={`w-6 h-6 ${option.color}`} />
+                                            <span className={`text-sm ${option.color}`}>
+                                                {option.label}
+                                            </span>
+                                        </>
+                                    )}
+                                </button>
+                            );
+                        })}
+                    </div>
+                )}
 
                 {/* Last result feedback */}
                 {lastResult && (
