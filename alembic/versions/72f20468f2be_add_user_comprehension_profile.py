@@ -63,7 +63,8 @@ def upgrade() -> None:
     sa.PrimaryKeyConstraint('id')
     )
     op.create_index('idx_user_goals_user', 'user_goals', ['user_id'], unique=False)
-    op.drop_column('sentence_learning_records', 'interaction_log')
+    # Use IF EXISTS to handle fresh databases that never had this column
+    op.execute("ALTER TABLE sentence_learning_records DROP COLUMN IF EXISTS interaction_log")
     # ### end Alembic commands ###
 
 
