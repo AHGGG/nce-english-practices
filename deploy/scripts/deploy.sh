@@ -31,25 +31,30 @@ if [ ! -f nginx/ssl/cert.pem ] || [ ! -f nginx/ssl/key.pem ]; then
     exit 1
 fi
 
-# 2. Build and Start
-echo -e "\n${YELLOW}2. Building and starting services...${NC}"
-docker compose down --remove-orphans
-docker compose build
+# 2. Cleanup old build artifacts
+echo -e "\n${YELLOW}2. Cleaning up old Docker artifacts...${NC}"
+docker compose down --remove-orphans --volumes 2>/dev/null || true
+docker system prune -f --filter "until=24h" 2>/dev/null || true
+echo -e "${GREEN}Cleanup complete.${NC}"
+
+# 3. Build and Start
+echo -e "\n${YELLOW}3. Building and starting services...${NC}"
+docker compose build --no-cache
 docker compose up -d
 
-# 3. Wait for Database
-echo -e "\n${YELLOW}3. Waiting for database...${NC}"
+# 4. Wait for Database
+echo -e "\n${YELLOW}4. Waiting for database...${NC}"
 echo "Waiting for postgres to be healthy..."
 until docker compose exec postgres pg_isready -U postgres; do
   echo "..."
   sleep 2
 done
 
-# 4. Run Migrations
-echo -e "\n${YELLOW}4. Running database migrations...${NC}"
+# 5. Run Migrations
+echo -e "\n${YELLOW}5. Running database migrations...${NC}"
 docker compose exec app alembic upgrade head
 
-# 5. Status
+# 6. Status
 echo -e "\n${GREEN}✅ Deployment complete!${NC}"
 echo -e "Access the application at: ${GREEN}https://localhost${NC} (or your server IP)"
 docker compose ps

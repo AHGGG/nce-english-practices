@@ -583,6 +583,20 @@ ReviewItem created when user:
 - **Tests**: Ran `tests/test_ldoce_parser.py` (All 22 passed).
 - **Ad-hoc**: Verified correct spacing on `simmer` examples.
 
+### ✅ Deployment Fixes (2026-01-06)
+**Resolved issues preventing successful local deployment.**
+
+#### Issues & Fixes
+- **Alembic Migration Failure**: `alembic/` directory was excluded in `.dockerignore`.
+  - **Fix**: Removed exclusion to ensure migration scripts are copied to container.
+- **Frontend 404**: FastAPI was not serving the React SPA static files.
+  - **Fix**: Added `StaticFiles` mount for `/app/frontend/dist` in `main.py` (after API routes).
+- **Deployment Script**:
+  - **Improvement**: Added cleanup step (`docker system prune`) and `--no-cache` build to `deploy.sh` to prevent stale build artifacts.
+
+#### Verification
+- **Manual**: User confirmed successful deployment locally.
+
 | **10. Refactor** | Unified Word Explainer (Hook), Reading Mode Context Explanation.
 
 | **11. Refactor** | **SentenceStudy Module**: Split frontend (1344 lines) into 5 views; created backend service layer for LLM/SRS logic. |

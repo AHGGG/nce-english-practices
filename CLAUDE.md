@@ -37,6 +37,8 @@ A full local/intranet deployment stack is available in `deploy/`.
 ```bash
 cd deploy
 # 1. One-click deploy (Check prerequisites first)
+#   - Cleans up old artifacts (docker system prune)
+#   - Builds with --no-cache
 ./scripts/deploy.sh
 
 # 2. Maintenance

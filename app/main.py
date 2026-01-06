@@ -135,6 +135,17 @@ async def receive_remote_log(log: RemoteLog):
     return {"status": "ok"}
 
 
+# --- Static File Serving for Frontend SPA ---
+# Must be mounted AFTER all API routes to avoid shadowing them
+from fastapi.staticfiles import StaticFiles
+
+frontend_dist = os.path.join(os.path.dirname(__file__), "..", "frontend", "dist")
+if os.path.exists(frontend_dist):
+    app.mount("/", StaticFiles(directory=frontend_dist, html=True), name="static")
+    logger.info(f"Serving frontend from: {frontend_dist}")
+else:
+    logger.warning(f"Frontend dist not found at: {frontend_dist}")
+
 
 if __name__ == "__main__":
     import uvicorn
