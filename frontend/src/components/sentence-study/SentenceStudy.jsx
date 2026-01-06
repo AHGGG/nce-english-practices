@@ -523,9 +523,16 @@ const SentenceStudy = () => {
             setSimplifyStage(1);
             setProgress(updateProgress);
         } else {
+            // Use backend API values for accurate progress when completing article
             const highlights = await sentenceStudyApi.getStudyHighlights(currentArticle.id, flatSentences.length);
             setStudyHighlights(highlights);
-            setProgress(updateProgress);
+            // Use API response values to ensure accuracy (fixes clear rate display issue)
+            setProgress(prev => ({
+                ...prev,
+                studied_count: highlights.studied_count,
+                clear_count: highlights.clear_count,
+                current_index: highlights.studied_count  // All sentences completed
+            }));
             setView(VIEW_STATES.COMPLETED);
         }
     }, [currentArticle, currentIndex, flatSentences]);
