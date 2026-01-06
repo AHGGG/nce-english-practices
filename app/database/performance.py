@@ -131,49 +131,42 @@ async def get_memory_curve_data(user_id: str = "default_user") -> Dict[str, Any]
                 30: (21, 45)
             }
             
+            # ⚡ OPTIMIZATION: Fetch all relevant logs in a single query instead of one per bucket.
+            # This reduces DB round-trips from N (buckets) to 1.
+
+            # 1. Fetch all logs within the max range (45 days)
+            stmt = (
+                select(ReviewLog.interval_at_review, ReviewLog.quality)
+                .join(ReviewItem)
+                .where(ReviewItem.user_id == user_id)
+                .where(ReviewLog.interval_at_review < 45)
+            )
+            result = await session.execute(stmt)
+            logs = result.all() # Returns list of (interval, quality) tuples
+
+            # 2. Bucket the data in memory
+            # structure: {day: {'total': 0, 'success': 0}}
+            buckets = {day: {'total': 0, 'success': 0} for day in bucket_ranges}
+
+            for interval, quality in logs:
+                for day, (min_int, max_int) in bucket_ranges.items():
+                    if min_int <= interval < max_int:
+                        buckets[day]['total'] += 1
+                        if quality >= 3: # 3+ is considered "remembered"
+                            buckets[day]['success'] += 1
+                        break
+
+            # 3. Calculate stats from buckets
             actual_curve = []
             total_reviews = 0
             successful_reviews = 0
             
-            # Optimization: Fetch all relevant logs in one query instead of looping
-            # Fetch minimal data needed: quality and interval
-
-            # Dynamically determine the max interval to query based on configured buckets
-            # Flatten ranges to find the absolute max needed
-            max_query_interval = max(r[1] for r in bucket_ranges.values())
-
-            stmt = (
-                select(ReviewLog.quality, ReviewLog.interval_at_review)
-                .join(ReviewItem)
-                .where(ReviewItem.user_id == user_id)
-                .where(ReviewLog.interval_at_review >= 0)
-                .where(ReviewLog.interval_at_review < max_query_interval)
-            )
-            result = await session.execute(stmt)
-            all_logs = result.all() # List of (quality, interval)
-
-            # Group into buckets in memory
-            # bucket_ranges = { 1: (0, 2), 3: (2, 5), ... }
-            bucket_data = {day: {'total': 0, 'success': 0} for day in bucket_ranges}
-
-            for quality, interval in all_logs:
-                for day, (min_int, max_int) in bucket_ranges.items():
-                    if min_int <= interval < max_int:
-                        bucket_data[day]['total'] += 1
-                        if quality >= 3:
-                            bucket_data[day]['success'] += 1
-                        break # Found the bucket, move to next log
-
-            # Build the response curve
-            for day in bucket_ranges:
-                data = bucket_data[day]
-                count = data['total']
-                successes = data['success']
-                
+            for day, stats in buckets.items():
+                count = stats['total']
                 if count > 0:
-                    retention = successes / count
+                    retention = stats['success'] / count
                     total_reviews += count
-                    successful_reviews += successes
+                    successful_reviews += stats['success']
                 else:
                     retention = None
                 

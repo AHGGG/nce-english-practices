@@ -1,2 +1,1 @@
 === Log session started at 2026-01-05T15:06:25.666395 ===
-2026-01-05 15:06:26.246 [BA] [INFO] [network] httpx: HTTP Request: GET http://test/api/performance?days=30 "HTTP/1.1 200 OK"
