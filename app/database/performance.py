@@ -131,37 +131,49 @@ async def get_memory_curve_data(user_id: str = "default_user") -> Dict[str, Any]
                 30: (21, 45)
             }
             
+            # ⚡ OPTIMIZATION: Fetch all relevant logs in a single query instead of one per bucket.
+            # This reduces DB round-trips from N (buckets) to 1.
+
+            # 1. Fetch all logs within the max range (45 days)
+            stmt = (
+                select(ReviewLog.interval_at_review, ReviewLog.quality)
+                .join(ReviewItem)
+                .where(ReviewItem.user_id == user_id)
+                .where(ReviewLog.interval_at_review < 45)
+            )
+            result = await session.execute(stmt)
+            logs = result.all() # Returns list of (interval, quality) tuples
+
+            # 2. Bucket the data in memory
+            # structure: {day: {'total': 0, 'success': 0}}
+            buckets = {day: {'total': 0, 'success': 0} for day in bucket_ranges}
+
+            for interval, quality in logs:
+                for day, (min_int, max_int) in bucket_ranges.items():
+                    if min_int <= interval < max_int:
+                        buckets[day]['total'] += 1
+                        if quality >= 3: # 3+ is considered "remembered"
+                            buckets[day]['success'] += 1
+                        break
+
+            # 3. Calculate stats from buckets
             actual_curve = []
             total_reviews = 0
             successful_reviews = 0
             
-            for day, (min_interval, max_interval) in bucket_ranges.items():
-                # Query reviews where interval_at_review falls within this bucket
-                stmt = (
-                    select(ReviewLog)
-                    .join(ReviewItem)
-                    .where(ReviewItem.user_id == user_id)
-                    .where(ReviewLog.interval_at_review >= min_interval)
-                    .where(ReviewLog.interval_at_review < max_interval)
-                )
-                result = await session.execute(stmt)
-                logs = result.scalars().all()
-                
-                if logs:
-                    # Success = quality >= 3 (remembered or easy)
-                    successes = sum(1 for log in logs if log.quality >= 3)
-                    retention = successes / len(logs)
-                    
-                    total_reviews += len(logs)
-                    successful_reviews += successes
+            for day, stats in buckets.items():
+                count = stats['total']
+                if count > 0:
+                    retention = stats['success'] / count
+                    total_reviews += count
+                    successful_reviews += stats['success']
                 else:
-                    # No data for this bucket
                     retention = None
                 
                 actual_curve.append({
                     'day': day,
                     'retention': round(retention, 2) if retention is not None else None,
-                    'sample_size': len(logs)
+                    'sample_size': count
                 })
             
             # Ebbinghaus theoretical curve: R = e^(-t/S) where S is stability

@@ -1,1 +1,3 @@
-=== Log session started at 2026-01-05T12:18:26.786173 ===
+=== Log session started at 2026-01-06T15:10:28.077127 ===
+2026-01-06 15:10:28.144 [BA] [WARN] [general] app.main: Frontend dist not found at: /app/frontend/dist
+2026-01-06 15:10:28.554 [BA] [INFO] [network] httpx: HTTP Request: GET http://test/api/performance?days=30 "HTTP/1.1 200 OK"
