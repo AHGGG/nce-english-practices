@@ -107,7 +107,15 @@ Context:
 
 The word to explain: "{text}"
 
-Give only the explanation, no preamble or labels.''',
+Please provide:
+1. A concise explanation of the meaning in this context.
+2. Two example sentences showing how to use this word in different contexts (different from the current one).
+
+Format:
+MEANING: [Explanation]
+EXAMPLES:
+1. [Example sentence 1]
+2. [Example sentence 2]''',
 
     "default_phrase": '''Explain the phrase/expression "{text}" as it is used in the following sentence context.
 The explanation should be in English, clear and concise (2-3 sentences max).
@@ -119,7 +127,15 @@ Context:
 
 The phrase to explain: "{text}"
 
-Give only the explanation, no preamble or labels.''',
+Please provide:
+1. A concise explanation of the meaning.
+2. Two example sentences showing how to use this phrase/expression in different contexts.
+
+Format:
+MEANING: [Explanation]
+EXAMPLES:
+1. [Example sentence 1]
+2. [Example sentence 2]''',
 
     "simple": '''Explain the {item_type} "{text}" in the context of the sentence below.
 Explanation must be in SIMPLE ENGLISH, suitable for a beginner learner.
