@@ -1,9 +1,11 @@
 
-import React, { useState, useRef } from 'react';
-import { Card, Button } from '../ui';
+import React, { useState, useRef, useId } from 'react';
+import { Card, Button, useToast } from '../ui';
 import { Mic, StopCircle, Upload, FileAudio, RefreshCw } from 'lucide-react';
 
 const STTPanel = ({ config, fixedProvider = null }) => {
+    const { addToast } = useToast();
+    const providerId = useId();
     const [provider, setProvider] = useState(fixedProvider || 'deepgram');
     const [isRecording, setIsRecording] = useState(false);
     const [audioBlob, setAudioBlob] = useState(null);
@@ -34,7 +36,7 @@ const STTPanel = ({ config, fixedProvider = null }) => {
             setIsRecording(true);
         } catch (err) {
             console.error("Mic Access Error:", err);
-            alert("Could not access microphone");
+            addToast("Could not access microphone", "error");
         }
     };
 
@@ -64,7 +66,7 @@ const STTPanel = ({ config, fixedProvider = null }) => {
             setTranscript(data.text);
         } catch (err) {
             console.error(err);
-            alert("Transcription Failed");
+            addToast("Transcription Failed", "error");
         } finally {
             setLoading(false);
         }
@@ -77,8 +79,9 @@ const STTPanel = ({ config, fixedProvider = null }) => {
                     {/* Provider Select */}
                     {!fixedProvider && (
                         <div className="space-y-1">
-                            <label className="text-xs font-mono font-bold text-ink-muted uppercase">Provider</label>
+                            <label htmlFor={providerId} className="text-xs font-mono font-bold text-ink-muted uppercase">Provider</label>
                             <select
+                                id={providerId}
                                 value={provider}
                                 onChange={(e) => setProvider(e.target.value)}
                                 className="w-full bg-bg-elevated border border-ink-faint text-ink px-4 py-2.5 text-sm font-mono focus:border-neon-cyan focus:outline-none"
@@ -94,17 +97,17 @@ const STTPanel = ({ config, fixedProvider = null }) => {
                     <div className="border border-dashed border-ink-faint bg-bg-elevated/50 p-8 rounded-lg text-center transition-all hover:border-ink-muted">
                         {!audioBlob ? (
                             isRecording ? (
-                                <div className="space-y-4">
+                                <div className="space-y-4" aria-live="polite">
                                     <div className="w-16 h-16 rounded-full bg-red-500/20 flex items-center justify-center mx-auto animate-pulse">
                                         <Mic className="text-red-500 w-8 h-8" />
                                     </div>
                                     <p className="font-mono text-sm text-red-500 font-bold">Recording...</p>
-                                    <Button variant="danger" onClick={stopRecording}>
+                                    <Button variant="danger" onClick={stopRecording} aria-label="Stop recording">
                                         <StopCircle className="mr-2 h-4 w-4" /> Stop Recording
                                     </Button>
                                 </div>
                             ) : (
-                                <div className="space-y-4">
+                                <div className="space-y-4" aria-live="polite">
                                     <div className="w-16 h-16 rounded-full bg-ink-faint/20 flex items-center justify-center mx-auto">
                                         <Mic className="text-ink-muted w-8 h-8" />
                                     </div>
