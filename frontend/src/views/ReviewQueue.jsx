@@ -23,6 +23,7 @@ import {
     SkipForward
 } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
+import { getGapTypeInfo } from '../components/sentence-study/constants';
 
 // API helpers for SM-2 review system
 const api = {
@@ -46,6 +47,8 @@ const api = {
         return res.json();
     }
 };
+
+
 
 // Rating options per design spec (SM-2 quality scores)
 const RATING_OPTIONS = [
@@ -387,7 +390,7 @@ const ReviewQueue = () => {
                             📖 {bookName.slice(0, 20)}...
                         </span>
                         <span className="px-2 py-0.5 bg-purple-500/10 text-purple-400 rounded">
-                            🏷️ {currentItem.difficulty_type}
+                            🏷️ {getGapTypeInfo(currentItem.difficulty_type).shortLabel}
                         </span>
                     </div>
 

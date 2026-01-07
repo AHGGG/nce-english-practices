@@ -1,22 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { X, Loader2, Sparkles, ChevronRight, AlertCircle } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
+import { getGapTypeInfo } from '../sentence-study/constants';
 
 // Get difficulty type label and color
-const getDifficultyInfo = (unclearChoice) => {
-    switch (unclearChoice) {
-        case 'vocabulary':
-            return { label: 'Words', color: 'text-orange-400 border-orange-400', bg: 'bg-orange-500/10' };
-        case 'grammar':
-            return { label: 'Structure', color: 'text-blue-400 border-blue-400', bg: 'bg-blue-500/10' };
-        case 'meaning':
-            return { label: 'Context', color: 'text-amber-400 border-amber-400', bg: 'bg-amber-500/10' };
-        case 'both':
-            return { label: 'Everything', color: 'text-red-400 border-red-400', bg: 'bg-red-500/10' };
-        default:
-            return { label: 'Unclear', color: 'text-yellow-400 border-yellow-400', bg: 'bg-yellow-500/10' };
-    }
-};
+
 
 // Markdown components for styled rendering
 const markdownComponents = {
@@ -135,7 +123,7 @@ const SentenceInspector = ({
 
     if (!isOpen || !sentence) return null;
 
-    const difficultyInfo = getDifficultyInfo(unclearInfo?.unclear_choice);
+    const difficultyInfo = getGapTypeInfo(unclearInfo?.unclear_choice);
     const stageLabels = {
         1: 'Simple Explanation',
         2: 'Detailed Breakdown',
@@ -156,9 +144,9 @@ const SentenceInspector = ({
                 <div className="p-4 border-b border-[#333] bg-[#111] shrink-0">
                     <div className="flex items-center justify-between mb-3">
                         <div className="flex items-center gap-2">
-                            <AlertCircle className={`w-4 h-4 ${difficultyInfo.color.split(' ')[0]}`} />
-                            <span className={`text-xs font-mono uppercase tracking-wider ${difficultyInfo.color.split(' ')[0]}`}>
-                                {difficultyInfo.label} Issue
+                            <AlertCircle className={`w-4 h-4 ${difficultyInfo.cssClasses.text}`} />
+                            <span className={`text-xs font-mono uppercase tracking-wider ${difficultyInfo.cssClasses.text}`}>
+                                {difficultyInfo.shortLabel} Issue
                             </span>
                         </div>
                         <button

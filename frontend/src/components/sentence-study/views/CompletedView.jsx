@@ -6,21 +6,12 @@
 import React, { useState } from 'react';
 import { ChevronLeft, CheckCircle, BookMarked, AlertCircle } from 'lucide-react';
 import SentenceInspector from '../../reading/SentenceInspector';
+import { getGapTypeInfo, DIFFICULTY_CHOICES } from '../constants';
 
 // Get border/bg class based on unclear type
 const getUnclearSentenceStyle = (unclearChoice) => {
-    switch (unclearChoice) {
-        case 'vocabulary':
-            return 'border-l-4 border-orange-400 bg-orange-500/10 pl-3';
-        case 'grammar':
-            return 'border-l-4 border-blue-400 bg-blue-500/10 pl-3';
-        case 'meaning':
-            return 'border-l-4 border-amber-400 bg-amber-500/10 pl-3';
-        case 'both':
-            return 'border-l-4 border-red-400 bg-red-500/10 pl-3';
-        default:
-            return 'border-l-4 border-yellow-400 bg-yellow-500/10 pl-3';
-    }
+    const gapInfo = getGapTypeInfo(unclearChoice);
+    return `border-l-4 ${gapInfo.cssClasses.border} ${gapInfo.cssClasses.bg} pl-3`;
 };
 
 // HighlightedText subcomponent
@@ -150,22 +141,12 @@ const CompletedView = ({
                     {/* Legend for unclear sentence colors */}
                     {unclearCount > 0 && (
                         <div className="flex flex-wrap justify-center gap-4 mb-6 text-xs text-[#888]">
-                            <div className="flex items-center gap-1">
-                                <span className="inline-block w-3 h-3 border-l-4 border-orange-400 bg-orange-500/20"></span>
-                                <span>Words</span>
-                            </div>
-                            <div className="flex items-center gap-1">
-                                <span className="inline-block w-3 h-3 border-l-4 border-blue-400 bg-blue-500/20"></span>
-                                <span>Structure</span>
-                            </div>
-                            <div className="flex items-center gap-1">
-                                <span className="inline-block w-3 h-3 border-l-4 border-amber-400 bg-amber-500/20"></span>
-                                <span>Context</span>
-                            </div>
-                            <div className="flex items-center gap-1">
-                                <span className="inline-block w-3 h-3 border-l-4 border-red-400 bg-red-500/20"></span>
-                                <span>Everything</span>
-                            </div>
+                            {DIFFICULTY_CHOICES.map(choice => (
+                                <div key={choice.id} className="flex items-center gap-1">
+                                    <span className={`inline-block w-3 h-3 border-l-4 ${choice.cssClasses.border} ${choice.cssClasses.bg.replace('/10', '/20')}`}></span>
+                                    <span>{choice.shortLabel}</span>
+                                </div>
+                            ))}
                         </div>
                     )}
 

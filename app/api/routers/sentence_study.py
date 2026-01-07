@@ -803,13 +803,18 @@ async def prefetch_collocations(req: PrefetchCollocationsRequest):
 def _calculate_review_interval(review_count: int, gap_type: str = None) -> timedelta:
     """
     Smart SRS interval based on review count and gap type.
-    Collocations are harder to remember, use shorter intervals.
+    - Collocations: hardest to retain, shortest intervals
+    - Meaning: medium difficulty (context understanding)
+    - Vocabulary/Structure: default intervals
     """
-    base_intervals = [1, 3, 7, 14, 30]  # days
+    base_intervals = [1, 3, 7, 14, 30]  # days (default for vocabulary, structure, fundamental)
     
-    # Collocation gaps get shorter intervals (harder to retain)
-    if gap_type and 'collocation' in gap_type:
-        base_intervals = [1, 2, 4, 7, 14]  
+    if gap_type == 'collocation':
+        # Collocations are hardest to remember
+        base_intervals = [1, 2, 4, 7, 14]
+    elif gap_type == 'meaning':
+        # Context/meaning gaps need slightly shorter intervals (harder than vocab)
+        base_intervals = [1, 2, 5, 10, 21]
     
     idx = min(review_count, len(base_intervals) - 1)
     return timedelta(days=base_intervals[idx])
