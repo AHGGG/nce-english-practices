@@ -205,6 +205,7 @@ The project follows a modular package structure:
   - Max-height scrollable content for long explanations.
   - Mobile-optimized touch targets and responsive layout.
   - **Refactored 2026-01-06**: Integrated `useWordExplainer` hook for unified dictionary/LLM logic; Uses `sseParser` utility.
+  - **UI Overhaul 2026-01-07**: Complete layout redesign with vertical centering, fixed bottom buttons, and "Cyber-Noir" aesthetic (glow effects, rounded corners).
 - **`frontend/src/components/sentence-study/views/OverviewView.jsx`**: **UPDATED 2026-01-06** Article Overview UI:
   - Supports **Streaming JSON** parsing for progressive UI rendering (no more raw JSON display).
 - **`frontend/src/views/ReviewQueue.jsx`**: **UPDATED 2026-01-04** SM-2 Review UI.
