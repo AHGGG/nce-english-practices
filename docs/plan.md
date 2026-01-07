@@ -261,6 +261,10 @@
         - [x] **Frontend Split**: Extracted `SentenceStudy.jsx` (1344 lines) into 5 focused views (`ArticleListView`, `StudyingView`, etc.) in `frontend/src/components/sentence-study/views/`.
         - [x] **Service Layer**: Created `sentence_study_service.py` for LLM streaming, caching, and SRS logic.
         - [x] **Router Slimming**: Reduced `sentence_study.py` router by ~14% (delegate to service).
+    - [x] **Memory Curve Optimization** (2026-01-07):
+        - [x] **Semantic Fix**: Clarified X-axis as "Review Interval" instead of "Days since learning" in documentation.
+        - [x] **Code Cleanup**: Consolidated duplicate logic in `review.py` by calling `get_memory_curve_data`.
+        - [x] **Naming**: Renamed misleading `total_words_analyzed` to `total_reviews`.
 - [x] **Voice Vendor Lab**:
     - [x] **Internal Tool**: `/voice-lab` refactored to **Vendor-Centric Layout** (Google, Deepgram, ElevenLabs tabs).
     - [x] **SDK Removal**: Removed ElevenLabs and Deepgram SDKs in favor of raw `httpx` API calls.

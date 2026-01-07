@@ -661,3 +661,17 @@ When users clicked "忘了" (Forgot) during review, they got no help understandi
 - **Browser Test**: Full flow verified (Forgot → Stage 1 → Stage 2 → Remembered → Next item).
 - **Design Doc**: `docs/plans/2026-01-06-review-helper-design.md`.
 
+### ✅ Memory Curve Optimization (2026-01-07)
+**Fixed semantic inconsistencies and code duplication in memory curve calculation.**
+
+#### Issues & Fixes
+- **Semantic Mismatch**: Documentation claimed X-axis was "days since learning", but code used "SM-2 interval".
+  - **Resolution**: Updated doc to reflect reality (Interval is more useful for SM-2).
+- **Misleading Naming**: `total_words_analyzed` actually tracked review count.
+  - **Resolution**: Renamed to `total_reviews`.
+- **Code Duplication**: `review.py` duplicated logic from `performance.py`.
+  - **Resolution**: Refactored to share `get_memory_curve_data()`.
+
+#### Verification
+- **Test**: `tests/test_api_stats.py` passed.
+- **Manual**: Verified API response format remains consistent.

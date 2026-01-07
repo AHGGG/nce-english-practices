@@ -307,73 +307,35 @@ async def get_memory_curve(
     """
     Get memory curve statistics comparing theoretical Ebbinghaus curve
     with user's actual retention rate at key time points.
-    """
-    # Time points to measure (days)
-    time_points = [1, 3, 7, 14, 30]
     
-    # Calculate theoretical curve
+    Delegates to shared function in app.database.performance.
+    """
+    from app.database import get_memory_curve_data
+    
+    data = await get_memory_curve_data(user_id)
+    
+    # Transform to response model format
     theoretical = [
         MemoryCurvePoint(
-            days_since_first_review=days,
-            retention_rate=round(calculate_theoretical_retention(days) * 100, 1)
+            days_since_first_review=point['day'],
+            retention_rate=round(point['retention'] * 100, 1)
         )
-        for days in time_points
+        for point in data['ebbinghaus']
     ]
     
-    # Get actual retention data from review logs
-    # For each time bucket, calculate success rate
-    actual_points = []
-    total_reviews = 0
-    successful_reviews = 0
-    
-    for days in time_points:
-        # Get reviews where interval_at_review falls within this bucket
-        # Bucket ranges: [0,2], [2,5], [5,10], [10,21], [21,45]
-        if days == 1:
-            min_interval, max_interval = 0, 2
-        elif days == 3:
-            min_interval, max_interval = 2, 5
-        elif days == 7:
-            min_interval, max_interval = 5, 10
-        elif days == 14:
-            min_interval, max_interval = 10, 21
-        else:  # 30
-            min_interval, max_interval = 21, 45
-        
-        # Query reviews in this interval bucket
-        stmt = (
-            select(ReviewLog)
-            .join(ReviewItem)
-            .where(ReviewItem.user_id == user_id)
-            .where(ReviewLog.interval_at_review >= min_interval)
-            .where(ReviewLog.interval_at_review < max_interval)
+    actual_points = [
+        MemoryCurvePoint(
+            days_since_first_review=point['day'],
+            retention_rate=round(point['retention'] * 100, 1) if point['retention'] is not None else round(calculate_theoretical_retention(point['day']) * 100, 1)
         )
-        result = await db.execute(stmt)
-        logs = result.scalars().all()
-        
-        if logs:
-            # Success = quality >= 3 (remembered or easy)
-            successes = sum(1 for log in logs if log.quality >= 3)
-            retention = (successes / len(logs)) * 100
-            
-            total_reviews += len(logs)
-            successful_reviews += successes
-        else:
-            # No data for this bucket, use theoretical as placeholder
-            retention = calculate_theoretical_retention(days) * 100
-        
-        actual_points.append(
-            MemoryCurvePoint(
-                days_since_first_review=days,
-                retention_rate=round(retention, 1)
-            )
-        )
+        for point in data['actual']
+    ]
     
     return MemoryCurveResponse(
         theoretical=theoretical,
         actual=actual_points,
-        total_reviews=total_reviews,
-        successful_reviews=successful_reviews
+        total_reviews=data['total_reviews'],
+        successful_reviews=data['successful_reviews']
     )
 
 
