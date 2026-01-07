@@ -46,7 +46,7 @@ class RecordRequest(BaseModel):
     sentence_index: int
     sentence_text: Optional[str] = None  # Store for review display
     initial_response: str  # clear, unclear
-    unclear_choice: Optional[str] = None  # vocabulary, grammar, both
+    unclear_choice: Optional[str] = None  # vocabulary (words), grammar (structure), meaning (context), both (everything)
     simplified_response: Optional[str] = None  # got_it, still_unclear
     word_clicks: List[str] = []
     phrase_clicks: List[str] = []  # Collocation/phrase clicks
@@ -62,7 +62,7 @@ class RecordRequest(BaseModel):
 
 class SimplifyRequest(BaseModel):
     sentence: str
-    simplify_type: str  # vocabulary, grammar, both
+    simplify_type: str  # vocabulary (words), grammar (structure), meaning (context), both (everything)
     stage: int = 1  # 1=English, 2=Detailed English with examples, 3=Chinese deep dive
     # Optional context for "both" mode
     prev_sentence: Optional[str] = None
@@ -110,7 +110,7 @@ class LastSessionResponse(BaseModel):
 class UnclearSentenceInfo(BaseModel):
     """Info about an unclear sentence for highlighting."""
     sentence_index: int
-    unclear_choice: Optional[str] = None  # vocabulary, grammar, both
+    unclear_choice: Optional[str] = None  # vocabulary (words), grammar (structure), meaning (context), both (everything)
     max_simplify_stage: int = 0           # Highest stage reached (1-3)
 
 
@@ -851,6 +851,7 @@ class ProfileResponse(BaseModel):
     # Gap Breakdown
     vocab_gap_count: int
     grammar_gap_count: int
+    meaning_gap_count: int
     collocation_gap_count: int
     # Words needing practice (from WordProficiency)
     words_to_review: List[WordToReview]
@@ -942,6 +943,7 @@ async def get_user_profile(
             func.sum(case((SentenceLearningRecord.initial_response == "clear", 1), else_=0)).label("clear"),
             func.sum(case((SentenceLearningRecord.diagnosed_gap_type == "vocabulary", 1), else_=0)).label("vocab"),
             func.sum(case((SentenceLearningRecord.diagnosed_gap_type == "structure", 1), else_=0)).label("grammar"),
+            func.sum(case((SentenceLearningRecord.diagnosed_gap_type == "meaning", 1), else_=0)).label("meaning"),
             func.sum(case((SentenceLearningRecord.diagnosed_gap_type == "collocation", 1), else_=0)).label("collocation"),
         ).where(SentenceLearningRecord.user_id == user_id)
     )
@@ -1004,6 +1006,7 @@ async def get_user_profile(
         clear_rate=round(clear / max(total, 1), 2),
         vocab_gap_count=stats.vocab or 0,
         grammar_gap_count=stats.grammar or 0,
+        meaning_gap_count=stats.meaning or 0,
         collocation_gap_count=stats.collocation or 0,
         words_to_review=[
             WordToReview(word=w.word, difficulty_score=round(w.difficulty_score, 2), exposure_count=w.exposure_count)
@@ -1104,6 +1107,9 @@ async def _perform_deep_diagnosis(
         confidence = 0.9 if simplified == "got_it" else 0.7
     elif choice == "grammar":
         gap_type = "structure"
+        confidence = 0.9 if simplified == "got_it" else 0.7
+    elif choice == "meaning":
+        gap_type = "meaning"
         confidence = 0.9 if simplified == "got_it" else 0.7
     elif choice == "collocation":
         gap_type = "collocation"

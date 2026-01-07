@@ -345,7 +345,7 @@ class SentenceLearningRecord(Base):
     
     # User interaction
     initial_response: Mapped[str] = mapped_column(Text)  # clear, unclear
-    unclear_choice: Mapped[Optional[str]] = mapped_column(Text, nullable=True)  # vocabulary, grammar, both
+    unclear_choice: Mapped[Optional[str]] = mapped_column(Text, nullable=True)  # vocabulary (words), grammar (structure), meaning (context), both (everything)
     simplified_response: Mapped[Optional[str]] = mapped_column(Text, nullable=True)  # got_it, still_unclear
     word_clicks: Mapped[List[str]] = mapped_column(JSON, default=list)
     phrase_clicks: Mapped[List[str]] = mapped_column(JSON, default=list)  # Collocation/phrase clicks
@@ -353,7 +353,7 @@ class SentenceLearningRecord(Base):
     word_count: Mapped[int] = mapped_column(Integer, default=0)  # Words in the sentence
     
     # Diagnosis
-    diagnosed_gap_type: Mapped[Optional[str]] = mapped_column(Text, nullable=True)  # vocabulary, structure, fundamental
+    diagnosed_gap_type: Mapped[Optional[str]] = mapped_column(Text, nullable=True)  # vocabulary, structure, meaning, fundamental, collocation
     diagnosed_patterns: Mapped[List[str]] = mapped_column(JSON, default=list)
     interaction_log: Mapped[List[Dict[str, Any]]] = mapped_column(JSON, default=list) # Added for storing detailed events
     confidence: Mapped[float] = mapped_column(Integer, default=0)  # SQLite doesn't have Float, use Integer
@@ -455,7 +455,7 @@ class ReviewItem(Base):
     
     # Context from study session
     highlighted_items: Mapped[List[str]] = mapped_column(JSON, default=list)  # Words/phrases looked up
-    difficulty_type: Mapped[str] = mapped_column(Text, default="vocabulary")  # vocabulary, grammar, both
+    difficulty_type: Mapped[str] = mapped_column(Text, default="vocabulary")  # vocabulary (words), grammar (structure), meaning (context), both (everything)
     
     # SM-2 parameters
     easiness_factor: Mapped[float] = mapped_column(Float, default=2.5)

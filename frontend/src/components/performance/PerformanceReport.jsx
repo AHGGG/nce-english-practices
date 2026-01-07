@@ -173,6 +173,19 @@ const PerformanceReport = () => {
                             <span className="text-sm text-ink-muted w-8">{profile.grammar_gap_count}</span>
                         </div>
                         <div className="flex items-center gap-3">
+                            <span className="text-sm text-ink w-24">句意问题</span>
+                            <div className="flex-1 bg-surface-2 h-4 relative overflow-hidden">
+                                <div
+                                    className="absolute inset-y-0 left-0"
+                                    style={{
+                                        width: `${Math.min(((profile.meaning_gap_count || 0) / profile.unclear_count * 100), 100)}%`,
+                                        backgroundColor: 'rgba(255, 165, 0, 0.6)'
+                                    }}
+                                />
+                            </div>
+                            <span className="text-sm text-ink-muted w-8">{profile.meaning_gap_count || 0}</span>
+                        </div>
+                        <div className="flex items-center gap-3">
                             <span className="text-sm text-ink w-24">固定搭配</span>
                             <div className="flex-1 bg-surface-2 h-4 relative overflow-hidden">
                                 <div

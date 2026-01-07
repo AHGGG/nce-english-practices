@@ -14,9 +14,10 @@ export const VIEW_STATES = {
 
 // Difficulty choice options when user clicks "Unclear"
 export const DIFFICULTY_CHOICES = [
-    { id: 'vocabulary', label: '📖 Vocabulary', desc: 'Hard words' },
-    { id: 'grammar', label: '🔧 Grammar', desc: 'Sentence structure' },
-    { id: 'both', label: '🤷 Both', desc: "I don't understand anything" }
+    { id: 'vocabulary', label: '📖 Words', desc: 'Difficult words' },
+    { id: 'grammar', label: '🔧 Structure', desc: 'Sentence structure' },
+    { id: 'meaning', label: '🧩 Context', desc: 'Overall meaning' },
+    { id: 'both', label: '� Everything', desc: 'I have no clue' }
 ];
 
 // Helper: Extract flat list of sentences from blocks

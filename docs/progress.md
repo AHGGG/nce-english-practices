@@ -675,3 +675,27 @@ When users clicked "忘了" (Forgot) during review, they got no help understandi
 #### Verification
 - **Test**: `tests/test_api_stats.py` passed.
 - **Manual**: Verified API response format remains consistent.
+
+### ✅ Unclear Sentence "Meaning" Option (2026-01-07)
+**Enhanced "Unclear" flow with a specific option for comprehension gaps beyond vocab/grammar.**
+
+#### Features
+- **New Option**: "Meaning" (Context) added to the Unclear choice modal.
+- **Updated Labels**: Renamed options for better clarity:
+  - 📖 **Words** (was Vocabulary)
+  - 🔧 **Structure** (was Grammar)
+  - 🧩 **Context** (New, Meaning)
+  - 🤯 **Everything** (was Both)
+- **Targeted Explanation**: New `meaning_stage1` prompt focuses on paraphrasing, core message("the point"), and subtext, rather than just simplifying words or splitting sentences.
+- **Full Integration**: 
+  - Tracks `diagnosed_gap_type="meaning"` in database.
+  - Updates Profile Stats with specific "句意问题" (Meaning Issues) count.
+  - Visualized in Performance Report (Amber color).
+
+#### Implementation
+- **Frontend**: Updated `constants.js` labels, `CompletedView.jsx` legend/colors, `SentenceInspector.jsx` logic.
+- **Backend Service**: Added `meaning_stage1` prompt in `sentence_study_service.py`.
+- **API/ORM**: Updated `sentence_study.py` diagnosis logic and `orm.py` schema comments.
+
+#### Verification
+- **Manual**: Verified the new option appears, generates correct tailored explanation, and correctly updates profile stats.

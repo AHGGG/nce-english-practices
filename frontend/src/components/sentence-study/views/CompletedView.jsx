@@ -14,6 +14,8 @@ const getUnclearSentenceStyle = (unclearChoice) => {
             return 'border-l-4 border-orange-400 bg-orange-500/10 pl-3';
         case 'grammar':
             return 'border-l-4 border-blue-400 bg-blue-500/10 pl-3';
+        case 'meaning':
+            return 'border-l-4 border-amber-400 bg-amber-500/10 pl-3';
         case 'both':
             return 'border-l-4 border-red-400 bg-red-500/10 pl-3';
         default:
@@ -150,15 +152,19 @@ const CompletedView = ({
                         <div className="flex flex-wrap justify-center gap-4 mb-6 text-xs text-[#888]">
                             <div className="flex items-center gap-1">
                                 <span className="inline-block w-3 h-3 border-l-4 border-orange-400 bg-orange-500/20"></span>
-                                <span>Vocabulary</span>
+                                <span>Words</span>
                             </div>
                             <div className="flex items-center gap-1">
                                 <span className="inline-block w-3 h-3 border-l-4 border-blue-400 bg-blue-500/20"></span>
-                                <span>Grammar</span>
+                                <span>Structure</span>
+                            </div>
+                            <div className="flex items-center gap-1">
+                                <span className="inline-block w-3 h-3 border-l-4 border-amber-400 bg-amber-500/20"></span>
+                                <span>Context</span>
                             </div>
                             <div className="flex items-center gap-1">
                                 <span className="inline-block w-3 h-3 border-l-4 border-red-400 bg-red-500/20"></span>
-                                <span>Both</span>
+                                <span>Everything</span>
                             </div>
                         </div>
                     )}

@@ -60,6 +60,21 @@ while keeping the same vocabulary words:
 
 Return ONLY the simplified sentences, no explanation.''',
 
+    "meaning_stage1": '''The learner knows the words and grammar, but doesn't understand what this sentence MEANS in context.
+
+Sentence: "{sentence}"
+
+Context:
+{context}
+
+Your job: Help them "get it". Provide:
+
+1. **Paraphrase**: Restate the sentence in completely different words (same meaning, different expression)
+2. **The Point**: What is the author trying to say? What's the takeaway?
+3. **Hidden Info**: Explain any cultural references, implied assumptions, or "reading between the lines"
+
+Keep it SHORT and CLEAR. Write like you're explaining to a smart friend who missed something obvious.''',
+
     "both_stage1": '''Explain this sentence in the simplest possible English (A1 level).
 Context:
 {context}
@@ -302,6 +317,8 @@ class SentenceStudyService:
                 prompt = SIMPLIFY_PROMPTS["vocabulary_stage1"].format(sentence=sentence)
             elif simplify_type == "grammar":
                 prompt = SIMPLIFY_PROMPTS["grammar_stage1"].format(sentence=sentence)
+            elif simplify_type == "meaning":
+                prompt = SIMPLIFY_PROMPTS["meaning_stage1"].format(sentence=sentence, context=context)
             else:
                 prompt = SIMPLIFY_PROMPTS["both_stage1"].format(context=context)
         elif stage == 2:

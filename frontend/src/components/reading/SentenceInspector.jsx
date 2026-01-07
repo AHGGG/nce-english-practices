@@ -6,11 +6,13 @@ import ReactMarkdown from 'react-markdown';
 const getDifficultyInfo = (unclearChoice) => {
     switch (unclearChoice) {
         case 'vocabulary':
-            return { label: 'Vocabulary', color: 'text-orange-400 border-orange-400', bg: 'bg-orange-500/10' };
+            return { label: 'Words', color: 'text-orange-400 border-orange-400', bg: 'bg-orange-500/10' };
         case 'grammar':
-            return { label: 'Grammar', color: 'text-blue-400 border-blue-400', bg: 'bg-blue-500/10' };
+            return { label: 'Structure', color: 'text-blue-400 border-blue-400', bg: 'bg-blue-500/10' };
+        case 'meaning':
+            return { label: 'Context', color: 'text-amber-400 border-amber-400', bg: 'bg-amber-500/10' };
         case 'both':
-            return { label: 'Both', color: 'text-red-400 border-red-400', bg: 'bg-red-500/10' };
+            return { label: 'Everything', color: 'text-red-400 border-red-400', bg: 'bg-red-500/10' };
         default:
             return { label: 'Unclear', color: 'text-yellow-400 border-yellow-400', bg: 'bg-yellow-500/10' };
     }
@@ -179,8 +181,8 @@ const SentenceInspector = ({
                             key={stage}
                             onClick={() => setCurrentStage(stage)}
                             className={`flex-1 py-3 text-xs font-mono uppercase tracking-wider transition-colors ${currentStage === stage
-                                    ? 'text-[#00FF94] border-b-2 border-[#00FF94] bg-[#00FF94]/5'
-                                    : 'text-[#666] hover:text-[#888]'
+                                ? 'text-[#00FF94] border-b-2 border-[#00FF94] bg-[#00FF94]/5'
+                                : 'text-[#666] hover:text-[#888]'
                                 }`}
                         >
                             Stage {stage}
