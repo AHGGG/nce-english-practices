@@ -269,13 +269,21 @@ class DictionaryManager:
             return html_content
         
         target_word = html_content.replace("@@@LINK=", "").strip()
+        target_word_lower = target_word.lower()
         
         if d.get('_legacy'):
+            # Try exact match first, then case variations
             target_bytes = d['mdx_cache'].get(target_word)
+            if not target_bytes:
+                for w in [target_word_lower, target_word.title(), target_word.upper()]:
+                    if w in d['mdx_cache']:
+                        target_bytes = d['mdx_cache'][w]
+                        break
         else:
+            # Query both word and word_lower for case-insensitive matching
             cursor = d['conn'].execute(
-                "SELECT definition FROM entries WHERE word = ? LIMIT 1",
-                (target_word,)
+                "SELECT definition FROM entries WHERE word = ? OR word_lower = ? LIMIT 1",
+                (target_word, target_word_lower)
             )
             row = cursor.fetchone()
             target_bytes = row[0] if row else None
