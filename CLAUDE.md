@@ -157,6 +157,7 @@ The project follows a modular package structure:
   - `schemas.py`: Pydantic models (DTOs) and API schemas.
   - `collins_schemas.py`: Structured models for Collins dictionary.
   - `ldoce_schemas.py`: Structured models for LDOCE dictionary.
+  - `sentence_study_schemas.py`: Request/Response models for Sentence Study (Refactored 2026-01-08).
   - `word_example_schemas.py`: Models for multi-example navigation (`WordExampleSet`).
   - `content_schemas.py`: `ContentBundle`, `ContentBlock`, `ContentSentence`, `ContentImage`, `SourceType` for Provider Architecture.
   - `orm.py`: SQLAlchemy database models.

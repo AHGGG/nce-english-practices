@@ -260,7 +260,7 @@
     - [x] **SentenceStudy Refactoring** (2026-01-06):
         - [x] **Frontend Split**: Extracted `SentenceStudy.jsx` (1344 lines) into 5 focused views (`ArticleListView`, `StudyingView`, etc.) in `frontend/src/components/sentence-study/views/`.
         - [x] **Service Layer**: Created `sentence_study_service.py` for LLM streaming, caching, and SRS logic.
-        - [x] **Router Slimming**: Reduced `sentence_study.py` router by ~14% (delegate to service).
+        - [x] **Router Slimming** (2026-01-08): extracted 14 Pydantic models to `app/models/sentence_study_schemas.py` (-219 lines).
     - [x] **Memory Curve Optimization** (2026-01-07):
         - [x] **Semantic Fix**: Clarified X-axis as "Review Interval" instead of "Days since learning" in documentation.
         - [x] **Code Cleanup**: Consolidated duplicate logic in `review.py` by calling `get_memory_curve_data`.
