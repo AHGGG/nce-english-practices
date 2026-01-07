@@ -132,6 +132,33 @@ Target: "{text}"
 
 Give only the explanation, no preamble.''',
 
+    # Brief style - Stage 1 for Review Queue (very concise, 1 sentence)
+    "brief": '''Give a very brief (1 sentence) explanation of "{text}" in this context:
+
+Context:
+{context}
+
+Target: "{text}"
+
+Respond in simple English, one sentence only.''',
+
+    # Detailed style - Stage 3 for Review Queue (Chinese deep explanation)
+    "detailed": '''请详细讲解句子中"{text}"这个{item_type}的含义和用法。
+结合以下上下文进行全方位的中文讲解：
+
+上下文：
+{context}
+
+讲解要求：
+1. 解释在当前语境下的确切含义
+2. 分析语法结构或搭配用法
+3. 给出一个类似用法的例句
+4. 为什么这个表达对中国学习者可能困难
+
+目标词汇："{text}"
+
+直接给出讲解内容，不要有多余的开场白。''',
+
     "chinese_deep": '''请详细讲解句子中"{text}"这个{item_type}的含义和用法。
 结合以下上下文进行全方位的中文讲解：
 
@@ -330,12 +357,19 @@ class SentenceStudyService:
         item_type = "短语" if is_phrase else "单词"
         item_type_en = "phrase" if is_phrase else "word"
         
-        # Select prompt
-        if style == "simple":
+        # Select prompt based on style
+        if style == "brief":
+            # Stage 1: Very concise, 1 sentence
+            prompt = EXPLAIN_PROMPTS["brief"].format(text=text, context=context)
+        elif style == "detailed":
+            # Stage 3: Chinese deep explanation
+            prompt = EXPLAIN_PROMPTS["detailed"].format(text=text, context=context, item_type=item_type)
+        elif style == "simple":
             prompt = EXPLAIN_PROMPTS["simple"].format(text=text, context=context, item_type=item_type_en)
         elif style == "chinese_deep":
             prompt = EXPLAIN_PROMPTS["chinese_deep"].format(text=text, context=context, item_type=item_type)
         else:
+            # Default style (Stage 2 in Review Queue, or standard word explanation)
             template = "default_phrase" if is_phrase else "default_word"
             prompt = EXPLAIN_PROMPTS[template].format(text=text, context=context)
         
