@@ -32,24 +32,9 @@ uv run python -m app.main       # Auto-detects cert.pem/key.pem
 
 ## Local Deployment (Docker)
 
-A full local/intranet deployment stack is available in `deploy/`.
+部署架构见 `deploy/` 目录。一键部署: `cd deploy && ./scripts/deploy.sh`
 
-```bash
-cd deploy
-# 1. One-click deploy (Check prerequisites first)
-#   - Cleans up old artifacts (docker system prune)
-#   - Builds with --no-cache
-#   - (Optional) ./scripts/generate_htpasswd.sh admin password
-./scripts/deploy.sh
-
-# 2. Maintenance
-./scripts/backup.sh       # Database backup to deploy/backups/
-./scripts/restore.sh list # List backups
-./scripts/logs.sh         # View logs
-./scripts/health-check.sh # System diagnostics
-```
-
-See `docs/plans/2025-12-31-local-deployment-architecture.md` for full architecture details.
+> 详见 [Local Deployment Skill](docs/skills/local-deployment.md)
 
 ## Shortcuts (Windows)
 ```powershell
@@ -120,100 +105,36 @@ The system uses **Edge-TTS** for audio.
 
 ### Package Structure (`app/`)
 
-The project follows a modular package structure:
+```
+app/
+├── main.py, config.py          # 入口 & 配置
+├── core/db.py                  # SQLAlchemy async session
+├── services/
+│   ├── llm.py                  # DeepSeek + Gemini 统一客户端
+│   ├── dictionary.py           # MDX/MDD 多词典
+│   ├── voice.py, tts.py        # WebSocket 语音 + Edge-TTS
+│   ├── voice_lab.py            # 多厂商集成 (ElevenLabs/Deepgram/Dashscope)
+│   ├── content_service.py      # Content Provider 工厂
+│   └── aui/                    # Agent-to-UI 流式渲染
+├── services/content_providers/ # EPUB/RSS/Podcast/PlainText
+├── models/
+│   ├── schemas.py, orm.py      # Pydantic DTOs + SQLAlchemy ORM
+│   └── *_schemas.py            # 按领域拆分的 schema
+├── database/                   # DB 操作封装
+└── api/routers/
+    ├── sentence_study.py       # 核心学习 API (SSE streaming, 两级缓存)
+    ├── review.py               # SM-2 间隔重复
+    ├── reading.py, content.py  # 阅读 & EPUB
+    ├── voice_session.py        # 语音会话
+    └── deepgram/               # Deepgram WebSocket 代理
+```
 
-- **`app/main.py`**: Application entry point and API routes.
-- **`app/config.py`**: Settings management using Pydantic Settings.
-- **`app/core/`**: Core utilities.
-  - `db.py`: SQLAlchemy session management.
-  - *(Removed in 2026-01-01: `practice.py`)*
-- **`app/services/`**: Infrastructure services.
-  - `llm.py`: Unified LLM service (DeepSeek + Gemini clients).
-  - `dictionary.py`: MDX/MDD parsing and multi-dictionary management.
-  - `voice.py`: Voice session management (WebSocket).
-  - `negotiation_service.py`: Interactive explanation loop with **Real-time Micro-Scenarios**.
-  - `tts.py`: Edge-TTS integration.
-  - `voice_lab.py`: Multi-vendor integration (Google, ElevenLabs, Deepgram).
-  - `content_service.py`: Factory/Registry for Content Providers.
-  - `content_feeder.py`: Orchestrates content for Voice Interface (uses ContentService).
-  - *(Removed in 2026-01-01: `chat.py`, `coach.py`, `dsml_parser.py`, `review.py`)*
-- **`app/services/aui/`**: **Refactored 2025-12-31** AUI Streaming & Rendering package.
-  - `story.py`: Story streaming mixin.
-  - `vocabulary.py`: Vocabulary cards & JSON Patch demos.
-  - `demos/`: Interactive demos (general, interactive, dashboard).
-  - `renderer.py`: AUI Renderer service (intent-based component selection).
-  - `service.py`: Main `AUIStreamingService` composing all mixins.
-- **`app/services/content_providers/`**: Pluggable content source providers.
-  - `base.py`: `BaseContentProvider` abstract interface.
-  - `epub_provider.py`: Local EPUB parsing with **structured block extraction** (legacy sentence mode removed 2026-01-05).
-  - `rss_provider.py`: RSS feed article extraction.
-  - `podcast_provider.py`: Podcast RSS with audio enclosures.
-  - `plain_text_provider.py`: Simple text segmentation.
-- **`app/api/routers/content.py`**: **UPDATED 2026-01-02** Content management endpoints:
-  - `GET /api/reading/epub/books`: List all available EPUB books.
-  - `GET /api/reading/epub/list`: List chapters/articles for a file (supports `filename` param).
-- **`app/generators/`**: *(Deprecated - Generators removed in 2026-01-01 cleanup)*
-- **`app/models/`**: Data models package.
-  - `schemas.py`: Pydantic models (DTOs) and API schemas.
-  - `collins_schemas.py`: Structured models for Collins dictionary.
-  - `ldoce_schemas.py`: Structured models for LDOCE dictionary.
-  - `sentence_study_schemas.py`: Request/Response models for Sentence Study (Refactored 2026-01-08).
-  - `word_example_schemas.py`: Models for multi-example navigation (`WordExampleSet`).
-  - `content_schemas.py`: `ContentBundle`, `ContentBlock`, `ContentSentence`, `ContentImage`, `SourceType` for Provider Architecture.
-  - `orm.py`: SQLAlchemy database models.
-- **`app/database/`**: **Refactored 2025-12-31, Cleaned 2026-01-02** Database operations package.
-  - `core.py`: Base, engine, AsyncSessionLocal, and ORM model re-exports.
-  - `performance.py`: Simplified performance metrics (study_time with Sentence Study + Reading, reading_stats, memory_curve).
-  - `reading.py`: Reading session tracking.
-  - *(Removed in 2026-01-01: `session_theme.py`, `story.py`, `review.py`, `chat.py`, `coach.py`)*
-  - *(Removed in 2026-01-02: `stats.py`, `goals.py`)*
-- **`app/api/routers/deepgram/`**: **Refactored 2025-12-31** Deepgram WebSocket endpoints.
-  - `live_stt.py`: Real-time STT proxy.
-  - `streaming_tts.py`: Streaming TTS proxy.
-  - `voice_agent.py`: STT-LLM-TTS voice agent pipeline.
-  - `unified_agent.py`: Deepgram Agent API integration.
-  - `router.py`: Main router aggregating all endpoints.
-- **`app/api/routers/reading.py`**: Reading session tracking API (`/api/reading/*`).
-- **`frontend/src/utils/ReadingTracker.js`**: **NEW** Client-side reading session tracking with heartbeat.
-- **`app/api/routers/sentence_study.py`**: **UPDATED 2026-01-03** Sentence Study (ASL) API endpoints:
-  - `GET /api/sentence-study/{source_id}/progress`: Get study progress for an article.
-  - `POST /api/sentence-study/record`: Record sentence learning result with gap diagnosis.
-  - `POST /api/sentence-study/simplify`: **Streaming SSE** with 3-stage progressive simplification (in-memory cached).
-  - `POST /api/sentence-study/overview`: Generate article overview (**DB-persisted cache**).
-  - `POST /api/sentence-study/explain-word`: **Streaming SSE** word/phrase explanation (in-memory cached, uses text stream format).
-  - `POST /api/sentence-study/detect-collocations`: AI collocation detection (**DB-persisted cache**).
-  - `POST /api/sentence-study/prefetch-collocations`: **NEW 2026-01-03** Background prefetch for lookahead (up to 5 sentences, uses `asyncio.create_task`).
-  - `GET /api/sentence-study/{source_id}/study-highlights`: **NEW 2026-01-04** Get aggregated lookups and unclear sentences (`unclear_sentences`).
-  - `GET /api/sentence-study/queue`: Get review queue (SRS).
-  - `POST /api/sentence-study/review`: Complete a review.
-  - `GET /api/sentence-study/profile`: User profile stats (Consumed by PerformanceReport).
-  - **Caching**: `overview` and `collocations` use two-tier cache (in-memory + PostgreSQL), surviving server restarts. `simplify` and `explain-word` use in-memory only.
-  - **New DB Tables**: `article_overview_cache`, `sentence_collocation_cache` (migration: `552a79d1e801`).
-- **`app/api/routers/voice_session.py`**: **NEW 2026-01-02** Voice Session API:
-  - `POST /start`, `PUT /heartbeat`, `POST /end`.
-- **`app/api/routers/review.py`**: **NEW 2026-01-04** SM-2 Spaced Repetition Review API:
-  - `GET /api/review/queue`: Get items due for review.
-  - `POST /api/review/complete`: Submit review result (quality: 1=forgot, 3=remembered, 5=easy).
-  - `POST /api/review/create`: Create review item (used internally by sentence_study).
-  - `GET /api/review/memory-curve`: Memory curve statistics for visualization.
-  - `GET /api/review/stats`: Overall review statistics.
-  - **Integration**: `sentence_study.py` auto-creates `ReviewItem` when user marks "Unclear" or looks up words.
-  - **New DB Tables**: `review_items`, `review_logs` (migration: `4f0adbca8a15`).
-- **`frontend/src/components/sentence-study/SentenceStudy.jsx`**: **UPDATED 2026-01-03** Sentence-by-sentence learning UI with:
-  - 3-stage progressive simplification with stage indicator and ReactMarkdown rendering.
-  - Streaming text display for explanations with request ID pattern (race condition fix).
-  - On-demand lookahead prefetching (auto-prefetch next 3 sentences' collocations).
-  - Max-height scrollable content for long explanations.
-  - Mobile-optimized touch targets and responsive layout.
-  - **Refactored 2026-01-06**: Integrated `useWordExplainer` hook for unified dictionary/LLM logic; Uses `sseParser` utility.
-  - **UI Overhaul 2026-01-07**: Complete layout redesign with vertical centering, fixed bottom buttons, and "Cyber-Noir" aesthetic (glow effects, rounded corners).
-- **`frontend/src/components/sentence-study/views/OverviewView.jsx`**: **UPDATED 2026-01-06** Article Overview UI:
-  - Supports **Streaming JSON** parsing for progressive UI rendering (no more raw JSON display).
-- **`frontend/src/views/ReviewQueue.jsx`**: **UPDATED 2026-01-04** SM-2 Review UI.
-- **`frontend/src/components/performance/PerformanceReport.jsx`**: **UPDATED 2026-01-04** Consolidated Dashboard:
-  - Merged Profile Stats (Clear Rate, Gap Breakdown, Words to Review).
-  - Added Memory Curve Visualization (SM-2 data).
-  - 4 Main KPI Cards + Insights.
+**Frontend** (`frontend/src/`):
+- `components/sentence-study/` - 句子学习 UI (3-stage simplification, streaming)
+- `components/reading/` - 阅读模式 (WordInspector, SentenceInspector)
+- `components/performance/` - 仪表盘 (KPI Cards, Memory Curve)
+- `hooks/useWordExplainer.js` - 词典 + LLM 解释统一逻辑
+- `utils/sseParser.js` - SSE 流解析器
 
 
 
@@ -389,119 +310,33 @@ To support multiple dictionaries (e.g., Collins + LDOCE) in one view:
 - **HTTPS Required**: WebSocket with audio requires HTTPS. Generate cert with `generate_cert.py`.
 - **Certificate Trust**: Users must accept self-signed cert warning on first connection.
 
-### Voice Integrations (Raw API Pattern)
+## Skills (Detailed Tool Guides)
 
-As of 2025-12-19, all voice provider integrations use **raw `httpx` API calls** instead of SDKs for better stability and control:
+以下技能模块包含详细操作指南，需要时按需加载：
 
-- **ElevenLabs** (`app/services/voice_lab.py`):
-  - **TTS**: `POST /v1/text-to-speech/{voice_id}` with JSON body, streaming response.
-  - **STT**: `POST /v1/speech-to-text` with multipart form data.
-  - **SFX**: `POST /v1/sound-generation` with JSON body.
-  - **STS**: `POST /v1/speech-to-speech/{voice_id}` with multipart form data.
-  - **Header**: `xi-api-key: {API_KEY}`
+| Skill | 路径 | 何时使用 |
+|-------|------|----------|
+| Local Deployment | [docs/skills/local-deployment.md](docs/skills/local-deployment.md) | Docker 本地/内网部署 |
+| Voice Integrations | [docs/skills/voice-integrations.md](docs/skills/voice-integrations.md) | 调用 ElevenLabs/Deepgram/Gemini/Dashscope 语音 API |
+| AUI Streaming Protocol | [docs/skills/aui-streaming-protocol.md](docs/skills/aui-streaming-protocol.md) | 实现或调试 Agent 实时流式 UI 更新 |
+| SDK Debugging | [docs/skills/sdk-debugging.md](docs/skills/sdk-debugging.md) | 第三方 SDK 调用失败的诊断方法 |
+| API Docs Query | [docs/skills/api-docs-query.md](docs/skills/api-docs-query.md) | 查询 ElevenLabs/Deepgram 离线 API 文档 |
 
-- **Deepgram** (`app/services/voice_lab.py` + `app/api/routers/deepgram/`):
-  - **TTS**: `POST https://api.deepgram.com/v1/speak?model={voice}&encoding=mp3`
-  - **STT**: `POST https://api.deepgram.com/v1/listen?model=nova-3&smart_format=true`
-  - **Live STT/TTS**: WebSocket proxying via `websockets` library.
-  - **Header**: `Authorization: Token {API_KEY}`
-  - **websockets v15.x**: Use `additional_headers` (not `extra_headers`).
+### Voice Integrations (概要)
 
-- **Google Gemini** (`app/services/voice_lab.py`):
-  - Uses official `google-genai` SDK with Live API for multimodal TTS/STT.
+所有语音厂商集成使用 **raw `httpx` API 调用**，而非 SDK：
+- **ElevenLabs**: TTS/STT/SFX/STS via `app/services/voice_lab.py`
+- **Deepgram**: TTS/STT + WebSocket 代理 via `app/api/routers/deepgram/`
+- **Gemini**: 官方 SDK Live API
+- **Dashscope**: Qwen3-TTS/ASR
 
-- **Dashscope (Alibaba Cloud)** (`app/services/voice_lab.py`):
-  - **TTS**: `POST https://dashscope.aliyuncs.com/api/v1/services/aigc/text-generation/generation` (Qwen3-TTS)
-  - **STT**: `POST https://dashscope.aliyuncs.com/api/v1/services/audio/asr/transcription` (Qwen3-ASR)
-  - **LLM**: Uses `AsyncOpenAI` client (compatible mode) for `qwen3-30b-a3b` "Deep Thinking".
-  - **Header**: `Authorization: Bearer {API_KEY}`
+> 详见 [Voice Integrations Skill](docs/skills/voice-integrations.md)
 
-**Why Raw APIs over SDKs?**
-1. SDK version mismatches cause frequent breakage (v3 vs v4 vs v5 API changes).
-2. Documentation often outdated; raw API specs are more reliable.
-3. Better error handling and debugging visibility.
-4. Reduced dependency footprint.
+### AUI Streaming Protocol (概要)
 
-4. Reduced dependency footprint.
+Agent-to-UI 实时流式协议，支持：
+- JSON Patch 增量更新、工具调用生命周期、中断事件
+- WebSocket 双向通信，PostgreSQL LISTEN/NOTIFY
+- 移动端兼容（自动重连、触摸优化）
 
-### AUI Streaming Protocol (Agent-to-UI)
-
-The system supports a streaming UI protocol for real-time Agent updates:
-
-- **Events**:
-  - `aui_render_snapshot`: Full component render (Backward compatible).
-  - `aui_text_delta`: Incremental text updates (ChatGPT-style).
-  - `aui_text_message_start/end`: Message lifecycle events for concurrent streams.
-  - `aui_messages_snapshot`: Message history synchronization.
-  - `aui_state_snapshot`: Complete state for recovery/initialization.
-  - `aui_state_delta`: Granular state updates using **JSON Patch** (RFC 6902).
-  - `aui_activity_snapshot/delta`: Activity progress tracking.
-  - `aui_tool_call_*`: Tool call lifecycle (start/args/end/result).
-  - `aui_run_*`: Agent run lifecycle (started/finished/error).
-  - `aui_interrupt`: Control flow interruption (e.g. for user input).
-- **Architecture**:
-  - **Backend**: `app.services.aui_events` generates events; `app.api.routers.aui_websocket` handles streaming.
-  - **Validation**: `app.services.aui_schema` validates component props using Pydantic models.
-  - **Frontend**: `AUIStreamHydrator` consumes WebSocket events and applies patches using `fast-json-patch`.
-- **Interactivity (Bi-directional)**:
-  - **Downstream**: WebSocket pushes UI state (buttons/forms).
-  - **Upstream**: Client sends actions via `POST /api/aui/input`.
-   - **Backend**: `AUIInputService` uses **PostgreSQL LISTEN/NOTIFY** to pause execution and signal waiting Agents across processes.
-   - **Persistence**: User inputs are stored in `aui_inputs` table, ensuring HITL flows survive restarts.
-- **AG-UI Alignment (2025-12-23)**:
-  - `InterruptEvent` now includes `interrupt_id` (auto-generated) and `payload` for structured data.
-  - `RunFinishedEvent` supports `outcome="interrupt"` with associated interrupt details.
-  - `InterruptBanner` component displays interactive action buttons from `payload.options`.
-- **WebSocket Transport (2025-12-23)**:
-  - **Backend**: `/api/aui/ws/{stream_type}` endpoint in `aui_websocket.py`.
-  - **Frontend**: `useAUITransport` hook (WebSocket-only); `AUIContext` provides `send` function.
-  - **Bidirectional**: `interactive` and `interrupt` streams use `handle_interactive_stream` for HITL.
-  - **Unified**: Replaces legacy SSE as the single transport channel (SSE code removed 2025-12).
-- **Mobile Compatibility (2025-12-25)**:
-  - **Frontend**: `useAUITransport.js` supports auto-reconnection with exponential backoff and visibility handling.
-  - **Layout**: Mobile-first designs for `AUIStreamingDemo` and all inline components (`InterruptBanner`, `MessageList`, etc.).
-  - **Touch Targets**: All interactive elements optimized for 48px minimum height.
-
-### Third-Party SDK Debugging: Lessons Learned (2025-12-17)
-
-**问题背景**: Deepgram TTS/STT 调用失败，尝试多次修复无效。
-
-**根本原因**: 安装的是 Deepgram SDK **v5.3.0**，但 MCP 文档和网上资料多为 v3/v4 API，导致：
-1. `from deepgram import SpeakOptions` 失败 - 该类在 v5 不存在
-2. `speak.rest.v("1").save()` 方法签名不同
-3. `listen.rest.v("1").transcribe_file()` 参数格式变了
-
-**解决方案**: 移除 SDK，改用 `httpx` 直接调用 REST API。
-
-**经验总结**:
-> 当第三方 SDK 频繁出问题时，考虑直接使用 REST API。
-
-## Documentation Tools
-
-We have a local CLI tool to query the offline API documentation (ElevenLabs & Deepgram) without needing to browse files manually.
-
-```bash
-# General Usage
-uv run python scripts/analyze_voice_api.py [query] [options]
-
-# Examples:
-
-# 0. Get API Catalog / Index (Directory Mode)
-# Lists all available endpoints in a compact format
-uv run python scripts/analyze_voice_api.py --compact
-
-# 1. Search for "websocket" related endpoints
-uv run python scripts/analyze_voice_api.py "websocket"
-
-# 2. List all ElevenLabs endpoints
-uv run python scripts/analyze_voice_api.py --provider elevenlabs
-
-# 3. Get detailed YAML spec for a specific endpoint (e.g., search for /v1/speak)
-uv run python scripts/analyze_voice_api.py "/v1/speak" --details
-
-# Options:
-#   query           Search term (path, summary, description)
-#   -p, --provider  Filter by provider (elevenlabs, deepgram)
-#   -m, --method    Filter by HTTP method (GET, POST)
-#   -d, --details   Show full OpenAPI spec
-```
+> 详见 [AUI Streaming Protocol Skill](docs/skills/aui-streaming-protocol.md)
