@@ -47,7 +47,7 @@ const StudyingView = ({
     const progressPercent = totalSentences > 0 ? ((currentIndex) / totalSentences) * 100 : 0;
 
     return (
-        <div className="h-screen flex flex-col bg-[#050505] text-[#E0E0E0] font-mono">
+        <div className="h-dvh flex flex-col bg-[#050505] text-[#E0E0E0] font-mono overflow-hidden">
             {/* Header */}
             <header className="flex-shrink-0 h-14 border-b border-[#333] flex items-center justify-between px-4 md:px-8 bg-[#0A0A0A]">
                 <button
@@ -71,8 +71,8 @@ const StudyingView = ({
                 />
             </div>
 
-            {/* Main Content Area - Vertically Centered */}
-            <main className="flex-1 flex flex-col items-center justify-center p-4 md:p-8 overflow-y-auto min-h-0">
+            {/* Main Content Area - Centered when idle, top-aligned when showing content */}
+            <main className={`flex-1 flex flex-col items-center p-4 md:p-8 overflow-y-auto min-h-0 ${showDiagnose || simplifiedText || isSimplifying ? 'justify-start pt-8' : 'justify-center'}`}>
                 <div className="max-w-3xl w-full">
                     {/* Current Sentence - with subtle glow */}
                     <div

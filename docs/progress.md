@@ -467,3 +467,21 @@ When users clicked "忘了" (Forgot) during review, they got no help understandi
 
 #### Verification
 - **Manual**: Verified sorting and RECENT badge in both Reading and Sentence Study modes.
+
+### ✅ Sentence Study Mobile & Explanation Fixes (2026-01-08)
+**Fixed mobile layout issues and markdown rendering for word/phrase explanations.**
+
+#### Mobile Layout Fixes
+- **Scrollbar Issue**: Changed `h-screen` to `h-dvh` (dynamic viewport height) to properly handle mobile browser chrome.
+- **Content Overflow**: Added `overflow-hidden` to prevent unwanted scrollbars on initial load.
+- **Long Content Layout**: Dynamic `justify-start`/`justify-center` based on whether explanations are shown, keeping sentence visible when explanations are long.
+
+#### Phrase Explanation Rendering
+- **Problem**: Markdown headers (`## Meaning`, `## Examples`) were not rendering correctly; content appeared all bolded with no line breaks.
+- **Root Cause**: SSE streaming broke newlines - when LLM chunks contained `\n`, they were lost during SSE parsing.
+- **Solution**:
+  - **Backend** (`sentence_study.py`): Encode newlines as `[NL]` markers before sending via SSE.
+  - **Frontend** (`sseParser.js`): Decode `[NL]` markers back to actual `\n` characters.
+  - **ReactMarkdown** (`WordInspector.jsx`): Added `h2`/`h3` component handlers for proper header styling.
+- **Prompts** (`sentence_study_service.py`): Updated word/phrase explanation prompts to use markdown format with headers.
+

@@ -126,9 +126,11 @@ Please provide:
 1. A concise explanation of the meaning in this context.
 2. Two example sentences showing how to use this word in different contexts (different from the current one).
 
-Format:
-MEANING: [Explanation]
-EXAMPLES:
+Format your response using markdown:
+## Meaning
+[Your explanation here]
+
+## Examples
 1. [Example sentence 1]
 2. [Example sentence 2]''',
 
@@ -146,9 +148,11 @@ Please provide:
 1. A concise explanation of the meaning.
 2. Two example sentences showing how to use this phrase/expression in different contexts.
 
-Format:
-MEANING: [Explanation]
-EXAMPLES:
+Format your response using markdown:
+## Meaning
+[Your explanation here]
+
+## Examples
 1. [Example sentence 1]
 2. [Example sentence 2]''',
 

@@ -484,7 +484,10 @@ async def explain_word_in_context(req: ExplainWordRequest):
             prev_sentence=req.prev_sentence,
             next_sentence=req.next_sentence
         ):
-            yield f"data: {chunk}\n\n"
+            # SSE spec: newlines in content must be encoded to avoid breaking the protocol
+            # We encode \n as [NL] which the client will decode back to newlines
+            encoded_chunk = chunk.replace('\n', '[NL]')
+            yield f"data: {encoded_chunk}\n\n"
         yield "data: [DONE]\n\n"
     
     return StreamingResponse(

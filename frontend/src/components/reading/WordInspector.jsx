@@ -71,6 +71,8 @@ const WordInspector = ({
                                     <ReactMarkdown
                                         components={{
                                             p: ({ children }) => <p className="mb-2 last:mb-0">{children}</p>,
+                                            h2: ({ children }) => <h2 className="text-sm font-bold text-[#00FF94] uppercase tracking-wider mt-3 mb-1 first:mt-0">{children}</h2>,
+                                            h3: ({ children }) => <h3 className="text-xs font-bold text-[#FFD700] uppercase tracking-wider mt-2 mb-1">{children}</h3>,
                                             ul: ({ children }) => <ul className="list-disc pl-4 mb-2 space-y-1">{children}</ul>,
                                             ol: ({ children }) => <ol className="list-decimal pl-4 mb-2 space-y-1">{children}</ol>,
                                             li: ({ children }) => <li className="pl-1 marker:text-[#00FF94]">{children}</li>,

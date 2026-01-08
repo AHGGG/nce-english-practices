@@ -114,7 +114,9 @@ export async function parseTextSSEStream(response, handlers = {}, options = {}) 
                         onError?.(new Error(text));
                         return;
                     } else {
-                        onText?.(text);
+                        // Decode [NL] markers back to actual newlines (preserves markdown formatting)
+                        const decodedText = text.replace(/\[NL\]/g, '\n');
+                        onText?.(decodedText);
                     }
                 }
             }
