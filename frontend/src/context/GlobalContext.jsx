@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useMemo } from 'react';
+import { ToastProvider } from '../components/ui/Toast';
 
 const GlobalContext = createContext(null);
 
@@ -12,7 +13,9 @@ export const GlobalProvider = ({ children }) => {
 
     return (
         <GlobalContext.Provider value={contextValue}>
-            {children}
+            <ToastProvider>
+                {children}
+            </ToastProvider>
         </GlobalContext.Provider>
     );
 };
