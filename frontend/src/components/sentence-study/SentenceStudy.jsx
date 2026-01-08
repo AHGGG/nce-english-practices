@@ -104,6 +104,7 @@ const SentenceStudy = () => {
                     if (status) {
                         article.last_read = status.last_read;
                         article.last_studied_at = status.last_studied_at;
+                        article.status = status.status;
                     }
                 });
                 articlesList.sort((a, b) => {

@@ -4,7 +4,7 @@
  */
 import React from 'react';
 import ReactMarkdown from 'react-markdown';
-import { ChevronLeft, CheckCircle, HelpCircle, Loader2, Sparkles } from 'lucide-react';
+import { ChevronLeft, CheckCircle, HelpCircle, Sparkles } from 'lucide-react';
 import MemoizedSentence from '../../reading/MemoizedSentence';
 import { DIFFICULTY_CHOICES } from '../constants';
 
@@ -123,16 +123,10 @@ const StudyingView = ({
                         </div>
                     )}
 
-                    {/* Loading simplified version */}
-                    {isSimplifying && (
-                        <div className="mt-6 p-6 border border-[#00FF94]/30 bg-[#00FF94]/5 text-center rounded-lg">
-                            <Loader2 className="w-6 h-6 animate-spin text-[#00FF94] mx-auto mb-2" />
-                            <p className="text-sm text-[#888]">Generating simplified version...</p>
-                        </div>
-                    )}
+
 
                     {/* Simplified version */}
-                    {simplifiedText && (
+                    {(simplifiedText || isSimplifying) && (
                         <div className="mt-6 p-6 border border-[#00FF94]/30 bg-[#00FF94]/5 rounded-lg">
                             <div className="flex items-center justify-between mb-3">
                                 <div className="flex items-center gap-2">
@@ -155,14 +149,22 @@ const StudyingView = ({
                             <div className="mt-6 flex flex-wrap justify-center gap-3">
                                 <button
                                     onClick={() => onSimplifiedResponse(true)}
-                                    className="flex items-center justify-center gap-2 min-w-[140px] px-6 py-4 bg-[#00FF94] text-black font-bold uppercase text-sm hover:bg-[#00CC77] active:scale-95 transition-all touch-manipulation rounded-md"
+                                    disabled={isSimplifying}
+                                    className={`flex items-center justify-center gap-2 min-w-[140px] px-6 py-4 font-bold uppercase text-sm transition-all touch-manipulation rounded-md ${isSimplifying
+                                        ? 'bg-[#00FF94]/30 text-black/50 cursor-not-allowed'
+                                        : 'bg-[#00FF94] text-black hover:bg-[#00CC77] active:scale-95'
+                                        }`}
                                 >
                                     <CheckCircle className="w-5 h-5" />
                                     {simplifyStage === 3 ? '明白了!' : 'Got it!'}
                                 </button>
                                 <button
                                     onClick={() => onSimplifiedResponse(false)}
-                                    className="flex items-center justify-center gap-2 min-w-[140px] px-6 py-4 border border-[#666] text-[#888] hover:text-white hover:border-white active:scale-95 transition-all touch-manipulation rounded-md"
+                                    disabled={isSimplifying}
+                                    className={`flex items-center justify-center gap-2 min-w-[140px] px-6 py-4 border transition-all touch-manipulation rounded-md ${isSimplifying
+                                        ? 'border-[#333] text-[#444] cursor-not-allowed'
+                                        : 'border-[#666] text-[#888] hover:text-white hover:border-white active:scale-95'
+                                        }`}
                                 >
                                     <HelpCircle className="w-5 h-5" />
                                     {simplifyStage < 3 ? 'Still Unclear' : '还是不懂'}
