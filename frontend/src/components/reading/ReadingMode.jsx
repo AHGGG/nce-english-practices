@@ -153,6 +153,8 @@ const ReadingMode = () => {
                                     article.status = status.status;
                                     article.study_progress = status.study_progress;
                                     article.reading_sessions = status.reading_sessions;
+                                    article.last_read = status.last_read;
+                                    article.last_studied_at = status.last_studied_at;
                                 }
                             });
                         }
@@ -161,7 +163,17 @@ const ReadingMode = () => {
                     }
                 }
 
-                setArticles(articlesData);
+                setArticles(articlesData.sort((a, b) => {
+                    const timeA = Math.max(
+                        new Date(a.last_read || 0).getTime(),
+                        new Date(a.last_studied_at || 0).getTime()
+                    );
+                    const timeB = Math.max(
+                        new Date(b.last_read || 0).getTime(),
+                        new Date(b.last_studied_at || 0).getTime()
+                    );
+                    return timeB - timeA;
+                }));
             }
         } catch (e) {
             console.error(e);

@@ -89,14 +89,50 @@ const SentenceStudy = () => {
         return extractSentencesFromBlocks(currentArticle.blocks);
     }, [currentArticle]);
 
+    // === Helper: Fetch status and sort articles by recent activity ===
+    const fetchStatusAndSort = async (filename, articlesList) => {
+        if (!filename || articlesList.length === 0) return articlesList;
+        try {
+            const statusRes = await fetch(`/api/content/article-status?filename=${encodeURIComponent(filename)}`);
+            if (statusRes.ok) {
+                const statusData = await statusRes.json();
+                const statusMap = new Map(
+                    statusData.articles?.map(a => [a.source_id, a]) || []
+                );
+                articlesList.forEach(article => {
+                    const status = statusMap.get(article.source_id);
+                    if (status) {
+                        article.last_read = status.last_read;
+                        article.last_studied_at = status.last_studied_at;
+                    }
+                });
+                articlesList.sort((a, b) => {
+                    const timeA = Math.max(
+                        new Date(a.last_read || 0).getTime(),
+                        new Date(a.last_studied_at || 0).getTime()
+                    );
+                    const timeB = Math.max(
+                        new Date(b.last_read || 0).getTime(),
+                        new Date(b.last_studied_at || 0).getTime()
+                    );
+                    return timeB - timeA;
+                });
+            }
+        } catch (e) {
+            console.warn('Could not fetch article status for sorting:', e);
+        }
+        return articlesList;
+    };
+
     // === Book Selection ===
     const selectBook = async (book) => {
         setLoading(true);
         setSelectedBook(book);
         try {
             const data = await sentenceStudyApi.getArticles(book.filename);
-            const filtered = (data.articles || []).filter(a => a.sentence_count > 0);
-            setArticles(filtered);
+            const articlesList = (data.articles || []).filter(a => a.sentence_count > 0);
+            const sorted = await fetchStatusAndSort(book.filename, articlesList);
+            setArticles(sorted);
             setView(VIEW_STATES.ARTICLE_LIST);
         } catch (e) {
             console.error('Failed to load articles for book:', e);
@@ -134,7 +170,9 @@ const SentenceStudy = () => {
                         setSelectedBook(book || { filename, title: filename });
 
                         const articlesData = await sentenceStudyApi.getArticles(filename);
-                        setArticles((articlesData.articles || []).filter(a => a.sentence_count > 0));
+                        const filtered = (articlesData.articles || []).filter(a => a.sentence_count > 0);
+                        const sorted = await fetchStatusAndSort(filename, filtered);
+                        setArticles(sorted);
 
                         await startStudying(urlSourceId);
 
@@ -158,9 +196,10 @@ const SentenceStudy = () => {
 
                         const articlesData = await sentenceStudyApi.getArticles(filename);
                         const filtered = (articlesData.articles || []).filter(a => a.sentence_count > 0);
-                        setArticles(filtered);
+                        const sorted = await fetchStatusAndSort(filename, filtered);
+                        setArticles(sorted);
 
-                        if (filtered.find(a => a.source_id === lastSession.source_id)) {
+                        if (sorted.find(a => a.source_id === lastSession.source_id)) {
                             await startStudying(lastSession.source_id);
                         } else {
                             setView(VIEW_STATES.ARTICLE_LIST);

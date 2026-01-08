@@ -364,7 +364,8 @@ async def get_article_status(
                         func.count(SentenceLearningRecord.id),
                         func.count(SentenceLearningRecord.id).filter(SentenceLearningRecord.initial_response == 'clear'),
                         func.count(SentenceLearningRecord.id).filter(SentenceLearningRecord.initial_response == 'unclear'),
-                        func.max(SentenceLearningRecord.sentence_index)
+                        func.max(SentenceLearningRecord.sentence_index),
+                        func.max(SentenceLearningRecord.updated_at)
                     )
                     .where(SentenceLearningRecord.user_id == user_id)
                     .where(SentenceLearningRecord.source_id == source_id)
@@ -374,6 +375,7 @@ async def get_article_status(
                 clear_count = study_row[1] or 0
                 unclear_count = study_row[2] or 0
                 max_index = study_row[3]
+                last_studied_at = study_row[4]
                 current_index = (max_index + 1) if max_index is not None else 0
                 
                 # Check for review items
@@ -402,6 +404,7 @@ async def get_article_status(
                     "sentence_count": total_sentences,
                     "reading_sessions": reading_sessions,
                     "last_read": last_read.isoformat() if last_read else None,
+                    "last_studied_at": last_studied_at.isoformat() if last_studied_at else None,
                     "study_progress": {
                         "current_index": current_index,
                         "total": total_sentences,

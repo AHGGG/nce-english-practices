@@ -3,7 +3,7 @@
  * Shows all articles in a selected book
  */
 import React from 'react';
-import { ChevronLeft, BookOpen, Loader2 } from 'lucide-react';
+import { ChevronLeft, BookOpen, Loader2, Zap } from 'lucide-react';
 
 const ArticleListView = ({
     selectedBook,
@@ -12,6 +12,15 @@ const ArticleListView = ({
     onBack,
     onSelectArticle
 }) => {
+    // Check if article was recently accessed (within 24 hours)
+    const isRecent = (article) => {
+        const lastActivity = Math.max(
+            new Date(article.last_read || 0).getTime(),
+            new Date(article.last_studied_at || 0).getTime()
+        );
+        return lastActivity > Date.now() - 24 * 60 * 60 * 1000;
+    };
+
     return (
         <div className="h-screen flex flex-col bg-[#050505] text-[#E0E0E0] font-mono">
             <header className="h-14 border-b border-[#333] flex items-center px-4 md:px-8 bg-[#0A0A0A]">
@@ -45,9 +54,16 @@ const ArticleListView = ({
                                 >
                                     <div className="flex items-start justify-between">
                                         <div className="flex-1 min-w-0">
-                                            <h3 className="font-serif text-lg text-white truncate group-hover:text-[#00FF94]">
-                                                {article.title}
-                                            </h3>
+                                            <div className="flex items-center gap-2 mb-1">
+                                                <h3 className="font-serif text-lg text-white truncate group-hover:text-[#00FF94]">
+                                                    {article.title}
+                                                </h3>
+                                                {isRecent(article) && (
+                                                    <span className="shrink-0 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider border bg-[#FF6B00]/10 text-[#FF6B00] border-[#FF6B00]/30 flex items-center gap-1">
+                                                        <Zap size={8} /> RECENT
+                                                    </span>
+                                                )}
+                                            </div>
                                             <p className="text-xs text-[#666] mt-1">
                                                 {article.sentence_count} sentences
                                             </p>

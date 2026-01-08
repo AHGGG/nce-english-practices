@@ -1,6 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { BookOpen, ChevronLeft, Loader2, Check, Clock, BookOpenCheck } from 'lucide-react';
+import { BookOpen, ChevronLeft, Loader2, Check, Clock, BookOpenCheck, Zap } from 'lucide-react';
 
 /**
  * Get status styling based on article status
@@ -59,6 +59,13 @@ const ArticleListView = ({
         const statusConfig = getStatusConfig(article.status);
         const displayIdx = showOriginalIndex ? articles.indexOf(article) + 1 : idx + 1;
 
+        // Check if recently accessed (within 24 hours)
+        const lastActivity = Math.max(
+            new Date(article.last_read || 0).getTime(),
+            new Date(article.last_studied_at || 0).getTime()
+        );
+        const isRecent = lastActivity > Date.now() - 24 * 60 * 60 * 1000;
+
         return (
             <button
                 key={article.source_id}
@@ -83,6 +90,12 @@ const ArticleListView = ({
                     {statusConfig.badgeText && (
                         <span className={`px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider border ${statusConfig.badgeClass}`}>
                             {statusConfig.badgeText}
+                        </span>
+                    )}
+                    {/* Recent Badge */}
+                    {isRecent && (
+                        <span className="px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider border bg-[#FF6B00]/10 text-[#FF6B00] border-[#FF6B00]/30 flex items-center gap-1">
+                            <Zap size={8} /> RECENT
                         </span>
                     )}
                     <div className="h-[1px] bg-[#333] flex-1 group-hover:bg-[#00FF94]/30 transition-colors"></div>

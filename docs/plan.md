@@ -250,6 +250,11 @@
                 - [x] **Study Highlights in Reading Mode**: Words looked up during Sentence Study shown in amber.
                 - [x] **Study Highlights in Reading Mode**: Words looked up during Sentence Study shown in amber.
                 - [x] **ReviewItem Auto-Creation**: Reading Mode word lookups (2+) create SM-2 items.
+                - [x] **Article Sorting by Recent Activity** (2026-01-08):
+                    - [x] Backend returns `last_studied_at` timestamp in article status API.
+                    - [x] Reading Mode sorts articles by max(last_read, last_studied_at).
+                    - [x] Sentence Study sorts articles using shared `fetchStatusAndSort` helper.
+                    - [x] Orange **RECENT** badge for articles accessed within 24 hours.
                 - [x] **Unified Word Explanation** (2026-01-05):
                     - [x] Shared `useWordExplainer` hook.
                     - [x] Streaming LLM Context Explanation in Reading Mode.

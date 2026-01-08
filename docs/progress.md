@@ -450,3 +450,20 @@ When users clicked "忘了" (Forgot) during review, they got no help understandi
   - Reduced router size by ~220 lines.
   - Improved separation of concerns.
 - **Verification**: 9/9 backend tests passed.
+
+### ✅ Article Sorting by Recent Activity (2026-01-08)
+**Articles in Reading and Sentence Study pages now sorted by most recent activity.**
+
+#### Features
+- **Smart Sorting**: Articles that were recently read or studied appear at the top of the list.
+- **Visual Indicator**: Orange **⚡ RECENT** badge for articles accessed within 24 hours.
+- **Cross-Mode Consistency**: Same sorting logic applied to both Reading Mode and Sentence Study.
+
+#### Implementation
+- **Backend** (`content.py`): Extended article status API to return `last_studied_at` timestamp from `SentenceLearningRecord`.
+- **Frontend** (`ReadingMode.jsx`): Merged timestamps and sorted by `max(last_read, last_studied_at)`.
+- **Frontend** (`SentenceStudy.jsx`): Added `fetchStatusAndSort` helper used in all article-loading code paths (selectBook, URL navigation, last session restoration).
+- **UI** (`ArticleListView.jsx` × 2): Added Zap icon RECENT badge with orange styling.
+
+#### Verification
+- **Manual**: Verified sorting and RECENT badge in both Reading and Sentence Study modes.
