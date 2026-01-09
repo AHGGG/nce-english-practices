@@ -193,6 +193,44 @@ async def get_review_queue(
     )
 
 
+@router.get("/random", response_model=ReviewQueueResponse)
+async def get_random_review(
+    user_id: str = "default_user",
+    limit: int = 20,
+    db: AsyncSession = Depends(get_db)
+):
+    """Get random review items for extra practice (does not affect SM-2 schedule)."""
+    # Use random ordering
+    stmt = (
+        select(ReviewItem)
+        .where(ReviewItem.user_id == user_id)
+        .order_by(func.random())
+        .limit(limit)
+    )
+    
+    result = await db.execute(stmt)
+    items = result.scalars().all()
+    
+    return ReviewQueueResponse(
+        items=[
+            ReviewQueueItem(
+                id=item.id,
+                source_id=item.source_id,
+                sentence_index=item.sentence_index,
+                sentence_text=item.sentence_text,
+                highlighted_items=item.highlighted_items or [],
+                difficulty_type=item.difficulty_type,
+                interval_days=item.interval_days,
+                repetition=item.repetition,
+                next_review_at=item.next_review_at.isoformat(),
+                created_at=item.created_at.isoformat()
+            )
+            for item in items
+        ],
+        count=len(items)
+    )
+
+
 @router.post("/complete", response_model=CompleteReviewResponse)
 async def complete_review(
     req: CompleteReviewRequest,

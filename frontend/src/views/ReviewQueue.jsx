@@ -32,6 +32,11 @@ const api = {
         if (!res.ok) throw new Error('Failed to fetch review queue');
         return res.json();
     },
+    async getRandomQueue(userId = 'default_user', limit = 20) {
+        const res = await fetch(`/api/review/random?user_id=${userId}&limit=${limit}`);
+        if (!res.ok) throw new Error('Failed to fetch random queue');
+        return res.json();
+    },
     async complete(itemId, quality) {
         const res = await fetch('/api/review/complete', {
             method: 'POST',
@@ -123,6 +128,8 @@ const ReviewQueue = () => {
     const [currentIndex, setCurrentIndex] = useState(0);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [lastResult, setLastResult] = useState(null);
+    const [isRandomMode, setIsRandomMode] = useState(false);
+
 
     // Help panel state
     const [showHelpPanel, setShowHelpPanel] = useState(false);
@@ -157,6 +164,22 @@ const ReviewQueue = () => {
     // Current item
     const currentItem = queue[currentIndex];
 
+    // Start random review
+    const startRandomReview = async () => {
+        setLoading(true);
+        try {
+            const queueData = await api.getRandomQueue();
+            setQueue(queueData.items || []);
+            setIsRandomMode(true);
+            setCurrentIndex(0);
+            setLastResult(null);
+        } catch (e) {
+            console.error('Failed to start random review:', e);
+        } finally {
+            setLoading(false);
+        }
+    };
+
     // Play TTS
     const playAudio = useCallback((text) => {
         if (!text) return;
@@ -175,6 +198,24 @@ const ReviewQueue = () => {
 
         setIsSubmitting(true);
         try {
+            // In random mode, we don't submit to backend
+            if (isRandomMode) {
+                // Just delay slightly for UI feedback
+                await new Promise(r => setTimeout(r, 300));
+
+                // Move next
+                if (currentIndex < queue.length - 1) {
+                    setCurrentIndex(prev => prev + 1);
+                    setLastResult(null);
+                } else {
+                    // Refetch random or show empty? 
+                    // Let's go back to empty state to allow choice
+                    setQueue([]);
+                    setLastResult(null);
+                }
+                return;
+            }
+
             const result = await api.complete(currentItem.id, quality);
             setLastResult(result);
 
@@ -197,7 +238,7 @@ const ReviewQueue = () => {
         } finally {
             setIsSubmitting(false);
         }
-    }, [currentItem, currentIndex, queue.length, isSubmitting]);
+    }, [currentItem, currentIndex, queue.length, isSubmitting, isRandomMode]);
 
     // Stream explanation content
     const streamExplanation = useCallback(async (stage) => {
@@ -315,6 +356,7 @@ const ReviewQueue = () => {
     // Refresh queue
     const refreshQueue = useCallback(async () => {
         setLoading(true);
+        setIsRandomMode(false); // Reset random mode
         try {
             const [queueData, statsData] = await Promise.all([
                 api.getQueue(),
@@ -323,6 +365,7 @@ const ReviewQueue = () => {
             setQueue(queueData.items || []);
             setStats(statsData);
             setCurrentIndex(0);
+            setLastResult(null);
         } catch (e) {
             console.error('Failed to refresh:', e);
         } finally {
@@ -340,10 +383,17 @@ const ReviewQueue = () => {
             <p className="text-[#888] text-sm text-center max-w-xs">
                 太棒了！你已经完成了所有复习任务。继续学习新内容吧！
             </p>
-            <div className="mt-8 space-y-3 text-center">
+            <div className="mt-8 space-y-3 text-center flex flex-col items-center">
+                <button
+                    onClick={startRandomReview}
+                    className="flex items-center gap-2 px-6 py-2 bg-[#00FF94]/10 text-[#00FF94] rounded-full hover:bg-[#00FF94]/20 transition-all border border-[#00FF94]/30"
+                >
+                    <Zap className="w-4 h-4" />
+                    开始随机复习
+                </button>
                 <button
                     onClick={refreshQueue}
-                    className="flex items-center gap-2 px-4 py-2 text-sm text-[#888] hover:text-[#00FF94] transition-colors"
+                    className="flex items-center gap-2 px-4 py-2 text-sm text-[#888] hover:text-[#00FF94] transition-colors mt-2"
                 >
                     <RefreshCw className="w-4 h-4" />
                     刷新队列
@@ -363,6 +413,11 @@ const ReviewQueue = () => {
                 <Clock className="w-3 h-3" />
                 <span>{queue.length} 待复习</span>
             </div>
+            {isRandomMode && (
+                <div className="px-2 py-0.5 bg-purple-500/20 text-purple-400 text-[10px] rounded uppercase tracking-wider font-bold">
+                    Random Mode
+                </div>
+            )}
         </div>
     );
 
@@ -417,6 +472,11 @@ const ReviewQueue = () => {
                             </span>
                         ) : (
                             <span>首次复习</span>
+                        )}
+                        {isRandomMode && (
+                            <span className="block mt-1 text-purple-400/70">
+                                (随机复习模式 - 不记录进度)
+                            </span>
                         )}
                     </div>
                 </div>
@@ -527,7 +587,7 @@ const ReviewQueue = () => {
                 )}
 
                 {/* Last result feedback */}
-                {lastResult && (
+                {lastResult && !isRandomMode && (
                     <div className="mt-4 text-center text-xs text-[#666]">
                         下次复习：{new Date(lastResult.next_review_at).toLocaleDateString('zh-CN')}
                         {' '}({Math.round(lastResult.new_interval)} 天后)
