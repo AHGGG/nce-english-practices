@@ -142,9 +142,20 @@ const StudyingView = ({
                                 </span>
                             </div>
                             <div className="font-serif text-base leading-relaxed text-[#00FF94] max-h-[40vh] overflow-y-auto custom-scrollbar">
-                                <ReactMarkdown components={markdownComponents}>
-                                    {simplifiedText}
-                                </ReactMarkdown>
+                                {simplifiedText ? (
+                                    <ReactMarkdown components={markdownComponents}>
+                                        {simplifiedText}
+                                    </ReactMarkdown>
+                                ) : (
+                                    isSimplifying && (
+                                        <div className="flex items-center gap-2 py-4">
+                                            <div className="w-2 h-2 bg-[#00FF94] rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                                            <div className="w-2 h-2 bg-[#00FF94] rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                                            <div className="w-2 h-2 bg-[#00FF94] rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                                            <span className="ml-2 text-sm text-[#00FF94]/70 font-mono">Analyzing context...</span>
+                                        </div>
+                                    )
+                                )}
                             </div>
                             <div className="mt-6 flex flex-wrap justify-center gap-3">
                                 <button
