@@ -637,7 +637,10 @@ class LDOCEParser:
                     current_source = "OTHER_DICTIONARIES"
             
             for li in ul.select('li'):
-                text = li.get_text(strip=True)
+                # Use separator=' ' to preserve spaces between HTML tags
+                text = li.get_text(separator=' ')
+                # Normalize: collapse multiple spaces, strip edges
+                text = re.sub(r'\s+', ' ', text).strip()
                 if text and len(text) > 5:
                     extra_examples.append(LDOCEExtraExample(
                         text=text,
