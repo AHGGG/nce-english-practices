@@ -401,7 +401,7 @@ const ReviewQueue = () => {
                         className="flex-1 flex items-center justify-center p-6 md:p-10 cursor-pointer"
                         onClick={() => playAudio(currentItem.sentence_text)}
                     >
-                        <p className="font-serif text-xl md:text-2xl text-white leading-relaxed text-center">
+                        <p className="font-serif text-xl md:text-2xl text-white leading-relaxed text-left w-full">
                             <HighlightedSentence
                                 text={currentItem.sentence_text}
                                 highlights={currentItem.highlighted_items || []}
