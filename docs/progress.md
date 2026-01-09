@@ -485,3 +485,43 @@ When users clicked "忘了" (Forgot) during review, they got no help understandi
   - **ReactMarkdown** (`WordInspector.jsx`): Added `h2`/`h3` component handlers for proper header styling.
 - **Prompts** (`sentence_study_service.py`): Updated word/phrase explanation prompts to use markdown format with headers.
 
+### ✅ Autonomous Verification System (2026-01-09)
+**Enabling AI to self-verify code changes before notifying users.**
+
+#### Problem
+AI coding assistants often complete changes without verifying correctness, requiring human intervention to catch errors that could have been detected automatically.
+
+#### Solution: Post-Change Verification Skill
+
+| Component | Path | Purpose |
+|-----------|------|---------|
+| **Health Check API** | `/api/verify/health` | Aggregates frontend/backend errors, DB status |
+| **Log Reader** | `log_collector.get_recent_errors()` | Reads unified.log with time filtering |
+| **Verification Skill** | `docs/skills/post-change-verification.md` | Decision tree for when/how to verify |
+
+#### Health Check Response
+```json
+{
+  "status": "healthy|unhealthy",
+  "error_count": 0,
+  "warning_count": 0,
+  "frontend_errors": [],
+  "backend_errors": [],
+  "db_connected": true,
+  "summary": "✅ System healthy. No errors in the last 60 seconds."
+}
+```
+
+#### Verification Workflow
+1. **Always**: Call `/api/verify/health` after changes
+2. **If UI change**: Use Chrome DevTools MCP for visual verification
+3. **If unhealthy**: Fix errors before notifying user
+
+#### Files Changed
+- `app/services/log_collector.py`: Added `get_recent_logs()`, `get_recent_errors()`
+- `app/api/routers/verify.py`: NEW - Health check endpoint
+- `app/core/db.py`: Added `get_db_health()`
+- `app/main.py`: Registered verify router
+- `docs/skills/post-change-verification.md`: NEW - Verification skill
+- `CLAUDE.md`: Added skill reference
+

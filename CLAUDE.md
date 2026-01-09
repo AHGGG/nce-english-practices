@@ -316,6 +316,7 @@ To support multiple dictionaries (e.g., Collins + LDOCE) in one view:
 
 | Skill | 路径 | 何时使用 |
 |-------|------|----------|
+| Post-Change Verification | [docs/skills/post-change-verification.md](docs/skills/post-change-verification.md) | **代码变更后、通知用户前** - 自动验证变更是否有问题 |
 | Local Deployment | [docs/skills/local-deployment.md](docs/skills/local-deployment.md) | Docker 本地/内网部署 |
 | Voice Integrations | [docs/skills/voice-integrations.md](docs/skills/voice-integrations.md) | 调用 ElevenLabs/Deepgram/Gemini/Dashscope 语音 API |
 | AUI Streaming Protocol | [docs/skills/aui-streaming-protocol.md](docs/skills/aui-streaming-protocol.md) | 实现或调试 Agent 实时流式 UI 更新 |

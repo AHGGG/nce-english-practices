@@ -22,3 +22,5 @@ node_modules/
 docs/voice/deepgram/examples
 
 docs/**/*_ignore.md
+test.db-shm
+test.db-wal

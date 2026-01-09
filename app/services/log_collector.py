@@ -210,6 +210,134 @@ class LogCollector:
             other_data = {k: v for k, v in entry.data.items() if k != "stack"}
             if other_data:
                 print(f"{Colors.DIM}  Data: {other_data}{Colors.RESET}")
+    
+    def get_recent_logs(
+        self, 
+        seconds: int = 60,
+        levels: list[LogLevel] = None,
+        sources: list[LogSource] = None
+    ) -> list[dict]:
+        """
+        Get recent log entries from the log file.
+        
+        Args:
+            seconds: Time window in seconds (default: 60)
+            levels: Filter by log levels (default: all levels)
+            sources: Filter by log sources (default: all sources)
+            
+        Returns:
+            List of log entries as dictionaries
+        """
+        import re
+        from pathlib import Path
+        
+        results = []
+        cutoff_time = datetime.now().timestamp() - seconds
+        
+        log_path = Path(self.LOG_FILE)
+        if not log_path.exists():
+            return results
+        
+        # Parse log file format: TIMESTAMP [SOURCE] [LEVEL] [CATEGORY] MESSAGE
+        # Example: 2026-01-09 22:00:00.123 [FE] [ERRO] [general ] Error message
+        log_pattern = re.compile(
+            r'^(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\.\d{3}) '
+            r'\[(\w{2})\] \[(\w{4})\] \[(\w+)\s*\] (.+)$'
+        )
+        
+        level_map = {
+            "DEBU": LogLevel.DEBUG,
+            "INFO": LogLevel.INFO,
+            "WARN": LogLevel.WARN,
+            "ERRO": LogLevel.ERROR,
+        }
+        
+        source_map = {
+            "FE": LogSource.FRONTEND,
+            "BA": LogSource.BACKEND,
+        }
+        
+        try:
+            with open(self.LOG_FILE, "r", encoding="utf-8") as f:
+                current_entry = None
+                current_data_lines = []
+                
+                for line in f:
+                    match = log_pattern.match(line.strip())
+                    
+                    if match:
+                        # Save previous entry if exists
+                        if current_entry:
+                            if current_data_lines:
+                                current_entry["data"] = "\n".join(current_data_lines)
+                            results.append(current_entry)
+                        
+                        # Parse new entry
+                        ts_str, src_code, lvl_code, cat, msg = match.groups()
+                        
+                        try:
+                            ts = datetime.strptime(ts_str, "%Y-%m-%d %H:%M:%S.%f")
+                        except ValueError:
+                            continue
+                        
+                        # Skip if outside time window
+                        if ts.timestamp() < cutoff_time:
+                            current_entry = None
+                            current_data_lines = []
+                            continue
+                        
+                        level = level_map.get(lvl_code, LogLevel.INFO)
+                        source = source_map.get(src_code, LogSource.BACKEND)
+                        
+                        # Apply filters
+                        if levels and level not in levels:
+                            current_entry = None
+                            current_data_lines = []
+                            continue
+                        
+                        if sources and source not in sources:
+                            current_entry = None
+                            current_data_lines = []
+                            continue
+                        
+                        current_entry = {
+                            "timestamp": ts.isoformat(),
+                            "source": source.value,
+                            "level": level.value,
+                            "category": cat.strip(),
+                            "message": msg,
+                        }
+                        current_data_lines = []
+                    
+                    elif current_entry and line.strip():
+                        # Continuation line (stack trace or data)
+                        current_data_lines.append(line.rstrip())
+                
+                # Don't forget the last entry
+                if current_entry:
+                    if current_data_lines:
+                        current_entry["data"] = "\n".join(current_data_lines)
+                    results.append(current_entry)
+                    
+        except Exception as e:
+            print(f"[LogCollector] Error reading log file: {e}")
+        
+        return results
+    
+    def get_recent_errors(self, seconds: int = 60) -> list[dict]:
+        """
+        Get recent error and warning logs from the log file.
+        
+        Args:
+            seconds: Time window in seconds (default: 60)
+            
+        Returns:
+            List of error/warning log entries as dictionaries
+        """
+        return self.get_recent_logs(
+            seconds=seconds,
+            levels=[LogLevel.ERROR, LogLevel.WARN]
+        )
 
 
 def detect_category(message: str, data: Optional[dict] = None) -> LogCategory:

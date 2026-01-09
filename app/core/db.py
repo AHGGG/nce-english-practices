@@ -32,3 +32,20 @@ async def get_db() -> AsyncGenerator[AsyncSession, None]:
             yield session
         finally:
             await session.close()
+
+
+async def get_db_health() -> bool:
+    """
+    Check database connectivity.
+    
+    Returns:
+        True if database is connected, False otherwise.
+    """
+    from sqlalchemy import text
+    
+    try:
+        async with AsyncSessionLocal() as session:
+            await session.execute(text("SELECT 1"))
+            return True
+    except Exception:
+        return False
