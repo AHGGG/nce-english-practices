@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { GlobalProvider } from './context/GlobalContext';
 import { DictionaryProvider } from './context/DictionaryContext';
 import PerformanceReport from './views/PerformanceReport';
+import StudyTimeDetail from './views/StudyTimeDetail';
 import VoiceLab from './views/VoiceLab';
 import AUIStreamingDemo from './views/AUIStreamingDemo';
 
@@ -30,6 +31,7 @@ function App() {
             <Route path="/lab/calibration" element={<LabCalibration />} />
             <Route path="/nav" element={<NavDashboard />} />
             <Route path="/performance" element={<PerformanceReport />} />
+            <Route path="/performance/time" element={<StudyTimeDetail />} />
             <Route path="/aui-stream-demo" element={<AUIStreamingDemo />} />
             <Route path="/review-queue" element={<ReviewQueue />} />
             <Route path="/profile-stats" element={<Navigate to="/performance" replace />} />

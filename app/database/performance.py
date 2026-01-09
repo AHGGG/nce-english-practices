@@ -110,6 +110,83 @@ async def get_performance_data(days: int = 30) -> Dict[str, Any]:
             }
 
 
+async def get_daily_study_time(days: int = 30) -> Dict[str, Any]:
+    """
+    Get daily study time breakdown for the last N days.
+    Groups by day and mode (sentence study, reading, voice).
+    """
+    async with AsyncSessionLocal() as session:
+        try:
+            cutoff = datetime.utcnow() - timedelta(days=days)
+            
+            # Helper to group by day (compatible with Postgres)
+            day_group = func.date_trunc('day', SentenceLearningRecord.created_at)
+            
+            # 1. Sentence Study by Day
+            sentence_stmt = (
+                select(
+                    func.date_trunc('day', SentenceLearningRecord.created_at).label('day'),
+                    func.sum(SentenceLearningRecord.dwell_time_ms)
+                )
+                .where(SentenceLearningRecord.created_at >= cutoff)
+                .group_by('day')
+                .order_by('day')
+            )
+            sentence_res = await session.execute(sentence_stmt)
+            sentence_days = {row[0].date().isoformat(): (row[1] or 0) // 1000 for row in sentence_res}
+            
+            # 2. Reading by Day
+            reading_stmt = (
+                select(
+                    func.date_trunc('day', ReadingSession.started_at).label('day'),
+                    func.sum(ReadingSession.total_active_seconds)
+                )
+                .where(ReadingSession.started_at >= cutoff)
+                .group_by('day')
+                .order_by('day')
+            )
+            reading_res = await session.execute(reading_stmt)
+            reading_days = {row[0].date().isoformat(): row[1] or 0 for row in reading_res}
+            
+            # 3. Voice by Day
+            voice_stmt = (
+                select(
+                    func.date_trunc('day', VoiceSession.started_at).label('day'),
+                    func.sum(VoiceSession.total_active_seconds)
+                )
+                .where(VoiceSession.started_at >= cutoff)
+                .group_by('day')
+                .order_by('day')
+            )
+            voice_res = await session.execute(voice_stmt)
+            voice_days = {row[0].date().isoformat(): row[1] or 0 for row in voice_res}
+            
+            # Merge all days
+            all_dates = sorted(list(set(list(sentence_days.keys()) + list(reading_days.keys()) + list(voice_days.keys()))))
+            
+            daily_data = []
+            for date_str in all_dates:
+                s_sec = sentence_days.get(date_str, 0)
+                r_sec = reading_days.get(date_str, 0)
+                v_sec = voice_days.get(date_str, 0)
+                daily_data.append({
+                    'date': date_str,
+                    'sentence_study': s_sec,
+                    'reading': r_sec,
+                    'voice': v_sec,
+                    'total': s_sec + r_sec + v_sec
+                })
+                
+            return {
+                'daily': daily_data,
+                'total_seconds': sum(d['total'] for d in daily_data)
+            }
+            
+        except Exception as e:
+            logger.exception("DB Error get_daily_study_time")
+            return {'daily': [], 'total_seconds': 0}
+
+
 async def get_memory_curve_data(user_id: str = "default_user") -> Dict[str, Any]:
     """
     Calculate retention rate at different time intervals using SM-2 review logs.
