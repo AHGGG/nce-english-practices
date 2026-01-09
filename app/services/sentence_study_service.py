@@ -113,48 +113,31 @@ Keep explanations in simple English. Format:
 
 
 EXPLAIN_PROMPTS = {
-    "default_word": '''Explain the word "{text}" as it is used in the following sentence context. 
-The explanation should be in English, clear and concise (2-3 sentences max).
-Focus on what the word means IN THIS SPECIFIC CONTEXT, not a general dictionary definition.
+    "default_word": '''Explain "{text}" in this context:
 
-Context:
 {context}
 
-The word to explain: "{text}"
+Respond in this EXACT format (each section on its own line):
 
-Please provide:
-1. A concise explanation of the meaning in this context.
-2. Two example sentences showing how to use this word in different contexts (different from the current one).
+📖 MEANING:
+[2-3 sentence explanation of what it means here]
 
-Format your response using markdown:
-## Meaning
-[Your explanation here]
+💡 EXAMPLES:
+- [Example sentence 1]
+- [Example sentence 2]''',
 
-## Examples
-1. [Example sentence 1]
-2. [Example sentence 2]''',
+    "default_phrase": '''Explain the phrase "{text}" in this context:
 
-    "default_phrase": '''Explain the phrase/expression "{text}" as it is used in the following sentence context.
-The explanation should be in English, clear and concise (2-3 sentences max).
-Focus on what this phrase/collocation means IN THIS SPECIFIC CONTEXT.
-If it's an idiomatic expression or common collocation, briefly mention that.
-
-Context:
 {context}
 
-The phrase to explain: "{text}"
+Respond in this EXACT format (each section on its own line):
 
-Please provide:
-1. A concise explanation of the meaning.
-2. Two example sentences showing how to use this phrase/expression in different contexts.
+📖 MEANING:
+[2-3 sentence explanation of what this phrase means here]
 
-Format your response using markdown:
-## Meaning
-[Your explanation here]
-
-## Examples
-1. [Example sentence 1]
-2. [Example sentence 2]''',
+💡 EXAMPLES:
+- [Example sentence 1]
+- [Example sentence 2]''',
 
     "simple": '''Explain the {item_type} "{text}" in the context of the sentence below.
 Explanation must be in SIMPLE ENGLISH, suitable for a beginner learner.

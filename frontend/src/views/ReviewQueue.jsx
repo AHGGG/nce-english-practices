@@ -267,7 +267,9 @@ const ReviewQueue = () => {
                             }
                         } catch {
                             // Plain text format from explain-word
-                            streamedText += data;
+                            // Decode [NL] markers back to newlines
+                            const decoded = data.replace(/\[NL\]/g, '\n');
+                            streamedText += decoded;
                             setHelpContent(streamedText);
                         }
                     }
@@ -563,7 +565,7 @@ const ReviewQueue = () => {
             </header>
 
             {/* Main content */}
-            <main className="flex-1 flex flex-col overflow-hidden">
+            <main className="flex-1 flex flex-col overflow-y-auto">
                 {loading ? (
                     <div className="flex-1 flex items-center justify-center">
                         <Loader2 className="w-8 h-8 animate-spin text-[#00FF94]" />
