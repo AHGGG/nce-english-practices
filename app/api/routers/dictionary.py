@@ -2,6 +2,7 @@ from fastapi import APIRouter, Response, HTTPException, Query
 from fastapi.concurrency import run_in_threadpool
 from pydantic import BaseModel
 import os
+from pathlib import Path
 import mimetypes
 from app.services.dictionary import dict_manager
 from app.services.llm import llm_service
@@ -26,11 +27,25 @@ async def get_dict_asset(file_path: str):
     """
     Unified endpoint for dictionary assets (CSS, JS, Images).
     """
+    # Security: Prevent path traversal
+    base_dir = Path("resources/dictionaries").resolve()
+    # If base_dir doesn't exist (e.g. in test envs), we might still want to proceed safely
+    # but resolve() usually handles non-existent paths by making them absolute.
+    # To be safe, let's assume if it exists we check against it, otherwise we check strict path containment.
+
+    # Note: resolve() on non-existent paths on Linux works fine.
+
+    requested_path = (base_dir / file_path).resolve()
+
+    if not requested_path.is_relative_to(base_dir):
+         # Log this security event?
+         logger.warning(f"Potential path traversal attempt: {file_path}")
+         raise HTTPException(status_code=403, detail="Access denied")
+
     # 1. Check disk
-    full_path = os.path.join(r"resources/dictionaries", file_path)
-    if os.path.exists(full_path) and os.path.isfile(full_path):
-        media_type, _ = mimetypes.guess_type(full_path)
-        with open(full_path, "rb") as f:
+    if requested_path.exists() and requested_path.is_file():
+        media_type, _ = mimetypes.guess_type(requested_path)
+        with open(requested_path, "rb") as f:
             content = f.read()
         return Response(content=content, media_type=media_type or "application/octet-stream")
 
