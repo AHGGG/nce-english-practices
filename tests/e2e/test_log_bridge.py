@@ -1,6 +1,8 @@
+import sys
 import pytest
 from playwright.sync_api import Page, expect
 
+@pytest.mark.skipif(sys.platform == "win32", reason="Playwright subprocess not supported with SelectorEventLoop on Windows")
 def test_log_bridge_stack_trace_second_arg(page: Page):
     """
     Test that logBridge sends stack trace when error is the second argument.

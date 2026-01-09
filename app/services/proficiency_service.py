@@ -184,24 +184,26 @@ class ProficiencyService:
 
         # 1. Batch Master
         if db_session:
-             await self._process_sweep_batch(db_session, user_id, swept_words)
+             # Session passed externally - use flush only, let caller control commit
+             await self._process_sweep_batch(db_session, user_id, swept_words, commit=False)
         else:
+             # We own the session - commit when done
              async with AsyncSessionLocal() as db:
-                 await self._process_sweep_batch(db, user_id, swept_words)
+                 await self._process_sweep_batch(db, user_id, swept_words, commit=True)
             
         # 2. Analyze Bands
         # Note: analyze_bands also needs update if we want full transactional integrity in test, 
         # but for now assume analyze_bands is read-only sufficient or we update it too.
         # Let's update analyze_bands call to pass session if analyze_bands supports it? 
         # For now, let's just make process_sweep work.
-        recommendation = await self.analyze_bands(user_id, swept_words, inspected_words)
+        recommendation = await self.analyze_bands(user_id, swept_words, inspected_words, db_session=db_session)
         
         return {
             "marked_count": len(swept_words),
             "recommendation": recommendation
         }
 
-    async def _process_sweep_batch(self, db: AsyncSession, user_id: str, swept_words: List[str]):
+    async def _process_sweep_batch(self, db: AsyncSession, user_id: str, swept_words: List[str], commit: bool = True):
         # Fetch existing records to minimize writes
         all_words = swept_words
         existing_stmt = select(WordProficiency).where(
@@ -229,27 +231,18 @@ class ProficiencyService:
         if new_records:
             db.add_all(new_records)
         
-        # Consistent behavior: commit if we created the session, OR if we are just a helper?
-        # If we passed db_session, usually we do NOT commit.
-        # BUT the original code committed.
-        # Let's check who called us.
-        # If db_session is None (we created session), we MUST commit.
-        # If db_session is passed, we probably should flush but NOT commit to let caller control transaction.
-        pass # The caller (or context manager closure) handles commit? 
-        # AsyncSessionLocal context manager DOES NOT auto-commit on exit unless configured?
-        # It usually just closes.
-        # So we must commit if we own it.
-        
-        # Refactoring approach:
-        # We need commit logic.
-        await db.commit() # This commits the transaction. If it's a test nested transaction, this might close it?
-        # If specific test setups use savepoints, commit() releases savepoint. That's fine.
+        # Control transaction: commit if we own the session, flush if caller controls it
+        if commit:
+            await db.commit()
+        else:
+            await db.flush()
 
     async def analyze_bands(
         self,
         user_id: str,
         swept_words: List[str],
-        inspected_words: List[str]
+        inspected_words: List[str],
+        db_session: Optional[AsyncSession] = None
     ) -> Optional[Dict[str, Any]]:
         """
         Analyze frequency bands of swept vs inspected words.
@@ -259,22 +252,24 @@ class ProficiencyService:
         if not all_words:
             return None
 
-        async with AsyncSessionLocal() as db:
-            # Get Ranks from a canonical book (e.g. COCA or the largest available)
-            # We'll just join with WordBookEntry regardless of book for now, 
-            # taking the min(sequence) if multiple books.
-            
-            from app.models.orm import WordBookEntry
-            from sqlalchemy import func
-            
-            # Use 'coca' book code primarily, or any
+        # Use provided session or create a new one
+        from app.models.orm import WordBookEntry
+        from sqlalchemy import func
+        
+        async def _query_ranks(db):
             stmt = (
                 select(WordBookEntry.word, func.min(WordBookEntry.sequence))
                 .where(WordBookEntry.word.in_(all_words))
                 .group_by(WordBookEntry.word)
             )
             result = await db.execute(stmt)
-            word_ranks = {row[0]: row[1] for row in result.all()}
+            return {row[0]: row[1] for row in result.all()}
+        
+        if db_session:
+            word_ranks = await _query_ranks(db_session)
+        else:
+            async with AsyncSessionLocal() as db:
+                word_ranks = await _query_ranks(db)
             
         # Buckets: 0-1000, 1000-2000, etc.
         buckets = {}
@@ -311,9 +306,6 @@ class ProficiencyService:
                 "reason": f"Low miss rate (<5%) in bands {sorted(recommended_bands)}"
             }
             
-        return None
-
-                
         return None
 
     async def analyze_calibration(

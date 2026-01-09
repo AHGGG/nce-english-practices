@@ -30,6 +30,10 @@ from tests.verification.utils import (
 def has_deepgram_key():
     if not settings.DEEPGRAM_API_KEY:
         pytest.skip("DEEPGRAM_API_KEY not configured")
+    # Also skip if not explicitly running integration tests to save credits/time
+    # This prevents 'uv run pytest' from hitting the API by default
+    if not os.environ.get("RUN_INTEGRATION_TESTS"):
+         pytest.skip("Skipping live Deepgram tests (set RUN_INTEGRATION_TESTS=1 to run)")
     return True
 
 

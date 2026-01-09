@@ -1,14 +1,15 @@
+import nest_asyncio
+import sys
 import pytest
 import asyncio
-import sys
-import nest_asyncio
+
+# Apply nest_asyncio to allow nested event loops (required for TestClient/AsyncClient on Windows)
+nest_asyncio.apply()
+
 from typing import AsyncGenerator
 from httpx import AsyncClient, ASGITransport
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncSession
-
-# Apply nest_asyncio to allow nested event loops (required for TestClient/AsyncClient on Windows)
-if sys.platform == "win32":
-    nest_asyncio.apply()
+from sqlalchemy import text
 
 import os
 
@@ -28,8 +29,10 @@ from app.main import app
 TEST_DATABASE_URL = "sqlite+aiosqlite:///./test.db"
 
 # Handle Windows Event Loop Policy globally
-# if sys.platform == "win32":
-#    asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
+if sys.platform == "win32":
+   # Use SelectorEventLoop explicitly to avoid Proactor issues with some drivers/tests
+   asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
+   pass
 
 # Override global settings
 # Override global settings
@@ -38,7 +41,7 @@ TEST_DATABASE_URL = "sqlite+aiosqlite:///./test.db"
 
 
 
-@pytest.fixture(scope="function")
+@pytest.fixture(scope="session")
 async def db_engine():
     """Create async engine and tables once per session."""
     # SQLite-specific args
@@ -47,6 +50,9 @@ async def db_engine():
     engine = create_async_engine(TEST_DATABASE_URL, echo=False, connect_args=connect_args)
     
     async with engine.begin() as conn:
+        # Enable WAL mode for SQLite (allows concurrent access)
+        if "sqlite" in TEST_DATABASE_URL:
+            await conn.execute(text("PRAGMA journal_mode=WAL"))
         # Reset DB state: Drop all and Create all
         await conn.run_sync(Base.metadata.drop_all)
         await conn.run_sync(Base.metadata.create_all)

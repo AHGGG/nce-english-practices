@@ -37,7 +37,8 @@ async def test_sweep_inference(db_session):
     result = await proficiency_service.process_sweep(
         user_id="default_user",
         swept_words=swept_words,
-        inspected_words=inspected_words
+        inspected_words=inspected_words,
+        db_session=db_session
     )
     
     # Validation
@@ -47,7 +48,14 @@ async def test_sweep_inference(db_session):
     assert 0 in rec["bands"] # Should recommend Band 0 (0-1000)
     assert 5000 not in rec["bands"] # Should NOT recommend Band 5000
     
-    # 2. Check DB status
-    # Verify 'easy0' is mastered
-    stats = await proficiency_service.get_word_stats("easy0", "default_user")
+    # 2. Check DB status using the test session directly
+    # (get_word_stats uses its own session and can't see uncommitted data)
+    from sqlalchemy import select
+    stmt = select(WordProficiency).where(
+        WordProficiency.user_id == "default_user",
+        WordProficiency.word == "easy0"
+    )
+    res = await db_session.execute(stmt)
+    stats = res.scalar_one_or_none()
+    assert stats is not None, "easy0 proficiency record not found"
     assert stats.status == "mastered"

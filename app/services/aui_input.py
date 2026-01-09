@@ -68,6 +68,11 @@ class AUIInputService:
             except asyncio.CancelledError:
                 pass
             self._listener_task = None
+        
+        # CLEAR QUEUES: Queues are bound to the event loop.
+        # Since we are stopping, the loop might be closing.
+        # We must clear them to force recreation on next start with new loop.
+        self._waiting_queues.clear()
 
     async def _listen_loop(self):
         """
