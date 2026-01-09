@@ -102,13 +102,19 @@ const PerformanceReport = () => {
             {/* KPI Cards Row */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
                 {/* Study Time Card */}
-                <div className="bg-bg-paper border border-ink-faint p-4 md:p-6 shadow-hard relative group hover:border-neon-cyan transition-colors">
+                <div 
+                    onClick={() => navigate('/performance/time')}
+                    className="bg-bg-paper border border-ink-faint p-4 md:p-6 shadow-hard relative group hover:border-neon-cyan transition-colors cursor-pointer"
+                >
                     <div className="absolute top-0 right-0 w-6 h-6 border-t-2 border-r-2 border-neon-cyan/30"></div>
                     <Clock className="text-neon-cyan opacity-70 mb-2" size={20} />
                     <div className="text-2xl md:text-3xl font-mono font-bold text-neon-cyan mb-1">
                         {formatDuration(study_time?.total_minutes || 0)}
                     </div>
                     <div className="text-sm font-serif text-ink">学习时长</div>
+                    <div className="absolute bottom-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <div className="text-[10px] font-mono text-neon-cyan">DETAILS {'>>'}</div>
+                    </div>
                 </div>
 
                 {/* Reading Words Card */}

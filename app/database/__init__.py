@@ -11,7 +11,7 @@ from .core import (
     WordProficiency,
     SentenceLearningRecord
 )
-from .performance import get_performance_data, get_memory_curve_data
+from .performance import get_performance_data, get_memory_curve_data, get_daily_study_time
 from .reading import (
     get_reading_stats, 
     start_reading_session, 
