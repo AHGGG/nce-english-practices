@@ -50,6 +50,11 @@ const api = {
         const res = await fetch(`/api/review/stats?user_id=${userId}`);
         if (!res.ok) throw new Error('Failed to fetch stats');
         return res.json();
+    },
+    async getContext(itemId) {
+        const res = await fetch(`/api/review/context/${itemId}`);
+        if (!res.ok) throw new Error('Failed to fetch context');
+        return res.json();
     }
 };
 
@@ -129,6 +134,11 @@ const ReviewQueue = () => {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [lastResult, setLastResult] = useState(null);
     const [isRandomMode, setIsRandomMode] = useState(false);
+    
+    // Context state
+    const [contextData, setContextData] = useState(null);
+    const [showContext, setShowContext] = useState(false);
+    const [loadingContext, setLoadingContext] = useState(false);
 
 
     // Help panel state
@@ -173,6 +183,8 @@ const ReviewQueue = () => {
             setIsRandomMode(true);
             setCurrentIndex(0);
             setLastResult(null);
+            setContextData(null);
+            setShowContext(false);
         } catch (e) {
             console.error('Failed to start random review:', e);
         } finally {
@@ -219,10 +231,12 @@ const ReviewQueue = () => {
             const result = await api.complete(currentItem.id, quality);
             setLastResult(result);
 
-            // Reset help panel state
+            // Reset help panel and context state
             setShowHelpPanel(false);
             setHelpStage(1);
             setHelpContent('');
+            setContextData(null);
+            setShowContext(false);
 
             // Move to next item or finish
             if (currentIndex < queue.length - 1) {
@@ -353,6 +367,30 @@ const ReviewQueue = () => {
         await handleRating(1);
     }, [handleRating]);
 
+    // Toggle context visibility
+    const toggleContext = useCallback(async () => {
+        if (showContext) {
+            setShowContext(false);
+            return;
+        }
+
+        if (contextData) {
+            setShowContext(true);
+            return;
+        }
+
+        setLoadingContext(true);
+        try {
+            const data = await api.getContext(currentItem.id);
+            setContextData(data);
+            setShowContext(true);
+        } catch (e) {
+            console.error('Failed to fetch context:', e);
+        } finally {
+            setLoadingContext(false);
+        }
+    }, [currentItem, contextData, showContext]);
+
     // Refresh queue
     const refreshQueue = useCallback(async () => {
         setLoading(true);
@@ -366,6 +404,8 @@ const ReviewQueue = () => {
             setStats(statsData);
             setCurrentIndex(0);
             setLastResult(null);
+            setContextData(null);
+            setShowContext(false);
         } catch (e) {
             console.error('Failed to refresh:', e);
         } finally {
@@ -442,21 +482,64 @@ const ReviewQueue = () => {
                 {/* Card */}
                 <div className="flex-1 flex flex-col border border-[#333] bg-[#0A0A0A]">
                     {/* Source tag */}
-                    <div className="px-4 py-2 border-b border-[#222] flex items-center gap-2 text-xs">
-                        <span className="px-2 py-0.5 bg-[#00FF94]/10 text-[#00FF94] rounded">
-                            📖 {bookName.slice(0, 20)}...
-                        </span>
-                        <span className="px-2 py-0.5 bg-purple-500/10 text-purple-400 rounded">
-                            🏷️ {getGapTypeInfo(currentItem.difficulty_type).shortLabel}
-                        </span>
+                    <div className="px-4 py-2 border-b border-[#222] flex items-center justify-between text-xs">
+                        <div className="flex items-center gap-2">
+                            <span className="px-2 py-0.5 bg-[#00FF94]/10 text-[#00FF94] rounded">
+                                📖 {bookName.slice(0, 20)}...
+                            </span>
+                            <span className="px-2 py-0.5 bg-purple-500/10 text-purple-400 rounded">
+                                🏷️ {getGapTypeInfo(currentItem.difficulty_type).shortLabel}
+                            </span>
+                        </div>
+                        
+                        {/* Context Toggle Button */}
+                        <button 
+                            onClick={toggleContext}
+                            disabled={loadingContext}
+                            className={`
+                                flex items-center gap-1 px-2 py-0.5 rounded transition-colors
+                                ${showContext 
+                                    ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30' 
+                                    : 'bg-[#222] text-[#888] hover:text-white border border-transparent'}
+                            `}
+                        >
+                            {loadingContext ? (
+                                <Loader2 className="w-3 h-3 animate-spin" />
+                            ) : (
+                                <BookOpen className="w-3 h-3" />
+                            )}
+                            <span>上下文</span>
+                        </button>
                     </div>
 
-                    {/* Sentence */}
+                    {/* Context View (Expanded) */}
+                    {showContext && contextData && (
+                        <div className="px-6 py-4 bg-[#111] border-b border-[#222] text-sm leading-relaxed text-[#888]">
+                            {contextData.previous_sentence && (
+                                <p className="mb-2 opacity-60">{contextData.previous_sentence}</p>
+                            )}
+                            <div className="pl-2 border-l-2 border-blue-500/50 my-2 text-[#E0E0E0]">
+                                <HighlightedSentence
+                                    text={contextData.target_sentence}
+                                    highlights={currentItem.highlighted_items || []}
+                                />
+                            </div>
+                            {contextData.next_sentence && (
+                                <p className="mt-2 opacity-60">{contextData.next_sentence}</p>
+                            )}
+                        </div>
+                    )}
+
+                    {/* Sentence (Main View) - Only show if context is NOT shown (or show both? user preference: show both feels redundant but safe) */}
+                    {/* Decision: If context is shown, we still show the main big card because that's the "Flashcard". 
+                        The context is supplementary at the top. 
+                        Actually, let's keep the main sentence prominent. */}
+                        
                     <div
                         className="flex-1 flex items-center justify-center p-6 md:p-10 cursor-pointer"
                         onClick={() => playAudio(currentItem.sentence_text)}
                     >
-                        <p className="font-serif text-xl md:text-2xl text-white leading-relaxed text-left w-full">
+                        <p className={`font-serif text-xl md:text-2xl text-white leading-relaxed text-left w-full ${showContext ? 'opacity-50' : ''}`}>
                             <HighlightedSentence
                                 text={currentItem.sentence_text}
                                 highlights={currentItem.highlighted_items || []}
