@@ -3,6 +3,7 @@ Tests for Sentence Study API endpoints (ASL - Adaptive Sentence Learning).
 """
 import pytest
 from httpx import AsyncClient
+from unittest.mock import AsyncMock, MagicMock, patch
 
 
 @pytest.mark.asyncio
@@ -168,3 +169,62 @@ async def test_get_study_highlights(client: AsyncClient):
     assert data["studied_count"] == 2
     assert data["clear_count"] == 1
     assert data["is_complete"] is True
+
+@pytest.mark.asyncio
+async def test_detect_collocations_with_keyword(client: AsyncClient):
+    """
+    Test that detect-collocations endpoint correctly parses key_word from LLM response.
+    """
+    
+    # Mock response from LLM
+    mock_llm_response_content = """
+    [
+        {
+            "text": "sit down",
+            "key_word": "sit",
+            "start_word_idx": 0,
+            "end_word_idx": 1
+        },
+        {
+            "text": "look forward to",
+            "key_word": "look",
+            "start_word_idx": 4,
+            "end_word_idx": 6
+        }
+    ]
+    """
+    
+    # Setup the mock
+    mock_completion = MagicMock()
+    mock_completion.choices = [
+        MagicMock(message=MagicMock(content=mock_llm_response_content))
+    ]
+    
+    # We need to patch where llm_service is used.
+    # In app/api/routers/sentence_study.py, it imports llm_service from app.services.llm
+    with patch("app.services.llm.llm_service.async_client.chat.completions.create", new_callable=AsyncMock) as mock_create:
+        mock_create.return_value = mock_completion
+        
+        response = await client.post("/api/sentence-study/detect-collocations", json={
+            "sentence": "Sit down and look forward to the show."
+        })
+        
+        assert response.status_code == 200
+        data = response.json()
+        
+        collocations = data["collocations"]
+        assert len(collocations) == 2
+        
+        # Verify first collocation
+        c1 = collocations[0]
+        assert c1["text"] == "sit down"
+        assert c1["key_word"] == "sit"
+        assert c1["start_word_idx"] == 0
+        assert c1["end_word_idx"] == 1
+        
+        # Verify second collocation
+        c2 = collocations[1]
+        assert c2["text"] == "look forward to"
+        assert c2["key_word"] == "look"
+        assert c2["start_word_idx"] == 4
+        assert c2["end_word_idx"] == 6

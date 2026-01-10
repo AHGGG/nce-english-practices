@@ -324,7 +324,7 @@ const SentenceStudy = () => {
     }, []);
 
     // Track word/phrase clicks and delegate to hook
-    const handleWordClick = useCallback((word, sentence) => {
+    const handleWordClick = useCallback((word, sentence, keyWord) => {
         if (!word) return;
         const cleanWord = word.toLowerCase().trim();
         if (cleanWord.length < 2) return;
@@ -339,7 +339,7 @@ const SentenceStudy = () => {
         }
 
         // Delegate to shared hook for inspector logic
-        baseHandleWordClick(cleanWord, sentence || flatSentences[currentIndex]?.text || '');
+        baseHandleWordClick(cleanWord, sentence || flatSentences[currentIndex]?.text || '', keyWord);
     }, [wordClicks, phraseClicks, baseHandleWordClick, flatSentences, currentIndex]);
 
     const handleClear = useCallback(async () => {

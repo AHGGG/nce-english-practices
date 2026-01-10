@@ -130,6 +130,7 @@ const MemoizedSentence = memo(function MemoizedSentence({
                 <span
                     key={`coll-${collocInfo.start_word_idx}`}
                     data-word={phraseText}
+                    data-key-word={collocInfo.key_word}
                     data-sentence={text}
                     data-collocation="true"
                     className={phraseClassName}

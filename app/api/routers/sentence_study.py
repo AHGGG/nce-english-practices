@@ -544,19 +544,20 @@ Word list with indices:
 
 Return a JSON array of detected collocations. For each, provide:
 - "text": the exact collocation text
+- "key_word": the most important word (headword/lemma) to look up in a dictionary for this phrase
 - "start_word_idx": starting word index
 - "end_word_idx": ending word index (inclusive)
 
 Examples of collocations to detect:
-- Phrasal verbs: "sit down", "give up", "look forward to"
-- Fixed expressions: "in terms of", "as a result", "take advantage of"
-- Common combinations: "make a decision", "pay attention", "climate change"
+- Phrasal verbs: "sit down" (key_word: "sit"), "give up" (key_word: "give"), "look forward to" (key_word: "look")
+- Fixed expressions: "in terms of" (key_word: "term"), "as a result" (key_word: "result"), "take advantage of" (key_word: "advantage")
+- Common combinations: "make a decision" (key_word: "decision"), "pay attention" (key_word: "attention"), "climate change" (key_word: "climate")
 
 IMPORTANT: Do NOT return overlapping collocations. If a word is part of multiple potential collocations, choose the longest or most meaningful one.
 For example, "a barrage of" is better than separate "a barrage" and "barrage of".
 
 Return ONLY the JSON array, no explanation. If no collocations found, return [].
-Example output: [{{"text": "sit down", "start_word_idx": 2, "end_word_idx": 3}}]"""
+Example output: [{{"text": "sit down", "key_word": "sit", "start_word_idx": 2, "end_word_idx": 3}}]"""
 
     try:
         response = await llm_service.async_client.chat.completions.create(
@@ -635,6 +636,7 @@ Word list with indices:
 
 Return a JSON array of detected collocations. For each, provide:
 - "text": the exact collocation text
+- "key_word": the most important word (headword/lemma) to look up in a dictionary for this phrase
 - "start_word_idx": starting word index
 - "end_word_idx": ending word index (inclusive)
 
@@ -656,7 +658,7 @@ Return ONLY the JSON array, no explanation. If no collocations found, return [].
         
         collocations = json.loads(content)
         valid_collocations = [
-            {"text": c["text"], "start_word_idx": c["start_word_idx"], "end_word_idx": c["end_word_idx"]}
+            {"text": c["text"], "key_word": c.get("key_word"), "start_word_idx": c["start_word_idx"], "end_word_idx": c["end_word_idx"]}
             for c in collocations
             if all(k in c for k in ["text", "start_word_idx", "end_word_idx"])
         ]

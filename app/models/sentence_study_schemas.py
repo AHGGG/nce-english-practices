@@ -133,6 +133,7 @@ class DetectCollocationsRequest(BaseModel):
 class CollocationItem(BaseModel):
     """A detected collocation/phrase."""
     text: str  # The collocation text, e.g. "sit down"
+    key_word: Optional[str] = None # The key word of the phrase for dictionary lookup, e.g. "sit"
     start_word_idx: int  # Start word index (0-based)
     end_word_idx: int  # End word index (inclusive)
 

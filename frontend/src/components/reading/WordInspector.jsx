@@ -110,30 +110,28 @@ const WordInspector = ({
                         </div>
                     )}
 
-                    {/* Dictionary section - only show for single words, not phrases */}
-                    {!isPhrase && (
-                        <>
-                            {isInspecting ? (
-                                <div className="flex flex-col items-center justify-center py-8 text-[#666] space-y-3">
-                                    <Loader2 className="w-6 h-6 animate-spin text-[#00FF94]" />
-                                    <span className="text-xs uppercase tracking-widest font-mono">Consulting Dictionary...</span>
-                                </div>
-                            ) : inspectorData?.found && inspectorData?.entries?.length > 0 ? (
-                                <DictionaryResults
-                                    word={selectedWord}
-                                    source="LDOCE"
-                                    entries={inspectorData.entries}
-                                />
-                            ) : inspectorData?.found === false ? (
-                                <div className="text-[#888] text-center py-8">
-                                    <p className="text-lg mb-2 font-serif">Word not found</p>
-                                    <p className="text-sm font-mono">"{selectedWord}" is not in LDOCE dictionary.</p>
-                                </div>
-                            ) : (
-                                <div className="text-[#FF0055] text-center text-sm py-8 font-mono">Failed to load definition</div>
-                            )}
-                        </>
-                    )}
+                    {/* Dictionary section - show for both single words and phrases */}
+                    <>
+                        {isInspecting ? (
+                            <div className="flex flex-col items-center justify-center py-8 text-[#666] space-y-3">
+                                <Loader2 className="w-6 h-6 animate-spin text-[#00FF94]" />
+                                <span className="text-xs uppercase tracking-widest font-mono">Consulting Dictionary...</span>
+                            </div>
+                        ) : inspectorData?.found && inspectorData?.entries?.length > 0 ? (
+                            <DictionaryResults
+                                word={selectedWord}
+                                source="LDOCE"
+                                entries={inspectorData.entries}
+                            />
+                        ) : inspectorData?.found === false ? (
+                            <div className="text-[#888] text-center py-8">
+                                <p className="text-lg mb-2 font-serif">Word not found</p>
+                                <p className="text-sm font-mono">"{selectedWord}" is not in LDOCE dictionary.</p>
+                            </div>
+                        ) : (
+                            <div className="text-[#FF0055] text-center text-sm py-8 font-mono">Failed to load definition</div>
+                        )}
+                    </>
                 </div>
 
                 {/* Footer Actions */}

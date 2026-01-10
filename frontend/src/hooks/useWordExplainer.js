@@ -13,6 +13,7 @@ import { parseTextSSEStream } from '../utils/sseParser';
 export function useWordExplainer() {
     // State
     const [selectedWord, setSelectedWord] = useState(null);
+    const [lookupWord, setLookupWord] = useState(null); // The word to actually look up in dictionary
     const [isPhrase, setIsPhrase] = useState(false);
     const [inspectorData, setInspectorData] = useState(null);
     const [isInspecting, setIsInspecting] = useState(false);
@@ -29,11 +30,9 @@ export function useWordExplainer() {
     // Request ID ref for cancelling stale streaming requests
     const explainRequestIdRef = useRef(0);
 
-    // Fetch dictionary data when selectedWord changes (only for single words)
+    // Fetch dictionary data when lookupWord changes
     useEffect(() => {
-        const wordIsPhrase = selectedWord?.includes(' ') || false;
-        
-        if (!selectedWord || wordIsPhrase) {
+        if (!lookupWord) {
             setInspectorData(null);
             setIsInspecting(false);
             return;
@@ -44,9 +43,38 @@ export function useWordExplainer() {
 
         const fetchData = async () => {
             try {
-                const res = await fetch(`/api/dictionary/ldoce/${encodeURIComponent(selectedWord)}`);
+                // 1. Try initial lookup (either keyWord or full phrase)
+                let res = await fetch(`/api/dictionary/ldoce/${encodeURIComponent(lookupWord)}`);
+                let data = null;
+                
                 if (!cancelled && res.ok) {
-                    const data = await res.json();
+                    data = await res.json();
+                }
+
+                // 2. Heuristic Fallback: If not found and it's a phrase, try to find a key word
+                if ((!data || !data.found) && lookupWord.includes(' ')) {
+                    // Split phrase and filter stop words
+                    const stopWords = new Set(['of', 'the', 'a', 'an', 'in', 'on', 'at', 'to', 'for', 'with', 'by', 'and', 'or', 'is', 'are']);
+                    const tokens = lookupWord.split(/[^a-zA-Z0-9-]/).filter(t => t && t.length > 2);
+                    const candidates = tokens.filter(t => !stopWords.has(t.toLowerCase()));
+                    
+                    // Sort by length descending (longest words are usually most significant)
+                    candidates.sort((a, b) => b.length - a.length);
+                    
+                    if (candidates.length > 0) {
+                        const fallbackWord = candidates[0];
+                        
+                        const fallbackRes = await fetch(`/api/dictionary/ldoce/${encodeURIComponent(fallbackWord)}`);
+                        if (!cancelled && fallbackRes.ok) {
+                            const fallbackData = await fallbackRes.json();
+                            if (fallbackData.found) {
+                                data = fallbackData;
+                            }
+                        }
+                    }
+                }
+
+                if (!cancelled && data) {
                     setInspectorData(data);
                 }
             } catch (e) {
@@ -58,7 +86,7 @@ export function useWordExplainer() {
 
         fetchData();
         return () => { cancelled = true; };
-    }, [selectedWord]);
+    }, [lookupWord]);
 
     // Stream context explanation when selectedWord changes
     useEffect(() => {
@@ -109,7 +137,7 @@ export function useWordExplainer() {
     }, [selectedWord, currentSentenceContext, explainStyle, extraContext]);
 
     // Handle word/phrase click
-    const handleWordClick = useCallback((word, sentence) => {
+    const handleWordClick = useCallback((word, sentence, keyWord) => {
         if (!word) return;
         const cleanWord = word.toLowerCase().trim();
         if (cleanWord.length < 2) return;
@@ -121,12 +149,20 @@ export function useWordExplainer() {
         setCurrentSentenceContext(sentence || '');
         setContextExplanation('');
         setExplainStyle('default');
+        
         setSelectedWord(cleanWord);
+        
+        // If a specific key word was provided (from backend collocation detection), use it
+        // Otherwise use the clicked word/phrase itself
+        const wordToLookup = keyWord && keyWord.trim() ? keyWord.toLowerCase().trim() : cleanWord;
+        setLookupWord(wordToLookup);
+        
     }, []);
 
     // Close inspector
     const closeInspector = useCallback(() => {
         setSelectedWord(null);
+        setLookupWord(null);
         setInspectorData(null);
         setContextExplanation('');
         setIsPhrase(false);

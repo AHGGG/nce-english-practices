@@ -80,7 +80,8 @@ const StudyingView = ({
                         className="font-serif text-xl md:text-2xl leading-relaxed text-left p-6 md:p-8 border border-[#333] bg-[#0A0A0A] select-text rounded-lg shadow-[0_0_30px_rgba(0,255,148,0.05)]"
                         onClick={(e) => {
                             const word = e.target.dataset?.word;
-                            if (word) onWordClick(word.toLowerCase(), currentSentence?.text || '');
+                            const keyWord = e.target.dataset?.keyWord;
+                            if (word) onWordClick(word.toLowerCase(), currentSentence?.text || '', keyWord);
                         }}
                     >
                         {currentSentence ? (
