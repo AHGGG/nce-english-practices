@@ -139,7 +139,7 @@ const SentenceInspector = ({
             ></div>
 
             {/* Panel */}
-            <div className="pointer-events-auto relative w-full md:w-[480px] bg-[#0A0A0A] border-t md:border border-[#333] md:shadow-[4px_4px_0px_0px_rgba(0,255,148,0.2)] overflow-hidden flex flex-col max-h-[85vh]">
+            <div className="pointer-events-auto relative w-full md:w-[480px] bg-[#0A0A0A] border-t md:border border-[#333] md:shadow-[4px_4px_0px_0px_rgba(0,255,148,0.2)] overflow-hidden flex flex-col h-[85dvh] lg:h-auto lg:max-h-[85vh]">
                 {/* Header */}
                 <div className="p-4 border-b border-[#333] bg-[#111] shrink-0">
                     <div className="flex items-center justify-between mb-3">
