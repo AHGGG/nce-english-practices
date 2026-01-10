@@ -1,6 +1,7 @@
 """
 Context Router - API endpoints for context resources and learning progress.
 """
+
 from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import StreamingResponse
@@ -11,7 +12,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.db import get_db
 from app.models.context_schemas import (
     ContextType,
-    LearningStatus,
     ContextResource,
     ContextResourceWithAudio,
     WordContextProgress,
@@ -38,7 +38,7 @@ async def get_word_contexts(
     Optionally filter by context type.
     """
     contexts = await context_service.get_contexts_for_word(word, db, context_type)
-    
+
     # Add audio endpoint info
     return [
         ContextResourceWithAudio(
@@ -65,14 +65,14 @@ async def extract_and_save_contexts(
     Optionally save to database (default: True).
     """
     contexts = await context_service.extract_from_dictionary(word)
-    
+
     if not contexts:
         return []
-    
+
     if save:
         saved = await context_service.save_contexts(contexts, db)
         return saved
-    
+
     return contexts
 
 
@@ -91,19 +91,19 @@ async def get_context_audio(
     Returns MP3 audio stream.
     """
     context = await context_service.get_context_by_id(context_id, db)
-    
+
     if not context:
         raise HTTPException(status_code=404, detail="Context not found")
-    
+
     audio_bytes = await context_service.generate_tts(context.text_content, voice)
-    
+
     return StreamingResponse(
         io.BytesIO(audio_bytes),
         media_type="audio/mpeg",
         headers={
             "Content-Disposition": f"inline; filename=context_{context_id}.mp3",
             "Cache-Control": "public, max-age=3600",  # Cache for 1 hour
-        }
+        },
     )
 
 
@@ -123,14 +123,14 @@ async def update_learning_status(
     context = await context_service.get_context_by_id(context_id, db)
     if not context:
         raise HTTPException(status_code=404, detail="Context not found")
-    
+
     record = await context_service.update_learning_status(
         context_id=context_id,
         user_id=request.user_id,
         status=request.status,
         db=db,
     )
-    
+
     return {
         "success": True,
         "record": record,
@@ -168,8 +168,8 @@ async def get_context_by_id(
     Get a single context resource by its ID.
     """
     context = await context_service.get_context_by_id(context_id, db)
-    
+
     if not context:
         raise HTTPException(status_code=404, detail="Context not found")
-    
+
     return context

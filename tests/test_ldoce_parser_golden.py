@@ -36,14 +36,14 @@ GOLDEN_DIR = Path("resources/test_data/ldoce_golden")
 #   - water: pronunciation variants (AmE/BrE)
 #   - assassin: etymology
 GOLDEN_WORDS = [
-    "hoist",     # baseline: verb+noun, grammar
-    "run",       # multi-sense, verb_table
-    "look",      # phrasal verbs
-    "give",      # complex grammar
-    "happy",     # adjective, thesaurus
-    "make",      # collocations
-    "beautiful", # hyphenation
-    "water",     # pronunciation
+    "hoist",  # baseline: verb+noun, grammar
+    "run",  # multi-sense, verb_table
+    "look",  # phrasal verbs
+    "give",  # complex grammar
+    "happy",  # adjective, thesaurus
+    "make",  # collocations
+    "beautiful",  # hyphenation
+    "water",  # pronunciation
     "assassin",  # etymology
 ]
 
@@ -74,8 +74,7 @@ def save_current_output(word: str, result: Dict[str, Any]):
     """Save current parser output for debugging."""
     json_path = GOLDEN_DIR / f"{word}_current.json"
     json_path.write_text(
-        json.dumps(result, ensure_ascii=False, indent=2),
-        encoding="utf-8"
+        json.dumps(result, ensure_ascii=False, indent=2), encoding="utf-8"
     )
 
 
@@ -85,35 +84,42 @@ def compare_fields(expected: Dict, actual: Dict, path: str = "") -> List[str]:
     Returns list of differences.
     """
     diffs = []
-    
+
     for key, expected_val in expected.items():
         full_path = f"{path}.{key}" if path else key
-        
+
         if key not in actual:
             diffs.append(f"MISSING: {full_path}")
             continue
-        
+
         actual_val = actual[key]
-        
+
         if isinstance(expected_val, dict) and isinstance(actual_val, dict):
             diffs.extend(compare_fields(expected_val, actual_val, full_path))
         elif isinstance(expected_val, list) and isinstance(actual_val, list):
             if len(expected_val) != len(actual_val):
-                diffs.append(f"LENGTH MISMATCH: {full_path} (expected {len(expected_val)}, got {len(actual_val)})")
+                diffs.append(
+                    f"LENGTH MISMATCH: {full_path} (expected {len(expected_val)}, got {len(actual_val)})"
+                )
             for i, (exp_item, act_item) in enumerate(zip(expected_val, actual_val)):
                 if isinstance(exp_item, dict) and isinstance(act_item, dict):
-                    diffs.extend(compare_fields(exp_item, act_item, f"{full_path}[{i}]"))
+                    diffs.extend(
+                        compare_fields(exp_item, act_item, f"{full_path}[{i}]")
+                    )
                 elif exp_item != act_item:
                     diffs.append(f"VALUE MISMATCH: {full_path}[{i}]")
         elif expected_val != actual_val:
-            diffs.append(f"VALUE MISMATCH: {full_path} (expected '{expected_val}', got '{actual_val}')")
-    
+            diffs.append(
+                f"VALUE MISMATCH: {full_path} (expected '{expected_val}', got '{actual_val}')"
+            )
+
     return diffs
 
 
 # ============================================================
 # CRITICAL FIELD TESTS - These must always pass
 # ============================================================
+
 
 class TestLDOCEParserCriticalFields:
     """Tests for critical dictionary fields that should never be missing."""
@@ -135,21 +141,21 @@ class TestLDOCEParserCriticalFields:
         """Every entry should have a headword."""
         result = parse_word(word)
         for i, entry in enumerate(result.entries):
-            assert entry.headword, f"Entry {i+1} should have headword"
+            assert entry.headword, f"Entry {i + 1} should have headword"
 
     @pytest.mark.parametrize("word", ["hoist"])
     def test_entries_have_part_of_speech(self, word: str):
         """Every entry should have part of speech."""
         result = parse_word(word)
         for i, entry in enumerate(result.entries):
-            assert entry.part_of_speech, f"Entry {i+1} should have part_of_speech"
+            assert entry.part_of_speech, f"Entry {i + 1} should have part_of_speech"
 
     @pytest.mark.parametrize("word", ["hoist"])
     def test_entries_have_senses(self, word: str):
         """Every entry should have at least one sense."""
         result = parse_word(word)
         for i, entry in enumerate(result.entries):
-            assert len(entry.senses) > 0, f"Entry {i+1} should have senses"
+            assert len(entry.senses) > 0, f"Entry {i + 1} should have senses"
 
     @pytest.mark.parametrize("word", ["hoist"])
     def test_senses_have_definition(self, word: str):
@@ -157,7 +163,9 @@ class TestLDOCEParserCriticalFields:
         result = parse_word(word)
         for i, entry in enumerate(result.entries):
             for j, sense in enumerate(entry.senses):
-                assert sense.definition, f"Entry {i+1} Sense {j+1} should have definition"
+                assert sense.definition, (
+                    f"Entry {i + 1} Sense {j + 1} should have definition"
+                )
 
     @pytest.mark.parametrize("word", ["hoist"])
     def test_senses_have_chinese_translation(self, word: str):
@@ -165,47 +173,64 @@ class TestLDOCEParserCriticalFields:
         result = parse_word(word)
         for i, entry in enumerate(result.entries):
             for j, sense in enumerate(entry.senses):
-                assert sense.definition_cn, f"Entry {i+1} Sense {j+1} should have definition_cn"
+                assert sense.definition_cn, (
+                    f"Entry {i + 1} Sense {j + 1} should have definition_cn"
+                )
 
 
 # ============================================================
 # GRAMMAR FIELD TESTS - Known issue being fixed
 # ============================================================
 
+
 class TestLDOCEParserGrammar:
     """Tests for grammar field extraction."""
 
-    @pytest.mark.parametrize("word,entry_idx,expected_pos,expected_grammar_pattern", [
-        # hoist verb entry - should have [transitive]
-        ("hoist", 0, "verb", r"\[transitive\]"),
-        # hoist noun entry - should have [countable] or [usually singular]
-        ("hoist", 1, "noun", r"\[countable\]|\[usually singular\]"),
-        # run verb - [intransitive]
-        ("run", 0, "verb", r"\[intransitive\]"),
-        # give verb - [intransitive, transitive]
-        ("give", 0, "verb", r"\[intransitive.*transitive\]|\[transitive\]"),
-        # make verb - [transitive]
-        ("make", 0, "verb", r"\[transitive\]"),
-        # water noun - [uncountable]
-        ("water", 0, "noun", r"\[uncountable\]"),
-    ])
-    def test_grammar_extraction(self, word: str, entry_idx: int, expected_pos: str, expected_grammar_pattern: str):
+    @pytest.mark.parametrize(
+        "word,entry_idx,expected_pos,expected_grammar_pattern",
+        [
+            # hoist verb entry - should have [transitive]
+            ("hoist", 0, "verb", r"\[transitive\]"),
+            # hoist noun entry - should have [countable] or [usually singular]
+            ("hoist", 1, "noun", r"\[countable\]|\[usually singular\]"),
+            # run verb - [intransitive]
+            ("run", 0, "verb", r"\[intransitive\]"),
+            # give verb - [intransitive, transitive]
+            ("give", 0, "verb", r"\[intransitive.*transitive\]|\[transitive\]"),
+            # make verb - [transitive]
+            ("make", 0, "verb", r"\[transitive\]"),
+            # water noun - [uncountable]
+            ("water", 0, "noun", r"\[uncountable\]"),
+        ],
+    )
+    def test_grammar_extraction(
+        self,
+        word: str,
+        entry_idx: int,
+        expected_pos: str,
+        expected_grammar_pattern: str,
+    ):
         """Grammar labels should be correctly extracted."""
         import re
+
         result = parse_word(word)
-        
-        assert len(result.entries) > entry_idx, f"Expected at least {entry_idx+1} entries"
+
+        assert len(result.entries) > entry_idx, (
+            f"Expected at least {entry_idx + 1} entries"
+        )
         entry = result.entries[entry_idx]
-        
-        assert entry.part_of_speech == expected_pos, f"Expected POS '{expected_pos}', got '{entry.part_of_speech}'"
-        
+
+        assert entry.part_of_speech == expected_pos, (
+            f"Expected POS '{expected_pos}', got '{entry.part_of_speech}'"
+        )
+
         # Check if any sense has the expected grammar pattern
         found_grammar = False
         for sense in entry.senses:
             if sense.grammar and re.search(expected_grammar_pattern, sense.grammar):
                 found_grammar = True
                 break
-        
+
         # If not in senses, check entry-level grammar (future enhancement)
         if not found_grammar:
             # For now, this test will fail for verb entry, documenting the known issue
@@ -219,6 +244,7 @@ class TestLDOCEParserGrammar:
 # EXTENDED DATA TESTS - Etymology, Thesaurus, etc.
 # ============================================================
 
+
 class TestLDOCEParserExtendedData:
     """Tests for extended dictionary data (when available)."""
 
@@ -227,24 +253,28 @@ class TestLDOCEParserExtendedData:
         """Verb entries should have verb table when available."""
         result = parse_word(word)
         verb_entries = [e for e in result.entries if e.part_of_speech == "verb"]
-        
+
         for entry in verb_entries:
             # verb_table may or may not be present
             if entry.verb_table:
                 assert entry.verb_table.lemma, "Verb table should have lemma"
-                assert len(entry.verb_table.simple_forms) > 0, "Verb table should have forms"
+                assert len(entry.verb_table.simple_forms) > 0, (
+                    "Verb table should have forms"
+                )
 
     @pytest.mark.parametrize("word", ["happy", "beautiful"])
     def test_thesaurus_when_available(self, word: str):
         """Thesaurus should be parsed when available."""
         result = parse_word(word)
         thesaurus_found = False
-        
+
         for entry in result.entries:
-            if entry.thesaurus and (entry.thesaurus.entries or entry.thesaurus.word_sets):
+            if entry.thesaurus and (
+                entry.thesaurus.entries or entry.thesaurus.word_sets
+            ):
                 thesaurus_found = True
                 break
-        
+
         # Just document availability, don't fail if not present
         print(f"Thesaurus for '{word}': {'Found' if thesaurus_found else 'Not found'}")
 
@@ -252,6 +282,7 @@ class TestLDOCEParserExtendedData:
 # ============================================================
 # GOLDEN STANDARD REGRESSION TEST
 # ============================================================
+
 
 class TestLDOCEParserGoldenStandard:
     """Full regression test against golden standard expected output."""
@@ -261,18 +292,20 @@ class TestLDOCEParserGoldenStandard:
         """Parser output should match expected golden standard."""
         result = parse_word(word)
         result_dict = result.model_dump()
-        
+
         # Save current output for debugging
         save_current_output(word, result_dict)
-        
+
         # Load expected output
         try:
             expected = load_expected_json(word)
         except Exception:
             pytest.skip(f"Expected JSON not yet created for '{word}'")
-        
+
         # Compare key fields
         diffs = compare_fields(expected, result_dict)
-        
+
         if diffs:
-            pytest.fail(f"Parser output differs from expected:\n" + "\n".join(diffs[:20]))
+            pytest.fail(
+                "Parser output differs from expected:\n" + "\n".join(diffs[:20])
+            )

@@ -3,9 +3,14 @@ Simplified Stats API Router.
 Removed: /api/stats (legacy Attempt-based stats), goals endpoints.
 Kept: /api/performance (simplified)
 """
+
 import asyncio
 from fastapi import APIRouter, Query
-from app.database import get_performance_data, get_memory_curve_data, get_daily_study_time
+from app.database import (
+    get_performance_data,
+    get_memory_curve_data,
+    get_daily_study_time,
+)
 
 router = APIRouter()
 

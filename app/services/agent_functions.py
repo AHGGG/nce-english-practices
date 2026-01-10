@@ -7,7 +7,6 @@ Functions are executed on the backend when the LLM decides to call them.
 Reference: docs/voice/deepgram/examples/common/agent_functions.py
 """
 
-import json
 import asyncio
 import logging
 from typing import Dict, Any, Optional, Callable, Awaitable
@@ -24,20 +23,23 @@ logger = logging.getLogger(__name__)
 # Function Implementations
 # =============================================================================
 
+
 async def end_call(params: Dict[str, Any], websocket=None) -> Dict[str, Any]:
     """
     End the conversation and close the connection.
-    
+
     This function prepares farewell messages to be injected before closing.
     The actual closing is handled by the caller after receiving the response.
     """
     farewell_type = params.get("farewell_type", "general")
-    
+
     # Prepare farewell message based on type
     if farewell_type == "thanks":
         message = "Thank you for practicing with me! Keep up the great work with your English studies. Goodbye!"
     elif farewell_type == "help":
-        message = "I'm glad I could help with your English learning! Have a wonderful day!"
+        message = (
+            "I'm glad I could help with your English learning! Have a wonderful day!"
+        )
     else:  # general
         message = "Goodbye! Good luck with your English practice!"
 
@@ -55,11 +57,11 @@ async def end_call(params: Dict[str, Any], websocket=None) -> Dict[str, Any]:
 async def agent_filler(params: Dict[str, Any], websocket=None) -> Dict[str, Any]:
     """
     Provide natural conversational filler before looking up information.
-    
+
     This fills the silence while actual lookup is being performed.
     """
     message_type = params.get("message_type", "general")
-    
+
     # Prepare the result that will be the function call response
     result = {"status": "queued", "message_type": message_type}
 
@@ -81,93 +83,92 @@ async def agent_filler(params: Dict[str, Any], websocket=None) -> Dict[str, Any]
 async def lookup_word(params: Dict[str, Any], websocket=None) -> Dict[str, Any]:
     """
     Look up a word in the dictionary.
-    
+
     Uses the MDX dictionary manager to find definitions.
     Returns a text summary suitable for voice output.
     """
     word = params.get("word", "").strip()
-    
+
     if not word:
         return {"error": "No word provided"}
-    
+
     try:
         # Load dictionaries if not already loaded
         dict_manager.load_dictionaries()
-        
+
         # Look up the word
         results = dict_manager.lookup(word)
-        
+
         logger.info(f"Lookup results for '{word}': {results}")
 
         if not results:
             return {
                 "word": word,
                 "found": False,
-                "message": f"I couldn't find the word '{word}' in the dictionary."
+                "message": f"I couldn't find the word '{word}' in the dictionary.",
             }
-        
+
         # Extract plain text from HTML definitions
         definitions = []
         for result in results[:2]:  # Limit to first 2 dictionaries
             html_content = result.get("definition", "")
             dict_name = result.get("dictionary", "Unknown")
-            
+
             # Parse HTML and extract text
             soup = BeautifulSoup(html_content, "html.parser")
-            
+
             # Remove script and style elements
             for element in soup(["script", "style"]):
                 element.decompose()
-            
+
             # Get text content
             text = soup.get_text(separator=" ", strip=True)
-            
+
             # Truncate if too long (for voice output)
             if len(text) > 500:
                 text = text[:500] + "..."
-            
+
             if text:
-                definitions.append({
-                    "source": dict_name,
-                    "definition": text
-                })
-        
+                definitions.append({"source": dict_name, "definition": text})
+
         if definitions:
             return {
                 "word": word,
                 "found": True,
                 "definitions": definitions,
-                "message": f"Found {len(definitions)} definition(s) for '{word}'."
+                "message": f"Found {len(definitions)} definition(s) for '{word}'.",
             }
         else:
             return {
                 "word": word,
                 "found": False,
-                "message": f"The dictionary entry for '{word}' is empty or couldn't be parsed."
+                "message": f"The dictionary entry for '{word}' is empty or couldn't be parsed.",
             }
-            
+
     except Exception as e:
         logger.error(f"Error looking up word '{word}': {e}")
         return {
             "word": word,
             "found": False,
             "error": str(e),
-            "message": f"Sorry, I encountered an error looking up '{word}'."
+            "message": f"Sorry, I encountered an error looking up '{word}'.",
         }
 
 
-async def get_example_sentences(params: Dict[str, Any], websocket=None) -> Dict[str, Any]:
+async def get_example_sentences(
+    params: Dict[str, Any], websocket=None
+) -> Dict[str, Any]:
     """
     Get example sentences for a word or phrase.
-    
+
     Uses the LLM to generate contextual example sentences.
     """
     word = params.get("word", "").strip()
     count = min(max(params.get("count", 3), 1), 5)  # Clamp to 1-5
-    
+
     if not word:
         return {"error": "No word or phrase provided"}
-    
+
     try:
         # Build prompt
         prompt = f"""Generate {count} natural English example sentences using the word or phrase "{word}".
@@ -188,12 +189,8 @@ Example format:
         # Call LLM
         client = llm_service.sync_client
         if not client:
-            return {
-                "word": word,
-                "examples": [],
-                "error": "LLM client not configured"
-            }
-        
+            return {"word": word, "examples": [], "error": "LLM client not configured"}
+
         # Run in executor to avoid blocking
         loop = asyncio.get_event_loop()
         response = await loop.run_in_executor(
@@ -202,15 +199,15 @@ Example format:
                 model=settings.MODEL_NAME,
                 messages=[
                     {"role": "system", "content": "You are a helpful English teacher."},
-                    {"role": "user", "content": prompt}
+                    {"role": "user", "content": prompt},
                 ],
                 max_tokens=300,
-                temperature=0.7
-            )
+                temperature=0.7,
+            ),
         )
-        
+
         content = response.choices[0].message.content
-        
+
         # Parse sentences from response
         lines = content.strip().split("\n")
         examples = []
@@ -223,20 +220,20 @@ Example format:
                 line = line.strip()
             if line:
                 examples.append(line)
-        
+
         return {
             "word": word,
             "examples": examples[:count],
-            "message": f"Here are {len(examples[:count])} example sentences for '{word}'."
+            "message": f"Here are {len(examples[:count])} example sentences for '{word}'.",
         }
-        
+
     except Exception as e:
         logger.error(f"Error generating examples for '{word}': {e}")
         return {
             "word": word,
             "examples": [],
             "error": str(e),
-            "message": f"Sorry, I couldn't generate examples for '{word}'."
+            "message": f"Sorry, I couldn't generate examples for '{word}'.",
         }
 
 
@@ -307,7 +304,7 @@ FUNCTION_DEFINITIONS = [
                     "type": "integer",
                     "description": "Number of example sentences to generate (1-5). Default is 3.",
                     "default": 3,
-                }
+                },
             },
             "required": ["word"],
         },
@@ -347,7 +344,9 @@ FUNCTION_DEFINITIONS = [
 # =============================================================================
 
 # Map function names to their implementations
-FUNCTION_MAP: Dict[str, Callable[[Dict[str, Any], Optional[Any]], Awaitable[Dict[str, Any]]]] = {
+FUNCTION_MAP: Dict[
+    str, Callable[[Dict[str, Any], Optional[Any]], Awaitable[Dict[str, Any]]]
+] = {
     "end_call": end_call,
     "agent_filler": agent_filler,
     "lookup_word": lookup_word,

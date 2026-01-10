@@ -3,6 +3,7 @@ Pydantic schemas for Sentence Study API (ASL - Adaptive Sentence Learning).
 
 Extracted from sentence_study.py router for better separation of concerns.
 """
+
 from typing import Optional, List, Dict
 from pydantic import BaseModel
 
@@ -10,6 +11,7 @@ from pydantic import BaseModel
 # ============================================================
 # Study Progress Models
 # ============================================================
+
 
 class StudyProgressResponse(BaseModel):
     source_id: str
@@ -27,25 +29,30 @@ class LastSessionResponse(BaseModel):
 
 class UnclearSentenceInfo(BaseModel):
     """Info about an unclear sentence for highlighting."""
+
     sentence_index: int
-    unclear_choice: Optional[str] = None  # vocabulary (words), grammar (structure), meaning (context), both (everything)
-    max_simplify_stage: int = 0           # Highest stage reached (1-3)
+    unclear_choice: Optional[str] = (
+        None  # vocabulary (words), grammar (structure), meaning (context), both (everything)
+    )
+    max_simplify_stage: int = 0  # Highest stage reached (1-3)
 
 
 class StudyHighlightsResponse(BaseModel):
     """All words/phrases looked up during study of an article."""
+
     source_id: str
-    word_clicks: List[str]     # All unique words clicked across all sentences
-    phrase_clicks: List[str]   # All unique phrases clicked across all sentences
+    word_clicks: List[str]  # All unique words clicked across all sentences
+    phrase_clicks: List[str]  # All unique phrases clicked across all sentences
     unclear_sentences: List[UnclearSentenceInfo] = []  # Sentences marked unclear
-    studied_count: int         # Number of sentences studied
-    clear_count: int           # Number of sentences marked clear
-    is_complete: bool          # True if all sentences have been studied
+    studied_count: int  # Number of sentences studied
+    clear_count: int  # Number of sentences marked clear
+    is_complete: bool  # True if all sentences have been studied
 
 
 # ============================================================
 # Record Learning Models
 # ============================================================
+
 
 class RecordRequest(BaseModel):
     source_type: str
@@ -53,7 +60,9 @@ class RecordRequest(BaseModel):
     sentence_index: int
     sentence_text: Optional[str] = None  # Store for review display
     initial_response: str  # clear, unclear
-    unclear_choice: Optional[str] = None  # vocabulary (words), grammar (structure), meaning (context), both (everything)
+    unclear_choice: Optional[str] = (
+        None  # vocabulary (words), grammar (structure), meaning (context), both (everything)
+    )
     simplified_response: Optional[str] = None  # got_it, still_unclear
     word_clicks: List[str] = []
     phrase_clicks: List[str] = []  # Collocation/phrase clicks
@@ -61,7 +70,7 @@ class RecordRequest(BaseModel):
     word_count: int = 0  # Number of words in the sentence
     max_simplify_stage: Optional[int] = None  # 1=English, 2=Detailed, 3=Chinese
     user_id: str = "default_user"  # Added field
-    
+
     # Detailed interaction log (e.g. sequence of "lookup_word", "req_simple_english")
     # Format: [{"action": "lookup", "target": "foo", "timestamp": 123}, ...]
     interaction_events: List[Dict] = []
@@ -70,6 +79,7 @@ class RecordRequest(BaseModel):
 # ============================================================
 # Simplification Models
 # ============================================================
+
 
 class SimplifyRequest(BaseModel):
     sentence: str
@@ -92,8 +102,10 @@ class SimplifyResponse(BaseModel):
 # Overview Models
 # ============================================================
 
+
 class OverviewRequest(BaseModel):
     """Request to generate article overview with context."""
+
     title: str
     full_text: str  # First ~500 words for context
     total_sentences: int
@@ -101,18 +113,21 @@ class OverviewRequest(BaseModel):
 
 class OverviewResponse(BaseModel):
     """Article overview with English summary and Chinese translation."""
-    summary_en: str      # 2-3 sentence English summary
-    summary_zh: str      # Chinese translation
+
+    summary_en: str  # 2-3 sentence English summary
+    summary_zh: str  # Chinese translation
     key_topics: List[str]  # 3-5 key topics/themes
-    difficulty_hint: str   # e.g. "Advanced vocabulary, complex sentences"
+    difficulty_hint: str  # e.g. "Advanced vocabulary, complex sentences"
 
 
 # ============================================================
 # Word Explanation Models
 # ============================================================
 
+
 class ExplainWordRequest(BaseModel):
     """Request to explain a word or phrase in its sentence context via streaming LLM."""
+
     word: Optional[str] = None  # Deprecated, use 'text' instead
     text: Optional[str] = None  # The word or phrase to explain
     sentence: str
@@ -125,26 +140,33 @@ class ExplainWordRequest(BaseModel):
 # Collocation Detection Models
 # ============================================================
 
+
 class DetectCollocationsRequest(BaseModel):
     """Request to detect collocations/phrases in a sentence."""
+
     sentence: str
 
 
 class CollocationItem(BaseModel):
     """A detected collocation/phrase."""
+
     text: str  # The collocation text, e.g. "sit down"
-    key_word: Optional[str] = None # The key word of the phrase for dictionary lookup, e.g. "sit"
+    key_word: Optional[str] = (
+        None  # The key word of the phrase for dictionary lookup, e.g. "sit"
+    )
     start_word_idx: int  # Start word index (0-based)
     end_word_idx: int  # End word index (inclusive)
 
 
 class DetectCollocationsResponse(BaseModel):
     """Response with detected collocations."""
+
     collocations: List[CollocationItem]
 
 
 class PrefetchCollocationsRequest(BaseModel):
     """Request to prefetch collocations for upcoming sentences."""
+
     sentences: List[str]  # Up to 5 sentences to prefetch
 
 
@@ -152,8 +174,10 @@ class PrefetchCollocationsRequest(BaseModel):
 # SRS Review Models
 # ============================================================
 
+
 class ReviewQueueItem(BaseModel):
     """Item in the review queue."""
+
     record_id: int
     source_type: str
     source_id: str
@@ -166,6 +190,7 @@ class ReviewQueueItem(BaseModel):
 
 class ReviewRequest(BaseModel):
     """Request to complete a review."""
+
     record_id: int
     result: str  # "clear" or "unclear"
 
@@ -174,8 +199,10 @@ class ReviewRequest(BaseModel):
 # User Profile Models
 # ============================================================
 
+
 class WordToReview(BaseModel):
     """A word that needs practice."""
+
     word: str
     difficulty_score: float
     exposure_count: int
@@ -183,6 +210,7 @@ class WordToReview(BaseModel):
 
 class ProfileResponse(BaseModel):
     """User comprehension profile stats."""
+
     user_id: str
     # Study Stats
     total_sentences_studied: int

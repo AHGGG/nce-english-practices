@@ -14,6 +14,7 @@ sys.path.insert(0, os.getcwd())
 
 from app.config import settings
 from app.core.db import Base
+
 # Import all ORM models to register them with Base.metadata
 from app.models import orm  # noqa: F401
 
@@ -32,6 +33,7 @@ if config.config_file_name is not None:
 # add your model's MetaData object here
 # for 'autogenerate' support
 target_metadata = Base.metadata
+
 
 def run_migrations_offline() -> None:
     """Run migrations in 'offline' mode.

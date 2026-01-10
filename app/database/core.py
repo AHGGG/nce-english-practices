@@ -1,12 +1,21 @@
-from typing import Dict, List, Any, Optional
-from datetime import datetime
-import logging
-
-from sqlalchemy import select, update, desc, func, Integer
-from sqlalchemy.orm import selectinload
-
-from app.core.db import AsyncSessionLocal, Base, engine
+from app.core.db import Base, engine, AsyncSessionLocal
 from app.models.orm import (
-    WordProficiency, VocabLearningLog,
-    ReadingSession, SentenceLearningRecord
+    ReadingSession,
+    VocabLearningLog,
+    WordProficiency,
+    SentenceLearningRecord,
+    UserGoal,
+    Attempt,
 )
+
+__all__ = [
+    "Base",
+    "engine",
+    "AsyncSessionLocal",
+    "ReadingSession",
+    "VocabLearningLog",
+    "WordProficiency",
+    "SentenceLearningRecord",
+    "UserGoal",
+    "Attempt",
+]

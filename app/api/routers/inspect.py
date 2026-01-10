@@ -15,8 +15,6 @@ from app.services.dictionary import dict_manager
 from app.services.collins_parser import collins_parser
 from app.services.ldoce_parser import ldoce_parser
 from app.models.orm import VocabLearningLog
-from app.models.collins_schemas import CollinsWord
-from app.models.ldoce_schemas import LDOCEWord
 
 router = APIRouter(prefix="/api", tags=["inspect"])
 
@@ -26,44 +24,41 @@ async def inspect_word(
     word: str,
     source_type: Optional[str] = Query(
         "dictionary",
-        description="Source type: epub, rss, podcast, plain_text, dictionary"
+        description="Source type: epub, rss, podcast, plain_text, dictionary",
     ),
     source_id: Optional[str] = Query(
-        None,
-        description="Source identifier: e.g., 'epub:economist_2024_01'"
+        None, description="Source identifier: e.g., 'epub:economist_2024_01'"
     ),
     context: Optional[str] = Query(
-        None,
-        description="The sentence where the word was encountered"
+        None, description="The sentence where the word was encountered"
     ),
     timestamp: Optional[float] = Query(
-        None,
-        description="Audio timestamp in seconds (for podcast/audio sources)"
+        None, description="Audio timestamp in seconds (for podcast/audio sources)"
     ),
     user_id: str = Query("default_user"),
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
 ):
     """
     Inspect a word: look up definition AND record learning context.
-    
+
     This endpoint:
     1. Returns dictionary definition (Collins + LDOCE if available)
     2. Records the source context in VocabLearningLog for later review
-    
+
     Example:
         GET /api/inspect?word=pivot&source_id=epub:economist&context=Let's+pivot
     """
     # 1. Dictionary lookup (runs in threadpool)
     results = await run_in_threadpool(dict_manager.lookup, word)
-    
+
     # Parse structured data from Collins and LDOCE
     collins_data = None
     ldoce_data = None
-    
+
     for result in results:
         dict_name = result.get("dictionary", "").lower()
         html = result.get("definition", "")
-        
+
         if "collins" in dict_name and not collins_data:
             parsed = collins_parser.parse(html, word)
             if parsed.found:
@@ -72,7 +67,7 @@ async def inspect_word(
             parsed = ldoce_parser.parse(html, word)
             if parsed.found:
                 ldoce_data = parsed
-    
+
     # 2. Record learning context (async DB operation)
     log_entry = VocabLearningLog(
         user_id=user_id,
@@ -80,11 +75,11 @@ async def inspect_word(
         source_type=source_type or "dictionary",
         source_id=source_id,
         context_sentence=context,
-        audio_timestamp=timestamp
+        audio_timestamp=timestamp,
     )
     db.add(log_entry)
     await db.commit()
-    
+
     # 3. Check if this word should be added to review queue (Phase 3: Deep Integration)
     # If user looks up same word 2+ times in EPUB sources, it means they're struggling
     review_item_created = False
@@ -92,7 +87,7 @@ async def inspect_word(
         from sqlalchemy import select, func
         from app.models.orm import ReviewItem
         from datetime import datetime, UTC
-        
+
         # Count previous lookups of this word in any EPUB
         lookup_count_result = await db.execute(
             select(func.count(VocabLearningLog.id))
@@ -101,7 +96,7 @@ async def inspect_word(
             .where(VocabLearningLog.source_type == "epub")
         )
         lookup_count = lookup_count_result.scalar() or 0
-        
+
         # If looked up 2+ times, create ReviewItem (if not already exists)
         if lookup_count >= 2:
             existing_review = await db.execute(
@@ -123,12 +118,12 @@ async def inspect_word(
                     interval_days=1.0,
                     repetition=0,
                     next_review_at=datetime.now(UTC),
-                    created_at=datetime.now(UTC)
+                    created_at=datetime.now(UTC),
                 )
                 db.add(review_item)
                 await db.commit()
                 review_item_created = True
-    
+
     # 4. Return combined response
     return {
         "word": word,
@@ -137,31 +132,33 @@ async def inspect_word(
         "review_item_created": review_item_created,
         "collins": collins_data.model_dump() if collins_data else None,
         "ldoce": ldoce_data.model_dump() if ldoce_data else None,
-        "raw_results": results  # Fallback for other dictionaries
+        "raw_results": results,  # Fallback for other dictionaries
     }
 
 
 @router.get("/inspect/history")
 async def get_word_history(
-    word: str,
-    user_id: str = Query("default_user"),
-    db: AsyncSession = Depends(get_db)
+    word: str, user_id: str = Query("default_user"), db: AsyncSession = Depends(get_db)
 ):
     """
     Get learning history for a word: all contexts where it was encountered.
-    
+
     Enables "Where did I learn this word?" feature during review.
     """
     from sqlalchemy import select
-    
-    stmt = select(VocabLearningLog).where(
-        VocabLearningLog.user_id == user_id,
-        VocabLearningLog.word == word.lower().strip()
-    ).order_by(VocabLearningLog.created_at.desc())
-    
+
+    stmt = (
+        select(VocabLearningLog)
+        .where(
+            VocabLearningLog.user_id == user_id,
+            VocabLearningLog.word == word.lower().strip(),
+        )
+        .order_by(VocabLearningLog.created_at.desc())
+    )
+
     result = await db.execute(stmt)
     logs = result.scalars().all()
-    
+
     return {
         "word": word,
         "total_encounters": len(logs),
@@ -172,8 +169,8 @@ async def get_word_history(
                 "source_id": log.source_id,
                 "context_sentence": log.context_sentence,
                 "audio_timestamp": log.audio_timestamp,
-                "created_at": log.created_at.isoformat() if log.created_at else None
+                "created_at": log.created_at.isoformat() if log.created_at else None,
             }
             for log in logs
-        ]
+        ],
     }

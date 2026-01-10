@@ -8,6 +8,7 @@ sys.path.append(str(Path(__file__).parent.parent))
 from app.services.content_service import content_service
 from app.models.content_schemas import SourceType
 
+
 async def main():
     print("=== Testing Content Provider Architecture ===\n")
 
@@ -17,7 +18,7 @@ async def main():
         bundle = await content_service.get_content(
             SourceType.PLAIN_TEXT,
             text="Hello world. This is a test sentence. It works great!",
-            title="Manual Test"
+            title="Manual Test",
         )
         print(f"✅ Success! ID: {bundle.id}")
         print(f"Title: {bundle.title}")
@@ -33,9 +34,7 @@ async def main():
     try:
         print(f"Fetching from: {rss_url}...")
         bundle = await content_service.get_content(
-            SourceType.RSS,
-            url=rss_url,
-            article_index=0
+            SourceType.RSS, url=rss_url, article_index=0
         )
         print(f"✅ Success! ID: {bundle.id}")
         print(f"Title: {bundle.title}")
@@ -52,9 +51,7 @@ async def main():
     try:
         print(f"Fetching from: {podcast_url}...")
         bundle = await content_service.get_content(
-            SourceType.PODCAST,
-            feed_url=podcast_url,
-            episode_index=0
+            SourceType.PODCAST, feed_url=podcast_url, episode_index=0
         )
         print(f"✅ Success! ID: {bundle.id}")
         print(f"Title: {bundle.title}")
@@ -62,6 +59,7 @@ async def main():
         print(f"Sentences (Show Notes): {len(bundle.sentences)}")
     except Exception as e:
         print(f"❌ Failed (Network/Parse): {e}")
+
 
 if __name__ == "__main__":
     asyncio.run(main())

@@ -16,12 +16,12 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from sqlalchemy import text
-from app.core.db import engine, AsyncSessionLocal
+from app.core.db import AsyncSessionLocal
 
 
 async def reset_all_data():
     """Clear ALL data from the database."""
-    
+
     # Order matters due to foreign key constraints
     # Tables with FK dependencies should be deleted first
     tables_to_clear = [
@@ -29,7 +29,6 @@ async def reset_all_data():
         "review_logs",
         "review_items",
         "context_learning_records",
-        
         # Main tables
         "sentence_learning_records",
         "sentence_collocation_cache",
@@ -48,7 +47,7 @@ async def reset_all_data():
         "attempts",
         "stories",
     ]
-    
+
     print("=" * 60)
     print("🔥 FULL DATABASE RESET SCRIPT 🔥")
     print("=" * 60)
@@ -57,15 +56,15 @@ async def reset_all_data():
     for table in tables_to_clear:
         print(f"  - {table}")
     print()
-    
+
     # Double confirmation
     confirm1 = input("⚠️  Are you sure? Type 'DELETE ALL' to proceed: ")
     if confirm1 != "DELETE ALL":
         print("❌ Aborted.")
         return
-    
+
     print("\n🚀 Starting full reset...")
-    
+
     async with AsyncSessionLocal() as session:
         total_deleted = 0
         for table in tables_to_clear:
@@ -73,18 +72,18 @@ async def reset_all_data():
                 # Check current count
                 result = await session.execute(text(f"SELECT COUNT(*) FROM {table}"))
                 count = result.scalar()
-                
+
                 # Delete all rows
                 await session.execute(text(f"DELETE FROM {table}"))
                 await session.commit()
-                
+
                 total_deleted += count
                 status = f"deleted {count} rows" if count > 0 else "empty"
                 print(f"  ✅ {table}: {status}")
             except Exception as e:
                 print(f"  ❌ {table}: error - {e}")
                 await session.rollback()
-    
+
     print("\n" + "=" * 60)
     print(f"🎉 Reset complete! Total rows deleted: {total_deleted}")
     print("=" * 60)

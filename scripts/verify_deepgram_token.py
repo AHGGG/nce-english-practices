@@ -1,8 +1,8 @@
 import requests
-import os
 from dotenv import load_dotenv
 
 load_dotenv()
+
 
 def test_token_endpoint():
     url = "http://localhost:8000/api/deepgram/token"
@@ -10,9 +10,9 @@ def test_token_endpoint():
     # User said they are running "uv run python -m app.main" and "npm run dev".
     # And main.py prints "Starting with HTTP (no SSL)" if key.pem missing.
     # Previous steps showed key.pem exists! So HTTPS.
-    
+
     url = "https://localhost:8000/api/deepgram/token"
-    
+
     try:
         print(f"Testing {url}...")
         response = requests.get(url, verify=False)
@@ -22,6 +22,7 @@ def test_token_endpoint():
             print(f"FAILED: {response.status_code} {response.text}")
     except Exception as e:
         print(f"ERROR: {e}")
+
 
 if __name__ == "__main__":
     test_token_endpoint()

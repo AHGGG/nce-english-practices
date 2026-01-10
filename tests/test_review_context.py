@@ -1,6 +1,6 @@
 import pytest
 from unittest.mock import AsyncMock, patch, MagicMock
-from app.api.routers.review import get_review_context, ReviewContextResponse
+from app.api.routers.review import get_review_context
 from app.models.orm import ReviewItem
 from app.models.content_schemas import (
     ContentBundle,

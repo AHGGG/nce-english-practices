@@ -6,6 +6,7 @@ from pydantic import BaseModel, Field
 
 # --- Existing Dataclasses (Kept for backward compatibility with TUI/Legacy) ---
 
+
 @dataclass
 class VerbEntry:
     base: str
@@ -18,9 +19,19 @@ class VerbEntry:
 
     @classmethod
     def from_raw(cls, payload: Dict) -> "VerbEntry":
-        base = (payload.get("base") or payload.get("verb") or payload.get("infinitive") or "study").strip()
+        base = (
+            payload.get("base")
+            or payload.get("verb")
+            or payload.get("infinitive")
+            or "study"
+        ).strip()
         past = (payload.get("past") or payload.get("verb_past") or f"{base}ed").strip()
-        pp = (payload.get("participle") or payload.get("past_participle") or payload.get("pp") or past).strip()
+        pp = (
+            payload.get("participle")
+            or payload.get("past_participle")
+            or payload.get("pp")
+            or past
+        ).strip()
         return cls(base=base, past=past, participle=pp, note=payload.get("note"))
 
 
@@ -48,7 +59,9 @@ class SelectionState:
     topic: str
     slots: Dict[str, List[str]]
     verbs: List[VerbEntry]
-    order: List[str] = field(default_factory=lambda: ["subject", "verb", "object", "manner", "place", "time"])
+    order: List[str] = field(
+        default_factory=lambda: ["subject", "verb", "object", "manner", "place", "time"]
+    )
     selected_slot_index: Dict[str, int] = field(default_factory=dict)
     selected_verb_index: int = 0
 
@@ -100,58 +113,79 @@ class SelectionState:
             },
         )
 
+
 # --- New Pydantic Models for Active Trainer (API Centric) ---
+
 
 class Story(BaseModel):
     """Stage 1: Context Mode"""
+
     topic: str
     target_tense: str
     title: str
     content: str
-    highlights: List[str] = Field(default_factory=list, description="List of substrings to highlight")
-    grammar_notes: List[str] = Field(default_factory=list, description="Explanations for tense usage")
+    highlights: List[str] = Field(
+        default_factory=list, description="List of substrings to highlight"
+    )
+    grammar_notes: List[str] = Field(
+        default_factory=list, description="Explanations for tense usage"
+    )
+
 
 class QuizOption(BaseModel):
     """Option for Multiple Choice Questions"""
+
     id: str  # A, B, C, D
     text: str
     is_correct: bool
     explanation: Optional[str] = None
 
+
 class QuizItem(BaseModel):
     """Stage 2: Drill Mode"""
+
     question_context: str
     options: List[QuizOption]
     tense_category: str
     aspect: str
 
+
 class ScenarioPrompt(BaseModel):
     """Stage 3: Apply Mode (Input)"""
+
     situation: str
     goal: str
 
+
 class ScenarioResponse(BaseModel):
     """Stage 3: Apply Mode (Output)"""
+
     user_input: str
     is_pass: bool
     feedback: str
     improved_version: str
 
+
 class Mission(BaseModel):
     """Stage 4: Speak Mode"""
+
     id: str
     title: str
     description: str
     required_grammar: List[str]
 
+
 class ChatState(BaseModel):
     """State for Roleplay"""
+
     mission_id: str
     history: List[Dict[str, str]]
     goals_met: List[bool]
 
+
 class RemoteLog(BaseModel):
     """Log entry from frontend"""
+
     level: str
     message: str
     data: Optional[Dict] = None

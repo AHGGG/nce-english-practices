@@ -2,7 +2,6 @@
 Tests for StateSnapshotEvent with activities field for rehydration.
 """
 
-import pytest
 
 from app.services.aui_events import (
     StateSnapshotEvent,
@@ -41,7 +40,12 @@ class TestStateSnapshotActivities:
     def test_snapshot_serialization_with_activities(self):
         """Ensure proper JSON serialization."""
         activities = [
-            {"activity_id": "a1", "name": "Task 1", "status": "completed", "progress": 1.0}
+            {
+                "activity_id": "a1",
+                "name": "Task 1",
+                "status": "completed",
+                "progress": 1.0,
+            }
         ]
         event = StateSnapshotEvent(
             state={"component": "VocabGrid", "props": {"words": []}},

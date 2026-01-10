@@ -8,14 +8,11 @@ from pydantic import ValidationError
 
 from app.services.aui_schema import (
     validate_component_props,
-    MarkdownMessageProps,
-    DiffCardProps,
-    TenseTimelineProps,
-    TaskDashboardProps,
 )
 
 
 # --- MarkdownMessage Tests ---
+
 
 class TestMarkdownMessageSchema:
     def test_valid_props(self):
@@ -29,6 +26,7 @@ class TestMarkdownMessageSchema:
 
 
 # --- DiffCard Tests ---
+
 
 class TestDiffCardSchema:
     def test_valid_props(self):
@@ -47,6 +45,7 @@ class TestDiffCardSchema:
 
 # --- TenseTimeline Tests ---
 
+
 class TestTenseTimelineSchema:
     def test_valid_props(self):
         props = {"tense": "Present Perfect"}
@@ -63,6 +62,7 @@ class TestTenseTimelineSchema:
 
 
 # --- TaskDashboard Tests ---
+
 
 class TestTaskDashboardSchema:
     def test_valid_minimal_props(self):

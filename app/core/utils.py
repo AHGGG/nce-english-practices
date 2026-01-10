@@ -2,19 +2,20 @@ import json
 import re
 from typing import Dict, List, Union, Any
 
+
 def parse_llm_json(content: str) -> Union[Dict[str, Any], List[Any]]:
     """
     Parses JSON from an LLM response, handling markdown code blocks.
     """
     cleaned = content.strip()
-    
+
     # Remove markdown code blocks if present
     # regex matches ```json ... ``` or just ``` ... ```
     # flags=re.DOTALL matches across newlines
     match = re.search(r"```(?:json)?\s*(.*?)```", cleaned, re.DOTALL)
     if match:
         cleaned = match.group(1).strip()
-    
+
     try:
         return json.loads(cleaned)
     except json.JSONDecodeError as e:
@@ -22,23 +23,25 @@ def parse_llm_json(content: str) -> Union[Dict[str, Any], List[Any]]:
         # Try to find the first { or [ and the last } or ]
         try:
             # Find start/end
-            start_idx = cleaned.find('{')
-            list_start_idx = cleaned.find('[')
-            
+            start_idx = cleaned.find("{")
+            list_start_idx = cleaned.find("[")
+
             # If both found, take the earlier one, but ignore if -1
             if list_start_idx != -1 and (start_idx == -1 or list_start_idx < start_idx):
                 start_idx = list_start_idx
-                end_char = ']'
+                end_char = "]"
             else:
-                end_char = '}'
+                end_char = "}"
 
             if start_idx != -1:
                 end_idx = cleaned.rfind(end_char)
                 if end_idx != -1 and end_idx > start_idx:
-                     candidate = cleaned[start_idx : end_idx + 1]
-                     return json.loads(candidate)
+                    candidate = cleaned[start_idx : end_idx + 1]
+                    return json.loads(candidate)
         except json.JSONDecodeError:
             pass
-            
+
         # Re-raise original error if fallback fails
-        raise RuntimeError(f"Failed to parse LLM JSON: {e}. Content snippet: {cleaned[:100]}...") from e
+        raise RuntimeError(
+            f"Failed to parse LLM JSON: {e}. Content snippet: {cleaned[:100]}..."
+        ) from e

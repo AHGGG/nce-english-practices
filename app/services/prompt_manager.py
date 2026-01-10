@@ -2,6 +2,7 @@ import yaml
 from pathlib import Path
 from typing import Dict, Any, Optional
 
+
 class PromptManager:
     def __init__(self, config_path: str = "app/prompts.yaml"):
         self.config_path = Path(config_path)
@@ -48,6 +49,7 @@ class PromptManager:
             return template.format(**kwargs)
         except KeyError as e:
             return f"Error formatting prompt '{key_path}': Missing key {e}"
+
 
 # Singleton instance
 prompt_manager = PromptManager()

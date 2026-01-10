@@ -2,6 +2,7 @@
 Reading Session API Router
 Tracks reading behavior with mixed signals for accurate input measurement.
 """
+
 from fastapi import APIRouter
 from pydantic import BaseModel, model_validator
 from typing import Optional
@@ -10,7 +11,7 @@ from app.database import (
     update_reading_session,
     increment_word_click,
     end_reading_session,
-    get_reading_stats_v2
+    get_reading_stats_v2,
 )
 
 router = APIRouter(prefix="/api/reading", tags=["reading"])
@@ -30,13 +31,18 @@ class HeartbeatRequest(BaseModel):
     total_active_seconds: Optional[int] = 0
     total_idle_seconds: Optional[int] = 0
     scroll_jump_count: Optional[int] = 0
-    
-    @model_validator(mode='before')
+
+    @model_validator(mode="before")
     @classmethod
     def coerce_nulls(cls, values):
         """Convert null values to 0 for numeric fields."""
         if isinstance(values, dict):
-            for field in ['max_sentence_reached', 'total_active_seconds', 'total_idle_seconds', 'scroll_jump_count']:
+            for field in [
+                "max_sentence_reached",
+                "total_active_seconds",
+                "total_idle_seconds",
+                "scroll_jump_count",
+            ]:
                 if values.get(field) is None:
                     values[field] = 0
         return values
@@ -48,13 +54,18 @@ class EndSessionRequest(BaseModel):
     total_active_seconds: Optional[int] = 0
     total_idle_seconds: Optional[int] = 0
     scroll_jump_count: Optional[int] = 0
-    
-    @model_validator(mode='before')
+
+    @model_validator(mode="before")
     @classmethod
     def coerce_nulls(cls, values):
         """Convert null values to 0 for numeric fields."""
         if isinstance(values, dict):
-            for field in ['max_sentence_reached', 'total_active_seconds', 'total_idle_seconds', 'scroll_jump_count']:
+            for field in [
+                "max_sentence_reached",
+                "total_active_seconds",
+                "total_idle_seconds",
+                "scroll_jump_count",
+            ]:
                 if values.get(field) is None:
                     values[field] = 0
         return values
@@ -73,9 +84,9 @@ async def api_start_reading(body: StartSessionRequest):
         source_id=body.source_id,
         article_title=body.article_title or "",
         total_word_count=body.total_word_count,
-        total_sentences=body.total_sentences
+        total_sentences=body.total_sentences,
     )
-    
+
     if session_id:
         return {"success": True, "session_id": session_id}
     return {"success": False, "error": "Failed to create session"}
@@ -89,7 +100,7 @@ async def api_heartbeat(body: HeartbeatRequest):
         max_sentence_reached=body.max_sentence_reached,
         total_active_seconds=body.total_active_seconds,
         total_idle_seconds=body.total_idle_seconds,
-        scroll_jump_count=body.scroll_jump_count
+        scroll_jump_count=body.scroll_jump_count,
     )
     return {"success": success}
 
@@ -110,8 +121,8 @@ async def api_end_reading(body: EndSessionRequest):
             "max_sentence_reached": body.max_sentence_reached,
             "total_active_seconds": body.total_active_seconds,
             "total_idle_seconds": body.total_idle_seconds,
-            "scroll_jump_count": body.scroll_jump_count
-        }
+            "scroll_jump_count": body.scroll_jump_count,
+        },
     )
     return result
 

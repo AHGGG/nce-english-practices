@@ -2,7 +2,12 @@ import logging
 from fastapi import APIRouter, HTTPException
 from typing import List
 from pydantic import BaseModel
-from app.models.negotiation_schemas import NegotiationRequest, NegotiationResponse, ContextRequest, ContextResponse
+from app.models.negotiation_schemas import (
+    NegotiationRequest,
+    NegotiationResponse,
+    ContextRequest,
+    ContextResponse,
+)
 from app.services.negotiation_service import negotiation_service
 from app.services.content_feeder import content_feeder, FeedContent
 from app.services.proficiency_service import proficiency_service
@@ -11,12 +16,14 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/negotiation", tags=["negotiation"])
 
+
 class WordProficiencyResponse(BaseModel):
     word: str
     exposure_count: int
     huh_count: int
     difficulty_score: float
     status: str
+
 
 @router.post("/interact", response_model=NegotiationResponse)
 async def interact(request: NegotiationRequest):
@@ -32,9 +39,10 @@ async def interact(request: NegotiationRequest):
         logger.exception("Negotiation Error")
         raise HTTPException(status_code=500, detail=str(e))
 
+
 @router.get("/next-content", response_model=FeedContent)
 async def get_next_content(
-    word: str = None, 
+    word: str = None,
     book: str = None,
     book_start: int = None,
     book_end: int = None,
@@ -42,11 +50,11 @@ async def get_next_content(
     rss_url: str = None,
     epub_file: str = None,
     article_idx: int = None,
-    sentence_idx: int = None
+    sentence_idx: int = None,
 ):
     """
     Get the next piece of content from the content feeder.
-    
+
     Args:
         word: Optional specific word to look up.
         book: Optional book code (e.g. 'cet4', 'coca') to select words from.
@@ -57,13 +65,13 @@ async def get_next_content(
         epub_file: Optional EPUB filename (for EPUB Mode)
         article_idx: Optional article index for sequential reading
         sentence_idx: Optional sentence index within article
-        
+
     Returns:
         FeedContent with a real dictionary example.
     """
     try:
         content = await content_feeder.get_next_content(
-            word, 
+            word,
             source_book=book,
             min_sequence=book_start,
             max_sequence=book_end,
@@ -71,7 +79,7 @@ async def get_next_content(
             rss_url=rss_url,
             epub_file=epub_file,
             article_idx=article_idx,
-            sentence_idx=sentence_idx
+            sentence_idx=sentence_idx,
         )
         if content:
             return content
@@ -80,11 +88,12 @@ async def get_next_content(
         logger.exception("ContentFeeder Error")
         raise HTTPException(status_code=500, detail=str(e))
 
+
 @router.get("/difficult-words", response_model=List[WordProficiencyResponse])
 async def get_difficult_words(limit: int = 20):
     """
     Get the user's most difficult words (highest HUH? rate).
-    
+
     Returns:
         List of words sorted by difficulty score.
     """
@@ -96,7 +105,7 @@ async def get_difficult_words(limit: int = 20):
                 exposure_count=w.exposure_count,
                 huh_count=w.huh_count,
                 difficulty_score=w.difficulty_score,
-                status=w.status
+                status=w.status,
             )
             for w in words
         ]
@@ -109,15 +118,14 @@ async def get_difficult_words(limit: int = 20):
 async def get_word_examples(word: str):
     """
     Get ALL examples for a word, grouped by sense.
-    
+
     Args:
         word: The word to look up.
-        
+
     Returns:
         WordExampleSet with all senses and examples.
     """
-    from app.models.word_example_schemas import WordExampleSet
-    
+
     try:
         result = content_feeder.get_all_examples(word)
         if result:
@@ -129,17 +137,19 @@ async def get_word_examples(word: str):
         logger.exception("WordExamples Error")
         raise HTTPException(status_code=500, detail=str(e))
 
+
 @router.post("/context", response_model=ContextResponse)
 async def generate_context(request: ContextRequest):
     """
     Generate a micro-scenario for a given word/example.
     """
     from app.models.negotiation_schemas import ContextResponse
+
     try:
         scenario = await negotiation_service.generate_micro_scenario(
             word=request.word,
             definition=request.definition,
-            target_sentence=request.target_sentence
+            target_sentence=request.target_sentence,
         )
         return ContextResponse(scenario=scenario)
     except Exception as e:

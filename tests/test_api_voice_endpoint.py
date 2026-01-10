@@ -1,13 +1,10 @@
 import pytest
 from httpx import AsyncClient
 
+
 @pytest.mark.asyncio
 async def test_api_voice_token(client: AsyncClient):
-    payload = {
-        "topic": "Food",
-        "mission_context": "Order Pizza",
-        "tense": "Present"
-    }
+    payload = {"topic": "Food", "mission_context": "Order Pizza", "tense": "Present"}
 
     response = await client.post("/api/voice/token", json=payload)
 
@@ -17,6 +14,7 @@ async def test_api_voice_token(client: AsyncClient):
     assert data["url"] == "/ws/voice"
     assert "token" in data
     assert data["token"] == "proxy"
+
 
 @pytest.mark.asyncio
 async def test_api_voice_websocket(client: AsyncClient):

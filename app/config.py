@@ -2,23 +2,26 @@ import os
 from pathlib import Path
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+
 class Settings(BaseSettings):
     # App Paths
     USER_HOME: Path = Path(os.path.expanduser("~/.english_tense_practice"))
-    
+
     # LLM Settings
     DEEPSEEK_API_KEY: str = ""
     DEEPSEEK_BASE_URL: str = "https://api.deepseek.com/v1"
 
     MODEL_NAME: str = "deepseek-chat"
-    
+
     # Voice / Gemini Settings
-    GEMINI_API_KEY: str = "" # Can also be set via GOOGLE_API_KEY in env if pydantic picks it up, but explicit is better
+    GEMINI_API_KEY: str = ""  # Can also be set via GOOGLE_API_KEY in env if pydantic picks it up, but explicit is better
     GEMINI_VOICE_MODEL_NAME: str = "gemini-2.0-flash-exp"
-    
+
     # Database Settings
     # Default to local postgres if not set. Users should set this in .env
-    DATABASE_URL: str = "postgresql+asyncpg://postgres:postgres@localhost:5432/nce_practice"
+    DATABASE_URL: str = (
+        "postgresql+asyncpg://postgres:postgres@localhost:5432/nce_practice"
+    )
 
     # Voice Lab Settings
     ELEVENLABS_API_KEY: str = ""
@@ -26,19 +29,23 @@ class Settings(BaseSettings):
     DASHSCOPE_API_KEY: str = ""
     # For Google Cloud Speech/TTS (Unified with Gemini usually, but separate if using standard Google Cloud APIs)
     GOOGLE_APPLICATION_CREDENTIALS: str = ""
-    
+
     # Dashscope LLM Settings (OpenAI Compatible)
-    DASHSCOPE_COMPATIBLE_BASE_URL: str = "https://dashscope.aliyuncs.com/compatible-mode/v1"
+    DASHSCOPE_COMPATIBLE_BASE_URL: str = (
+        "https://dashscope.aliyuncs.com/compatible-mode/v1"
+    )
     DASHSCOPE_MODEL_NAME: str = "qwen3-30b-a3b"
-    
+
     # Test Configuration - Control which providers to test
     # Set to False to skip provider tests (useful when credits are low)
     TEST_ELEVENLABS_ENABLED: bool = False  # Default: skip ElevenLabs tests
-    TEST_DEEPGRAM_ENABLED: bool = True     # Default: run Deepgram tests  
-    TEST_DASHSCOPE_ENABLED: bool = True    # Default: run Dashscope tests
-    TEST_GOOGLE_ENABLED: bool = True       # Default: run Google tests
+    TEST_DEEPGRAM_ENABLED: bool = True  # Default: run Deepgram tests
+    TEST_DASHSCOPE_ENABLED: bool = True  # Default: run Dashscope tests
+    TEST_GOOGLE_ENABLED: bool = True  # Default: run Google tests
 
-    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
+    model_config = SettingsConfigDict(
+        env_file=".env", env_file_encoding="utf-8", extra="ignore"
+    )
 
     @property
     def home_dir(self) -> Path:
@@ -48,7 +55,9 @@ class Settings(BaseSettings):
             return self.USER_HOME
         except PermissionError:
             # Fallback to local dir
-            fallback = Path(__file__).resolve().parent.parent / ".english_tense_practice"
+            fallback = (
+                Path(__file__).resolve().parent.parent / ".english_tense_practice"
+            )
             fallback.mkdir(parents=True, exist_ok=True)
             return fallback
 
@@ -57,14 +66,15 @@ class Settings(BaseSettings):
         path = self.home_dir / "themes"
         path.mkdir(parents=True, exist_ok=True)
         return path
-    
+
     @property
     def progress_file(self) -> Path:
         return self.home_dir / "progress.json"
-        
+
     @property
     def export_file(self) -> Path:
         return self.home_dir / "exported_practice.csv"
+
 
 settings = Settings()
 
@@ -78,6 +88,7 @@ OPENAI_API_KEY = settings.DEEPSEEK_API_KEY
 OPENAI_BASE_URL = settings.DEEPSEEK_BASE_URL
 GEMINI_API_KEY = settings.GEMINI_API_KEY or os.getenv("GOOGLE_API_KEY")
 
+
 def check_model_availability(client):
     """Probe the LLM API to confirm connectivity and return (ok, message)."""
     if client is None:
@@ -88,4 +99,3 @@ def check_model_availability(client):
         return True, f"{count} models reachable"
     except Exception as exc:
         return False, str(exc)
-

@@ -22,19 +22,19 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from sqlalchemy import text
-from app.core.db import engine, AsyncSessionLocal
+from app.core.db import AsyncSessionLocal
 
 
 async def reset_sentence_data():
     """Clear all sentence-related data from the database."""
-    
+
     tables_to_clear = [
-        "review_logs",           # Must be first (FK dependency)
-        "review_items",          # Review queue
+        "review_logs",  # Must be first (FK dependency)
+        "review_items",  # Review queue
         "sentence_learning_records",  # Study progress
-        "sentence_collocation_cache", # Cached collocations
+        "sentence_collocation_cache",  # Cached collocations
     ]
-    
+
     print("=" * 50)
     print("🔄 Sentence Data Reset Script")
     print("=" * 50)
@@ -42,31 +42,31 @@ async def reset_sentence_data():
     for table in tables_to_clear:
         print(f"  - {table}")
     print()
-    
+
     # Ask for confirmation
     confirm = input("⚠️  Are you sure you want to proceed? (yes/no): ")
     if confirm.lower() != "yes":
         print("❌ Aborted.")
         return
-    
+
     print("\n🚀 Starting reset...")
-    
+
     async with AsyncSessionLocal() as session:
         for table in tables_to_clear:
             try:
                 # Check current count
                 result = await session.execute(text(f"SELECT COUNT(*) FROM {table}"))
                 count = result.scalar()
-                
+
                 # Delete all rows
                 await session.execute(text(f"DELETE FROM {table}"))
                 await session.commit()
-                
+
                 print(f"  ✅ {table}: deleted {count} rows")
             except Exception as e:
                 print(f"  ❌ {table}: error - {e}")
                 await session.rollback()
-    
+
     print("\n" + "=" * 50)
     print("🎉 Reset complete!")
     print("=" * 50)
