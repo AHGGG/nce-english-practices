@@ -316,10 +316,18 @@ class SentenceStudyService:
         # Stream from LLM
         full_text = ""
         try:
+            # Determine max tokens based on stage
+            if stage == 3:
+                max_gen_tokens = 1500
+            elif stage == 2:
+                max_gen_tokens = 800
+            else:
+                max_gen_tokens = 300
+
             stream = await self.llm.async_client.chat.completions.create(
                 model=self.llm.model_name,
                 messages=[{"role": "user", "content": prompt}],
-                max_tokens=500 if stage > 1 else 300,
+                max_tokens=max_gen_tokens,
                 temperature=0.3,
                 stream=True
             )
