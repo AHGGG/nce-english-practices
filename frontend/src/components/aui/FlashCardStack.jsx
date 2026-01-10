@@ -31,16 +31,33 @@ const FlashCardStack = ({
         }
     };
 
+    const handleKeyDown = (e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            handleFlip();
+        }
+    };
+
     const rawWord = words[currentIndex];
     const currentWordData = typeof rawWord === 'object' ? rawWord : { word: rawWord, definition: null };
 
     return (
         <div className="w-full max-w-sm mx-auto perspective-1000">
             <div
-                className="relative h-48 w-full cursor-pointer group"
+                className="relative h-48 w-full cursor-pointer group focus:outline-none focus-visible:ring-2 focus-visible:ring-neon-green rounded-xl"
                 onClick={handleFlip}
+                onKeyDown={handleKeyDown}
+                tabIndex={0}
             >
-                <div className={`
+                <span className="sr-only">
+                    {isFlipped
+                        ? `Definition for ${currentWordData.word}. Press Enter to flip back.`
+                        : `Word: ${currentWordData.word}. Press Enter to reveal definition.`
+                    }
+                </span>
+                <div
+                    aria-hidden={isFlipped}
+                    className={`
              absolute inset-0 w-full h-full text-center flex flex-col items-center justify-center p-6
              bg-zinc-900 border border-zinc-700 rounded-xl shadow-xl transition-all duration-500
              backface-hidden
@@ -51,7 +68,9 @@ const FlashCardStack = ({
                     <p className="mt-4 text-xs text-neon-green animate-pulse">Tap to reveal</p>
                 </div>
 
-                <div className={`
+                <div
+                    aria-hidden={!isFlipped}
+                    className={`
              absolute inset-0 w-full h-full text-center flex flex-col items-center justify-center p-6
              bg-zinc-800 border border-zinc-600 rounded-xl shadow-xl transition-all duration-500
              backface-hidden rotate-y-180
@@ -63,7 +82,8 @@ const FlashCardStack = ({
                     )}
                     <button
                         onClick={(e) => { e.stopPropagation(); handleNext(); }}
-                        className="mt-6 px-4 py-2 bg-zinc-700 hover:bg-zinc-600 rounded text-sm text-white transition"
+                        disabled={!isFlipped}
+                        className="mt-6 px-4 py-2 bg-zinc-700 hover:bg-zinc-600 rounded text-sm text-white transition disabled:opacity-0"
                     >
                         Next Word
                     </button>
