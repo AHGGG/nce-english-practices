@@ -24,6 +24,29 @@ from app.models.ldoce_schemas import LDOCEWord
 
 GOLDEN_DIR = Path("resources/test_data/ldoce_golden")
 
+# Words with golden standard test data
+# Each word covers specific parser features:
+#   - hoist: basic parsing, verb+noun entries, grammar labels
+#   - run: high-frequency multi-sense verb, verb_table (irregular)
+#   - look: phrasal verbs (look up, look after, look for)
+#   - give: complex grammar patterns (double object)
+#   - happy: adjective, thesaurus
+#   - make: collocations (make a decision)
+#   - beautiful: hyphenation, simple adjective
+#   - water: pronunciation variants (AmE/BrE)
+#   - assassin: etymology
+GOLDEN_WORDS = [
+    "hoist",     # baseline: verb+noun, grammar
+    "run",       # multi-sense, verb_table
+    "look",      # phrasal verbs
+    "give",      # complex grammar
+    "happy",     # adjective, thesaurus
+    "make",      # collocations
+    "beautiful", # hyphenation
+    "water",     # pronunciation
+    "assassin",  # etymology
+]
+
 
 def load_golden_html(word: str) -> str:
     """Load raw HTML for a word from golden standard directory."""
@@ -95,7 +118,7 @@ def compare_fields(expected: Dict, actual: Dict, path: str = "") -> List[str]:
 class TestLDOCEParserCriticalFields:
     """Tests for critical dictionary fields that should never be missing."""
 
-    @pytest.mark.parametrize("word", ["hoist"])
+    @pytest.mark.parametrize("word", GOLDEN_WORDS)
     def test_word_found(self, word: str):
         """Word should be found in dictionary."""
         result = parse_word(word)
@@ -157,6 +180,14 @@ class TestLDOCEParserGrammar:
         ("hoist", 0, "verb", r"\[transitive\]"),
         # hoist noun entry - should have [countable] or [usually singular]
         ("hoist", 1, "noun", r"\[countable\]|\[usually singular\]"),
+        # run verb - [intransitive]
+        ("run", 0, "verb", r"\[intransitive\]"),
+        # give verb - [intransitive, transitive]
+        ("give", 0, "verb", r"\[intransitive.*transitive\]|\[transitive\]"),
+        # make verb - [transitive]
+        ("make", 0, "verb", r"\[transitive\]"),
+        # water noun - [uncountable]
+        ("water", 0, "noun", r"\[uncountable\]"),
     ])
     def test_grammar_extraction(self, word: str, entry_idx: int, expected_pos: str, expected_grammar_pattern: str):
         """Grammar labels should be correctly extracted."""
@@ -191,7 +222,7 @@ class TestLDOCEParserGrammar:
 class TestLDOCEParserExtendedData:
     """Tests for extended dictionary data (when available)."""
 
-    @pytest.mark.parametrize("word", ["hoist"])
+    @pytest.mark.parametrize("word", ["hoist", "run", "give", "make", "water"])
     def test_verb_table_for_verbs(self, word: str):
         """Verb entries should have verb table when available."""
         result = parse_word(word)
@@ -203,7 +234,7 @@ class TestLDOCEParserExtendedData:
                 assert entry.verb_table.lemma, "Verb table should have lemma"
                 assert len(entry.verb_table.simple_forms) > 0, "Verb table should have forms"
 
-    @pytest.mark.parametrize("word", ["hoist"])
+    @pytest.mark.parametrize("word", ["happy", "beautiful"])
     def test_thesaurus_when_available(self, word: str):
         """Thesaurus should be parsed when available."""
         result = parse_word(word)
@@ -225,7 +256,7 @@ class TestLDOCEParserExtendedData:
 class TestLDOCEParserGoldenStandard:
     """Full regression test against golden standard expected output."""
 
-    @pytest.mark.parametrize("word", ["hoist"])
+    @pytest.mark.parametrize("word", GOLDEN_WORDS)
     def test_matches_expected_output(self, word: str):
         """Parser output should match expected golden standard."""
         result = parse_word(word)
