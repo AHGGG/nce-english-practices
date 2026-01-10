@@ -304,7 +304,7 @@ class EpubProvider(BaseContentProvider):
         # Parse HTML to extract structured blocks
         raw_html = article.get('raw_html', '')
         if raw_html:
-            soup = BeautifulSoup(raw_html, 'html.parser')
+            soup = BeautifulSoup(raw_html, 'lxml-xml')
             blocks = self._extract_structured_blocks(soup)
         else:
             blocks = []
