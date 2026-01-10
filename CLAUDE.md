@@ -346,6 +346,10 @@ To support multiple dictionaries (e.g., Collins + LDOCE) in one view:
 - **HTTPS Required**: WebSocket with audio requires HTTPS. Generate cert with `generate_cert.py`.
 - **Certificate Trust**: Users must accept self-signed cert warning on first connection.
 
+### PowerShell HTTPS Testing
+- PowerShell `curl -k` / `Invoke-WebRequest -SkipCertificateCheck` may fail with self-signed certs.
+- **Use Node.js instead**: `$env:NODE_TLS_REJECT_UNAUTHORIZED=0; node -e "fetch('https://localhost:5173/api/...').then(r=>r.json()).then(console.log)"`
+
 ## Skills (Detailed Tool Guides)
 
 以下技能模块包含详细操作指南，需要时按需加载：
