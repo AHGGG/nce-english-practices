@@ -525,3 +525,29 @@ AI coding assistants often complete changes without verifying correctness, requi
 - `docs/skills/post-change-verification.md`: NEW - Verification skill
 - `CLAUDE.md`: Added skill reference
 
+### ✅ Dictionary Reliability & Testing (Phase 52) (2026-01-10)
+**Established "Golden Standard" testing framework to prevent dictionary parsing regressions.**
+
+#### Problem
+- Parsing logic modification was high-risk, often breaking one feature while fixing another.
+- Missing specific data points (e.g., verb grammar `[transitive]`) causing incorrect display.
+- No automated way to verify parser output against "truth" (actual dictionary HTML).
+
+#### Solution: Golden Standard Framework
+- **Snapshot Testing**: Capture raw HTML (`.html`) and verified JSON (`_expected.json`).
+- **Tools**: `scripts/generate_ldoce_golden.py` to auto-generate test data.
+- **Test Suite**: `tests/test_ldoce_parser_golden.py` performs deep comparison and critical field checks.
+- **Coverage**: Initial coverage for example word "hoist" (verb/noun homographs).
+
+#### Fixes Implemented
+- **Grammar Extraction**:
+  - Fixed missing `[transitive]` label for verbs.
+  - Logic now extracts entry-level grammar from `.entryhead` and applies as fallback to senses.
+- **Verification**: Browser validated against golden standard image.
+
+#### Files
+- `tests/test_ldoce_parser_golden.py`: New test suite.
+- `scripts/generate_ldoce_golden.py`: Data generator.
+- `app/services/ldoce_parser.py`: Logic fix.
+
+

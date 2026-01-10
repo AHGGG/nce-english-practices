@@ -95,6 +95,7 @@
 - [x] **Async Architecture**: Refactor synchronous LLM calls to prevent blocking (Complete).
 - [x] Dictionary Fixes: Support `@@@LINK` redirects and relative asset pathing.
 - [x] Dictionary Fixes: Fixed missing spaces in LDOCE collocation examples (2026-01-05).
+- [x] **Dictionary Reliability** (2026-01-10): Golden Standard testing framework + Grammar extraction fix.
 - [x] Testing Infrastructure: Refactored legacy tests into a modern `pytest` suite for voice integration and WebSocket verification.
 - [x] **Mobile Adaptation**:
     - [x] `TEXT_DELTA`: Streaming text incremental updates.

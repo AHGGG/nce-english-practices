@@ -11,7 +11,9 @@ wheels/
 .env
 .english_tense_practice/
 
+# Resources (large dictionary files)
 resources/
+!resources/test_data/
 *.db
 key.pem
 cert.pem

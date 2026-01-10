@@ -163,14 +163,19 @@ class LDOCEParser:
         pos_elem = entryhead.select_one('.pos')
         pos = pos_elem.get_text(strip=True) if pos_elem else None
         
+        # Entry-level grammar (e.g., [transitive] for verbs)
+        # This is used as fallback when senses don't have their own grammar
+        entry_gram_elem = entryhead.select_one('.gram')
+        entry_grammar = entry_gram_elem.get_text(strip=True) if entry_gram_elem else None
+        
         # Pronunciation
         pron, pron_ame = self._extract_pronunciation(entryhead)
         
         # Audio URLs
         audio = self._extract_audio(entryhead)
         
-        # Senses
-        senses = self._extract_senses(entry_elem)
+        # Senses (pass entry-level grammar as default)
+        senses = self._extract_senses(entry_elem, default_grammar=entry_grammar)
         
         # Phrasal verbs
         phrasal_verbs = self._extract_phrasal_verbs(entry_elem)
@@ -253,8 +258,13 @@ class LDOCEParser:
             return LDOCEAudio(bre_url=bre_url, ame_url=ame_url)
         return None
     
-    def _extract_senses(self, entry_elem: Tag) -> List[LDOCESense]:
-        """Extract all senses from an entry."""
+    def _extract_senses(self, entry_elem: Tag, default_grammar: Optional[str] = None) -> List[LDOCESense]:
+        """Extract all senses from an entry.
+        
+        Args:
+            entry_elem: The entry element containing senses
+            default_grammar: Entry-level grammar to use when sense has no grammar
+        """
         senses = []
         
         # Direct child senses (not inside phrasal verb entries)
@@ -264,14 +274,19 @@ class LDOCEParser:
             if parent:
                 continue
             
-            sense = self._parse_sense(sense_elem)
+            sense = self._parse_sense(sense_elem, default_grammar=default_grammar)
             if sense:
                 senses.append(sense)
         
         return senses[:MAX_SENSES_PER_ENTRY]  # Performance: limit senses
     
-    def _parse_sense(self, sense_elem: Tag) -> Optional[LDOCESense]:
-        """Parse a single sense element."""
+    def _parse_sense(self, sense_elem: Tag, default_grammar: Optional[str] = None) -> Optional[LDOCESense]:
+        """Parse a single sense element.
+        
+        Args:
+            sense_elem: The sense element to parse
+            default_grammar: Entry-level grammar to use as fallback
+        """
         # Sense number
         sensenum_elem = sense_elem.select_one('.sensenum')
         index = 1
@@ -281,9 +296,9 @@ class LDOCEParser:
             except ValueError:
                 pass
         
-        # Grammar
+        # Grammar: prefer sense-level, fallback to entry-level
         gram_elem = sense_elem.select_one('.gram')
-        grammar = gram_elem.get_text(strip=True) if gram_elem else None
+        grammar = gram_elem.get_text(strip=True) if gram_elem else default_grammar
         
         # Definition (English and Chinese)
         definition, definition_cn = self._extract_definition(sense_elem)
