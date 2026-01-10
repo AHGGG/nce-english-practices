@@ -93,9 +93,9 @@ const DictionaryResults = ({ word, source, entries = [] }) => {
                         {entry.homnum && (
                             <span className="text-xs text-[#666]">#{entry.homnum}</span>
                         )}
-                        {entry.pos && (
+                        {entry.part_of_speech && (
                             <span className="px-2 py-0.5 text-xs bg-purple-500/20 text-purple-400 rounded">
-                                {entry.pos}
+                                {entry.part_of_speech}
                             </span>
                         )}
                         {entry.pronunciation && (
