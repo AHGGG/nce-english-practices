@@ -11,6 +11,7 @@ from app.models.negotiation_schemas import (
 from app.services.negotiation_service import negotiation_service
 from app.services.content_feeder import content_feeder, FeedContent
 from app.services.proficiency_service import proficiency_service
+from app.core.utils import validate_input
 
 logger = logging.getLogger(__name__)
 
@@ -34,10 +35,12 @@ async def interact(request: NegotiationRequest):
     try:
         response = await negotiation_service.handle_request(request)
         return response
+    except HTTPException:
+        raise
     except Exception as e:
         # In production log this
         logger.exception("Negotiation Error")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Internal Server Error")
 
 
 @router.get("/next-content", response_model=FeedContent)
@@ -84,9 +87,11 @@ async def get_next_content(
         if content:
             return content
         raise HTTPException(status_code=404, detail="No content available")
+    except HTTPException:
+        raise
     except Exception as e:
         logger.exception("ContentFeeder Error")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Internal Server Error")
 
 
 @router.get("/difficult-words", response_model=List[WordProficiencyResponse])
@@ -109,9 +114,11 @@ async def get_difficult_words(limit: int = 20):
             )
             for w in words
         ]
+    except HTTPException:
+        raise
     except Exception as e:
         logger.exception("Proficiency Error")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Internal Server Error")
 
 
 @router.get("/word-examples")
@@ -125,6 +132,7 @@ async def get_word_examples(word: str):
     Returns:
         WordExampleSet with all senses and examples.
     """
+    validate_input(word, "Word", max_length=100)
 
     try:
         result = content_feeder.get_all_examples(word)
@@ -135,7 +143,7 @@ async def get_word_examples(word: str):
         raise
     except Exception as e:
         logger.exception("WordExamples Error")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Internal Server Error")
 
 
 @router.post("/context", response_model=ContextResponse)
@@ -152,6 +160,8 @@ async def generate_context(request: ContextRequest):
             target_sentence=request.target_sentence,
         )
         return ContextResponse(scenario=scenario)
+    except HTTPException:
+        raise
     except Exception as e:
         logger.exception("Context Generation Error")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Internal Server Error")
