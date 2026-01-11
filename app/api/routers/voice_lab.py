@@ -1,6 +1,7 @@
 from fastapi import APIRouter, UploadFile, File, Form, WebSocket, HTTPException
 from fastapi.responses import StreamingResponse
 from app.services.voice_lab import voice_lab_service
+from app.core.utils import validate_input
 import logging
 
 logger = logging.getLogger(__name__)
@@ -27,6 +28,10 @@ async def tts_endpoint(
     model: str = Form("default"),
 ):
     """Generate speech from text."""
+    # Input validation
+    validate_input(text, field_name="Text")
+    validate_input(voice_id, field_name="Voice ID")
+
     try:
         logger.info(f"TTS Request: {provider} - {voice_id}")
         svc = voice_lab_service.get_provider(provider)
@@ -71,6 +76,9 @@ async def assess_endpoint(
     file: UploadFile = File(...),
 ):
     """Assess pronunciation quality."""
+    # Input validation
+    validate_input(reference_text, field_name="Reference Text")
+
     try:
         logger.info(f"Assessment Request: {provider}")
         svc = voice_lab_service.get_provider(provider)
@@ -114,6 +122,9 @@ async def llm_endpoint(text: str = Form(...), model: str = Form(None)):
     """
     Simple LLM wrapper for Voice Lab Conversation Loop.
     """
+    # Input validation
+    validate_input(text, field_name="Input Text")
+
     try:
         from app.services.llm import llm_service
 
