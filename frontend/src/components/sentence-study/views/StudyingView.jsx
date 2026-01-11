@@ -72,118 +72,121 @@ const StudyingView = ({
             </div>
 
             {/* Main Content Area - Centered when idle, top-aligned when showing content */}
-            <main className={`flex-1 flex flex-col items-center p-4 md:p-8 overflow-y-auto min-h-0 ${showDiagnose || simplifiedText || isSimplifying ? 'justify-start pt-8' : 'justify-center'}`}>
-                <div className="max-w-3xl w-full">
-                    {/* Current Sentence - with subtle glow */}
-                    <div
-                        ref={sentenceContainerRef}
-                        className="font-serif text-xl md:text-2xl leading-relaxed text-left p-6 md:p-8 border border-[#333] bg-[#0A0A0A] select-text rounded-lg shadow-[0_0_30px_rgba(0,255,148,0.05)]"
-                        onClick={(e) => {
-                            const word = e.target.dataset?.word;
-                            const keyWord = e.target.dataset?.keyWord;
-                            if (word) onWordClick(word.toLowerCase(), currentSentence?.text || '', keyWord);
-                        }}
-                    >
-                        {currentSentence ? (
-                            <MemoizedSentence
-                                text={currentSentence.text}
-                                highlightSet={highlightSet}
-                                showHighlights={true}
-                                collocations={collocations}
-                            />
-                        ) : (
-                            <span className="text-[#666]">No sentence available</span>
-                        )}
-                    </div>
-
-                    {/* Word clicks indicator */}
-                    {wordClicks.length > 0 && (
-                        <div className="text-center text-xs text-[#666] mt-4">
-                            Looked up: {wordClicks.join(', ')}
+            {/* Main Content Area - Centered when idle, top-aligned when showing content */}
+            <main className="flex-1 overflow-y-auto min-h-0">
+                <div className={`min-h-full flex flex-col items-center p-4 md:p-8 ${showDiagnose || simplifiedText || isSimplifying ? 'justify-start pt-8' : 'justify-center'}`}>
+                    <div className="max-w-3xl w-full">
+                        {/* Current Sentence - with subtle glow */}
+                        <div
+                            ref={sentenceContainerRef}
+                            className="font-serif text-xl md:text-2xl leading-relaxed text-left p-6 md:p-8 border border-[#333] bg-[#0A0A0A] select-text rounded-lg shadow-[0_0_30px_rgba(0,255,148,0.05)]"
+                            onClick={(e) => {
+                                const word = e.target.dataset?.word;
+                                const keyWord = e.target.dataset?.keyWord;
+                                if (word) onWordClick(word.toLowerCase(), currentSentence?.text || '', keyWord);
+                            }}
+                        >
+                            {currentSentence ? (
+                                <MemoizedSentence
+                                    text={currentSentence.text}
+                                    highlightSet={highlightSet}
+                                    showHighlights={true}
+                                    collocations={collocations}
+                                />
+                            ) : (
+                                <span className="text-[#666]">No sentence available</span>
+                            )}
                         </div>
-                    )}
 
-                    {/* Diagnose Mode */}
-                    {showDiagnose && !simplifiedText && !isSimplifying && (
-                        <div className="mt-6 p-4 border border-[#444] bg-[#0A0A0A] rounded-lg">
-                            <p className="text-center text-sm text-[#888] mb-4">
-                                What's making this tricky?
-                            </p>
-                            <div className="flex flex-wrap justify-center gap-3">
-                                {DIFFICULTY_CHOICES.map(choice => (
-                                    <button
-                                        key={choice.id}
-                                        onClick={() => onDifficultyChoice(choice.id)}
-                                        className="px-4 py-3 border border-[#333] hover:border-[#00FF94] hover:bg-[#00FF94]/10 transition-all text-center rounded-md"
-                                    >
-                                        <div className="text-lg">{choice.label}</div>
-                                        <div className="text-xs text-[#666]">{choice.desc}</div>
-                                    </button>
-                                ))}
+                        {/* Word clicks indicator */}
+                        {wordClicks.length > 0 && (
+                            <div className="text-center text-xs text-[#666] mt-4">
+                                Looked up: {wordClicks.join(', ')}
                             </div>
-                        </div>
-                    )}
+                        )}
+
+                        {/* Diagnose Mode */}
+                        {showDiagnose && !simplifiedText && !isSimplifying && (
+                            <div className="mt-6 p-4 border border-[#444] bg-[#0A0A0A] rounded-lg">
+                                <p className="text-center text-sm text-[#888] mb-4">
+                                    What's making this tricky?
+                                </p>
+                                <div className="flex flex-wrap justify-center gap-3">
+                                    {DIFFICULTY_CHOICES.map(choice => (
+                                        <button
+                                            key={choice.id}
+                                            onClick={() => onDifficultyChoice(choice.id)}
+                                            className="px-4 py-3 border border-[#333] hover:border-[#00FF94] hover:bg-[#00FF94]/10 transition-all text-center rounded-md"
+                                        >
+                                            <div className="text-lg">{choice.label}</div>
+                                            <div className="text-xs text-[#666]">{choice.desc}</div>
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
 
 
 
-                    {/* Simplified version */}
-                    {(simplifiedText || isSimplifying) && (
-                        <div className="mt-6 p-6 border border-[#00FF94]/30 bg-[#00FF94]/5 rounded-lg">
-                            <div className="flex items-center justify-between mb-3">
-                                <div className="flex items-center gap-2">
-                                    <Sparkles className="w-4 h-4 text-[#00FF94]" />
-                                    <span className="text-xs text-[#00FF94] uppercase tracking-wider">
-                                        {simplifyStage === 1 ? 'Simple Explanation' :
-                                            simplifyStage === 2 ? 'Detailed Breakdown' :
-                                                '中文深度解释'}
+                        {/* Simplified version */}
+                        {(simplifiedText || isSimplifying) && (
+                            <div className="mt-6 p-6 border border-[#00FF94]/30 bg-[#00FF94]/5 rounded-lg">
+                                <div className="flex items-center justify-between mb-3">
+                                    <div className="flex items-center gap-2">
+                                        <Sparkles className="w-4 h-4 text-[#00FF94]" />
+                                        <span className="text-xs text-[#00FF94] uppercase tracking-wider">
+                                            {simplifyStage === 1 ? 'Simple Explanation' :
+                                                simplifyStage === 2 ? 'Detailed Breakdown' :
+                                                    '中文深度解释'}
+                                        </span>
+                                    </div>
+                                    <span className="text-xs text-[#666]">
+                                        Stage {simplifyStage}/3
                                     </span>
                                 </div>
-                                <span className="text-xs text-[#666]">
-                                    Stage {simplifyStage}/3
-                                </span>
+                                <div className="font-serif text-base leading-relaxed text-[#00FF94] max-h-[40vh] overflow-y-auto custom-scrollbar">
+                                    {simplifiedText ? (
+                                        <ReactMarkdown components={markdownComponents}>
+                                            {simplifiedText}
+                                        </ReactMarkdown>
+                                    ) : (
+                                        isSimplifying && (
+                                            <div className="flex items-center gap-2 py-4">
+                                                <div className="w-2 h-2 bg-[#00FF94] rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                                                <div className="w-2 h-2 bg-[#00FF94] rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                                                <div className="w-2 h-2 bg-[#00FF94] rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                                                <span className="ml-2 text-sm text-[#00FF94]/70 font-mono">Analyzing context...</span>
+                                            </div>
+                                        )
+                                    )}
+                                </div>
+                                <div className="mt-6 flex flex-wrap justify-center gap-3">
+                                    <button
+                                        onClick={() => onSimplifiedResponse(true)}
+                                        disabled={isSimplifying}
+                                        className={`flex items-center justify-center gap-2 min-w-[140px] px-6 py-4 font-bold uppercase text-sm transition-all touch-manipulation rounded-md ${isSimplifying
+                                            ? 'bg-[#00FF94]/30 text-black/50 cursor-not-allowed'
+                                            : 'bg-[#00FF94] text-black hover:bg-[#00CC77] active:scale-95'
+                                            }`}
+                                    >
+                                        <CheckCircle className="w-5 h-5" />
+                                        {simplifyStage === 3 ? '明白了!' : 'Got it!'}
+                                    </button>
+                                    <button
+                                        onClick={() => onSimplifiedResponse(false)}
+                                        disabled={isSimplifying}
+                                        className={`flex items-center justify-center gap-2 min-w-[140px] px-6 py-4 border transition-all touch-manipulation rounded-md ${isSimplifying
+                                            ? 'border-[#333] text-[#444] cursor-not-allowed'
+                                            : 'border-[#666] text-[#888] hover:text-white hover:border-white active:scale-95'
+                                            }`}
+                                    >
+                                        <HelpCircle className="w-5 h-5" />
+                                        {simplifyStage < 3 ? 'Still Unclear' : '还是不懂'}
+                                    </button>
+                                </div>
                             </div>
-                            <div className="font-serif text-base leading-relaxed text-[#00FF94] max-h-[40vh] overflow-y-auto custom-scrollbar">
-                                {simplifiedText ? (
-                                    <ReactMarkdown components={markdownComponents}>
-                                        {simplifiedText}
-                                    </ReactMarkdown>
-                                ) : (
-                                    isSimplifying && (
-                                        <div className="flex items-center gap-2 py-4">
-                                            <div className="w-2 h-2 bg-[#00FF94] rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-                                            <div className="w-2 h-2 bg-[#00FF94] rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-                                            <div className="w-2 h-2 bg-[#00FF94] rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
-                                            <span className="ml-2 text-sm text-[#00FF94]/70 font-mono">Analyzing context...</span>
-                                        </div>
-                                    )
-                                )}
-                            </div>
-                            <div className="mt-6 flex flex-wrap justify-center gap-3">
-                                <button
-                                    onClick={() => onSimplifiedResponse(true)}
-                                    disabled={isSimplifying}
-                                    className={`flex items-center justify-center gap-2 min-w-[140px] px-6 py-4 font-bold uppercase text-sm transition-all touch-manipulation rounded-md ${isSimplifying
-                                        ? 'bg-[#00FF94]/30 text-black/50 cursor-not-allowed'
-                                        : 'bg-[#00FF94] text-black hover:bg-[#00CC77] active:scale-95'
-                                        }`}
-                                >
-                                    <CheckCircle className="w-5 h-5" />
-                                    {simplifyStage === 3 ? '明白了!' : 'Got it!'}
-                                </button>
-                                <button
-                                    onClick={() => onSimplifiedResponse(false)}
-                                    disabled={isSimplifying}
-                                    className={`flex items-center justify-center gap-2 min-w-[140px] px-6 py-4 border transition-all touch-manipulation rounded-md ${isSimplifying
-                                        ? 'border-[#333] text-[#444] cursor-not-allowed'
-                                        : 'border-[#666] text-[#888] hover:text-white hover:border-white active:scale-95'
-                                        }`}
-                                >
-                                    <HelpCircle className="w-5 h-5" />
-                                    {simplifyStage < 3 ? 'Still Unclear' : '还是不懂'}
-                                </button>
-                            </div>
-                        </div>
-                    )}
+                        )}
+                    </div>
                 </div>
             </main>
 
