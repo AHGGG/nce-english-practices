@@ -7,7 +7,7 @@ from typing import Dict, Any
 from datetime import datetime, timedelta
 import math
 import logging
-from sqlalchemy import select, func
+from sqlalchemy import select, func, case
 
 
 from app.database.core import (
@@ -30,23 +30,67 @@ async def get_performance_data(days: int = 30) -> Dict[str, Any]:
             result = {}
             cutoff = datetime.utcnow() - timedelta(days=days)
 
-            # --- Study Time ---
-            # From SentenceLearningRecord (Sentence Study mode)
-            sentence_time_stmt = select(
-                func.sum(SentenceLearningRecord.dwell_time_ms)
+            # --- 1. Sentence Learning Records ---
+            # Combined query for Study Time (dwell_time_ms) and Reading Stats (word_count, articles)
+            sentence_stmt = select(
+                func.sum(SentenceLearningRecord.dwell_time_ms),
+                func.sum(SentenceLearningRecord.word_count),
+                func.count(func.distinct(SentenceLearningRecord.source_id)),
             ).where(SentenceLearningRecord.created_at >= cutoff)
-            sentence_time_res = await session.execute(sentence_time_stmt)
-            sentence_ms = sentence_time_res.scalar() or 0
+
+            sentence_res = await session.execute(sentence_stmt)
+            sentence_row = sentence_res.first()
+
+            sentence_ms = sentence_row[0] or 0
             sentence_seconds = sentence_ms // 1000
+            sentence_words = sentence_row[1] or 0
+            sentence_articles = sentence_row[2] or 0
 
-            # From ReadingSession (Reading mode)
-            reading_time_stmt = select(
-                func.sum(ReadingSession.total_active_seconds)
+            # --- 2. Reading Sessions ---
+            # Combined query for Study Time (total_active_seconds) and Reading Stats (validated_word_count, etc.)
+            # We use conditional aggregation (CASE) to handle the 'reading_quality' filter for stats
+
+            # DRY: Reusable filter condition
+            has_valid_quality = ReadingSession.reading_quality.in_(["high", "medium", "low"])
+
+            reading_stmt = select(
+                # Total time (no quality filter)
+                func.sum(ReadingSession.total_active_seconds),
+                # Validated Word Count (quality IN high, medium, low)
+                func.sum(
+                    case(
+                        (has_valid_quality, ReadingSession.validated_word_count),
+                        else_=0,
+                    )
+                ),
+                # Session Count (quality IN high, medium, low)
+                func.count(
+                    case(
+                        (has_valid_quality, ReadingSession.id),
+                        else_=None,
+                    )
+                ),
+                # Article Count (distinct source_id, quality IN high, medium, low)
+                func.count(
+                    func.distinct(
+                        case(
+                            (has_valid_quality, ReadingSession.source_id),
+                            else_=None,
+                        )
+                    )
+                ),
             ).where(ReadingSession.started_at >= cutoff)
-            reading_time_res = await session.execute(reading_time_stmt)
-            reading_seconds = reading_time_res.scalar() or 0
 
-            # From VoiceSession (Voice mode)
+            reading_res = await session.execute(reading_stmt)
+            reading_row = reading_res.first()
+
+            reading_seconds = reading_row[0] or 0
+            reading_words = reading_row[1] or 0
+            reading_sessions = reading_row[2] or 0
+            reading_articles = reading_row[3] or 0
+
+            # --- 3. Voice Sessions ---
+            # Study Time only
             voice_time_stmt = select(func.sum(VoiceSession.total_active_seconds)).where(
                 VoiceSession.started_at >= cutoff
             )
@@ -64,34 +108,6 @@ async def get_performance_data(days: int = 30) -> Dict[str, Any]:
                     "voice": voice_seconds,
                 },
             }
-
-            # --- Reading Stats ---
-            # From ReadingSession (Reading Mode)
-            reading_stmt = select(
-                func.sum(ReadingSession.validated_word_count),
-                func.count(ReadingSession.id),
-                func.count(func.distinct(ReadingSession.source_id)),
-            ).where(
-                ReadingSession.started_at >= cutoff,
-                ReadingSession.reading_quality.in_(["high", "medium", "low"]),
-            )
-            reading_res = await session.execute(reading_stmt)
-            row = reading_res.first()
-
-            reading_words = row[0] or 0
-            reading_sessions = row[1] or 0
-            reading_articles = row[2] or 0
-
-            # From SentenceLearningRecord (Sentence Study Mode)
-            sentence_stmt = select(
-                func.sum(SentenceLearningRecord.word_count),
-                func.count(func.distinct(SentenceLearningRecord.source_id)),
-            ).where(SentenceLearningRecord.created_at >= cutoff)
-            sentence_res = await session.execute(sentence_stmt)
-            sentence_row = sentence_res.first()
-
-            sentence_words = sentence_row[0] or 0
-            sentence_articles = sentence_row[1] or 0
 
             result["reading_stats"] = {
                 "total_words": reading_words + sentence_words,
