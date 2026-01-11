@@ -1,6 +1,36 @@
 import json
 import re
 from typing import Dict, List, Union, Any
+from fastapi import HTTPException
+
+# Safe pattern: Alphanumeric, common punctuation, safe symbols.
+# Allows: ( ) [ ] - good for text content
+# Blocks: < > { } - potential HTML/JS/Template injection vectors
+SAFE_INPUT_PATTERN = r'^[\w\s\.,!?\'\";:()\-&%+=/@$*\[\]#~]+$'
+
+
+def validate_input(
+    text: str,
+    field_name: str = "Input",
+    pattern: str = SAFE_INPUT_PATTERN,
+    max_length: int = 1000,
+) -> str:
+    """
+    Validates that the input text matches the safe pattern and length limits.
+    Raises HTTPException(400) if validation fails.
+    """
+    if not text:
+        return text
+
+    if len(text) > max_length:
+        raise HTTPException(
+            status_code=400, detail=f"{field_name} exceeds maximum length of {max_length}"
+        )
+
+    if not re.match(pattern, text):
+        raise HTTPException(status_code=400, detail=f"{field_name} contains invalid characters")
+
+    return text
 
 
 def parse_llm_json(content: str) -> Union[Dict[str, Any], List[Any]]:
