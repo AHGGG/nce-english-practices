@@ -7,6 +7,7 @@ from typing import Dict, Any
 from datetime import datetime, timedelta
 import math
 import logging
+import asyncio
 from sqlalchemy import select, func, case
 
 
@@ -20,126 +21,149 @@ from app.models.orm import VoiceSession, ReviewLog
 logger = logging.getLogger(__name__)
 
 
+async def _get_sentence_stats(cutoff: datetime) -> Dict[str, Any]:
+    """Helper to fetch sentence study stats in a separate session."""
+    async with AsyncSessionLocal() as session:
+        sentence_stmt = select(
+            func.sum(SentenceLearningRecord.dwell_time_ms),
+            func.sum(SentenceLearningRecord.word_count),
+            func.count(func.distinct(SentenceLearningRecord.source_id)),
+        ).where(SentenceLearningRecord.created_at >= cutoff)
+
+        sentence_res = await session.execute(sentence_stmt)
+        sentence_row = sentence_res.first()
+
+        ms = sentence_row[0] or 0
+        return {
+            "seconds": ms // 1000,
+            "words": sentence_row[1] or 0,
+            "articles": sentence_row[2] or 0,
+        }
+
+
+async def _get_reading_stats(cutoff: datetime) -> Dict[str, Any]:
+    """Helper to fetch reading session stats in a separate session."""
+    async with AsyncSessionLocal() as session:
+        has_valid_quality = ReadingSession.reading_quality.in_(
+            ["high", "medium", "low"]
+        )
+
+        reading_stmt = select(
+            func.sum(ReadingSession.total_active_seconds),
+            func.sum(
+                case(
+                    (has_valid_quality, ReadingSession.validated_word_count),
+                    else_=0,
+                )
+            ),
+            func.count(
+                case(
+                    (has_valid_quality, ReadingSession.id),
+                    else_=None,
+                )
+            ),
+            func.count(
+                func.distinct(
+                    case(
+                        (has_valid_quality, ReadingSession.source_id),
+                        else_=None,
+                    )
+                )
+            ),
+        ).where(ReadingSession.started_at >= cutoff)
+
+        reading_res = await session.execute(reading_stmt)
+        reading_row = reading_res.first()
+
+        return {
+            "seconds": reading_row[0] or 0,
+            "words": reading_row[1] or 0,
+            "sessions": reading_row[2] or 0,
+            "articles": reading_row[3] or 0,
+        }
+
+
+async def _get_voice_stats(cutoff: datetime) -> Dict[str, Any]:
+    """Helper to fetch voice session stats in a separate session."""
+    async with AsyncSessionLocal() as session:
+        voice_time_stmt = select(func.sum(VoiceSession.total_active_seconds)).where(
+            VoiceSession.started_at >= cutoff
+        )
+        voice_time_res = await session.execute(voice_time_stmt)
+        return {"seconds": voice_time_res.scalar() or 0}
+
+
+async def _get_review_stats(cutoff: datetime) -> Dict[str, Any]:
+    """Helper to fetch review stats in a separate session."""
+    async with AsyncSessionLocal() as session:
+        review_stmt = select(func.sum(ReviewLog.duration_ms)).where(
+            ReviewLog.reviewed_at >= cutoff
+        )
+        review_res = await session.execute(review_stmt)
+        review_ms = review_res.scalar() or 0
+        return {"seconds": review_ms // 1000}
+
+
 async def get_performance_data(days: int = 30) -> Dict[str, Any]:
     """
     Get simplified performance data for dashboard.
     Returns: study time, reading stats, and memory curve data.
     """
-    async with AsyncSessionLocal() as session:
-        try:
-            result = {}
-            cutoff = datetime.utcnow() - timedelta(days=days)
+    try:
+        cutoff = datetime.utcnow() - timedelta(days=days)
 
-            # --- 1. Sentence Learning Records ---
-            # Combined query for Study Time (dwell_time_ms) and Reading Stats (word_count, articles)
-            sentence_stmt = select(
-                func.sum(SentenceLearningRecord.dwell_time_ms),
-                func.sum(SentenceLearningRecord.word_count),
-                func.count(func.distinct(SentenceLearningRecord.source_id)),
-            ).where(SentenceLearningRecord.created_at >= cutoff)
+        # ⚡ OPTIMIZATION: Run independent DB queries in parallel
+        # Instead of 4 sequential round-trips, we run them concurrently.
+        # This reduces the total latency to roughly the max(query_time) instead of sum(query_times).
+        sentence_task = _get_sentence_stats(cutoff)
+        reading_task = _get_reading_stats(cutoff)
+        voice_task = _get_voice_stats(cutoff)
+        review_task = _get_review_stats(cutoff)
 
-            sentence_res = await session.execute(sentence_stmt)
-            sentence_row = sentence_res.first()
+        results = await asyncio.gather(
+            sentence_task, reading_task, voice_task, review_task
+        )
+        s_stats, r_stats, v_stats, rv_stats = results
 
-            sentence_ms = sentence_row[0] or 0
-            sentence_seconds = sentence_ms // 1000
-            sentence_words = sentence_row[1] or 0
-            sentence_articles = sentence_row[2] or 0
+        total_study_seconds = (
+            s_stats["seconds"]
+            + r_stats["seconds"]
+            + v_stats["seconds"]
+            + rv_stats["seconds"]
+        )
 
-            # --- 2. Reading Sessions ---
-            # Combined query for Study Time (total_active_seconds) and Reading Stats (validated_word_count, etc.)
-            # We use conditional aggregation (CASE) to handle the 'reading_quality' filter for stats
-
-            # DRY: Reusable filter condition
-            has_valid_quality = ReadingSession.reading_quality.in_(["high", "medium", "low"])
-
-            reading_stmt = select(
-                # Total time (no quality filter)
-                func.sum(ReadingSession.total_active_seconds),
-                # Validated Word Count (quality IN high, medium, low)
-                func.sum(
-                    case(
-                        (has_valid_quality, ReadingSession.validated_word_count),
-                        else_=0,
-                    )
-                ),
-                # Session Count (quality IN high, medium, low)
-                func.count(
-                    case(
-                        (has_valid_quality, ReadingSession.id),
-                        else_=None,
-                    )
-                ),
-                # Article Count (distinct source_id, quality IN high, medium, low)
-                func.count(
-                    func.distinct(
-                        case(
-                            (has_valid_quality, ReadingSession.source_id),
-                            else_=None,
-                        )
-                    )
-                ),
-            ).where(ReadingSession.started_at >= cutoff)
-
-            reading_res = await session.execute(reading_stmt)
-            reading_row = reading_res.first()
-
-            reading_seconds = reading_row[0] or 0
-            reading_words = reading_row[1] or 0
-            reading_sessions = reading_row[2] or 0
-            reading_articles = reading_row[3] or 0
-
-            # --- 3. Voice Sessions ---
-            # Study Time only
-            voice_time_stmt = select(func.sum(VoiceSession.total_active_seconds)).where(
-                VoiceSession.started_at >= cutoff
-            )
-            voice_time_res = await session.execute(voice_time_stmt)
-            voice_seconds = voice_time_res.scalar() or 0
-
-            # --- 4. Review Sessions ---
-            review_stmt = select(func.sum(ReviewLog.duration_ms)).where(
-                ReviewLog.reviewed_at >= cutoff
-            )
-            review_res = await session.execute(review_stmt)
-            review_ms = review_res.scalar() or 0
-            review_seconds = review_ms // 1000
-
-            total_study_seconds = sentence_seconds + reading_seconds + voice_seconds + review_seconds
-
-            result["study_time"] = {
+        return {
+            "study_time": {
                 "total_seconds": total_study_seconds,
                 "total_minutes": round(total_study_seconds / 60),
                 "breakdown": {
-                    "sentence_study": sentence_seconds,
-                    "reading": reading_seconds,
-                    "voice": voice_seconds,
-                    "review": review_seconds,
+                    "sentence_study": s_stats["seconds"],
+                    "reading": r_stats["seconds"],
+                    "voice": v_stats["seconds"],
+                    "review": rv_stats["seconds"],
                 },
-            }
-
-            result["reading_stats"] = {
-                "total_words": reading_words + sentence_words,
-                "sessions_count": reading_sessions,
-                "articles_count": reading_articles + sentence_articles,
+            },
+            "reading_stats": {
+                "total_words": r_stats["words"] + s_stats["words"],
+                "sessions_count": r_stats["sessions"],
+                "articles_count": r_stats["articles"] + s_stats["articles"],
                 "breakdown": {
-                    "reading_mode": reading_words,
-                    "sentence_study": sentence_words,
+                    "reading_mode": r_stats["words"],
+                    "sentence_study": s_stats["words"],
                 },
-            }
+            },
+        }
 
-            return result
-
-        except Exception:
-            logger.exception("DB Error get_performance_data")
-            return {
-                "study_time": {"total_seconds": 0, "total_minutes": 0, "breakdown": {}},
-                "reading_stats": {
-                    "total_words": 0,
-                    "sessions_count": 0,
-                    "articles_count": 0,
-                },
-            }
+    except Exception:
+        logger.exception("DB Error get_performance_data")
+        return {
+            "study_time": {"total_seconds": 0, "total_minutes": 0, "breakdown": {}},
+            "reading_stats": {
+                "total_words": 0,
+                "sessions_count": 0,
+                "articles_count": 0,
+            },
+        }
 
 
 async def get_daily_study_time(days: int = 30) -> Dict[str, Any]:
