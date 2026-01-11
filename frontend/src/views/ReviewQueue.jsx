@@ -493,12 +493,12 @@ const ReviewQueue = () => {
                 {/* Card */}
                 <div className="flex-1 flex flex-col border border-[#333] bg-[#0A0A0A]">
                     {/* Source tag */}
-                    <div className="px-4 py-2 border-b border-[#222] flex items-center justify-between text-xs">
-                        <div className="flex items-center gap-2">
-                            <span className="px-2 py-0.5 bg-[#00FF94]/10 text-[#00FF94] rounded">
-                                📖 {bookName.slice(0, 20)}...
+                    <div className="px-3 py-2 border-b border-[#222] flex items-center justify-between gap-3 text-xs">
+                        <div className="flex items-center gap-2 min-w-0 flex-1">
+                            <span className="px-1.5 py-0.5 bg-[#00FF94]/10 text-[#00FF94] rounded text-[11px] truncate max-w-[120px] sm:max-w-none" title={bookName}>
+                                📖 {bookName}
                             </span>
-                            <span className="px-2 py-0.5 bg-purple-500/10 text-purple-400 rounded">
+                            <span className="px-1.5 py-0.5 bg-purple-500/10 text-purple-400 rounded text-[11px] whitespace-nowrap flex-shrink-0">
                                 🏷️ {getGapTypeInfo(currentItem.difficulty_type).shortLabel}
                             </span>
                         </div>
@@ -508,7 +508,7 @@ const ReviewQueue = () => {
                             onClick={toggleContext}
                             disabled={loadingContext}
                             className={`
-                                flex items-center gap-1 px-2 py-0.5 rounded transition-colors
+                                flex items-center gap-1 px-2 py-0.5 rounded transition-colors whitespace-nowrap flex-shrink-0
                                 ${showContext
                                     ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30'
                                     : 'bg-[#222] text-[#888] hover:text-white border border-transparent'}
