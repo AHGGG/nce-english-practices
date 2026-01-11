@@ -16,8 +16,7 @@ export const HIGHLIGHT_OPTIONS = [
     { label: 'COCA 14k-15k', value: 'coca20000', range: [14001, 15000] },
     { label: 'COCA 15k-20k', value: 'coca20000', range: [15001, 20000] },
     { label: 'CET-4', value: 'cet4' },
-    { label: 'CET-6', value: 'cet6' },
-    { label: 'QA Vocab', value: 'qa_vocab' }
+    { label: 'CET-6', value: 'cet6' }
 ];
 
 /**

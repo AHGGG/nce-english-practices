@@ -54,7 +54,11 @@ done
 echo -e "\n${YELLOW}5. Running database migrations...${NC}"
 docker compose exec app alembic upgrade head
 
-# 6. Status
+# 6. Seed Initial Data
+echo -e "\n${YELLOW}6. Seeding initial data...${NC}"
+docker compose exec app uv run python scripts/seed_word_lists.py
+
+# 7. Status
 echo -e "\n${GREEN}✅ Deployment complete!${NC}"
 echo -e "Access the application at: ${GREEN}https://localhost${NC} (or your server IP)"
 docker compose ps
