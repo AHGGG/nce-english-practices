@@ -54,7 +54,19 @@ export function useWordExplainer() {
                 // 2. Heuristic Fallback: If not found and it's a phrase, try to find a key word
                 if ((!data || !data.found) && lookupWord.includes(' ')) {
                     // Split phrase and filter stop words
-                    const stopWords = new Set(['of', 'the', 'a', 'an', 'in', 'on', 'at', 'to', 'for', 'with', 'by', 'and', 'or', 'is', 'are']);
+                    // Split phrase and filter stop words
+                    const stopWords = new Set([
+                        'of', 'the', 'a', 'an', 'in', 'on', 'at', 'to', 'for', 'with', 'by', 'and', 'or', 'is', 'are', 'was', 'were', 'be', 'been', 'being',
+                        'have', 'has', 'had', 'do', 'does', 'did', 'will', 'would', 'shall', 'should', 'can', 'could', 'may', 'might', 'must',
+                        'i', 'you', 'he', 'she', 'it', 'we', 'they', 'me', 'him', 'her', 'us', 'them', 'my', 'your', 'his', 'its', 'our', 'their',
+                        'that', 'this', 'these', 'those', 'there', 'here',
+                        'not', 'no', 'but', 'if', 'so', 'as', 'when', 'where', 'why', 'how',
+                        'up', 'down', 'out', 'back', 'about', 'into', 'over', 'after', 'off', 'away', 'from',
+                        'one', 'two', 'three', 'first', 'second', 'third',
+                        'get', 'got', 'make', 'made', 'go', 'went', 'take', 'took', 'come', 'came', 'see', 'saw', 'know', 'knew', 'think', 'thought',
+                        'look', 'looked', 'want', 'wanted', 'give', 'gave', 'use', 'used', 'find', 'found', 'tell', 'told', 'ask', 'asked', 'work', 'worked',
+                        'seem', 'seemed', 'feel', 'felt', 'try', 'tried', 'leave', 'left', 'call', 'called'
+                    ]);
                     const tokens = lookupWord.split(/[^a-zA-Z0-9-]/).filter(t => t && t.length > 2);
                     const candidates = tokens.filter(t => !stopWords.has(t.toLowerCase()));
                     

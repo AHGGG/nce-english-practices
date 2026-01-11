@@ -554,12 +554,12 @@ Word list with indices:
 
 Return a JSON array of detected collocations. For each, provide:
 - "text": the exact collocation text
-- "key_word": the most important word (headword/lemma) to look up in a dictionary for this phrase
+- "key_word": the most difficult or least frequent word in the phrase to look up. Avoid common verbs (make, get, take, do, have, be) and prepositions unless they are the core meaning.
 - "start_word_idx": starting word index
 - "end_word_idx": ending word index (inclusive)
 
 Examples of collocations to detect:
-- Phrasal verbs: "sit down" (key_word: "sit"), "give up" (key_word: "give"), "look forward to" (key_word: "look")
+- Phrasal verbs: "sit down" (key_word: "sit"), "give up" (key_word: "give"), "look forward to" (key_word: "forward")
 - Fixed expressions: "in terms of" (key_word: "term"), "as a result" (key_word: "result"), "take advantage of" (key_word: "advantage")
 - Common combinations: "make a decision" (key_word: "decision"), "pay attention" (key_word: "attention"), "climate change" (key_word: "climate")
 
@@ -651,7 +651,7 @@ Word list with indices:
 
 Return a JSON array of detected collocations. For each, provide:
 - "text": the exact collocation text
-- "key_word": the most important word (headword/lemma) to look up in a dictionary for this phrase
+- "key_word": the most difficult or least frequent word in the phrase to look up. Avoid common verbs (make, get, take, do, have, be) and prepositions unless they are the core meaning.
 - "start_word_idx": starting word index
 - "end_word_idx": ending word index (inclusive)
 
