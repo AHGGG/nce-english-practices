@@ -37,11 +37,11 @@ const api = {
         if (!res.ok) throw new Error('Failed to fetch random queue');
         return res.json();
     },
-    async complete(itemId, quality) {
+    async complete(itemId, quality, durationMs = 0) {
         const res = await fetch('/api/review/complete', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ item_id: itemId, quality })
+            body: JSON.stringify({ item_id: itemId, quality, duration_ms: durationMs })
         });
         if (!res.ok) throw new Error('Failed to complete review');
         return res.json();
@@ -134,7 +134,7 @@ const ReviewQueue = () => {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [lastResult, setLastResult] = useState(null);
     const [isRandomMode, setIsRandomMode] = useState(false);
-    
+
     // Context state
     const [contextData, setContextData] = useState(null);
     const [showContext, setShowContext] = useState(false);
@@ -150,6 +150,9 @@ const ReviewQueue = () => {
 
     // Audio ref
     const audioRef = useRef(null);
+
+    // Timer state
+    const [startTime, setStartTime] = useState(Date.now());
 
     // Load queue and stats
     useEffect(() => {
@@ -173,6 +176,13 @@ const ReviewQueue = () => {
 
     // Current item
     const currentItem = queue[currentIndex];
+
+    // Reset timer when item changes
+    useEffect(() => {
+        if (currentItem) {
+            setStartTime(Date.now());
+        }
+    }, [currentItem]);
 
     // Start random review
     const startRandomReview = async () => {
@@ -228,7 +238,8 @@ const ReviewQueue = () => {
                 return;
             }
 
-            const result = await api.complete(currentItem.id, quality);
+            const duration = Date.now() - startTime;
+            const result = await api.complete(currentItem.id, quality, duration);
             setLastResult(result);
 
             // Reset help panel and context state
@@ -252,7 +263,7 @@ const ReviewQueue = () => {
         } finally {
             setIsSubmitting(false);
         }
-    }, [currentItem, currentIndex, queue.length, isSubmitting, isRandomMode]);
+    }, [currentItem, currentIndex, queue.length, isSubmitting, isRandomMode, startTime]);
 
     // Stream explanation content
     const streamExplanation = useCallback(async (stage) => {
@@ -491,15 +502,15 @@ const ReviewQueue = () => {
                                 🏷️ {getGapTypeInfo(currentItem.difficulty_type).shortLabel}
                             </span>
                         </div>
-                        
+
                         {/* Context Toggle Button */}
-                        <button 
+                        <button
                             onClick={toggleContext}
                             disabled={loadingContext}
                             className={`
                                 flex items-center gap-1 px-2 py-0.5 rounded transition-colors
-                                ${showContext 
-                                    ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30' 
+                                ${showContext
+                                    ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30'
                                     : 'bg-[#222] text-[#888] hover:text-white border border-transparent'}
                             `}
                         >
@@ -534,7 +545,7 @@ const ReviewQueue = () => {
                     {/* Decision: If context is shown, we still show the main big card because that's the "Flashcard". 
                         The context is supplementary at the top. 
                         Actually, let's keep the main sentence prominent. */}
-                        
+
                     <div
                         className="flex-1 flex items-center justify-center p-6 md:p-10 cursor-pointer"
                         onClick={() => playAudio(currentItem.sentence_text)}

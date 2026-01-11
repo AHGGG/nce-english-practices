@@ -51,6 +51,7 @@ class CompleteReviewRequest(BaseModel):
 
     item_id: int
     quality: int  # 1=forgot, 2=remembered after help, 3=remembered, 5=easy
+    duration_ms: int = 0
 
 
 class CompleteReviewResponse(BaseModel):
@@ -373,6 +374,7 @@ async def complete_review(
         review_item_id=item.id,
         quality=req.quality,
         interval_at_review=item.interval_days,
+        duration_ms=req.duration_ms,
     )
     db.add(log)
 

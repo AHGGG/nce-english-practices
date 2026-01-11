@@ -331,6 +331,8 @@ To support multiple dictionaries (e.g., Collins + LDOCE) in one view:
     - **Solution**: We removed most Playwright E2E tests to simplify this. For remaining synchronous tests, run them separately if needed.
 - **Backend `RuntimeError`**: `asyncio.run()` loops conflict with `pytest-asyncio` loops.
     - **Fix**: Tests require `nest_asyncio.apply()` on Windows. (This is handled in `tests/conftest.py`).
+- **Alembic `NotNullViolationError`**: Adding a non-nullable column to an existing table fails without a default value.
+    - **Fix**: Always add `server_default='...'` to `op.add_column` for non-nullable columns in migration scripts.
 
 ### Database Connection
 - **Tests**: Require PostgreSQL running on `localhost:5432` with `nce_practice_test` database.

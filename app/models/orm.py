@@ -612,6 +612,7 @@ class ReviewLog(Base):
     )  # Interval when reviewed (days)
 
     reviewed_at: Mapped[datetime] = mapped_column(TIMESTAMP, server_default=func.now())
+    duration_ms: Mapped[int] = mapped_column(Integer, default=0)
 
     # Relationship
     review_item: Mapped["ReviewItem"] = relationship(

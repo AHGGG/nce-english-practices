@@ -15,7 +15,7 @@ from app.database.core import (
     ReadingSession,
     SentenceLearningRecord,
 )
-from app.models.orm import VoiceSession
+from app.models.orm import VoiceSession, ReviewLog
 
 logger = logging.getLogger(__name__)
 
@@ -97,7 +97,15 @@ async def get_performance_data(days: int = 30) -> Dict[str, Any]:
             voice_time_res = await session.execute(voice_time_stmt)
             voice_seconds = voice_time_res.scalar() or 0
 
-            total_study_seconds = sentence_seconds + reading_seconds + voice_seconds
+            # --- 4. Review Sessions ---
+            review_stmt = select(func.sum(ReviewLog.duration_ms)).where(
+                ReviewLog.reviewed_at >= cutoff
+            )
+            review_res = await session.execute(review_stmt)
+            review_ms = review_res.scalar() or 0
+            review_seconds = review_ms // 1000
+
+            total_study_seconds = sentence_seconds + reading_seconds + voice_seconds + review_seconds
 
             result["study_time"] = {
                 "total_seconds": total_study_seconds,
@@ -106,6 +114,7 @@ async def get_performance_data(days: int = 30) -> Dict[str, Any]:
                     "sentence_study": sentence_seconds,
                     "reading": reading_seconds,
                     "voice": voice_seconds,
+                    "review": review_seconds,
                 },
             }
 
@@ -190,6 +199,21 @@ async def get_daily_study_time(days: int = 30) -> Dict[str, Any]:
             voice_res = await session.execute(voice_stmt)
             voice_days = {row[0].date().isoformat(): row[1] or 0 for row in voice_res}
 
+            # 4. Review by Day
+            review_stmt = (
+                select(
+                    func.date_trunc("day", ReviewLog.reviewed_at).label("day"),
+                    func.sum(ReviewLog.duration_ms),
+                )
+                .where(ReviewLog.reviewed_at >= cutoff)
+                .group_by("day")
+                .order_by("day")
+            )
+            review_res = await session.execute(review_stmt)
+            review_days = {
+                row[0].date().isoformat(): (row[1] or 0) // 1000 for row in review_res
+            }
+
             # Merge all days
             all_dates = sorted(
                 list(
@@ -197,6 +221,7 @@ async def get_daily_study_time(days: int = 30) -> Dict[str, Any]:
                         list(sentence_days.keys())
                         + list(reading_days.keys())
                         + list(voice_days.keys())
+                        + list(review_days.keys())
                     )
                 )
             )
@@ -206,13 +231,15 @@ async def get_daily_study_time(days: int = 30) -> Dict[str, Any]:
                 s_sec = sentence_days.get(date_str, 0)
                 r_sec = reading_days.get(date_str, 0)
                 v_sec = voice_days.get(date_str, 0)
+                rv_sec = review_days.get(date_str, 0)
                 daily_data.append(
                     {
                         "date": date_str,
                         "sentence_study": s_sec,
                         "reading": r_sec,
                         "voice": v_sec,
-                        "total": s_sec + r_sec + v_sec,
+                        "review": rv_sec,
+                        "total": s_sec + r_sec + v_sec + rv_sec,
                     }
                 )
 
