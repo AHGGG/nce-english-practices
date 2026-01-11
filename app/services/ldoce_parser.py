@@ -352,15 +352,28 @@ class LDOCEParser:
 
         def_elem = container.select_one(".def")
         if def_elem:
-            # English definition is in <en> tag
-            en_elem = def_elem.select_one("en")
-            if en_elem:
-                definition = en_elem.get_text(strip=True)
-
             # Chinese translation is in <tran> tag
             tran_elem = def_elem.select_one("tran")
             if tran_elem:
                 definition_cn = tran_elem.get_text(strip=True)
+
+            # English definition
+            en_elem = def_elem.select_one("en")
+            if en_elem:
+                definition = en_elem.get_text(strip=True)
+            else:
+                # Fallback: if no <en> tag, get text directly from .def
+                # We must exclude <tran> tag content if it exists
+                text_parts = []
+                for child in def_elem.children:
+                    if child.name == "tran":
+                        continue
+                    if hasattr(child, "get_text"):
+                        text_parts.append(child.get_text(strip=True))
+                    else:
+                        text_parts.append(str(child).strip())
+                
+                definition = " ".join(part for part in text_parts if part)
 
         return definition, definition_cn
 

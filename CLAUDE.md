@@ -343,6 +343,7 @@ To support multiple dictionaries (e.g., Collins + LDOCE) in one view:
 - **MDD Keys**: Often use Windows-style paths (`\image.png`) or just filenames.
 - **Lookup Priority**: Check filesystem first, then MDD cache, then basename fallback.
 - **Rewriting**: All `src`, `href` attributes in HTML are rewritten to absolute `/dict-assets/` URLs.
+- **Parsing Robustness**: Some LDOCE entries (like 'palestinian') lack standard `<en>` tags within definitions. The parser implements a fallback to read direct text nodes while excluding `<tran>` tags.
 
 ### Voice on Mobile
 - **HTTPS Required**: WebSocket with audio requires HTTPS. Generate cert with `generate_cert.py`.
