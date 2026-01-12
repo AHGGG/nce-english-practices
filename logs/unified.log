@@ -1,3 +1,5 @@
-=== Log session started at 2026-01-12T17:12:04.077546 ===
-2026-01-12 17:12:04.139 [BA] [INFO] [general] app.main: Serving frontend from: D:\Documents\GitHub\python\nce-english-practices\frontend\dist
-2026-01-12 17:12:04.469 [BA] [INFO] [network] httpx: HTTP Request: POST http://test/api/review/complete "HTTP/1.1 200 OK"
+=== Log session started at 2026-01-12T21:12:40.814887 ===
+2026-01-12 21:12:40.879 [BA] [INFO] [general] __mp_main__: Serving frontend from: D:\Documents\GitHub\python\nce-english-practices\frontend\dist
+2026-01-12 21:12:41.034 [BA] [INFO] [general] app.main: Serving frontend from: D:\Documents\GitHub\python\nce-english-practices\frontend\dist
+2026-01-12 21:12:41.036 [BA] [INFO] [general] app.services.aui_input: Starting AUI Postgres Listener...
+2026-01-12 21:12:41.227 [BA] [INFO] [general] app.services.aui_input: Listening on channel: aui_input_channel
