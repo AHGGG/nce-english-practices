@@ -1,0 +1,3 @@
+## 2026-01-12 - Form Accessibility & `React.useId`
+**Learning:** Hardcoded IDs for form labels/errors are brittle. React 19's `useId` is perfect for generating stable, unique IDs for `aria-describedby` and `htmlFor` associations. Also, Playwright's `get_by_text` can be flaky for Select components (matches trigger button AND option text); `get_by_label` is much more robust IF the label is correctly associated.
+**Action:** Always use `useId` for internal component ID generation (errors, hints). Verify form controls using `get_by_label` to simultaneously prove accessibility association and visibility.

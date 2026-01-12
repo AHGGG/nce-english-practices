@@ -196,8 +196,8 @@ const DeepgramStreamingTTS = () => {
                         </div>
 
                         <div className="mb-4">
-                            <label className="block text-xs font-mono text-ink-muted mb-2">Voice</label>
                             <Select
+                                label="Voice"
                                 value={voice}
                                 onChange={(e) => setVoice(e.target.value)}
                                 disabled={connectionState === 'connected'}

@@ -45,21 +45,30 @@ export const Button = ({
     );
 };
 
-export const Input = ({ icon: Icon, error, className = "", ...props }) => (
-    <div className={`relative group flex-grow ${className}`}>
-        {Icon && (
-            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <Icon className="w-4 h-4 text-ink-faint group-focus-within:text-neon-green transition-colors" />
-            </div>
-        )}
-        <input
-            type="text"
-            className={`w-full bg-bg-elevated border border-ink-faint text-ink px-4 py-2.5 text-sm font-mono focus:outline-none focus:border-neon-green focus:ring-1 focus:ring-neon-green transition-all placeholder:text-ink-muted/50 ${Icon ? 'pl-9' : ''} ${error ? 'border-neon-pink focus:border-neon-pink focus:ring-neon-pink' : ''}`}
-            {...props}
-        />
-        {error && <span className="absolute -bottom-5 left-0 text-[10px] text-neon-pink font-mono">{error}</span>}
-    </div>
-);
+export const Input = ({ icon: Icon, error, className = "", id, ...props }) => {
+    const generatedId = React.useId();
+    const inputId = id || generatedId;
+    const errorId = `${inputId}-error`;
+
+    return (
+        <div className={`relative group flex-grow ${className}`}>
+            {Icon && (
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <Icon className="w-4 h-4 text-ink-faint group-focus-within:text-neon-green transition-colors" />
+                </div>
+            )}
+            <input
+                id={inputId}
+                aria-invalid={!!error}
+                aria-describedby={error ? errorId : undefined}
+                type="text"
+                className={`w-full bg-bg-elevated border border-ink-faint text-ink px-4 py-2.5 text-sm font-mono focus:outline-none focus:border-neon-green focus:ring-1 focus:ring-neon-green transition-all placeholder:text-ink-muted/50 ${Icon ? 'pl-9' : ''} ${error ? 'border-neon-pink focus:border-neon-pink focus:ring-neon-pink' : ''}`}
+                {...props}
+            />
+            {error && <span id={errorId} className="absolute -bottom-5 left-0 text-[10px] text-neon-pink font-mono">{error}</span>}
+        </div>
+    );
+};
 
 export const Card = ({ children, title, subtitle, variant = "default", className = "", actions }) => {
     const variants = {
@@ -116,26 +125,35 @@ export const Tag = ({ children, variant = "solid", color = "green", className = 
     );
 };
 
-export const Select = ({ label, options = [], className = "", error, ...props }) => (
-    <div className={`flex flex-col gap-1.5 ${className}`}>
-        {label && <label className="text-xs font-mono text-ink-muted uppercase">{label}</label>}
-        <div className="relative">
-            <select
-                className={`w-full bg-bg-elevated border border-ink-faint text-ink px-4 py-2.5 text-sm font-mono focus:outline-none focus:border-neon-green focus:ring-1 focus:ring-neon-green transition-all appearance-none cursor-pointer ${error ? 'border-neon-pink focus:border-neon-pink focus:ring-neon-pink' : ''}`}
-                {...props}
-            >
-                {options.map((opt) => (
-                    <option key={opt.value} value={opt.value}>
-                        {opt.label}
-                    </option>
-                ))}
-            </select>
-            <div className="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none text-ink-muted">
-                <svg className="w-4 h-4 fill-current" viewBox="0 0 20 20">
-                    <path d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" fillRule="evenodd" />
-                </svg>
+export const Select = ({ label, options = [], className = "", error, id, ...props }) => {
+    const generatedId = React.useId();
+    const selectId = id || generatedId;
+    const errorId = `${selectId}-error`;
+
+    return (
+        <div className={`flex flex-col gap-1.5 ${className}`}>
+            {label && <label htmlFor={selectId} className="text-xs font-mono text-ink-muted uppercase">{label}</label>}
+            <div className="relative">
+                <select
+                    id={selectId}
+                    aria-invalid={!!error}
+                    aria-describedby={error ? errorId : undefined}
+                    className={`w-full bg-bg-elevated border border-ink-faint text-ink px-4 py-2.5 text-sm font-mono focus:outline-none focus:border-neon-green focus:ring-1 focus:ring-neon-green transition-all appearance-none cursor-pointer ${error ? 'border-neon-pink focus:border-neon-pink focus:ring-neon-pink' : ''}`}
+                    {...props}
+                >
+                    {options.map((opt) => (
+                        <option key={opt.value} value={opt.value}>
+                            {opt.label}
+                        </option>
+                    ))}
+                </select>
+                <div className="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none text-ink-muted">
+                    <svg className="w-4 h-4 fill-current" viewBox="0 0 20 20">
+                        <path d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" fillRule="evenodd" />
+                    </svg>
+                </div>
             </div>
+            {error && <span id={errorId} className="text-[10px] text-neon-pink font-mono">{error}</span>}
         </div>
-        {error && <span className="text-[10px] text-neon-pink font-mono">{error}</span>}
-    </div>
-);
+    );
+};

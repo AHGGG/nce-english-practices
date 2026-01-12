@@ -1,5 +1,34 @@
-=== Log session started at 2026-01-12T21:12:40.814887 ===
-2026-01-12 21:12:40.879 [BA] [INFO] [general] __mp_main__: Serving frontend from: D:\Documents\GitHub\python\nce-english-practices\frontend\dist
-2026-01-12 21:12:41.034 [BA] [INFO] [general] app.main: Serving frontend from: D:\Documents\GitHub\python\nce-english-practices\frontend\dist
-2026-01-12 21:12:41.036 [BA] [INFO] [general] app.services.aui_input: Starting AUI Postgres Listener...
-2026-01-12 21:12:41.227 [BA] [INFO] [general] app.services.aui_input: Listening on channel: aui_input_channel
+=== Log session started at 2026-01-12T15:44:49.140103 ===
+2026-01-12 15:44:49.219 [BA] [WARN] [general] __mp_main__: Frontend dist not found at: /app/frontend/dist
+2026-01-12 15:44:49.333 [BA] [WARN] [general] app.main: Frontend dist not found at: /app/frontend/dist
+2026-01-12 15:44:49.334 [BA] [INFO] [general] app.services.aui_input: Starting AUI Postgres Listener...
+2026-01-12 15:44:49.339 [BA] [ERRO] [network] app.services.aui_input: Error in AUI listener loop: Multiple exceptions: [Errno 111] Connect call failed ('::1', 5432, 0, 0), [Errno 111] Connect call failed ('127.0.0.1', 5432)
+2026-01-12 15:44:54.343 [BA] [ERRO] [network] app.services.aui_input: Error in AUI listener loop: Multiple exceptions: [Errno 111] Connect call failed ('::1', 5432, 0, 0), [Errno 111] Connect call failed ('127.0.0.1', 5432)
+2026-01-12 15:44:59.347 [BA] [ERRO] [network] app.services.aui_input: Error in AUI listener loop: Multiple exceptions: [Errno 111] Connect call failed ('::1', 5432, 0, 0), [Errno 111] Connect call failed ('127.0.0.1', 5432)
+2026-01-12 15:45:04.352 [BA] [ERRO] [network] app.services.aui_input: Error in AUI listener loop: Multiple exceptions: [Errno 111] Connect call failed ('::1', 5432, 0, 0), [Errno 111] Connect call failed ('127.0.0.1', 5432)
+2026-01-12 15:45:09.355 [BA] [ERRO] [network] app.services.aui_input: Error in AUI listener loop: Multiple exceptions: [Errno 111] Connect call failed ('::1', 5432, 0, 0), [Errno 111] Connect call failed ('127.0.0.1', 5432)
+2026-01-12 15:45:14.359 [BA] [ERRO] [network] app.services.aui_input: Error in AUI listener loop: Multiple exceptions: [Errno 111] Connect call failed ('::1', 5432, 0, 0), [Errno 111] Connect call failed ('127.0.0.1', 5432)
+2026-01-12 15:45:19.362 [BA] [ERRO] [network] app.services.aui_input: Error in AUI listener loop: Multiple exceptions: [Errno 111] Connect call failed ('::1', 5432, 0, 0), [Errno 111] Connect call failed ('127.0.0.1', 5432)
+2026-01-12 15:45:24.368 [BA] [ERRO] [network] app.services.aui_input: Error in AUI listener loop: Multiple exceptions: [Errno 111] Connect call failed ('::1', 5432, 0, 0), [Errno 111] Connect call failed ('127.0.0.1', 5432)
+2026-01-12 15:45:29.372 [BA] [ERRO] [network] app.services.aui_input: Error in AUI listener loop: Multiple exceptions: [Errno 111] Connect call failed ('::1', 5432, 0, 0), [Errno 111] Connect call failed ('127.0.0.1', 5432)
+2026-01-12 15:45:34.379 [BA] [ERRO] [network] app.services.aui_input: Error in AUI listener loop: Multiple exceptions: [Errno 111] Connect call failed ('::1', 5432, 0, 0), [Errno 111] Connect call failed ('127.0.0.1', 5432)
+2026-01-12 15:45:39.384 [BA] [ERRO] [network] app.services.aui_input: Error in AUI listener loop: Multiple exceptions: [Errno 111] Connect call failed ('::1', 5432, 0, 0), [Errno 111] Connect call failed ('127.0.0.1', 5432)
+2026-01-12 15:45:44.388 [BA] [ERRO] [network] app.services.aui_input: Error in AUI listener loop: Multiple exceptions: [Errno 111] Connect call failed ('::1', 5432, 0, 0), [Errno 111] Connect call failed ('127.0.0.1', 5432)
+2026-01-12 15:45:49.391 [BA] [ERRO] [network] app.services.aui_input: Error in AUI listener loop: Multiple exceptions: [Errno 111] Connect call failed ('::1', 5432, 0, 0), [Errno 111] Connect call failed ('127.0.0.1', 5432)
+2026-01-12 15:45:54.397 [BA] [ERRO] [network] app.services.aui_input: Error in AUI listener loop: Multiple exceptions: [Errno 111] Connect call failed ('::1', 5432, 0, 0), [Errno 111] Connect call failed ('127.0.0.1', 5432)
+2026-01-12 15:45:59.400 [BA] [ERRO] [network] app.services.aui_input: Error in AUI listener loop: Multiple exceptions: [Errno 111] Connect call failed ('::1', 5432, 0, 0), [Errno 111] Connect call failed ('127.0.0.1', 5432)
+2026-01-12 15:46:04.403 [BA] [ERRO] [network] app.services.aui_input: Error in AUI listener loop: Multiple exceptions: [Errno 111] Connect call failed ('::1', 5432, 0, 0), [Errno 111] Connect call failed ('127.0.0.1', 5432)
+2026-01-12 15:46:09.406 [BA] [ERRO] [network] app.services.aui_input: Error in AUI listener loop: Multiple exceptions: [Errno 111] Connect call failed ('::1', 5432, 0, 0), [Errno 111] Connect call failed ('127.0.0.1', 5432)
+2026-01-12 15:46:14.411 [BA] [ERRO] [network] app.services.aui_input: Error in AUI listener loop: Multiple exceptions: [Errno 111] Connect call failed ('::1', 5432, 0, 0), [Errno 111] Connect call failed ('127.0.0.1', 5432)
+2026-01-12 15:46:19.414 [BA] [ERRO] [network] app.services.aui_input: Error in AUI listener loop: Multiple exceptions: [Errno 111] Connect call failed ('::1', 5432, 0, 0), [Errno 111] Connect call failed ('127.0.0.1', 5432)
+2026-01-12 15:46:24.420 [BA] [ERRO] [network] app.services.aui_input: Error in AUI listener loop: Multiple exceptions: [Errno 111] Connect call failed ('::1', 5432, 0, 0), [Errno 111] Connect call failed ('127.0.0.1', 5432)
+2026-01-12 15:46:29.424 [BA] [ERRO] [network] app.services.aui_input: Error in AUI listener loop: Multiple exceptions: [Errno 111] Connect call failed ('::1', 5432, 0, 0), [Errno 111] Connect call failed ('127.0.0.1', 5432)
+2026-01-12 15:46:34.428 [BA] [ERRO] [network] app.services.aui_input: Error in AUI listener loop: Multiple exceptions: [Errno 111] Connect call failed ('::1', 5432, 0, 0), [Errno 111] Connect call failed ('127.0.0.1', 5432)
+2026-01-12 15:46:39.431 [BA] [ERRO] [network] app.services.aui_input: Error in AUI listener loop: Multiple exceptions: [Errno 111] Connect call failed ('::1', 5432, 0, 0), [Errno 111] Connect call failed ('127.0.0.1', 5432)
+2026-01-12 15:46:44.434 [BA] [ERRO] [network] app.services.aui_input: Error in AUI listener loop: Multiple exceptions: [Errno 111] Connect call failed ('::1', 5432, 0, 0), [Errno 111] Connect call failed ('127.0.0.1', 5432)
+2026-01-12 15:46:49.438 [BA] [ERRO] [network] app.services.aui_input: Error in AUI listener loop: Multiple exceptions: [Errno 111] Connect call failed ('::1', 5432, 0, 0), [Errno 111] Connect call failed ('127.0.0.1', 5432)
+2026-01-12 15:46:54.441 [BA] [ERRO] [network] app.services.aui_input: Error in AUI listener loop: Multiple exceptions: [Errno 111] Connect call failed ('::1', 5432, 0, 0), [Errno 111] Connect call failed ('127.0.0.1', 5432)
+2026-01-12 15:46:59.445 [BA] [ERRO] [network] app.services.aui_input: Error in AUI listener loop: Multiple exceptions: [Errno 111] Connect call failed ('::1', 5432, 0, 0), [Errno 111] Connect call failed ('127.0.0.1', 5432)
+2026-01-12 15:47:04.448 [BA] [ERRO] [network] app.services.aui_input: Error in AUI listener loop: Multiple exceptions: [Errno 111] Connect call failed ('::1', 5432, 0, 0), [Errno 111] Connect call failed ('127.0.0.1', 5432)
+2026-01-12 15:47:09.452 [BA] [ERRO] [network] app.services.aui_input: Error in AUI listener loop: Multiple exceptions: [Errno 111] Connect call failed ('::1', 5432, 0, 0), [Errno 111] Connect call failed ('127.0.0.1', 5432)
+2026-01-12 15:47:13.585 [BA] [INFO] [general] app.services.aui_input: Stopping AUI Postgres Listener...
