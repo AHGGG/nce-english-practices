@@ -86,6 +86,15 @@ const PerformanceReport = () => {
                         </button>
                     ))}
                 </div>
+
+                {/* Debug Link */}
+                <button
+                    onClick={() => navigate('/performance/debug')}
+                    className="ml-auto px-3 py-1 border border-ink-faint text-ink-muted hover:border-ink hover:text-ink hover:text-neon-cyan hover:border-neon-cyan flex items-center gap-2 font-mono text-xs transition-colors"
+                >
+                    <RefreshCw className="w-3 h-3" />
+                    ALGO_DEBUG
+                </button>
             </header>
 
             {/* Recommendation Banner (from ProfileStats) */}
@@ -102,7 +111,7 @@ const PerformanceReport = () => {
             {/* KPI Cards Row */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
                 {/* Study Time Card */}
-                <div 
+                <div
                     onClick={() => navigate('/performance/time')}
                     className="bg-bg-paper border border-ink-faint p-4 md:p-6 shadow-hard relative group hover:border-neon-cyan transition-colors cursor-pointer"
                 >

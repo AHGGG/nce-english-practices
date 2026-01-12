@@ -296,7 +296,13 @@ Get-Content logs/unified.log -Tail 50   # Last 50 lines
 To support multiple dictionaries (e.g., Collins + LDOCE) in one view:
 - **No Global Base URL**: We do *not* use `<base>` tags in the frontend.
 - **Path Rewriting**: The backend rewrites all relative asset links at runtime to point to their specific dictionary subdirectory.
+- Path Rewriting: The backend rewrites all relative asset links at runtime to point to their specific dictionary subdirectory.
 - This prevents CSS/JS conflicts between different dictionaries.
+
+### 4. Review Algorithm Debugging
+- **Debug Dashboard**: A dedicated view at `/performance/debug` helps verify the SM-2 algorithm.
+- **Endpoint**: `GET /api/review/debug/schedule` returns the logic trace for upcoming 14 days.
+- **Unit Tests**: `tests/test_sm2_core.py` ensures mathematical correctness of the interval logic.
 
 ### 3. Async/Sync Hybrid
 - **API Routes**: Use `async def` and run blocking LLM calls in thread pools via `run_in_threadpool`.

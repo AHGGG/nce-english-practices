@@ -11,6 +11,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.engine import Result
 
 from app.core.db import get_db
 from app.models.orm import ReviewItem, ReviewLog
@@ -166,6 +167,108 @@ def calculate_theoretical_retention(days: int, stability: float = 10.0) -> float
 # ============================================================
 # API Endpoints
 # ============================================================
+
+class ReviewScheduleItem(BaseModel):
+    id: int
+    text: str
+    next_review_at: datetime
+    ef: float
+    interval: float
+    repetition: int
+    last_review: Optional[Dict[str, Any]] = None
+
+class ReviewScheduleResponse(BaseModel):
+    schedule: Dict[str, List[ReviewScheduleItem]]
+
+@router.get("/debug/schedule", response_model=ReviewScheduleResponse)
+async def get_review_schedule_debug(
+    days: int = 14,
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Get detailed review schedule for debugging purposes.
+    Returns items grouped by date (YYYY-MM-DD), including logic trace.
+    """
+    now = datetime.utcnow()
+    end_date = now + timedelta(days=days)
+
+    # 1. Fetch items due in range (or overdue)
+    # We want everything that IS due or WILL BE due shortly.
+    # Actually, let's just fetch all active items sorted by date for simplicity of debugging?
+    # No, limit to range.
+    
+    stmt = (
+        select(ReviewItem)
+        .where(ReviewItem.next_review_at <= end_date)
+        .order_by(ReviewItem.next_review_at.asc())
+        # .limit(200) # Safety limit?
+    )
+    
+    result = await db.execute(stmt)
+    items = result.scalars().all()
+
+    # 2. Fetch last logs for these items to explain logic
+    # We can do a second query or join. N+1 is okay for debug endpoint usually, but let's be efficient.
+    # Group ids
+    item_ids = [item.id for item in items]
+    
+    # Fetch latest log for each item
+    # This is a bit complex in SQL (Window function), let's just lazy load or separate queries for now.
+    # Since it's a debug page, let's fetch logs in bulk where item_id IN (...)
+    # And allow multiple logs? No, just need the last one.
+    
+    logs_map = {}
+    if item_ids:
+
+        
+        # Simple approach: fetch all logs for these items, sort desc, pick first in python
+        # (Not efficient for production, fine for debug)
+        log_stmt = (
+            select(ReviewLog)
+            .where(ReviewLog.review_item_id.in_(item_ids))
+            .order_by(ReviewLog.reviewed_at.desc())
+        )
+        log_result = await db.execute(log_stmt)
+        all_logs = log_result.scalars().all()
+        
+        for log in all_logs:
+            if log.review_item_id not in logs_map:
+                logs_map[log.review_item_id] = log
+
+    # 3. Group by Day
+    schedule: Dict[str, List[ReviewScheduleItem]] = {}
+    
+    for item in items:
+        # Determine Key (Date)
+        # Convert to YYYY-MM-DD
+        due_date = item.next_review_at.strftime("%Y-%m-%d")
+        
+        if due_date not in schedule:
+            schedule[due_date] = []
+            
+        last_log = logs_map.get(item.id)
+        last_review_info = None
+        if last_log:
+            last_review_info = {
+                "date": last_log.reviewed_at.isoformat(),
+                "quality": last_log.quality,
+                "duration_ms": last_log.duration_ms,
+                "interval_before": last_log.interval_at_review
+            }
+            
+        schedule[due_date].append(
+            ReviewScheduleItem(
+                id=item.id,
+                text=item.sentence_text,
+                next_review_at=item.next_review_at,
+                ef=item.easiness_factor,
+                interval=item.interval_days,
+                repetition=item.repetition,
+                last_review=last_review_info
+            )
+        )
+
+    return ReviewScheduleResponse(schedule=schedule)
 
 
 @router.get("/context/{item_id}", response_model=ReviewContextResponse)
