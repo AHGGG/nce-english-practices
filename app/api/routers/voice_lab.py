@@ -17,7 +17,7 @@ async def get_config():
         return voice_lab_service.get_all_configs()
     except Exception as e:
         logger.error(f"Config Error: {e}", exc_info=True)
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Internal Server Error")
 
 
 @router.post("/tts")
@@ -51,8 +51,8 @@ async def tts_endpoint(
 
         return StreamingResponse(audio_gen(), media_type=media_type)
     except Exception as e:
-        logger.error(f"TTS Error: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.error(f"TTS Error: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Internal Server Error")
 
 
 @router.post("/stt")
@@ -65,8 +65,8 @@ async def stt_endpoint(provider: str = Form(...), file: UploadFile = File(...)):
         text = await svc.stt(content)
         return {"text": text}
     except Exception as e:
-        logger.error(f"STT Error: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.error(f"STT Error: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Internal Server Error")
 
 
 @router.post("/assess")
@@ -88,8 +88,8 @@ async def assess_endpoint(
         result = await svc.assess(content, reference_text)
         return result
     except Exception as e:
-        logger.error(f"Assessment Error: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.error(f"Assessment Error: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Internal Server Error")
 
 
 @router.websocket("/live/{provider}")
@@ -142,5 +142,5 @@ async def llm_endpoint(text: str = Form(...), model: str = Form(None)):
         response = await llm_service.chat_complete(messages, model=model)
         return {"text": response}
     except Exception as e:
-        logger.error(f"LLM Loop Error: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.error(f"LLM Loop Error: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Internal Server Error")
