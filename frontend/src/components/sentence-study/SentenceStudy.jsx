@@ -469,12 +469,17 @@ const SentenceStudy = () => {
         }
     }, [currentArticle, currentIndex, flatSentences]);
 
-    const handleBack = useCallback(() => {
+    const handleBack = useCallback(async () => {
         if (view === VIEW_STATES.STUDYING || view === VIEW_STATES.OVERVIEW || view === VIEW_STATES.COMPLETED) {
             setView(VIEW_STATES.ARTICLE_LIST);
             setCurrentArticle(null);
             setCurrentIndex(0);
             setStudyHighlights({ word_clicks: [], phrase_clicks: [] });
+            // Refresh article status to update completed status
+            if (selectedBook?.filename) {
+                const sorted = await fetchStatusAndSort(selectedBook.filename, [...articles]);
+                setArticles(sorted);
+            }
         } else if (view === VIEW_STATES.ARTICLE_LIST) {
             setView(VIEW_STATES.BOOK_SHELF);
             setSelectedBook(null);
@@ -482,7 +487,7 @@ const SentenceStudy = () => {
         } else {
             navigate('/nav');
         }
-    }, [view, navigate]);
+    }, [view, navigate, selectedBook, articles]);
 
     // === Render ===
     const renderView = () => {
