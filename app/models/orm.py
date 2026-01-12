@@ -74,13 +74,13 @@ class ContextResource(Base):
 
     __tablename__ = "context_resources"
     __table_args__ = (
-        Index("idx_context_word", "word"),
+        # Index("idx_context_word", "word"), # Redundant: covered by idx_context_word_type prefix
         Index("idx_context_type", "context_type"),
         Index("idx_context_word_type", "word", "context_type"),
     )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    word: Mapped[str] = mapped_column(Text, index=True)
+    word: Mapped[str] = mapped_column(Text)  # index=True removed (redundant)
     sense_label: Mapped[Optional[str]] = mapped_column(
         Text, nullable=True
     )  # e.g., "v. to cook gently"
@@ -150,7 +150,7 @@ class AUIInputRecord(Base):
     )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    session_id: Mapped[str] = mapped_column(String, index=True)
+    session_id: Mapped[str] = mapped_column(String)  # index=True removed (redundant)
     action: Mapped[str] = mapped_column(String)
     payload: Mapped[Dict[str, Any]] = mapped_column(JSON, default=dict)
 
@@ -254,7 +254,9 @@ class VocabLearningLog(Base):
     )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    user_id: Mapped[str] = mapped_column(Text, default="default_user", index=True)
+    user_id: Mapped[str] = mapped_column(
+        Text, default="default_user"
+    )  # index=True removed (redundant)
     word: Mapped[str] = mapped_column(Text, index=True)
 
     # Source context
@@ -389,8 +391,8 @@ class UserCalibration(Base):
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     user_id: Mapped[str] = mapped_column(
-        Text, default="default_user", unique=True, index=True
-    )
+        Text, default="default_user", unique=True
+    )  # index=True removed (redundant with unique=True)
     level: Mapped[int] = mapped_column(Integer, default=0)  # 0-11 (12 levels)
 
     # Timestamps
@@ -553,7 +555,9 @@ class ReviewItem(Base):
     )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    user_id: Mapped[str] = mapped_column(Text, default="default_user", index=True)
+    user_id: Mapped[str] = mapped_column(
+        Text, default="default_user"
+    )  # index=True removed (redundant)
 
     # Sentence reference
     source_id: Mapped[str] = mapped_column(Text)  # e.g., "epub:file.epub:3"
