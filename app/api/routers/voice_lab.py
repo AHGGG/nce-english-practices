@@ -12,12 +12,13 @@ router = APIRouter(prefix="/api/voice-lab", tags=["voice-lab"])
 @router.get("/config")
 async def get_config():
     """Get available providers, voices, and models."""
-    """Get available providers, voices, and models."""
     try:
         return voice_lab_service.get_all_configs()
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Config Error: {e}", exc_info=True)
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Internal processing error")
 
 
 @router.post("/tts")
@@ -50,9 +51,11 @@ async def tts_endpoint(
             media_type = "audio/wav"
 
         return StreamingResponse(audio_gen(), media_type=media_type)
+    except HTTPException:
+        raise
     except Exception as e:
-        logger.error(f"TTS Error: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.error(f"TTS Error: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Internal processing error")
 
 
 @router.post("/stt")
@@ -64,9 +67,11 @@ async def stt_endpoint(provider: str = Form(...), file: UploadFile = File(...)):
         content = await file.read()
         text = await svc.stt(content)
         return {"text": text}
+    except HTTPException:
+        raise
     except Exception as e:
-        logger.error(f"STT Error: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.error(f"STT Error: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Internal processing error")
 
 
 @router.post("/assess")
@@ -87,9 +92,11 @@ async def assess_endpoint(
         # Call assess method
         result = await svc.assess(content, reference_text)
         return result
+    except HTTPException:
+        raise
     except Exception as e:
-        logger.error(f"Assessment Error: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.error(f"Assessment Error: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Internal processing error")
 
 
 @router.websocket("/live/{provider}")
@@ -141,6 +148,8 @@ async def llm_endpoint(text: str = Form(...), model: str = Form(None)):
 
         response = await llm_service.chat_complete(messages, model=model)
         return {"text": response}
+    except HTTPException:
+        raise
     except Exception as e:
-        logger.error(f"LLM Loop Error: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.error(f"LLM Loop Error: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Internal processing error")
