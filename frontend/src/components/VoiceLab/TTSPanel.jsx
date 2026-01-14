@@ -1,5 +1,5 @@
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useId } from 'react';
 import { Card, Button, Input } from '../ui';
 import { Play, Download, Loader2, StopCircle, Volume2 } from 'lucide-react';
 
@@ -10,6 +10,10 @@ const TTSPanel = ({ config, fixedProvider = null }) => {
     const [loading, setLoading] = useState(false);
     const [audioUrl, setAudioUrl] = useState(null);
     const audioRef = useRef(null);
+
+    const providerId = useId();
+    const voiceId = useId();
+    const textId = useId();
 
     // Get voices for selected provider
     const availableVoices = config?.[provider]?.voices || [];
@@ -60,8 +64,9 @@ const TTSPanel = ({ config, fixedProvider = null }) => {
                     {/* Provider Select - Show only if no fixed provider */}
                     {!fixedProvider && (
                         <div className="space-y-1">
-                            <label className="text-xs font-mono font-bold text-ink-muted uppercase">Provider</label>
+                            <label htmlFor={providerId} className="text-xs font-mono font-bold text-ink-muted uppercase">Provider</label>
                             <select
+                                id={providerId}
                                 value={provider}
                                 onChange={(e) => { setProvider(e.target.value); setVoice(''); }}
                                 className="w-full bg-bg-elevated border border-ink-faint text-ink px-4 py-2.5 text-sm font-mono focus:border-neon-cyan focus:outline-none"
@@ -75,8 +80,9 @@ const TTSPanel = ({ config, fixedProvider = null }) => {
 
                     {/* Voice Select */}
                     <div className="space-y-1">
-                        <label className="text-xs font-mono font-bold text-ink-muted uppercase">Voice Model</label>
+                        <label htmlFor={voiceId} className="text-xs font-mono font-bold text-ink-muted uppercase">Voice Model</label>
                         <select
+                            id={voiceId}
                             value={voice}
                             onChange={(e) => setVoice(e.target.value)}
                             className="w-full bg-bg-elevated border border-ink-faint text-ink px-4 py-2.5 text-sm font-mono focus:border-neon-cyan focus:outline-none"
@@ -92,8 +98,9 @@ const TTSPanel = ({ config, fixedProvider = null }) => {
 
                     {/* Text Input */}
                     <div className="space-y-1">
-                        <label className="text-xs font-mono font-bold text-ink-muted uppercase">Input Text</label>
+                        <label htmlFor={textId} className="text-xs font-mono font-bold text-ink-muted uppercase">Input Text</label>
                         <textarea
+                            id={textId}
                             value={text}
                             onChange={(e) => setText(e.target.value)}
                             rows={5}
@@ -106,15 +113,7 @@ const TTSPanel = ({ config, fixedProvider = null }) => {
                         variant="primary"
                         onClick={() => {
                             // Handle default voice if none selected
-                            if (!voice && availableVoices.length > 0) {
-                                const first = availableVoices[0];
-                                const firstId = typeof first === 'object' ? first.id : first;
-                                // We can't easily update state and allow generate in same tick without ref or passing the val.
-                                // But handleGenerate uses 'voice'. We should ensure handleGenerate checks this logic too.
-                                // Actually, handleGenerate repeats this check. I will update handleGenerate logic inside the component 
-                                // or just let the user select.
-                                // But for now, let's just trigger generate.
-                            }
+                            // Logic is handled inside handleGenerate or requires user selection
                             handleGenerate();
                         }}
                         isLoading={loading}
