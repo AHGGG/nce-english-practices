@@ -1,3 +1,32 @@
-=== Log session started at 2026-01-13T15:24:28.024733 ===
-2026-01-13 15:24:28.118 [BA] [WARN] [general] app.main: Frontend dist not found at: /app/frontend/dist
-2026-01-13 15:24:28.421 [BA] [INFO] [network] httpx: HTTP Request: GET http://test/api/performance?days=30 "HTTP/1.1 200 OK"
+=== Log session started at 2026-01-14T15:10:20.762290 ===
+2026-01-14 15:10:20.839 [BA] [WARN] [general] app.main: Frontend dist not found at: /app/frontend/dist
+2026-01-14 15:10:21.176 [BA] [INFO] [network] httpx: HTTP Request: GET http://test/api/reading/epub/books "HTTP/1.1 200 OK"
+2026-01-14 15:10:21.185 [BA] [INFO] [network] httpx: HTTP Request: GET http://test/api/reading/epub/books "HTTP/1.1 200 OK"
+2026-01-14 15:10:21.197 [BA] [WARN] [general] app.services.content_providers.epub_provider: Path traversal attempt detected: ../../dummy_outside.epub
+2026-01-14 15:10:21.198 [BA] [WARN] [general] app.services.content_providers.epub_provider: Path traversal attempt detected: /tmp/tmpac2jtara.epub
+2026-01-14 15:10:21.201 [BA] [ERRO] [network] app.services.content_providers.epub_provider: Error loading EPUB valid_test.epub
+Traceback (most recent call last):
+  File "/app/.venv/lib/python3.11/site-packages/ebooklib/epub.py", line 1755, in _load
+    self.zf = zipfile.ZipFile(self.file_name, "r", compression=zipfile.ZIP_DEFLATED, allowZip64=True)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/jules/.local/share/uv/python/cpython-3.11.14-linux-x86_64-gnu/lib/python3.11/zipfile.py", line 1329, in __init__
+    self._RealGetContents()
+  File "/home/jules/.local/share/uv/python/cpython-3.11.14-linux-x86_64-gnu/lib/python3.11/zipfile.py", line 1396, in _RealGetContents
+    raise BadZipFile("File is not a zip file")
+zipfile.BadZipFile: File is not a zip file
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/app/app/services/content_providers/epub_provider.py", line 60, in _load_epub
+    book = epub.read_epub(str(filepath))
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/app/.venv/lib/python3.11/site-packages/ebooklib/epub.py", line 1817, in read_epub
+    book = reader.load()
+           ^^^^^^^^^^^^^
+  File "/app/.venv/lib/python3.11/site-packages/ebooklib/epub.py", line 1463, in load
+    self._load()
+  File "/app/.venv/lib/python3.11/site-packages/ebooklib/epub.py", line 1757, in _load
+    raise EpubException(0, "Bad Zip file")  # noqa: B904
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+ebooklib.epub.EpubException: 'Bad Zip file'
