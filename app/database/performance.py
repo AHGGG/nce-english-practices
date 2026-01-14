@@ -30,79 +30,70 @@ async def get_performance_data(days: int = 30) -> Dict[str, Any]:
             result = {}
             cutoff = datetime.utcnow() - timedelta(days=days)
 
-            # --- 1. Sentence Learning Records ---
-            # Combined query for Study Time (dwell_time_ms) and Reading Stats (word_count, articles)
-            sentence_stmt = select(
-                func.sum(SentenceLearningRecord.dwell_time_ms),
-                func.sum(SentenceLearningRecord.word_count),
-                func.count(func.distinct(SentenceLearningRecord.source_id)),
-            ).where(SentenceLearningRecord.created_at >= cutoff)
+            # ⚡ OPTIMIZATION: Combine 4 independent aggregation queries into ONE database round-trip.
+            # Previously: 4 sequential 'await session.execute()' calls (4x latency).
+            # Now: 1 query using scalar subqueries.
 
-            sentence_res = await session.execute(sentence_stmt)
-            sentence_row = sentence_res.first()
+            # 1. Sentence Learning Records Subquery
+            sentence_subq = select(
+                func.sum(SentenceLearningRecord.dwell_time_ms).label("s_time"),
+                func.sum(SentenceLearningRecord.word_count).label("s_words"),
+                func.count(func.distinct(SentenceLearningRecord.source_id)).label("s_articles")
+            ).where(SentenceLearningRecord.created_at >= cutoff).subquery()
 
-            sentence_ms = sentence_row[0] or 0
-            sentence_seconds = sentence_ms // 1000
-            sentence_words = sentence_row[1] or 0
-            sentence_articles = sentence_row[2] or 0
-
-            # --- 2. Reading Sessions ---
-            # Combined query for Study Time (total_active_seconds) and Reading Stats (validated_word_count, etc.)
-            # We use conditional aggregation (CASE) to handle the 'reading_quality' filter for stats
-
+            # 2. Reading Sessions Subquery
             # DRY: Reusable filter condition
             has_valid_quality = ReadingSession.reading_quality.in_(["high", "medium", "low"])
 
-            reading_stmt = select(
-                # Total time (no quality filter)
-                func.sum(ReadingSession.total_active_seconds),
-                # Validated Word Count (quality IN high, medium, low)
-                func.sum(
-                    case(
-                        (has_valid_quality, ReadingSession.validated_word_count),
-                        else_=0,
-                    )
-                ),
-                # Session Count (quality IN high, medium, low)
-                func.count(
-                    case(
-                        (has_valid_quality, ReadingSession.id),
-                        else_=None,
-                    )
-                ),
-                # Article Count (distinct source_id, quality IN high, medium, low)
-                func.count(
-                    func.distinct(
-                        case(
-                            (has_valid_quality, ReadingSession.source_id),
-                            else_=None,
-                        )
-                    )
-                ),
-            ).where(ReadingSession.started_at >= cutoff)
+            reading_subq = select(
+                func.sum(ReadingSession.total_active_seconds).label("r_time"),
+                func.sum(case((has_valid_quality, ReadingSession.validated_word_count), else_=0)).label("r_words"),
+                func.count(case((has_valid_quality, ReadingSession.id), else_=None)).label("r_sessions"),
+                func.count(func.distinct(case((has_valid_quality, ReadingSession.source_id), else_=None))).label("r_articles")
+            ).where(ReadingSession.started_at >= cutoff).subquery()
 
-            reading_res = await session.execute(reading_stmt)
-            reading_row = reading_res.first()
+            # 3. Voice Sessions Subquery
+            voice_subq = select(
+                func.sum(VoiceSession.total_active_seconds).label("v_time")
+            ).where(VoiceSession.started_at >= cutoff).subquery()
 
-            reading_seconds = reading_row[0] or 0
-            reading_words = reading_row[1] or 0
-            reading_sessions = reading_row[2] or 0
-            reading_articles = reading_row[3] or 0
+            # 4. Review Sessions Subquery
+            review_subq = select(
+                func.sum(ReviewLog.duration_ms).label("rv_time")
+            ).where(ReviewLog.reviewed_at >= cutoff).subquery()
 
-            # --- 3. Voice Sessions ---
-            # Study Time only
-            voice_time_stmt = select(func.sum(VoiceSession.total_active_seconds)).where(
-                VoiceSession.started_at >= cutoff
+            # Combined Query
+            # Selecting columns from multiple subqueries creates a Cartesian product (cross join).
+            # Since each subquery returns exactly 1 row (aggregate), the result is exactly 1 row.
+            stmt = select(
+                sentence_subq.c.s_time,
+                sentence_subq.c.s_words,
+                sentence_subq.c.s_articles,
+                reading_subq.c.r_time,
+                reading_subq.c.r_words,
+                reading_subq.c.r_sessions,
+                reading_subq.c.r_articles,
+                voice_subq.c.v_time,
+                review_subq.c.rv_time
             )
-            voice_time_res = await session.execute(voice_time_stmt)
-            voice_seconds = voice_time_res.scalar() or 0
 
-            # --- 4. Review Sessions ---
-            review_stmt = select(func.sum(ReviewLog.duration_ms)).where(
-                ReviewLog.reviewed_at >= cutoff
-            )
-            review_res = await session.execute(review_stmt)
-            review_ms = review_res.scalar() or 0
+            res = await session.execute(stmt)
+            row = res.first()
+
+            # Extract results (handle None from SUM)
+            sentence_ms = row.s_time or 0
+            sentence_seconds = sentence_ms // 1000
+            sentence_words = row.s_words or 0
+            sentence_articles = row.s_articles or 0
+
+            reading_seconds = row.r_time or 0
+            reading_words = row.r_words or 0
+            reading_sessions = row.r_sessions or 0
+            reading_articles = row.r_articles or 0
+
+            voice_seconds = row.v_time or 0
+
+            review_ms = row.rv_time or 0
             review_seconds = review_ms // 1000
 
             total_study_seconds = sentence_seconds + reading_seconds + voice_seconds + review_seconds
