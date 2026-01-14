@@ -1,5 +1,3 @@
-=== Log session started at 2026-01-12T21:12:40.814887 ===
-2026-01-12 21:12:40.879 [BA] [INFO] [general] __mp_main__: Serving frontend from: D:\Documents\GitHub\python\nce-english-practices\frontend\dist
-2026-01-12 21:12:41.034 [BA] [INFO] [general] app.main: Serving frontend from: D:\Documents\GitHub\python\nce-english-practices\frontend\dist
-2026-01-12 21:12:41.036 [BA] [INFO] [general] app.services.aui_input: Starting AUI Postgres Listener...
-2026-01-12 21:12:41.227 [BA] [INFO] [general] app.services.aui_input: Listening on channel: aui_input_channel
+=== Log session started at 2026-01-13T15:24:28.024733 ===
+2026-01-13 15:24:28.118 [BA] [WARN] [general] app.main: Frontend dist not found at: /app/frontend/dist
+2026-01-13 15:24:28.421 [BA] [INFO] [network] httpx: HTTP Request: GET http://test/api/performance?days=30 "HTTP/1.1 200 OK"

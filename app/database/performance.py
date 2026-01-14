@@ -7,7 +7,7 @@ from typing import Dict, Any
 from datetime import datetime, timedelta
 import math
 import logging
-from sqlalchemy import select, func, case
+from sqlalchemy import select, func, case, and_
 
 
 from app.database.core import (
@@ -274,42 +274,52 @@ async def get_memory_curve_data(user_id: str = "default_user") -> Dict[str, Any]
                 30: (21, 45),
             }
 
-            # ⚡ OPTIMIZATION: Fetch all relevant logs in a single query instead of one per bucket.
-            # This reduces DB round-trips from N (buckets) to 1.
+            # ⚡ OPTIMIZATION: Use database aggregation instead of fetching all logs.
+            # This reduces data transfer and leverages DB engine for counting.
 
-            # 1. Fetch all logs within the max range (45 days)
+            selections = []
+            sorted_days = sorted(bucket_ranges.keys())
+
+            for day in sorted_days:
+                min_int, max_int = bucket_ranges[day]
+                bucket_cond = and_(
+                    ReviewLog.interval_at_review >= min_int,
+                    ReviewLog.interval_at_review < max_int
+                )
+                # Count Total in bucket
+                selections.append(
+                    func.count(case((bucket_cond, 1), else_=None))
+                )
+                # Count Success in bucket (quality >= 3)
+                selections.append(
+                    func.count(case((and_(bucket_cond, ReviewLog.quality >= 3), 1), else_=None))
+                )
+
             stmt = (
-                select(ReviewLog.interval_at_review, ReviewLog.quality)
+                select(*selections)
                 .join(ReviewItem)
                 .where(ReviewItem.user_id == user_id)
                 .where(ReviewLog.interval_at_review < 45)
             )
+
             result = await session.execute(stmt)
-            logs = result.all()  # Returns list of (interval, quality) tuples
+            row = result.one()
 
-            # 2. Bucket the data in memory
-            # structure: {day: {'total': 0, 'success': 0}}
-            buckets = {day: {"total": 0, "success": 0} for day in bucket_ranges}
-
-            for interval, quality in logs:
-                for day, (min_int, max_int) in bucket_ranges.items():
-                    if min_int <= interval < max_int:
-                        buckets[day]["total"] += 1
-                        if quality >= 3:  # 3+ is considered "remembered"
-                            buckets[day]["success"] += 1
-                        break
-
-            # 3. Calculate stats from buckets
             actual_curve = []
             total_reviews = 0
             successful_reviews = 0
 
-            for day, stats in buckets.items():
-                count = stats["total"]
+            for i, day in enumerate(sorted_days):
+                total_idx = i * 2
+                success_idx = i * 2 + 1
+
+                count = row[total_idx] or 0
+                success = row[success_idx] or 0
+
                 if count > 0:
-                    retention = stats["success"] / count
+                    retention = success / count
                     total_reviews += count
-                    successful_reviews += stats["success"]
+                    successful_reviews += success
                 else:
                     retention = None
 
