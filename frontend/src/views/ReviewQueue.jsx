@@ -20,7 +20,8 @@ import {
     Clock,
     Lightbulb,
     ArrowRight,
-    SkipForward
+    SkipForward,
+    Volume2
 } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import { getGapTypeInfo } from '../components/sentence-study/constants';
@@ -503,24 +504,35 @@ const ReviewQueue = () => {
                             </span>
                         </div>
 
-                        {/* Context Toggle Button */}
-                        <button
-                            onClick={toggleContext}
-                            disabled={loadingContext}
-                            className={`
-                                flex items-center gap-1 px-2 py-0.5 rounded transition-colors whitespace-nowrap flex-shrink-0
-                                ${showContext
-                                    ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30'
-                                    : 'bg-bg-elevated text-text-secondary hover:text-white border border-transparent'}
-                            `}
-                        >
-                            {loadingContext ? (
-                                <Loader2 className="w-3 h-3 animate-spin" />
-                            ) : (
-                                <BookOpen className="w-3 h-3" />
-                            )}
-                            <span>上下文</span>
-                        </button>
+                        <div className="flex items-center gap-2">
+                            <button
+                                onClick={() => playAudio(currentItem.sentence_text)}
+                                className="flex items-center gap-1 px-2 py-0.5 rounded transition-colors whitespace-nowrap flex-shrink-0 bg-bg-elevated text-text-secondary hover:text-white border border-transparent"
+                                title="播放发音"
+                            >
+                                <Volume2 className="w-3 h-3" />
+                                <span>发音</span>
+                            </button>
+
+                            {/* Context Toggle Button */}
+                            <button
+                                onClick={toggleContext}
+                                disabled={loadingContext}
+                                className={`
+                                    flex items-center gap-1 px-2 py-0.5 rounded transition-colors whitespace-nowrap flex-shrink-0
+                                    ${showContext
+                                        ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30'
+                                        : 'bg-bg-elevated text-text-secondary hover:text-white border border-transparent'}
+                                `}
+                            >
+                                {loadingContext ? (
+                                    <Loader2 className="w-3 h-3 animate-spin" />
+                                ) : (
+                                    <BookOpen className="w-3 h-3" />
+                                )}
+                                <span>上下文</span>
+                            </button>
+                        </div>
                     </div>
 
                     {/* Context View (Expanded) */}
@@ -547,8 +559,7 @@ const ReviewQueue = () => {
                         Actually, let's keep the main sentence prominent. */}
 
                     <div
-                        className="flex-1 flex items-center justify-center p-6 md:p-10 cursor-pointer"
-                        onClick={() => playAudio(currentItem.sentence_text)}
+                        className="flex-1 flex items-center justify-center p-6 md:p-10"
                     >
                         <p className={`font-serif text-xl md:text-2xl text-white leading-relaxed text-left w-full ${showContext ? 'opacity-50' : ''}`}>
                             <HighlightedSentence
