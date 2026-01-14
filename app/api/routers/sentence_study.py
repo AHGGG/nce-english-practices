@@ -490,11 +490,12 @@ async def explain_word_in_context(req: ExplainWordRequest):
             prev_sentence=req.prev_sentence,
             next_sentence=req.next_sentence,
         ):
-            # SSE spec: newlines in content must be encoded to avoid breaking the protocol
-            # We encode \n as [NL] which the client will decode back to newlines
-            encoded_chunk = chunk.replace("\n", "[NL]")
-            yield f"data: {encoded_chunk}\n\n"
-        yield "data: [DONE]\n\n"
+            # Stream already yields JSON formatted "data: ..." lines or just JSON strings
+            # If stream_word_explanation yields valid JSON strings, we wrap them in "data: ...\n\n"
+            # But stream_word_explanation yields json.dumps(...) so it is a single line string.
+            yield f"data: {chunk}\n\n"
+        
+        yield "data: {\"type\": \"done\"}\n\n"
 
     return StreamingResponse(
         generate(),

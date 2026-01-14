@@ -252,14 +252,20 @@ uv run pytest tests/test_ldoce_parser_golden.py -v
 - **DSML Parser**: Handles DeepSeek's custom XML-style tool calls (`<｜DSML｜invoke>`).
 - **Data Flow**: User Input -> LLM -> Tool Call -> Backend Execution (e.g., Generate Story) -> Result Re-injection -> Final Response -> Frontend Render.
 
-### Voice Chat (WebSocket)
-
 - **Endpoint**: `/ws/voice` (requires HTTPS on mobile browsers).
 - **Protocol**:
   1. Client connects and sends config (voice name, system instruction).
   2. Server connects to Gemini Live API.
   3. Bidirectional streaming: Client sends PCM audio, server streams back audio + transcriptions.
 - **Transcriptions**: Both user input and AI output are transcribed and sent separately as JSON messages.
+
+### Context-Aware Image Generation
+- **Service**: `app/services/image_generation.py` using Zhipu GLM-Image.
+- **Trigger**: LLM analyzes sentence context to determine if visual aid helps understanding.
+- **Parallelism**: Image detection runs parallel to text explanation to reduce latency.
+- **Storage**: generated images are stored in Postgres (`generated_images` table) as raw bytes.
+- **Config**: Controlled by `ENABLE_IMAGE_GENERATION` in `.env`.
+- **Frontend**: `WordInspector` receives `image_check` events via SSE to trigger generation.
 
 ## Key Design Patterns
 

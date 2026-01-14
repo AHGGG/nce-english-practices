@@ -101,10 +101,23 @@ async def api_dict_context(payload: DictionaryContextRequest):
             return {"explanation": "AI client is not configured (API Key missing)."}
 
         prompt = f"""
-        Explain the meaning of the word "{payload.word}" in the context of this sentence:
-        "{payload.sentence}"
+        You are an English tutor. Analyze the following word/phrase in the context of the sentence.
 
-        Keep it brief (max 2 sentences). Explain the nuance or usage.
+        Word: "{payload.word}"
+        Sentence: "{payload.sentence}"
+
+        1. Provide a brief explanation of the meaning in this context (in Chinese, max 2 sentences).
+        2. Determine if this word/phrase is suitable for visual illustration (concrete nouns, action verbs, physical descriptions).
+           - Suitable: deforestation, sprint, glossy, stumble, volcano
+           - Unsuitable: democracy, however, realize, very, abstract concepts, grammar words
+        3. If suitable, write a specific English image prompt (max 50 words) to visualize it. If NOT suitable, "image_prompt" should be null.
+
+        Return strictly valid JSON:
+        {{
+            "explanation": "中文解释...",
+            "needs_image": true/false,
+            "image_prompt": "A detailed illustration of..." (or null)
+        }}
         """
 
         response = await run_in_threadpool(
@@ -112,15 +125,31 @@ async def api_dict_context(payload: DictionaryContextRequest):
                 model=MODEL_NAME,
                 messages=[{"role": "user", "content": prompt}],
                 temperature=0.3,
+                response_format={"type": "json_object"},  # Force JSON if supported by model
             )
         )
-        explanation = (
+        content = (
             response.choices[0].message.content.strip()
             if response.choices
-            else "Could not generate explanation."
+            else ""
         )
-
-        return {"explanation": explanation}
+        
+        # Parse JSON
+        import json
+        try:
+            data = json.loads(content)
+            return {
+                "explanation": data.get("explanation", content),
+                "needs_image": data.get("needs_image", False),
+                "image_prompt": data.get("image_prompt"),
+            }
+        except json.JSONDecodeError:
+            # Fallback if model returns raw text despite instructions
+            return {
+                "explanation": content,
+                "needs_image": False,
+                "image_prompt": None
+            }
     except Exception:
         logger.exception("AI Error")
         return {"explanation": "An error occurred while generating explanation."}

@@ -57,7 +57,9 @@ const ReadingMode = () => {
         explainStyle,
         handleWordClick: hookHandleWordClick,
         closeInspector,
-        changeExplainStyle
+        changeExplainStyle,
+        generatedImage,
+        isGeneratingImage
     } = useWordExplainer();
 
     // Progressive loading
@@ -376,6 +378,8 @@ const ReadingMode = () => {
                 isPhrase={isPhrase}
                 onExplainStyle={changeExplainStyle}
                 currentStyle={explainStyle}
+                generatedImage={generatedImage}
+                isGeneratingImage={isGeneratingImage}
             />
 
             {lightboxImage && (

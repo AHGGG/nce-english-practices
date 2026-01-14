@@ -27,6 +27,8 @@ class Settings(BaseSettings):
     ELEVENLABS_API_KEY: str = ""
     DEEPGRAM_API_KEY: str = ""
     DASHSCOPE_API_KEY: str = ""
+    ZHIPU_API_KEY: str = ""
+    ENABLE_IMAGE_GENERATION: bool = False  # Feature flag: set to True to enable AI image generation
     # For Google Cloud Speech/TTS (Unified with Gemini usually, but separate if using standard Google Cloud APIs)
     GOOGLE_APPLICATION_CREDENTIALS: str = ""
 

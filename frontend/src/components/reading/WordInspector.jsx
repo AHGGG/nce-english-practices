@@ -19,7 +19,10 @@ const WordInspector = ({
     isExplaining = false,
     isPhrase = false,  // True when showing a phrase instead of a single word
     onExplainStyle = () => { }, // Handle style change request
-    currentStyle = 'default'   // default, simple, chinese_deep
+    currentStyle = 'default',   // default, simple, chinese_deep
+    // Image generation props
+    generatedImage = null,
+    isGeneratingImage = false
 }) => {
     if (!selectedWord) return null;
 
@@ -85,6 +88,33 @@ const WordInspector = ({
                                     </ReactMarkdown>
                                 ) : 'Analyzing...'}
                             </div>
+
+                            {/* Generated Image Section */}
+                            {(isGeneratingImage || generatedImage) && (
+                                <div className="mt-4 border-t border-accent-primary/20 pt-3">
+                                    <div className="flex items-center gap-2 mb-2">
+                                        <Sparkles className="w-3 h-3 text-accent-warning" />
+                                        <span className="text-xs text-accent-warning uppercase tracking-wider font-mono">
+                                            AI Visualization
+                                        </span>
+                                    </div>
+
+                                    {isGeneratingImage ? (
+                                        <div className="flex flex-col items-center justify-center py-4 bg-black/20 rounded">
+                                            <Loader2 className="w-5 h-5 animate-spin text-accent-warning mb-2" />
+                                            <span className="text-[10px] text-text-muted uppercase font-mono tracking-widest">Generating Image...</span>
+                                        </div>
+                                    ) : (
+                                        <div className="relative group overflow-hidden rounded border border-border">
+                                            <img
+                                                src={generatedImage}
+                                                alt={`AI visualization for ${selectedWord}`}
+                                                className="w-full h-auto object-cover max-h-[200px]"
+                                            />
+                                        </div>
+                                    )}
+                                </div>
+                            )}
 
                             {/* Progressive Actions */}
                             {!isExplaining && contextExplanation && (

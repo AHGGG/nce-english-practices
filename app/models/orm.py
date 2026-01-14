@@ -1,4 +1,5 @@
 from datetime import datetime
+import uuid
 from typing import Any, Dict, List, Optional
 from sqlalchemy import (
     String,
@@ -10,6 +11,8 @@ from sqlalchemy import (
     JSON,
     Index,
     Float,
+    LargeBinary,
+    Uuid,
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.sql import func
@@ -618,3 +621,26 @@ class ReviewLog(Base):
     review_item: Mapped["ReviewItem"] = relationship(
         "ReviewItem", back_populates="review_logs"
     )
+
+
+class GeneratedImage(Base):
+    """
+    Cache for AI-generated images for word/context pairs.
+    """
+
+    __tablename__ = "generated_images"
+
+    id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
+    word: Mapped[str] = mapped_column(String(100), index=True, nullable=False)
+    context_hash: Mapped[str] = mapped_column(String(64), index=True, nullable=False)
+    sentence: Mapped[str] = mapped_column(Text, nullable=False)
+    image_prompt: Mapped[str] = mapped_column(Text, nullable=False)
+    image_data: Mapped[bytes] = mapped_column(LargeBinary, nullable=False)
+    mime_type: Mapped[str] = mapped_column(String(20), default="image/png")
+    model: Mapped[str] = mapped_column(String(50), default="cogview-4")
+    created_at: Mapped[datetime] = mapped_column(TIMESTAMP, server_default=func.now())
+
+    __table_args__ = (
+        Index("ix_generated_images_word_context", "word", "context_hash"),
+    )
+

@@ -57,7 +57,6 @@ const SentenceStudy = () => {
     // Study highlights state (for COMPLETED view)
     const [studyHighlights, setStudyHighlights] = useState({ word_clicks: [], phrase_clicks: [] });
 
-    // Word/phrase explanation (shared hook - replaces duplicate dictionary/explanation code)
     const {
         selectedWord,
         isPhrase,
@@ -66,6 +65,8 @@ const SentenceStudy = () => {
         contextExplanation,
         isExplaining,
         explainStyle,
+        generatedImage,
+        isGeneratingImage,
         handleWordClick: baseHandleWordClick,
         closeInspector,
         changeExplainStyle,
@@ -575,6 +576,8 @@ const SentenceStudy = () => {
                     isPhrase={isPhrase}
                     onExplainStyle={changeExplainStyle}
                     currentStyle={explainStyle}
+                    generatedImage={generatedImage}
+                    isGeneratingImage={isGeneratingImage}
                 />
             )}
         </>

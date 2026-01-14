@@ -27,6 +27,7 @@ from app.api.routers import (
     voice_session,
     review,
     verify,
+    images,
 )
 from app.services.log_collector import setup_logging
 import logging
@@ -92,6 +93,7 @@ app.include_router(sentence_study.router)
 app.include_router(voice_session.router)
 app.include_router(review.router)
 app.include_router(verify.router)
+app.include_router(images.router)
 
 from app.models.schemas import RemoteLog
 from app.services.log_collector import (

@@ -45,6 +45,9 @@ export async function parseJSONSSEStream(response, handlers = {}) {
                             onDone?.(data);
                         } else if (data.type === 'error') {
                             onError?.(new Error(data.message || 'Stream error'));
+                        } else {
+                            // Handle custom event types (e.g., 'image_check')
+                            handlers.onEvent?.(data.type, data);
                         }
                     } catch (parseError) {
                         // Non-JSON line, ignore

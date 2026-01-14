@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { parseTextSSEStream } from '../utils/sseParser';
+import { parseJSONSSEStream } from '../utils/sseParser';
 
 /**
  * useWordExplainer - Shared hook for word/phrase explanation functionality
@@ -26,6 +26,8 @@ export function useWordExplainer() {
     const [contextExplanation, setContextExplanation] = useState('');
     const [isExplaining, setIsExplaining] = useState(false);
     const [explainStyle, setExplainStyle] = useState('default');
+    const [generatedImage, setGeneratedImage] = useState(null);
+    const [isGeneratingImage, setIsGeneratingImage] = useState(false);
     
     // Request ID ref for cancelling stale streaming requests
     const explainRequestIdRef = useRef(0);
@@ -126,15 +128,50 @@ export function useWordExplainer() {
                 if (explainRequestIdRef.current !== currentRequestId) return;
                 if (!res.ok) throw new Error('Failed to fetch');
 
-                await parseTextSSEStream(res, {
-                    onText: (text) => {
+                await parseJSONSSEStream(res, {
+                    onChunk: (text) => {
                         if (explainRequestIdRef.current === currentRequestId) {
                             setContextExplanation(prev => prev + text);
                         }
                     },
+                    onEvent: async (type, data) => {
+                        console.log('[useWordExplainer] SSE Event:', type, data);
+                        if (type === 'image_check' && explainRequestIdRef.current === currentRequestId) {
+                            // If suitable for image, trigger generation
+                            if (data.suitable && data.image_prompt) {
+                                console.log('[useWordExplainer] Image suitable, generating...');
+                                setIsGeneratingImage(true);
+                                try {
+                                    const genRes = await fetch('/api/generated-images/generate', {
+                                        method: 'POST',
+                                        headers: { 'Content-Type': 'application/json' },
+                                        body: JSON.stringify({
+                                            word: selectedWord,
+                                            sentence: currentSentenceContext,
+                                            image_prompt: data.image_prompt
+                                        })
+                                    });
+                                    
+                                    if (genRes.ok) {
+                                        const genData = await genRes.json();
+                                        console.log('[useWordExplainer] Image URL received:', genData.image_url);
+                                        if (explainRequestIdRef.current === currentRequestId) {
+                                            setGeneratedImage(genData.image_url);
+                                        }
+                                    } else {
+                                        console.error('[useWordExplainer] Generate API failed:', genRes.status);
+                                    }
+                                } catch (e) {
+                                    console.error('[useWordExplainer] Image generation failed', e);
+                                } finally {
+                                    if (explainRequestIdRef.current === currentRequestId) {
+                                        setIsGeneratingImage(false);
+                                    }
+                                }
+                            }
+                        }
+                    },
                     onError: (err) => console.error('Stream error:', err)
-                }, {
-                    abortCheck: () => explainRequestIdRef.current !== currentRequestId
                 });
             } catch (e) {
                 console.error('Stream error:', e);
@@ -160,6 +197,8 @@ export function useWordExplainer() {
         setInspectorData(null);
         setCurrentSentenceContext(sentence || '');
         setContextExplanation('');
+        setGeneratedImage(null);
+        setIsGeneratingImage(false);
         setExplainStyle('default');
         
         setSelectedWord(cleanWord);
@@ -177,6 +216,7 @@ export function useWordExplainer() {
         setLookupWord(null);
         setInspectorData(null);
         setContextExplanation('');
+        setGeneratedImage(null);
         setIsPhrase(false);
     }, []);
 
@@ -197,6 +237,8 @@ export function useWordExplainer() {
         contextExplanation,
         isExplaining,
         explainStyle,
+        generatedImage,
+        isGeneratingImage,
         // Actions
         handleWordClick,
         closeInspector,

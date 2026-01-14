@@ -216,6 +216,33 @@ Respond in this exact JSON format:
 Return ONLY the JSON, no markdown formatting."""
 
 
+
+IMAGE_DETECTION_PROMPT = """You are helping an English learner understand the word "{word}" in the following sentence.
+
+Sentence: "{sentence}"
+
+Full Context:
+{context}
+
+**Task 1: Determine Visual Suitability**
+Decide if this word/phrase IN THIS SPECIFIC CONTEXT is suitable for visual illustration.
+- SUITABLE: Physical objects, visible actions, describable scenes (e.g., "volcanic eruption", "sprinting athlete", "glossy surface").
+- NOT SUITABLE: Abstract ideas, emotions, grammar words, very common words (e.g., "democracy", "however", "think", "book").
+
+**Task 2: Generate Educational Image Prompt (if suitable)**
+If suitable, create a detailed English prompt for an AI image generator. The goal is to help the learner UNDERSTAND the word's meaning in this context through visualization.
+- Describe a scene that illustrates the MEANING of the word as used in this sentence.
+- Be specific and visual. Use concrete details.
+- Do NOT just draw the word literally; show its meaning in action or context.
+- Max 60 words.
+
+Return strictly valid JSON:
+{{
+  "reasoning": "your thinking trajectory here, one or two sentences",
+  "suitable": true/false,
+  "image_prompt": "An educational illustration showing..." (or null if not suitable)
+}}"""
+
 # =============================================================================
 # Service Class
 # =============================================================================
@@ -247,6 +274,9 @@ class SentenceStudyService:
 
     def get_collocation_cache_key(self, sentence: str) -> str:
         return hashlib.md5(sentence.encode()).hexdigest()
+
+    def get_image_suitability_cache_key(self, word: str, sentence: str) -> str:
+        return hashlib.md5(f"{word}|{sentence}|image_check".encode()).hexdigest()
 
     # -------------------------------------------------------------------------
     # Simplify Streaming
@@ -357,76 +387,143 @@ class SentenceStudyService:
     ):
         """
         Stream LLM explanation of a word/phrase with caching.
-        Yields raw text chunks (not JSON).
+        Yields JSON chunks: {"type": "chunk", "content": ...} OR {"type": "image_check", ...}
         """
+        import asyncio
+        import json
+        from app.config import settings
+        
+        # Start parallel image check ONLY if feature is enabled
+        detect_task = None
+        if settings.ENABLE_IMAGE_GENERATION:
+            context_parts_img = []
+            if prev_sentence: context_parts_img.append(prev_sentence)
+            context_parts_img.append(sentence)
+            if next_sentence: context_parts_img.append(next_sentence)
+            full_context = " ".join(context_parts_img)
+            
+            detect_task = asyncio.create_task(
+                self.detect_image_suitability(text, sentence, full_context)
+            )
+
         cache_key = self.get_explain_cache_key(text, sentence, style)
+        image_check_sent = False  # Track if we already sent image_check
 
         # Check cache
         if cache_key in _explain_cache:
             cached = _explain_cache[cache_key]
-            for line in cached.split("\n"):
-                yield line
-                yield "\n"
-            return
-
-        # Build context
-        context_parts = []
-        if prev_sentence:
-            context_parts.append(f'Previous: "{prev_sentence}"')
-        context_parts.append(f'Current: "{sentence}"')
-        if next_sentence:
-            context_parts.append(f'Next: "{next_sentence}"')
-        context = "\n".join(context_parts)
-
-        is_phrase = " " in text.strip()
-        item_type = "短语" if is_phrase else "单词"
-        item_type_en = "phrase" if is_phrase else "word"
-
-        # Select prompt based on style
-        if style == "brief":
-            # Stage 1: Very concise, 1 sentence
-            prompt = EXPLAIN_PROMPTS["brief"].format(text=text, context=context)
-        elif style == "detailed":
-            # Stage 3: Chinese deep explanation
-            prompt = EXPLAIN_PROMPTS["detailed"].format(
-                text=text, context=context, item_type=item_type
-            )
-        elif style == "simple":
-            prompt = EXPLAIN_PROMPTS["simple"].format(
-                text=text, context=context, item_type=item_type_en
-            )
-        elif style == "chinese_deep":
-            prompt = EXPLAIN_PROMPTS["chinese_deep"].format(
-                text=text, context=context, item_type=item_type
-            )
+            # Yield cached content as chunks
+            yield json.dumps({"type": "chunk", "content": cached})
         else:
-            # Default style (Stage 2 in Review Queue, or standard word explanation)
-            template = "default_phrase" if is_phrase else "default_word"
-            prompt = EXPLAIN_PROMPTS[template].format(text=text, context=context)
+            # Build context for explanation
+            context_parts = []
+            if prev_sentence:
+                context_parts.append(f'Previous: "{prev_sentence}"')
+            context_parts.append(f'Current: "{sentence}"')
+            if next_sentence:
+                context_parts.append(f'Next: "{next_sentence}"')
+            context = "\n".join(context_parts)
 
-        # Stream from LLM
-        full_text = ""
+            is_phrase = " " in text.strip()
+            item_type = "短语" if is_phrase else "单词"
+            item_type_en = "phrase" if is_phrase else "word"
+
+            # Select prompt based on style
+            if style == "brief":
+                prompt = EXPLAIN_PROMPTS["brief"].format(text=text, context=context)
+            elif style == "detailed":
+                prompt = EXPLAIN_PROMPTS["detailed"].format(
+                    text=text, context=context, item_type=item_type
+                )
+            elif style == "simple":
+                prompt = EXPLAIN_PROMPTS["simple"].format(
+                    text=text, context=context, item_type=item_type_en
+                )
+            elif style == "chinese_deep":
+                prompt = EXPLAIN_PROMPTS["chinese_deep"].format(
+                    text=text, context=context, item_type=item_type
+                )
+            else:
+                template = "default_phrase" if is_phrase else "default_word"
+                prompt = EXPLAIN_PROMPTS[template].format(text=text, context=context)
+
+            # Stream from LLM
+            full_text = ""
+            try:
+                stream = await self.llm.async_client.chat.completions.create(
+                    model=self.llm.model_name,
+                    messages=[{"role": "user", "content": prompt}],
+                    max_tokens=1000,
+                    temperature=0.3,
+                    stream=True,
+                )
+
+                async for chunk in stream:
+                    if chunk.choices and chunk.choices[0].delta.content:
+                        content = chunk.choices[0].delta.content
+                        full_text += content
+                        yield json.dumps({"type": "chunk", "content": content})
+                    
+                    # Check if image detection completed during streaming
+                    if detect_task and not image_check_sent and detect_task.done():
+                        try:
+                            result = detect_task.result()
+                            if result and result.get("suitable"):
+                                yield json.dumps({
+                                    "type": "image_check", 
+                                    "suitable": True,
+                                    "image_prompt": result.get("image_prompt")
+                                })
+                            image_check_sent = True
+                        except Exception as e:
+                            logger.error(f"Image check task error during stream: {e}")
+                            image_check_sent = True
+
+                # Cache result
+                _explain_cache[cache_key] = full_text
+
+            except Exception as e:
+                logger.error(f"Explain stream error: {e}")
+                yield json.dumps({"type": "error", "message": str(e)})
+
+        # Parallel Task Result: Check if image check completed (fallback if not sent during stream)
+        if detect_task and not image_check_sent:
+            try:
+                 result = await detect_task
+                 if result and result.get("suitable"):
+                     yield json.dumps({
+                         "type": "image_check", 
+                         "suitable": True,
+                         "image_prompt": result.get("image_prompt")
+                     })
+            except Exception as e:
+                logger.error(f"Image check task error: {e}")
+
+    async def detect_image_suitability(self, word: str, sentence: str, context: str = "") -> dict:
+        """Check if a word is suitable for image generation."""
         try:
-            stream = await self.llm.async_client.chat.completions.create(
+             prompt = IMAGE_DETECTION_PROMPT.format(word=word, sentence=sentence, context=context)
+             
+             response = await self.llm.async_client.chat.completions.create(
                 model=self.llm.model_name,
                 messages=[{"role": "user", "content": prompt}],
-                max_tokens=1000,
-                temperature=0.3,
-                stream=True,
-            )
-
-            async for chunk in stream:
-                if chunk.choices and chunk.choices[0].delta.content:
-                    content = chunk.choices[0].delta.content
-                    full_text += content
-                    yield content
-
-            # Cache result
-            _explain_cache[cache_key] = full_text
-
+                max_tokens=200,  # Increased for longer prompts
+                temperature=0.1,
+                response_format={"type": "json_object"},
+             )
+             content = response.choices[0].message.content
+             try:
+                 result = json.loads(content)
+                 # Log the result for debugging
+                 logger.info(f"[Image Detection] word='{word}', reasoning={result.get('reasoning')}, suitable={result.get('suitable')}, prompt={result.get('image_prompt')[:80] if result.get('image_prompt') else 'N/A'}...")
+                 return result
+             except:
+                 logger.warning(f"[Image Detection] Failed to parse JSON: {content[:200]}")
+                 return {"suitable": False, "image_prompt": None}
+                 
         except Exception as e:
-            logger.error(f"Explain stream error: {e}")
-            yield f"[ERROR] {str(e)}"
+            logger.error(f"Image detection error: {e}")
+            return {"suitable": False, "image_prompt": None}
 
     # -------------------------------------------------------------------------
     # SRS Interval Calculation
