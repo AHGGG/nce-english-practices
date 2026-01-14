@@ -92,19 +92,19 @@ const CompletedView = ({
     };
 
     return (
-        <div className="h-screen flex flex-col bg-[#050505] text-[#E0E0E0] font-mono">
+        <div className="h-screen flex flex-col bg-bg-base text-text-primary font-mono">
             {/* Header */}
-            <header className="h-14 border-b border-[#333] flex items-center justify-between px-4 md:px-8 bg-[#0A0A0A]">
+            <header className="h-14 border-b border-border flex items-center justify-between px-4 md:px-8 bg-bg-surface">
                 <button
                     onClick={onBack}
-                    className="flex items-center gap-2 text-[#888] hover:text-[#00FF94] transition-colors"
+                    className="flex items-center gap-2 text-text-secondary hover:text-accent-primary transition-colors"
                 >
                     <ChevronLeft className="w-4 h-4" />
                     <span className="text-xs font-bold uppercase tracking-wider">Back</span>
                 </button>
                 <div className="flex items-center gap-3">
-                    <CheckCircle className="w-5 h-5 text-[#00FF94]" />
-                    <span className="text-xs text-[#00FF94] uppercase tracking-wider font-bold">Completed</span>
+                    <CheckCircle className="w-5 h-5 text-accent-primary" />
+                    <span className="text-xs text-accent-primary uppercase tracking-wider font-bold">Completed</span>
                 </div>
             </header>
 
@@ -119,28 +119,28 @@ const CompletedView = ({
                     {/* Stats */}
                     <div className="flex justify-center gap-6 mb-6">
                         <div className="text-center">
-                            <div className="text-2xl font-bold text-[#00FF94]">{progress.studied_count}</div>
-                            <div className="text-xs text-[#666]">Sentences</div>
+                            <div className="text-2xl font-bold text-accent-primary">{progress.studied_count}</div>
+                            <div className="text-xs text-text-muted">Sentences</div>
                         </div>
                         <div className="text-center">
-                            <div className="text-2xl font-bold text-[#00FF94]">{clearRate}%</div>
-                            <div className="text-xs text-[#666]">Clear Rate</div>
+                            <div className="text-2xl font-bold text-accent-primary">{clearRate}%</div>
+                            <div className="text-xs text-text-muted">Clear Rate</div>
                         </div>
                         <div className="text-center">
                             <div className="text-2xl font-bold text-amber-400">{allHighlights.length}</div>
-                            <div className="text-xs text-[#666]">Looked Up</div>
+                            <div className="text-xs text-text-muted">Looked Up</div>
                         </div>
                         {unclearCount > 0 && (
                             <div className="text-center">
                                 <div className="text-2xl font-bold text-red-400">{unclearCount}</div>
-                                <div className="text-xs text-[#666]">Unclear</div>
+                                <div className="text-xs text-text-muted">Unclear</div>
                             </div>
                         )}
                     </div>
 
                     {/* Legend for unclear sentence colors */}
                     {unclearCount > 0 && (
-                        <div className="flex flex-wrap justify-center gap-4 mb-6 text-xs text-[#888]">
+                        <div className="flex flex-wrap justify-center gap-4 mb-6 text-xs text-text-secondary">
                             {DIFFICULTY_CHOICES.map(choice => (
                                 <div key={choice.id} className="flex items-center gap-1">
                                     <span className={`inline-block w-3 h-3 border-l-4 ${choice.cssClasses.border} ${choice.cssClasses.bg.replace('/10', '/20')}`}></span>
@@ -152,20 +152,20 @@ const CompletedView = ({
 
                     {/* Hint */}
                     {(allHighlights.length > 0 || unclearCount > 0) && (
-                        <p className="text-center text-sm text-[#888] mb-6">
+                        <p className="text-center text-sm text-text-secondary mb-6">
                             🔍 Click highlighted words to review | Click colored sentences to see explanations
                         </p>
                     )}
 
                     {/* Full Article with Highlights */}
-                    <div className="p-6 border border-[#333] bg-[#0A0A0A]">
+                    <div className="p-6 border border-border bg-bg-surface">
                         <div className="font-serif text-base md:text-lg leading-relaxed space-y-4">
                             {sentences.map((sentence, idx) => {
                                 const unclearInfo = unclearMap[idx];
                                 const isUnclear = !!unclearInfo;
                                 const sentenceClass = isUnclear
-                                    ? `text-[#CCC] py-1 cursor-pointer hover:bg-opacity-30 ${getUnclearSentenceStyle(unclearInfo.unclear_choice)}`
-                                    : 'text-[#CCC]';
+                                    ? `text-text-primary py-1 cursor-pointer hover:bg-opacity-30 ${getUnclearSentenceStyle(unclearInfo.unclear_choice)}`
+                                    : 'text-text-primary';
 
                                 return (
                                     <p
@@ -191,14 +191,14 @@ const CompletedView = ({
                             onClick={() => {
                                 window.location.href = `/reading?source_id=${encodeURIComponent(article?.id)}`;
                             }}
-                            className="flex items-center gap-2 px-6 py-3 bg-[#00FF94] text-black font-bold hover:bg-[#00FF94]/80 transition-colors"
+                            className="flex items-center gap-2 px-6 py-3 bg-accent-primary text-black font-bold hover:bg-accent-primary/80 transition-colors"
                         >
                             <BookMarked className="w-4 h-4" />
                             Read Full Article
                         </button>
                         <button
                             onClick={onBack}
-                            className="px-6 py-3 border border-[#666] text-[#888] hover:text-white hover:border-white transition-colors"
+                            className="px-6 py-3 border border-text-muted text-text-secondary hover:text-white hover:border-white transition-colors"
                         >
                             Back to Chapter List
                         </button>

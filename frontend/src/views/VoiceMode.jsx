@@ -12,7 +12,7 @@ const VoiceMode = () => {
             <header className="h-14 border-b border-zinc-800 flex items-center px-4">
                 <button
                     onClick={() => navigate('/nav')}
-                    className="flex items-center gap-2 text-[#888] hover:text-[#00FF94] transition-colors mr-3"
+                    className="flex items-center gap-2 text-text-secondary hover:text-accent-primary transition-colors mr-3"
                 >
                     <ChevronLeft className="w-4 h-4" />
                 </button>

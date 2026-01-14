@@ -32,21 +32,21 @@ const WordInspector = ({
             ></div>
 
             {/* Card - Sharp Industrial Style */}
-            <div className="pointer-events-auto relative w-full md:w-[420px] bg-[#0A0A0A] border-t md:border border-[#333] md:shadow-[4px_4px_0px_0px_rgba(0,255,148,0.2)] overflow-hidden flex flex-col max-h-[80vh] md:max-h-[85vh]">
+            <div className="pointer-events-auto relative w-full md:w-[420px] bg-bg-surface border-t md:border border-border md:shadow-[4px_4px_0px_0px_rgba(0,255,148,0.2)] overflow-hidden flex flex-col max-h-[80vh] md:max-h-[85vh]">
                 {/* Header */}
-                <div className="p-4 border-b border-[#333] flex items-center justify-between bg-[#111] shrink-0">
+                <div className="p-4 border-b border-border flex items-center justify-between bg-bg-elevated shrink-0">
                     <div className="flex items-center gap-3">
                         <span className="text-xl font-serif font-bold text-white">{selectedWord}</span>
                         <button
                             onClick={() => onPlayAudio(selectedWord)}
-                            className="w-8 h-8 flex items-center justify-center border border-[#333] text-[#00FF94] hover:bg-[#00FF94] hover:text-black transition-colors"
+                            className="w-8 h-8 flex items-center justify-center border border-border text-accent-primary hover:bg-accent-primary hover:text-black transition-colors"
                         >
                             <Volume2 className="w-4 h-4" />
                         </button>
                     </div>
                     <button
                         onClick={onClose}
-                        className="w-8 h-8 flex items-center justify-center border border-[#333] text-[#666] hover:border-[#FF0055] hover:text-[#FF0055] transition-colors"
+                        className="w-8 h-8 flex items-center justify-center border border-border text-text-muted hover:border-accent-danger hover:text-accent-danger transition-colors"
                     >
                         <X className="w-4 h-4" />
                     </button>
@@ -56,29 +56,29 @@ const WordInspector = ({
                 <div className="flex-1 overflow-y-auto p-4 custom-scrollbar">
                     {/* Streaming Context Explanation Section */}
                     {(contextExplanation || isExplaining) && (
-                        <div className="mb-4 p-3 border border-[#00FF94]/30 bg-[#00FF94]/5 rounded">
+                        <div className="mb-4 p-3 border border-accent-primary/30 bg-accent-primary/5 rounded">
                             <div className="flex items-center gap-2 mb-2">
-                                <Sparkles className="w-4 h-4 text-[#00FF94]" />
-                                <span className="text-xs text-[#00FF94] uppercase tracking-wider font-mono">
+                                <Sparkles className="w-4 h-4 text-accent-primary" />
+                                <span className="text-xs text-accent-primary uppercase tracking-wider font-mono">
                                     {isPhrase ? 'Phrase Explanation' : 'In This Context'}
                                 </span>
                                 {isExplaining && (
-                                    <Loader2 className="w-3 h-3 animate-spin text-[#00FF94] ml-auto" />
+                                    <Loader2 className="w-3 h-3 animate-spin text-accent-primary ml-auto" />
                                 )}
                             </div>
-                            <div className="text-sm text-[#CCC] leading-relaxed font-serif">
+                            <div className="text-sm text-text-primary leading-relaxed font-serif">
                                 {contextExplanation ? (
                                     <ReactMarkdown
                                         components={{
                                             p: ({ children }) => <p className="mb-2 last:mb-0">{children}</p>,
-                                            h2: ({ children }) => <h2 className="text-sm font-bold text-[#00FF94] uppercase tracking-wider mt-3 mb-1 first:mt-0">{children}</h2>,
-                                            h3: ({ children }) => <h3 className="text-xs font-bold text-[#FFD700] uppercase tracking-wider mt-2 mb-1">{children}</h3>,
+                                            h2: ({ children }) => <h2 className="text-sm font-bold text-accent-primary uppercase tracking-wider mt-3 mb-1 first:mt-0">{children}</h2>,
+                                            h3: ({ children }) => <h3 className="text-xs font-bold text-accent-warning uppercase tracking-wider mt-2 mb-1">{children}</h3>,
                                             ul: ({ children }) => <ul className="list-disc pl-4 mb-2 space-y-1">{children}</ul>,
                                             ol: ({ children }) => <ol className="list-decimal pl-4 mb-2 space-y-1">{children}</ol>,
-                                            li: ({ children }) => <li className="pl-1 marker:text-[#00FF94]">{children}</li>,
-                                            strong: ({ children }) => <strong className="text-[#00FF94] font-bold">{children}</strong>,
-                                            em: ({ children }) => <em className="text-[#FFD700] not-italic">{children}</em>,
-                                            code: ({ children }) => <code className="bg-[#1A1A1A] px-1 rounded text-[#00FF94] font-mono text-xs">{children}</code>
+                                            li: ({ children }) => <li className="pl-1 marker:text-accent-primary">{children}</li>,
+                                            strong: ({ children }) => <strong className="text-accent-primary font-bold">{children}</strong>,
+                                            em: ({ children }) => <em className="text-accent-warning not-italic">{children}</em>,
+                                            code: ({ children }) => <code className="bg-bg-elevated px-1 rounded text-accent-primary font-mono text-xs">{children}</code>
                                         }}
                                     >
                                         {contextExplanation}
@@ -88,11 +88,11 @@ const WordInspector = ({
 
                             {/* Progressive Actions */}
                             {!isExplaining && contextExplanation && (
-                                <div className="mt-3 flex gap-2 border-t border-[#00FF94]/20 pt-2">
+                                <div className="mt-3 flex gap-2 border-t border-accent-primary/20 pt-2">
                                     {currentStyle !== 'simple' && (
                                         <button
                                             onClick={() => onExplainStyle('simple')}
-                                            className="flex-1 py-1.5 text-xs font-mono text-[#00FF94] border border-[#00FF94]/30 hover:bg-[#00FF94]/10 transition-colors uppercase flex items-center justify-center gap-1"
+                                            className="flex-1 py-1.5 text-xs font-mono text-accent-primary border border-accent-primary/30 hover:bg-accent-primary/10 transition-colors uppercase flex items-center justify-center gap-1"
                                         >
                                             <span>Simpler please</span>
                                         </button>
@@ -100,7 +100,7 @@ const WordInspector = ({
                                     {currentStyle !== 'chinese_deep' && (
                                         <button
                                             onClick={() => onExplainStyle('chinese_deep')}
-                                            className="flex-1 py-1.5 text-xs font-mono text-[#FFD700] border border-[#FFD700]/30 hover:bg-[#FFD700]/10 transition-colors uppercase flex items-center justify-center gap-1"
+                                            className="flex-1 py-1.5 text-xs font-mono text-accent-warning border border-accent-warning/30 hover:bg-accent-warning/10 transition-colors uppercase flex items-center justify-center gap-1"
                                         >
                                             <span>🇨🇳 Chinese Deep Dive</span>
                                         </button>
@@ -113,8 +113,8 @@ const WordInspector = ({
                     {/* Dictionary section - show for both single words and phrases */}
                     <>
                         {isInspecting ? (
-                            <div className="flex flex-col items-center justify-center py-8 text-[#666] space-y-3">
-                                <Loader2 className="w-6 h-6 animate-spin text-[#00FF94]" />
+                            <div className="flex flex-col items-center justify-center py-8 text-text-muted space-y-3">
+                                <Loader2 className="w-6 h-6 animate-spin text-accent-primary" />
                                 <span className="text-xs uppercase tracking-widest font-mono">Consulting Dictionary...</span>
                             </div>
                         ) : inspectorData?.found && inspectorData?.entries?.length > 0 ? (
@@ -124,25 +124,25 @@ const WordInspector = ({
                                 entries={inspectorData.entries}
                             />
                         ) : inspectorData?.found === false ? (
-                            <div className="text-[#888] text-center py-8">
+                            <div className="text-text-secondary text-center py-8">
                                 <p className="text-lg mb-2 font-serif">Word not found</p>
                                 <p className="text-sm font-mono">"{selectedWord}" is not in LDOCE dictionary.</p>
                             </div>
                         ) : (
-                            <div className="text-[#FF0055] text-center text-sm py-8 font-mono">Failed to load definition</div>
+                            <div className="text-accent-danger text-center text-sm py-8 font-mono">Failed to load definition</div>
                         )}
                     </>
                 </div>
 
                 {/* Footer Actions */}
-                <div className="p-4 border-t border-[#333] bg-[#111] shrink-0 flex gap-2">
+                <div className="p-4 border-t border-border bg-bg-elevated shrink-0 flex gap-2">
                     <button
                         onClick={() => onMarkAsKnown(selectedWord)}
-                        className="flex-1 bg-[#1A1A1A] border border-[#333] text-[#888] py-3 font-mono text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-2 hover:bg-[#222] hover:text-white transition-all active:translate-y-[1px]"
+                        className="flex-1 bg-bg-elevated border border-border text-text-secondary py-3 font-mono text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-2 hover:bg-border hover:text-white transition-all active:translate-y-[1px]"
                     >
                         Mark Known
                     </button>
-                    <button className="flex-[2] bg-[#E0E0E0] text-black py-3 font-mono text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-2 hover:bg-white hover:shadow-[4px_4px_0px_0px_rgba(255,255,255,0.2)] transition-all active:translate-y-[1px]">
+                    <button className="flex-[2] bg-text-primary text-black py-3 font-mono text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-2 hover:bg-white hover:shadow-[4px_4px_0px_0px_rgba(255,255,255,0.2)] transition-all active:translate-y-[1px]">
                         <Bookmark className="w-4 h-4" />
                         Add to Review
                     </button>

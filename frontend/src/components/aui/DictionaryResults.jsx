@@ -23,7 +23,7 @@ const RevealableTranslation = ({ text }) => {
     if (isVisible) {
         return (
             <p
-                className="text-[#666] text-xs mt-1 cursor-pointer hover:text-[#888] transition-colors"
+                className="text-text-muted text-xs mt-1 cursor-pointer hover:text-text-secondary transition-colors"
                 onClick={(e) => {
                     e.stopPropagation();
                     setIsVisible(false);
@@ -41,7 +41,7 @@ const RevealableTranslation = ({ text }) => {
                 e.stopPropagation();
                 setIsVisible(true);
             }}
-            className="flex items-center gap-1.5 text-xs text-[#444] hover:text-[#00FF94] transition-colors mt-1"
+            className="flex items-center gap-1.5 text-xs text-text-muted hover:text-accent-primary transition-colors mt-1"
         >
             <Languages size={12} />
             <span>Translate</span>
@@ -66,8 +66,8 @@ const DictionaryResults = ({ word, source, entries = [] }) => {
 
     if (!entries || entries.length === 0) {
         return (
-            <div className="p-4 bg-[#111] border border-[#333] rounded">
-                <p className="text-[#666]">Loading dictionary data for <span className="text-white font-bold">{word}</span>...</p>
+            <div className="p-4 bg-bg-elevated border border-border rounded">
+                <p className="text-text-muted">Loading dictionary data for <span className="text-white font-bold">{word}</span>...</p>
             </div>
         );
     }
@@ -75,7 +75,7 @@ const DictionaryResults = ({ word, source, entries = [] }) => {
     return (
         <div className="space-y-4">
             {/* Header */}
-            <div className="flex items-center justify-between gap-3 pb-3 border-b border-[#333]">
+            <div className="flex items-center justify-between gap-3 pb-3 border-b border-border">
                 <div className="flex items-center gap-3">
                     <span className="text-2xl font-serif font-bold text-white">{word}</span>
                     <span className="px-2 py-0.5 text-xs bg-blue-500/20 text-blue-400 border border-blue-500/30 rounded">
@@ -86,12 +86,12 @@ const DictionaryResults = ({ word, source, entries = [] }) => {
 
             {/* Entries */}
             {entries.map((entry, idx) => (
-                <div key={idx} className="bg-[#0A0A0A] border border-[#333] rounded-lg overflow-hidden">
+                <div key={idx} className="bg-bg-surface border border-border rounded-lg overflow-hidden">
                     {/* Entry Header */}
-                    <div className="px-4 py-3 bg-[#111] border-b border-[#333] flex items-center gap-3 flex-wrap">
+                    <div className="px-4 py-3 bg-bg-elevated border-b border-border flex items-center gap-3 flex-wrap">
                         <span className="font-bold text-white">{entry.headword}</span>
                         {entry.homnum && (
-                            <span className="text-xs text-[#666]">#{entry.homnum}</span>
+                            <span className="text-xs text-text-muted">#{entry.homnum}</span>
                         )}
                         {entry.part_of_speech && (
                             <span className="px-2 py-0.5 text-xs bg-purple-500/20 text-purple-400 rounded">
@@ -99,7 +99,7 @@ const DictionaryResults = ({ word, source, entries = [] }) => {
                             </span>
                         )}
                         {entry.pronunciation && (
-                            <span className="text-[#888] text-sm font-mono">/{entry.pronunciation}/</span>
+                            <span className="text-text-secondary text-sm font-mono">/{entry.pronunciation}/</span>
                         )}
                     </div>
 
@@ -109,12 +109,12 @@ const DictionaryResults = ({ word, source, entries = [] }) => {
                             <div key={sIdx} className="space-y-2">
                                 {/* Sense Header */}
                                 <div className="flex items-start gap-2">
-                                    <span className="flex-shrink-0 w-6 h-6 rounded-full bg-[#00FF94]/20 text-[#00FF94] text-xs flex items-center justify-center font-bold">
+                                    <span className="flex-shrink-0 w-6 h-6 rounded-full bg-accent-primary/20 text-accent-primary text-xs flex items-center justify-center font-bold">
                                         {sense.index}
                                     </span>
                                     <div className="flex-1">
                                         {sense.grammar && (
-                                            <span className="text-xs text-[#888] mr-2">{sense.grammar}</span>
+                                            <span className="text-xs text-text-secondary mr-2">{sense.grammar}</span>
                                         )}
                                         <span className="text-white">{sense.definition}</span>
                                         <RevealableTranslation text={sense.definition_cn} />
@@ -125,8 +125,8 @@ const DictionaryResults = ({ word, source, entries = [] }) => {
                                 {sense.examples?.length > 0 && (
                                     <div className="ml-8 space-y-2">
                                         {sense.examples.map((ex, exIdx) => (
-                                            <div key={exIdx} className="pl-3 border-l-2 border-[#333]">
-                                                <p className="text-[#E0E0E0] italic text-sm">{ex.text}</p>
+                                            <div key={exIdx} className="pl-3 border-l-2 border-border">
+                                                <p className="text-text-primary italic text-sm">{ex.text}</p>
                                                 <RevealableTranslation text={ex.translation} />
                                             </div>
                                         ))}
@@ -137,13 +137,13 @@ const DictionaryResults = ({ word, source, entries = [] }) => {
 
                         {/* Phrasal Verbs */}
                         {entry.phrasal_verbs?.length > 0 && (
-                            <div className="mt-4 pt-4 border-t border-[#333]">
-                                <span className="text-xs uppercase text-[#666] tracking-wider">Phrasal Verbs</span>
+                            <div className="mt-4 pt-4 border-t border-border">
+                                <span className="text-xs uppercase text-text-muted tracking-wider">Phrasal Verbs</span>
                                 <div className="mt-2 space-y-2">
                                     {entry.phrasal_verbs.map((pv, pvIdx) => (
-                                        <div key={pvIdx} className="p-2 bg-[#111] rounded">
-                                            <span className="font-bold text-[#00FF94]">{pv.phrase}</span>
-                                            <span className="ml-2 text-[#E0E0E0]">{pv.definition}</span>
+                                        <div key={pvIdx} className="p-2 bg-bg-elevated rounded">
+                                            <span className="font-bold text-accent-primary">{pv.phrase}</span>
+                                            <span className="ml-2 text-text-primary">{pv.definition}</span>
                                             <RevealableTranslation text={pv.definition_cn} />
                                         </div>
                                     ))}
@@ -158,13 +158,13 @@ const DictionaryResults = ({ word, source, entries = [] }) => {
                             <div className="mt-4 pt-4 border-t border-[#333]">
                                 <button
                                     onClick={() => toggleSection(idx, 'etymology')}
-                                    className="flex items-center gap-2 text-xs uppercase text-[#666] tracking-wider hover:text-white transition-colors"
+                                    className="flex items-center gap-2 text-xs uppercase text-text-muted tracking-wider hover:text-white transition-colors"
                                 >
                                     <span>{isSectionExpanded(idx, 'etymology') ? '▼' : '▶'}</span>
                                     <span>📜 Word Origin</span>
                                 </button>
                                 {isSectionExpanded(idx, 'etymology') && (
-                                    <div className="mt-2 p-3 bg-[#111] rounded text-sm">
+                                    <div className="mt-2 p-3 bg-bg-elevated rounded text-sm">
                                         <div className="flex flex-wrap gap-3">
                                             {entry.etymology.century && (
                                                 <span className="px-2 py-1 bg-amber-500/20 text-amber-400 rounded text-xs">
@@ -172,16 +172,16 @@ const DictionaryResults = ({ word, source, entries = [] }) => {
                                                 </span>
                                             )}
                                             {entry.etymology.origin && (
-                                                <span className="text-[#E0E0E0]">
+                                                <span className="text-text-primary">
                                                     from <span className="font-italic text-cyan-400">{entry.etymology.origin}</span>
                                                 </span>
                                             )}
                                             {entry.etymology.meaning && (
-                                                <span className="text-[#888]">{entry.etymology.meaning}</span>
+                                                <span className="text-text-secondary">{entry.etymology.meaning}</span>
                                             )}
                                         </div>
                                         {entry.etymology.note && (
-                                            <p className="mt-2 text-[#666] text-xs">{entry.etymology.note}</p>
+                                            <p className="mt-2 text-text-muted text-xs">{entry.etymology.note}</p>
                                         )}
                                     </div>
                                 )}
@@ -199,17 +199,17 @@ const DictionaryResults = ({ word, source, entries = [] }) => {
                                     <span>📝 Verb Table</span>
                                 </button>
                                 {isSectionExpanded(idx, 'verb_table') && (
-                                    <div className="mt-2 p-3 bg-[#111] rounded">
+                                    <div className="mt-2 p-3 bg-bg-elevated rounded">
                                         <div className="text-xs font-mono">
                                             {entry.verb_table.simple_forms?.length > 0 && (
                                                 <div className="mb-3">
-                                                    <span className="text-[#888] block mb-1">Simple Forms</span>
+                                                    <span className="text-text-secondary block mb-1">Simple Forms</span>
                                                     <div className="grid grid-cols-2 gap-1">
                                                         {entry.verb_table.simple_forms.slice(0, 6).map((f, fIdx) => (
                                                             <div key={fIdx} className="flex gap-2">
-                                                                <span className="text-[#666] w-20 truncate">{f.tense}</span>
-                                                                <span className="text-[#00FF94]">
-                                                                    {f.auxiliary && <span className="text-[#888]">{f.auxiliary} </span>}
+                                                                <span className="text-text-muted w-20 truncate">{f.tense}</span>
+                                                                <span className="text-accent-primary">
+                                                                    {f.auxiliary && <span className="text-text-secondary">{f.auxiliary} </span>}
                                                                     {f.form}
                                                                 </span>
                                                             </div>
@@ -223,9 +223,9 @@ const DictionaryResults = ({ word, source, entries = [] }) => {
                                                     <div className="grid grid-cols-2 gap-1">
                                                         {entry.verb_table.continuous_forms.slice(0, 4).map((f, fIdx) => (
                                                             <div key={fIdx} className="flex gap-2">
-                                                                <span className="text-[#666] w-20 truncate">{f.tense}</span>
-                                                                <span className="text-[#00FF94]">
-                                                                    {f.auxiliary && <span className="text-[#888]">{f.auxiliary} </span>}
+                                                                <span className="text-text-muted w-20 truncate">{f.tense}</span>
+                                                                <span className="text-accent-primary">
+                                                                    {f.auxiliary && <span className="text-text-secondary">{f.auxiliary} </span>}
                                                                     {f.form}
                                                                 </span>
                                                             </div>

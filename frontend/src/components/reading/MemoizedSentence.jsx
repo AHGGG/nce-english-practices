@@ -124,7 +124,7 @@ const MemoizedSentence = memo(function MemoizedSentence({
             // Amber for studied phrases, yellow dashed border for detected but not studied
             const phraseClassName = isStudiedPhrase
                 ? 'reading-word cursor-pointer px-0.5 text-amber-400 border-b-2 border-amber-400 bg-amber-400/10'
-                : 'reading-word cursor-pointer px-0.5 border-b-2 border-dashed border-[#FFD700] hover:bg-[#FFD700]/10 hover:text-[#FFD700]';
+                : 'reading-word cursor-pointer px-0.5 border-b-2 border-dashed border-accent-warning hover:bg-accent-warning/10 hover:text-accent-warning';
 
             rendered.push(
                 <span
@@ -171,9 +171,9 @@ const MemoizedSentence = memo(function MemoizedSentence({
                 className += 'text-amber-400 border-b border-amber-400/50 bg-amber-400/10';
             } else if (isVocabHighlighted) {
                 // Green for vocabulary highlights
-                className += 'text-[#00FF94] border-b border-[#00FF94]/50';
+                className += 'text-accent-primary border-b border-accent-primary/50';
             } else {
-                className += 'hover:text-[#00FF94] hover:bg-[#00FF94]/10';
+                className += 'hover:text-accent-primary hover:bg-accent-primary/10';
             }
 
             rendered.push(

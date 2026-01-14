@@ -27,33 +27,33 @@ const StudyTimeDetail = () => {
 
     if (loading) {
         return (
-            <div className="h-full w-full flex flex-col items-center justify-center bg-bg font-mono gap-4">
-                <div className="w-12 h-12 border-4 border-ink-faint border-t-neon-cyan rounded-none animate-spin"></div>
-                <div className="text-neon-cyan tracking-widest animate-pulse">{'>>'} LOADING_TIME_METRICS...</div>
+            <div className="h-full w-full flex flex-col items-center justify-center bg-bg-base font-mono gap-4">
+                <div className="w-12 h-12 border-4 border-border border-t-accent-primary rounded-none animate-spin"></div>
+                <div className="text-accent-primary tracking-widest animate-pulse">{'>>'} LOADING_TIME_METRICS...</div>
             </div>
         );
     }
 
     const totalMinutes = data ? Math.round(data.total_seconds / 60) : 0;
-    const avgMinutes = data && data.daily.length > 0 
-        ? Math.round(totalMinutes / data.daily.length) 
+    const avgMinutes = data && data.daily.length > 0
+        ? Math.round(totalMinutes / data.daily.length)
         : 0;
 
     return (
-        <section className="h-full w-full bg-bg overflow-y-auto p-4 md:p-8 pb-24 md:pb-8">
+        <section className="h-full w-full bg-bg-base overflow-y-auto p-4 md:p-8 pb-24 md:pb-8">
             {/* Header */}
-            <header className="mb-8 border-b border-ink-faint pb-6">
+            <header className="mb-8 border-b border-border pb-6">
                 <div className="flex items-center gap-4 mb-4">
                     <button
                         onClick={() => navigate('/performance')}
-                        className="p-2 hover:bg-surface-1 transition-colors"
+                        className="p-2 hover:bg-bg-surface transition-colors"
                     >
-                        <ChevronLeft className="w-6 h-6 text-ink" />
+                        <ChevronLeft className="w-6 h-6 text-text-primary" />
                     </button>
-                    <div className="w-1 h-12 bg-neon-cyan"></div>
+                    <div className="w-1 h-12 bg-accent-primary"></div>
                     <div>
-                        <h2 className="text-3xl font-serif font-bold text-ink mb-1">学习时长细节</h2>
-                        <p className="text-ink-muted text-sm font-mono uppercase tracking-widest">{'>>'} Study Duration Breakdown</p>
+                        <h2 className="text-3xl font-serif font-bold text-text-primary mb-1">学习时长细节</h2>
+                        <p className="text-text-muted text-sm font-mono uppercase tracking-widest">{'>>'} Study Duration Breakdown</p>
                     </div>
                 </div>
 
@@ -64,8 +64,8 @@ const StudyTimeDetail = () => {
                             key={d}
                             onClick={() => setDays(d)}
                             className={`px-3 py-1 border transition-colors ${days === d
-                                ? 'bg-neon-cyan text-bg border-neon-cyan'
-                                : 'border-ink-faint text-ink-muted hover:border-ink'
+                                ? 'bg-accent-primary text-black border-accent-primary'
+                                : 'border-border text-text-muted hover:border-text-secondary'
                                 }`}
                         >
                             {d} DAYS
@@ -76,17 +76,17 @@ const StudyTimeDetail = () => {
 
             {/* Overview Stats */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
-                <div className="bg-bg-paper border border-ink-faint p-6 shadow-hard relative">
-                    <div className="absolute top-0 right-0 w-6 h-6 border-t-2 border-r-2 border-neon-cyan/30"></div>
-                    <div className="text-xs text-ink-muted font-mono mb-2">TOTAL_PRACTICE_TIME</div>
-                    <div className="text-4xl font-mono font-bold text-neon-cyan">
+                <div className="bg-bg-surface border border-border p-6 relative">
+                    <div className="absolute top-0 right-0 w-6 h-6 border-t-2 border-r-2 border-accent-primary/30"></div>
+                    <div className="text-xs text-text-muted font-mono mb-2">TOTAL_PRACTICE_TIME</div>
+                    <div className="text-4xl font-mono font-bold text-accent-primary">
                         {formatDuration(totalMinutes)}
                     </div>
                 </div>
-                <div className="bg-bg-paper border border-ink-faint p-6 shadow-hard relative">
-                    <div className="absolute top-0 right-0 w-6 h-6 border-t-2 border-r-2 border-neon-cyan/30"></div>
-                    <div className="text-xs text-ink-muted font-mono mb-2">DAILY_AVERAGE</div>
-                    <div className="text-4xl font-mono font-bold text-neon-cyan">
+                <div className="bg-bg-surface border border-border p-6 relative">
+                    <div className="absolute top-0 right-0 w-6 h-6 border-t-2 border-r-2 border-accent-primary/30"></div>
+                    <div className="text-xs text-text-muted font-mono mb-2">DAILY_AVERAGE</div>
+                    <div className="text-4xl font-mono font-bold text-accent-primary">
                         {avgMinutes} <span className="text-xl">min</span>
                     </div>
                 </div>
@@ -103,23 +103,23 @@ const StudyTimeDetail = () => {
             <Card title="历史记录" icon={Calendar}>
                 <div className="overflow-x-auto">
                     <table className="w-full text-left font-mono text-sm">
-                        <thead className="border-b border-ink-faint text-ink-muted">
+                        <thead className="border-b border-border text-text-muted">
                             <tr>
                                 <th className="py-2 px-4">DATE</th>
                                 <th className="py-2 px-4">READING</th>
                                 <th className="py-2 px-4">SENTENCE</th>
                                 <th className="py-2 px-4">VOICE</th>
-                                <th className="py-2 px-4 text-neon-cyan">TOTAL</th>
+                                <th className="py-2 px-4 text-accent-primary">TOTAL</th>
                             </tr>
                         </thead>
-                        <tbody className="divide-y divide-ink-faint/30">
+                        <tbody className="divide-y divide-border/30">
                             {data?.daily.slice().reverse().map((d, idx) => (
-                                <tr key={idx} className="hover:bg-surface-1 transition-colors">
-                                    <td className="py-2 px-4 text-ink">{d.date}</td>
-                                    <td className="py-2 px-4 text-ink-muted">{Math.round(d.reading / 60)}m</td>
-                                    <td className="py-2 px-4 text-ink-muted">{Math.round(d.sentence_study / 60)}m</td>
-                                    <td className="py-2 px-4 text-ink-muted">{Math.round(d.voice / 60)}m</td>
-                                    <td className="py-2 px-4 text-neon-cyan font-bold">{Math.round(d.total / 60)}m</td>
+                                <tr key={idx} className="hover:bg-bg-surface transition-colors">
+                                    <td className="py-2 px-4 text-text-primary">{d.date}</td>
+                                    <td className="py-2 px-4 text-text-muted">{Math.round(d.reading / 60)}m</td>
+                                    <td className="py-2 px-4 text-text-muted">{Math.round(d.sentence_study / 60)}m</td>
+                                    <td className="py-2 px-4 text-text-muted">{Math.round(d.voice / 60)}m</td>
+                                    <td className="py-2 px-4 text-accent-primary font-bold">{Math.round(d.total / 60)}m</td>
                                 </tr>
                             ))}
                         </tbody>

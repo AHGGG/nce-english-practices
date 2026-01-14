@@ -154,37 +154,37 @@ const AUIStreamingDemo = () => {
     };
 
     return (
-        <div className="min-h-screen bg-[#050505] text-[#E0E0E0] p-4 md:p-8 font-mono flex flex-col md:flex-row gap-8">
+        <div className="min-h-screen bg-bg-base text-text-primary p-4 md:p-8 font-mono flex flex-col md:flex-row gap-8">
             {/* Control Panel */}
             <div className="w-full md:w-1/3 space-y-6">
-                <header className="mb-4 md:mb-8 border-b border-[#333] pb-4">
+                <header className="mb-4 md:mb-8 border-b border-border pb-4">
                     <div className="flex items-center gap-3">
                         <button
                             onClick={() => navigate('/nav')}
-                            className="text-[#888] hover:text-[#00FF94] transition-colors"
+                            className="text-text-secondary hover:text-accent-primary transition-colors"
                         >
                             <ChevronLeft className="w-5 h-5" />
                         </button>
                         <h1 className="text-xl md:text-2xl font-serif font-bold text-white">AUI Streaming Demo</h1>
                     </div>
-                    <p className="text-xs text-[#666] mt-2">Event Streaming Testbed with Transport Selection</p>
+                    <p className="text-xs text-text-muted mt-2">Event Streaming Testbed with Transport Selection</p>
                 </header>
 
                 {/* Transport Layer Indicator */}
                 <div>
-                    <p className="text-[10px] text-[#555] mt-2">
+                    <p className="text-[10px] text-text-muted mt-2">
                         Using WebSocket (bidirectional)
                     </p>
                 </div>
 
                 {/* Book Selector */}
                 {books.length > 0 && (
-                    <div className="bg-[#111] p-3 rounded border border-[#333]">
-                        <label className="block text-xs uppercase text-[#666] mb-2">Select Word Book</label>
+                    <div className="bg-bg-elevated p-3 rounded border border-border">
+                        <label className="block text-xs uppercase text-text-muted mb-2">Select Word Book</label>
                         <select
                             value={selectedBook}
                             onChange={(e) => setSelectedBook(e.target.value)}
-                            className="w-full bg-black border border-[#333] text-white p-2 rounded text-sm"
+                            className="w-full bg-black border border-border text-white p-2 rounded text-sm"
                         >
                             {books.map(book => (
                                 <option key={book.code} value={book.code}>
@@ -197,15 +197,15 @@ const AUIStreamingDemo = () => {
 
                 {/* Demo Selection Grid */}
                 <div>
-                    <label className="block text-xs uppercase text-[#666] mb-3">Select Demo</label>
+                    <label className="block text-xs uppercase text-text-muted mb-3">Select Demo</label>
                     <div className="grid grid-cols-2 gap-2">
                         {demos.map(demo => (
                             <button
                                 key={demo.id}
                                 onClick={() => handleSelectDemo(demo)}
                                 className={`p-4 md:p-3 text-left rounded border transition-all active:scale-95 ${selectedDemo === demo.id
-                                    ? 'bg-[#00FF94] text-black border-[#00FF94] font-bold'
-                                    : 'bg-[#111] text-[#888] border-[#333] hover:border-[#555] hover:text-white'
+                                    ? 'bg-accent-primary text-black border-accent-primary font-bold'
+                                    : 'bg-bg-elevated text-text-secondary border-border hover:border-text-muted hover:text-white'
                                     }`}
                             >
                                 <div className="text-xl md:text-lg mb-1">{demo.icon}</div>
@@ -221,7 +221,7 @@ const AUIStreamingDemo = () => {
                     {streamUrl && (
                         <button
                             onClick={handleReset}
-                            className="w-full bg-[#222] text-white border border-[#444] py-2 rounded hover:bg-[#333] transition text-sm"
+                            className="w-full bg-bg-elevated text-white border border-border py-2 rounded hover:bg-border transition text-sm"
                         >
                             RESET STREAM
                         </button>
@@ -231,15 +231,15 @@ const AUIStreamingDemo = () => {
                 {/* Current Stream Info */}
                 {streamUrl && (
                     <div className="mt-8">
-                        <label className="block text-xs uppercase text-[#666] mb-2">Active Stream</label>
-                        <div className="bg-black border border-[#333] p-3 rounded space-y-2">
+                        <label className="block text-xs uppercase text-text-muted mb-2">Active Stream</label>
+                        <div className="bg-black border border-border p-3 rounded space-y-2">
                             <div className="flex items-center gap-2">
                                 <span className="px-2 py-0.5 rounded text-[10px] uppercase font-bold bg-purple-500/20 text-purple-400 border border-purple-500/30">
                                     🔌 WS
                                 </span>
-                                <span className="text-[10px] text-[#666]">{selectedDemo}</span>
+                                <span className="text-[10px] text-text-muted">{selectedDemo}</span>
                             </div>
-                            <div className="text-[10px] text-[#00FF94] break-all font-mono">
+                            <div className="text-[10px] text-accent-primary break-all font-mono">
                                 {streamUrl}
                             </div>
                         </div>
@@ -248,9 +248,9 @@ const AUIStreamingDemo = () => {
             </div>
 
             {/* Viewport */}
-            <div className="w-full md:flex-1 bg-[#111] border border-[#333] rounded-lg relative overflow-hidden flex flex-col h-[60vh] md:h-auto">
-                <div className="p-4 border-b border-[#333] flex justify-between items-center bg-[#0A0A0A]">
-                    <span className="text-xs uppercase tracking-widest text-[#666]">Stream Output</span>
+            <div className="w-full md:flex-1 bg-bg-elevated border border-border rounded-lg relative overflow-hidden flex flex-col h-[60vh] md:h-auto">
+                <div className="p-4 border-b border-border flex justify-between items-center bg-bg-surface">
+                    <span className="text-xs uppercase tracking-widest text-text-muted">Stream Output</span>
                     <div className="flex items-center gap-3">
                         <span className="px-2 py-0.5 rounded text-[10px] uppercase bg-purple-500/20 text-purple-400">
                             WEBSOCKET
@@ -263,7 +263,7 @@ const AUIStreamingDemo = () => {
                     </div>
                 </div>
 
-                <div className="flex-1 overflow-auto bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-[#1a1a1a] to-[#0A0A0A]">
+                <div className="flex-1 overflow-auto bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-bg-elevated to-bg-surface">
                     <div className="min-h-full w-full p-4 md:p-8 flex items-center justify-center">
                         {streamUrl ? (
                             <div className="w-full max-w-2xl">
@@ -275,7 +275,7 @@ const AUIStreamingDemo = () => {
                                 />
                             </div>
                         ) : (
-                            <div className="text-[#333] text-center">
+                            <div className="text-border text-center">
                                 <p className="text-4xl opacity-20 font-serif">AWAITING SIGNAL</p>
                                 <p className="text-xs opacity-10 mt-4">Select a demo to start streaming</p>
                             </div>

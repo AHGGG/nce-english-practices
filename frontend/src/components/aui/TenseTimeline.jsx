@@ -8,24 +8,24 @@ const TenseTimeline = ({ tense, complexity = "high" }) => {
         const configs = {
             "Present Perfect": {
                 events: [
-                    { label: "Past Action", time: -3, color: "#FF0055", type: "point", tooltip: "Action happened in the past" },
-                    { label: "Effect Continues", time: 0, color: "#00FF94", type: "range", start: -3, end: 1, tooltip: "Relevance extends to now" }
+                    { label: "Past Action", time: -3, color: "var(--color-accent-danger)", type: "point", tooltip: "Action happened in the past" },
+                    { label: "Effect Continues", time: 0, color: "var(--color-accent-primary)", type: "range", start: -3, end: 1, tooltip: "Relevance extends to now" }
                 ],
                 formula: "have/has + V3",
                 description: "Links past action to present relevance"
             },
             "Past Perfect": {
                 events: [
-                    { label: "Earlier Past", time: -4, color: "#FF0055", type: "point", tooltip: "First action completed" },
-                    { label: "Later Past", time: -1, color: "#00FFFF", type: "point", tooltip: "Second action (reference point)" }
+                    { label: "Earlier Past", time: -4, color: "var(--color-accent-danger)", type: "point", tooltip: "First action completed" },
+                    { label: "Later Past", time: -1, color: "var(--color-accent-info)", type: "point", tooltip: "Second action (reference point)" }
                 ],
                 formula: "had + V3",
                 description: "Action completed before another past action"
             },
             "Future Perfect": {
                 events: [
-                    { label: "Future Point", time: 3, color: "#00FFFF", type: "point", tooltip: "Reference time in future" },
-                    { label: "Completion", time: 2, color: "#00FF94", type: "point", tooltip: "Action completes before reference time" }
+                    { label: "Future Point", time: 3, color: "var(--color-accent-info)", type: "point", tooltip: "Reference time in future" },
+                    { label: "Completion", time: 2, color: "var(--color-accent-primary)", type: "point", tooltip: "Action completes before reference time" }
                 ],
                 formula: "will have + V3",
                 description: "Action will be completed before a future time"
@@ -33,7 +33,7 @@ const TenseTimeline = ({ tense, complexity = "high" }) => {
         };
 
         return configs[tenseName] || {
-            events: [{ label: "Now", time: 0, color: "#666", type: "marker" }],
+            events: [{ label: "Now", time: 0, color: "var(--color-text-muted)", type: "marker" }],
             formula: "N/A",
             description: "Timeline visualization"
         };
@@ -57,12 +57,12 @@ const TenseTimeline = ({ tense, complexity = "high" }) => {
         : config.events;
 
     return (
-        <div className="w-full max-w-3xl bg-[#0A0A0A] border border-[#333] rounded-xl p-6">
+        <div className="w-full max-w-3xl bg-bg-surface border border-border rounded-xl p-6">
             {/* Header */}
             <div className="mb-6">
                 <h3 className="font-serif text-2xl text-white mb-2">{tense}</h3>
-                <p className="text-sm text-[#888] mb-1">{config.description}</p>
-                <code className="text-xs bg-[#111] border border-[#333] px-2 py-1 rounded text-neon-green font-mono">
+                <p className="text-sm text-text-secondary mb-1">{config.description}</p>
+                <code className="text-xs bg-bg-elevated border border-border px-2 py-1 rounded text-neon-green font-mono">
                     {config.formula}
                 </code>
             </div>
@@ -75,14 +75,14 @@ const TenseTimeline = ({ tense, complexity = "high" }) => {
                     y1={centerY}
                     x2={width - padding}
                     y2={centerY}
-                    stroke="#333"
+                    stroke="var(--color-border)"
                     strokeWidth="2"
                 />
 
                 {/* Arrow */}
                 <polygon
                     points={`${width - padding},${centerY} ${width - padding - 10},${centerY - 5} ${width - padding - 10},${centerY + 5}`}
-                    fill="#333"
+                    fill="var(--color-border)"
                 />
 
                 {/* "Now" marker at center */}
@@ -91,14 +91,14 @@ const TenseTimeline = ({ tense, complexity = "high" }) => {
                     y1={centerY - 30}
                     x2={timeToX(0)}
                     y2={centerY + 30}
-                    stroke="#666"
+                    stroke="var(--color-text-muted)"
                     strokeWidth="2"
                     strokeDasharray="4"
                 />
                 <text
                     x={timeToX(0)}
                     y={centerY - 40}
-                    fill="#666"
+                    fill="var(--color-text-muted)"
                     fontSize="10"
                     textAnchor="middle"
                     fontFamily="monospace"
@@ -140,7 +140,7 @@ const TenseTimeline = ({ tense, complexity = "high" }) => {
                                             y={centerY - 60}
                                             width="140"
                                             height="30"
-                                            fill="#111"
+                                            fill="var(--color-bg-elevated)"
                                             stroke={event.color}
                                             strokeWidth="1"
                                             rx="4"
@@ -187,21 +187,21 @@ const TenseTimeline = ({ tense, complexity = "high" }) => {
                 })}
 
                 {/* Time labels */}
-                <text x={padding} y={centerY + 60} fill="#444" fontSize="10" textAnchor="middle">PAST</text>
-                <text x={width - padding} y={centerY + 60} fill="#444" fontSize="10" textAnchor="middle">FUTURE</text>
+                <text x={padding} y={centerY + 60} fill="var(--color-text-muted)" fontSize="10" textAnchor="middle">PAST</text>
+                <text x={width - padding} y={centerY + 60} fill="var(--color-text-muted)" fontSize="10" textAnchor="middle">FUTURE</text>
             </svg>
 
             {complexity !== "medium" && (
-                <div className="mt-6 pt-4 border-t border-[#222]">
-                    <p className="text-xs text-[#666] font-mono">
-                        💡 <span className="text-[#888]">Hover over timeline points to see detailed explanations</span>
+                <div className="mt-6 pt-4 border-t border-border">
+                    <p className="text-xs text-text-muted font-mono">
+                        💡 <span className="text-text-secondary">Hover over timeline points to see detailed explanations</span>
                     </p>
                 </div>
             )}
             {complexity === "medium" && (
-                <div className="mt-4 bg-[#111] border border-[#222] rounded p-3">
+                <div className="mt-4 bg-bg-elevated border border-border rounded p-3">
                     <p className="text-xs text-neon-cyan mb-2 font-mono uppercase tracking-wider">Level 2 View (Simplified)</p>
-                    <p className="text-xs text-[#888]">Key events only. Upgrade to Level 3 for full timeline + interactive tooltips.</p>
+                    <p className="text-xs text-text-secondary">Key events only. Upgrade to Level 3 for full timeline + interactive tooltips.</p>
                 </div>
             )}
         </div>

@@ -2,15 +2,52 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ============================================
+ * Design System: Cyber-Noir Color Tokens
+ * 
+ * Single source of truth for all colors.
+ * To change a color globally, modify only these variables.
+ * ============================================ */
+:root {
+  /* Background Hierarchy */
+  --color-bg-base: #050505;       /* OLED Black - Main background */
+  --color-bg-surface: #0A0A0A;    /* Cards, panels */
+  --color-bg-elevated: #111111;   /* Modals, popovers */
+  
+  /* Text Hierarchy */
+  --color-text-primary: #E0E0E0;  /* Primary text */
+  --color-text-secondary: #888888; /* Secondary text */
+  --color-text-muted: #666666;    /* Disabled, hints */
+  
+  /* Borders */
+  --color-border-default: #333333;
+  --color-border-subtle: #222222;
+  
+  /* Accent Colors */
+  --color-accent-primary: #00FF94;  /* Matrix Green - Primary CTA */
+  --color-accent-danger: #FF0055;   /* Razor Pink - Errors, destructive */
+  --color-accent-info: #06b6d4;     /* Cyan - Info, links */
+  --color-accent-warning: #f59e0b;  /* Amber - Warnings */
+  
+  /* Neon Colors (for charts and visual variety) */
+  --color-neon-green: #00FF94;
+  --color-neon-cyan: #06b6d4;
+  --color-neon-purple: #a855f7;
+  --color-neon-pink: #FF0055;
+  --color-neon-lime: #84cc16;
+  --color-neon-magenta: #d946ef;
+  --color-neon-yellow: #facc15;
+}
+
 @layer base {
   body {
-    background-color: theme('colors.bg.DEFAULT');
-    color: theme('colors.ink.DEFAULT');
+    background-color: var(--color-bg-base);
+    color: var(--color-text-primary);
     font-family: theme('fontFamily.sans');
   }
 
   ::selection {
-    background-color: theme('colors.neon.green');
+    background-color: var(--color-accent-primary);
     color: black;
   }
   
@@ -25,14 +62,14 @@
     height: 6px;
   }
   .custom-scrollbar::-webkit-scrollbar-track {
-    background: theme('colors.bg.elevated');
+    background: var(--color-bg-elevated);
   }
   .custom-scrollbar::-webkit-scrollbar-thumb {
-    background: theme('colors.ink.faint');
+    background: var(--color-border-default);
     border-radius: 0px; 
   }
   .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-    background: theme('colors.neon.cyan');
+    background: var(--color-accent-info);
   }
 
   .no-scrollbar::-webkit-scrollbar {
@@ -64,7 +101,7 @@
   /* Highlight the selected word using pure CSS */
   [data-selected-word=""] ~ * .reading-word:hover,
   [data-selected-word]:not([data-selected-word=""]) .reading-word:hover {
-    color: theme('colors.neon.green');
-    background-color: rgba(0, 255, 148, 0.1);
+    color: var(--color-accent-primary);
+    background-color: rgb(0 255 148 / 0.1);
   }
 }

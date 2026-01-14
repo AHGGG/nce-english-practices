@@ -135,7 +135,7 @@ const ReaderView = ({
                             ? "text-3xl font-serif text-white mt-10 mb-6"
                             : level === 2
                                 ? "text-2xl font-serif text-white mt-8 mb-4"
-                                : "text-xl font-serif text-[#AAA] mt-6 mb-3";
+                                : "text-xl font-serif text-text-secondary mt-6 mb-3";
                         return (
                             <div key={`h-${blockIdx}`} className={className}>
                                 {block.text}
@@ -183,7 +183,7 @@ const ReaderView = ({
 
                     case 'subtitle': {
                         return (
-                            <div key={`sub-${blockIdx}`} className="text-lg italic text-[#888] mb-4 font-serif">
+                            <div key={`sub-${blockIdx}`} className="text-lg italic text-text-secondary mb-4 font-serif">
                                 {block.text}
                             </div>
                         );
@@ -200,22 +200,22 @@ const ReaderView = ({
     };
 
     return (
-        <div className="h-screen flex flex-col bg-[#050505] text-[#E0E0E0] font-mono selection:bg-[#00FF94] selection:text-black">
+        <div className="h-screen flex flex-col bg-bg-base text-text-primary font-mono selection:bg-accent-primary selection:text-black">
             {/* GLOBAL NOISE TEXTURE OVERLAY */}
             <div className="fixed inset-0 opacity-[0.03] pointer-events-none z-50 bg-[url('https://grainy-gradients.vercel.app/noise.svg')]"></div>
 
             {/* Calibration Suggestion Banner */}
             {calibrationBanner && (
-                <div className="bg-[#00FF94]/10 border-b border-[#00FF94]/30 px-4 py-2 text-center text-xs text-[#00FF94] font-mono">
+                <div className="bg-accent-primary/10 border-b border-accent-primary/30 px-4 py-2 text-center text-xs text-accent-primary font-mono">
                     {calibrationBanner}
                 </div>
             )}
 
             {/* Toolbar - Industrial Style */}
-            <header className="h-14 border-b border-[#333] flex items-center justify-between px-4 md:px-8 bg-[#0A0A0A] shrink-0 z-20">
+            <header className="h-14 border-b border-border flex items-center justify-between px-4 md:px-8 bg-bg-surface shrink-0 z-20">
                 <button
                     onClick={onBackToLibrary}
-                    className="flex items-center gap-2 text-[#888] hover:text-[#00FF94] transition-colors group"
+                    className="flex items-center gap-2 text-text-secondary hover:text-accent-primary transition-colors group"
                 >
                     <ChevronLeft className="w-4 h-4" />
                     <span className="text-xs font-bold uppercase tracking-wider">Library</span>
@@ -227,13 +227,13 @@ const ReaderView = ({
                         <select
                             value={selectedOptionIndex}
                             onChange={(e) => setSelectedOptionIndex(Number(e.target.value))}
-                            className="bg-[#111] border border-[#333] text-[#E0E0E0] text-xs font-mono font-bold uppercase py-2 pl-3 pr-8 focus:outline-none focus:border-[#00FF94] appearance-none cursor-pointer transition-colors hover:border-[#666]"
+                            className="bg-bg-elevated border border-border text-text-primary text-xs font-mono font-bold uppercase py-2 pl-3 pr-8 focus:outline-none focus:border-accent-primary appearance-none cursor-pointer transition-colors hover:border-text-muted"
                         >
                             {HIGHLIGHT_OPTIONS.map((opt, i) => (
                                 <option key={i} value={i}>{opt.label}</option>
                             ))}
                         </select>
-                        <div className="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none text-[#666] group-hover:text-[#00FF94]">
+                        <div className="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none text-text-muted group-hover:text-accent-primary">
                             <ChevronLeft className="w-3 h-3 rotate-[-90deg]" />
                         </div>
                     </div>
@@ -241,8 +241,8 @@ const ReaderView = ({
                     <button
                         onClick={() => setShowHighlights(!showHighlights)}
                         className={`p-2 border transition-all duration-200 ${showHighlights
-                            ? 'border-[#00FF94] text-[#00FF94] bg-[#00FF94]/10'
-                            : 'border-[#333] text-[#666] hover:text-[#E0E0E0] hover:border-[#666]'}`}
+                            ? 'border-accent-primary text-accent-primary bg-accent-primary/10'
+                            : 'border-border text-text-muted hover:text-text-primary hover:border-text-muted'}`}
                         title="Toggle Highlights"
                     >
                         <Zap className="w-4 h-4 fill-current" />
@@ -252,7 +252,7 @@ const ReaderView = ({
                 {/* Sweep Button */}
                 <button
                     onClick={onSweep}
-                    className="ml-2 flex items-center gap-2 px-3 py-1.5 border border-[#333] text-[#666] hover:text-[#00FF94] hover:border-[#00FF94] hover:bg-[#00FF94]/5 transition-all group"
+                    className="ml-2 flex items-center gap-2 px-3 py-1.5 border border-border text-text-muted hover:text-accent-primary hover:border-accent-primary hover:bg-accent-primary/5 transition-all group"
                     title="Mark Remaining as Known"
                 >
                     <CheckCheck className="w-4 h-4" />
@@ -264,7 +264,7 @@ const ReaderView = ({
                     onClick={() => {
                         window.location.href = `/sentence-study?source_id=${encodeURIComponent(article.id)}`;
                     }}
-                    className="ml-2 flex items-center gap-2 px-3 py-1.5 border border-[#333] text-[#666] hover:text-[#00FF94] hover:border-[#00FF94] hover:bg-[#00FF94]/5 transition-all group"
+                    className="ml-2 flex items-center gap-2 px-3 py-1.5 border border-border text-text-muted hover:text-accent-primary hover:border-accent-primary hover:bg-accent-primary/5 transition-all group"
                     title="Study this article sentence by sentence"
                 >
                     <GraduationCap className="w-4 h-4" />
@@ -273,7 +273,7 @@ const ReaderView = ({
 
                 {/* Right section - Stats */}
                 <div className="hidden md:flex items-center gap-2 ml-auto">
-                    <span className="text-[10px] text-[#666] uppercase tracking-wider">{article.sentence_count} Sentences</span>
+                    <span className="text-[10px] text-text-muted uppercase tracking-wider">{article.sentence_count} Sentences</span>
                 </div>
             </header>
 
@@ -284,24 +284,24 @@ const ReaderView = ({
                         {/* Article Header - Cyber-Noir Style */}
                         <header className="mb-12 px-4">
                             <div className="flex items-center gap-3 mb-4">
-                                <span className="px-2 py-0.5 bg-[#00FF94] text-black text-[10px] font-bold uppercase tracking-wider">
+                                <span className="px-2 py-0.5 bg-accent-primary text-black text-[10px] font-bold uppercase tracking-wider">
                                     Reading
                                 </span>
-                                <div className="h-[1px] bg-[#333] flex-1"></div>
+                                <div className="h-[1px] bg-border flex-1"></div>
                             </div>
                             <h1 className="font-serif text-3xl md:text-4xl text-white mb-4 leading-tight">
                                 {article.title}
                             </h1>
-                            <div className="flex items-center gap-4 text-xs text-[#666] font-mono">
+                            <div className="flex items-center gap-4 text-xs text-text-muted font-mono">
                                 <span>{article.sentence_count} sentences</span>
-                                <span className="text-[#333]">/</span>
+                                <span className="text-border">/</span>
                                 <span>{article.metadata?.filename?.split('.').slice(0, 2).join(' ')}</span>
                             </div>
                         </header>
 
                         {/* Event delegation + CSS containment for performance */}
                         <div
-                            className="prose prose-invert prose-lg max-w-none font-serif md:text-xl leading-loose text-[#CCC] px-4"
+                            className="prose prose-invert prose-lg max-w-none font-serif md:text-xl leading-loose text-text-primary px-4"
                             style={{ contain: 'content' }}
                             data-selected-word={selectedWord || ''}
                             onClick={handleArticleClick}
@@ -312,7 +312,7 @@ const ReaderView = ({
                             {visibleCount < totalContentCount && (
                                 <div
                                     ref={sentinelRef}
-                                    className="flex justify-center py-4 text-[#666]"
+                                    className="flex justify-center py-4 text-text-muted"
                                 >
                                     <Loader2 className="w-5 h-5 animate-spin" />
                                     <span className="ml-2 text-xs font-mono">Loading more...</span>

@@ -37,8 +37,8 @@ const VoiceLab = () => {
         <button
             onClick={() => setActiveTab(id)}
             className={`flex items-center gap-2 px-6 py-3 font-mono font-bold uppercase transition-all whitespace-nowrap ${activeTab === id
-                ? 'text-neon-cyan border-b-2 border-neon-cyan bg-neon-cyan/5'
-                : 'text-ink-muted hover:text-ink'
+                ? 'text-accent-primary border-b-2 border-accent-primary bg-accent-primary/5'
+                : 'text-text-muted hover:text-text-primary'
                 }`}
         >
             <Icon size={18} />
@@ -47,14 +47,14 @@ const VoiceLab = () => {
     );
 
     const SectionHeader = ({ title, icon: Icon }) => (
-        <div className="flex items-center gap-2 mb-4 mt-8 border-b border-ink-faint pb-2">
-            <Icon size={20} className="text-neon-pink" />
-            <h2 className="text-xl font-serif font-bold text-ink">{title}</h2>
+        <div className="flex items-center gap-2 mb-4 mt-8 border-b border-border pb-2">
+            <Icon size={20} className="text-accent-primary" />
+            <h2 className="text-xl font-serif font-bold text-text-primary">{title}</h2>
         </div>
     );
 
     return (
-        <div className="min-h-screen bg-canvas p-6 pb-24 md:p-8 md:pl-72">
+        <div className="min-h-screen bg-bg-base p-6 pb-24 md:p-8 md:pl-72">
             <div className="max-w-6xl mx-auto space-y-8">
                 {/* Header */}
                 <div className="flex justify-between items-start">
@@ -62,23 +62,23 @@ const VoiceLab = () => {
                         <div className="flex items-center gap-3 mb-2">
                             <button
                                 onClick={() => navigate('/nav')}
-                                className="text-[#888] hover:text-[#00FF94] transition-colors"
+                                className="text-text-secondary hover:text-accent-primary transition-colors"
                             >
                                 <ChevronLeft className="w-5 h-5" />
                             </button>
-                            <Beaker className="text-neon-pink" size={32} />
-                            <h1 className="text-3xl font-serif font-bold text-ink">
+                            <Beaker className="text-accent-primary" size={32} />
+                            <h1 className="text-3xl font-serif font-bold text-text-primary">
                                 Voice Vendor Lab
                             </h1>
                         </div>
-                        <p className="text-ink-muted font-mono max-w-2xl">
+                        <p className="text-text-muted font-mono max-w-2xl">
                             Vendor-specific integration testing for TTS, STT, and Streaming capabilities.
                         </p>
                     </div>
                 </div>
 
                 {/* Tabs */}
-                <div className="flex border-b border-ink-faint mb-6 overflow-x-auto no-scrollbar">
+                <div className="flex border-b border-border mb-6 overflow-x-auto no-scrollbar">
                     <TabButton id="loop" icon={RefreshCw} label="Conversation Loop" />
                     <TabButton id="google" icon={Globe} label="Google Gemini" />
                     <TabButton id="deepgram" icon={Zap} label="Deepgram" />
@@ -89,7 +89,7 @@ const VoiceLab = () => {
                 {/* Content Area */}
                 <div className="min-h-[400px]">
                     {loading ? (
-                        <div className="text-center py-20 text-ink-muted font-mono animate-pulse">
+                        <div className="text-center py-20 text-text-muted font-mono animate-pulse">
                             Initializing Vendor Configurations...
                         </div>
                     ) : (
@@ -130,8 +130,8 @@ const VoiceLab = () => {
                                                 key={sub}
                                                 onClick={() => setDeepgramSubTab(sub)}
                                                 className={`px-4 py-2 text-xs font-mono border transition-all duration-300 ${deepgramSubTab === sub
-                                                    ? 'bg-neon-cyan/20 border-neon-cyan text-neon-cyan shadow-[0_0_10px_rgba(0,255,255,0.3)]'
-                                                    : 'bg-bg-elevated border-ink-faint text-ink-muted hover:border-neon-cyan/50 hover:text-ink'
+                                                    ? 'bg-accent-primary/20 border-accent-primary text-accent-primary shadow-[0_0_10px_rgba(0,255,148,0.3)]'
+                                                    : 'bg-bg-elevated border-border text-text-muted hover:border-accent-primary/50 hover:text-text-primary'
                                                     }`}
                                             >
                                                 {sub === 'live' && '🎙️ LIVE STT'}
@@ -151,7 +151,7 @@ const VoiceLab = () => {
                                     {deepgramSubTab === 'agent' && (
                                         <>
                                             <SectionHeader title="Voice Agent API (End-to-End)" icon={Bot} />
-                                            <div className="p-4 border border-ink-faint rounded bg-bg-elevated/50">
+                                            <div className="p-4 border border-border rounded bg-bg-elevated/50">
                                                 <DeepgramVoiceAgent />
                                             </div>
                                         </>
@@ -162,19 +162,19 @@ const VoiceLab = () => {
                                             <SectionHeader title="Developer Tools & REST APIs" icon={TestTube2} />
                                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                                 <div className="space-y-6">
-                                                    <div className="p-4 border border-ink-faint rounded bg-bg-elevated/50">
-                                                        <h3 className="text-sm font-mono text-neon-cyan mb-4">REST: Speech-to-Text</h3>
+                                                    <div className="p-4 border border-border rounded bg-bg-elevated/50">
+                                                        <h3 className="text-sm font-mono text-accent-primary mb-4">REST: Speech-to-Text</h3>
                                                         <STTPanel fixedProvider="deepgram" />
                                                     </div>
-                                                    <div className="p-4 border border-ink-faint rounded bg-bg-elevated/50">
-                                                        <h3 className="text-sm font-mono text-neon-cyan mb-4">REST: Text-to-Speech</h3>
+                                                    <div className="p-4 border border-border rounded bg-bg-elevated/50">
+                                                        <h3 className="text-sm font-mono text-accent-primary mb-4">REST: Text-to-Speech</h3>
                                                         <TTSPanel fixedProvider="deepgram" />
                                                     </div>
                                                 </div>
 
                                                 <div className="space-y-6">
-                                                    <div className="p-4 border border-ink-faint rounded bg-bg-elevated/50">
-                                                        <h3 className="text-sm font-mono text-neon-cyan mb-4">Streaming TTS Test</h3>
+                                                    <div className="p-4 border border-border rounded bg-bg-elevated/50">
+                                                        <h3 className="text-sm font-mono text-accent-primary mb-4">Streaming TTS Test</h3>
                                                         <DeepgramStreamingTTS />
                                                     </div>
                                                 </div>
@@ -194,7 +194,7 @@ const VoiceLab = () => {
 
                                     <section>
                                         <SectionHeader title="Voice Agent (STT + LLM + TTS)" icon={Bot} />
-                                        <div className="p-4 border border-ink-faint rounded bg-bg-elevated/50">
+                                        <div className="p-4 border border-border rounded bg-bg-elevated/50">
                                             <ElevenLabsVoiceAgent />
                                         </div>
                                     </section>
@@ -222,7 +222,7 @@ const VoiceLab = () => {
                                         <SectionHeader title="Speech-to-Text (Qwen3-ASR)" icon={Mic} />
                                         <STTPanel config={config} fixedProvider="dashscope" />
                                     </section>
-                                    <div className="p-4 border border-ink-faint rounded bg-bg-elevated/50 text-sm text-ink-muted">
+                                    <div className="p-4 border border-border rounded bg-bg-elevated/50 text-sm text-text-muted">
                                         <p>Note: Currently showing Qwen3 MultiModal Models.</p>
                                     </div>
                                 </div>
@@ -233,7 +233,7 @@ const VoiceLab = () => {
 
                 {/* Footer / Debug Info */}
                 <Card variant="outline" className="mt-12 opacity-50">
-                    <div className="flex items-center gap-2 text-xs font-mono text-ink-muted">
+                    <div className="flex items-center gap-2 text-xs font-mono text-text-muted">
                         <Server size={14} />
                         <span>Available Configs:</span>
                         {config && Object.keys(config).map(provider => (

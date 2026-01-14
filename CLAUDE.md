@@ -183,8 +183,8 @@ ALL generators and routes use this service rather than creating clients directly
   - `src/utils/`: Shared utilities.
     - `sseParser.js`: **NEW 2026-01-06** Unified SSE stream parser supporting both JSON (chunks) and Text (raw) streams.
   - `src/index.css`: Global token definitions via Tailwind `@layer base`.
-  - `tailwind.config.js`: Central source of truth for design tokens.
-  - **Rule**: ALWAYS prefer using `components/ui` primitives (Button, Card, Tag) over raw Tailwind classes to maintain the "Cyber-Noir" aesthetic (sharp edges, hard shadows).
+  - `tailwind.config.js`: Central source of truth for design tokens. Maps `neon-*` colors to CSS variables for runtime theming.
+  - **Rule**: ALWAYS prefer using `components/ui` primitives (Button, Card, Tag) or semantic tokens (`accent-primary`, `text-muted`) over raw Tailwind classes (`text-green-500`) to maintain the "Cyber-Noir" aesthetic.
 
 ### Dictionary Service
 

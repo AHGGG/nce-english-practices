@@ -9,7 +9,7 @@ const VocabGrid = ({ words = [], show_translation = false, challenge_mode = fals
     };
 
     return (
-        <div className="w-full max-w-2xl bg-[#0A0A0A] border border-[#333] rounded-xl p-6">
+        <div className="w-full max-w-2xl bg-bg-surface border border-border rounded-xl p-6">
             <div className="flex justify-between items-center mb-6">
                 <h3 className="font-serif text-xl text-white">Vocabulary Review</h3>
                 <div className="flex gap-2">
@@ -34,7 +34,7 @@ const VocabGrid = ({ words = [], show_translation = false, challenge_mode = fals
                     return (
                         <div
                             key={idx}
-                            className="group relative aspect-square bg-[#111] border border-[#222] rounded-lg hover:border-[#00FF94] transition-all cursor-pointer flex flex-col items-center justify-center p-4 text-center"
+                            className="group relative aspect-square bg-bg-elevated border border-border rounded-lg hover:border-accent-primary transition-all cursor-pointer flex flex-col items-center justify-center p-4 text-center"
                         >
                             {/* Word */}
                             <span className="font-serif text-lg text-white group-hover:scale-110 transition-transform">
@@ -42,7 +42,7 @@ const VocabGrid = ({ words = [], show_translation = false, challenge_mode = fals
                             </span>
 
                             {/* Translation / Definition Overlay */}
-                            <div className="absolute inset-0 bg-[#00FF94]/90 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center rounded-lg backdrop-blur-sm p-2">
+                            <div className="absolute inset-0 bg-accent-primary/90 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center rounded-lg backdrop-blur-sm p-2">
                                 <span className="text-black font-bold text-sm">
                                     {definition || getHoverText(word)}
                                 </span>
@@ -52,7 +52,7 @@ const VocabGrid = ({ words = [], show_translation = false, challenge_mode = fals
                 })}
             </div>
 
-            <p className="mt-4 text-center text-xs text-[#666] font-mono">
+            <p className="mt-4 text-center text-xs text-text-muted font-mono">
                 Hover cards to verify meaning
             </p>
         </div>

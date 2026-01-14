@@ -35,17 +35,17 @@ const Lightbox = memo(function Lightbox({ src, alt, caption, onClose }) {
                 <img
                     src={src}
                     alt={alt || ''}
-                    className="max-w-full max-h-[80vh] object-contain border border-[#333]"
+                    className="max-w-full max-h-[80vh] object-contain border border-border"
                 />
                 {caption && (
-                    <p className="mt-4 text-center text-[#888] font-mono text-sm max-w-xl">
+                    <p className="mt-4 text-center text-text-secondary font-mono text-sm max-w-xl">
                         {caption}
                     </p>
                 )}
             </div>
 
             {/* Hint */}
-            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 text-[#666] text-xs font-mono">
+            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 text-text-muted text-xs font-mono">
                 Press ESC or click outside to close
             </div>
         </div>

@@ -427,24 +427,24 @@ const ReviewQueue = () => {
     // Render empty state
     const renderEmptyState = () => (
         <div className="flex flex-col items-center justify-center flex-1 px-4">
-            <div className="w-20 h-20 rounded-full bg-[#00FF94]/10 flex items-center justify-center mb-6">
-                <CheckCircle className="w-10 h-10 text-[#00FF94]" />
+            <div className="w-20 h-20 rounded-full bg-accent-primary/10 flex items-center justify-center mb-6">
+                <CheckCircle className="w-10 h-10 text-accent-primary" />
             </div>
             <h2 className="text-xl font-serif text-white mb-2">暂无待复习内容</h2>
-            <p className="text-[#888] text-sm text-center max-w-xs">
+            <p className="text-text-secondary text-sm text-center max-w-xs">
                 太棒了！你已经完成了所有复习任务。继续学习新内容吧！
             </p>
             <div className="mt-8 space-y-3 text-center flex flex-col items-center">
                 <button
                     onClick={startRandomReview}
-                    className="flex items-center gap-2 px-6 py-2 bg-[#00FF94]/10 text-[#00FF94] rounded-full hover:bg-[#00FF94]/20 transition-all border border-[#00FF94]/30"
+                    className="flex items-center gap-2 px-6 py-2 bg-accent-primary/10 text-accent-primary rounded-full hover:bg-accent-primary/20 transition-all border border-accent-primary/30"
                 >
                     <Zap className="w-4 h-4" />
                     开始随机复习
                 </button>
                 <button
                     onClick={refreshQueue}
-                    className="flex items-center gap-2 px-4 py-2 text-sm text-[#888] hover:text-[#00FF94] transition-colors mt-2"
+                    className="flex items-center gap-2 px-4 py-2 text-sm text-text-secondary hover:text-accent-primary transition-colors mt-2"
                 >
                     <RefreshCw className="w-4 h-4" />
                     刷新队列
@@ -455,7 +455,7 @@ const ReviewQueue = () => {
 
     // Render stats header
     const renderStats = () => (
-        <div className="flex items-center gap-4 text-xs text-[#666]">
+        <div className="flex items-center gap-4 text-xs text-text-muted">
             <div className="flex items-center gap-1">
                 <BookOpen className="w-3 h-3" />
                 <span>{stats.total_items} 总项</span>
@@ -484,18 +484,18 @@ const ReviewQueue = () => {
             <div className="flex-1 flex flex-col px-4 py-6 max-w-2xl mx-auto w-full">
                 {/* Progress */}
                 <div className="flex items-center justify-between mb-4">
-                    <span className="text-xs text-[#666]">
+                    <span className="text-xs text-text-muted">
                         {currentIndex + 1} / {queue.length}
                     </span>
                     {renderStats()}
                 </div>
 
                 {/* Card */}
-                <div className="flex-1 flex flex-col border border-[#333] bg-[#0A0A0A]">
+                <div className="flex-1 flex flex-col border border-border bg-bg-surface">
                     {/* Source tag */}
-                    <div className="px-3 py-2 border-b border-[#222] flex items-center justify-between gap-3 text-xs">
+                    <div className="px-3 py-2 border-b border-border-subtle flex items-center justify-between gap-3 text-xs">
                         <div className="flex items-center gap-2 min-w-0 flex-1">
-                            <span className="px-1.5 py-0.5 bg-[#00FF94]/10 text-[#00FF94] rounded text-[11px] truncate max-w-[120px] sm:max-w-none" title={bookName}>
+                            <span className="px-1.5 py-0.5 bg-accent-primary/10 text-accent-primary rounded text-[11px] truncate max-w-[120px] sm:max-w-none" title={bookName}>
                                 📖 {bookName}
                             </span>
                             <span className="px-1.5 py-0.5 bg-purple-500/10 text-purple-400 rounded text-[11px] whitespace-nowrap flex-shrink-0">
@@ -511,7 +511,7 @@ const ReviewQueue = () => {
                                 flex items-center gap-1 px-2 py-0.5 rounded transition-colors whitespace-nowrap flex-shrink-0
                                 ${showContext
                                     ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30'
-                                    : 'bg-[#222] text-[#888] hover:text-white border border-transparent'}
+                                    : 'bg-bg-elevated text-text-secondary hover:text-white border border-transparent'}
                             `}
                         >
                             {loadingContext ? (
@@ -525,11 +525,11 @@ const ReviewQueue = () => {
 
                     {/* Context View (Expanded) */}
                     {showContext && contextData && (
-                        <div className="px-6 py-4 bg-[#111] border-b border-[#222] text-sm leading-relaxed text-[#888]">
+                        <div className="px-6 py-4 bg-bg-elevated border-b border-border-subtle text-sm leading-relaxed text-text-secondary">
                             {contextData.previous_sentence && (
                                 <p className="mb-2 opacity-60">{contextData.previous_sentence}</p>
                             )}
-                            <div className="pl-2 border-l-2 border-blue-500/50 my-2 text-[#E0E0E0]">
+                            <div className="pl-2 border-l-2 border-blue-500/50 my-2 text-text-primary">
                                 <HighlightedSentence
                                     text={contextData.target_sentence}
                                     highlights={currentItem.highlighted_items || []}
@@ -559,7 +559,7 @@ const ReviewQueue = () => {
                     </div>
 
                     {/* Interval info */}
-                    <div className="px-4 py-2 border-t border-[#222] text-xs text-[#666] text-center">
+                    <div className="px-4 py-2 border-t border-border-subtle text-xs text-text-muted text-center">
                         {currentItem.repetition > 0 ? (
                             <span>
                                 已复习 {currentItem.repetition} 次 · 上次间隔 {Math.round(currentItem.interval_days)} 天
@@ -577,14 +577,14 @@ const ReviewQueue = () => {
 
                 {/* Help Panel (shown when user clicks 'Forgot') */}
                 {showHelpPanel ? (
-                    <div className="mt-6 border border-[#333] bg-[#0A0A0A]">
+                    <div className="mt-6 border border-border bg-bg-surface">
                         {/* Stage indicator */}
-                        <div className="px-4 py-2 border-b border-[#222] flex items-center gap-2">
+                        <div className="px-4 py-2 border-b border-border-subtle flex items-center gap-2">
                             <Lightbulb className="w-4 h-4 text-amber-400" />
                             <span className="text-xs text-amber-400 font-mono">
                                 STAGE {helpStage} / 3
                             </span>
-                            <div className="flex-1 h-1 bg-[#222] rounded-full ml-2">
+                            <div className="flex-1 h-1 bg-border-subtle rounded-full ml-2">
                                 <div
                                     className="h-full bg-amber-400 rounded-full transition-all"
                                     style={{ width: `${(helpStage / 3) * 100}%` }}
@@ -595,19 +595,19 @@ const ReviewQueue = () => {
                         {/* Explanation content */}
                         <div className="p-4 min-h-[120px] max-h-[200px] overflow-y-auto">
                             {isLoadingHelp && !helpContent ? (
-                                <div className="flex items-center gap-2 text-[#666]">
+                                <div className="flex items-center gap-2 text-text-muted">
                                     <Loader2 className="w-4 h-4 animate-spin" />
                                     <span className="text-sm">正在生成解释...</span>
                                 </div>
                             ) : (
-                                <div className="prose prose-invert prose-sm max-w-none text-[#CCC]">
+                                <div className="prose prose-invert prose-sm max-w-none text-text-primary">
                                     <ReactMarkdown>{helpContent}</ReactMarkdown>
                                 </div>
                             )}
                         </div>
 
                         {/* Response buttons */}
-                        <div className="px-4 py-3 border-t border-[#222] space-y-2">
+                        <div className="px-4 py-3 border-t border-border-subtle space-y-2">
                             <div className="grid grid-cols-2 gap-3">
                                 <button
                                     onClick={() => handleHelpResponse(true)}
@@ -636,7 +636,7 @@ const ReviewQueue = () => {
                                 onClick={handleSkipHelp}
                                 disabled={isSubmitting}
                                 className="w-full flex items-center justify-center gap-2 p-2
-                                    text-[#666] hover:text-[#888] transition-colors text-xs"
+                                    text-text-muted hover:text-text-secondary transition-colors text-xs"
                             >
                                 <SkipForward className="w-3 h-3" />
                                 <span>跳过，下一个</span>
@@ -665,7 +665,7 @@ const ReviewQueue = () => {
                                     `}
                                 >
                                     {isSubmitting ? (
-                                        <Loader2 className="w-6 h-6 animate-spin text-[#666]" />
+                                        <Loader2 className="w-6 h-6 animate-spin text-text-muted" />
                                     ) : (
                                         <>
                                             <Icon className={`w-6 h-6 ${option.color}`} />
@@ -682,7 +682,7 @@ const ReviewQueue = () => {
 
                 {/* Last result feedback */}
                 {lastResult && !isRandomMode && (
-                    <div className="mt-4 text-center text-xs text-[#666]">
+                    <div className="mt-4 text-center text-xs text-text-muted">
                         下次复习：{new Date(lastResult.next_review_at).toLocaleDateString('zh-CN')}
                         {' '}({Math.round(lastResult.new_interval)} 天后)
                     </div>
@@ -692,12 +692,12 @@ const ReviewQueue = () => {
     };
 
     return (
-        <div className="h-screen flex flex-col bg-[#050505] text-[#E0E0E0] font-mono">
+        <div className="h-screen flex flex-col bg-bg-base text-text-primary font-mono">
             {/* Header */}
-            <header className="h-14 border-b border-[#333] flex items-center px-4 md:px-8 bg-[#0A0A0A]">
+            <header className="h-14 border-b border-border flex items-center px-4 md:px-8 bg-bg-surface">
                 <button
                     onClick={() => navigate('/nav')}
-                    className="flex items-center gap-2 text-[#888] hover:text-[#00FF94] transition-colors mr-3"
+                    className="flex items-center gap-2 text-text-secondary hover:text-accent-primary transition-colors mr-3"
                 >
                     <ChevronLeft className="w-4 h-4" />
                 </button>
@@ -705,13 +705,13 @@ const ReviewQueue = () => {
                     <h1 className="text-sm font-bold uppercase tracking-wider text-white">
                         复习队列
                     </h1>
-                    <span className="text-[10px] text-[#666] uppercase tracking-wider">
+                    <span className="text-[10px] text-text-muted uppercase tracking-wider">
                         Spaced Repetition Review
                     </span>
                 </div>
                 <button
                     onClick={refreshQueue}
-                    className="ml-auto p-2 text-[#666] hover:text-[#00FF94] transition-colors"
+                    className="ml-auto p-2 text-text-muted hover:text-accent-primary transition-colors"
                     title="刷新"
                 >
                     <RefreshCw className="w-4 h-4" />
@@ -722,7 +722,7 @@ const ReviewQueue = () => {
             <main className="flex-1 flex flex-col overflow-y-auto">
                 {loading ? (
                     <div className="flex-1 flex items-center justify-center">
-                        <Loader2 className="w-8 h-8 animate-spin text-[#00FF94]" />
+                        <Loader2 className="w-8 h-8 animate-spin text-accent-primary" />
                     </div>
                 ) : queue.length === 0 ? (
                     renderEmptyState()

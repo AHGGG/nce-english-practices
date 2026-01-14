@@ -183,8 +183,8 @@ ALL generators and routes use this service rather than creating clients directly
   - `src/utils/`: Shared utilities.
     - `sseParser.js`: **NEW 2026-01-06** Unified SSE stream parser supporting both JSON (chunks) and Text (raw) streams.
   - `src/index.css`: Global token definitions via Tailwind `@layer base`.
-  - `tailwind.config.js`: Central source of truth for design tokens.
-  - **Rule**: ALWAYS prefer using `components/ui` primitives (Button, Card, Tag) over raw Tailwind classes to maintain the "Cyber-Noir" aesthetic (sharp edges, hard shadows).
+  - `tailwind.config.js`: Central source of truth for design tokens. Maps `neon-*` colors to CSS variables for runtime theming.
+  - **Rule**: ALWAYS prefer using `components/ui` primitives (Button, Card, Tag) or semantic tokens (`accent-primary`, `text-muted`) over raw Tailwind classes (`text-green-500`) to maintain the "Cyber-Noir" aesthetic.
 
 ### Dictionary Service
 
@@ -296,7 +296,13 @@ Get-Content logs/unified.log -Tail 50   # Last 50 lines
 To support multiple dictionaries (e.g., Collins + LDOCE) in one view:
 - **No Global Base URL**: We do *not* use `<base>` tags in the frontend.
 - **Path Rewriting**: The backend rewrites all relative asset links at runtime to point to their specific dictionary subdirectory.
+- Path Rewriting: The backend rewrites all relative asset links at runtime to point to their specific dictionary subdirectory.
 - This prevents CSS/JS conflicts between different dictionaries.
+
+### 4. Review Algorithm Debugging
+- **Debug Dashboard**: A dedicated view at `/performance/debug` helps verify the SM-2 algorithm.
+- **Endpoint**: `GET /api/review/debug/schedule` returns the logic trace for upcoming 14 days.
+- **Unit Tests**: `tests/test_sm2_core.py` ensures mathematical correctness of the interval logic.
 
 ### 3. Async/Sync Hybrid
 - **API Routes**: Use `async def` and run blocking LLM calls in thread pools via `run_in_threadpool`.
@@ -331,6 +337,8 @@ To support multiple dictionaries (e.g., Collins + LDOCE) in one view:
     - **Solution**: We removed most Playwright E2E tests to simplify this. For remaining synchronous tests, run them separately if needed.
 - **Backend `RuntimeError`**: `asyncio.run()` loops conflict with `pytest-asyncio` loops.
     - **Fix**: Tests require `nest_asyncio.apply()` on Windows. (This is handled in `tests/conftest.py`).
+- **Alembic `NotNullViolationError`**: Adding a non-nullable column to an existing table fails without a default value.
+    - **Fix**: Always add `server_default='...'` to `op.add_column` for non-nullable columns in migration scripts.
 
 ### Database Connection
 - **Tests**: Require PostgreSQL running on `localhost:5432` with `nce_practice_test` database.
@@ -341,6 +349,7 @@ To support multiple dictionaries (e.g., Collins + LDOCE) in one view:
 - **MDD Keys**: Often use Windows-style paths (`\image.png`) or just filenames.
 - **Lookup Priority**: Check filesystem first, then MDD cache, then basename fallback.
 - **Rewriting**: All `src`, `href` attributes in HTML are rewritten to absolute `/dict-assets/` URLs.
+- **Parsing Robustness**: Some LDOCE entries (like 'palestinian') lack standard `<en>` tags within definitions. The parser implements a fallback to read direct text nodes while excluding `<tran>` tags.
 
 ### Voice on Mobile
 - **HTTPS Required**: WebSocket with audio requires HTTPS. Generate cert with `generate_cert.py`.

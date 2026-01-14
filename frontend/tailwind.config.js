@@ -7,24 +7,63 @@ export default {
   theme: {
     extend: {
       colors: {
-        // Cyber-Noir Palette
-        // Cyber-Noir Palette
+        // ============================================
+        // Cyber-Noir Design System
+        // All colors reference CSS variables defined in index.css
+        // ============================================
+        
+        // Background Hierarchy
         bg: {
-          DEFAULT: '#050505', // OLED Black with subtle noise
-          paper: '#0A0A0A',   // Secondary background
-          elevated: '#111111', // Tertiary background
+          base: 'var(--color-bg-base)',
+          surface: 'var(--color-bg-surface)',
+          elevated: 'var(--color-bg-elevated)',
         },
-        ink: {
-          DEFAULT: '#E0E0E0', // Primary Text (Off-white)
-          muted: '#888888',   // Secondary Text
-          faint: '#333333',   // Borders / Dividers
+        
+        // Text Hierarchy
+        text: {
+          primary: 'var(--color-text-primary)',
+          secondary: 'var(--color-text-secondary)',
+          muted: 'var(--color-text-muted)',
         },
+        
+        // Borders
+        border: {
+          DEFAULT: 'var(--color-border-default)',
+          subtle: 'var(--color-border-subtle)',
+        },
+        
+        // Accent Colors
+        accent: {
+          primary: 'var(--color-accent-primary)',
+          danger: 'var(--color-accent-danger)',
+          info: 'var(--color-accent-info)',
+          warning: 'var(--color-accent-warning)',
+        },
+        
+        // Neon Colors (for charts and visual highlights)
+        // Reference CSS variables for easy theme customization
         neon: {
-          green: '#00FF94',   // Primary Accent (Matrix Green)
-          pink: '#FF0055',    // Secondary Accent (Razor Pink)
-          cyan: '#06b6d4',    // Info / Tech
-          amber: '#f59e0b',   // Warning
-        }
+          green: 'var(--color-neon-green)',
+          cyan: 'var(--color-neon-cyan)',
+          purple: 'var(--color-neon-purple)',
+          pink: 'var(--color-neon-pink)',
+          lime: 'var(--color-neon-lime)',
+          magenta: 'var(--color-neon-magenta)',
+          yellow: 'var(--color-neon-yellow)',
+        },
+        
+        // Legacy ink colors (used by older components)
+        ink: {
+          DEFAULT: '#E0E0E0',
+          muted: '#666666',
+          faint: '#333333',
+        },
+        
+        // Legacy surface colors
+        surface: {
+          1: '#0A0A0A',
+          2: '#111111',
+        },
       },
       fontFamily: {
         serif: ['"Merriweather"', 'serif'], // Headings / Story
