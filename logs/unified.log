@@ -1,3 +1,4 @@
 === Log session started at 2026-01-13T15:24:28.024733 ===
 2026-01-13 15:24:28.118 [BA] [WARN] [general] app.main: Frontend dist not found at: /app/frontend/dist
 2026-01-13 15:24:28.421 [BA] [INFO] [network] httpx: HTTP Request: GET http://test/api/performance?days=30 "HTTP/1.1 200 OK"
+2026-01-14 15:45:38.895 [BA] [INFO] [general] app.services.aui_input: Stopping AUI Postgres Listener...
