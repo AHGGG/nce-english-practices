@@ -37,6 +37,7 @@
   --color-neon-lime: #84cc16;
   --color-neon-magenta: #d946ef;
   --color-neon-yellow: #facc15;
+  --color-neon-gold: #FFD700;     /* Gold - Reading Mode collocations */
 }
 
 @layer base {

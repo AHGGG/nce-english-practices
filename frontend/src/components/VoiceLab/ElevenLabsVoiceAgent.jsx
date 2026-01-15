@@ -261,18 +261,18 @@ const ElevenLabsVoiceAgent = () => {
 
                     <div className="space-y-4">
                         <div>
-                            <label className="text-xs font-mono text-ink-muted">Voice ID</label>
+                            <label className="text-xs font-mono text-text-muted">Voice ID</label>
                             <input
                                 type="text"
-                                className="w-full text-xs p-2 bg-bg-base border border-ink-faint rounded font-mono"
+                                className="w-full text-xs p-2 bg-bg-base border border-border rounded font-mono"
                                 value={config.voice_id}
                                 onChange={e => setConfig({ ...config, voice_id: e.target.value })}
                                 disabled={isActive}
                             />
-                            <p className="text-[10px] text-ink-muted mt-1">Default: George</p>
+                            <p className="text-[10px] text-text-muted mt-1">Default: George</p>
                         </div>
                         <div>
-                            <label className="text-xs font-mono text-ink-muted">LLM Provider</label>
+                            <label className="text-xs font-mono text-text-muted">LLM Provider</label>
                             <Select
                                 value={config.llm_provider}
                                 onChange={e => setConfig({ ...config, llm_provider: e.target.value })}
@@ -285,9 +285,9 @@ const ElevenLabsVoiceAgent = () => {
                             />
                         </div>
                         <div>
-                            <label className="text-xs font-mono text-ink-muted">Prompt</label>
+                            <label className="text-xs font-mono text-text-muted">Prompt</label>
                             <textarea
-                                className="w-full text-xs p-2 bg-bg-base border border-ink-faint rounded"
+                                className="w-full text-xs p-2 bg-bg-base border border-border rounded"
                                 value={config.system_prompt}
                                 onChange={e => setConfig({ ...config, system_prompt: e.target.value })}
                                 disabled={isActive}
@@ -297,7 +297,7 @@ const ElevenLabsVoiceAgent = () => {
 
                         <Button
                             fullWidth
-                            variant={isActive ? "danger" : "neon"}
+                            variant={isActive ? "danger" : "primary"}
                             onClick={isActive ? stopAgent : startAgent}
                             isLoading={connectionState === 'connecting'}
                         >
@@ -317,11 +317,11 @@ const ElevenLabsVoiceAgent = () => {
 
             {/* Chat Column */}
             <div className="lg:col-span-2 h-full flex flex-col overflow-hidden">
-                <div className="h-full flex flex-col bg-bg-elevated/20 border border-ink-faint rounded-lg overflow-hidden">
+                <div className="h-full flex flex-col bg-bg-elevated/20 border border-border rounded-lg overflow-hidden">
                     {/* Header simulating Card title */}
-                    <div className="p-4 border-b border-ink-faint bg-bg-elevated/30">
-                        <h3 className="text-xl font-serif font-bold text-ink flex items-center gap-2">
-                            <Bot size={20} className="text-neon-cyan" />
+                    <div className="p-4 border-b border-border bg-bg-elevated/30">
+                        <h3 className="text-xl font-serif font-bold text-text-primary flex items-center gap-2">
+                            <Bot size={20} className="text-accent-info" />
                             ElevenLabs Voice Agent
                         </h3>
                     </div>
@@ -332,7 +332,7 @@ const ElevenLabsVoiceAgent = () => {
                             className="absolute inset-0 overflow-y-auto space-y-4 p-4 scroll-smooth"
                         >
                             {messages.length === 0 && (
-                                <div className="text-center text-ink-muted/30 py-10">
+                                <div className="text-center text-text-muted/30 py-10">
                                     <Bot size={48} className="mx-auto mb-2" />
                                     <p>Start speaking to begin conversation</p>
                                 </div>
@@ -341,8 +341,8 @@ const ElevenLabsVoiceAgent = () => {
                             {messages.map((msg, i) => (
                                 <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                                     <div className={`max-w-[80%] rounded-lg p-3 ${msg.role === 'user'
-                                        ? 'bg-ink/5 border border-ink/10 text-ink'
-                                        : 'bg-neon-cyan/5 border border-neon-cyan/20 text-neon-cyan'
+                                        ? 'bg-bg-elevated/50 border border-border text-text-primary'
+                                        : 'bg-accent-info/5 border border-accent-info/20 text-accent-info'
                                         }`}>
                                         <div className="flex items-center gap-2 mb-1 opacity-50 text-xs">
                                             {msg.role === 'user' ? <User size={12} /> : <Bot size={12} />}
@@ -356,7 +356,7 @@ const ElevenLabsVoiceAgent = () => {
                             {/* Live pending transcript */}
                             {pendingTranscript && (
                                 <div className="flex justify-end">
-                                    <div className="max-w-[80%] rounded-lg p-3 bg-ink/5 border border-ink/20 border-dashed text-ink/70 animate-pulse">
+                                    <div className="max-w-[80%] rounded-lg p-3 bg-bg-elevated/50 border border-border border-dashed text-text-primary/70 animate-pulse">
                                         <div className="flex items-center gap-2 mb-1 opacity-50 text-xs">
                                             <User size={12} />
                                             <span>SPEAKING...</span>

@@ -9,9 +9,9 @@ import { Volume2, VolumeX, Check, Loader2, BookOpen, Languages } from 'lucide-re
 
 // Status badge styles
 const STATUS_STYLES = {
-    unseen: 'bg-gray-500/20 text-gray-400 border-gray-500/30',
-    learning: 'bg-amber-500/20 text-amber-400 border-amber-500/30',
-    mastered: 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30',
+    unseen: 'bg-text-muted/20 text-text-muted border-text-muted/30',
+    learning: 'bg-accent-warning/20 text-accent-warning border-accent-warning/30',
+    mastered: 'bg-accent-primary/20 text-accent-primary border-accent-primary/30',
 };
 
 const STATUS_LABELS = {
@@ -166,8 +166,8 @@ const ContextCard = ({
     return (
         <div className={`
       relative border rounded-lg
-      bg-canvas/50 border-ink/10
-      hover:border-ink/20 transition-colors
+      bg-bg-elevated border-border
+      hover:border-text-secondary transition-colors
       ${compact ? 'p-3' : 'p-4'}
     `}>
             {/* Header Row: Source/Grammar + Status */}
@@ -177,7 +177,7 @@ const ContextCard = ({
                         {source.replace('.mdx', '')}
                     </span>
                     {grammar_pattern && (
-                        <span className="text-xs px-1.5 py-0.5 rounded bg-neon-cyan/10 text-neon-cyan/70 font-mono">
+                        <span className="text-xs px-1.5 py-0.5 rounded bg-accent-info/10 text-accent-info/70 font-mono">
                             {grammar_pattern}
                         </span>
                     )}
@@ -199,7 +199,7 @@ const ContextCard = ({
 
             {/* Text content with highlighted word */}
             <p className={`
-        text-ink leading-relaxed
+        text-text-primary leading-relaxed
         ${compact ? 'text-sm' : 'text-base'}
       `}>
                 <HighlightedText text={text_content} word={word} />
@@ -211,7 +211,7 @@ const ContextCard = ({
                     <div className="mt-1.5">
                         {showTranslation ? (
                             <p
-                                className="text-sm text-ink/80 italic cursor-pointer hover:text-ink transition-colors"
+                                className="text-sm text-text-secondary italic cursor-pointer hover:text-text-primary transition-colors"
                                 onClick={() => setShowTranslation(false)}
                                 title="Click to hide"
                             >
@@ -220,7 +220,7 @@ const ContextCard = ({
                         ) : (
                             <button
                                 onClick={() => setShowTranslation(true)}
-                                className="flex items-center gap-1.5 text-xs text-ink/40 hover:text-ink/70 transition-colors mt-1"
+                                className="flex items-center gap-1.5 text-xs text-text-muted hover:text-text-secondary transition-colors mt-1"
                             >
                                 <Languages className="w-3 h-3" />
                                 <span>Show Translation</span>
@@ -233,7 +233,7 @@ const ContextCard = ({
             {/* Actions */}
             {
                 show_actions && (
-                    <div className="flex items-center gap-2 mt-3 pt-3 border-t border-ink/5 flex-wrap">
+                    <div className="flex items-center gap-2 mt-3 pt-3 border-t border-border flex-wrap">
                         {/* Play audio button */}
                         <button
                             onClick={handlePlayAudio}
@@ -242,8 +242,8 @@ const ContextCard = ({
               flex items-center gap-1.5 px-3 py-1.5 rounded
               text-sm font-mono transition-all
               ${isPlaying
-                                    ? 'bg-neon-cyan/20 text-neon-cyan border border-neon-cyan/30'
-                                    : 'bg-ink/5 text-ink/70 hover:bg-ink/10 hover:text-ink'
+                                    ? 'bg-accent-info/20 text-accent-info border border-accent-info/30'
+                                    : 'bg-bg-elevated border border-border text-text-muted hover:bg-bg-elevated_hover hover:text-text-primary'
                                 }
               disabled:opacity-50
             `}
@@ -264,7 +264,7 @@ const ContextCard = ({
                             className="
               flex items-center gap-1.5 px-3 py-1.5 rounded
               text-sm font-mono transition-all
-              bg-ink/5 text-ink/70 hover:bg-ink/10 hover:text-ink
+              bg-bg-elevated border border-border text-text-muted hover:bg-bg-elevated_hover hover:text-text-primary
             "
                         >
                             <BookOpen className="w-4 h-4" />
@@ -278,8 +278,8 @@ const ContextCard = ({
                                 className="
                 flex items-center gap-1.5 px-3 py-1.5 rounded
                 text-sm font-mono transition-all
-                bg-emerald-500/10 text-emerald-400 
-                hover:bg-emerald-500/20 border border-emerald-500/20
+                bg-accent-primary/10 text-accent-primary 
+                hover:bg-accent-primary/20 border border-accent-primary/20
               "
                             >
                                 <Check className="w-4 h-4" />

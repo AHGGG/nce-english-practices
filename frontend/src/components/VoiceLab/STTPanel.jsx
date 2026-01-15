@@ -79,12 +79,12 @@ const STTPanel = ({ config, fixedProvider = null }) => {
                     {/* Provider Select */}
                     {!fixedProvider && (
                         <div className="space-y-1">
-                            <label htmlFor={providerId} className="text-xs font-mono font-bold text-ink-muted uppercase">Provider</label>
+                            <label htmlFor={providerId} className="text-xs font-mono font-bold text-text-muted uppercase">Provider</label>
                             <select
                                 id={providerId}
                                 value={provider}
                                 onChange={(e) => setProvider(e.target.value)}
-                                className="w-full bg-bg-elevated border border-ink-faint text-ink px-4 py-2.5 text-sm font-mono focus:border-neon-cyan focus:outline-none"
+                                className="w-full bg-bg-elevated border border-border text-text-primary px-4 py-2.5 text-sm font-mono focus:border-accent-info focus:outline-none"
                             >
                                 {config && Object.keys(config).map(p => (
                                     <option key={p} value={p}>{p.toUpperCase()}</option>
@@ -94,7 +94,7 @@ const STTPanel = ({ config, fixedProvider = null }) => {
                     )}
 
                     {/* Recorder */}
-                    <div className="border border-dashed border-ink-faint bg-bg-elevated/50 p-8 rounded-lg text-center transition-all hover:border-ink-muted">
+                    <div className="border border-dashed border-border bg-bg-elevated/50 p-8 rounded-lg text-center transition-all hover:border-text-secondary">
                         {!audioBlob ? (
                             isRecording ? (
                                 <div className="space-y-4" aria-live="polite">
@@ -108,10 +108,10 @@ const STTPanel = ({ config, fixedProvider = null }) => {
                                 </div>
                             ) : (
                                 <div className="space-y-4" aria-live="polite">
-                                    <div className="w-16 h-16 rounded-full bg-ink-faint/20 flex items-center justify-center mx-auto">
-                                        <Mic className="text-ink-muted w-8 h-8" />
+                                    <div className="w-16 h-16 rounded-full bg-border/20 flex items-center justify-center mx-auto">
+                                        <Mic className="text-text-muted w-8 h-8" />
                                     </div>
-                                    <p className="font-mono text-sm text-ink-muted">Click to start recording</p>
+                                    <p className="font-mono text-sm text-text-muted">Click to start recording</p>
                                     <Button variant="outline" onClick={startRecording}>
                                         <Mic className="mr-2 h-4 w-4" /> Start Microphone
                                     </Button>
@@ -119,10 +119,10 @@ const STTPanel = ({ config, fixedProvider = null }) => {
                             )
                         ) : (
                             <div className="space-y-4">
-                                <div className="w-16 h-16 rounded-full bg-neon-green/20 flex items-center justify-center mx-auto">
-                                    <FileAudio className="text-neon-green w-8 h-8" />
+                                <div className="w-16 h-16 rounded-full bg-accent-primary/20 flex items-center justify-center mx-auto">
+                                    <FileAudio className="text-accent-primary w-8 h-8" />
                                 </div>
-                                <p className="font-mono text-sm text-ink-muted">Audio capture ready</p>
+                                <p className="font-mono text-sm text-text-muted">Audio capture ready</p>
                                 <div className="flex justify-center gap-2">
                                     <Button variant="ghost" size="sm" onClick={() => setAudioBlob(null)}>
                                         <RefreshCw size={14} className="mr-2" /> Reset
@@ -139,11 +139,11 @@ const STTPanel = ({ config, fixedProvider = null }) => {
 
             <Card title="Transcription Result" className="min-h-[300px] flex flex-col">
                 {transcript ? (
-                    <div className="flex-grow bg-bg-elevated p-4 rounded border border-ink-faint font-serif text-lg leading-relaxed whitespace-pre-wrap animate-in fade-in slide-in-from-bottom-2">
+                    <div className="flex-grow bg-bg-elevated p-4 rounded border border-border font-serif text-lg leading-relaxed whitespace-pre-wrap animate-in fade-in slide-in-from-bottom-2">
                         {transcript}
                     </div>
                 ) : (
-                    <div className="flex-grow flex items-center justify-center text-ink-muted/30 font-mono text-sm">
+                    <div className="flex-grow flex items-center justify-center text-text-muted/30 font-mono text-sm">
                         No transcription yet...
                     </div>
                 )}

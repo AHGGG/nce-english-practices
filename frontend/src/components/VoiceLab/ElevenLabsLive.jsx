@@ -197,9 +197,9 @@ const ElevenLabsLive = () => {
 
     const getEventColor = (type) => {
         switch (type) {
-            case 'success': return 'text-neon-green';
-            case 'error': return 'text-red-500';
-            default: return 'text-ink-muted';
+            case 'success': return 'text-accent-primary';
+            case 'error': return 'text-accent-danger';
+            default: return 'text-text-muted';
         }
     };
 
@@ -221,7 +221,7 @@ const ElevenLabsLive = () => {
                         </Button>
 
                         <div className="flex items-center gap-2">
-                            <span className="text-xs font-mono text-ink-muted uppercase font-bold">State</span>
+                            <span className="text-xs font-mono text-text-muted uppercase font-bold">State</span>
                             <Tag color={connectionState === 'connected' ? 'green' : connectionState === 'error' ? 'red' : 'gray'}>
                                 {connectionState.toUpperCase()}
                             </Tag>
@@ -230,7 +230,7 @@ const ElevenLabsLive = () => {
                 </div>
 
                 {error && (
-                    <div className="mb-4 p-2 bg-red-500/10 border border-red-500/50 text-red-500 text-xs rounded flex items-start gap-2">
+                    <div className="mb-4 p-2 bg-accent-danger/10 border border-accent-danger/50 text-accent-danger text-xs rounded flex items-start gap-2">
                         <AlertCircle size={14} className="mt-0.5 shrink-0" />
                         <span>{error}</span>
                     </div>
@@ -238,28 +238,28 @@ const ElevenLabsLive = () => {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div className="space-y-4">
-                        <h3 className="text-sm font-bold text-ink-muted font-mono uppercase">Live Transcript</h3>
-                        <div className="min-h-[200px] bg-bg-elevated p-4 rounded border border-ink-faint font-serif text-lg leading-relaxed whitespace-pre-wrap">
-                            {transcript || <span className="text-ink-muted/30 font-mono text-sm">Listening...</span>}
+                        <h3 className="text-sm font-bold text-text-muted font-mono uppercase">Live Transcript</h3>
+                        <div className="min-h-[200px] bg-bg-elevated p-4 rounded border border-border font-serif text-lg leading-relaxed whitespace-pre-wrap">
+                            {transcript || <span className="text-text-muted/30 font-mono text-sm">Listening...</span>}
                             {interimTranscript && (
-                                <span className="text-neon-cyan opacity-80 italic ml-1">{interimTranscript}</span>
+                                <span className="text-accent-info opacity-80 italic ml-1">{interimTranscript}</span>
                             )}
                         </div>
                     </div>
 
                     <div className="space-y-4">
-                        <h3 className="text-sm font-bold text-ink-muted font-mono uppercase">Event Log</h3>
+                        <h3 className="text-sm font-bold text-text-muted font-mono uppercase">Event Log</h3>
                         <div
                             ref={eventLogRef}
-                            className="h-[200px] overflow-y-auto bg-bg-elevated p-4 rounded border border-ink-faint font-mono text-xs space-y-1"
+                            className="h-[200px] overflow-y-auto bg-bg-elevated p-4 rounded border border-border font-mono text-xs space-y-1"
                         >
                             {eventLog.map((event, idx) => (
-                                <div key={idx} className="border-b border-ink-faint/30 pb-1 mb-1">
-                                    <span className="text-ink-muted mr-2">{event.timestamp}</span>
+                                <div key={idx} className="border-b border-border/30 pb-1 mb-1">
+                                    <span className="text-text-muted mr-2">{event.timestamp}</span>
                                     <span className={`font-bold ${getEventColor(event.type)}`}>
                                         [{event.type.toUpperCase()}]
                                     </span>
-                                    <span className="ml-2 text-ink">{event.message}</span>
+                                    <span className="ml-2 text-text-primary">{event.message}</span>
                                 </div>
                             ))}
                         </div>

@@ -156,12 +156,12 @@ const LivePanel = ({ config, fixedProvider = null }) => {
                 <div className="space-y-6">
                     {!fixedProvider && (
                         <div className="space-y-1">
-                            <label className="text-xs font-mono font-bold text-ink-muted uppercase">Provider Target</label>
+                            <label className="text-xs font-mono font-bold text-text-muted uppercase">Provider Target</label>
                             <select
                                 value={provider}
                                 onChange={(e) => setProvider(e.target.value)}
                                 disabled={isConnected}
-                                className="w-full bg-bg-elevated border border-ink-faint text-ink px-4 py-2.5 text-sm font-mono focus:border-neon-cyan focus:outline-none disabled:opacity-50"
+                                className="w-full bg-bg-elevated border border-border text-text-primary px-4 py-2.5 text-sm font-mono focus:border-accent-info focus:outline-none disabled:opacity-50"
                             >
                                 {config && Object.keys(config).map(p => (
                                     <option key={p} value={p}>{p.toUpperCase()}</option>
@@ -170,9 +170,9 @@ const LivePanel = ({ config, fixedProvider = null }) => {
                         </div>
                     )}
 
-                    <div className="p-4 bg-bg-elevated rounded border border-ink-faint">
+                    <div className="p-4 bg-bg-elevated rounded border border-border">
                         <div className="flex items-center justify-between mb-2">
-                            <span className="text-xs font-mono text-ink-muted uppercase font-bold">Status</span>
+                            <span className="text-xs font-mono text-text-muted uppercase font-bold">Status</span>
                             <Tag color={isConnected ? 'green' : 'gray'}>
                                 {isConnected ? 'LIVE' : 'OFFLINE'}
                             </Tag>
@@ -202,17 +202,17 @@ const LivePanel = ({ config, fixedProvider = null }) => {
                 </div>
             </Card>
 
-            <Card className="min-h-[400px] bg-black border-ink-faint font-mono text-xs p-0 overflow-hidden flex flex-col">
-                <div className="bg-bg-elevated px-4 py-2 border-b border-ink-faint flex items-center justify-between">
+            <Card className="min-h-[400px] bg-bg-base border-border font-mono text-xs p-0 overflow-hidden flex flex-col">
+                <div className="bg-bg-elevated px-4 py-2 border-b border-border flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                        <Terminal size={12} className="text-neon-cyan" />
-                        <span className="font-bold text-ink-muted">LIVE LOGS</span>
+                        <Terminal size={12} className="text-accent-info" />
+                        <span className="font-bold text-text-muted">LIVE LOGS</span>
                     </div>
-                    <span className="text-xs font-mono text-neon-pink animate-pulse">{status}</span>
+                    <span className="text-xs font-mono text-accent-danger animate-pulse">{status}</span>
                 </div>
-                <div className="p-4 h-32 overflow-y-auto space-y-1 text-neon-green/80 border-b border-ink-faint">
+                <div className="p-4 h-32 overflow-y-auto space-y-1 text-accent-primary/80 border-b border-border">
                     {logs.map((log, i) => (
-                        <div key={i} className="break-all border-b border-white/5 pb-0.5 mb-0.5">
+                        <div key={i} className="break-all border-b border-border/10 pb-0.5 mb-0.5">
                             {log}
                         </div>
                     ))}
@@ -220,18 +220,18 @@ const LivePanel = ({ config, fixedProvider = null }) => {
                 </div>
 
                 {/* Transcript Area */}
-                <div className="flex-1 flex flex-col min-h-0 bg-bg-paper">
-                    <div className="bg-bg-elevated px-4 py-2 border-b border-ink-faint flex items-center gap-2">
-                        <Radio size={12} className="text-neon-pink" />
-                        <span className="font-bold text-ink-muted">TRANSCRIPT STREAM</span>
+                <div className="flex-1 flex flex-col min-h-0 bg-bg-surface">
+                    <div className="bg-bg-elevated px-4 py-2 border-b border-border flex items-center gap-2">
+                        <Radio size={12} className="text-accent-danger" />
+                        <span className="font-bold text-text-muted">TRANSCRIPT STREAM</span>
                     </div>
                     <div className="p-4 overflow-y-auto space-y-4 flex-1">
                         {transcript.length === 0 && (
-                            <div className="text-ink-muted/30 italic text-center mt-10">Waiting for speech...</div>
+                            <div className="text-text-muted/30 italic text-center mt-10">Waiting for speech...</div>
                         )}
                         {transcript.map((msg, i) => (
                             <div key={i} className={`flex ${msg.isUser ? 'justify-end' : 'justify-start'}`}>
-                                <div className={`max-w-[80%] p-3 rounded text-sm font-mono border ${msg.isUser ? 'bg-bg-elevated border-neon-cyan text-ink' : 'bg-black border-neon-pink text-neon-pink'}`}>
+                                <div className={`max-w-[80%] p-3 rounded text-sm font-mono border ${msg.isUser ? 'bg-bg-elevated border-accent-info text-text-primary' : 'bg-bg-base border-accent-danger text-accent-danger'}`}>
                                     {msg.text}
                                 </div>
                             </div>

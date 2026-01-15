@@ -115,9 +115,9 @@ const DeepgramLive = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <Card title="Deepgram Control">
                 <div className="space-y-6">
-                    <div className="p-4 bg-bg-elevated rounded border border-ink-faint">
+                    <div className="p-4 bg-bg-elevated rounded border border-border">
                         <div className="flex items-center justify-between mb-4">
-                            <span className="text-xs font-mono text-ink-muted uppercase font-bold">State</span>
+                            <span className="text-xs font-mono text-text-muted uppercase font-bold">State</span>
                             <Tag
                                 color={
                                     connectionState === 'connected' ? 'green' :
@@ -130,7 +130,7 @@ const DeepgramLive = () => {
                         </div>
 
                         {error && (
-                            <div className="mb-4 p-2 bg-red-500/10 border border-red-500/50 text-red-500 text-xs rounded flex items-start gap-2">
+                            <div className="mb-4 p-2 bg-accent-danger/10 border border-accent-danger/50 text-accent-danger text-xs rounded flex items-start gap-2">
                                 <AlertCircle size={14} className="mt-0.5 shrink-0" />
                                 <span>{error}</span>
                             </div>
@@ -149,7 +149,7 @@ const DeepgramLive = () => {
                             )}
                         </Button>
 
-                        <p className="mt-3 text-xs text-ink-muted text-center">
+                        <p className="mt-3 text-xs text-text-muted text-center">
                             Uses Deepgram "Nova-3" Model via Proxy.
                         </p>
                     </div>
@@ -158,11 +158,11 @@ const DeepgramLive = () => {
 
             <Card title="Live Transcript" className="min-h-[300px] flex flex-col relative">
                 {transcript ? (
-                    <div className="flex-grow bg-bg-elevated p-4 rounded border border-ink-faint font-serif text-lg leading-relaxed whitespace-pre-wrap animate-in fade-in h-64 overflow-y-auto">
+                    <div className="flex-grow bg-bg-elevated p-4 rounded border border-border font-serif text-lg leading-relaxed whitespace-pre-wrap animate-in fade-in h-64 overflow-y-auto">
                         {transcript}
                     </div>
                 ) : (
-                    <div className="flex-grow flex items-center justify-center text-ink-muted/30 font-mono text-sm h-64">
+                    <div className="flex-grow flex items-center justify-center text-text-muted/30 font-mono text-sm h-64">
                         {isListening ? "Listening..." : "Ready to transcribe..."}
                     </div>
                 )}

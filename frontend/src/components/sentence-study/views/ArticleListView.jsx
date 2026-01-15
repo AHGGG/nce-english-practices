@@ -29,49 +29,49 @@ const ArticleListView = ({
         <button
             key={idx}
             onClick={() => onSelectArticle(article.source_id)}
-            className={`w-full text-left p-4 border bg-[#0A0A0A] hover:border-[#00FF94] hover:bg-[#00FF94]/5 transition-all group ${article.status === 'completed' ? 'border-[#00FF94]/30' : 'border-[#333]'
+            className={`w-full text-left p-4 border bg-bg-surface hover:border-accent-primary hover:bg-accent-primary/5 transition-all group ${article.status === 'completed' ? 'border-accent-primary/30' : 'border-border'
                 }`}
         >
             <div className="flex items-start justify-between">
                 <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1 flex-wrap">
-                        <h3 className="font-serif text-lg text-white truncate group-hover:text-[#00FF94]">
+                        <h3 className="font-serif text-lg text-text-primary truncate group-hover:text-accent-primary">
                             {article.title}
                         </h3>
                         {article.status === 'completed' && (
-                            <span className="shrink-0 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider border bg-[#00FF94]/10 text-[#00FF94] border-[#00FF94]/30 flex items-center gap-1">
+                            <span className="shrink-0 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider border bg-accent-primary/10 text-accent-primary border-accent-primary/30 flex items-center gap-1">
                                 <Check size={8} /> COMPLETED
                             </span>
                         )}
                         {isRecent(article) && (
-                            <span className="shrink-0 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider border bg-[#FF6B00]/10 text-[#FF6B00] border-[#FF6B00]/30 flex items-center gap-1">
+                            <span className="shrink-0 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider border bg-accent-warning/10 text-accent-warning border-accent-warning/30 flex items-center gap-1">
                                 <Zap size={8} /> RECENT
                             </span>
                         )}
                     </div>
-                    <p className="text-xs text-[#666] mt-1">
+                    <p className="text-xs text-text-muted mt-1">
                         {article.sentence_count} sentences
                     </p>
                 </div>
-                <BookOpen className="w-4 h-4 text-[#666] group-hover:text-[#00FF94] ml-3 shrink-0" />
+                <BookOpen className="w-4 h-4 text-text-muted group-hover:text-accent-primary ml-3 shrink-0" />
             </div>
         </button>
     );
 
     return (
-        <div className="h-screen flex flex-col bg-[#050505] text-[#E0E0E0] font-mono">
-            <header className="h-14 border-b border-[#333] flex items-center px-4 md:px-8 bg-[#0A0A0A]">
+        <div className="h-screen flex flex-col bg-bg-base text-text-primary font-mono">
+            <header className="h-14 border-b border-border flex items-center px-4 md:px-8 bg-bg-elevated">
                 <button
                     onClick={onBack}
-                    className="flex items-center gap-2 text-[#888] hover:text-[#00FF94] transition-colors mr-3"
+                    className="flex items-center gap-2 text-text-secondary hover:text-accent-primary transition-colors mr-3"
                 >
                     <ChevronLeft className="w-4 h-4" />
                 </button>
                 <div className="flex flex-col">
-                    <h1 className="text-sm font-bold uppercase tracking-wider text-white">
+                    <h1 className="text-sm font-bold uppercase tracking-wider text-text-primary">
                         {selectedBook?.title || 'Unknown Book'}
                     </h1>
-                    <span className="text-[10px] text-[#666] uppercase tracking-wider">Chapter List</span>
+                    <span className="text-[10px] text-text-muted uppercase tracking-wider">Chapter List</span>
                 </div>
             </header>
 
@@ -79,7 +79,7 @@ const ArticleListView = ({
                 <div className="max-w-2xl mx-auto">
                     {loading ? (
                         <div className="flex items-center justify-center py-12">
-                            <Loader2 className="w-6 h-6 animate-spin text-[#00FF94]" />
+                            <Loader2 className="w-6 h-6 animate-spin text-accent-primary" />
                         </div>
                     ) : (
                         <>
@@ -94,11 +94,11 @@ const ArticleListView = ({
                             {completedArticles.length > 0 && (
                                 <>
                                     <div className="flex items-center gap-3 mb-4 mt-8">
-                                        <Check size={14} className="text-[#00FF94]" />
-                                        <span className="text-xs text-[#00FF94]/70 uppercase tracking-wider font-bold">
+                                        <Check size={14} className="text-accent-primary" />
+                                        <span className="text-xs text-accent-primary/70 uppercase tracking-wider font-bold">
                                             Completed ({completedArticles.length})
                                         </span>
-                                        <div className="h-[1px] bg-[#00FF94]/20 flex-grow" />
+                                        <div className="h-[1px] bg-accent-primary/20 flex-grow" />
                                     </div>
                                     <div className="space-y-3">
                                         {completedArticles.map((article, i) => renderArticleCard(article, i))}
@@ -108,7 +108,7 @@ const ArticleListView = ({
 
                             {/* Empty state */}
                             {articles.length === 0 && (
-                                <div className="text-center py-12 text-[#666]">
+                                <div className="text-center py-12 text-text-muted">
                                     <BookOpen size={48} className="mx-auto mb-4 opacity-30" />
                                     <p>No articles available</p>
                                 </div>

@@ -165,10 +165,9 @@ const PerformanceReport = () => {
                             <span className="text-sm text-text-primary w-24">词汇问题</span>
                             <div className="flex-1 bg-bg-elevated h-4 relative overflow-hidden">
                                 <div
-                                    className="absolute inset-y-0 left-0"
+                                    className="absolute inset-y-0 left-0 bg-accent-primary/70"
                                     style={{
-                                        width: `${Math.min((profile.vocab_gap_count / profile.unclear_count * 100), 100)}%`,
-                                        backgroundColor: 'rgba(0, 255, 148, 0.7)'
+                                        width: `${Math.min((profile.vocab_gap_count / profile.unclear_count * 100), 100)}%`
                                     }}
                                 />
                             </div>
@@ -178,10 +177,9 @@ const PerformanceReport = () => {
                             <span className="text-sm text-text-primary w-24">语法问题</span>
                             <div className="flex-1 bg-bg-elevated h-4 relative overflow-hidden">
                                 <div
-                                    className="absolute inset-y-0 left-0"
+                                    className="absolute inset-y-0 left-0 bg-accent-danger/70"
                                     style={{
-                                        width: `${Math.min((profile.grammar_gap_count / profile.unclear_count * 100), 100)}%`,
-                                        backgroundColor: 'rgba(255, 0, 85, 0.7)'
+                                        width: `${Math.min((profile.grammar_gap_count / profile.unclear_count * 100), 100)}%`
                                     }}
                                 />
                             </div>
@@ -191,10 +189,9 @@ const PerformanceReport = () => {
                             <span className="text-sm text-text-primary w-24">句意问题</span>
                             <div className="flex-1 bg-bg-elevated h-4 relative overflow-hidden">
                                 <div
-                                    className="absolute inset-y-0 left-0"
+                                    className="absolute inset-y-0 left-0 bg-accent-warning/70"
                                     style={{
-                                        width: `${Math.min(((profile.meaning_gap_count || 0) / profile.unclear_count * 100), 100)}%`,
-                                        backgroundColor: 'rgba(245, 158, 11, 0.7)'
+                                        width: `${Math.min(((profile.meaning_gap_count || 0) / profile.unclear_count * 100), 100)}%`
                                     }}
                                 />
                             </div>
@@ -204,10 +201,9 @@ const PerformanceReport = () => {
                             <span className="text-sm text-text-primary w-24">固定搭配</span>
                             <div className="flex-1 bg-bg-elevated h-4 relative overflow-hidden">
                                 <div
-                                    className="absolute inset-y-0 left-0"
+                                    className="absolute inset-y-0 left-0 bg-accent-info/70"
                                     style={{
-                                        width: `${Math.min((profile.collocation_gap_count / profile.unclear_count * 100), 100)}%`,
-                                        backgroundColor: 'rgba(6, 182, 212, 0.7)'
+                                        width: `${Math.min((profile.collocation_gap_count / profile.unclear_count * 100), 100)}%`
                                     }}
                                 />
                             </div>

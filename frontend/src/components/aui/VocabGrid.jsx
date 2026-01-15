@@ -14,12 +14,12 @@ const VocabGrid = ({ words = [], show_translation = false, challenge_mode = fals
                 <h3 className="font-serif text-xl text-white">Vocabulary Review</h3>
                 <div className="flex gap-2">
                     {challenge_mode && (
-                        <span className="text-[10px] bg-neon-pink/10 text-neon-pink border border-neon-pink/30 px-2 py-1 rounded font-mono uppercase tracking-widest animate-pulse">
+                        <span className="text-[10px] bg-accent-danger/10 text-accent-danger border border-accent-danger/30 px-2 py-1 rounded font-mono uppercase tracking-widest animate-pulse">
                             Recall Challenge
                         </span>
                     )}
                     {monolingual && (
-                        <span className="text-[10px] bg-neon-cyan/10 text-neon-cyan border border-neon-cyan/30 px-2 py-1 rounded font-mono uppercase tracking-widest">
+                        <span className="text-[10px] bg-accent-info/10 text-accent-info border border-accent-info/30 px-2 py-1 rounded font-mono uppercase tracking-widest">
                             English Only
                         </span>
                     )}
@@ -37,7 +37,7 @@ const VocabGrid = ({ words = [], show_translation = false, challenge_mode = fals
                             className="group relative aspect-square bg-bg-elevated border border-border rounded-lg hover:border-accent-primary transition-all cursor-pointer flex flex-col items-center justify-center p-4 text-center"
                         >
                             {/* Word */}
-                            <span className="font-serif text-lg text-white group-hover:scale-110 transition-transform">
+                            <span className="font-serif text-lg text-text-primary group-hover:scale-110 transition-transform">
                                 {word}
                             </span>
 

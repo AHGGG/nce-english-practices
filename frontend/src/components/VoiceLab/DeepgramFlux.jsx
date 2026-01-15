@@ -166,9 +166,9 @@ const DeepgramFlux = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <Card title="Configuration">
                 <div className="space-y-6">
-                    <div className="p-4 bg-bg-elevated rounded border border-ink-faint">
+                    <div className="p-4 bg-bg-elevated rounded border border-border">
                         <div className="flex items-center justify-between mb-4">
-                            <span className="text-xs font-mono text-ink-muted uppercase font-bold">Status</span>
+                            <span className="text-xs font-mono text-text-muted uppercase font-bold">Status</span>
                             <Tag
                                 color={
                                     connectionState === 'connected' ? 'green' :
@@ -181,7 +181,7 @@ const DeepgramFlux = () => {
                         </div>
 
                         <div className="mb-4">
-                            <label className="block text-xs font-mono text-ink-muted mb-2">Model</label>
+                            <label className="block text-xs font-mono text-text-muted mb-2">Model</label>
                             <Select
                                 value={model}
                                 onChange={(e) => setModel(e.target.value)}
@@ -195,7 +195,7 @@ const DeepgramFlux = () => {
                         </div>
 
                         {error && (
-                            <div className="mb-4 p-2 bg-red-500/10 border border-red-500/50 text-red-500 text-xs rounded flex items-start gap-2">
+                            <div className="mb-4 p-2 bg-accent-danger/10 border border-accent-danger/50 text-accent-danger text-xs rounded flex items-start gap-2">
                                 <AlertCircle size={14} className="mt-0.5 shrink-0" />
                                 <span>{error}</span>
                             </div>
@@ -215,15 +215,15 @@ const DeepgramFlux = () => {
                         </Button>
 
                         {metrics.confidence && (
-                            <div className="mt-4 pt-4 border-t border-ink-faint">
+                            <div className="mt-4 pt-4 border-t border-border">
                                 <div className="flex justify-between text-xs font-mono mb-1">
-                                    <span className="text-ink-muted">Last Confidence</span>
-                                    <span className={metrics.confidence > 0.8 ? "text-neon-green" : "text-yellow-500"}>
+                                    <span className="text-text-muted">Last Confidence</span>
+                                    <span className={metrics.confidence > 0.8 ? "text-accent-primary" : "text-accent-warning"}>
                                         {(metrics.confidence * 100).toFixed(1)}%
                                     </span>
                                 </div>
                                 <div className="flex justify-between text-xs font-mono">
-                                    <span className="text-ink-muted">Utterances</span>
+                                    <span className="text-text-muted">Utterances</span>
                                     <span>{metrics.finality}</span>
                                 </div>
                             </div>
@@ -233,16 +233,16 @@ const DeepgramFlux = () => {
             </Card>
 
             <Card title="Real-time Transcript" className="min-h-[300px] flex flex-col relative">
-                <div className="flex-grow bg-bg-elevated p-4 rounded border border-ink-faint font-serif text-lg leading-relaxed whitespace-pre-wrap h-64 overflow-y-auto">
+                <div className="flex-grow bg-bg-elevated p-4 rounded border border-border font-serif text-lg leading-relaxed whitespace-pre-wrap h-64 overflow-y-auto">
                     {transcript}
-                    <span className="text-ink-muted italic">{interimTranscript}</span>
+                    <span className="text-text-muted italic">{interimTranscript}</span>
                     {isListening && !interimTranscript && (
-                        <span className="animate-pulse inline-block w-2 h-4 bg-neon-green ml-1 align-middle"></span>
+                        <span className="animate-pulse inline-block w-2 h-4 bg-accent-primary ml-1 align-middle"></span>
                     )}
                 </div>
 
                 <div className="absolute top-4 right-4 flex gap-2">
-                    <span className="text-xs font-mono bg-bg-base px-2 py-1 rounded border border-ink-faint text-ink-muted flex items-center gap-1">
+                    <span className="text-xs font-mono bg-bg-base px-2 py-1 rounded border border-border text-text-muted flex items-center gap-1">
                         <Activity size={12} />
                         WebSocket
                     </span>

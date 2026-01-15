@@ -60,9 +60,9 @@ const TenseTimeline = ({ tense, complexity = "high" }) => {
         <div className="w-full max-w-3xl bg-bg-surface border border-border rounded-xl p-6">
             {/* Header */}
             <div className="mb-6">
-                <h3 className="font-serif text-2xl text-white mb-2">{tense}</h3>
+                <h3 className="font-serif text-2xl text-text-primary mb-2">{tense}</h3>
                 <p className="text-sm text-text-secondary mb-1">{config.description}</p>
-                <code className="text-xs bg-bg-elevated border border-border px-2 py-1 rounded text-neon-green font-mono">
+                <code className="text-xs bg-bg-elevated border border-border px-2 py-1 rounded text-accent-primary font-mono">
                     {config.formula}
                 </code>
             </div>
@@ -148,7 +148,7 @@ const TenseTimeline = ({ tense, complexity = "high" }) => {
                                         <text
                                             x={timeToX(event.time)}
                                             y={centerY - 40}
-                                            fill="white"
+                                            fill="var(--color-text-primary)"
                                             fontSize="10"
                                             textAnchor="middle"
                                         >
@@ -200,7 +200,7 @@ const TenseTimeline = ({ tense, complexity = "high" }) => {
             )}
             {complexity === "medium" && (
                 <div className="mt-4 bg-bg-elevated border border-border rounded p-3">
-                    <p className="text-xs text-neon-cyan mb-2 font-mono uppercase tracking-wider">Level 2 View (Simplified)</p>
+                    <p className="text-xs text-accent-info mb-2 font-mono uppercase tracking-wider">Level 2 View (Simplified)</p>
                     <p className="text-xs text-text-secondary">Key events only. Upgrade to Level 3 for full timeline + interactive tooltips.</p>
                 </div>
             )}

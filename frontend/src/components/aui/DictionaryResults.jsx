@@ -67,7 +67,7 @@ const DictionaryResults = ({ word, source, entries = [] }) => {
     if (!entries || entries.length === 0) {
         return (
             <div className="p-4 bg-bg-elevated border border-border rounded">
-                <p className="text-text-muted">Loading dictionary data for <span className="text-white font-bold">{word}</span>...</p>
+                <p className="text-text-muted">Loading dictionary data for <span className="text-text-primary font-bold">{word}</span>...</p>
             </div>
         );
     }
@@ -77,7 +77,7 @@ const DictionaryResults = ({ word, source, entries = [] }) => {
             {/* Header */}
             <div className="flex items-center justify-between gap-3 pb-3 border-b border-border">
                 <div className="flex items-center gap-3">
-                    <span className="text-2xl font-serif font-bold text-white">{word}</span>
+                    <span className="text-2xl font-serif font-bold text-text-primary">{word}</span>
                     <span className="px-2 py-0.5 text-xs bg-blue-500/20 text-blue-400 border border-blue-500/30 rounded">
                         {source}
                     </span>
@@ -89,12 +89,12 @@ const DictionaryResults = ({ word, source, entries = [] }) => {
                 <div key={idx} className="bg-bg-surface border border-border rounded-lg overflow-hidden">
                     {/* Entry Header */}
                     <div className="px-4 py-3 bg-bg-elevated border-b border-border flex items-center gap-3 flex-wrap">
-                        <span className="font-bold text-white">{entry.headword}</span>
+                        <span className="font-bold text-text-primary">{entry.headword}</span>
                         {entry.homnum && (
                             <span className="text-xs text-text-muted">#{entry.homnum}</span>
                         )}
                         {entry.part_of_speech && (
-                            <span className="px-2 py-0.5 text-xs bg-purple-500/20 text-purple-400 rounded">
+                            <span className="px-2 py-0.5 text-xs bg-neon-purple/20 text-neon-purple rounded">
                                 {entry.part_of_speech}
                             </span>
                         )}
@@ -116,7 +116,7 @@ const DictionaryResults = ({ word, source, entries = [] }) => {
                                         {sense.grammar && (
                                             <span className="text-xs text-text-secondary mr-2">{sense.grammar}</span>
                                         )}
-                                        <span className="text-white">{sense.definition}</span>
+                                        <span className="text-text-primary">{sense.definition}</span>
                                         <RevealableTranslation text={sense.definition_cn} />
                                     </div>
                                 </div>
@@ -155,10 +155,10 @@ const DictionaryResults = ({ word, source, entries = [] }) => {
 
                         {/* Etymology (Word Origin) */}
                         {entry.etymology && (
-                            <div className="mt-4 pt-4 border-t border-[#333]">
+                            <div className="mt-4 pt-4 border-t border-border">
                                 <button
                                     onClick={() => toggleSection(idx, 'etymology')}
-                                    className="flex items-center gap-2 text-xs uppercase text-text-muted tracking-wider hover:text-white transition-colors"
+                                    className="flex items-center gap-2 text-xs uppercase text-text-muted tracking-wider hover:text-text-primary transition-colors"
                                 >
                                     <span>{isSectionExpanded(idx, 'etymology') ? '▼' : '▶'}</span>
                                     <span>📜 Word Origin</span>
@@ -167,13 +167,13 @@ const DictionaryResults = ({ word, source, entries = [] }) => {
                                     <div className="mt-2 p-3 bg-bg-elevated rounded text-sm">
                                         <div className="flex flex-wrap gap-3">
                                             {entry.etymology.century && (
-                                                <span className="px-2 py-1 bg-amber-500/20 text-amber-400 rounded text-xs">
+                                                <span className="px-2 py-1 bg-accent-warning/20 text-accent-warning rounded text-xs">
                                                     {entry.etymology.century}
                                                 </span>
                                             )}
                                             {entry.etymology.origin && (
                                                 <span className="text-text-primary">
-                                                    from <span className="font-italic text-cyan-400">{entry.etymology.origin}</span>
+                                                    from <span className="font-italic text-accent-info">{entry.etymology.origin}</span>
                                                 </span>
                                             )}
                                             {entry.etymology.meaning && (
@@ -190,10 +190,10 @@ const DictionaryResults = ({ word, source, entries = [] }) => {
 
                         {/* Verb Table */}
                         {entry.verb_table && (
-                            <div className="mt-4 pt-4 border-t border-[#333]">
+                            <div className="mt-4 pt-4 border-t border-border">
                                 <button
                                     onClick={() => toggleSection(idx, 'verb_table')}
-                                    className="flex items-center gap-2 text-xs uppercase text-[#666] tracking-wider hover:text-white transition-colors"
+                                    className="flex items-center gap-2 text-xs uppercase text-text-muted tracking-wider hover:text-text-primary transition-colors"
                                 >
                                     <span>{isSectionExpanded(idx, 'verb_table') ? '▼' : '▶'}</span>
                                     <span>📝 Verb Table</span>
@@ -219,7 +219,7 @@ const DictionaryResults = ({ word, source, entries = [] }) => {
                                             )}
                                             {entry.verb_table.continuous_forms?.length > 0 && (
                                                 <div>
-                                                    <span className="text-[#888] block mb-1">Continuous Forms</span>
+                                                    <span className="text-text-secondary block mb-1">Continuous Forms</span>
                                                     <div className="grid grid-cols-2 gap-1">
                                                         {entry.verb_table.continuous_forms.slice(0, 4).map((f, fIdx) => (
                                                             <div key={fIdx} className="flex gap-2">
@@ -241,39 +241,39 @@ const DictionaryResults = ({ word, source, entries = [] }) => {
 
                         {/* Thesaurus */}
                         {entry.thesaurus && (entry.thesaurus.entries?.length > 0 || entry.thesaurus.word_sets?.length > 0) && (
-                            <div className="mt-4 pt-4 border-t border-[#333]">
+                            <div className="mt-4 pt-4 border-t border-border">
                                 <button
                                     onClick={() => toggleSection(idx, 'thesaurus')}
-                                    className="flex items-center gap-2 text-xs uppercase text-[#666] tracking-wider hover:text-white transition-colors"
+                                    className="flex items-center gap-2 text-xs uppercase text-text-muted tracking-wider hover:text-text-primary transition-colors"
                                 >
                                     <span>{isSectionExpanded(idx, 'thesaurus') ? '▼' : '▶'}</span>
                                     <span>📚 Thesaurus</span>
                                     {entry.thesaurus.topic && (
-                                        <span className="text-[#888] normal-case">({entry.thesaurus.topic})</span>
+                                        <span className="text-text-secondary normal-case">({entry.thesaurus.topic})</span>
                                     )}
                                 </button>
                                 {isSectionExpanded(idx, 'thesaurus') && (
-                                    <div className="mt-2 p-3 bg-[#111] rounded space-y-3">
+                                    <div className="mt-2 p-3 bg-bg-elevated rounded space-y-3">
                                         {entry.thesaurus.entries?.length > 0 && (
                                             <div className="space-y-2">
                                                 {entry.thesaurus.entries.slice(0, 8).map((te, teIdx) => (
-                                                    <div key={teIdx} className="border-l-2 border-[#333] pl-3">
+                                                    <div key={teIdx} className="border-l-2 border-border pl-3">
                                                         <button
                                                             onClick={() => toggleSection(idx, `thes_${teIdx}`)}
-                                                            className="flex items-start gap-2 w-full text-left hover:bg-[#1a1a1a] p-1 -ml-1 rounded transition-colors"
+                                                            className="flex items-start gap-2 w-full text-left hover:bg-bg-elevated_hover p-1 -ml-1 rounded transition-colors"
                                                         >
-                                                            <span className="text-[#666] text-xs mt-0.5">
+                                                            <span className="text-text-muted text-xs mt-0.5">
                                                                 {isSectionExpanded(idx, `thes_${teIdx}`) ? '▼' : '▶'}
                                                             </span>
-                                                            <span className="text-cyan-400 font-medium">{te.word}</span>
+                                                            <span className="text-accent-info font-medium">{te.word}</span>
                                                             {te.definition && (
-                                                                <span className="text-[#888] text-sm">- {te.definition}</span>
+                                                                <span className="text-text-secondary text-sm">- {te.definition}</span>
                                                             )}
                                                         </button>
                                                         {isSectionExpanded(idx, `thes_${teIdx}`) && te.examples?.length > 0 && (
                                                             <div className="ml-6 mt-1 space-y-1">
                                                                 {te.examples.map((ex, exIdx) => (
-                                                                    <p key={exIdx} className="text-[#888] text-sm italic">
+                                                                    <p key={exIdx} className="text-text-secondary text-sm italic">
                                                                         • {ex}
                                                                     </p>
                                                                 ))}
@@ -285,10 +285,10 @@ const DictionaryResults = ({ word, source, entries = [] }) => {
                                         )}
                                         {entry.thesaurus.word_sets?.length > 0 && (
                                             <div>
-                                                <span className="text-[#666] text-xs block mb-2">Word Sets:</span>
+                                                <span className="text-text-muted text-xs block mb-2">Word Sets:</span>
                                                 <div className="flex flex-wrap gap-1">
                                                     {entry.thesaurus.word_sets.slice(0, 20).map((ws, wsIdx) => (
-                                                        <span key={wsIdx} className="px-2 py-0.5 text-xs bg-[#222] text-[#888] rounded hover:text-white transition-colors">
+                                                        <span key={wsIdx} className="px-2 py-0.5 text-xs bg-bg-surface text-text-secondary rounded hover:text-text-primary transition-colors">
                                                             {ws}
                                                         </span>
                                                     ))}
@@ -302,41 +302,41 @@ const DictionaryResults = ({ word, source, entries = [] }) => {
 
                         {/* Collocations */}
                         {entry.collocations?.length > 0 && (
-                            <div className="mt-4 pt-4 border-t border-[#333]">
+                            <div className="mt-4 pt-4 border-t border-border">
                                 <button
                                     onClick={() => toggleSection(idx, 'collocations')}
-                                    className="flex items-center gap-2 text-xs uppercase text-[#666] tracking-wider hover:text-white transition-colors"
+                                    className="flex items-center gap-2 text-xs uppercase text-text-muted tracking-wider hover:text-text-primary transition-colors"
                                 >
                                     <span>{isSectionExpanded(idx, 'collocations') ? '▼' : '▶'}</span>
                                     <span>🔗 Collocations</span>
-                                    <span className="text-[#888]">({entry.collocations.length})</span>
+                                    <span className="text-text-secondary">({entry.collocations.length})</span>
                                 </button>
                                 {isSectionExpanded(idx, 'collocations') && (
-                                    <div className="mt-2 p-3 bg-[#111] rounded space-y-2">
+                                    <div className="mt-2 p-3 bg-bg-elevated rounded space-y-2">
                                         {entry.collocations.map((col, colIdx) => (
-                                            <div key={colIdx} className="border-l-2 border-green-500/30 pl-3">
+                                            <div key={colIdx} className="border-l-2 border-accent-primary/30 pl-3">
                                                 <button
                                                     onClick={() => toggleSection(idx, `col_${colIdx}`)}
-                                                    className="flex items-center gap-2 w-full text-left hover:bg-[#1a1a1a] p-1 -ml-1 rounded transition-colors"
+                                                    className="flex items-center gap-2 w-full text-left hover:bg-bg-elevated_hover p-1 -ml-1 rounded transition-colors"
                                                 >
-                                                    <span className="text-[#666] text-xs">
+                                                    <span className="text-text-muted text-xs">
                                                         {isSectionExpanded(idx, `col_${colIdx}`) ? '▼' : '▶'}
                                                     </span>
-                                                    <span className="px-2 py-0.5 bg-green-500/20 text-green-400 rounded text-sm">
+                                                    <span className="px-2 py-0.5 bg-accent-primary/20 text-accent-primary rounded text-sm">
                                                         {col.pattern}
                                                     </span>
                                                     {col.part_of_speech && (
-                                                        <span className="text-[#666] text-xs">{col.part_of_speech}</span>
+                                                        <span className="text-text-muted text-xs">{col.part_of_speech}</span>
                                                     )}
                                                     {col.examples?.length > 0 && (
-                                                        <span className="text-[#555] text-xs">({col.examples.length} examples)</span>
+                                                        <span className="text-text-secondary text-xs">({col.examples.length} examples)</span>
                                                     )}
                                                 </button>
                                                 {isSectionExpanded(idx, `col_${colIdx}`) && col.examples?.length > 0 && (
                                                     <div className="ml-6 mt-2 space-y-2">
                                                         {col.examples.map((ex, exIdx) => (
-                                                            <div key={exIdx} className="pl-3 border-l-2 border-[#333]">
-                                                                <p className="text-[#E0E0E0] text-sm italic">{ex.text}</p>
+                                                            <div key={exIdx} className="pl-3 border-l-2 border-border">
+                                                                <p className="text-text-primary text-sm italic">{ex.text}</p>
                                                                 <RevealableTranslation text={ex.translation} />
                                                             </div>
                                                         ))}
@@ -351,26 +351,26 @@ const DictionaryResults = ({ word, source, entries = [] }) => {
 
                         {/* Extra Examples */}
                         {entry.extra_examples?.length > 0 && (
-                            <div className="mt-4 pt-4 border-t border-[#333]">
+                            <div className="mt-4 pt-4 border-t border-border">
                                 <button
                                     onClick={() => toggleSection(idx, 'extra_examples')}
-                                    className="flex items-center gap-2 text-xs uppercase text-[#666] tracking-wider hover:text-white transition-colors"
+                                    className="flex items-center gap-2 text-xs uppercase text-text-muted tracking-wider hover:text-text-primary transition-colors"
                                 >
                                     <span>{isSectionExpanded(idx, 'extra_examples') ? '▼' : '▶'}</span>
                                     <span>💬 Extra Examples</span>
-                                    <span className="text-[#888]">({entry.extra_examples.length})</span>
+                                    <span className="text-text-secondary">({entry.extra_examples.length})</span>
                                 </button>
                                 {isSectionExpanded(idx, 'extra_examples') && (
-                                    <div className="mt-2 p-3 bg-[#111] rounded space-y-2">
+                                    <div className="mt-2 p-3 bg-bg-elevated rounded space-y-2">
                                         {entry.extra_examples.slice(0, 8).map((ex, exIdx) => (
                                             <div key={exIdx} className="flex items-start gap-2">
                                                 <span className={`text-xs px-1 rounded ${ex.source === 'CORPUS'
-                                                    ? 'bg-blue-500/20 text-blue-400'
-                                                    : 'bg-orange-500/20 text-orange-400'
+                                                    ? 'bg-accent-info/20 text-accent-info'
+                                                    : 'bg-accent-warning/20 text-accent-warning'
                                                     }`}>
                                                     {ex.source === 'CORPUS' ? 'C' : 'D'}
                                                 </span>
-                                                <span className="text-[#E0E0E0] text-sm italic">{ex.text}</span>
+                                                <span className="text-text-primary text-sm italic">{ex.text}</span>
                                             </div>
                                         ))}
                                     </div>

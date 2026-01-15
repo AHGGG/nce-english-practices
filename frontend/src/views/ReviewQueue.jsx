@@ -67,28 +67,28 @@ const RATING_OPTIONS = [
         quality: 1,
         label: '忘了',
         icon: RotateCcw,
-        color: 'text-red-400',
-        bgColor: 'bg-red-500/10',
-        hoverBg: 'hover:bg-red-500/20',
-        borderColor: 'border-red-500/30'
+        color: 'text-accent-danger',
+        bgColor: 'bg-accent-danger/10',
+        hoverBg: 'hover:bg-accent-danger/20',
+        borderColor: 'border-accent-danger/30'
     },
     {
         quality: 3,
         label: '想起来了',
         icon: CheckCircle,
-        color: 'text-green-400',
-        bgColor: 'bg-green-500/10',
-        hoverBg: 'hover:bg-green-500/20',
-        borderColor: 'border-green-500/30'
+        color: 'text-accent-primary',
+        bgColor: 'bg-accent-primary/10',
+        hoverBg: 'hover:bg-accent-primary/20',
+        borderColor: 'border-accent-primary/30'
     },
     {
         quality: 5,
         label: '太简单',
         icon: Zap,
-        color: 'text-amber-400',
-        bgColor: 'bg-amber-500/10',
-        hoverBg: 'hover:bg-amber-500/20',
-        borderColor: 'border-amber-500/30'
+        color: 'text-accent-warning',
+        bgColor: 'bg-accent-warning/10',
+        hoverBg: 'hover:bg-accent-warning/20',
+        borderColor: 'border-accent-warning/30'
     }
 ];
 
@@ -466,7 +466,7 @@ const ReviewQueue = () => {
                 <span>{queue.length} 待复习</span>
             </div>
             {isRandomMode && (
-                <div className="px-2 py-0.5 bg-purple-500/20 text-purple-400 text-[10px] rounded uppercase tracking-wider font-bold">
+                <div className="px-2 py-0.5 bg-accent-info/20 text-accent-info text-[10px] rounded uppercase tracking-wider font-bold">
                     Random Mode
                 </div>
             )}
@@ -499,7 +499,7 @@ const ReviewQueue = () => {
                             <span className="px-1.5 py-0.5 bg-accent-primary/10 text-accent-primary rounded text-[11px] truncate max-w-[120px] sm:max-w-none" title={bookName}>
                                 📖 {bookName}
                             </span>
-                            <span className="px-1.5 py-0.5 bg-purple-500/10 text-purple-400 rounded text-[11px] whitespace-nowrap flex-shrink-0">
+                            <span className="px-1.5 py-0.5 bg-accent-info/10 text-accent-info rounded text-[11px] whitespace-nowrap flex-shrink-0">
                                 🏷️ {getGapTypeInfo(currentItem.difficulty_type).shortLabel}
                             </span>
                         </div>
@@ -521,8 +521,8 @@ const ReviewQueue = () => {
                                 className={`
                                     flex items-center gap-1 px-2 py-0.5 rounded transition-colors whitespace-nowrap flex-shrink-0
                                     ${showContext
-                                        ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30'
-                                        : 'bg-bg-elevated text-text-secondary hover:text-white border border-transparent'}
+                                        ? 'bg-accent-info/20 text-accent-info border border-accent-info/30'
+                                        : 'bg-bg-elevated text-text-secondary hover:text-text-primary border border-transparent'}
                                 `}
                             >
                                 {loadingContext ? (
@@ -541,7 +541,7 @@ const ReviewQueue = () => {
                             {contextData.previous_sentence && (
                                 <p className="mb-2 opacity-60">{contextData.previous_sentence}</p>
                             )}
-                            <div className="pl-2 border-l-2 border-blue-500/50 my-2 text-text-primary">
+                            <div className="pl-2 border-l-2 border-accent-info/50 my-2 text-text-primary">
                                 <HighlightedSentence
                                     text={contextData.target_sentence}
                                     highlights={currentItem.highlighted_items || []}
@@ -561,7 +561,7 @@ const ReviewQueue = () => {
                     <div
                         className="flex-1 flex items-center justify-center p-6 md:p-10"
                     >
-                        <p className={`font-serif text-xl md:text-2xl text-white leading-relaxed text-left w-full ${showContext ? 'opacity-50' : ''}`}>
+                        <p className={`font-serif text-xl md:text-2xl text-text-primary leading-relaxed text-left w-full ${showContext ? 'opacity-50' : ''}`}>
                             <HighlightedSentence
                                 text={currentItem.sentence_text}
                                 highlights={currentItem.highlighted_items || []}
@@ -579,7 +579,7 @@ const ReviewQueue = () => {
                             <span>首次复习</span>
                         )}
                         {isRandomMode && (
-                            <span className="block mt-1 text-purple-400/70">
+                            <span className="block mt-1 text-accent-info/70">
                                 (随机复习模式 - 不记录进度)
                             </span>
                         )}
@@ -591,13 +591,13 @@ const ReviewQueue = () => {
                     <div className="mt-6 border border-border bg-bg-surface">
                         {/* Stage indicator */}
                         <div className="px-4 py-2 border-b border-border-subtle flex items-center gap-2">
-                            <Lightbulb className="w-4 h-4 text-amber-400" />
-                            <span className="text-xs text-amber-400 font-mono">
+                            <Lightbulb className="w-4 h-4 text-accent-warning" />
+                            <span className="text-xs text-accent-warning font-mono">
                                 STAGE {helpStage} / 3
                             </span>
                             <div className="flex-1 h-1 bg-border-subtle rounded-full ml-2">
                                 <div
-                                    className="h-full bg-amber-400 rounded-full transition-all"
+                                    className="h-full bg-accent-warning rounded-full transition-all"
                                     style={{ width: `${(helpStage / 3) * 100}%` }}
                                 />
                             </div>
@@ -624,8 +624,8 @@ const ReviewQueue = () => {
                                     onClick={() => handleHelpResponse(true)}
                                     disabled={isSubmitting || isLoadingHelp}
                                     className="flex items-center justify-center gap-2 p-3 
-                                        border border-green-500/30 bg-green-500/10 hover:bg-green-500/20
-                                        text-green-400 transition-all disabled:opacity-50"
+                                        border border-accent-primary/30 bg-accent-primary/10 hover:bg-accent-primary/20
+                                        text-accent-primary transition-all disabled:opacity-50"
                                 >
                                     <CheckCircle className="w-5 h-5" />
                                     <span className="text-sm">想起来了</span>
@@ -634,8 +634,8 @@ const ReviewQueue = () => {
                                     onClick={() => handleHelpResponse(false)}
                                     disabled={isSubmitting || isLoadingHelp}
                                     className="flex items-center justify-center gap-2 p-3 
-                                        border border-amber-500/30 bg-amber-500/10 hover:bg-amber-500/20
-                                        text-amber-400 transition-all disabled:opacity-50"
+                                        border border-accent-warning/30 bg-accent-warning/10 hover:bg-accent-warning/20
+                                        text-accent-warning transition-all disabled:opacity-50"
                                 >
                                     <ArrowRight className="w-5 h-5" />
                                     <span className="text-sm">

@@ -181,9 +181,9 @@ const DeepgramStreamingTTS = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <Card title="Streaming TTS Config">
                 <div className="space-y-6">
-                    <div className="p-4 bg-bg-elevated rounded border border-ink-faint">
+                    <div className="p-4 bg-bg-elevated rounded border border-border">
                         <div className="flex items-center justify-between mb-4">
-                            <span className="text-xs font-mono text-ink-muted uppercase font-bold">Status</span>
+                            <span className="text-xs font-mono text-text-muted uppercase font-bold">Status</span>
                             <Tag
                                 color={
                                     connectionState === 'connected' ? 'green' :
@@ -196,7 +196,7 @@ const DeepgramStreamingTTS = () => {
                         </div>
 
                         <div className="mb-4">
-                            <label className="block text-xs font-mono text-ink-muted mb-2">Voice</label>
+                            <label className="block text-xs font-mono text-text-muted mb-2">Voice</label>
                             <Select
                                 value={voice}
                                 onChange={(e) => setVoice(e.target.value)}
@@ -220,7 +220,7 @@ const DeepgramStreamingTTS = () => {
                             </Button>
                         )}
 
-                        <div className="mt-4 text-xs font-mono text-ink-muted">
+                        <div className="mt-4 text-xs font-mono text-text-muted">
                             Buffer Chunks: {bufferStatus}
                         </div>
                     </div>
@@ -230,7 +230,7 @@ const DeepgramStreamingTTS = () => {
             <Card title="Streaming Input">
                 <div className="flex flex-col h-full space-y-4">
                     <textarea
-                        className="w-full flex-grow p-3 bg-bg-base border border-ink-faint rounded font-serif text-lg focus:border-neon-cyan outline-none resize-none min-h-[150px]"
+                        className="w-full flex-grow p-3 bg-bg-base border border-border rounded font-serif text-lg focus:border-accent-info outline-none resize-none min-h-[150px]"
                         value={textInput}
                         onChange={(e) => setTextInput(e.target.value)}
                         placeholder="Type text to stream..."
@@ -251,7 +251,7 @@ const DeepgramStreamingTTS = () => {
                     </div>
 
                     {error && (
-                        <div className="p-2 bg-red-500/10 border border-red-500/50 text-red-500 text-xs rounded">
+                        <div className="p-2 bg-accent-danger/10 border border-accent-danger/50 text-accent-danger text-xs rounded">
                             {error}
                         </div>
                     )}

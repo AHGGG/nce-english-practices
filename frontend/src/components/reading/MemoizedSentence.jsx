@@ -121,10 +121,10 @@ const MemoizedSentence = memo(function MemoizedSentence({
             const phraseText = collocInfo.text.toLowerCase();
             const isStudiedPhrase = showHighlights && studyHighlightSet?.has(phraseText);
 
-            // Amber for studied phrases, yellow dashed border for detected but not studied
+            // Amber for studied phrases, golden dashed border for detected but not studied
             const phraseClassName = isStudiedPhrase
                 ? 'reading-word cursor-pointer px-0.5 text-amber-400 border-b-2 border-amber-400 bg-amber-400/10'
-                : 'reading-word cursor-pointer px-0.5 border-b-2 border-dashed border-accent-warning hover:bg-accent-warning/10 hover:text-accent-warning';
+                : 'reading-word cursor-pointer px-0.5 border-b-2 border-dashed border-neon-gold hover:bg-neon-gold/10 hover:text-neon-gold';
 
             rendered.push(
                 <span

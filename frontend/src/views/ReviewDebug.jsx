@@ -29,14 +29,14 @@ const ReviewDebug = () => {
     const dates = Object.keys(schedule).sort();
 
     return (
-        <div className="min-h-screen bg-bg-canvas p-6 pb-20">
+        <div className="min-h-screen bg-bg-base p-6 pb-20">
             <div className="max-w-6xl mx-auto space-y-8">
 
                 {/* Header */}
                 <div className="flex items-center justify-between">
                     <div>
-                        <h1 className="text-3xl font-serif font-bold text-ink mb-2">Review Algorithm Debug</h1>
-                        <p className="text-ink-muted font-mono text-sm">
+                        <h1 className="text-3xl font-serif font-bold text-text-primary mb-2">Review Algorithm Debug</h1>
+                        <p className="text-text-muted font-mono text-sm">
                             Inspect SM-2 scheduling logic and future review queue.
                         </p>
                     </div>
@@ -44,7 +44,7 @@ const ReviewDebug = () => {
                         <select
                             value={days}
                             onChange={(e) => setDays(Number(e.target.value))}
-                            className="bg-bg-elevated border border-ink-faint text-ink px-3 py-1.5 font-mono text-sm"
+                            className="bg-bg-elevated border border-border text-text-primary px-3 py-1.5 font-mono text-sm"
                         >
                             <option value={7}>Next 7 Days</option>
                             <option value={14}>Next 14 Days</option>
@@ -52,7 +52,7 @@ const ReviewDebug = () => {
                         </select>
                         <button
                             onClick={fetchSchedule}
-                            className="p-2 border border-ink-faint text-ink hover:text-neon-green hover:border-neon-green transition-colors"
+                            className="p-2 border border-border text-text-primary hover:text-accent-primary hover:border-accent-primary transition-colors"
                         >
                             <RotateCw className="w-5 h-5" />
                         </button>
@@ -60,25 +60,25 @@ const ReviewDebug = () => {
                 </div>
 
                 {loading ? (
-                    <div className="flex items-center justify-center py-20 text-ink-muted font-mono animate-pulse">
+                    <div className="flex items-center justify-center py-20 text-text-muted font-mono animate-pulse">
                         LOADING DATA...
                     </div>
                 ) : (
                     <div className="space-y-8">
                         {dates.length === 0 && (
-                            <div className="p-10 text-center border border-dashed border-ink-faint text-ink-muted font-mono">
+                            <div className="p-10 text-center border border-dashed border-border text-text-muted font-mono">
                                 No reviews scheduled for the next {days} days.
                             </div>
                         )}
 
                         {dates.map(date => (
                             <div key={date} className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-                                <div className="flex items-center gap-3 mb-4 sticky top-0 bg-bg-canvas/90 backdrop-blur py-2 z-10 border-b border-ink-faint">
-                                    <Calendar className="w-5 h-5 text-neon-cyan" />
-                                    <h2 className="text-lg font-bold font-mono text-ink tracking-wider">
+                                <div className="flex items-center gap-3 mb-4 sticky top-0 bg-bg-base/90 backdrop-blur py-2 z-10 border-b border-border">
+                                    <Calendar className="w-5 h-5 text-accent-info" />
+                                    <h2 className="text-lg font-bold font-mono text-text-primary tracking-wider">
                                         {new Date(date).toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
                                     </h2>
-                                    <span className="text-xs font-mono text-ink-muted bg-bg-elevated px-2 py-0.5 rounded">
+                                    <span className="text-xs font-mono text-text-muted bg-bg-elevated px-2 py-0.5 rounded">
                                         {schedule[date].length} items
                                     </span>
                                 </div>
@@ -99,10 +99,10 @@ const ReviewDebug = () => {
 
 const ReviewItemRow = ({ item }) => {
     return (
-        <div className="group bg-bg-paper border border-ink-faint p-4 hover:border-neon-green/50 transition-all flex items-start gap-4">
+        <div className="group bg-bg-surface border border-border p-4 hover:border-accent-primary/50 transition-all flex items-start gap-4">
             {/* Main Content */}
             <div className="flex-grow min-w-0">
-                <div className="text-ink font-serif text-lg mb-2 truncate">
+                <div className="text-text-primary font-serif text-lg mb-2 truncate">
                     {item.text}
                 </div>
 
@@ -111,7 +111,7 @@ const ReviewItemRow = ({ item }) => {
                     <MetricBadge label="Interval" value={`${item.interval.toFixed(1)}d`} color="cyan" />
                     <MetricBadge label="Factor" value={item.ef.toFixed(2)} color="pink" />
                     <MetricBadge label="Repetition" value={item.repetition} color="amber" />
-                    <div className="text-xs text-ink-muted font-mono ml-2">
+                    <div className="text-xs text-text-muted font-mono ml-2">
                         Due: {new Date(item.next_review_at).toLocaleTimeString()}
                     </div>
                 </div>
@@ -127,9 +127,9 @@ const ReviewItemRow = ({ item }) => {
 
 const MetricBadge = ({ label, value, color }) => {
     const colors = {
-        cyan: "text-neon-cyan border-neon-cyan/30 bg-neon-cyan/5",
-        pink: "text-neon-pink border-neon-pink/30 bg-neon-pink/5",
-        amber: "text-neon-amber border-neon-amber/30 bg-neon-amber/5"
+        cyan: "text-accent-info border-accent-info/30 bg-accent-info/5",
+        pink: "text-accent-danger border-accent-danger/30 bg-accent-danger/5",
+        amber: "text-accent-warning border-accent-warning/30 bg-accent-warning/5"
     };
 
     return (
@@ -143,7 +143,7 @@ const MetricBadge = ({ label, value, color }) => {
 const LogicTooltip = ({ item }) => {
     if (!item.last_review) {
         return (
-            <div className="text-xs font-mono text-ink-muted flex items-center gap-1 opacity-50 cursor-not-allowed">
+            <div className="text-xs font-mono text-text-muted flex items-center gap-1 opacity-50 cursor-not-allowed">
                 <Calculator className="w-4 h-4" />
                 <span>New Item</span>
             </div>
@@ -168,47 +168,47 @@ const LogicTooltip = ({ item }) => {
 
     return (
         <div className="group/tooltip relative">
-            <button className="flex items-center gap-2 px-3 py-1.5 bg-bg-elevated border border-ink-faint text-ink-muted hover:text-neon-green hover:border-neon-green transition-all font-mono text-xs uppercase tracking-wider">
+            <button className="flex items-center gap-2 px-3 py-1.5 bg-bg-elevated border border-border text-text-muted hover:text-accent-primary hover:border-accent-primary transition-all font-mono text-xs uppercase tracking-wider">
                 <Calculator className="w-4 h-4" />
                 <span>Inspect Logic</span>
             </button>
 
             {/* Tooltip Content */}
-            <div className="absolute right-0 top-full mt-2 w-80 p-4 bg-bg-elevated border border-ink border-b-4 border-b-neon-green shadow-hard z-50 opacity-0 invisible group-hover/tooltip:opacity-100 group-hover/tooltip:visible transition-all translate-y-2 group-hover/tooltip:translate-y-0 text-left pointer-events-none">
-                <div className="font-mono text-xs font-bold text-neon-green mb-3 uppercase tracking-wider border-b border-ink-faint pb-1">
+            <div className="absolute right-0 top-full mt-2 w-80 p-4 bg-bg-elevated border border-border border-b-4 border-b-accent-primary shadow-hard z-50 opacity-0 invisible group-hover/tooltip:opacity-100 group-hover/tooltip:visible transition-all translate-y-2 group-hover/tooltip:translate-y-0 text-left pointer-events-none">
+                <div className="font-mono text-xs font-bold text-accent-primary mb-3 uppercase tracking-wider border-b border-border pb-1">
                     Scheduling Logic Trace
                 </div>
 
-                <div className="space-y-3 font-mono text-xs text-ink-muted">
+                <div className="space-y-3 font-mono text-xs text-text-muted">
                     <div className="flex justify-between">
                         <span>Last Review:</span>
-                        <span className="text-ink">{new Date(date).toLocaleDateString()}</span>
+                        <span className="text-text-primary">{new Date(date).toLocaleDateString()}</span>
                     </div>
                     <div className="flex justify-between">
                         <span>User Rating:</span>
-                        <span className={`font-bold ${quality >= 3 ? 'text-neon-cyan' : 'text-neon-pink'}`}>
+                        <span className={`font-bold ${quality >= 3 ? 'text-accent-info' : 'text-accent-danger'}`}>
                             {quality} ({quality === 5 ? 'Easy' : quality === 3 ? 'Remembered' : 'Forgot'})
                         </span>
                     </div>
                     <div className="flex justify-between">
                         <span>Prev Interval:</span>
-                        <span className="text-ink">{interval_before} days</span>
+                        <span className="text-text-primary">{interval_before} days</span>
                     </div>
                     <div className="flex justify-between">
                         <span>Study Duration:</span>
-                        <span className="text-ink">{(duration_ms / 1000).toFixed(1)}s</span>
+                        <span className="text-text-primary">{(duration_ms / 1000).toFixed(1)}s</span>
                     </div>
 
-                    <div className="h-px bg-ink-faint my-2" />
+                    <div className="h-px bg-border my-2" />
 
                     <div>
-                        <span className="block text-ink mb-1 font-bold">Calculation:</span>
-                        <p className="leading-relaxed text-ink/80 opacity-80">
+                        <span className="block text-text-primary mb-1 font-bold">Calculation:</span>
+                        <p className="leading-relaxed text-text-primary/80 opacity-80">
                             {logicText}
                         </p>
                     </div>
 
-                    <div className="mt-2 pt-2 border-t border-ink-faint flex items-center justify-between text-neon-green font-bold">
+                    <div className="mt-2 pt-2 border-t border-border flex items-center justify-between text-accent-primary font-bold">
                         <span>Result:</span>
                         <span className="flex items-center gap-1">
                             Next Review in {item.interval.toFixed(1)}d

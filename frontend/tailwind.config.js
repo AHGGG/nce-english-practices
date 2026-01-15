@@ -50,6 +50,7 @@ export default {
           lime: 'var(--color-neon-lime)',
           magenta: 'var(--color-neon-magenta)',
           yellow: 'var(--color-neon-yellow)',
+          gold: 'var(--color-neon-gold)',
         },
         
         // Legacy ink colors (used by older components)

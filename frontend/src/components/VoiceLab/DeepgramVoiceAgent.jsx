@@ -367,7 +367,7 @@ const DeepgramVoiceAgent = () => {
                     <Card title="Agent Settings">
                         <div className="space-y-4">
                             <div>
-                                <label className="text-xs font-mono text-ink-muted">LLM Provider</label>
+                                <label className="text-xs font-mono text-text-muted">LLM Provider</label>
                                 <Select
                                     value={config.llm_provider}
                                     onChange={e => setConfig({ ...config, llm_provider: e.target.value })}
@@ -380,7 +380,7 @@ const DeepgramVoiceAgent = () => {
                                 />
                             </div>
                             <div>
-                                <label className="text-xs font-mono text-ink-muted">Voice</label>
+                                <label className="text-xs font-mono text-text-muted">Voice</label>
                                 <Select
                                     value={config.voice}
                                     onChange={e => setConfig({ ...config, voice: e.target.value })}
@@ -395,9 +395,9 @@ const DeepgramVoiceAgent = () => {
                                 />
                             </div>
                             <div>
-                                <label className="text-xs font-mono text-ink-muted">System Prompt</label>
+                                <label className="text-xs font-mono text-text-muted">System Prompt</label>
                                 <textarea
-                                    className="w-full text-xs p-2 bg-bg-base border border-ink-faint rounded resize-none"
+                                    className="w-full text-xs p-2 bg-bg-base border border-border rounded resize-none"
                                     value={config.system_prompt}
                                     onChange={e => setConfig({ ...config, system_prompt: e.target.value })}
                                     disabled={isActive}
@@ -405,10 +405,10 @@ const DeepgramVoiceAgent = () => {
                                 />
                             </div>
                             <div>
-                                <label className="text-xs font-mono text-ink-muted">Greeting</label>
+                                <label className="text-xs font-mono text-text-muted">Greeting</label>
                                 <input
                                     type="text"
-                                    className="w-full text-xs p-2 bg-bg-base border border-ink-faint rounded"
+                                    className="w-full text-xs p-2 bg-bg-base border border-border rounded"
                                     value={config.greeting}
                                     onChange={e => setConfig({ ...config, greeting: e.target.value })}
                                     disabled={isActive}
@@ -416,12 +416,12 @@ const DeepgramVoiceAgent = () => {
                             </div>
                             <div className="flex items-center justify-between py-1">
                                 <div>
-                                    <label className="text-xs font-mono text-ink-muted">Function Calling</label>
-                                    <p className="text-[10px] text-ink-muted/60">lookup, examples, end_call</p>
+                                    <label className="text-xs font-mono text-text-muted">Function Calling</label>
+                                    <p className="text-[10px] text-text-muted/60">lookup, examples, end_call</p>
                                 </div>
                                 <button
                                     type="button"
-                                    className={`relative w-10 h-5 rounded-full transition-colors ${config.functions_enabled ? 'bg-neon-cyan' : 'bg-ink/20'}`}
+                                    className={`relative w-10 h-5 rounded-full transition-colors ${config.functions_enabled ? 'bg-accent-info' : 'bg-bg-elevated/50'}`}
                                     onClick={() => setConfig({ ...config, functions_enabled: !config.functions_enabled })}
                                     disabled={isActive}
                                 >
@@ -431,7 +431,7 @@ const DeepgramVoiceAgent = () => {
 
                             <Button
                                 fullWidth
-                                variant={isActive ? "danger" : "neon"}
+                                variant={isActive ? "danger" : "primary"}
                                 onClick={isActive ? stopAgent : startAgent}
                                 isLoading={connectionState === 'connecting'}
                             >
@@ -450,7 +450,7 @@ const DeepgramVoiceAgent = () => {
                             )}
 
                             {error && (
-                                <div className="text-red-500 text-xs p-2 bg-red-500/10 rounded">{error}</div>
+                                <div className="text-accent-danger text-xs p-2 bg-accent-danger/10 rounded">{error}</div>
                             )}
                         </div>
                     </Card>
@@ -458,7 +458,7 @@ const DeepgramVoiceAgent = () => {
                     {/* Info Card - Collapsible on smaller screens */}
                     <div className="hidden lg:block">
                         <Card title="ℹ️ Voice Agent">
-                            <p className="text-xs text-ink-muted leading-relaxed">
+                            <p className="text-xs text-text-muted leading-relaxed">
                                 Using Deepgram's Agent API for lowest latency (~300ms).
                                 <br /><br />
                                 <strong>Barge-in:</strong> Speak anytime to interrupt.
@@ -481,7 +481,7 @@ const DeepgramVoiceAgent = () => {
                             className="flex-grow overflow-y-auto space-y-3 p-4 bg-bg-base rounded-md min-h-[400px] max-h-[500px]"
                         >
                             {messages.length === 0 && (
-                                <div className="text-center text-ink-muted/30 py-10">
+                                <div className="text-center text-text-muted/30 py-10">
                                     <Bot size={48} className="mx-auto mb-2" />
                                     <p>Start speaking to begin</p>
                                     <p className="text-xs mt-2">The agent will greet you first</p>
@@ -493,7 +493,7 @@ const DeepgramVoiceAgent = () => {
                                 if (msg.role === 'function') {
                                     return (
                                         <div key={i} className="flex justify-center">
-                                            <div className="max-w-[90%] rounded-lg p-2 bg-violet-500/10 border border-violet-500/30 text-violet-400">
+                                            <div className="max-w-[90%] rounded-lg p-2 bg-accent-secondary/10 border border-accent-secondary/30 text-accent-secondary">
                                                 <div className="flex items-center gap-2 text-xs">
                                                     <Wrench size={12} />
                                                     <span className="font-mono truncate">
@@ -512,8 +512,8 @@ const DeepgramVoiceAgent = () => {
                                 return (
                                     <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                                         <div className={`max-w-[80%] rounded-lg p-3 ${msg.role === 'user'
-                                            ? 'bg-ink/5 border border-ink/10 text-ink'
-                                            : 'bg-neon-cyan/5 border border-neon-cyan/20 text-neon-cyan'
+                                            ? 'bg-bg-elevated/50 border border-border/10 text-text-primary'
+                                            : 'bg-accent-info/5 border border-accent-info/20 text-accent-info'
                                             }`}>
                                             <div className="flex items-center gap-2 mb-1 opacity-50 text-xs">
                                                 {msg.role === 'user' ? <User size={12} /> : <Bot size={12} />}
@@ -528,7 +528,7 @@ const DeepgramVoiceAgent = () => {
                             {/* Live pending transcript */}
                             {pendingTranscript && (
                                 <div className="flex justify-end">
-                                    <div className="max-w-[80%] rounded-lg p-3 bg-ink/5 border border-ink/20 border-dashed text-ink/70 animate-pulse">
+                                    <div className="max-w-[80%] rounded-lg p-3 bg-bg-elevated/50 border border-border/20 border-dashed text-text-primary/70 animate-pulse">
                                         <div className="flex items-center gap-2 mb-1 opacity-50 text-xs">
                                             <User size={12} />
                                             <span>SPEAKING...</span>

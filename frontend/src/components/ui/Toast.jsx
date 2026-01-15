@@ -56,27 +56,27 @@ const ToastItem = ({ message, type, duration, onDismiss }) => {
 
     const variants = {
         success: {
-            bg: 'bg-black',
-            border: 'border-neon-green',
-            text: 'text-neon-green',
+            bg: 'bg-bg-elevated',
+            border: 'border-accent-primary',
+            text: 'text-accent-primary',
             icon: CheckCircle
         },
         error: {
-            bg: 'bg-black',
-            border: 'border-neon-pink',
-            text: 'text-neon-pink',
+            bg: 'bg-bg-elevated',
+            border: 'border-accent-danger',
+            text: 'text-accent-danger',
             icon: X
         },
         warning: {
-            bg: 'bg-black',
-            border: 'border-neon-amber',
-            text: 'text-neon-amber',
+            bg: 'bg-bg-elevated',
+            border: 'border-accent-warning',
+            text: 'text-accent-warning',
             icon: AlertTriangle
         },
         info: {
-            bg: 'bg-black',
-            border: 'border-neon-cyan',
-            text: 'text-neon-cyan',
+            bg: 'bg-bg-elevated',
+            border: 'border-accent-info',
+            text: 'text-accent-info',
             icon: Info
         }
     };
@@ -99,12 +99,12 @@ const ToastItem = ({ message, type, duration, onDismiss }) => {
             `}
         >
             <Icon className={`w-5 h-5 flex-none ${style.text}`} aria-hidden="true" />
-            <div className={`flex-1 font-mono text-sm leading-relaxed text-ink`}>
+            <div className={`flex-1 font-mono text-sm leading-relaxed text-text-primary`}>
                 {message}
             </div>
             <button
                 onClick={() => setIsVisible(false)}
-                className="text-ink-muted hover:text-ink transition-colors"
+                className="text-text-muted hover:text-text-primary transition-colors"
                 aria-label="Dismiss notification"
             >
                 <X size={14} />

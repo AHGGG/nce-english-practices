@@ -191,27 +191,27 @@ const LabCalibration = () => {
 
     if (step === 'intro') {
         return (
-            <div className="flex flex-col items-center justify-center min-h-screen bg-[#050505] text-white p-6">
+            <div className="flex flex-col items-center justify-center min-h-screen bg-bg-base text-text-primary p-6">
                 {/* Back Button */}
                 <button
                     onClick={() => navigate('/nav')}
-                    className="absolute top-4 left-4 flex items-center gap-2 text-[#888] hover:text-[#00FF94] transition-colors"
+                    className="absolute top-4 left-4 flex items-center gap-2 text-text-secondary hover:text-accent-primary transition-colors"
                 >
                     <ChevronLeft className="w-4 h-4" />
                 </button>
 
                 <div className="max-w-md text-center space-y-6">
-                    <div className="w-16 h-16 bg-[#00FF94]/10 rounded-full flex items-center justify-center mx-auto mb-4">
-                        <Brain className="w-8 h-8 text-[#00FF94]" />
+                    <div className="w-16 h-16 bg-accent-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <Brain className="w-8 h-8 text-accent-primary" />
                     </div>
                     <h1 className="text-3xl font-serif font-bold">Calibration Mission</h1>
-                    <p className="text-[#888] font-mono text-sm leading-relaxed">
+                    <p className="text-text-secondary font-mono text-sm leading-relaxed">
                         We need to calibrate your neural interface.
-                        Read 5 sentences. Tell us if they are <span className="text-[#00FF94]">Clear</span> or <span className="text-[#FF0055]">Confusing</span>.
+                        Read 5 sentences. Tell us if they are <span className="text-accent-primary">Clear</span> or <span className="text-accent-danger">Confusing</span>.
                     </p>
                     <button
                         onClick={() => setStep('reading')}
-                        className="w-full bg-[#E0E0E0] text-black py-4 font-mono font-bold uppercase tracking-widest hover:bg-white transition-all flex items-center justify-center gap-2"
+                        className="w-full bg-text-primary text-bg-base py-4 font-mono font-bold uppercase tracking-widest hover:bg-white transition-all flex items-center justify-center gap-2"
                     >
                         START SEQUENCE <ArrowRight className="w-4 h-4" />
                     </button>
@@ -222,17 +222,17 @@ const LabCalibration = () => {
 
     if (step === 'reading') {
         return (
-            <div className="flex flex-col min-h-screen bg-[#050505] text-white">
+            <div className="flex flex-col min-h-screen bg-bg-base text-text-primary">
                 {/* Progress */}
-                <div className="h-1 bg-[#222]">
+                <div className="h-1 bg-bg-elevated">
                     <div
-                        className="h-full bg-[#00FF94] transition-all duration-300"
+                        className="h-full bg-accent-primary transition-all duration-300"
                         style={{ width: `${((currentIndex + 1) / sentences.length) * 100}%` }}
                     ></div>
                 </div>
 
                 <div className="flex-1 flex flex-col items-center justify-center p-6 max-w-2xl mx-auto w-full">
-                    <span className="font-mono text-xs text-[#666] mb-8 uppercase tracking-widest">
+                    <span className="font-mono text-xs text-text-muted mb-8 uppercase tracking-widest">
                         Sentence {currentIndex + 1} / {sentences.length}
                     </span>
 
@@ -250,23 +250,23 @@ const LabCalibration = () => {
                     <div className="grid grid-cols-3 gap-3 w-full max-w-lg">
                         <button
                             onClick={() => recordAndAdvance('confused')}
-                            className="py-6 border border-[#333] hover:border-[#FF0055] hover:bg-[#FF0055]/10 hover:text-[#FF0055] transition-all flex flex-col items-center gap-2 group"
+                            className="py-6 border border-border hover:border-accent-danger hover:bg-accent-danger/10 hover:text-accent-danger transition-all flex flex-col items-center gap-2 group"
                         >
-                            <X className="w-6 h-6 text-[#666] group-hover:text-[#FF0055]" />
+                            <X className="w-6 h-6 text-text-muted group-hover:text-accent-danger" />
                             <span className="font-mono text-xs font-bold uppercase tracking-wider">Confusing</span>
                         </button>
                         <button
                             onClick={() => recordAndAdvance('partial')}
-                            className="py-6 border border-[#333] hover:border-[#FFB800] hover:bg-[#FFB800]/10 hover:text-[#FFB800] transition-all flex flex-col items-center gap-2 group"
+                            className="py-6 border border-border hover:border-accent-warning hover:bg-accent-warning/10 hover:text-accent-warning transition-all flex flex-col items-center gap-2 group"
                         >
-                            <HelpCircle className="w-6 h-6 text-[#666] group-hover:text-[#FFB800]" />
+                            <HelpCircle className="w-6 h-6 text-text-muted group-hover:text-accent-warning" />
                             <span className="font-mono text-xs font-bold uppercase tracking-wider">Somewhat</span>
                         </button>
                         <button
                             onClick={() => recordAndAdvance('clear')}
-                            className="py-6 border border-[#333] hover:border-[#00FF94] hover:bg-[#00FF94]/10 hover:text-[#00FF94] transition-all flex flex-col items-center gap-2 group"
+                            className="py-6 border border-border hover:border-accent-primary hover:bg-accent-primary/10 hover:text-accent-primary transition-all flex flex-col items-center gap-2 group"
                         >
-                            <Check className="w-6 h-6 text-[#666] group-hover:text-[#00FF94]" />
+                            <Check className="w-6 h-6 text-text-muted group-hover:text-accent-primary" />
                             <span className="font-mono text-xs font-bold uppercase tracking-wider">Clear</span>
                         </button>
                     </div>
@@ -290,22 +290,22 @@ const LabCalibration = () => {
 
     if (step === 'leveling') {
         return (
-            <div className="flex flex-col items-center justify-center min-h-screen bg-[#050505] text-white">
+            <div className="flex flex-col items-center justify-center min-h-screen bg-bg-base text-text-primary">
                 <div className="relative mb-8">
-                    <div className="w-20 h-20 border-4 border-[#00FF94]/30 rounded-full animate-ping absolute" />
-                    <Zap className="w-12 h-12 text-[#00FF94] relative z-10 m-4" />
+                    <div className="w-20 h-20 border-4 border-accent-primary/30 rounded-full animate-ping absolute" />
+                    <Zap className="w-12 h-12 text-accent-primary relative z-10 m-4" />
                 </div>
                 <h2 className="text-2xl font-serif font-bold mb-2">Adjusting Difficulty</h2>
-                <p className="font-mono text-sm text-[#888]">Level {currentLevel + 1}</p>
+                <p className="font-mono text-sm text-text-secondary">Level {currentLevel + 1}</p>
             </div>
         );
     }
 
     if (step === 'processing') {
         return (
-            <div className="flex flex-col items-center justify-center min-h-screen bg-[#050505] text-white">
-                <Brain className="w-12 h-12 text-[#00FF94] animate-pulse mb-4" />
-                <p className="font-mono text-xs uppercase tracking-widest text-[#666]">Analyzing Neural Patterns...</p>
+            <div className="flex flex-col items-center justify-center min-h-screen bg-bg-base text-text-primary">
+                <Brain className="w-12 h-12 text-accent-primary animate-pulse mb-4" />
+                <p className="font-mono text-xs uppercase tracking-widest text-text-muted">Analyzing Neural Patterns...</p>
             </div>
         );
     }
@@ -320,51 +320,51 @@ const LabCalibration = () => {
         const suggestedBand = bandRanges[Math.min(currentLevel, bandRanges.length - 1)][0];
 
         return (
-            <div className="min-h-screen bg-[#050505] text-white p-6 overflow-y-auto">
+            <div className="min-h-screen bg-bg-base text-text-primary p-6 overflow-y-auto">
                 <div className="max-w-lg mx-auto space-y-8 py-12">
                     <div className="text-center">
-                        <h1 className="text-2xl font-serif font-bold text-[#00FF94] mb-2">Calibration Complete</h1>
-                        <p className="text-[#888] font-mono text-xs">Your Level: {currentLevel} / 11</p>
+                        <h1 className="text-2xl font-serif font-bold text-accent-primary mb-2">Calibration Complete</h1>
+                        <p className="text-text-secondary font-mono text-xs">Your Level: {currentLevel} / 11</p>
                     </div>
 
                     {/* Calibration Result */}
-                    <div className="bg-[#00FF94]/5 border border-[#00FF94]/30 p-4 text-center">
-                        <p className="text-sm text-[#888] mb-2">Suggested focus for Reading Mode:</p>
-                        <p className="text-2xl font-mono text-[#00FF94]">COCA {suggestedBand}+</p>
+                    <div className="bg-accent-primary/5 border border-accent-primary/30 p-4 text-center">
+                        <p className="text-sm text-text-secondary mb-2">Suggested focus for Reading Mode:</p>
+                        <p className="text-2xl font-mono text-accent-primary">COCA {suggestedBand}+</p>
                     </div>
 
-                    <div className="bg-[#111] border border-[#333] p-6 space-y-6">
+                    <div className="bg-bg-elevated border border-border p-6 space-y-6">
                         <div>
                             <div className="flex items-center justify-between mb-2">
-                                <h3 className="text-sm font-bold uppercase tracking-wider text-white">Vocabulary</h3>
-                                <span className="text-[#00FF94] font-mono text-xl">{diagnosis.words_mastered}</span>
+                                <h3 className="text-sm font-bold uppercase tracking-wider text-text-primary">Vocabulary</h3>
+                                <span className="text-accent-primary font-mono text-xl">{diagnosis.words_mastered}</span>
                             </div>
-                            <div className="h-2 bg-[#222] rounded-full overflow-hidden">
-                                <div className="h-full bg-[#00FF94]" style={{ width: `${(currentLevel / 11) * 100}%` }}></div>
+                            <div className="h-2 bg-bg-surface rounded-full overflow-hidden">
+                                <div className="h-full bg-accent-primary" style={{ width: `${(currentLevel / 11) * 100}%` }}></div>
                             </div>
-                            <p className="text-[#666] text-xs mt-2">Words marked as Mastered from this session.</p>
+                            <p className="text-text-muted text-xs mt-2">Words marked as Mastered from this session.</p>
                         </div>
 
-                        <div className="h-[1px] bg-[#333]"></div>
+                        <div className="h-[1px] bg-border"></div>
 
                         <div>
-                            <h3 className="text-sm font-bold uppercase tracking-wider text-white mb-4">Syntax Diagnosis</h3>
+                            <h3 className="text-sm font-bold uppercase tracking-wider text-text-primary mb-4">Syntax Diagnosis</h3>
                             {diagnosis.syntax_diagnosis?.weaknesses ? (
                                 <div className="space-y-4">
                                     <div className="flex gap-2 flex-wrap">
                                         {diagnosis.syntax_diagnosis.weaknesses.map((w, i) => (
-                                            <span key={i} className="px-2 py-1 bg-[#FF0055]/10 border border-[#FF0055]/30 text-[#FF0055] text-xs font-mono uppercase">
+                                            <span key={i} className="px-2 py-1 bg-accent-danger/10 border border-accent-danger/30 text-accent-danger text-xs font-mono uppercase">
                                                 {w}
                                             </span>
                                         ))}
                                     </div>
-                                    <p className="text-[#CCC] text-sm italic border-l-2 border-[#FF0055] pl-4">
+                                    <p className="text-text-muted text-sm italic border-l-2 border-accent-danger pl-4">
                                         "{diagnosis.syntax_diagnosis.advice}"
                                     </p>
                                 </div>
                             ) : (
-                                <div className="flex items-center gap-2 text-[#888]">
-                                    <Check className="w-4 h-4 text-[#00FF94]" />
+                                <div className="flex items-center gap-2 text-text-secondary">
+                                    <Check className="w-4 h-4 text-accent-primary" />
                                     <span className="text-sm">No significant syntax gaps detected.</span>
                                 </div>
                             )}
@@ -373,7 +373,7 @@ const LabCalibration = () => {
 
                     <button
                         onClick={() => window.location.href = '/reading'}
-                        className="w-full bg-[#00FF94] text-black py-4 font-mono font-bold uppercase tracking-widest hover:bg-[#00FF94]/90 transition-all flex items-center justify-center gap-2"
+                        className="w-full bg-accent-primary text-black py-4 font-mono font-bold uppercase tracking-widest hover:bg-accent-primary/90 transition-all flex items-center justify-center gap-2"
                     >
                         <BookOpen className="w-4 h-4" />
                         Apply to Reading Mode
@@ -381,7 +381,7 @@ const LabCalibration = () => {
 
                     <button
                         onClick={() => window.location.href = '/'}
-                        className="w-full border border-[#333] text-[#E0E0E0] py-4 font-mono font-bold uppercase tracking-widest hover:border-white transition-all"
+                        className="w-full border border-border text-text-primary py-4 font-mono font-bold uppercase tracking-widest hover:border-text-primary transition-all"
                     >
                         Return to Library
                     </button>

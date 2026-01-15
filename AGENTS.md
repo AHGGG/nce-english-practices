@@ -164,7 +164,8 @@ ALL generators and routes use this service rather than creating clients directly
 - **Philosophy**: "Mental Gym" - High contrast, information-dense, no distractions.
 - **Tech Stack**: TailwindCSS + Lucide Icons + custom `index.css` utilities.
 - **Tokens**:
-  - **Colors**: `canvas` (Black), `ink` (Off-white), `neon` (Accents).
+  - **Colors**: Uses semantic naming in `tailwind.config.js` (e.g., `bg-bg-base`, `text-text-primary`, `accent-primary`).
+  - **Source of Truth**: `src/index.css` (CSS Variables) mapped to Tailwind via `tailwind.config.js`.
   - **Typography**: `Merriweather` (Content/Serif), `JetBrains Mono` (Data/UI).
 - **Architecture**:
   - `src/components/ui/`: Core atomic components (Button, Input, Card).

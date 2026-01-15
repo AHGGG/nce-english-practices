@@ -184,7 +184,7 @@ const AUIStreamingDemo = () => {
                         <select
                             value={selectedBook}
                             onChange={(e) => setSelectedBook(e.target.value)}
-                            className="w-full bg-black border border-border text-white p-2 rounded text-sm"
+                            className="w-full bg-bg-elevated border border-border text-text-primary p-2 rounded text-sm"
                         >
                             {books.map(book => (
                                 <option key={book.code} value={book.code}>
@@ -232,9 +232,9 @@ const AUIStreamingDemo = () => {
                 {streamUrl && (
                     <div className="mt-8">
                         <label className="block text-xs uppercase text-text-muted mb-2">Active Stream</label>
-                        <div className="bg-black border border-border p-3 rounded space-y-2">
+                        <div className="bg-bg-surface border border-border p-3 rounded space-y-2">
                             <div className="flex items-center gap-2">
-                                <span className="px-2 py-0.5 rounded text-[10px] uppercase font-bold bg-purple-500/20 text-purple-400 border border-purple-500/30">
+                                <span className="px-2 py-0.5 rounded text-[10px] uppercase font-bold bg-neon-purple/20 text-neon-purple border border-neon-purple/30">
                                     🔌 WS
                                 </span>
                                 <span className="text-[10px] text-text-muted">{selectedDemo}</span>
@@ -252,13 +252,13 @@ const AUIStreamingDemo = () => {
                 <div className="p-4 border-b border-border flex justify-between items-center bg-bg-surface">
                     <span className="text-xs uppercase tracking-widest text-text-muted">Stream Output</span>
                     <div className="flex items-center gap-3">
-                        <span className="px-2 py-0.5 rounded text-[10px] uppercase bg-purple-500/20 text-purple-400">
+                        <span className="px-2 py-0.5 rounded text-[10px] uppercase bg-neon-purple/20 text-neon-purple">
                             WEBSOCKET
                         </span>
                         <div className="flex gap-2">
-                            <span className="w-2 h-2 rounded-full bg-[#FF5F57]"></span>
-                            <span className="w-2 h-2 rounded-full bg-[#FEBC2E]"></span>
-                            <span className="w-2 h-2 rounded-full bg-[#28C840]"></span>
+                            <span className="w-2 h-2 rounded-full bg-accent-danger"></span>
+                            <span className="w-2 h-2 rounded-full bg-accent-warning"></span>
+                            <span className="w-2 h-2 rounded-full bg-accent-primary"></span>
                         </div>
                     </div>
                 </div>

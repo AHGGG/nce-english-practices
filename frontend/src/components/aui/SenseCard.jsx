@@ -15,9 +15,9 @@ const SenseCard = ({
     const [showCN, setShowCN] = useState(false);
 
     return (
-        <div className="border border-ink/10 rounded-lg overflow-hidden bg-canvas/30 mb-4">
+        <div className="border border-border-subtle rounded-lg overflow-hidden bg-bg-elevated/30 mb-4">
             {/* Sense Header */}
-            <div className="p-3 bg-ink/5 border-b border-ink/5">
+            <div className="p-3 bg-text-primary/5 border-b border-border-subtle">
                 <div className="flex items-start gap-3">
                     {/* Index Badge */}
                     <div className="flex-shrink-0 w-6 h-6 rounded bg-neon-purple/20 text-neon-purple flex items-center justify-center text-xs font-mono font-bold">
@@ -28,11 +28,11 @@ const SenseCard = ({
                         {/* Definition Row */}
                         <div className="flex items-baseline gap-2 flex-wrap">
                             {partOfSpeech && (
-                                <span className="text-xs font-mono text-ink/40 uppercase tracking-wide">
+                                <span className="text-xs font-mono text-text-muted uppercase tracking-wide">
                                     {partOfSpeech}
                                 </span>
                             )}
-                            <h4 className="text-ink font-medium leading-snug">
+                            <h4 className="text-text-primary font-medium leading-snug">
                                 {definition}
                             </h4>
                         </div>
@@ -42,7 +42,7 @@ const SenseCard = ({
                             <div className="mt-1">
                                 {showCN ? (
                                     <p
-                                        className="text-ink/80 text-sm cursor-pointer hover:text-ink transition-colors"
+                                        className="text-text-secondary text-sm cursor-pointer hover:text-text-primary transition-colors"
                                         onClick={() => setShowCN(false)}
                                         title="Click to hide"
                                     >
@@ -51,7 +51,7 @@ const SenseCard = ({
                                 ) : (
                                     <button
                                         onClick={() => setShowCN(true)}
-                                        className="flex items-center gap-1.5 text-xs text-ink/40 hover:text-ink/70 transition-colors"
+                                        className="flex items-center gap-1.5 text-xs text-text-muted hover:text-text-secondary transition-colors"
                                     >
                                         <Languages className="w-3 h-3" />
                                         <span>Show Meaning</span>
@@ -63,11 +63,11 @@ const SenseCard = ({
                         {/* Synonyms */}
                         {synonyms && synonyms.length > 0 && (
                             <div className="flex items-center gap-1.5 flex-wrap mt-2">
-                                <span className="text-[10px] text-ink/30 uppercase tracking-wider">Synonyms</span>
+                                <span className="text-[10px] text-text-muted uppercase tracking-wider">Synonyms</span>
                                 {synonyms.map((syn, i) => (
                                     <span
                                         key={i}
-                                        className="text-xs px-1.5 py-0.5 rounded bg-ink/5 text-ink/50"
+                                        className="text-xs px-1.5 py-0.5 rounded bg-text-primary/5 text-text-secondary"
                                     >
                                         {syn}
                                     </span>

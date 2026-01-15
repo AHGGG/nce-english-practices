@@ -241,10 +241,10 @@ const DeepgramUnified = () => {
 
     const getEventColor = (type) => {
         switch (type) {
-            case 'success': return 'text-neon-green';
-            case 'error': return 'text-red-500';
-            case 'transcript': return 'text-ink';
-            default: return 'text-ink-muted';
+            case 'success': return 'text-accent-primary';
+            case 'error': return 'text-accent-danger';
+            case 'transcript': return 'text-text-primary';
+            default: return 'text-text-muted';
         }
     };
 
@@ -254,7 +254,7 @@ const DeepgramUnified = () => {
                 <div className="space-y-6">
                     {/* Model Selection */}
                     <div className="space-y-2">
-                        <label className="text-xs font-mono font-bold text-ink-muted uppercase flex items-center gap-2">
+                        <label className="text-xs font-mono font-bold text-text-muted uppercase flex items-center gap-2">
                             <Zap size={14} />
                             Model Selection
                         </label>
@@ -263,8 +263,8 @@ const DeepgramUnified = () => {
                                 onClick={() => setModel('nova-3')}
                                 disabled={isListening}
                                 className={`p-4 border-2 rounded-lg font-mono text-sm transition-all ${model === 'nova-3'
-                                    ? 'border-neon-green bg-neon-green/10 text-neon-green'
-                                    : 'border-ink-faint text-ink-muted hover:border-ink-muted'
+                                    ? 'border-accent-primary bg-accent-primary/10 text-accent-primary'
+                                    : 'border-border text-text-muted hover:border-text-secondary'
                                     } ${isListening ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
                             >
                                 <div className="font-bold">Nova-3</div>
@@ -274,8 +274,8 @@ const DeepgramUnified = () => {
                                 onClick={() => setModel('flux')}
                                 disabled={isListening}
                                 className={`p-4 border-2 rounded-lg font-mono text-sm transition-all ${model === 'flux'
-                                    ? 'border-neon-cyan bg-neon-cyan/10 text-neon-cyan'
-                                    : 'border-ink-faint text-ink-muted hover:border-ink-muted'
+                                    ? 'border-accent-info bg-accent-info/10 text-accent-info'
+                                    : 'border-border text-text-muted hover:border-text-secondary'
                                     } ${isListening ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
                             >
                                 <div className="font-bold">Flux</div>
@@ -285,9 +285,9 @@ const DeepgramUnified = () => {
                     </div>
 
                     {/* Connection State & Controls */}
-                    <div className="p-4 bg-bg-elevated rounded border border-ink-faint">
+                    <div className="p-4 bg-bg-elevated rounded border border-border">
                         <div className="flex items-center justify-between mb-4">
-                            <span className="text-xs font-mono text-ink-muted uppercase font-bold">State</span>
+                            <span className="text-xs font-mono text-text-muted uppercase font-bold">State</span>
                             <Tag
                                 color={
                                     connectionState === 'connected' ? 'green' :
@@ -300,7 +300,7 @@ const DeepgramUnified = () => {
                         </div>
 
                         {error && (
-                            <div className="mb-4 p-2 bg-red-500/10 border border-red-500/50 text-red-500 text-xs rounded flex items-start gap-2">
+                            <div className="mb-4 p-2 bg-accent-danger/10 border border-accent-danger/50 text-accent-danger text-xs rounded flex items-start gap-2">
                                 <AlertCircle size={14} className="mt-0.5 shrink-0" />
                                 <span>{error}</span>
                             </div>
@@ -327,25 +327,25 @@ const DeepgramUnified = () => {
                 {/* Live Transcript */}
                 <Card title="Live Transcript" className="flex flex-col">
                     <div className="flex-grow space-y-4">
-                        <div className="min-h-[200px] max-h-[300px] overflow-y-auto bg-bg-elevated p-4 rounded border border-ink-faint">
+                        <div className="min-h-[200px] max-h-[300px] overflow-y-auto bg-bg-elevated p-4 rounded border border-border">
                             {transcript ? (
                                 <div className="font-serif text-lg leading-relaxed whitespace-pre-wrap">
                                     {transcript}
                                 </div>
                             ) : (
-                                <div className="flex items-center justify-center h-full text-ink-muted/30 font-mono text-sm">
+                                <div className="flex items-center justify-center h-full text-text-muted/30 font-mono text-sm">
                                     {isListening ? "Listening..." : "Ready to transcribe..."}
                                 </div>
                             )}
                         </div>
 
                         {interimTranscript && (
-                            <div className="p-3 bg-neon-cyan/5 border border-neon-cyan/30 rounded">
-                                <div className="text-xs font-mono text-neon-cyan mb-1 flex items-center gap-2">
+                            <div className="p-3 bg-accent-info/5 border border-accent-info/30 rounded">
+                                <div className="text-xs font-mono text-accent-info mb-1 flex items-center gap-2">
                                     <Activity size={12} className="animate-pulse" />
                                     INTERIM
                                 </div>
-                                <div className="font-serif text-base text-neon-cyan/80 italic">
+                                <div className="font-serif text-base text-accent-info/80 italic">
                                     {interimTranscript}
                                 </div>
                             </div>
@@ -367,22 +367,22 @@ const DeepgramUnified = () => {
                 <Card title="Event Log" className="flex flex-col">
                     <div
                         ref={eventLogRef}
-                        className="flex-grow h-[400px] overflow-y-auto bg-bg-elevated p-4 rounded border border-ink-faint font-mono text-xs space-y-1"
+                        className="flex-grow h-[400px] overflow-y-auto bg-bg-elevated p-4 rounded border border-border font-mono text-xs space-y-1"
                     >
                         {eventLog.length === 0 ? (
-                            <div className="flex items-center justify-center h-full text-ink-muted/30">
+                            <div className="flex items-center justify-center h-full text-text-muted/30">
                                 No events yet...
                             </div>
                         ) : (
                             eventLog.map((event, idx) => (
-                                <div key={idx} className="border-b border-ink-faint/30 pb-1 mb-1">
+                                <div key={idx} className="border-b border-border/30 pb-1 mb-1">
                                     <div className="flex items-start gap-2">
-                                        <span className="text-ink-muted shrink-0">{event.timestamp}</span>
+                                        <span className="text-text-muted shrink-0">{event.timestamp}</span>
                                         <span className={`font-bold ${getEventColor(event.type)}`}>
                                             [{event.type.toUpperCase()}]
                                         </span>
                                     </div>
-                                    <div className="ml-2 text-ink mt-1">
+                                    <div className="ml-2 text-text-primary mt-1">
                                         {event.message}
                                     </div>
                                 </div>
