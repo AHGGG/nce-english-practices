@@ -13,6 +13,30 @@ import ElevenLabsLive from '../components/VoiceLab/ElevenLabsLive';
 import ElevenLabsVoiceAgent from '../components/VoiceLab/ElevenLabsVoiceAgent';
 import { Mic, Volume2, Radio, Server, Beaker, GraduationCap, Cloud, Zap, Globe, Cpu, Bot, TestTube2, RefreshCw, ChevronLeft } from 'lucide-react';
 
+const TabButton = ({ id, icon: Icon, label, isActive, onClick }) => (
+    <button
+        role="tab"
+        id={`tab-${id}`}
+        aria-selected={isActive}
+        aria-controls={`panel-${id}`}
+        onClick={() => onClick(id)}
+        className={`flex items-center gap-2 px-6 py-3 font-mono font-bold uppercase transition-all whitespace-nowrap ${isActive
+            ? 'text-accent-primary border-b-2 border-accent-primary bg-accent-primary/5'
+            : 'text-text-muted hover:text-text-primary'
+            }`}
+    >
+        <Icon size={18} />
+        {label}
+    </button>
+);
+
+const SectionHeader = ({ title, icon: Icon }) => (
+    <div className="flex items-center gap-2 mb-4 mt-8 border-b border-border pb-2">
+        <Icon size={20} className="text-accent-primary" />
+        <h2 className="text-xl font-serif font-bold text-text-primary">{title}</h2>
+    </div>
+);
+
 const VoiceLab = () => {
     const navigate = useNavigate();
     const [activeTab, setActiveTab] = useState('loop');
@@ -32,26 +56,6 @@ const VoiceLab = () => {
                 setLoading(false);
             });
     }, []);
-
-    const TabButton = ({ id, icon: Icon, label }) => (
-        <button
-            onClick={() => setActiveTab(id)}
-            className={`flex items-center gap-2 px-6 py-3 font-mono font-bold uppercase transition-all whitespace-nowrap ${activeTab === id
-                ? 'text-accent-primary border-b-2 border-accent-primary bg-accent-primary/5'
-                : 'text-text-muted hover:text-text-primary'
-                }`}
-        >
-            <Icon size={18} />
-            {label}
-        </button>
-    );
-
-    const SectionHeader = ({ title, icon: Icon }) => (
-        <div className="flex items-center gap-2 mb-4 mt-8 border-b border-border pb-2">
-            <Icon size={20} className="text-accent-primary" />
-            <h2 className="text-xl font-serif font-bold text-text-primary">{title}</h2>
-        </div>
-    );
 
     return (
         <div className="min-h-screen bg-bg-base p-6 pb-24 md:p-8 md:pl-72">
@@ -78,12 +82,16 @@ const VoiceLab = () => {
                 </div>
 
                 {/* Tabs */}
-                <div className="flex border-b border-border mb-6 overflow-x-auto no-scrollbar">
-                    <TabButton id="loop" icon={RefreshCw} label="Conversation Loop" />
-                    <TabButton id="google" icon={Globe} label="Google Gemini" />
-                    <TabButton id="deepgram" icon={Zap} label="Deepgram" />
-                    <TabButton id="elevenlabs" icon={Volume2} label="ElevenLabs" />
-                    <TabButton id="dashscope" icon={Cloud} label="Dashscope" />
+                <div
+                    role="tablist"
+                    aria-label="Voice Lab Vendors"
+                    className="flex border-b border-border mb-6 overflow-x-auto no-scrollbar"
+                >
+                    <TabButton id="loop" icon={RefreshCw} label="Conversation Loop" isActive={activeTab === 'loop'} onClick={setActiveTab} />
+                    <TabButton id="google" icon={Globe} label="Google Gemini" isActive={activeTab === 'google'} onClick={setActiveTab} />
+                    <TabButton id="deepgram" icon={Zap} label="Deepgram" isActive={activeTab === 'deepgram'} onClick={setActiveTab} />
+                    <TabButton id="elevenlabs" icon={Volume2} label="ElevenLabs" isActive={activeTab === 'elevenlabs'} onClick={setActiveTab} />
+                    <TabButton id="dashscope" icon={Cloud} label="Dashscope" isActive={activeTab === 'dashscope'} onClick={setActiveTab} />
                 </div>
 
                 {/* Content Area */}
@@ -93,7 +101,12 @@ const VoiceLab = () => {
                             Initializing Vendor Configurations...
                         </div>
                     ) : (
-                        <div className="space-y-12">
+                        <div
+                            role="tabpanel"
+                            id={`panel-${activeTab}`}
+                            aria-labelledby={`tab-${activeTab}`}
+                            className="space-y-12"
+                        >
                             {/* CONVERSATION LOOP VIEW */}
                             {activeTab === 'loop' && (
                                 <ConversationLoop config={config} />
