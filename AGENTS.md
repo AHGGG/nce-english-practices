@@ -282,6 +282,7 @@ A centralized logging system that collects both frontend and backend logs.
 - **`app/services/log_collector.py`**: Color-coded terminal output + file logging
 - **`frontend/src/utils/logBridge.js`**: Intercepts `console.log` and sends to backend via `navigator.sendBeacon` (non-blocking)
 - **Log File**: `logs/unified.log` (cleared on each server restart)
+> Don't commit `logs/unified.log` to git.
 
 **Categories** (Generic, not vendor-specific):
 | Category | Description | Color |
