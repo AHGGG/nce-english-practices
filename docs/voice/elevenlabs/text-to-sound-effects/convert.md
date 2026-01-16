@@ -1,0 +1,274 @@
+# Create sound effect
+
+POST https://api.elevenlabs.io/v1/sound-generation
+Content-Type: application/json
+
+Turn text into sound effects for your videos, voice-overs or video games using the most advanced sound effects models in the world.
+
+Reference: https://elevenlabs.io/docs/api-reference/text-to-sound-effects/convert
+
+## OpenAPI Specification
+
+```yaml
+openapi: 3.1.1
+info:
+  title: Create sound effect
+  version: endpoint_textToSoundEffects.convert
+paths:
+  /v1/sound-generation:
+    post:
+      operationId: convert
+      summary: Create sound effect
+      description: >-
+        Turn text into sound effects for your videos, voice-overs or video games
+        using the most advanced sound effects models in the world.
+      tags:
+        - - subpackage_textToSoundEffects
+      parameters:
+        - name: output_format
+          in: query
+          description: >-
+            Output format of the generated audio. Formatted as
+            codec_sample_rate_bitrate. So an mp3 with 22.05kHz sample rate at
+            32kbs is represented as mp3_22050_32. MP3 with 192kbps bitrate
+            requires you to be subscribed to Creator tier or above. PCM with
+            44.1kHz sample rate requires you to be subscribed to Pro tier or
+            above. Note that the μ-law format (sometimes written mu-law, often
+            approximated as u-law) is commonly used for Twilio audio inputs.
+          required: false
+          schema:
+            $ref: '#/components/schemas/V1SoundGenerationPostParametersOutputFormat'
+        - name: xi-api-key
+          in: header
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The generated sound effect as an MP3 file
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+        '422':
+          description: Validation Error
+          content: {}
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: >-
+                #/components/schemas/Body_Sound_Generation_v1_sound_generation_post
+components:
+  schemas:
+    V1SoundGenerationPostParametersOutputFormat:
+      type: string
+      enum:
+        - value: mp3_22050_32
+        - value: mp3_24000_48
+        - value: mp3_44100_32
+        - value: mp3_44100_64
+        - value: mp3_44100_96
+        - value: mp3_44100_128
+        - value: mp3_44100_192
+        - value: pcm_8000
+        - value: pcm_16000
+        - value: pcm_22050
+        - value: pcm_24000
+        - value: pcm_32000
+        - value: pcm_44100
+        - value: pcm_48000
+        - value: ulaw_8000
+        - value: alaw_8000
+        - value: opus_48000_32
+        - value: opus_48000_64
+        - value: opus_48000_96
+        - value: opus_48000_128
+        - value: opus_48000_192
+      default: mp3_44100_128
+    Body_Sound_Generation_v1_sound_generation_post:
+      type: object
+      properties:
+        text:
+          type: string
+          description: The text that will get converted into a sound effect.
+        loop:
+          type: boolean
+          default: false
+          description: >-
+            Whether to create a sound effect that loops smoothly. Only available
+            for the 'eleven_text_to_sound_v2 model'.
+        duration_seconds:
+          type:
+            - number
+            - 'null'
+          format: double
+          description: >-
+            The duration of the sound which will be generated in seconds. Must
+            be at least 0.5 and at most 30. If set to None we will guess the
+            optimal duration using the prompt. Defaults to None.
+        prompt_influence:
+          type:
+            - number
+            - 'null'
+          format: double
+          default: 0.3
+          description: >-
+            A higher prompt influence makes your generation follow the prompt
+            more closely while also making generations less variable. Must be a
+            value between 0 and 1. Defaults to 0.3.
+        model_id:
+          type: string
+          default: eleven_text_to_sound_v2
+          description: The model ID to use for the sound generation.
+      required:
+        - text
+
+```
+
+## SDK Code Examples
+
+```typescript
+import { ElevenLabsClient } from "@elevenlabs/elevenlabs-js";
+
+async function main() {
+    const client = new ElevenLabsClient({
+        environment: "https://api.elevenlabs.io",
+    });
+    await client.textToSoundEffects.convert({
+        text: "Spacious braam suitable for high-impact movie trailer moments",
+    });
+}
+main();
+
+```
+
+```python
+from elevenlabs import ElevenLabs
+
+client = ElevenLabs(
+    base_url="https://api.elevenlabs.io"
+)
+
+client.text_to_sound_effects.convert(
+    text="Spacious braam suitable for high-impact movie trailer moments"
+)
+
+```
+
+```go
+package main
+
+import (
+	"fmt"
+	"strings"
+	"net/http"
+	"io"
+)
+
+func main() {
+
+	url := "https://api.elevenlabs.io/v1/sound-generation"
+
+	payload := strings.NewReader("{\n  \"text\": \"Spacious braam suitable for high-impact movie trailer moments\"\n}")
+
+	req, _ := http.NewRequest("POST", url, payload)
+
+	req.Header.Add("xi-api-key", "xi-api-key")
+	req.Header.Add("Content-Type", "application/json")
+
+	res, _ := http.DefaultClient.Do(req)
+
+	defer res.Body.Close()
+	body, _ := io.ReadAll(res.Body)
+
+	fmt.Println(res)
+	fmt.Println(string(body))
+
+}
+```
+
+```ruby
+require 'uri'
+require 'net/http'
+
+url = URI("https://api.elevenlabs.io/v1/sound-generation")
+
+http = Net::HTTP.new(url.host, url.port)
+http.use_ssl = true
+
+request = Net::HTTP::Post.new(url)
+request["xi-api-key"] = 'xi-api-key'
+request["Content-Type"] = 'application/json'
+request.body = "{\n  \"text\": \"Spacious braam suitable for high-impact movie trailer moments\"\n}"
+
+response = http.request(request)
+puts response.read_body
+```
+
+```java
+HttpResponse<String> response = Unirest.post("https://api.elevenlabs.io/v1/sound-generation")
+  .header("xi-api-key", "xi-api-key")
+  .header("Content-Type", "application/json")
+  .body("{\n  \"text\": \"Spacious braam suitable for high-impact movie trailer moments\"\n}")
+  .asString();
+```
+
+```php
+<?php
+
+$client = new \GuzzleHttp\Client();
+
+$response = $client->request('POST', 'https://api.elevenlabs.io/v1/sound-generation', [
+  'body' => '{
+  "text": "Spacious braam suitable for high-impact movie trailer moments"
+}',
+  'headers' => [
+    'Content-Type' => 'application/json',
+    'xi-api-key' => 'xi-api-key',
+  ],
+]);
+
+echo $response->getBody();
+```
+
+```csharp
+var client = new RestClient("https://api.elevenlabs.io/v1/sound-generation");
+var request = new RestRequest(Method.POST);
+request.AddHeader("xi-api-key", "xi-api-key");
+request.AddHeader("Content-Type", "application/json");
+request.AddParameter("application/json", "{\n  \"text\": \"Spacious braam suitable for high-impact movie trailer moments\"\n}", ParameterType.RequestBody);
+IRestResponse response = client.Execute(request);
+```
+
+```swift
+import Foundation
+
+let headers = [
+  "xi-api-key": "xi-api-key",
+  "Content-Type": "application/json"
+]
+let parameters = ["text": "Spacious braam suitable for high-impact movie trailer moments"] as [String : Any]
+
+let postData = JSONSerialization.data(withJSONObject: parameters, options: [])
+
+let request = NSMutableURLRequest(url: NSURL(string: "https://api.elevenlabs.io/v1/sound-generation")! as URL,
+                                        cachePolicy: .useProtocolCachePolicy,
+                                    timeoutInterval: 10.0)
+request.httpMethod = "POST"
+request.allHTTPHeaderFields = headers
+request.httpBody = postData as Data
+
+let session = URLSession.shared
+let dataTask = session.dataTask(with: request as URLRequest, completionHandler: { (data, response, error) -> Void in
+  if (error != nil) {
+    print(error as Any)
+  } else {
+    let httpResponse = response as? HTTPURLResponse
+    print(httpResponse)
+  }
+})
+
+dataTask.resume()
+```

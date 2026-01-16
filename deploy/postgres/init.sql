@@ -1,0 +1,2 @@
+-- Optional initialization script
+-- You can add custom schema setup here

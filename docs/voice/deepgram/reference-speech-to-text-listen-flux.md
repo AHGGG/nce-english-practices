@@ -1,0 +1,314 @@
+# Turn-based Audio (Flux)
+
+GET /v2/listen
+
+Real-time conversational speech recognition with contextual turn detection
+for natural voice conversations
+
+
+Reference: https://developers.deepgram.com/reference/speech-to-text/listen-flux
+
+## AsyncAPI Specification
+
+```yaml
+asyncapi: 2.6.0
+info:
+  title: listen.v2
+  version: subpackage_listen/v2.listen.v2
+  description: |
+    Real-time conversational speech recognition with contextual turn detection
+    for natural voice conversations
+channels:
+  /v2/listen:
+    description: |
+      Real-time conversational speech recognition with contextual turn detection
+      for natural voice conversations
+    bindings:
+      ws:
+        query:
+          type: object
+          properties:
+            model:
+              $ref: '#/components/schemas/ListenV2Model'
+            encoding:
+              $ref: '#/components/schemas/ListenV2Encoding'
+            sample_rate:
+              $ref: '#/components/schemas/ListenV2SampleRate'
+            eager_eot_threshold:
+              $ref: '#/components/schemas/ListenV2EagerEotThreshold'
+            eot_threshold:
+              $ref: '#/components/schemas/ListenV2EotThreshold'
+            eot_timeout_ms:
+              $ref: '#/components/schemas/ListenV2EotTimeoutMs'
+            keyterm:
+              $ref: '#/components/schemas/ListenV2Keyterm'
+            mip_opt_out:
+              $ref: '#/components/schemas/ListenV2MipOptOut'
+            tag:
+              $ref: '#/components/schemas/ListenV2Tag'
+        headers:
+          type: object
+          properties:
+            Authorization:
+              type: string
+    publish:
+      operationId: listen-v-2-publish
+      summary: Server messages
+      message:
+        oneOf:
+          - $ref: >-
+              #/components/messages/subpackage_listen/v2.listen.v2-server-0-ListenV2Connected
+          - $ref: >-
+              #/components/messages/subpackage_listen/v2.listen.v2-server-1-ListenV2TurnInfo
+          - $ref: >-
+              #/components/messages/subpackage_listen/v2.listen.v2-server-2-ListenV2FatalError
+    subscribe:
+      operationId: listen-v-2-subscribe
+      summary: Client messages
+      message:
+        oneOf:
+          - $ref: >-
+              #/components/messages/subpackage_listen/v2.listen.v2-client-0-ListenV2Media
+          - $ref: >-
+              #/components/messages/subpackage_listen/v2.listen.v2-client-1-ListenV2CloseStream
+servers:
+  Production:
+    url: wss://api.deepgram.com/
+    protocol: wss
+    x-default: true
+  Agent:
+    url: wss://api.deepgram.com/
+    protocol: wss
+components:
+  messages:
+    subpackage_listen/v2.listen.v2-server-0-ListenV2Connected:
+      name: ListenV2Connected
+      title: ListenV2Connected
+      description: Receive a connected message
+      payload:
+        $ref: '#/components/schemas/ListenV2_ListenV2Connected'
+    subpackage_listen/v2.listen.v2-server-1-ListenV2TurnInfo:
+      name: ListenV2TurnInfo
+      title: ListenV2TurnInfo
+      description: Receive a turn info message
+      payload:
+        $ref: '#/components/schemas/ListenV2_ListenV2TurnInfo'
+    subpackage_listen/v2.listen.v2-server-2-ListenV2FatalError:
+      name: ListenV2FatalError
+      title: ListenV2FatalError
+      description: Receive a fatal error message
+      payload:
+        $ref: '#/components/schemas/ListenV2_ListenV2FatalError'
+    subpackage_listen/v2.listen.v2-client-0-ListenV2Media:
+      name: ListenV2Media
+      title: ListenV2Media
+      description: Send audio or video data to be transcribed
+      payload:
+        $ref: '#/components/schemas/ListenV2_ListenV2Media'
+    subpackage_listen/v2.listen.v2-client-1-ListenV2CloseStream:
+      name: ListenV2CloseStream
+      title: ListenV2CloseStream
+      description: Send a CloseStream message to close the WebSocket stream
+      payload:
+        $ref: '#/components/schemas/ListenV2_ListenV2CloseStream'
+  schemas:
+    ListenV2Model:
+      type: string
+      enum:
+        - value: flux-general-en
+    ListenV2Encoding:
+      type: string
+      enum:
+        - value: linear16
+        - value: linear32
+        - value: mulaw
+        - value: alaw
+        - value: opus
+        - value: ogg-opus
+    ListenV2SampleRate:
+      description: Any type
+    ListenV2EagerEotThreshold:
+      description: Any type
+    ListenV2EotThreshold:
+      description: Any type
+    ListenV2EotTimeoutMs:
+      description: Any type
+    ListenV2Keyterm:
+      oneOf:
+        - type: string
+        - type: array
+          items:
+            type: string
+    ListenV2MipOptOut:
+      description: Any type
+    ListenV2Tag:
+      description: Any type
+    ChannelsListenV2MessagesListenV2ConnectedType:
+      type: string
+      enum:
+        - value: Connected
+    ListenV2_ListenV2Connected:
+      type: object
+      properties:
+        type:
+          $ref: '#/components/schemas/ChannelsListenV2MessagesListenV2ConnectedType'
+          description: Message type identifier
+        request_id:
+          type: string
+          format: uuid
+          description: The unique identifier of the request
+        sequence_id:
+          type: number
+          format: double
+          description: |
+            Starts at `0` and increments for each message the server sends
+            to the client.  This includes messages of other types, like
+            `TurnInfo` messages.
+      required:
+        - type
+        - request_id
+        - sequence_id
+    ChannelsListenV2MessagesListenV2TurnInfoEvent:
+      type: string
+      enum:
+        - value: Update
+        - value: StartOfTurn
+        - value: EagerEndOfTurn
+        - value: TurnResumed
+        - value: EndOfTurn
+    ChannelsListenV2MessagesListenV2TurnInfoWordsItems:
+      type: object
+      properties:
+        word:
+          type: string
+          description: The individual punctuated, properly-cased word from the transcript
+        confidence:
+          type: number
+          format: double
+          description: Confidence that this word was transcribed correctly
+      required:
+        - word
+        - confidence
+    ListenV2_ListenV2TurnInfo:
+      type: object
+      properties:
+        type:
+          type: string
+          enum:
+            - type: stringLiteral
+              value: TurnInfo
+        request_id:
+          type: string
+          format: uuid
+          description: The unique identifier of the request
+        sequence_id:
+          type: number
+          format: double
+          description: >
+            Starts at `0` and increments for each message the server sends to
+            the client.  This includes messages of other types, like `Connected`
+            messages.
+        event:
+          $ref: '#/components/schemas/ChannelsListenV2MessagesListenV2TurnInfoEvent'
+          description: >
+            The type of event being reported.
+
+
+            - **Update** - Additional audio has been transcribed, but the turn
+            state hasn't changed
+
+            - **StartOfTurn** - The user has begun speaking for the first time
+            in the turn
+
+            - **EagerEndOfTurn** - The system has moderate confidence that the
+            user has finished speaking for the turn. This is an opportunity to
+            begin preparing an agent reply
+
+            - **TurnResumed** - The system detected that speech had ended and
+            therefore sent an **EagerEndOfTurn** event, but speech is actually
+            continuing for this turn
+
+            - **EndOfTurn** - The user has finished speaking for the turn
+        turn_index:
+          type: number
+          format: double
+          description: The index of the current turn
+        audio_window_start:
+          type: number
+          format: double
+          description: Start time in seconds of the audio range that was transcribed
+        audio_window_end:
+          type: number
+          format: double
+          description: End time in seconds of the audio range that was transcribed
+        transcript:
+          type: string
+          description: Text that was said over the course of the current turn
+        words:
+          type: array
+          items:
+            $ref: >-
+              #/components/schemas/ChannelsListenV2MessagesListenV2TurnInfoWordsItems
+          description: The words in the `transcript`
+        end_of_turn_confidence:
+          type: number
+          format: double
+          description: Confidence that no more speech is coming in this turn
+      required:
+        - type
+        - request_id
+        - sequence_id
+        - event
+        - turn_index
+        - audio_window_start
+        - audio_window_end
+        - transcript
+        - words
+        - end_of_turn_confidence
+    ChannelsListenV2MessagesListenV2FatalErrorType:
+      type: string
+      enum:
+        - value: Error
+    ListenV2_ListenV2FatalError:
+      type: object
+      properties:
+        type:
+          $ref: '#/components/schemas/ChannelsListenV2MessagesListenV2FatalErrorType'
+          description: Message type identifier
+        sequence_id:
+          type: number
+          format: double
+          description: |
+            Starts at `0` and increments for each message the server sends
+            to the client.  This includes messages of other types, like
+            `Connected` messages.
+        code:
+          type: string
+          description: A string code describing the error, e.g. `INTERNAL_SERVER_ERROR`
+        description:
+          type: string
+          description: Prose description of the error
+      required:
+        - type
+        - sequence_id
+        - code
+        - description
+    ListenV2_ListenV2Media:
+      type: string
+      format: binary
+    ChannelsListenV2MessagesListenV2CloseStreamType:
+      type: string
+      enum:
+        - value: Finalize
+        - value: CloseStream
+        - value: KeepAlive
+    ListenV2_ListenV2CloseStream:
+      type: object
+      properties:
+        type:
+          $ref: '#/components/schemas/ChannelsListenV2MessagesListenV2CloseStreamType'
+          description: Message type identifier
+      required:
+        - type
+
+```
