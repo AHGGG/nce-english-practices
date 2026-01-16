@@ -546,8 +546,25 @@ AI coding assistants often complete changes without verifying correctness, requi
 - **Verification**: Browser validated against golden standard image.
 
 #### Files
-- `tests/test_ldoce_parser_golden.py`: New test suite.
-- `scripts/generate_ldoce_golden.py`: Data generator.
 - `app/services/ldoce_parser.py`: Logic fix.
+
+### ✅ Review Queue UX Enhancements (Phase 53) (2026-01-16)
+**Optimized Review Queue experience with clickable help words and visual cues.**
+
+#### Features
+- **Clickable Help Words**: "Forgot" panel help explanation now features a clickable version of the sentence.
+- **Contextual Lookup**: Clicking highlighted words in the help panel triggers the dictionary/AI inspector.
+- **Visual Cues**: Added pulse animation to highlighted words to guide user interaction.
+- **Layout Optimization**: Removed duplicate sentence display; main card remains visible and interactive when help is shown.
+
+#### Implementation
+- **Frontend**: `ReviewQueue.jsx`
+  - Integrated `useWordExplainer` hook.
+  - Enhanced `HighlightedSentence` with `clickable` prop and CSS pulse animation.
+  - Conditional rendering logic to toggle interactivity.
+
+#### Verification
+- **Manual**: Verified interaction flow (Forgot -> Click Highlight -> Inspector).
+
 
 

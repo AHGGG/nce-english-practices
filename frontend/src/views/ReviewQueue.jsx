@@ -6,6 +6,7 @@
  * - Flip-card UI showing sentence with highlighted words
  * - 3 rating buttons: Forgot (1), Remembered (3), Easy (5)
  * - Progress tracking and empty state
+ * - Clickable words in help panel for dictionary lookup
  */
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -25,6 +26,8 @@ import {
 } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import { getGapTypeInfo } from '../components/sentence-study/constants';
+import useWordExplainer from '../hooks/useWordExplainer';
+import WordInspector from '../components/reading/WordInspector';
 
 // API helpers for SM-2 review system
 const api = {
@@ -92,8 +95,8 @@ const RATING_OPTIONS = [
     }
 ];
 
-// Highlight words in sentence
-const HighlightedSentence = ({ text, highlights = [] }) => {
+// Highlight words in sentence - supports clickable mode for dictionary lookup
+const HighlightedSentence = ({ text, highlights = [], clickable = false, onWordClick, sentence }) => {
     if (!highlights || highlights.length === 0) {
         return <span>{text}</span>;
     }
@@ -114,7 +117,17 @@ const HighlightedSentence = ({ text, highlights = [] }) => {
                 return isHighlight ? (
                     <mark
                         key={i}
-                        className="bg-amber-500/30 text-amber-200 px-1 rounded"
+                        className={`bg-amber-500/30 text-amber-200 px-1 rounded ${clickable
+                                ? 'cursor-pointer hover:bg-amber-500/50 transition-colors animate-[pulse-highlight_1.5s_ease-in-out_2]'
+                                : ''
+                            }`}
+                        style={clickable ? {
+                            animation: 'pulse-highlight 0.6s ease-in-out 3'
+                        } : undefined}
+                        onClick={clickable && onWordClick ? (e) => {
+                            e.stopPropagation();
+                            onWordClick(part, sentence || text);
+                        } : undefined}
                     >
                         {part}
                     </mark>
@@ -122,6 +135,15 @@ const HighlightedSentence = ({ text, highlights = [] }) => {
                     <span key={i}>{part}</span>
                 );
             })}
+            {/* Inject keyframes for pulse animation */}
+            {clickable && (
+                <style>{`
+                    @keyframes pulse-highlight {
+                        0%, 100% { background-color: rgba(245, 158, 11, 0.3); }
+                        50% { background-color: rgba(245, 158, 11, 0.7); box-shadow: 0 0 8px rgba(245, 158, 11, 0.6); }
+                    }
+                `}</style>
+            )}
         </>
     );
 };
@@ -149,6 +171,22 @@ const ReviewQueue = () => {
     const [isLoadingHelp, setIsLoadingHelp] = useState(false);
     const helpRequestIdRef = useRef(0);
     const helpContainerRef = useRef(null);
+
+    // Word explainer hook for dictionary lookup in help panel
+    const {
+        selectedWord: inspectedWord,
+        inspectorData,
+        isInspecting,
+        contextExplanation: wordExplanation,
+        isExplaining: isExplainingWord,
+        isPhrase,
+        explainStyle,
+        handleWordClick,
+        closeInspector,
+        changeExplainStyle,
+        generatedImage,
+        isGeneratingImage
+    } = useWordExplainer();
 
     // Audio ref
     const audioRef = useRef(null);
@@ -561,20 +599,25 @@ const ReviewQueue = () => {
                         </div>
                     )}
 
-                    {/* Sentence (Main View) - Only show if context is NOT shown (or show both? user preference: show both feels redundant but safe) */}
-                    {/* Decision: If context is shown, we still show the main big card because that's the "Flashcard". 
-                        The context is supplementary at the top. 
-                        Actually, let's keep the main sentence prominent. */}
-
+                    {/* Sentence (Main View) - Clickable when help panel is open */}
                     <div
                         className="flex-1 flex items-center justify-center p-6 md:p-10"
                     >
-                        <p className={`font-serif text-xl md:text-2xl text-text-primary leading-relaxed text-left w-full ${showContext ? 'opacity-50' : ''}`}>
-                            <HighlightedSentence
-                                text={currentItem.sentence_text}
-                                highlights={currentItem.highlighted_items || []}
-                            />
-                        </p>
+                        <div className="w-full">
+                            {/* Hint when sentence is clickable */}
+                            {showHelpPanel && currentItem?.highlighted_items?.length > 0 && (
+                                <p className="text-xs text-accent-primary mb-2 font-mono uppercase tracking-wider">👆 点击高亮词查看释义</p>
+                            )}
+                            <p className={`font-serif text-xl md:text-2xl text-text-primary leading-relaxed text-left ${showContext ? 'opacity-50' : ''}`}>
+                                <HighlightedSentence
+                                    text={currentItem.sentence_text}
+                                    highlights={currentItem.highlighted_items || []}
+                                    clickable={showHelpPanel}
+                                    onWordClick={handleWordClick}
+                                    sentence={currentItem.sentence_text}
+                                />
+                            </p>
+                        </div>
                     </div>
 
                     {/* Interval info */}
@@ -616,6 +659,7 @@ const ReviewQueue = () => {
                             ref={helpContainerRef}
                             className="p-4 min-h-[120px] max-h-[200px] overflow-y-auto custom-scrollbar"
                         >
+
                             {isLoadingHelp && !helpContent ? (
                                 <div className="flex items-center gap-2 text-text-muted">
                                     <Loader2 className="w-4 h-4 animate-spin" />
@@ -752,6 +796,25 @@ const ReviewQueue = () => {
                     renderReviewCard()
                 )}
             </main>
+
+            {/* WordInspector for dictionary lookup */}
+            {inspectedWord && (
+                <WordInspector
+                    selectedWord={inspectedWord}
+                    inspectorData={inspectorData}
+                    isInspecting={isInspecting}
+                    onClose={closeInspector}
+                    onPlayAudio={playAudio}
+                    onMarkAsKnown={() => { }}
+                    contextExplanation={wordExplanation}
+                    isExplaining={isExplainingWord}
+                    isPhrase={isPhrase}
+                    onExplainStyle={changeExplainStyle}
+                    currentStyle={explainStyle}
+                    generatedImage={generatedImage}
+                    isGeneratingImage={isGeneratingImage}
+                />
+            )}
         </div>
     );
 };
