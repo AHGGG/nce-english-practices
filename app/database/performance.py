@@ -335,8 +335,8 @@ async def get_memory_curve_data(user_id: str = "default_user") -> Dict[str, Any]
             return {
                 "actual": actual_curve,
                 "ebbinghaus": ebbinghaus_curve,
-                "total_reviews": total_reviews,
-                "successful_reviews": successful_reviews,
+                "total_words_analyzed": total_reviews,
+                "successful_recalls": successful_reviews,
             }
 
         except Exception:
