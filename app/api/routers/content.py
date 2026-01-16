@@ -1,5 +1,8 @@
 from fastapi import APIRouter, HTTPException, Response
 from typing import Optional
+import logging
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
@@ -38,7 +41,8 @@ def list_epub_books():
 
         return {"books": books}
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.error(f"Error listing epub books: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Internal processing error")
 
 
 @router.get("/api/reading/epub/list")
@@ -100,7 +104,8 @@ def list_epub_articles(filename: Optional[str] = None):
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.error(f"Error listing epub articles: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Internal processing error")
 
 
 @router.get("/api/reading/article")
@@ -277,7 +282,8 @@ async def get_article_content(
     except FileNotFoundError as e:
         raise HTTPException(status_code=404, detail=str(e))
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.error(f"Error getting article content: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Internal processing error")
 
 
 @router.get("/api/reading/epub/image")
@@ -313,7 +319,8 @@ def get_epub_image(filename: str, image_path: str):
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.error(f"Error getting epub image: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Internal processing error")
 
 
 # ============================================================
@@ -446,7 +453,5 @@ async def get_article_status(filename: str, user_id: str = "default_user"):
     except HTTPException:
         raise
     except Exception as e:
-        import traceback
-
-        traceback.print_exc()
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.error(f"Error getting article status: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Internal processing error")
