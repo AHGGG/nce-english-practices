@@ -148,6 +148,7 @@ const ReviewQueue = () => {
     const [helpContent, setHelpContent] = useState('');
     const [isLoadingHelp, setIsLoadingHelp] = useState(false);
     const helpRequestIdRef = useRef(0);
+    const helpContainerRef = useRef(null);
 
     // Audio ref
     const audioRef = useRef(null);
@@ -353,6 +354,13 @@ const ReviewQueue = () => {
             }
         }
     }, [currentItem]);
+
+    // Auto-scroll help content
+    useEffect(() => {
+        if (helpContainerRef.current) {
+            helpContainerRef.current.scrollTop = helpContainerRef.current.scrollHeight;
+        }
+    }, [helpContent]);
 
     // Handle "Forgot" button - open help panel
     const handleForgot = useCallback(() => {
@@ -604,7 +612,10 @@ const ReviewQueue = () => {
                         </div>
 
                         {/* Explanation content */}
-                        <div className="p-4 min-h-[120px] max-h-[200px] overflow-y-auto">
+                        <div
+                            ref={helpContainerRef}
+                            className="p-4 min-h-[120px] max-h-[200px] overflow-y-auto custom-scrollbar"
+                        >
                             {isLoadingHelp && !helpContent ? (
                                 <div className="flex items-center gap-2 text-text-muted">
                                     <Loader2 className="w-4 h-4 animate-spin" />
