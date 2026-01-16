@@ -163,6 +163,7 @@ ALL generators and routes use this service rather than creating clients directly
 ### Frontend Design System ("Cyber-Noir")
 - **Philosophy**: "Mental Gym" - High contrast, information-dense, no distractions.
 - **Tech Stack**: TailwindCSS + Lucide Icons + custom `index.css` utilities.
+- **Charts**: `react-chartjs-2` + `chart.js` for data visualization.
 - **Tokens**:
   - **Colors**: Uses semantic naming in `tailwind.config.js` (e.g., `bg-bg-base`, `text-text-primary`, `accent-primary`).
   - **Source of Truth**: `src/index.css` (CSS Variables) mapped to Tailwind via `tailwind.config.js`.

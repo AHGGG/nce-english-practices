@@ -216,12 +216,45 @@ const PerformanceReport = () => {
                 </Card>
             )}
 
-            {/* Memory Curve Section */}
-            {memory_curve && memory_curve.total_words_analyzed > 0 && (
-                <Card title="记忆曲线" icon={Brain}>
-                    <MemoryCurveChart data={memory_curve} />
-                </Card>
-            )}
+            {/* Two-Column Grid for Memory Curve and Insights */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
+                {/* Memory Curve Section */}
+                {memory_curve && memory_curve.total_words_analyzed > 0 ? (
+                    <Card title="记忆曲线" icon={Brain}>
+                        <MemoryCurveChart data={memory_curve} />
+                    </Card>
+                ) : (
+                    <Card title="记忆曲线" icon={Brain}>
+                        <div className="text-center py-8 text-text-muted font-mono">
+                            <Brain className="mx-auto mb-3 opacity-30" size={36} />
+                            <div className="text-sm">暂无足够数据</div>
+                            <div className="text-xs mt-1">完成一些复习后，这里会显示你的记忆曲线</div>
+                        </div>
+                    </Card>
+                )}
+
+                {/* Insights (from ProfileStats) */}
+                {profile?.insights && profile.insights.length > 0 ? (
+                    <Card title="学习建议" icon={Lightbulb}>
+                        <div className="space-y-2">
+                            {profile.insights.map((insight, idx) => (
+                                <div key={idx} className="flex items-start gap-2 text-sm text-text-primary">
+                                    <AlertTriangle className="w-4 h-4 text-accent-warning flex-shrink-0 mt-0.5" />
+                                    {insight}
+                                </div>
+                            ))}
+                        </div>
+                    </Card>
+                ) : (
+                    <Card title="学习建议" icon={Lightbulb}>
+                        <div className="text-center py-8 text-text-muted font-mono">
+                            <Lightbulb className="mx-auto mb-3 opacity-30" size={36} />
+                            <div className="text-sm">继续学习</div>
+                            <div className="text-xs mt-1">完成更多练习后，这里会显示个性化建议</div>
+                        </div>
+                    </Card>
+                )}
+            </div>
 
             {/* Words to Review (from ProfileStats) */}
             {profile?.words_to_review && profile.words_to_review.length > 0 && (
@@ -237,31 +270,6 @@ const PerformanceReport = () => {
                                 {w.word}
                             </span>
                         ))}
-                    </div>
-                </Card>
-            )}
-
-            {/* Insights (from ProfileStats) */}
-            {profile?.insights && profile.insights.length > 0 && (
-                <Card title="学习建议" icon={Lightbulb}>
-                    <div className="space-y-2">
-                        {profile.insights.map((insight, idx) => (
-                            <div key={idx} className="flex items-start gap-2 text-sm text-text-primary">
-                                <AlertTriangle className="w-4 h-4 text-accent-warning flex-shrink-0 mt-0.5" />
-                                {insight}
-                            </div>
-                        ))}
-                    </div>
-                </Card>
-            )}
-
-            {/* Empty State for Memory Curve */}
-            {(!memory_curve || memory_curve.total_words_analyzed === 0) && (
-                <Card title="记忆曲线" icon={Brain}>
-                    <div className="text-center py-12 text-text-muted font-mono">
-                        <Brain className="mx-auto mb-4 opacity-30" size={48} />
-                        <div>暂无足够数据</div>
-                        <div className="text-xs mt-2">完成一些复习后，这里会显示你的记忆曲线</div>
                     </div>
                 </Card>
             )}
