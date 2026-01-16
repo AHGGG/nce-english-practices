@@ -300,6 +300,9 @@
     - [x] **Drill Matrix**: Apply Monospace data aesthetic and snappy interactions.
     - [x] **Scenario/Chat**: Update message bubbles to "Hard Shape" style.
     - [x] **Reading Mode**: Refactored to strict Cyber-Noir token usage (2025-12-29).
+    - [x] **Unified Explanation UI** (2026-01-16):
+        - [x] Created `ExplanationCard` for consistent help experience in Sentence Study and Review Queue.
+        - [x] **Visual Consistency**: "Knowledge Stream" palette (Cyan/Stage 1 -> Sky Blue/Stage 2 -> Indigo/Stage 3).
 
 ## 8. Engineering Excellence (Optimization)
 - [x] **Structure Optimization**: Consolidate models into `app/models/` package.

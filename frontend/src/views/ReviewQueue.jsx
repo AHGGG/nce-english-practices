@@ -19,12 +19,11 @@ import {
     BookOpen,
     RefreshCw,
     Clock,
-    Lightbulb,
-    ArrowRight,
     SkipForward,
     Volume2
 } from 'lucide-react';
-import ReactMarkdown from 'react-markdown';
+
+import ExplanationCard from '../components/sentence-study/views/ExplanationCard';
 import { getGapTypeInfo } from '../components/sentence-study/constants';
 import useWordExplainer from '../hooks/useWordExplainer';
 import WordInspector from '../components/reading/WordInspector';
@@ -118,8 +117,8 @@ const HighlightedSentence = ({ text, highlights = [], clickable = false, onWordC
                     <mark
                         key={i}
                         className={`bg-amber-500/30 text-amber-200 px-1 rounded ${clickable
-                                ? 'cursor-pointer hover:bg-amber-500/50 transition-colors animate-[pulse-highlight_1.5s_ease-in-out_2]'
-                                : ''
+                            ? 'cursor-pointer hover:bg-amber-500/50 transition-colors animate-[pulse-highlight_1.5s_ease-in-out_2]'
+                            : ''
                             }`}
                         style={clickable ? {
                             animation: 'pulse-highlight 0.6s ease-in-out 3'
@@ -639,70 +638,20 @@ const ReviewQueue = () => {
 
                 {/* Help Panel (shown when user clicks 'Forgot') */}
                 {showHelpPanel ? (
-                    <div className="mt-6 border border-border bg-bg-surface">
-                        {/* Stage indicator */}
-                        <div className="px-4 py-2 border-b border-border-subtle flex items-center gap-2">
-                            <Lightbulb className="w-4 h-4 text-accent-warning" />
-                            <span className="text-xs text-accent-warning font-mono">
-                                STAGE {helpStage} / 3
-                            </span>
-                            <div className="flex-1 h-1 bg-border-subtle rounded-full ml-2">
-                                <div
-                                    className="h-full bg-accent-warning rounded-full transition-all"
-                                    style={{ width: `${(helpStage / 3) * 100}%` }}
-                                />
-                            </div>
-                        </div>
+                    <div className="mt-6">
+                        <ExplanationCard
+                            simplifiedText={helpContent}
+                            simplifyStage={helpStage}
+                            isSimplifying={isLoadingHelp}
+                            onSimplifiedResponse={handleHelpResponse}
+                        />
 
-                        {/* Explanation content */}
-                        <div
-                            ref={helpContainerRef}
-                            className="p-4 min-h-[120px] max-h-[200px] overflow-y-auto custom-scrollbar"
-                        >
-
-                            {isLoadingHelp && !helpContent ? (
-                                <div className="flex items-center gap-2 text-text-muted">
-                                    <Loader2 className="w-4 h-4 animate-spin" />
-                                    <span className="text-sm">正在生成解释...</span>
-                                </div>
-                            ) : (
-                                <div className="prose prose-invert prose-sm max-w-none text-text-primary">
-                                    <ReactMarkdown>{helpContent}</ReactMarkdown>
-                                </div>
-                            )}
-                        </div>
-
-                        {/* Response buttons */}
-                        <div className="px-4 py-3 border-t border-border-subtle space-y-2">
-                            <div className="grid grid-cols-2 gap-3">
-                                <button
-                                    onClick={() => handleHelpResponse(true)}
-                                    disabled={isSubmitting || isLoadingHelp}
-                                    className="flex items-center justify-center gap-2 p-3 
-                                        border border-accent-primary/30 bg-accent-primary/10 hover:bg-accent-primary/20
-                                        text-accent-primary transition-all disabled:opacity-50"
-                                >
-                                    <CheckCircle className="w-5 h-5" />
-                                    <span className="text-sm">想起来了</span>
-                                </button>
-                                <button
-                                    onClick={() => handleHelpResponse(false)}
-                                    disabled={isSubmitting || isLoadingHelp}
-                                    className="flex items-center justify-center gap-2 p-3 
-                                        border border-accent-warning/30 bg-accent-warning/10 hover:bg-accent-warning/20
-                                        text-accent-warning transition-all disabled:opacity-50"
-                                >
-                                    <ArrowRight className="w-5 h-5" />
-                                    <span className="text-sm">
-                                        {helpStage < 3 ? '还是不懂' : '继续'}
-                                    </span>
-                                </button>
-                            </div>
+                        {/* Skip button below card */}
+                        <div className="mt-4 flex justify-center">
                             <button
                                 onClick={handleSkipHelp}
                                 disabled={isSubmitting}
-                                className="w-full flex items-center justify-center gap-2 p-2
-                                    text-text-muted hover:text-text-secondary transition-colors text-xs"
+                                className="flex items-center gap-2 px-4 py-2 text-text-muted hover:text-text-secondary transition-colors text-xs opacity-60 hover:opacity-100"
                             >
                                 <SkipForward className="w-3 h-3" />
                                 <span>跳过，下一个</span>

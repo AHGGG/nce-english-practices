@@ -3,23 +3,12 @@
  * Shows current sentence with Clear/Unclear buttons and simplification flow
  */
 import React from 'react';
-import ReactMarkdown from 'react-markdown';
-import { ChevronLeft, CheckCircle, HelpCircle, Sparkles } from 'lucide-react';
+import { ChevronLeft, CheckCircle, HelpCircle } from 'lucide-react';
 import MemoizedSentence from '../../reading/MemoizedSentence';
+import ExplanationCard from './ExplanationCard';
 import { DIFFICULTY_CHOICES } from '../constants';
 
-// Markdown components for styled rendering
-const markdownComponents = {
-    p: ({ children }) => <p className="mb-3 last:mb-0">{children}</p>,
-    ul: ({ children }) => <ul className="list-disc pl-5 mb-3 space-y-1">{children}</ul>,
-    ol: ({ children }) => <ol className="list-decimal pl-5 mb-3 space-y-1">{children}</ol>,
-    li: ({ children }) => <li className="pl-1">{children}</li>,
-    strong: ({ children }) => <strong className="text-white font-bold">{children}</strong>,
-    em: ({ children }) => <em className="text-accent-warning not-italic">{children}</em>,
-    h1: ({ children }) => <h1 className="text-xl font-bold mb-2 text-white">{children}</h1>,
-    h2: ({ children }) => <h2 className="text-lg font-bold mb-2 text-white">{children}</h2>,
-    h3: ({ children }) => <h3 className="text-base font-bold mb-2 text-white">{children}</h3>,
-};
+
 
 const StudyingView = ({
     // Data
@@ -129,63 +118,12 @@ const StudyingView = ({
 
 
                         {/* Simplified version */}
-                        {(simplifiedText || isSimplifying) && (
-                            <div className="mt-6 p-6 border border-accent-primary/30 bg-accent-primary/5 rounded-lg">
-                                <div className="flex items-center justify-between mb-3">
-                                    <div className="flex items-center gap-2">
-                                        <Sparkles className="w-4 h-4 text-accent-primary" />
-                                        <span className="text-xs text-accent-primary uppercase tracking-wider">
-                                            {simplifyStage === 1 ? 'Simple Explanation' :
-                                                simplifyStage === 2 ? 'Detailed Breakdown' :
-                                                    '中文深度解释'}
-                                        </span>
-                                    </div>
-                                    <span className="text-xs text-text-muted">
-                                        Stage {simplifyStage}/3
-                                    </span>
-                                </div>
-                                <div className="font-serif text-base leading-relaxed text-accent-primary max-h-[40vh] overflow-y-auto custom-scrollbar">
-                                    {simplifiedText ? (
-                                        <ReactMarkdown components={markdownComponents}>
-                                            {simplifiedText}
-                                        </ReactMarkdown>
-                                    ) : (
-                                        isSimplifying && (
-                                            <div className="flex items-center gap-2 py-4">
-                                                <div className="w-2 h-2 bg-accent-primary rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-                                                <div className="w-2 h-2 bg-accent-primary rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-                                                <div className="w-2 h-2 bg-accent-primary rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
-                                                <span className="ml-2 text-sm text-accent-primary/70 font-mono">Analyzing context...</span>
-                                            </div>
-                                        )
-                                    )}
-                                </div>
-                                <div className="mt-6 flex flex-wrap justify-center gap-3">
-                                    <button
-                                        onClick={() => onSimplifiedResponse(true)}
-                                        disabled={isSimplifying}
-                                        className={`flex items-center justify-center gap-2 min-w-[140px] px-6 py-4 font-bold uppercase text-sm transition-all touch-manipulation rounded-md ${isSimplifying
-                                            ? 'bg-accent-primary/30 text-black/50 cursor-not-allowed'
-                                            : 'bg-accent-primary text-black hover:bg-accent-primary/80 active:scale-95'
-                                            }`}
-                                    >
-                                        <CheckCircle className="w-5 h-5" />
-                                        {simplifyStage === 3 ? '明白了!' : 'Got it!'}
-                                    </button>
-                                    <button
-                                        onClick={() => onSimplifiedResponse(false)}
-                                        disabled={isSimplifying}
-                                        className={`flex items-center justify-center gap-2 min-w-[140px] px-6 py-4 border transition-all touch-manipulation rounded-md ${isSimplifying
-                                            ? 'border-border text-text-muted cursor-not-allowed'
-                                            : 'border-text-muted text-text-secondary hover:text-white hover:border-white active:scale-95'
-                                            }`}
-                                    >
-                                        <HelpCircle className="w-5 h-5" />
-                                        {simplifyStage < 3 ? 'Still Unclear' : '还是不懂'}
-                                    </button>
-                                </div>
-                            </div>
-                        )}
+                        <ExplanationCard
+                            simplifiedText={simplifiedText}
+                            simplifyStage={simplifyStage}
+                            isSimplifying={isSimplifying}
+                            onSimplifiedResponse={onSimplifiedResponse}
+                        />
                     </div>
                 </div>
             </main>

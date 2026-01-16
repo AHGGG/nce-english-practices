@@ -568,3 +568,22 @@ AI coding assistants often complete changes without verifying correctness, requi
 
 
 
+
+### ✅ Visual Consistency & Explanation UI (Phase 54) (2026-01-16)
+**Unified the "Help" experience across Study and Review modes with a refined visual palette.**
+
+#### Problem
+- Review Queue had a legacy "help panel" design (Orange/Yellow).
+- Sentence Study had a different design.
+- The original "Green/Cyan/Purple" palette felt disconnected ("Green" implies success, not help).
+
+#### Solution
+- **Unified Component**: `ExplanationCard.jsx` now powers both Sentence Study and Review Queue help views.
+- **Knowledge Stream Palette**:
+  - **Stage 1 (Simple)**: Cyan (Clean Info)
+  - **Stage 2 (Detailed)**: Sky Blue (Structure)
+  - **Stage 3 (Deep)**: Indigo (Deep Analysis)
+- **Result**: A cohesive, professional "deep dive" aesthetic without semantic confusion.
+
+#### Verification
+- **Manual**: Verified consistent behavior in both modes.
