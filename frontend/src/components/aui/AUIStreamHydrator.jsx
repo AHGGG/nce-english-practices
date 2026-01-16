@@ -334,7 +334,7 @@ const AUIStreamHydrator = ({
 
     if (error) {
         return (
-            <div className="bg-red-900/20 border border-red-500/50 rounded-lg p-4 text-red-400">
+            <div className="bg-accent-danger/20 border border-accent-danger/50 rounded-lg p-4 text-accent-danger">
                 <strong>Stream Error:</strong> {error}
             </div>
         );
@@ -458,10 +458,10 @@ const ActivityProgressBar = ({ activity }) => (
     <div className="bg-canvas-dark border border-ink/20 rounded-lg p-4 sm:p-3 font-mono">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-3">
             <span className="text-ink font-medium text-base sm:text-sm">{activity.name}</span>
-            <span className={`text-sm sm:text-xs px-3 py-1.5 sm:px-2 sm:py-0.5 rounded self-start sm:self-auto ${activity.status === 'completed' ? 'bg-green-500/20 text-green-400' :
-                activity.status === 'running' ? 'bg-blue-500/20 text-blue-400' :
-                    activity.status === 'failed' ? 'bg-red-500/20 text-red-400' :
-                        'bg-gray-500/20 text-gray-400'
+            <span className={`text-sm sm:text-xs px-3 py-1.5 sm:px-2 sm:py-0.5 rounded self-start sm:self-auto ${activity.status === 'completed' ? 'bg-accent-success/20 text-accent-success' :
+                activity.status === 'running' ? 'bg-category-blue/20 text-category-blue' :
+                    activity.status === 'failed' ? 'bg-accent-danger/20 text-accent-danger' :
+                        'bg-category-gray/20 text-category-gray'
                 }`}>
                 {activity.status}
             </span>
@@ -527,20 +527,20 @@ const RunStatusBadge = ({ runState }) => (
             <span className="text-ink/60 text-sm">Agent Run:</span>
             {runState.type === 'aui_run_started' && (
                 <>
-                    <span className="text-blue-400 text-base sm:text-sm">🔄 Running</span>
+                    <span className="text-category-blue text-base sm:text-sm">🔄 Running</span>
                     <span className="text-sm sm:text-xs text-ink/60">{runState.task_description}</span>
                 </>
             )}
             {runState.type === 'aui_run_finished' && (
                 <>
-                    <span className="text-green-400 text-base sm:text-sm">✅ Finished</span>
+                    <span className="text-accent-success text-base sm:text-sm">✅ Finished</span>
                     <span className="text-sm sm:text-xs text-ink/60">{runState.duration_ms?.toFixed(0)}ms</span>
                 </>
             )}
             {runState.type === 'aui_run_error' && (
                 <>
-                    <span className="text-red-400 text-base sm:text-sm">❌ Error</span>
-                    <span className="text-sm sm:text-xs text-red-400/80">{runState.error_message}</span>
+                    <span className="text-accent-danger text-base sm:text-sm">❌ Error</span>
+                    <span className="text-sm sm:text-xs text-accent-danger/80">{runState.error_message}</span>
                 </>
             )}
         </div>
@@ -596,13 +596,13 @@ const InterruptBanner = ({ interrupt, onAction, useWebSocket = false }) => {
 
     return (
         <div className={`border rounded-lg p-5 sm:p-4 font-mono transition-all ${submitted
-            ? 'bg-green-900/20 border-green-500/50'
-            : 'bg-amber-900/20 border-amber-500/50'
+            ? 'bg-accent-success/20 border-accent-success/50'
+            : 'bg-accent-warning/20 border-accent-warning/50'
             }`}>
             <div className="flex flex-col sm:flex-row sm:items-center gap-2 mb-4">
                 <div className="flex items-center gap-2">
                     <span className="text-xl sm:text-lg">{submitted ? '✅' : '⚠️'}</span>
-                    <span className={`font-semibold text-base sm:text-sm ${submitted ? 'text-green-400' : 'text-amber-400'}`}>
+                    <span className={`font-semibold text-base sm:text-sm ${submitted ? 'text-accent-success' : 'text-accent-warning'}`}>
                         {submitted ? 'Response Submitted' : 'Confirmation Required'}
                     </span>
                 </div>
@@ -613,13 +613,13 @@ const InterruptBanner = ({ interrupt, onAction, useWebSocket = false }) => {
                 <>
                     <div className="text-ink mb-3 text-base sm:text-sm">
                         <span className="text-ink/60">Reason: </span>
-                        <span className="text-amber-300">{interrupt.reason}</span>
+                        <span className="text-accent-warning">{interrupt.reason}</span>
                     </div>
 
                     {interrupt.requiredAction && (
                         <div className="text-ink mb-4 text-base sm:text-sm">
                             <span className="text-ink/60">Action: </span>
-                            <span className="text-amber-200">{interrupt.requiredAction}</span>
+                            <span className="text-accent-warning/80">{interrupt.requiredAction}</span>
                         </div>
                     )}
 
@@ -641,7 +641,7 @@ const InterruptBanner = ({ interrupt, onAction, useWebSocket = false }) => {
                                     <ul className="mt-1 ml-4 space-y-1">
                                         {interrupt.payload.focus_areas.map((area, i) => (
                                             <li key={i} className="flex items-center gap-2">
-                                                <span className={`w-2 h-2 rounded-full ${area.priority === 'high' ? 'bg-red-400' : 'bg-yellow-400'}`} />
+                                                <span className={`w-2 h-2 rounded-full ${area.priority === 'high' ? 'bg-accent-danger' : 'bg-category-yellow'}`} />
                                                 <span className="text-ink">{area.skill}</span>
                                                 <span className="text-ink/50">({area.estimated_sessions} sessions)</span>
                                             </li>
@@ -650,7 +650,7 @@ const InterruptBanner = ({ interrupt, onAction, useWebSocket = false }) => {
                                 </div>
                             )}
                             {interrupt.payload.expected_improvement && (
-                                <div><span className="text-ink/60">Expected Improvement: </span><span className="text-green-400">{interrupt.payload.expected_improvement}</span></div>
+                                <div><span className="text-ink/60">Expected Improvement: </span><span className="text-accent-success">{interrupt.payload.expected_improvement}</span></div>
                             )}
                         </div>
                     )}
@@ -664,11 +664,11 @@ const InterruptBanner = ({ interrupt, onAction, useWebSocket = false }) => {
                                     onClick={() => handleAction(option)}
                                     disabled={isSubmitting}
                                     className={`w-full sm:w-auto px-6 py-3 sm:px-4 sm:py-2 rounded border transition-all text-base sm:text-sm active:scale-95 ${isSubmitting && selectedAction?.action === option.action
-                                        ? 'bg-amber-500/30 border-amber-500 text-amber-300 animate-pulse'
+                                        ? 'bg-accent-warning/30 border-accent-warning text-accent-warning animate-pulse'
                                         : option.action === 'confirm'
-                                            ? 'bg-green-500/20 border-green-500/50 text-green-400 hover:bg-green-500/30'
+                                            ? 'bg-accent-success/20 border-accent-success/50 text-accent-success hover:bg-accent-success/30'
                                             : option.action === 'cancel'
-                                                ? 'bg-red-500/20 border-red-500/50 text-red-400 hover:bg-red-500/30'
+                                                ? 'bg-accent-danger/20 border-accent-danger/50 text-accent-danger hover:bg-accent-danger/30'
                                                 : 'bg-ink/10 border-ink/30 text-ink hover:bg-ink/20'
                                         } ${isSubmitting ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
                                 >
@@ -681,7 +681,7 @@ const InterruptBanner = ({ interrupt, onAction, useWebSocket = false }) => {
             )}
 
             {submitted && (
-                <div className="text-green-300 text-base sm:text-sm">
+                <div className="text-accent-success text-base sm:text-sm">
                     Selected: <span className="font-bold">{selectedAction?.label}</span>
                 </div>
             )}
@@ -718,7 +718,7 @@ const DynamicComponentRenderer = ({ component, props, onAction, onStatusChange }
 
     if (error) {
         return (
-            <div className="text-red-400 font-mono text-sm p-4 border border-red-500/50 rounded">
+            <div className="text-accent-danger font-mono text-sm p-4 border border-accent-danger/50 rounded">
                 Error: {error}
             </div>
         );

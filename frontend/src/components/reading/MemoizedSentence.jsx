@@ -15,13 +15,13 @@ const getUnclearSentenceClass = (unclearInfo) => {
     if (!unclearInfo) return '';
     switch (unclearInfo.unclear_choice) {
         case 'vocabulary':
-            return 'border-l-4 border-orange-400 bg-orange-500/5 pl-2 -ml-2';
+            return 'border-l-4 border-category-orange bg-category-orange/5 pl-2 -ml-2';
         case 'grammar':
-            return 'border-l-4 border-blue-400 bg-blue-500/5 pl-2 -ml-2';
+            return 'border-l-4 border-category-blue bg-category-blue/5 pl-2 -ml-2';
         case 'both':
-            return 'border-l-4 border-red-400 bg-red-500/5 pl-2 -ml-2';
+            return 'border-l-4 border-category-red bg-category-red/5 pl-2 -ml-2';
         default:
-            return 'border-l-4 border-yellow-400 bg-yellow-500/5 pl-2 -ml-2';
+            return 'border-l-4 border-category-yellow bg-category-yellow/5 pl-2 -ml-2';
     }
 };
 
@@ -123,7 +123,7 @@ const MemoizedSentence = memo(function MemoizedSentence({
 
             // Amber for studied phrases, golden dashed border for detected but not studied
             const phraseClassName = isStudiedPhrase
-                ? 'reading-word cursor-pointer px-0.5 text-amber-400 border-b-2 border-amber-400 bg-amber-400/10'
+                ? 'reading-word cursor-pointer px-0.5 text-category-amber border-b-2 border-category-amber bg-category-amber/10'
                 : 'reading-word cursor-pointer px-0.5 border-b-2 border-dashed border-neon-gold hover:bg-neon-gold/10 hover:text-neon-gold';
 
             rendered.push(
@@ -168,7 +168,7 @@ const MemoizedSentence = memo(function MemoizedSentence({
             let className = 'reading-word cursor-pointer px-0.5 ';
             if (isStudyHighlighted) {
                 // Amber for words looked up during Sentence Study
-                className += 'text-amber-400 border-b border-amber-400/50 bg-amber-400/10';
+                className += 'text-category-amber border-b border-category-amber/50 bg-category-amber/10';
             } else if (isVocabHighlighted) {
                 // Green for vocabulary highlights
                 className += 'text-accent-primary border-b border-accent-primary/50';

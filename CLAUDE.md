@@ -351,6 +351,8 @@ To support multiple dictionaries (e.g., Collins + LDOCE) in one view:
     - **Fix**: Always add `server_default='...'` to `op.add_column` for non-nullable columns in migration scripts.
 - **API/Frontend Contract Mismatch**: Frontend components may silently fail to render if API response keys don't match exactly what props expect.
     - **Fix**: Double-check Pydantic schemas or dict keys in backend against React component usage. (e.g., `total_reviews` vs `total_words_analyzed`).
+- **Tailwind CSS Variable Opacity**: Using `bg-color/50` with CSS variables defined as Hex codes (e.g., `--color: #ff0000`) fails silently.
+    - **Fix**: Define CSS variables as RGB triplets (e.g., `--color: 255 0 0`) and use `rgb(var(--color) / <alpha-value>)` in `tailwind.config.js`.
 
 ### Database Connection
 - **Tests**: Require PostgreSQL running on `localhost:5432` with `nce_practice_test` database.

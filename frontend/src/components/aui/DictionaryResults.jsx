@@ -78,7 +78,7 @@ const DictionaryResults = ({ word, source, entries = [] }) => {
             <div className="flex items-center justify-between gap-3 pb-3 border-b border-border">
                 <div className="flex items-center gap-3">
                     <span className="text-2xl font-serif font-bold text-text-primary">{word}</span>
-                    <span className="px-2 py-0.5 text-xs bg-blue-500/20 text-blue-400 border border-blue-500/30 rounded">
+                    <span className="px-2 py-0.5 text-xs bg-category-blue/20 text-category-blue border border-category-blue/30 rounded">
                         {source}
                     </span>
                 </div>

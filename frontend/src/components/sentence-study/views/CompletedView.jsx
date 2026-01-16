@@ -35,7 +35,7 @@ const HighlightedText = ({ text, highlights = [], onWordClick }) => {
                 return isHighlight ? (
                     <mark
                         key={i}
-                        className="bg-amber-500/30 text-amber-200 px-0.5 rounded cursor-pointer hover:bg-amber-500/50"
+                        className="bg-category-amber/30 text-category-amber px-0.5 rounded cursor-pointer hover:bg-category-amber/50"
                         onClick={(e) => {
                             e.stopPropagation();
                             onWordClick?.(part, text);
@@ -127,12 +127,12 @@ const CompletedView = ({
                             <div className="text-xs text-text-muted">Clear Rate</div>
                         </div>
                         <div className="text-center">
-                            <div className="text-2xl font-bold text-amber-400">{allHighlights.length}</div>
+                            <div className="text-2xl font-bold text-category-amber">{allHighlights.length}</div>
                             <div className="text-xs text-text-muted">Looked Up</div>
                         </div>
                         {unclearCount > 0 && (
                             <div className="text-center">
-                                <div className="text-2xl font-bold text-red-400">{unclearCount}</div>
+                                <div className="text-2xl font-bold text-accent-danger">{unclearCount}</div>
                                 <div className="text-xs text-text-muted">Unclear</div>
                             </div>
                         )}

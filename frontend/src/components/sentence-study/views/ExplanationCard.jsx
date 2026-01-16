@@ -38,20 +38,20 @@ const STAGE_CONFIG = {
         gradient: 'from-accent-info/10 to-transparent'
     },
     2: {
-        color: 'text-blue-400',
-        borderColor: 'border-blue-400',
-        bgColor: 'bg-blue-400',
+        color: 'text-category-blue',
+        borderColor: 'border-category-blue',
+        bgColor: 'bg-category-blue',
         icon: BookOpen,
         label: 'Detailed Breakdown',
-        gradient: 'from-blue-400/10 to-transparent'
+        gradient: 'from-category-blue/10 to-transparent'
     },
     3: {
-        color: 'text-indigo-400',
-        borderColor: 'border-indigo-400',
-        bgColor: 'bg-indigo-400',
+        color: 'text-category-indigo',
+        borderColor: 'border-category-indigo',
+        bgColor: 'bg-category-indigo',
         icon: Brain,
         label: 'Deep Analysis',
-        gradient: 'from-indigo-400/10 to-transparent'
+        gradient: 'from-category-indigo/10 to-transparent'
     }
 };
 

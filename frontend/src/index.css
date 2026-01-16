@@ -23,21 +23,42 @@
   --color-border-default: #333333;
   --color-border-subtle: #222222;
   
-  /* Accent Colors */
-  --color-accent-primary: #00FF94;  /* Matrix Green - Primary CTA */
-  --color-accent-danger: #FF0055;   /* Razor Pink - Errors, destructive */
-  --color-accent-info: #06b6d4;     /* Cyan - Info, links */
-  --color-accent-warning: #f59e0b;  /* Amber - Warnings */
+  /* Accent Colors - RGB format for opacity support */
+  --color-accent-primary: 0 255 148;  /* Matrix Green - Primary CTA */
+  --color-accent-danger: 255 0 85;   /* Razor Pink - Errors, destructive */
+  --color-accent-info: 6 182 212;     /* Cyan - Info, links */
+  --color-accent-warning: 245 158 11;  /* Amber - Warnings */
+  --color-accent-success: 34 197 94;  /* Green - Success states */
   
   /* Neon Colors (for charts and visual variety) */
-  --color-neon-green: #00FF94;
-  --color-neon-cyan: #06b6d4;
-  --color-neon-purple: #a855f7;
-  --color-neon-pink: #FF0055;
-  --color-neon-lime: #84cc16;
-  --color-neon-magenta: #d946ef;
-  --color-neon-yellow: #facc15;
-  --color-neon-gold: #FFD700;     /* Gold - Reading Mode collocations */
+  --color-neon-green: 0 255 148;
+  --color-neon-cyan: 6 182 212;
+  --color-neon-purple: 168 85 247;
+  --color-neon-pink: 255 0 85;
+  --color-neon-lime: 132 204 22;
+  --color-neon-magenta: 217 70 239;
+  --color-neon-yellow: 250 204 21;
+  --color-neon-gold: 255 215 0;     /* Gold - Reading Mode collocations */
+  
+  /* Category Colors (for gap types, status indicators) - RGB format for opacity support */
+  --color-category-orange: 251 146 60;    /* orange-400 */
+  --color-category-blue: 96 165 250;      /* blue-400 */
+  --color-category-amber: 251 191 36;     /* amber-400 */
+  --color-category-red: 248 113 113;      /* red-400 */
+  --color-category-gray: 156 163 175;     /* gray-400 */
+  --color-category-indigo: 129 140 248;   /* indigo-400 */
+  --color-category-yellow: 250 204 21;    /* yellow-400 */
+  
+  /* Light Theme Surface (for DictionaryModal and similar light-bg components) */
+  --color-light-surface: #f8fafc;     /* slate-50 */
+  --color-light-border: #e2e8f0;      /* slate-200 */
+  --color-light-text: #1e293b;        /* slate-800 */
+  --color-light-text-muted: #94a3b8;  /* slate-400 */
+  
+  /* Chart Colors (for MemoryCurveChart) */
+  --color-chart-primary: rgb(34, 211, 238);       /* cyan-400 */
+  --color-chart-secondary: rgb(148, 163, 184);    /* slate-400 */
+  --color-chart-bg: rgb(15, 23, 42);              /* slate-900 */
 }
 
 @layer base {

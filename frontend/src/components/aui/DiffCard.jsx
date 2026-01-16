@@ -12,9 +12,9 @@ const DiffCard = ({ original, corrected, label = "Correction" }) => {
 
             <div className="p-4 space-y-4">
                 {/* Original (Incorrect) */}
-                <div className="relative pl-3 border-l-2 border-red-500/50">
-                    <p className="font-mono text-xs text-red-500/70 mb-1 uppercase tracking-wider">You said</p>
-                    <p className="text-text-primary opacity-60 line-through decoration-red-500/50 decoration-2">
+                <div className="relative pl-3 border-l-2 border-accent-danger/50">
+                    <p className="font-mono text-xs text-accent-danger/70 mb-1 uppercase tracking-wider">You said</p>
+                    <p className="text-text-primary opacity-60 line-through decoration-accent-danger/50 decoration-2">
                         {original}
                     </p>
                 </div>

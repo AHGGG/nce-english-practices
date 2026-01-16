@@ -25,9 +25,9 @@ export const GAP_TYPES = {
         desc: 'Difficult words',
         color: 'orange',        // For border/text color
         cssClasses: {
-            border: 'border-orange-400',
-            bg: 'bg-orange-500/10',
-            text: 'text-orange-400'
+            border: 'border-category-orange',
+            bg: 'bg-category-orange/10',
+            text: 'text-category-orange'
         }
     },
     grammar: {
@@ -37,9 +37,9 @@ export const GAP_TYPES = {
         desc: 'Sentence structure',
         color: 'blue',
         cssClasses: {
-            border: 'border-blue-400',
-            bg: 'bg-blue-500/10',
-            text: 'text-blue-400'
+            border: 'border-category-blue',
+            bg: 'bg-category-blue/10',
+            text: 'text-category-blue'
         }
     },
     meaning: {
@@ -49,9 +49,9 @@ export const GAP_TYPES = {
         desc: 'Overall meaning',
         color: 'amber',
         cssClasses: {
-            border: 'border-amber-400',
-            bg: 'bg-amber-500/10',
-            text: 'text-amber-400'
+            border: 'border-category-amber',
+            bg: 'bg-category-amber/10',
+            text: 'text-category-amber'
         }
     },
     both: {
@@ -61,9 +61,9 @@ export const GAP_TYPES = {
         desc: 'I have no clue',
         color: 'red',
         cssClasses: {
-            border: 'border-red-400',
-            bg: 'bg-red-500/10',
-            text: 'text-red-400'
+            border: 'border-category-red',
+            bg: 'bg-category-red/10',
+            text: 'text-category-red'
         }
     },
     // Backend-only types (mapped from user choices or other logic)
@@ -72,21 +72,21 @@ export const GAP_TYPES = {
         label: '🔧 Structure',
         shortLabel: 'Structure', 
         color: 'blue', 
-        cssClasses: { border: 'border-blue-400', bg: 'bg-blue-500/10', text: 'text-blue-400' } 
+        cssClasses: { border: 'border-category-blue', bg: 'bg-category-blue/10', text: 'text-category-blue' } 
     },
     fundamental: { 
         id: 'fundamental',
         label: '🤯 Everything',
         shortLabel: 'Everything', 
         color: 'red', 
-        cssClasses: { border: 'border-red-400', bg: 'bg-red-500/10', text: 'text-red-400' } 
+        cssClasses: { border: 'border-category-red', bg: 'bg-category-red/10', text: 'text-category-red' } 
     },
     collocation: { 
         id: 'collocation',
         label: '🔗 Collocation',
         shortLabel: 'Collocation', 
         color: 'cyan', 
-        cssClasses: { border: 'border-cyan-400', bg: 'bg-cyan-500/10', text: 'text-cyan-400' } 
+        cssClasses: { border: 'border-accent-info', bg: 'bg-accent-info/10', text: 'text-accent-info' } 
     }
 };
 
@@ -101,7 +101,7 @@ export const getGapTypeInfo = (type) => {
         label: type,
         shortLabel: type, 
         color: 'yellow', 
-        cssClasses: { border: 'border-yellow-400', bg: 'bg-yellow-500/10', text: 'text-yellow-400' } 
+        cssClasses: { border: 'border-category-yellow', bg: 'bg-category-yellow/10', text: 'text-category-yellow' } 
     };
 };
 

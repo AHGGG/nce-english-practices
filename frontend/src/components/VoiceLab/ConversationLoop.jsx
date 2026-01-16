@@ -227,9 +227,9 @@ const ConversationLoop = ({ config }) => {
 
                     {/* Status Indicator */}
                     <div className="mt-6 flex items-center justify-center gap-2 font-mono text-sm">
-                        <div className={`w-3 h-3 rounded-full ${status === 'idle' ? 'bg-gray-500' :
+                        <div className={`w-3 h-3 rounded-full ${status === 'idle' ? 'bg-category-gray' :
                             status === 'recording' ? 'bg-accent-danger animate-pulse' :
-                                status === 'error' ? 'bg-red-500' :
+                                status === 'error' ? 'bg-accent-danger' :
                                     'bg-accent-primary animate-bounce'
                             }`} />
                         <span className="uppercase text-text-muted">{status}</span>

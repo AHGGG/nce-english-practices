@@ -116,8 +116,8 @@ const HighlightedSentence = ({ text, highlights = [], clickable = false, onWordC
                 return isHighlight ? (
                     <mark
                         key={i}
-                        className={`bg-amber-500/30 text-amber-200 px-1 rounded ${clickable
-                            ? 'cursor-pointer hover:bg-amber-500/50 transition-colors animate-[pulse-highlight_1.5s_ease-in-out_2]'
+                        className={`bg-category-amber/30 text-category-amber px-1 rounded ${clickable
+                            ? 'cursor-pointer hover:bg-category-amber/50 transition-colors animate-[pulse-highlight_1.5s_ease-in-out_2]'
                             : ''
                             }`}
                         style={clickable ? {
