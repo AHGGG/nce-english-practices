@@ -25,7 +25,7 @@ uv run python -m app.main
 
 # For HTTPS (mobile voice requires HTTPS)
 uv run python scripts/generate_cert.py  # Generate self-signed cert
-uv run python -m app.main       # Auto-detects cert.pem/key.pem
+./scripts/dev.ps1 -Https                # Start with HTTPS
 ```
 
 ```
@@ -38,8 +38,9 @@ uv run python -m app.main       # Auto-detects cert.pem/key.pem
 
 ## Shortcuts (Windows)
 ```powershell
-./scripts/dev.ps1   # Start Server
-./scripts/test.ps1  # Run All Tests (E2E + Backend)
+./scripts/dev.ps1        # Start Server (HTTP)
+./scripts/dev.ps1 -Https # Start Server (HTTPS)
+./scripts/test.ps1       # Run All Tests (E2E + Backend)
 ```
 
 ## Testing
@@ -163,6 +164,7 @@ ALL generators and routes use this service rather than creating clients directly
 ### Frontend Design System ("Cyber-Noir")
 - **Philosophy**: "Mental Gym" - High contrast, information-dense, no distractions.
 - **Tech Stack**: TailwindCSS + Lucide Icons + custom `index.css` utilities.
+- **Charts**: `react-chartjs-2` + `chart.js` for data visualization.
 - **Tokens**:
   - **Colors**: Uses semantic naming in `tailwind.config.js` (e.g., `bg-bg-base`, `text-text-primary`, `accent-primary`).
   - **Source of Truth**: `src/index.css` (CSS Variables) mapped to Tailwind via `tailwind.config.js`.
@@ -347,6 +349,8 @@ To support multiple dictionaries (e.g., Collins + LDOCE) in one view:
     - **Fix**: Tests require `nest_asyncio.apply()` on Windows. (This is handled in `tests/conftest.py`).
 - **Alembic `NotNullViolationError`**: Adding a non-nullable column to an existing table fails without a default value.
     - **Fix**: Always add `server_default='...'` to `op.add_column` for non-nullable columns in migration scripts.
+- **API/Frontend Contract Mismatch**: Frontend components may silently fail to render if API response keys don't match exactly what props expect.
+    - **Fix**: Double-check Pydantic schemas or dict keys in backend against React component usage. (e.g., `total_reviews` vs `total_words_analyzed`).
 
 ### Database Connection
 - **Tests**: Require PostgreSQL running on `localhost:5432` with `nce_practice_test` database.
@@ -360,7 +364,9 @@ To support multiple dictionaries (e.g., Collins + LDOCE) in one view:
 - **Parsing Robustness**: Some LDOCE entries (like 'palestinian') lack standard `<en>` tags within definitions. The parser implements a fallback to read direct text nodes while excluding `<tran>` tags.
 
 ### Voice on Mobile
-- **HTTPS Required**: WebSocket with audio requires HTTPS. Generate cert with `generate_cert.py`.
+- **HTTPS Required**: WebSocket with audio requires HTTPS.
+- **Certificate**: Generate with `uv run python scripts/generate_cert.py`.
+- **Start Server**: Use `./scripts/dev.ps1 -Https`.
 - **Certificate Trust**: Users must accept self-signed cert warning on first connection.
 
 ### PowerShell HTTPS Testing

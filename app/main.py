@@ -188,11 +188,12 @@ if __name__ == "__main__":
     import uvicorn
     import os
 
-    # Check for SSL certificates
+    # Check for SSL certificates and intent
     ssl_keyfile = "key.pem" if os.path.exists("key.pem") else None
     ssl_certfile = "cert.pem" if os.path.exists("cert.pem") else None
+    use_https = os.getenv("USE_HTTPS", "false").lower() == "true"
 
-    if ssl_keyfile and ssl_certfile:
+    if use_https and ssl_keyfile and ssl_certfile:
         print("Starting with HTTPS (self-signed certificate)")
         print("Access via: https://192.168.0.100:8000")
         print("Note: Accept the security warning in your browser")
@@ -205,6 +206,9 @@ if __name__ == "__main__":
             ssl_certfile=ssl_certfile,
         )
     else:
-        print("Starting with HTTP (no SSL)")
+        print("Starting with HTTP (Default)")
+        if use_https:
+            print("WARNING: HTTPS requested but certificates (key.pem/cert.pem) not found.")
         print("For mobile voice, generate cert: uv run python scripts/generate_cert.py")
+        print("To enable HTTPS: ./scripts/dev.ps1 -Https")
         uvicorn.run("app.main:app", host="0.0.0.0", port=8000, reload=True)

@@ -25,7 +25,7 @@ uv run python -m app.main
 
 # For HTTPS (mobile voice requires HTTPS)
 uv run python scripts/generate_cert.py  # Generate self-signed cert
-uv run python -m app.main       # Auto-detects cert.pem/key.pem
+./scripts/dev.ps1 -Https                # Start with HTTPS
 ```
 
 ```
@@ -38,8 +38,9 @@ uv run python -m app.main       # Auto-detects cert.pem/key.pem
 
 ## Shortcuts (Windows)
 ```powershell
-./scripts/dev.ps1   # Start Server
-./scripts/test.ps1  # Run All Tests (E2E + Backend)
+./scripts/dev.ps1        # Start Server (HTTP)
+./scripts/dev.ps1 -Https # Start Server (HTTPS)
+./scripts/test.ps1       # Run All Tests (E2E + Backend)
 ```
 
 ## Testing
@@ -363,7 +364,9 @@ To support multiple dictionaries (e.g., Collins + LDOCE) in one view:
 - **Parsing Robustness**: Some LDOCE entries (like 'palestinian') lack standard `<en>` tags within definitions. The parser implements a fallback to read direct text nodes while excluding `<tran>` tags.
 
 ### Voice on Mobile
-- **HTTPS Required**: WebSocket with audio requires HTTPS. Generate cert with `generate_cert.py`.
+- **HTTPS Required**: WebSocket with audio requires HTTPS.
+- **Certificate**: Generate with `uv run python scripts/generate_cert.py`.
+- **Start Server**: Use `./scripts/dev.ps1 -Https`.
 - **Certificate Trust**: Users must accept self-signed cert warning on first connection.
 
 ### PowerShell HTTPS Testing

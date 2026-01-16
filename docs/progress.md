@@ -587,3 +587,21 @@ AI coding assistants often complete changes without verifying correctness, requi
 
 #### Verification
 - **Manual**: Verified consistent behavior in both modes.
+
+### ✅ Optional HTTPS Support (Phase 55) (2026-01-16)
+**Enabled optional HTTPS mode for Voice Development without breaking default workflow.**
+
+#### Problem
+- Mobile voice features (Gemini Live) require HTTPS to work (WebSocket/Mic constraints).
+- Running HTTPS by default causes browser security warnings every time.
+- PowerShell script logic forced a binary choice based on file existence, not intent.
+
+#### Solution
+- **Default to HTTP**: Standard `dev.ps1` runs in HTTP.
+- **Opt-in HTTPS**: Added `-Https` flag to `dev.ps1`.
+- **Frontend Config**: Updated `vite.config.js` to respect `HTTPS` env var and added `npm run dev:https`.
+
+#### Verification
+- **Manual**: Verified `./scripts/dev.ps1` runs on HTTP.
+- **Manual**: Verified `./scripts/dev.ps1 -Https` runs on HTTPS (with certs).
+- **Manual**: Verified `npm run dev` vs `npm run dev:https`.
