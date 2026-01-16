@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Check, X, ArrowRight, Brain, Zap, HelpCircle, BookOpen, ChevronLeft } from 'lucide-react';
+import { Check, X, ArrowRight, Brain, Zap, HelpCircle, BookOpen, ChevronLeft, Loader2 } from 'lucide-react';
 import WordInspector from '../reading/WordInspector';
 import MemoizedSentence from '../reading/MemoizedSentence';
 
@@ -40,7 +40,7 @@ const LabCalibration = () => {
                 setSentences(data.sentences);
                 setCurrentIndex(0);
                 setCurrentLevel(level);
-                setStep('reading');
+                // setStep('reading'); // Wait for user to click Start
             }
         } catch (e) {
             console.error("Failed to load session", e);
@@ -195,6 +195,7 @@ const LabCalibration = () => {
                 {/* Back Button */}
                 <button
                     onClick={() => navigate('/nav')}
+                    aria-label="Go back"
                     className="absolute top-4 left-4 flex items-center gap-2 text-text-secondary hover:text-accent-primary transition-colors"
                 >
                     <ChevronLeft className="w-4 h-4" />
@@ -211,9 +212,18 @@ const LabCalibration = () => {
                     </p>
                     <button
                         onClick={() => setStep('reading')}
-                        className="w-full bg-text-primary text-bg-base py-4 font-mono font-bold uppercase tracking-widest hover:bg-white transition-all flex items-center justify-center gap-2"
+                        disabled={isLoading}
+                        className="w-full bg-text-primary text-bg-base py-4 font-mono font-bold uppercase tracking-widest hover:bg-white transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                        START SEQUENCE <ArrowRight className="w-4 h-4" />
+                        {isLoading ? (
+                            <>
+                                <Loader2 className="w-4 h-4 animate-spin" /> LOADING DATA...
+                            </>
+                        ) : (
+                            <>
+                                START SEQUENCE <ArrowRight className="w-4 h-4" />
+                            </>
+                        )}
                     </button>
                 </div>
             </div>

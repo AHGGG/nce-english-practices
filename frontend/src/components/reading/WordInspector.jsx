@@ -42,6 +42,7 @@ const WordInspector = ({
                         <span className="text-xl font-serif font-bold text-white">{selectedWord}</span>
                         <button
                             onClick={() => onPlayAudio(selectedWord)}
+                            aria-label={`Play pronunciation for ${selectedWord}`}
                             className="w-8 h-8 flex items-center justify-center border border-border text-accent-primary hover:bg-accent-primary hover:text-black transition-colors"
                         >
                             <Volume2 className="w-4 h-4" />
@@ -49,6 +50,7 @@ const WordInspector = ({
                     </div>
                     <button
                         onClick={onClose}
+                        aria-label="Close dictionary"
                         className="w-8 h-8 flex items-center justify-center border border-border text-text-muted hover:border-accent-danger hover:text-accent-danger transition-colors"
                     >
                         <X className="w-4 h-4" />
