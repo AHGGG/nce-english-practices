@@ -11,7 +11,7 @@ const VocabGrid = ({ words = [], show_translation = false, challenge_mode = fals
     return (
         <div className="w-full max-w-2xl bg-bg-surface border border-border rounded-xl p-6">
             <div className="flex justify-between items-center mb-6">
-                <h3 className="font-serif text-xl text-white">Vocabulary Review</h3>
+                <h3 className="font-serif text-xl text-text-primary">Vocabulary Review</h3>
                 <div className="flex gap-2">
                     {challenge_mode && (
                         <span className="text-[10px] bg-accent-danger/10 text-accent-danger border border-accent-danger/30 px-2 py-1 rounded font-mono uppercase tracking-widest animate-pulse">
@@ -43,7 +43,7 @@ const VocabGrid = ({ words = [], show_translation = false, challenge_mode = fals
 
                             {/* Translation / Definition Overlay */}
                             <div className="absolute inset-0 bg-accent-primary/90 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center rounded-lg backdrop-blur-sm p-2">
-                                <span className="text-black font-bold text-sm">
+                                <span className="text-text-primary font-bold text-sm">
                                     {definition || getHoverText(word)}
                                 </span>
                             </div>

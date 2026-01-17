@@ -18,12 +18,12 @@ const markdownComponents = {
     strong: ({ children }) => <strong className="font-bold opacity-100">{children}</strong>,
     em: ({ children }) => <em className="opacity-90 not-italic border-b border-current/30">{children}</em>,
     blockquote: ({ children }) => (
-        <blockquote className="border-l-2 border-current/30 pl-4 py-1 my-3 bg-black/10 rounded-r opacity-90 italic">
+        <blockquote className="border-l-2 border-current/30 pl-4 py-1 my-3 bg-bg-base/10 rounded-r opacity-90 italic">
             {children}
         </blockquote>
     ),
     code: ({ children }) => (
-        <code className="bg-black/20 rounded px-1.5 py-0.5 font-mono text-sm opacity-90 mx-1">
+        <code className="bg-bg-base/20 rounded px-1.5 py-0.5 font-mono text-sm opacity-90 mx-1">
             {children}
         </code>
     ),
@@ -87,7 +87,7 @@ const ExplanationCard = ({
                     {/* Header */}
                     <div className="flex items-center justify-between mb-6">
                         <div className="flex items-center gap-3">
-                            <div className={`p-2 rounded-lg bg-black/40 border border-white/5 ${config.color}`}>
+                            <div className={`p-2 rounded-lg bg-bg-base/40 border border-white/5 ${config.color}`}>
                                 <Icon className="w-5 h-5" />
                             </div>
                             <div>
@@ -113,7 +113,7 @@ const ExplanationCard = ({
                     </div>
 
                     {/* Content */}
-                    <div className={`font-serif text-base md:text-lg leading-relaxed ${config.color} selection:bg-white/20 selection:text-white min-h-[100px]`}>
+                    <div className={`font-serif text-base md:text-lg leading-relaxed ${config.color} selection:bg-light-surface/20 selection:text-text-primary min-h-[100px]`}>
                         {simplifiedText ? (
                             <motion.div
                                 initial={{ opacity: 0 }}
@@ -149,7 +149,7 @@ const ExplanationCard = ({
                             <button
                                 onClick={() => onSimplifiedResponse(true)}
                                 className={`flex items-center justify-center gap-2 px-8 py-3.5 font-bold uppercase text-sm tracking-wide transition-all rounded-lg shadow-lg
-                                    ${config.bgColor} text-black hover:brightness-110 active:scale-95`}
+                                    ${config.bgColor} text-text-inverse hover:brightness-110 active:scale-95`}
                             >
                                 <CheckCircle className="w-4 h-4" />
                                 {simplifyStage === 3 ? 'Understood' : 'Got it'}
@@ -159,7 +159,7 @@ const ExplanationCard = ({
                                 onClick={() => onSimplifiedResponse(false)}
                                 className={`flex items-center justify-center gap-2 px-8 py-3.5 border-2 transition-all rounded-lg font-bold uppercase text-sm tracking-wide active:scale-95
                                     ${simplifyStage < 3
-                                        ? `border-white/10 hover:border-${config.color.split('-')[1]}-${config.color.split('-')[2]} text-text-secondary hover:text-white bg-black/20 hover:bg-black/40`
+                                        ? `border-white/10 hover:border-${config.color.split('-')[1]}-${config.color.split('-')[2]} text-text-secondary hover:text-text-primary bg-bg-base/20 hover:bg-bg-base/40`
                                         : 'border-white/10 text-text-muted cursor-not-allowed opacity-50'
                                     }`}
                                 disabled={simplifyStage >= 3}

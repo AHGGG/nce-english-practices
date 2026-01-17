@@ -416,7 +416,7 @@ const DeepgramVoiceAgent = () => {
                                     onClick={() => setConfig({ ...config, functions_enabled: !config.functions_enabled })}
                                     disabled={isActive}
                                 >
-                                    <span className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white transition-transform ${config.functions_enabled ? 'translate-x-5' : 'translate-x-0'}`} />
+                                    <span className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-light-surface transition-transform ${config.functions_enabled ? 'translate-x-5' : 'translate-x-0'}`} />
                                 </button>
                             </div>
 

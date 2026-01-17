@@ -141,7 +141,7 @@ const AUIStreamHydrator = ({
                             intention: newDoc.intention,
                             targetLevel: newDoc.target_level || newDoc.targetLevel
                         };
-                    } catch {
+                    } catch (err) {
                         console.error('[AUIStreamHydrator] JSON Patch failed:', err);
                         return prev;
                     }
@@ -218,7 +218,7 @@ const AUIStreamHydrator = ({
                             ...prev,
                             [auiEvent.activity_id]: newActivity
                         };
-                    } catch {
+                    } catch (err) {
                         console.error('[AUIStreamHydrator] Activity patch failed:', err);
                         return prev;
                     }

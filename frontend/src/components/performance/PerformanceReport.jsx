@@ -18,7 +18,7 @@ const PerformanceReport = () => {
     const [days, setDays] = useState(30);
 
     useEffect(() => {
-        setLoading(true);
+        // Don't setLoading(true) here - it's either initial true or set by onClick
         Promise.all([
             api.get(`/api/performance?days=${days}`),
             fetch('/api/sentence-study/profile').then(r => r.ok ? r.json() : null)
@@ -76,9 +76,12 @@ const PerformanceReport = () => {
                     {[7, 30, 90].map(d => (
                         <button
                             key={d}
-                            onClick={() => setDays(d)}
+                            onClick={() => {
+                                setLoading(true);
+                                setDays(d);
+                            }}
                             className={`px-3 py-1 border transition-colors ${days === d
-                                ? 'bg-accent-primary text-black border-accent-primary'
+                                ? 'bg-accent-primary text-text-inverse border-accent-primary'
                                 : 'border-border text-text-muted hover:border-text-secondary'
                                 }`}
                         >

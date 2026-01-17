@@ -204,7 +204,7 @@ const AUIStreamingDemo = () => {
                                 key={demo.id}
                                 onClick={() => handleSelectDemo(demo)}
                                 className={`p-4 md:p-3 text-left rounded border transition-all active:scale-95 ${selectedDemo === demo.id
-                                    ? 'bg-accent-primary text-black border-accent-primary font-bold'
+                                    ? 'bg-accent-primary text-text-inverse border-accent-primary font-bold'
                                     : 'bg-bg-elevated text-text-secondary border-border hover:border-text-muted hover:text-text-primary'
                                     }`}
                             >

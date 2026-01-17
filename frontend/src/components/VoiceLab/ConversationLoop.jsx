@@ -209,8 +209,8 @@ const ConversationLoop = () => {
                             onClick={isRecording ? stopRecording : startRecording}
                             disabled={isProcessing && !isRecording}
                             className={`w-full h-16 text-lg font-bold tracking-widest relative overflow-hidden transition-all duration-300 ${isRecording
-                                ? 'bg-accent-danger hover:bg-red-600 text-white shadow-[0_0_20px_rgba(255,0,85,0.4)]'
-                                : 'bg-accent-primary hover:bg-green-600 text-black shadow-[0_0_20px_rgba(0,255,148,0.4)]'
+                                ? 'bg-accent-danger hover:bg-red-600 text-text-primary shadow-[0_0_20px_rgba(255,0,85,0.4)]'
+                                : 'bg-accent-primary hover:bg-green-600 text-text-inverse shadow-[0_0_20px_rgba(0,255,148,0.4)]'
                                 }`}
                         >
                             <div className="flex items-center gap-3 z-10">
@@ -220,7 +220,7 @@ const ConversationLoop = () => {
 
                             {/* Pulse Effect */}
                             {isRecording && (
-                                <span className="absolute inset-0 bg-white/20 animate-pulse rounded-md"></span>
+                                <span className="absolute inset-0 bg-light-surface/20 animate-pulse rounded-md"></span>
                             )}
                         </Button>
                     </div>

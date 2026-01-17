@@ -115,7 +115,7 @@ const OverviewView = ({
                                 <div className="flex justify-center pt-4 animate-in fade-in slide-in-from-bottom-8 duration-700">
                                     <button
                                         onClick={onStartStudying}
-                                        className="flex items-center gap-3 px-10 py-4 bg-accent-primary text-black font-bold uppercase text-sm hover:bg-accent-primary/80 transition-colors"
+                                        className="flex items-center gap-3 px-10 py-4 bg-accent-primary text-text-inverse font-bold uppercase text-sm hover:bg-accent-primary/80 transition-colors"
                                     >
                                         <GraduationCap className="w-5 h-5" />
                                         Start Studying

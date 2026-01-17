@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from 'react';
+﻿import React, { useEffect, useState, useRef } from 'react';
 import { Volume2, Brain, X, Loader2 } from 'lucide-react';
 import { lookupDictionary, explainInContext } from '../../api/client';
 import DangerousHtml from './DangerousHtml';
@@ -63,7 +63,7 @@ const DictionaryModal = ({ isOpen, onClose, word, contextSentence }) => {
 
     return (
         <div
-            className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in"
+            className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-bg-base/60 backdrop-blur-sm animate-fade-in"
             onClick={onClose}
             role="dialog"
             aria-modal="true"
@@ -72,7 +72,7 @@ const DictionaryModal = ({ isOpen, onClose, word, contextSentence }) => {
             <div
                 ref={modalRef}
                 tabIndex="-1"
-                className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[85vh] flex flex-col overflow-hidden animate-slide-up focus:outline-none"
+                className="bg-light-surface rounded-2xl shadow-2xl w-full max-w-2xl max-h-[85vh] flex flex-col overflow-hidden animate-slide-up focus:outline-none"
                 onClick={e => e.stopPropagation()}
             >
                 {/* Header */}
@@ -116,7 +116,7 @@ const DictionaryModal = ({ isOpen, onClose, word, contextSentence }) => {
                 )}
 
                 {/* Content Content */}
-                <div className="flex-1 overflow-y-auto p-6 bg-white min-h-0">
+                <div className="flex-1 overflow-y-auto p-6 bg-light-surface min-h-0">
                     {loading && (
                         <div className="flex items-center gap-3 text-slate-400">
                             <Loader2 className="w-5 h-5 animate-spin text-sky-500" />
@@ -124,7 +124,7 @@ const DictionaryModal = ({ isOpen, onClose, word, contextSentence }) => {
                         </div>
                     )}
 
-                    {error && <div className="p-4 bg-red-50 text-red-600 rounded-xl text-sm">{error}</div>}
+                    {error && <div className="p-4 bg-accent-danger/10 text-red-600 rounded-xl text-sm">{error}</div>}
 
                     {data && (
                         <div className="space-y-6">

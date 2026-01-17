@@ -50,7 +50,7 @@ const MemoizedImage = memo(function MemoizedImage({ src, alt, caption, onImageCl
                     onError={() => setError(true)}
                 />
                 {/* Zoom icon overlay */}
-                <div className="absolute bottom-2 right-2 p-2 bg-black/50 text-accent-primary opacity-0 group-hover:opacity-100 transition-opacity">
+                <div className="absolute bottom-2 right-2 p-2 bg-bg-base/50 text-accent-primary opacity-0 group-hover:opacity-100 transition-opacity">
                     <ZoomIn className="w-4 h-4" />
                 </div>
             </div>

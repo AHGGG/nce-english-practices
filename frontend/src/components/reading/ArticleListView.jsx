@@ -54,7 +54,7 @@ const ArticleListView = ({
     // Separate completed and non-completed articles
     const completedArticles = articles.filter(a => a.status === 'completed');
     const nonCompletedArticles = articles.filter(a => a.status !== 'completed');
-    const [now] = React.useState(Date.now());
+    const [now] = React.useState(() => Date.now());
 
     const renderArticleCard = (article, idx, showOriginalIndex = false) => {
         const statusConfig = getStatusConfig(article.status);
@@ -130,7 +130,7 @@ const ArticleListView = ({
     };
 
     return (
-        <div className="min-h-screen bg-bg-base text-text-primary font-mono selection:bg-accent-primary selection:text-black">
+        <div className="min-h-screen bg-bg-base text-text-primary font-mono selection:bg-accent-primary selection:text-text-inverse">
             {/* GLOBAL NOISE TEXTURE OVERLAY */}
             <div className="fixed inset-0 opacity-[0.03] pointer-events-none z-50 bg-[url('https://grainy-gradients.vercel.app/noise.svg')]"></div>
 
@@ -145,7 +145,7 @@ const ArticleListView = ({
                             <ChevronLeft className="w-5 h-5" />
                         </button>
                         <div className="w-6 h-6 bg-accent-primary flex items-center justify-center">
-                            <BookOpen size={16} className="text-black" />
+                            <BookOpen size={16} className="text-text-inverse" />
                         </div>
                         <span className="text-accent-primary text-xs font-bold tracking-[0.3em] uppercase">Reading Mode</span>
                     </div>

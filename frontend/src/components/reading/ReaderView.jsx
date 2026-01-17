@@ -200,7 +200,7 @@ const ReaderView = ({
     };
 
     return (
-        <div className="h-screen flex flex-col bg-bg-base text-text-primary font-mono selection:bg-accent-primary selection:text-black">
+        <div className="h-screen flex flex-col bg-bg-base text-text-primary font-mono selection:bg-accent-primary selection:text-text-inverse">
             {/* GLOBAL NOISE TEXTURE OVERLAY */}
             <div className="fixed inset-0 opacity-[0.03] pointer-events-none z-50 bg-[url('https://grainy-gradients.vercel.app/noise.svg')]"></div>
 
@@ -284,7 +284,7 @@ const ReaderView = ({
                         {/* Article Header - Cyber-Noir Style */}
                         <header className="mb-12 px-4">
                             <div className="flex items-center gap-3 mb-4">
-                                <span className="px-2 py-0.5 bg-accent-primary text-black text-[10px] font-bold uppercase tracking-wider">
+                                <span className="px-2 py-0.5 bg-accent-primary text-text-inverse text-[10px] font-bold uppercase tracking-wider">
                                     Reading
                                 </span>
                                 <div className="h-[1px] bg-border flex-1"></div>

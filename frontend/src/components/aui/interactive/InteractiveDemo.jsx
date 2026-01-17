@@ -1,4 +1,4 @@
-import React from 'react';
+﻿import React from 'react';
 import { Card, Button } from "../../ui";
 import { Loader2, CheckCircle2, XCircle, RefreshCw } from "lucide-react";
 import { useAUI } from '../AUIContext';
@@ -28,24 +28,24 @@ const InteractiveDemo = ({
     // Status config map
     const config = {
         processing: {
-            icon: <Loader2 className="w-8 h-8 text-blue-500 animate-spin" />,
-            color: "border-blue-200 bg-blue-50 dark:bg-blue-950/20"
+            icon: <Loader2 className="w-8 h-8 text-category-blue animate-spin" />,
+            color: "border-blue-200 bg-category-blue/10 dark:bg-category-blue/10"
         },
         waiting_input: {
-            icon: <RefreshCw className="w-8 h-8 text-amber-500" />,
-            color: "border-amber-200 bg-amber-50 dark:bg-amber-950/20"
+            icon: <RefreshCw className="w-8 h-8 text-accent-warning" />,
+            color: "border-amber-200 bg-accent-warning/10 dark:bg-accent-warning/10"
         },
         success: {
-            icon: <CheckCircle2 className="w-8 h-8 text-green-500" />,
-            color: "border-green-200 bg-green-50 dark:bg-green-950/20"
+            icon: <CheckCircle2 className="w-8 h-8 text-accent-success" />,
+            color: "border-green-200 bg-accent-success/10 dark:bg-accent-success/10"
         },
         cancelled: {
-            icon: <XCircle className="w-8 h-8 text-gray-400" />,
-            color: "border-gray-200 bg-gray-50 dark:bg-gray-800/50"
+            icon: <XCircle className="w-8 h-8 text-text-muted" />,
+            color: "border-gray-200 bg-gray-50 dark:bg-bg-surface/50"
         },
         error: {
-            icon: <XCircle className="w-8 h-8 text-red-500" />,
-            color: "border-red-200 bg-red-50 dark:bg-red-950/20"
+            icon: <XCircle className="w-8 h-8 text-accent-danger" />,
+            color: "border-red-200 bg-accent-danger/10 dark:bg-accent-danger/10"
         }
     };
 
@@ -90,7 +90,7 @@ const InteractiveDemo = ({
                 throw new Error(`Input submission failed: ${response.statusText}`);
             }
             // Success - The agent stream will update the UI state shortly
-        } catch (error) {
+        } catch {
             // Silently handle errors
         } finally {
             setSubmitting(false);
@@ -100,7 +100,7 @@ const InteractiveDemo = ({
     return (
         <Card className={`w-full max-w-md mx-auto transition-all duration-300 ${currentConfig.color}`}>
             <div className="pt-6 flex flex-col items-center text-center gap-4">
-                <div className="p-3 bg-white dark:bg-black rounded-full shadow-sm">
+                <div className="p-3 bg-light-surface dark:bg-bg-base rounded-full shadow-sm">
                     {currentConfig.icon}
                 </div>
 

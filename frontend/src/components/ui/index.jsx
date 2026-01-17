@@ -16,12 +16,12 @@ export const Button = ({
     const base = "inline-flex items-center justify-center gap-2 font-mono font-bold uppercase tracking-wider transition-all duration-200 active:translate-y-[2px] disabled:opacity-50 disabled:cursor-not-allowed";
 
     const variants = {
-        primary: "bg-text-primary text-black border border-text-primary hover:bg-white hover:text-black hover:shadow-hard shadow-none",
-        secondary: "bg-transparent text-accent-danger border border-accent-danger hover:bg-accent-danger hover:text-black hover:shadow-accent-danger",
+        primary: "bg-text-primary text-text-inverse border border-text-primary hover:bg-light-surface hover:text-text-inverse hover:shadow-hard shadow-none",
+        secondary: "bg-transparent text-accent-danger border border-accent-danger hover:bg-accent-danger hover:text-text-inverse hover:shadow-accent-danger",
         outline: "bg-transparent text-text-muted border border-border hover:border-text-primary hover:text-text-primary",
         ghost: "bg-transparent text-text-muted hover:text-text-primary hover:bg-text-primary/10",
-        danger: "bg-transparent text-accent-danger border border-accent-danger hover:bg-accent-danger hover:text-black",
-        text: "bg-transparent text-accent-primary hover:text-white px-0 border-none"
+        danger: "bg-transparent text-accent-danger border border-accent-danger hover:bg-accent-danger hover:text-text-inverse",
+        text: "bg-transparent text-accent-primary hover:text-text-inverse px-0 border-none"
     };
 
     const sizes = {
@@ -104,11 +104,11 @@ export const Card = ({ children, title, subtitle, variant = "default", className
 
 export const Tag = ({ children, variant = "solid", color = "green", className = "" }) => {
     const colors = {
-        green: "bg-accent-primary text-black border-accent-primary",
-        pink: "bg-accent-danger text-black border-accent-danger",
-        cyan: "bg-accent-info text-black border-accent-info",
-        amber: "bg-accent-warning text-black border-accent-warning",
-        gray: "bg-text-muted text-black border-text-muted"
+        green: "bg-accent-primary text-text-inverse border-accent-primary",
+        pink: "bg-accent-danger text-text-inverse border-accent-danger",
+        cyan: "bg-accent-info text-text-inverse border-accent-info",
+        amber: "bg-accent-warning text-text-inverse border-accent-warning",
+        gray: "bg-text-muted text-text-inverse border-text-muted"
     };
 
     const outlines = {

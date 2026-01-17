@@ -106,7 +106,7 @@ export class GeminiLiveClient {
               this.workletNode.port.onmessage = (event) => { this.processAudioData(event.data); };
               this.source.connect(this.workletNode);
               return;
-          } catch (e) { // eslint-disable-line no-unused-vars
+          } catch (e) {
               console.warn("AudioWorklet failed", e);
           }
       }

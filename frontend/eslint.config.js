@@ -24,7 +24,6 @@ export default defineConfig([
     },
     rules: {
       'no-unused-vars': ['error', { varsIgnorePattern: '^[A-Z_]' }],
-      
       // Enforce semantic color tokens - prevent hardcoded Tailwind colors
       'no-restricted-syntax': [
         'warn',

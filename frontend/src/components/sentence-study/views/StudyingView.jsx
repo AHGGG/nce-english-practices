@@ -134,7 +134,7 @@ const StudyingView = ({
                     <div className="max-w-3xl mx-auto flex flex-wrap justify-center gap-3">
                         <button
                             onClick={onClear}
-                            className="flex items-center justify-center gap-2 min-w-[140px] px-8 py-4 bg-accent-primary text-black font-bold uppercase text-sm hover:bg-accent-primary/80 active:scale-95 transition-all touch-manipulation rounded-md"
+                            className="flex items-center justify-center gap-2 min-w-[140px] px-8 py-4 bg-accent-primary text-text-inverse font-bold uppercase text-sm hover:bg-accent-primary/80 active:scale-95 transition-all touch-manipulation rounded-md"
                         >
                             <CheckCircle className="w-5 h-5" />
                             Clear

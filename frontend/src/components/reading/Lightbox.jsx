@@ -16,7 +16,7 @@ const Lightbox = memo(function Lightbox({ src, alt, caption, onClose }) {
 
     return (
         <div
-            className="fixed inset-0 z-[100] bg-black/95 flex items-center justify-center"
+            className="fixed inset-0 z-[100] bg-bg-base/95 flex items-center justify-center"
             onClick={onClose}
         >
             {/* Close button */}

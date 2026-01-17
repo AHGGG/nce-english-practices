@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+﻿import React, { useState, useEffect, useRef } from 'react';
 import { Card, Button, Tag, Select } from '../ui';
 import { Mic, MicOff, Bot, User, Volume2, Cpu } from 'lucide-react';
 
@@ -308,7 +308,7 @@ const ElevenLabsVoiceAgent = () => {
                         </Button>
 
                         {error && (
-                            <div className="text-red-500 text-xs mt-2">{error}</div>
+                            <div className="text-accent-danger text-xs mt-2">{error}</div>
                         )}
                     </div>
                 </Card>

@@ -206,7 +206,7 @@ const LabCalibration = () => {
                     </p>
                     <button
                         onClick={() => setStep('reading')}
-                        className="w-full bg-text-primary text-bg-base py-4 font-mono font-bold uppercase tracking-widest hover:bg-white transition-all flex items-center justify-center gap-2"
+                        className="w-full bg-text-primary text-bg-base py-4 font-mono font-bold uppercase tracking-widest hover:bg-light-surface transition-all flex items-center justify-center gap-2"
                     >
                         START SEQUENCE <ArrowRight className="w-4 h-4" />
                     </button>
@@ -368,7 +368,7 @@ const LabCalibration = () => {
 
                     <button
                         onClick={() => window.location.href = '/reading'}
-                        className="w-full bg-accent-primary text-black py-4 font-mono font-bold uppercase tracking-widest hover:bg-accent-primary/90 transition-all flex items-center justify-center gap-2"
+                        className="w-full bg-accent-primary text-text-inverse py-4 font-mono font-bold uppercase tracking-widest hover:bg-accent-primary/90 transition-all flex items-center justify-center gap-2"
                     >
                         <BookOpen className="w-4 h-4" />
                         Apply to Reading Mode

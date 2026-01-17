@@ -134,7 +134,7 @@ const SentenceInspector = ({
         <div className="fixed inset-0 z-[60] pointer-events-none flex flex-col justify-end md:justify-center md:items-end md:pr-8">
             {/* Backdrop */}
             <div
-                className="absolute inset-0 bg-black/80 md:bg-black/50 pointer-events-auto"
+                className="absolute inset-0 bg-bg-base/80 md:bg-bg-base/50 pointer-events-auto"
                 onClick={onClose}
             ></div>
 

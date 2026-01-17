@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+﻿import React, { useState, useEffect, useRef } from 'react';
 import { Volume2, HelpCircle, ArrowRight, Eye, EyeOff, Play, BookOpen, Languages, SkipForward, ChevronLeft, ChevronRight, Gauge, Layers } from 'lucide-react';
 import { escapeHtml } from '../../utils/security';
 import VoiceSessionTracker from '../../utils/VoiceSessionTracker';
@@ -814,28 +814,28 @@ const NegotiationInterface = () => {
                 {books.length > 0 && (
                     <div className="mb-6 w-full max-w-xs space-y-4">
                         <div>
-                            <label className="block text-xs uppercase text-zinc-500 mb-2 text-center font-bold">Content Source</label>
+                            <label className="block text-xs uppercase text-text-muted mb-2 text-center font-bold">Content Source</label>
 
                             {/* Toggle between Dictionary, EPUB, and RSS */}
-                            <div className="flex rounded-lg bg-zinc-800 p-1 mb-4" role="group" aria-label="Content Source">
+                            <div className="flex rounded-lg bg-bg-surface p-1 mb-4" role="group" aria-label="Content Source">
                                 <button
                                     onClick={() => { setIsRssMode(false); setIsEpubMode(false); }}
                                     aria-pressed={!isRssMode && !isEpubMode}
-                                    className={`flex-1 py-1.5 px-2 rounded text-xs font-medium transition-colors ${!isRssMode && !isEpubMode ? 'bg-zinc-700 text-white shadow' : 'text-zinc-500 hover:text-zinc-300'}`}
+                                    className={`flex-1 py-1.5 px-2 rounded text-xs font-medium transition-colors ${!isRssMode && !isEpubMode ? 'bg-bg-elevated text-text-primary shadow' : 'text-text-muted hover:text-text-secondary'}`}
                                 >
                                     📖 Dictionary
                                 </button>
                                 <button
                                     onClick={() => { setIsEpubMode(true); setIsRssMode(false); }}
                                     aria-pressed={isEpubMode}
-                                    className={`flex-1 py-1.5 px-2 rounded text-xs font-medium transition-colors ${isEpubMode ? 'bg-neon-cyan/20 text-neon-cyan shadow' : 'text-zinc-500 hover:text-zinc-300'}`}
+                                    className={`flex-1 py-1.5 px-2 rounded text-xs font-medium transition-colors ${isEpubMode ? 'bg-neon-cyan/20 text-neon-cyan shadow' : 'text-text-muted hover:text-text-secondary'}`}
                                 >
                                     📰 EPUB
                                 </button>
                                 <button
                                     onClick={() => { setIsRssMode(true); setIsEpubMode(false); }}
                                     aria-pressed={isRssMode}
-                                    className={`flex-1 py-1.5 px-2 rounded text-xs font-medium transition-colors ${isRssMode ? 'bg-zinc-700 text-white shadow' : 'text-zinc-500 hover:text-zinc-300'}`}
+                                    className={`flex-1 py-1.5 px-2 rounded text-xs font-medium transition-colors ${isRssMode ? 'bg-bg-elevated text-text-primary shadow' : 'text-text-muted hover:text-text-secondary'}`}
                                 >
                                     🌐 RSS
                                 </button>
@@ -845,7 +845,7 @@ const NegotiationInterface = () => {
                             {isEpubMode && (
                                 <div className="animate-in fade-in slide-in-from-top-2 mb-4 p-3 rounded-lg bg-neon-cyan/5 border border-neon-cyan/20">
                                     <div className="text-xs text-neon-cyan mb-1 font-mono">📰 Economist EPUB</div>
-                                    <div className="text-xs text-zinc-400">TheEconomist.2025.12.27.epub</div>
+                                    <div className="text-xs text-text-muted">TheEconomist.2025.12.27.epub</div>
                                     <div className="text-xs text-zinc-600 mt-1">73 articles • Full content</div>
                                 </div>
                             )}
@@ -853,14 +853,14 @@ const NegotiationInterface = () => {
                             {/* RSS URL Input */}
                             {isRssMode && (
                                 <div className="animate-in fade-in slide-in-from-top-2 mb-4">
-                                    <label htmlFor="rss-url-input" className="block text-xs text-zinc-500 mb-1">RSS URL</label>
+                                    <label htmlFor="rss-url-input" className="block text-xs text-text-muted mb-1">RSS URL</label>
                                     <input
                                         id="rss-url-input"
                                         type="text"
                                         value={rssUrl}
                                         onChange={(e) => setRssUrl(e.target.value)}
                                         placeholder="https://example.com/feed.xml"
-                                        className="w-full bg-zinc-800 border-zinc-700 text-zinc-300 p-2 rounded text-sm focus:ring-2 focus:ring-neon-green/50 outline-none font-mono"
+                                        className="w-full bg-bg-surface border-border text-text-secondary p-2 rounded text-sm focus:ring-2 focus:ring-neon-green/50 outline-none font-mono"
                                     />
                                     <div className="flex flex-wrap gap-2 mt-2">
                                         <button onClick={() => setRssUrl("https://rsshub.rssforever.com/economist/latest?mode=fulltext")} className="text-xs text-neon-cyan hover:underline">
@@ -869,17 +869,17 @@ const NegotiationInterface = () => {
                                         <button onClick={() => setRssUrl("https://rsshub.rssforever.com/nytimes/en?mode=fulltext")} className="text-xs text-neon-cyan hover:underline">
                                             🗽 NYT (全文)
                                         </button>
-                                        <button onClick={() => setRssUrl("https://rsshub.pseudoyu.com/economist/latest?mode=fulltext")} className="text-xs text-zinc-500 hover:underline">
+                                        <button onClick={() => setRssUrl("https://rsshub.pseudoyu.com/economist/latest?mode=fulltext")} className="text-xs text-text-muted hover:underline">
                                             备用: Economist
                                         </button>
-                                        <button onClick={() => setRssUrl("https://plink.anyfeeder.com/weixin/Economist_fans")} className="text-xs text-zinc-500 hover:underline">
+                                        <button onClick={() => setRssUrl("https://plink.anyfeeder.com/weixin/Economist_fans")} className="text-xs text-text-muted hover:underline">
                                             旧: Economist
                                         </button>
                                     </div>
                                 </div>
                             )}
 
-                            <label className="block text-xs uppercase text-zinc-500 mb-2 text-center mt-4">
+                            <label className="block text-xs uppercase text-text-muted mb-2 text-center mt-4">
                                 {isRssMode ? "Identify Vocabulary From" : "Vocabulary Source"}
                             </label>
                             <select
@@ -888,7 +888,7 @@ const NegotiationInterface = () => {
                                     setSelectedBook(e.target.value);
                                     setBookRange({ start: null, end: null });
                                 }}
-                                className="w-full bg-zinc-800 border-zinc-700 text-zinc-300 p-3 rounded-lg text-sm focus:ring-2 focus:ring-neon-green/50 outline-none transition-all cursor-pointer appearance-none text-center font-mono"
+                                className="w-full bg-bg-surface border-border text-text-secondary p-3 rounded-lg text-sm focus:ring-2 focus:ring-neon-green/50 outline-none transition-all cursor-pointer appearance-none text-center font-mono"
                             >
                                 <option value="">🔀 Random Mix</option>
                                 {books.map(book => (
@@ -902,7 +902,7 @@ const NegotiationInterface = () => {
                         {/* COCA Range Filter */}
                         {selectedBook === 'coca20000' && (
                             <div className="animate-in fade-in slide-in-from-top-2">
-                                <label className="block text-xs uppercase text-zinc-500 mb-2 text-center">Frequency Range</label>
+                                <label className="block text-xs uppercase text-text-muted mb-2 text-center">Frequency Range</label>
                                 <select
                                     value={bookRange.start !== null ? `${bookRange.start}-${bookRange.end}` : ""}
                                     onChange={(e) => {
@@ -914,7 +914,7 @@ const NegotiationInterface = () => {
                                             setBookRange({ start: null, end: null });
                                         }
                                     }}
-                                    className="w-full bg-zinc-800 border-zinc-700 text-zinc-300 p-3 rounded-lg text-sm focus:ring-2 focus:ring-neon-cyan/50 outline-none transition-all cursor-pointer appearance-none text-center font-mono"
+                                    className="w-full bg-bg-surface border-border text-text-secondary p-3 rounded-lg text-sm focus:ring-2 focus:ring-neon-cyan/50 outline-none transition-all cursor-pointer appearance-none text-center font-mono"
                                 >
                                     <option value="">All Levels (1-20000)</option>
                                     <option value="1-1000">Top 1000 (Beginner)</option>
@@ -931,13 +931,13 @@ const NegotiationInterface = () => {
                     </div>
                 )}
 
-                <p className="text-zinc-500 text-center mb-8">
+                <p className="text-text-muted text-center mb-8">
                     Press START to begin listening. <br />
                     Try to understand without looking at the text.
                 </p>
                 <button
                     onClick={handleStart}
-                    className="flex items-center gap-3 px-8 py-4 rounded-full bg-neon-green text-black font-bold text-lg hover:bg-neon-green/80 transition-colors"
+                    className="flex items-center gap-3 px-8 py-4 rounded-full bg-neon-green text-text-inverse font-bold text-lg hover:bg-neon-green/80 transition-colors"
                 >
                     <Play className="w-6 h-6" />
                     START
@@ -961,7 +961,7 @@ const NegotiationInterface = () => {
                         📰 {articleTitle}
                     </a>
                     {rssTotalSentences > 0 && (
-                        <span className="text-xs text-zinc-500 font-mono">
+                        <span className="text-xs text-text-muted font-mono">
                             Sentence {rssSentenceIdx + 1} / {rssTotalSentences}
                         </span>
                     )}
@@ -979,7 +979,7 @@ const NegotiationInterface = () => {
                 <div
                     className={`relative p-6 rounded-2xl border-2 transition-all ${isSpeaking
                         ? 'border-neon-yellow bg-neon-yellow/5'
-                        : 'border-zinc-700 bg-zinc-900/80'
+                        : 'border-border bg-bg-base/80'
                         }`}
                 >
                     {/* Sentence Text */}
@@ -1023,9 +1023,9 @@ const NegotiationInterface = () => {
 
                     {/* Context Scenario (if available) */}
                     {(contextScenario || isContextLoading) && isTextVisible && step === 'original' && (
-                        <div className="mt-4 pt-4 border-t border-zinc-700/50 text-base text-zinc-300 font-serif leading-relaxed animate-in fade-in slide-in-from-bottom-2">
+                        <div className="mt-4 pt-4 border-t border-border/50 text-base text-text-secondary font-serif leading-relaxed animate-in fade-in slide-in-from-bottom-2">
                             {isContextLoading ? (
-                                <span className="flex items-center gap-2 text-zinc-500 italic text-sm">
+                                <span className="flex items-center gap-2 text-text-muted italic text-sm">
                                     <span className="w-2 h-2 bg-neon-cyan rounded-full animate-ping" />
                                     Thinking of a scenario...
                                 </span>
@@ -1042,19 +1042,19 @@ const NegotiationInterface = () => {
 
                     {/* Text Reveal Hint */}
                     {!isTextVisible && (
-                        <div className="absolute top-4 right-4 text-xs text-zinc-500 font-mono flex items-center gap-1">
+                        <div className="absolute top-4 right-4 text-xs text-text-muted font-mono flex items-center gap-1">
                             <Eye size={12} /> TAP
                         </div>
                     )}
 
                     {/* Audio Control - Embedded */}
-                    <div className="flex items-center justify-center gap-3 pt-4 border-t border-zinc-700/50">
+                    <div className="flex items-center justify-center gap-3 pt-4 border-t border-border/50">
                         {/* Back Button - only show if there's history */}
                         {stepHistory.length > 0 && (
                             <button
                                 onClick={handleGoBack}
                                 disabled={historyIndex <= 0}
-                                className="p-2 rounded-full bg-zinc-800 text-zinc-400 hover:text-zinc-200 hover:bg-zinc-700 transition-all disabled:opacity-30"
+                                className="p-2 rounded-full bg-bg-surface text-text-muted hover:text-text-primary hover:bg-bg-elevated transition-all disabled:opacity-30"
                                 title="回看上一步"
                                 aria-label="Previous step"
                             >
@@ -1066,7 +1066,7 @@ const NegotiationInterface = () => {
                         {canGoForward && (
                             <button
                                 onClick={handleGoForward}
-                                className="p-2 rounded-full bg-zinc-800 text-zinc-400 hover:text-zinc-200 hover:bg-zinc-700 transition-all"
+                                className="p-2 rounded-full bg-bg-surface text-text-muted hover:text-text-primary hover:bg-bg-elevated transition-all"
                                 title="前进到下一步"
                                 aria-label="Next step"
                             >
@@ -1079,8 +1079,8 @@ const NegotiationInterface = () => {
                             onClick={handleReplay}
                             disabled={isLoading}
                             className={`flex items-center gap-2 px-5 py-2.5 rounded-full font-mono text-sm transition-all ${isSpeaking
-                                ? 'bg-neon-yellow text-black'
-                                : 'bg-zinc-800 text-zinc-300 hover:bg-zinc-700'
+                                ? 'bg-neon-yellow text-text-inverse'
+                                : 'bg-bg-surface text-text-secondary hover:bg-bg-elevated'
                                 }`}
                         >
                             <Volume2 className={`w-5 h-5 ${isSpeaking ? 'animate-pulse' : ''}`} />
@@ -1092,7 +1092,7 @@ const NegotiationInterface = () => {
                             onClick={toggleSpeed}
                             className={`p-2 rounded-full transition-all ${playbackSpeed < 1
                                 ? 'bg-neon-cyan/20 text-neon-cyan'
-                                : 'bg-zinc-800 text-zinc-400 hover:text-zinc-200'
+                                : 'bg-bg-surface text-text-muted hover:text-text-primary'
                                 }`}
                             title={`Speed: ${playbackSpeed}x`}
                             aria-label={`Playback speed: ${playbackSpeed}x`}
@@ -1106,7 +1106,7 @@ const NegotiationInterface = () => {
                         )}
 
                         {/* Step Indicator */}
-                        <span className="text-xs text-zinc-500 font-mono">
+                        <span className="text-xs text-text-muted font-mono">
                             {step === 'original' ? '' :
                                 step === 'explain_en' ? '💡 EN' :
                                     step === 'explain_cn' ? '🀄 CN' : '✓'}
@@ -1146,7 +1146,7 @@ const NegotiationInterface = () => {
                             }}
                             className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-xs font-mono transition-all ${showDefinition
                                 ? 'bg-neon-cyan/15 border border-neon-cyan/50 text-neon-cyan'
-                                : 'bg-zinc-800/50 border border-zinc-700 text-zinc-500 hover:text-zinc-300'
+                                : 'bg-bg-surface/50 border border-border text-text-muted hover:text-text-secondary'
                                 }`}
                         >
                             <BookOpen size={14} />
@@ -1156,7 +1156,7 @@ const NegotiationInterface = () => {
                             onClick={() => { setShowTranslation(!showTranslation); if (!showTranslation) setScaffoldUsed(true); }}
                             className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-xs font-mono transition-all ${showTranslation
                                 ? 'bg-neon-pink/15 border border-neon-pink/50 text-neon-pink'
-                                : 'bg-zinc-800/50 border border-zinc-700 text-zinc-500 hover:text-zinc-300'
+                                : 'bg-bg-surface/50 border border-border text-text-muted hover:text-text-secondary'
                                 }`}
                         >
                             <Languages size={14} />
@@ -1166,13 +1166,13 @@ const NegotiationInterface = () => {
 
                     {/* Expanded Scaffolds */}
                     {showDefinition && definition && (
-                        <div className="p-3 rounded-lg bg-neon-cyan/5 border border-neon-cyan/20 text-sm text-zinc-300">
+                        <div className="p-3 rounded-lg bg-neon-cyan/5 border border-neon-cyan/20 text-sm text-text-secondary">
                             <span className="text-neon-cyan text-xs font-mono">📖 </span>
                             {definition}
                         </div>
                     )}
                     {showTranslation && translation && (
-                        <div className="p-3 rounded-lg bg-neon-pink/5 border border-neon-pink/20 text-sm text-zinc-300">
+                        <div className="p-3 rounded-lg bg-neon-pink/5 border border-neon-pink/20 text-sm text-text-secondary">
                             <span className="text-neon-pink text-xs font-mono">🀄 </span>
                             {translation}
                         </div>
@@ -1186,7 +1186,7 @@ const NegotiationInterface = () => {
                     {/* Sense Tabs */}
                     {wordExamples.total_senses > 1 && (
                         <div className="flex items-center gap-2 overflow-x-auto pb-1">
-                            <Layers size={14} className="text-zinc-500 flex-shrink-0" />
+                            <Layers size={14} className="text-text-muted flex-shrink-0" />
                             <div className="flex gap-1">
                                 {wordExamples.entries.flatMap((e, ei) =>
                                     e.senses.map((s, si) => {
@@ -1197,7 +1197,7 @@ const NegotiationInterface = () => {
                                                 onClick={() => goToSense(flatIndex)}
                                                 className={`px-2 py-1 rounded text-xs font-mono transition-all ${flatIndex === currentSenseIndex
                                                     ? 'bg-neon-green/20 text-neon-green border border-neon-green/50'
-                                                    : 'bg-zinc-800 text-zinc-500 hover:text-zinc-300'
+                                                    : 'bg-bg-surface text-text-muted hover:text-text-secondary'
                                                     }`}
                                             >
                                                 {s.index}
@@ -1213,18 +1213,18 @@ const NegotiationInterface = () => {
                     )}
 
                     {/* Example Navigator */}
-                    <div className="flex items-center justify-between gap-2 p-2 rounded-lg bg-zinc-800/50 border border-zinc-700">
+                    <div className="flex items-center justify-between gap-2 p-2 rounded-lg bg-bg-surface/50 border border-border">
                         <button
                             onClick={prevExample}
                             disabled={currentSenseIndex === 0 && currentExampleIndex === 0}
-                            className="p-2 rounded-full bg-zinc-700 hover:bg-zinc-600 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+                            className="p-2 rounded-full bg-bg-elevated hover:bg-zinc-600 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
                             aria-label="Previous example"
                         >
                             <ChevronLeft size={16} />
                         </button>
 
                         <div className="text-center flex-1">
-                            <span className="text-xs text-zinc-400 font-mono">
+                            <span className="text-xs text-text-muted font-mono">
                                 Example {currentExampleIndex + 1} / {
                                     wordExamples.entries.flatMap(e => e.senses)[currentSenseIndex]?.examples.length || 0
                                 }
@@ -1237,7 +1237,7 @@ const NegotiationInterface = () => {
                                 currentSenseIndex >= wordExamples.total_senses - 1 &&
                                 currentExampleIndex >= (wordExamples.entries.flatMap(e => e.senses)[currentSenseIndex]?.examples.length || 0) - 1
                             }
-                            className="p-2 rounded-full bg-zinc-700 hover:bg-zinc-600 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+                            className="p-2 rounded-full bg-bg-elevated hover:bg-zinc-600 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
                             aria-label="Next example"
                         >
                             <ChevronRight size={16} />
@@ -1250,7 +1250,7 @@ const NegotiationInterface = () => {
                     <button
                         onClick={() => handleInteraction('huh')}
                         disabled={isLoading}
-                        className="flex flex-col items-center justify-center gap-1 p-3 rounded-xl bg-zinc-800 hover:bg-zinc-700 active:scale-95 transition-all border border-transparent hover:border-neon-pink/50 disabled:opacity-50"
+                        className="flex flex-col items-center justify-center gap-1 p-3 rounded-xl bg-bg-surface hover:bg-bg-elevated active:scale-95 transition-all border border-transparent hover:border-neon-pink/50 disabled:opacity-50"
                     >
                         <HelpCircle className="w-5 h-5 text-neon-pink" />
                         <span className="font-mono font-bold text-xs">HUH?</span>
@@ -1260,7 +1260,7 @@ const NegotiationInterface = () => {
                         <button
                             onClick={handleNextSentence}
                             disabled={isLoading || !rssHasNext}
-                            className="flex flex-col items-center justify-center gap-1 p-3 rounded-xl bg-zinc-800 hover:bg-zinc-700 active:scale-95 transition-all border border-transparent hover:border-neon-yellow/50 disabled:opacity-50"
+                            className="flex flex-col items-center justify-center gap-1 p-3 rounded-xl bg-bg-surface hover:bg-bg-elevated active:scale-95 transition-all border border-transparent hover:border-neon-yellow/50 disabled:opacity-50"
                         >
                             <ArrowRight className="w-5 h-5 text-neon-yellow" />
                             <span className="font-mono font-bold text-xs">NEXT</span>
@@ -1269,7 +1269,7 @@ const NegotiationInterface = () => {
                         <button
                             onClick={handleSkip}
                             disabled={isLoading}
-                            className="flex flex-col items-center justify-center gap-1 p-3 rounded-xl bg-zinc-800 hover:bg-zinc-700 active:scale-95 transition-all border border-transparent hover:border-neon-yellow/50 disabled:opacity-50"
+                            className="flex flex-col items-center justify-center gap-1 p-3 rounded-xl bg-bg-surface hover:bg-bg-elevated active:scale-95 transition-all border border-transparent hover:border-neon-yellow/50 disabled:opacity-50"
                         >
                             <SkipForward className="w-5 h-5 text-neon-yellow" />
                             <span className="font-mono font-bold text-xs">SKIP</span>
@@ -1279,7 +1279,7 @@ const NegotiationInterface = () => {
                     <button
                         onClick={() => handleInteraction('continue')}
                         disabled={isLoading}
-                        className="flex flex-col items-center justify-center gap-1 p-3 rounded-xl bg-zinc-800 hover:bg-zinc-700 active:scale-95 transition-all border border-transparent hover:border-neon-green/50 disabled:opacity-50"
+                        className="flex flex-col items-center justify-center gap-1 p-3 rounded-xl bg-bg-surface hover:bg-bg-elevated active:scale-95 transition-all border border-transparent hover:border-neon-green/50 disabled:opacity-50"
                     >
                         <ArrowRight className="w-5 h-5 text-neon-green" />
                         <span className="font-mono font-bold text-xs">GOT IT</span>
@@ -1295,14 +1295,14 @@ const NegotiationInterface = () => {
 
             {/* === DEBUG PANEL: Raw Article Content === */}
             {(isRssMode || isEpubMode) && (
-                <div className="mt-6 p-4 rounded-xl bg-zinc-800/50 border border-neon-yellow">
+                <div className="mt-6 p-4 rounded-xl bg-bg-surface/50 border border-neon-yellow">
                     <div className="flex items-center justify-between mb-2">
                         <span className="text-xs font-mono text-neon-yellow">🐛 DEBUG: Raw Article Content</span>
-                        <span className="text-xs text-zinc-500 font-mono">
+                        <span className="text-xs text-text-muted font-mono">
                             {rawContent ? `${rawContent.length} chars` : 'NO DATA'}
                         </span>
                     </div>
-                    <div className="max-h-48 overflow-y-auto text-xs text-zinc-400 font-mono whitespace-pre-wrap leading-relaxed">
+                    <div className="max-h-48 overflow-y-auto text-xs text-text-muted font-mono whitespace-pre-wrap leading-relaxed">
                         {rawContent || '⚠️ rawContent is empty or undefined. Check backend response.'}
                     </div>
                 </div>

@@ -35,7 +35,36 @@ const ContextList = ({
     onStatusChange,
     onAction,
 }) => {
+    // Group contexts by sense_index - MUST be before any early returns (React Hook rules)
+    const groupedContexts = React.useMemo(() => {
+        if (!contexts || contexts.length === 0) {
+            return { sortedGroups: [], noSense: [] };
+        }
+        const groups = {};
+        const noSense = [];
 
+        contexts.forEach(ctx => {
+            if (ctx.sense_index !== undefined && ctx.sense_index !== null) {
+                const key = ctx.sense_index;
+                if (!groups[key]) {
+                    groups[key] = {
+                        senseIndex: ctx.sense_index,
+                        definition: ctx.definition,
+                        definitionCn: ctx.definition_cn,
+                        partOfSpeech: ctx.source?.replace('Collins - ', ''),
+                        synonyms: ctx.synonyms,
+                        items: []
+                    };
+                }
+                groups[key].items.push(ctx);
+            } else {
+                noSense.push(ctx);
+            }
+        });
+
+        const sortedGroups = Object.values(groups).sort((a, b) => a.senseIndex - b.senseIndex);
+        return { sortedGroups, noSense };
+    }, [contexts]);
 
     // Handle status change from child card
     const handleStatusChange = (contextId, newStatus) => {
@@ -65,35 +94,6 @@ const ContextList = ({
             </div>
         );
     }
-
-    // Group contexts by sense_index
-    const groupedContexts = React.useMemo(() => {
-        const groups = {};
-        const noSense = [];
-
-        contexts.forEach(ctx => {
-            if (ctx.sense_index !== undefined && ctx.sense_index !== null) {
-                const key = ctx.sense_index;
-                if (!groups[key]) {
-                    groups[key] = {
-                        senseIndex: ctx.sense_index,
-                        definition: ctx.definition,
-                        definitionCn: ctx.definition_cn,
-                        partOfSpeech: ctx.source?.replace('Collins - ', ''), // Rough extraction
-                        synonyms: ctx.synonyms,
-                        items: []
-                    };
-                }
-                groups[key].items.push(ctx);
-            } else {
-                noSense.push(ctx);
-            }
-        });
-
-        // Convert to array and sort by index
-        const sortedGroups = Object.values(groups).sort((a, b) => a.senseIndex - b.senseIndex);
-        return { sortedGroups, noSense };
-    }, [contexts]);
 
     return (
         <div className="space-y-4">

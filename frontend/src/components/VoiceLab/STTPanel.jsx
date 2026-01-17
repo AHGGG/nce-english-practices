@@ -1,4 +1,4 @@
-
+﻿
 import React, { useState, useRef, useId } from 'react';
 import { Card, Button, useToast } from '../ui';
 import { Mic, StopCircle, Upload, FileAudio, RefreshCw } from 'lucide-react';
@@ -99,9 +99,9 @@ const STTPanel = ({ config, fixedProvider = null }) => {
                             isRecording ? (
                                 <div className="space-y-4" aria-live="polite">
                                     <div className="w-16 h-16 rounded-full bg-red-500/20 flex items-center justify-center mx-auto animate-pulse">
-                                        <Mic className="text-red-500 w-8 h-8" />
+                                        <Mic className="text-accent-danger w-8 h-8" />
                                     </div>
-                                    <p className="font-mono text-sm text-red-500 font-bold">Recording...</p>
+                                    <p className="font-mono text-sm text-accent-danger font-bold">Recording...</p>
                                     <Button variant="danger" onClick={stopRecording} aria-label="Stop recording">
                                         <StopCircle className="mr-2 h-4 w-4" /> Stop Recording
                                     </Button>

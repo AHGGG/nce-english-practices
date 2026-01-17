@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useMemo } from 'react';
 import { Volume2, X, Bookmark, Loader2, Sparkles } from 'lucide-react';
 import DictionaryResults from '../aui/DictionaryResults';
 import ReactMarkdown from 'react-markdown';
@@ -24,18 +24,21 @@ const WordInspector = ({
     generatedImage = null,
     isGeneratingImage = false
 }) => {
-    const [activeTab, setActiveTab] = useState('LDOCE');
+    // Derive default tab from inspectorData (memoized to avoid recalculation)
+    const defaultTab = useMemo(() => {
+        if (inspectorData?.ldoce?.found) return 'LDOCE';
+        if (inspectorData?.collins?.found) return 'Collins';
+        return 'LDOCE';
+    }, [inspectorData]);
 
-    // Default to LDOCE if available, otherwise switch to Collins
-    useEffect(() => {
-        if (inspectorData?.ldoce?.found) {
-            // eslint-disable-next-line react/no-did-mount-set-state
-            if (activeTab !== 'LDOCE') setActiveTab('LDOCE');
-        } else if (inspectorData?.collins?.found) {
-            // eslint-disable-next-line react/no-did-mount-set-state
-            if (activeTab !== 'Collins') setActiveTab('Collins');
-        }
-    }, [inspectorData, selectedWord]);
+    const [activeTab, setActiveTab] = useState(defaultTab);
+
+    // Update tab when data changes (but only if current tab is invalid)
+    const effectiveTab = useMemo(() => {
+        if (activeTab === 'LDOCE' && inspectorData?.ldoce?.found) return 'LDOCE';
+        if (activeTab === 'Collins' && inspectorData?.collins?.found) return 'Collins';
+        return defaultTab;
+    }, [activeTab, inspectorData, defaultTab]);
 
     if (!selectedWord) return null;
 
@@ -43,7 +46,7 @@ const WordInspector = ({
         <div className="fixed inset-0 z-[60] pointer-events-none flex flex-col justify-end md:justify-center md:items-end md:pr-8">
             {/* Backdrop for mobile only */}
             <div
-                className="absolute inset-0 bg-black/80 md:bg-black/50 pointer-events-auto"
+                className="absolute inset-0 bg-bg-base/80 md:bg-bg-base/50 pointer-events-auto"
                 onClick={onClose}
             ></div>
 
@@ -55,7 +58,7 @@ const WordInspector = ({
                         <span className="text-xl font-serif font-bold text-text-primary">{selectedWord}</span>
                         <button
                             onClick={() => onPlayAudio(selectedWord)}
-                            className="w-8 h-8 flex items-center justify-center border border-border text-accent-primary hover:bg-accent-primary hover:text-black transition-colors"
+                            className="w-8 h-8 flex items-center justify-center border border-border text-accent-primary hover:bg-accent-primary hover:text-text-inverse transition-colors"
                         >
                             <Volume2 className="w-4 h-4" />
                         </button>
@@ -113,7 +116,7 @@ const WordInspector = ({
                                     </div>
 
                                     {isGeneratingImage ? (
-                                        <div className="flex flex-col items-center justify-center py-4 bg-black/20 rounded">
+                                        <div className="flex flex-col items-center justify-center py-4 bg-bg-base/20 rounded">
                                             <Loader2 className="w-5 h-5 animate-spin text-accent-warning mb-2" />
                                             <span className="text-[10px] text-text-muted uppercase font-mono tracking-widest">Generating Image...</span>
                                         </div>
@@ -167,7 +170,7 @@ const WordInspector = ({
                                     {inspectorData.ldoce?.found && (
                                         <button
                                             onClick={() => setActiveTab('LDOCE')}
-                                            className={`flex-1 py-2 text-xs font-bold uppercase tracking-wider transition-colors ${activeTab === 'LDOCE'
+                                            className={`flex-1 py-2 text-xs font-bold uppercase tracking-wider transition-colors ${effectiveTab === 'LDOCE'
                                                 ? 'text-accent-primary border-b-2 border-accent-primary bg-accent-primary/5'
                                                 : 'text-text-muted hover:text-text-primary hover:bg-bg-elevated'
                                                 }`}
@@ -178,7 +181,7 @@ const WordInspector = ({
                                     {inspectorData.collins?.found && (
                                         <button
                                             onClick={() => setActiveTab('Collins')}
-                                            className={`flex-1 py-2 text-xs font-bold uppercase tracking-wider transition-colors ${activeTab === 'Collins'
+                                            className={`flex-1 py-2 text-xs font-bold uppercase tracking-wider transition-colors ${effectiveTab === 'Collins'
                                                 ? 'text-accent-warning border-b-2 border-accent-warning bg-accent-warning/5'
                                                 : 'text-text-muted hover:text-text-primary hover:bg-bg-elevated'
                                                 }`}
@@ -190,14 +193,14 @@ const WordInspector = ({
 
                                 {/* Results */}
                                 <div className="flex-1 p-4 mt-2">
-                                    {activeTab === 'LDOCE' && inspectorData.ldoce?.found && (
+                                    {effectiveTab === 'LDOCE' && inspectorData.ldoce?.found && (
                                         <DictionaryResults
                                             word={selectedWord}
                                             source="LDOCE"
                                             entries={inspectorData.ldoce.entries}
                                         />
                                     )}
-                                    {activeTab === 'Collins' && inspectorData.collins?.found && (
+                                    {effectiveTab === 'Collins' && inspectorData.collins?.found && (
                                         <DictionaryResults
                                             word={selectedWord}
                                             source="Collins"
@@ -225,7 +228,7 @@ const WordInspector = ({
                     >
                         Mark Known
                     </button>
-                    <button className="flex-[2] bg-text-primary text-black py-3 font-mono text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-2 hover:bg-white hover:shadow-[4px_4px_0px_0px_rgba(255,255,255,0.2)] transition-all active:translate-y-[1px]">
+                    <button className="flex-[2] bg-text-primary text-text-inverse py-3 font-mono text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-2 hover:bg-light-surface hover:shadow-[4px_4px_0px_0px_rgba(255,255,255,0.2)] transition-all active:translate-y-[1px]">
                         <Bookmark className="w-4 h-4" />
                         Add to Review
                     </button>

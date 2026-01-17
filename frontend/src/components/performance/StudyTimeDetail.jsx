@@ -17,7 +17,6 @@ const StudyTimeDetail = () => {
         api.get(`/api/performance/study-time?days=${days}`)
             .then(res => {
                 setData(res);
-                // eslint-disable-next-line react/no-did-mount-set-state
                 setLoading(false);
             })
             .catch(err => {
@@ -68,7 +67,7 @@ const StudyTimeDetail = () => {
                                 setLoading(true);
                             }}
                             className={`px-3 py-1 border transition-colors ${days === d
-                                ? 'bg-accent-primary text-black border-accent-primary'
+                                ? 'bg-accent-primary text-text-inverse border-accent-primary'
                                 : 'border-border text-text-muted hover:border-text-secondary'
                                 }`}
                         >

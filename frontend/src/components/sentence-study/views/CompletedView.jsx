@@ -172,7 +172,7 @@ const CompletedView = ({
                                         key={idx}
                                         className={sentenceClass}
                                         onClick={isUnclear ? () => handleSentenceClick(sentence.text, unclearInfo) : undefined}
-                                        title={isUnclear ? '❓ Click to see explanation' : undefined}
+                                        title={isUnclear ? 'Click to see explanation' : undefined}
                                     >
                                         <HighlightedText
                                             text={sentence.text}
@@ -191,7 +191,7 @@ const CompletedView = ({
                             onClick={() => {
                                 window.location.href = `/reading?source_id=${encodeURIComponent(article?.id)}`;
                             }}
-                            className="flex items-center gap-2 px-6 py-3 bg-accent-primary text-black font-bold hover:bg-accent-primary/80 transition-colors"
+                            className="flex items-center gap-2 px-6 py-3 bg-accent-primary text-text-inverse font-bold hover:bg-accent-primary/80 transition-colors"
                         >
                             <BookMarked className="w-4 h-4" />
                             Read Full Article
