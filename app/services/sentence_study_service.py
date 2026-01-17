@@ -99,30 +99,30 @@ Keep explanations in simple English. Format:
 
 
 EXPLAIN_PROMPTS = {
-    "default_word": """Explain "{text}" in this context:
-
-{context}
-
-Respond in this EXACT format (each section on its own line):
-
-📖 MEANING:
-[2-3 sentence explanation of what it means here]
-
-💡 EXAMPLES:
-- [Example sentence 1]
-- [Example sentence 2]""",
-    "default_phrase": """Explain the phrase "{text}" in this context:
-
-{context}
-
-Respond in this EXACT format (each section on its own line):
-
-📖 MEANING:
-[2-3 sentence explanation of what this phrase means here]
-
-💡 EXAMPLES:
-- [Example sentence 1]
-- [Example sentence 2]""",
+    "default_word": """Define "{text}" clearly (dictionary style).
+ 
+ {context}
+ 
+ Respond in this EXACT format (each section on its own line):
+ 
+ 📖 MEANING:
+ [Clear, concise dictionary definition. If the word has multiple meanings, choose the one matching the context. Do NOT start with "In this context".]
+ 
+ 💡 EXAMPLES:
+ - [Example sentence 1]
+ - [Example sentence 2]""",
+     "default_phrase": """Define the phrase "{text}" clearly.
+ 
+ {context}
+ 
+ Respond in this EXACT format (each section on its own line):
+ 
+ 📖 MEANING:
+ [Clear, concise definition of the phrase. Do NOT start with "In this context".]
+ 
+ 💡 EXAMPLES:
+ - [Example sentence 1]
+ - [Example sentence 2]""",
     "simple": """Explain the {item_type} "{text}" in the context of the sentence below.
 Explanation must be in SIMPLE ENGLISH, suitable for a beginner learner.
 Use simple vocabulary and short sentences.
