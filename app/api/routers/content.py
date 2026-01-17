@@ -1,5 +1,6 @@
 from fastapi import APIRouter, HTTPException, Response
-from typing import Optional
+from typing import Optional, List, Dict, Any
+from bs4 import BeautifulSoup
 
 router = APIRouter()
 
@@ -10,6 +11,33 @@ router = APIRouter()
 
 from app.services.content_service import content_service
 from app.models.content_schemas import SourceType
+
+
+def _get_block_sentence_count(article: Dict[str, Any], provider) -> int:
+    """
+    Get sentence count from structured blocks (paragraphs only).
+    Uses cached value from EPUB loading for performance.
+    Falls back to computation if cache is missing (for backwards compatibility).
+    """
+    # Use cached value if available (set during EPUB loading)
+    if "block_sentence_count" in article:
+        return article["block_sentence_count"]
+    
+    # Fallback: compute from raw_html
+    raw_html = article.get("raw_html", "")
+    if not raw_html:
+        # Final fallback to lenient splitting if no HTML available
+        return len(provider._split_sentences_lenient(article.get("full_text", "")))
+    
+    soup = BeautifulSoup(raw_html, "lxml-xml")
+    blocks = provider._extract_structured_blocks(soup)
+    
+    sentence_count = 0
+    for block in blocks:
+        if block.type.value == "paragraph" and block.sentences:
+            sentence_count += len(block.sentences)
+    
+    return sentence_count
 
 
 @router.get("/api/reading/epub/books")
@@ -77,23 +105,28 @@ def list_epub_articles(filename: Optional[str] = None):
         articles = []
         for i, article in enumerate(provider._cached_articles):
             full_text = article.get("full_text", "")
-            # Use lenient sentence splitting to filter out TOC/navigation pages
-            sentences = provider._split_sentences_lenient(full_text)
             
             # Filter out Section TOC pages (Calibre Generated)
             if article.get("is_toc"):
                 continue
-
-            if len(sentences) < 3:
+            
+            # Use block-based sentence count to match how article content works
+            sentence_count = _get_block_sentence_count(article, provider)
+            
+            if sentence_count < 3:
                 continue
+            
+            # Get preview from first sentences of full_text
+            preview_sentences = provider._split_sentences_lenient(full_text)
+            preview = preview_sentences[0] if preview_sentences else full_text[:200] + "..."
 
             articles.append(
                 {
                     "index": i,
                     "title": article.get("title", f"Chapter {i + 1}"),
-                    "preview": sentences[0] if sentences else full_text[:200] + "...",
+                    "preview": preview,
                     "source_id": f"epub:{filename}:{i}",
-                    "sentence_count": len(sentences),
+                    "sentence_count": sentence_count,
                 }
             )
 
@@ -355,9 +388,13 @@ async def get_article_status(filename: str, user_id: str = "default_user"):
             articles = []
 
             for i, article in enumerate(provider._cached_articles):
-                full_text = article.get("full_text", "")
-                sentences = provider._split_sentences_lenient(full_text)
-                if len(sentences) < 3:
+                # Filter out TOC pages
+                if article.get("is_toc"):
+                    continue
+                
+                # Use block-based sentence count to match article content
+                sentence_count = _get_block_sentence_count(article, provider)
+                if sentence_count < 3:
                     continue
 
                 source_id = f"epub:{filename}:{i}"
@@ -412,8 +449,8 @@ async def get_article_status(filename: str, user_id: str = "default_user"):
                 )
                 review_count = review_result.scalar() or 0
 
-                # Determine status
-                total_sentences = len(sentences)
+                # Determine status (use block-based sentence count)
+                total_sentences = sentence_count
                 if current_index >= total_sentences and studied_count > 0:
                     status = "completed"
                 elif studied_count > 0:

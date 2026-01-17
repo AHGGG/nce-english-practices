@@ -367,6 +367,11 @@ To support multiple dictionaries (e.g., Collins + LDOCE) in one view:
 - **Rewriting**: All `src`, `href` attributes in HTML are rewritten to absolute `/dict-assets/` URLs.
 - **Parsing Robustness**: Some LDOCE entries (like 'palestinian') lack standard `<en>` tags within definitions. The parser implements a fallback to read direct text nodes while excluding `<tran>` tags.
 
+### EPUB Sentence Extraction
+- **Consistency Rule**: Always use **Block-Based Extraction** (sentences from `ContentBlock` paragraphs) for counting.
+- **Do NOT** use `_split_sentences_lenient(full_text)` for logic or status checks, as it often produces different counts than the structured content used in the UI.
+- **Caching**: Use `article.get("block_sentence_count")` which is pre-computed during EPUB loading to avoid O(N) HTML parsing in list endpoints.
+
 ### Voice on Mobile
 - **HTTPS Required**: WebSocket with audio requires HTTPS.
 - **Certificate**: Generate with `uv run python scripts/generate_cert.py`.

@@ -645,4 +645,19 @@ User reported that Memory Curve only displayed Day 1 data despite having study h
   - `DictionaryResults.jsx`: Added conditional rendering for standardizing distinct dictionary schemas.
 
 #### Verification
-- **Manual**: Verified "simmer" shows both tabs. Verified "hello" shows both. Verified switching tabs updates content instantly.
+### ✅ Fix Article Completion Bug (Phase 58) (2026-01-17)
+**Resolved discrepancy in sentence counting causing premature "Completed" status.**
+
+#### Problem
+- Article listing used `_split_sentences_lenient` on raw text (e.g., 33 sentences).
+- Study mode used structured block extraction (e.g., 31 sentences).
+- Progress tracking uses block-based index, but completion check compared against raw text count.
+- Result: Articles with `index >= block_count` were incorrectly marked COMPLETED.
+
+#### Solution
+- **Unified Counting**: Both article listing and status APIs now use block-based sentence extraction.
+- **Performance Optimization**: Pre-compute and cache `block_sentence_count` during EPUB loading to avoid repeated HTML parsing in list views.
+
+#### Verification
+- **Manual**: Verified "Are some types of sugar healthier than others?" now shows correct count (31) and "In Progress" status.
+

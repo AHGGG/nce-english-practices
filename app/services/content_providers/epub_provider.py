@@ -156,6 +156,13 @@ class EpubProvider(BaseContentProvider):
                     if len(text) < 100:
                         continue
 
+                    # Precompute block-based sentence count for consistency with article content
+                    blocks = self._extract_structured_blocks(soup)
+                    block_sentence_count = sum(
+                        len(block.sentences) for block in blocks 
+                        if block.type.value == "paragraph" and block.sentences
+                    )
+
                     articles.append(
                         {
                             "title": title,
@@ -164,6 +171,7 @@ class EpubProvider(BaseContentProvider):
                             "raw_images": images,
                             "raw_html": str(soup),  # Store for structured parsing
                             "is_toc": bool(soup.find(class_="calibre_feed_list")),
+                            "block_sentence_count": block_sentence_count,  # Cached for performance
                         }
                     )
                 except Exception:
