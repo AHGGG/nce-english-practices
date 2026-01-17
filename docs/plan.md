@@ -159,8 +159,12 @@
     - [x] **RLock Fix**: Fixed backend self-deadlock in `log_collector.py`.
     - [x] **Autonomous Verification** (2026-01-09):
         - [x] `/api/verify/health` endpoint aggregates frontend/backend errors and DB status.
-        - [x] `log_collector.get_recent_errors()` reads from unified.log with time filtering.
+        - [x] `log_collector.get_recent_logs()` reads from unified.log with time filtering.
         - [x] `docs/skills/post-change-verification.md` Skill for AI self-verification workflow.
+    - [x] **Dual Dictionary UI** (2026-01-17):
+        - [x] **Parallel Fetching**: `useWordExplainer` fetches LDOCE + Collins concurrently.
+        - [x] **Tabbed Inspector**: Edge-to-edge tabs for switching dictionaries in WordInspector.
+        - [x] **Collins Support**: `DictionaryResults` renders Collins-specific pronunciation fields (UK/US).
 - [x] **Data Dashboard**:
     - [x] **Visual Stats**: Daily streaks, words encounter counter, practice volume.
     - [x] **Time Tracking**: Record total practice duration per session.

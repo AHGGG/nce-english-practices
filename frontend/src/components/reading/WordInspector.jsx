@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Volume2, X, Bookmark, Loader2, Sparkles } from 'lucide-react';
 import DictionaryResults from '../aui/DictionaryResults';
 import ReactMarkdown from 'react-markdown';
@@ -24,6 +24,17 @@ const WordInspector = ({
     generatedImage = null,
     isGeneratingImage = false
 }) => {
+    const [activeTab, setActiveTab] = useState('LDOCE');
+
+    // Default to LDOCE if available, otherwise switch to Collins
+    useEffect(() => {
+        if (inspectorData?.ldoce?.found) {
+            setActiveTab('LDOCE');
+        } else if (inspectorData?.collins?.found) {
+            setActiveTab('Collins');
+        }
+    }, [inspectorData, selectedWord]);
+
     if (!selectedWord) return null;
 
     return (
@@ -56,10 +67,10 @@ const WordInspector = ({
                 </div>
 
                 {/* Content - Using DictionaryResults */}
-                <div className="flex-1 overflow-y-auto p-4 custom-scrollbar">
+                <div className="flex-1 overflow-y-auto custom-scrollbar">
                     {/* Streaming Context Explanation Section */}
                     {(contextExplanation || isExplaining) && (
-                        <div className="mb-4 p-3 border border-accent-primary/30 bg-accent-primary/5 rounded">
+                        <div className="m-4 mb-4 p-3 border border-accent-primary/30 bg-accent-primary/5 rounded">
                             <div className="flex items-center gap-2 mb-2">
                                 <Sparkles className="w-4 h-4 text-accent-primary" />
                                 <span className="text-xs text-accent-primary uppercase tracking-wider font-mono">
@@ -143,23 +154,63 @@ const WordInspector = ({
                     {/* Dictionary section - show for both single words and phrases */}
                     <>
                         {isInspecting ? (
-                            <div className="flex flex-col items-center justify-center py-8 text-text-muted space-y-3">
+                            <div className="flex flex-col items-center justify-center p-8 text-text-muted space-y-3">
                                 <Loader2 className="w-6 h-6 animate-spin text-accent-primary" />
                                 <span className="text-xs uppercase tracking-widest font-mono">Consulting Dictionary...</span>
                             </div>
-                        ) : inspectorData?.found && inspectorData?.entries?.length > 0 ? (
-                            <DictionaryResults
-                                word={selectedWord}
-                                source="LDOCE"
-                                entries={inspectorData.entries}
-                            />
+                        ) : inspectorData?.found ? (
+                            <div className="flex flex-col h-full">
+                                {/* Dictionary Tabs */}
+                                <div className="flex border-b border-border bg-bg-surface shrink-0 z-10 sticky top-0">
+                                    {inspectorData.ldoce?.found && (
+                                        <button
+                                            onClick={() => setActiveTab('LDOCE')}
+                                            className={`flex-1 py-2 text-xs font-bold uppercase tracking-wider transition-colors ${activeTab === 'LDOCE'
+                                                ? 'text-accent-primary border-b-2 border-accent-primary bg-accent-primary/5'
+                                                : 'text-text-muted hover:text-text-primary hover:bg-bg-elevated'
+                                                }`}
+                                        >
+                                            LDOCE
+                                        </button>
+                                    )}
+                                    {inspectorData.collins?.found && (
+                                        <button
+                                            onClick={() => setActiveTab('Collins')}
+                                            className={`flex-1 py-2 text-xs font-bold uppercase tracking-wider transition-colors ${activeTab === 'Collins'
+                                                ? 'text-accent-warning border-b-2 border-accent-warning bg-accent-warning/5'
+                                                : 'text-text-muted hover:text-text-primary hover:bg-bg-elevated'
+                                                }`}
+                                        >
+                                            Collins
+                                        </button>
+                                    )}
+                                </div>
+
+                                {/* Results */}
+                                <div className="flex-1 p-4 mt-2">
+                                    {activeTab === 'LDOCE' && inspectorData.ldoce?.found && (
+                                        <DictionaryResults
+                                            word={selectedWord}
+                                            source="LDOCE"
+                                            entries={inspectorData.ldoce.entries}
+                                        />
+                                    )}
+                                    {activeTab === 'Collins' && inspectorData.collins?.found && (
+                                        <DictionaryResults
+                                            word={selectedWord}
+                                            source="Collins"
+                                            entries={inspectorData.collins.entry ? [inspectorData.collins.entry] : []}
+                                        />
+                                    )}
+                                </div>
+                            </div>
                         ) : inspectorData?.found === false ? (
-                            <div className="text-text-secondary text-center py-8">
+                            <div className="text-text-secondary text-center p-8">
                                 <p className="text-lg mb-2 font-serif">Word not found</p>
-                                <p className="text-sm font-mono">"{selectedWord}" is not in LDOCE dictionary.</p>
+                                <p className="text-sm font-mono">"{selectedWord}" is not in dictionaries.</p>
                             </div>
                         ) : (
-                            <div className="text-accent-danger text-center text-sm py-8 font-mono">Failed to load definition</div>
+                            <div className="text-accent-danger text-center text-sm p-8 font-mono">Failed to load definition</div>
                         )}
                     </>
                 </div>

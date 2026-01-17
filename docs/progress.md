@@ -624,3 +624,25 @@ User reported that Memory Curve only displayed Day 1 data despite having study h
 #### Verification
 - **Manual**: Validated using the new debug page that 100% of logs were indeed in the 0-2 day bucket, confirming the "empty" curve was accurate.
 
+
+### ✅ Dual Dictionary UI (Phase 57) (2026-01-17)
+**Enabled simultaneous access to both LDOCE and Collins dictionaries with a unified tabbed interface.**
+
+#### Problem
+- Users could only see LDOCE results even when distinct Collins data was available.
+- "Phrasal verb" lookups were brittle if the exact phrase wasn't in the specific dictionary being queried.
+
+#### Solution
+- **Parallel Querying**: Frontend now queries both `/api/dictionary/ldoce` and `/api/dictionary/collins` in parallel.
+- **Unified Inspector**: `WordInspector` displays tabs ("LDOCE" | "Collins") when both sources return data.
+- **Collins Rendering**: Updated `DictionaryResults` to handle Collins-specific fields (UK/US pronunciation, frequency bands).
+- **Robust Fallback**: Phrase decomposition algorithm now attempts to find keywords in *both* dictionaries.
+
+#### Implementation
+- **Frontend Hook**: `useWordExplainer.js` refactored to use `Promise.all` and consolidated state (`{ ldoce: ..., collins: ... }`).
+- **UI Components**: 
+  - `WordInspector.jsx`: Added tab state and edge-to-edge tab styling.
+  - `DictionaryResults.jsx`: Added conditional rendering for standardizing distinct dictionary schemas.
+
+#### Verification
+- **Manual**: Verified "simmer" shows both tabs. Verified "hello" shows both. Verified switching tabs updates content instantly.

@@ -43,19 +43,30 @@ export function useWordExplainer() {
         let cancelled = false;
         setIsInspecting(true);
 
+        const fetchBothDictionaries = async (word) => {
+            const [ldoceRes, collinsRes] = await Promise.all([
+                fetch(`/api/dictionary/ldoce/${encodeURIComponent(word)}`),
+                fetch(`/api/dictionary/collins/${encodeURIComponent(word)}`)
+            ]);
+
+            const ldoceData = ldoceRes.ok ? await ldoceRes.json() : null;
+            const collinsData = collinsRes.ok ? await collinsRes.json() : null;
+
+            return {
+                word,
+                ldoce: ldoceData,
+                collins: collinsData,
+                found: (ldoceData?.found || collinsData?.found)
+            };
+        };
+
         const fetchData = async () => {
             try {
                 // 1. Try initial lookup (either keyWord or full phrase)
-                let res = await fetch(`/api/dictionary/ldoce/${encodeURIComponent(lookupWord)}`);
-                let data = null;
-                
-                if (!cancelled && res.ok) {
-                    data = await res.json();
-                }
+                let combinedData = await fetchBothDictionaries(lookupWord);
 
                 // 2. Heuristic Fallback: If not found and it's a phrase, try to find a key word
-                if ((!data || !data.found) && lookupWord.includes(' ')) {
-                    // Split phrase and filter stop words
+                if (!combinedData.found && lookupWord.includes(' ')) {
                     // Split phrase and filter stop words
                     const stopWords = new Set([
                         'of', 'the', 'a', 'an', 'in', 'on', 'at', 'to', 'for', 'with', 'by', 'and', 'or', 'is', 'are', 'was', 'were', 'be', 'been', 'being',
@@ -77,19 +88,16 @@ export function useWordExplainer() {
                     
                     if (candidates.length > 0) {
                         const fallbackWord = candidates[0];
+                        const fallbackData = await fetchBothDictionaries(fallbackWord);
                         
-                        const fallbackRes = await fetch(`/api/dictionary/ldoce/${encodeURIComponent(fallbackWord)}`);
-                        if (!cancelled && fallbackRes.ok) {
-                            const fallbackData = await fallbackRes.json();
-                            if (fallbackData.found) {
-                                data = fallbackData;
-                            }
+                        if (fallbackData.found) {
+                            combinedData = fallbackData;
                         }
                     }
                 }
 
-                if (!cancelled && data) {
-                    setInspectorData(data);
+                if (!cancelled) {
+                    setInspectorData(combinedData);
                 }
             } catch (e) {
                 console.error('Dictionary fetch error:', e);

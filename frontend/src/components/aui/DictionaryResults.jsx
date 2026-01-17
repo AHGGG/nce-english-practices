@@ -98,8 +98,16 @@ const DictionaryResults = ({ word, source, entries = [] }) => {
                                 {entry.part_of_speech}
                             </span>
                         )}
+                        {/* LDOCE Style Pronunciation */}
                         {entry.pronunciation && (
                             <span className="text-text-secondary text-sm font-mono">/{entry.pronunciation}/</span>
+                        )}
+                        {/* Collins Style Pronunciation */}
+                        {(entry.pronunciation_uk || entry.pronunciation_us) && (
+                            <div className="flex gap-2 text-sm font-mono text-text-secondary">
+                                {entry.pronunciation_uk && <span>UK: /{entry.pronunciation_uk}/</span>}
+                                {entry.pronunciation_us && <span>US: /{entry.pronunciation_us}/</span>}
+                            </div>
                         )}
                     </div>
 

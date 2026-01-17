@@ -182,7 +182,7 @@ ALL generators and routes use this service rather than creating clients directly
     - `cards/`: KPI display components (KPICard, ActionCards, Card).
     - `widgets/`: Data visualization widgets (Heatmap, Charts, Badges).
   - `src/hooks/`: Shared logic hooks.
-    - `useWordExplainer.js`: Unified dictionary + LLM context explanation logic (Shared by Reading/SentenceStudy). **Updated 2026-01-06** to support prev/next sentence context.
+    - `useWordExplainer.js`: Unified dictionary + LLM context explanation logic (Shared by Reading/SentenceStudy). **Updated 2026-01-17** to support parallel Collins/LDOCE fetching and context-aware fallback.
   - `src/utils/`: Shared utilities.
     - `sseParser.js`: **NEW 2026-01-06** Unified SSE stream parser supporting both JSON (chunks) and Text (raw) streams.
   - `src/index.css`: Global token definitions via Tailwind `@layer base`.
