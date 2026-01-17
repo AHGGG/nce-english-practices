@@ -7,7 +7,7 @@ from typing import Dict, Any
 from datetime import datetime, timedelta
 import math
 import logging
-from sqlalchemy import select, func, case, and_
+from sqlalchemy import select, func, case, and_, union_all, literal
 
 
 from app.database.core import (
@@ -142,97 +142,101 @@ async def get_daily_study_time(days: int = 30) -> Dict[str, Any]:
         try:
             cutoff = datetime.utcnow() - timedelta(days=days)
 
-            # Helper to group by day (compatible with Postgres)
-            # day_group = func.date_trunc("day", SentenceLearningRecord.created_at)
+            # ⚡ OPTIMIZATION: Combine 4 aggregation queries into ONE database round-trip using UNION ALL.
+            # Reduces latency by avoiding sequential execution.
 
             # 1. Sentence Study by Day
-            sentence_stmt = (
+            q1 = (
                 select(
                     func.date_trunc("day", SentenceLearningRecord.created_at).label(
                         "day"
                     ),
-                    func.sum(SentenceLearningRecord.dwell_time_ms),
+                    literal("sentence").label("mode"),
+                    func.sum(SentenceLearningRecord.dwell_time_ms).label("val"),
                 )
                 .where(SentenceLearningRecord.created_at >= cutoff)
                 .group_by("day")
-                .order_by("day")
             )
-            sentence_res = await session.execute(sentence_stmt)
-            sentence_days = {
-                row[0].date().isoformat(): (row[1] or 0) // 1000 for row in sentence_res
-            }
 
             # 2. Reading by Day
-            reading_stmt = (
+            q2 = (
                 select(
                     func.date_trunc("day", ReadingSession.started_at).label("day"),
-                    func.sum(ReadingSession.total_active_seconds),
+                    literal("reading").label("mode"),
+                    func.sum(ReadingSession.total_active_seconds).label("val"),
                 )
                 .where(ReadingSession.started_at >= cutoff)
                 .group_by("day")
-                .order_by("day")
             )
-            reading_res = await session.execute(reading_stmt)
-            reading_days = {
-                row[0].date().isoformat(): row[1] or 0 for row in reading_res
-            }
 
             # 3. Voice by Day
-            voice_stmt = (
+            q3 = (
                 select(
                     func.date_trunc("day", VoiceSession.started_at).label("day"),
-                    func.sum(VoiceSession.total_active_seconds),
+                    literal("voice").label("mode"),
+                    func.sum(VoiceSession.total_active_seconds).label("val"),
                 )
                 .where(VoiceSession.started_at >= cutoff)
                 .group_by("day")
-                .order_by("day")
             )
-            voice_res = await session.execute(voice_stmt)
-            voice_days = {row[0].date().isoformat(): row[1] or 0 for row in voice_res}
 
             # 4. Review by Day
-            review_stmt = (
+            q4 = (
                 select(
                     func.date_trunc("day", ReviewLog.reviewed_at).label("day"),
-                    func.sum(ReviewLog.duration_ms),
+                    literal("review").label("mode"),
+                    func.sum(ReviewLog.duration_ms).label("val"),
                 )
                 .where(ReviewLog.reviewed_at >= cutoff)
                 .group_by("day")
-                .order_by("day")
-            )
-            review_res = await session.execute(review_stmt)
-            review_days = {
-                row[0].date().isoformat(): (row[1] or 0) // 1000 for row in review_res
-            }
-
-            # Merge all days
-            all_dates = sorted(
-                list(
-                    set(
-                        list(sentence_days.keys())
-                        + list(reading_days.keys())
-                        + list(voice_days.keys())
-                        + list(review_days.keys())
-                    )
-                )
             )
 
-            daily_data = []
-            for date_str in all_dates:
-                s_sec = sentence_days.get(date_str, 0)
-                r_sec = reading_days.get(date_str, 0)
-                v_sec = voice_days.get(date_str, 0)
-                rv_sec = review_days.get(date_str, 0)
-                daily_data.append(
-                    {
-                        "date": date_str,
-                        "sentence_study": s_sec,
-                        "reading": r_sec,
-                        "voice": v_sec,
-                        "review": rv_sec,
-                        "total": s_sec + r_sec + v_sec + rv_sec,
+            # Combined Query
+            union_stmt = union_all(q1, q2, q3, q4).order_by("day")
+            res = await session.execute(union_stmt)
+            rows = res.all()
+
+            # Process Results
+            daily_map = {}  # date_str -> {sentence: 0, reading: 0, ...}
+
+            for row in rows:
+                if not row.day:
+                    continue
+                date_str = row.day.date().isoformat()
+                mode = row.mode
+                val = row.val or 0
+
+                if date_str not in daily_map:
+                    daily_map[date_str] = {
+                        "sentence_study": 0,
+                        "reading": 0,
+                        "voice": 0,
+                        "review": 0,
+                        "total": 0,
                     }
-                )
+
+                seconds = 0
+                if mode == "sentence":
+                    seconds = val // 1000
+                    daily_map[date_str]["sentence_study"] = seconds
+                elif mode == "reading":
+                    seconds = val
+                    daily_map[date_str]["reading"] = seconds
+                elif mode == "voice":
+                    seconds = val
+                    daily_map[date_str]["voice"] = seconds
+                elif mode == "review":
+                    seconds = val // 1000
+                    daily_map[date_str]["review"] = seconds
+
+                daily_map[date_str]["total"] += seconds
+
+            # Convert to sorted list
+            daily_data = []
+            for date_str in sorted(daily_map.keys()):
+                entry = daily_map[date_str]
+                entry["date"] = date_str
+                daily_data.append(entry)
 
             return {
                 "daily": daily_data,
