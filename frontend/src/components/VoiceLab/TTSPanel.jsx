@@ -1,6 +1,6 @@
 
-import React, { useState, useRef, useId } from 'react';
-import { Card, Button, Input } from '../ui';
+import React, { useState, useRef } from 'react';
+import { Card, Button, Input, Select, Textarea, useToast } from '../ui';
 import { Play, Download, Loader2, StopCircle, Volume2 } from 'lucide-react';
 
 const TTSPanel = ({ config, fixedProvider = null }) => {
@@ -10,10 +10,7 @@ const TTSPanel = ({ config, fixedProvider = null }) => {
     const [loading, setLoading] = useState(false);
     const [audioUrl, setAudioUrl] = useState(null);
     const audioRef = useRef(null);
-
-    const providerId = useId();
-    const voiceId = useId();
-    const textId = useId();
+    const { addToast } = useToast();
 
     // Get voices for selected provider
     const availableVoices = config?.[provider]?.voices || [];
@@ -51,11 +48,22 @@ const TTSPanel = ({ config, fixedProvider = null }) => {
 
         } catch (err) {
             console.error(err);
-            alert("Generation Failed");
+            addToast("Generation Failed", "error");
         } finally {
             setLoading(false);
         }
     };
+
+    const providerOptions = config ? Object.keys(config).map(p => ({ value: p, label: p.toUpperCase() })) : [];
+
+    const voiceOptions = [
+        { value: "", label: "-- Select Voice --" },
+        ...availableVoices.map(v => {
+            const id = typeof v === 'object' ? v.id : v;
+            const name = typeof v === 'object' ? v.name : v;
+            return { value: id, label: name };
+        })
+    ];
 
     return (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -63,50 +71,30 @@ const TTSPanel = ({ config, fixedProvider = null }) => {
                 <div className="space-y-4">
                     {/* Provider Select - Show only if no fixed provider */}
                     {!fixedProvider && (
-                        <div className="space-y-1">
-                            <label htmlFor={providerId} className="text-xs font-mono font-bold text-text-muted uppercase">Provider</label>
-                            <select
-                                id={providerId}
-                                value={provider}
-                                onChange={(e) => { setProvider(e.target.value); setVoice(''); }}
-                                className="w-full bg-bg-elevated border border-border text-text-primary px-4 py-2.5 text-sm font-mono focus:border-accent-info focus:outline-none"
-                            >
-                                {config && Object.keys(config).map(p => (
-                                    <option key={p} value={p}>{p.toUpperCase()}</option>
-                                ))}
-                            </select>
-                        </div>
+                        <Select
+                            label="Provider"
+                            value={provider}
+                            onChange={(e) => { setProvider(e.target.value); setVoice(''); }}
+                            options={providerOptions}
+                        />
                     )}
 
                     {/* Voice Select */}
-                    <div className="space-y-1">
-                        <label htmlFor={voiceId} className="text-xs font-mono font-bold text-text-muted uppercase">Voice Model</label>
-                        <select
-                            id={voiceId}
-                            value={voice}
-                            onChange={(e) => setVoice(e.target.value)}
-                            className="w-full bg-bg-elevated border border-border text-text-primary px-4 py-2.5 text-sm font-mono focus:border-accent-info focus:outline-none"
-                        >
-                            <option value="">-- Select Voice --</option>
-                            {availableVoices.map(v => {
-                                const id = typeof v === 'object' ? v.id : v;
-                                const name = typeof v === 'object' ? v.name : v;
-                                return <option key={id} value={id}>{name}</option>
-                            })}
-                        </select>
-                    </div>
+                    <Select
+                        label="Voice Model"
+                        value={voice}
+                        onChange={(e) => setVoice(e.target.value)}
+                        options={voiceOptions}
+                    />
 
                     {/* Text Input */}
-                    <div className="space-y-1">
-                        <label htmlFor={textId} className="text-xs font-mono font-bold text-text-muted uppercase">Input Text</label>
-                        <textarea
-                            id={textId}
-                            value={text}
-                            onChange={(e) => setText(e.target.value)}
-                            rows={5}
-                            className="w-full bg-bg-elevated border border-border text-text-primary px-4 py-3 text-sm focus:border-accent-info focus:outline-none resize-none font-serif leading-relaxed"
-                        />
-                    </div>
+                    <Textarea
+                        label="Input Text"
+                        value={text}
+                        onChange={(e) => setText(e.target.value)}
+                        rows={5}
+                        className="font-serif leading-relaxed"
+                    />
 
                     <Button
                         fullWidth

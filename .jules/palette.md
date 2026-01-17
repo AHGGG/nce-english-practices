@@ -5,3 +5,7 @@
 ## 2025-02-18 - Label Association for Raw Inputs
 **Learning:** Raw `<input>`/`<select>` elements in feature panels often lack `id` and `htmlFor` associations, unlike the base UI components which handle this.
 **Action:** When auditing feature panels, check for disconnected labels on raw form elements and use `useId` to fix them.
+
+## 2025-05-20 - Blocking Alerts in Legacy Code
+**Learning:** Legacy components like `TTSPanel` use native `alert()` for error handling, which disrupts the user flow and is not accessible/consistent with the `useToast` system.
+**Action:** Audit legacy components for `alert()` usage and replace with `useToast`.
