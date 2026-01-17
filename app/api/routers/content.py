@@ -1,6 +1,7 @@
 from fastapi import APIRouter, HTTPException, Response
 from typing import Optional, List, Dict, Any
 from bs4 import BeautifulSoup
+from app.core.errors import handle_error
 
 router = APIRouter()
 
@@ -66,7 +67,7 @@ def list_epub_books():
 
         return {"books": books}
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        handle_error(e, detail="Failed to list books")
 
 
 @router.get("/api/reading/epub/list")
@@ -135,10 +136,8 @@ def list_epub_articles(filename: Optional[str] = None):
             "total_articles": len(articles),
             "articles": articles,
         }
-    except HTTPException:
-        raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        handle_error(e, detail="Failed to list articles")
 
 
 @router.get("/api/reading/article")
@@ -311,11 +310,11 @@ async def get_article_content(
         return result
 
     except (IndexError, ValueError) as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail="Invalid request parameters")
     except FileNotFoundError as e:
-        raise HTTPException(status_code=404, detail=str(e))
+        raise HTTPException(status_code=404, detail="Content not found")
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        handle_error(e, detail="Failed to fetch article content")
 
 
 @router.get("/api/reading/epub/image")
@@ -348,10 +347,8 @@ def get_epub_image(filename: str, image_path: str):
                 "Cache-Control": "public, max-age=86400"  # Cache for 24 hours
             },
         )
-    except HTTPException:
-        raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        handle_error(e, detail="Failed to retrieve image")
 
 
 # ============================================================
@@ -485,10 +482,5 @@ async def get_article_status(filename: str, user_id: str = "default_user"):
 
             return {"filename": filename, "user_id": user_id, "articles": articles}
 
-    except HTTPException:
-        raise
     except Exception as e:
-        import traceback
-
-        traceback.print_exc()
-        raise HTTPException(status_code=500, detail=str(e))
+        handle_error(e, detail="Failed to retrieve article status")

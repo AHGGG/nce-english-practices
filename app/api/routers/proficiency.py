@@ -3,6 +3,7 @@ from pydantic import BaseModel
 from typing import List, Optional
 
 from app.services.proficiency_service import proficiency_service
+from app.core.errors import handle_error
 
 router = APIRouter(tags=["Proficiency"])
 
@@ -31,7 +32,7 @@ async def update_word_proficiency(payload: WordUpdatePayload):
         )
         return {"status": "success", "word": record.word, "new_status": record.status}
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        handle_error(e, detail="Failed to update word proficiency")
 
 
 @router.post("/api/proficiency/sweep")
@@ -47,7 +48,7 @@ async def sweep_words(payload: SweepPayload):
         )
         return result
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        handle_error(e, detail="Failed to process sweep")
 
 
 class CalibrationItem(BaseModel):
@@ -74,7 +75,7 @@ async def calibrate_proficiency(payload: CalibrationPayload):
         )
         return result
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        handle_error(e, detail="Failed to calibrate proficiency")
 
 
 @router.get("/api/proficiency/calibration/session")
@@ -88,7 +89,7 @@ async def get_calibration_session(level: int = 0, count: int = 5):
         )
         return {"sentences": sentences, "level": level}
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        handle_error(e, detail="Failed to generate calibration session")
 
 
 # --- Calibration Level Persistence ---
@@ -110,7 +111,7 @@ async def save_calibration_level(payload: CalibrationLevelPayload):
         )
         return result
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        handle_error(e, detail="Failed to save calibration level")
 
 
 @router.get("/api/proficiency/calibration/level")
@@ -125,4 +126,4 @@ async def get_calibration_level():
             return {"level": None, "message": "No calibration found"}
         return result
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        handle_error(e, detail="Failed to get calibration level")

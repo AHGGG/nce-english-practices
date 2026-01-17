@@ -26,3 +26,36 @@ def test_voice_lab_error_leak_prevention():
 
         # Verify the generic error message is present
         assert "Internal processing error" in response.text
+
+def test_content_error_leak_prevention():
+    """
+    Security Test: Verify that internal error details are NOT leaked in content router.
+    """
+    with patch("pathlib.Path.glob") as mock_glob:
+        secret_message = "DB_PASSWORD_IS_LEAKED_123"
+        mock_glob.side_effect = Exception(secret_message)
+
+        with patch("pathlib.Path.exists", return_value=True):
+            response = client.get("/api/reading/epub/books")
+
+            assert response.status_code == 500
+            assert secret_message not in response.text
+            assert "Failed to list books" in response.text
+
+def test_images_error_leak_prevention():
+    """
+    Security Test: Verify that internal error details are NOT leaked in images router.
+    """
+    with patch("app.services.image_generation.image_service.get_or_generate_image") as mock_gen:
+        secret_message = "API_KEY_LEAKED_456"
+        mock_gen.side_effect = Exception(secret_message)
+
+        response = client.post("/api/generated-images/generate", json={
+            "word": "test",
+            "sentence": "test sentence",
+            "image_prompt": "test prompt"
+        })
+
+        assert response.status_code == 500
+        assert secret_message not in response.text
+        assert "Failed to generate image" in response.text

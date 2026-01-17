@@ -3,6 +3,7 @@ from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.db import get_db
 from app.services.image_generation import image_service
+from app.core.errors import handle_error
 
 router = APIRouter(tags=["images"])
 
@@ -42,4 +43,4 @@ async def generate_image(
             "image_url": f"/api/generated-images/{request.word}?context_hash={context_hash}"
         }
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        handle_error(e, detail="Failed to generate image")
