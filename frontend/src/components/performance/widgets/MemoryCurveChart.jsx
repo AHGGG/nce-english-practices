@@ -30,19 +30,9 @@ ChartJS.register(
  * Compares user's actual retention vs Ebbinghaus forgetting curve
  */
 const MemoryCurveChart = ({ data }) => {
-    if (!data || !data.actual || data.actual.length === 0) {
-        return (
-            <div className="text-text-muted font-mono text-sm italic">
-                {'>>'} 数据不足，继续学习后查看
-            </div>
-        );
-    }
-
-    const { actual, ebbinghaus } = data;
-
-    // Calculate metrics
+    const actual = data?.actual || [];
+    const ebbinghaus = data?.ebbinghaus || [];
     const validActual = actual.filter(p => p.retention !== null);
-    const latestPoint = validActual.length > 0 ? validActual[validActual.length - 1] : null;
 
     const avgRetention = useMemo(() => {
         if (validActual.length === 0) return 0;
@@ -72,6 +62,16 @@ const MemoryCurveChart = ({ data }) => {
         if (avgDiff < -3) return { diff: avgDiff, status: 'worse' };
         return { diff: avgDiff, status: 'neutral' };
     }, [validActual, ebbinghaus]);
+
+    if (!data || !data.actual || data.actual.length === 0) {
+        return (
+            <div className="text-text-muted font-mono text-sm italic">
+                {'>>'} 数据不足，继续学习后查看
+            </div>
+        );
+    }
+
+    const latestPoint = validActual.length > 0 ? validActual[validActual.length - 1] : null;
 
     // Prepare chart data - use days as labels
     const maxDay = Math.max(...actual.map(p => p.day), ...ebbinghaus.map(p => p.day));

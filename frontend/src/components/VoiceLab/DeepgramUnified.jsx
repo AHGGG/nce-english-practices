@@ -18,8 +18,7 @@ const DeepgramUnified = () => {
     const [eventLog, setEventLog] = useState([]);
 
     // Advanced Info
-    const [showAdvanced, setShowAdvanced] = useState(false);
-    const [lastResult, setLastResult] = useState(null);
+
 
     // Refs
     const microphoneRef = useRef(null);
@@ -83,10 +82,6 @@ const DeepgramUnified = () => {
                         if (msg.is_final) {
                             setTranscript(prev => prev + (prev ? ' ' : '') + text);
                             setInterimTranscript('');
-                            setLastResult({
-                                is_final: true,
-                                channel: { alternatives: [{ transcript: text, confidence: msg.confidence }] }
-                            });
                         } else {
                             setInterimTranscript(text);
                         }
@@ -97,7 +92,7 @@ const DeepgramUnified = () => {
                     else {
                         // console.log("Unknown msg", msg);
                     }
-                } catch (e) {
+                } catch {
                     // ignore
                 }
             };
@@ -237,7 +232,7 @@ const DeepgramUnified = () => {
         return () => {
             stopDeepgram();
         };
-    }, []);
+    }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
     const getEventColor = (type) => {
         switch (type) {
@@ -355,7 +350,7 @@ const DeepgramUnified = () => {
                             <Button variant="ghost" size="sm" onClick={() => {
                                 setTranscript('');
                                 setInterimTranscript('');
-                                setLastResult(null);
+                                // setLastResult(null);
                             }}>
                                 Clear Transcript
                             </Button>

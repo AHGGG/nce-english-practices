@@ -21,7 +21,6 @@ const ElevenLabsVoiceAgent = () => {
     const audioQueueRef = useRef([]);
     const nextStartTimeRef = useRef(0);
     const chatContainerRef = useRef(null);
-    const activeSourceRef = useRef(null);
 
     // Audio Playback Logic (Shared with TTS Streaming)
     const playAudioChunk = (data) => {
@@ -89,7 +88,7 @@ const ElevenLabsVoiceAgent = () => {
                 try {
                     source.stop();
                     source.disconnect();
-                } catch (e) {
+                } catch {
                     // ignore if already stopped
                 }
             });

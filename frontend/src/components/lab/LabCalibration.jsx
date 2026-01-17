@@ -15,7 +15,6 @@ const LabCalibration = () => {
     const [sentences, setSentences] = useState([]);
     const [currentIndex, setCurrentIndex] = useState(0);
     const [results, setResults] = useState([]); // { text, status, words }
-    const [isLoading, setIsLoading] = useState(false);
     const [diagnosis, setDiagnosis] = useState(null);
 
     // Dictionary Inspection State
@@ -32,7 +31,6 @@ const LabCalibration = () => {
     }, []);
 
     const fetchSession = async (level) => {
-        setIsLoading(true);
         try {
             const res = await fetch(`/api/proficiency/calibration/session?level=${level}&count=5`);
             if (res.ok) {
@@ -46,7 +44,6 @@ const LabCalibration = () => {
             console.error("Failed to load session", e);
             setStep('error');
         }
-        setIsLoading(false);
     };
 
     // --- Handlers ---
@@ -161,7 +158,6 @@ const LabCalibration = () => {
 
     const submitCalibration = async (finalData) => {
         setStep('processing');
-        setIsLoading(true);
         try {
             // 1. Analyze calibration data
             const res = await fetch('/api/proficiency/calibrate', {
@@ -184,7 +180,6 @@ const LabCalibration = () => {
             console.error(e);
             setStep('error');
         }
-        setIsLoading(false);
     };
 
     // --- Views ---

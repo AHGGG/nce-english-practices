@@ -48,7 +48,7 @@ const NegotiationInterface = () => {
     const [isRssMode, setIsRssMode] = useState(false);
     // EPUB Mode
     const [isEpubMode, setIsEpubMode] = useState(false);
-    const [epubFile, setEpubFile] = useState('TheEconomist.2025.12.27.epub');
+    const [epubFile] = useState('TheEconomist.2025.12.27.epub');
     const [highlightedWords, setHighlightedWords] = useState([]); // Array of words to highlight
     const [articleTitle, setArticleTitle] = useState('');
     const [articleLink, setArticleLink] = useState('');

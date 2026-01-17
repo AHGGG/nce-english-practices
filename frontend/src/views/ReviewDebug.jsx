@@ -9,22 +9,22 @@ const ReviewDebug = () => {
 
     useEffect(() => {
         fetchSchedule();
-    }, [days]);
+    }, [days, fetchSchedule]);
 
-    const fetchSchedule = async () => {
+    const fetchSchedule = React.useCallback(async () => {
         setLoading(true);
         try {
             const res = await fetch(`/api/review/debug/schedule?days=${days}`);
             if (res.ok) {
-                const data = await res.json();
-                setSchedule(data.schedule || {});
+                const json = await res.json();
+                setSchedule(json.schedule || {});
             }
         } catch (err) {
             console.error(err);
         } finally {
             setLoading(false);
         }
-    };
+    }, [days]);
 
     const dates = Object.keys(schedule).sort();
 

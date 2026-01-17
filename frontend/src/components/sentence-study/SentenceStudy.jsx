@@ -51,7 +51,7 @@ const SentenceStudy = () => {
 
     // Overview state
     const [overview, setOverview] = useState(null);
-    const [loadingOverview, setLoadingOverview] = useState(false);
+
     const [overviewStreamContent, setOverviewStreamContent] = useState('');
 
     // Study highlights state (for COMPLETED view)
@@ -75,7 +75,7 @@ const SentenceStudy = () => {
 
     // Collocations
     const [collocations, setCollocations] = useState([]);
-    const [isLoadingCollocations, setIsLoadingCollocations] = useState(false);
+
 
     // Refs
     const audioRef = useRef(null);
@@ -235,8 +235,8 @@ const SentenceStudy = () => {
         }
 
         let cancelled = false;
+
         setCollocations([]);
-        setIsLoadingCollocations(true);
 
         const fetchCollocations = async () => {
             try {
@@ -245,8 +245,6 @@ const SentenceStudy = () => {
             } catch (e) {
                 console.error('Failed to detect collocations:', e);
                 if (!cancelled) setCollocations([]);
-            } finally {
-                if (!cancelled) setIsLoadingCollocations(false);
             }
         };
 
@@ -269,7 +267,7 @@ const SentenceStudy = () => {
 
     const startStudying = useCallback(async (sourceId) => {
         setLoading(true);
-        setLoadingOverview(true);
+
         try {
             const [article, progressData] = await Promise.all([
                 sentenceStudyApi.getArticle(sourceId, highlightOptionIndex),
@@ -315,7 +313,7 @@ const SentenceStudy = () => {
             console.error('Failed to load article:', e);
         } finally {
             setLoading(false);
-            setLoadingOverview(false);
+            setLoading(false);
         }
     }, [highlightOptionIndex]);
 

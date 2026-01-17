@@ -6,9 +6,8 @@ class AudioRecorderProcessor extends AudioWorkletProcessor {
         this.index = 0;
     }
 
-    process(inputs, outputs, parameters) {
+    process(inputs) {
         const input = inputs[0];
-        const output = outputs[0];
 
         if (input && input.length > 0) {
             const channelData = input[0];

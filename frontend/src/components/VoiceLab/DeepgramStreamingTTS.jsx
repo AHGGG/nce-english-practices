@@ -1,9 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Card, Button, Tag, Select } from '../ui';
-import { Play, Square, AlertCircle, FastForward, MessageSquare } from 'lucide-react';
+import { Play } from 'lucide-react';
 
 const DeepgramStreamingTTS = () => {
-    const [isPlaying, setIsPlaying] = useState(false);
     const [textInput, setTextInput] = useState('Hello! This is a streaming Text to Speech test.');
     const [connectionState, setConnectionState] = useState('disconnected');
     const [error, setError] = useState(null);

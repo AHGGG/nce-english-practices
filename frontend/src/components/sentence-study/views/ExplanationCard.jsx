@@ -1,5 +1,6 @@
 import React from 'react';
 import ReactMarkdown from 'react-markdown';
+// eslint-disable-next-line no-unused-vars
 import { motion, AnimatePresence } from 'framer-motion';
 import { Sparkles, CheckCircle, HelpCircle, BookOpen, Brain, Zap } from 'lucide-react';
 

@@ -1,3 +1,4 @@
+/* eslint-disable react-refresh/only-export-components */
 import React, { createContext, useContext } from 'react';
 
 /**
@@ -13,7 +14,7 @@ const AUIContext = createContext({
     send: null,  // WebSocket send function
 });
 
-export const AUIProvider = AUIContext.Provider;
+export const AUIProvider = (props) => <AUIContext.Provider {...props} />;
 
 export const useAUI = () => useContext(AUIContext);
 

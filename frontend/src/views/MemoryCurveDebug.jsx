@@ -346,7 +346,7 @@ const MemoryCurveDebug = () => {
     );
 };
 
-const StatCard = ({ label, value, icon: Icon, color, tooltip }) => {
+const StatCard = ({ label, value, icon: Icon, color, tooltip }) => { // eslint-disable-line no-unused-vars
     const colors = {
         cyan: "text-accent-info border-accent-info/30",
         pink: "text-accent-danger border-accent-danger/30",

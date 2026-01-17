@@ -1,12 +1,12 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef } from 'react';
 import { Mic, Volume2, Play, Square, Loader2, Bot, ArrowRight, MessageSquare, RefreshCw } from 'lucide-react';
 import { Card, Button } from '../ui';
 
-const ConversationLoop = ({ config }) => {
+const ConversationLoop = () => {
     // Configuration State
     const [sttProvider, setSttProvider] = useState('deepgram');
     const [ttsProvider, setTtsProvider] = useState('elevenlabs');
-    const [llmModel, setLlmModel] = useState(''); // Default from backend
+    const [llmModel] = useState(''); // Default from backend
 
     // Loop State
     const [isRecording, setIsRecording] = useState(false);
@@ -16,7 +16,7 @@ const ConversationLoop = ({ config }) => {
     // Data State
     const [transcript, setTranscript] = useState('');
     const [response, setResponse] = useState('');
-    const [audioUrl, setAudioUrl] = useState(null);
+    const [, setAudioUrl] = useState(null);
     const [logs, setLogs] = useState([]);
 
     // Refs
@@ -300,7 +300,7 @@ const ConversationLoop = ({ config }) => {
     );
 };
 
-const FlowStep = ({ icon: Icon, label, active }) => (
+const FlowStep = ({ icon: Icon, label, active }) => ( // eslint-disable-line no-unused-vars
     <div className={`flex flex-col items-center gap-2 z-10 transition-all duration-500 ${active ? 'scale-110' : 'opacity-40'}`}>
         <div className={`p-4 rounded-full border-2 ${active ? 'border-accent-primary bg-accent-primary/10 text-accent-primary shadow-[0_0_15px_rgba(0,255,148,0.3)]' : 'border-text-muted text-text-muted'}`}>
             <Icon size={24} />

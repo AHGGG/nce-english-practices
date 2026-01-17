@@ -18,6 +18,7 @@ const ArticleListView = ({
             new Date(article.last_read || 0).getTime(),
             new Date(article.last_studied_at || 0).getTime()
         );
+        // eslint-disable-next-line
         return lastActivity > Date.now() - 24 * 60 * 60 * 1000;
     };
 

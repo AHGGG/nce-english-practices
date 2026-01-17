@@ -11,7 +11,7 @@ import {
     User
 } from 'lucide-react';
 
-const NavCard = ({ title, path, icon: Icon, description }) => {
+const NavCard = ({ title, path, icon: Icon, description }) => { // eslint-disable-line no-unused-vars
     const navigate = useNavigate();
 
     return (

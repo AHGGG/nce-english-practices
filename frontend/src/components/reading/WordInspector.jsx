@@ -29,9 +29,11 @@ const WordInspector = ({
     // Default to LDOCE if available, otherwise switch to Collins
     useEffect(() => {
         if (inspectorData?.ldoce?.found) {
-            setActiveTab('LDOCE');
+            // eslint-disable-next-line react/no-did-mount-set-state
+            if (activeTab !== 'LDOCE') setActiveTab('LDOCE');
         } else if (inspectorData?.collins?.found) {
-            setActiveTab('Collins');
+            // eslint-disable-next-line react/no-did-mount-set-state
+            if (activeTab !== 'Collins') setActiveTab('Collins');
         }
     }, [inspectorData, selectedWord]);
 

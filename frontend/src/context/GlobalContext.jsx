@@ -1,3 +1,4 @@
+/* eslint-disable react-refresh/only-export-components */
 import React, { createContext, useContext, useState, useMemo } from 'react';
 import { ToastProvider } from '../components/ui/Toast';
 
@@ -5,7 +6,7 @@ const GlobalContext = createContext(null);
 
 export const GlobalProvider = ({ children }) => {
     // Minimal state - kept for future extensibility
-    const [state, setState] = useState({});
+    const [state] = useState({});
 
     const actions = useMemo(() => ({}), []);
 

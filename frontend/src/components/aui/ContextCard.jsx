@@ -4,7 +4,7 @@
  * This component receives all data via props and emits actions via callbacks.
  * It should be registered in the AUI registry and rendered by AUIStreamHydrator.
  */
-import React, { useState, useRef, useMemo } from 'react';
+import React, { useState, useRef } from 'react';
 import { Volume2, VolumeX, Check, Loader2, BookOpen, Languages } from 'lucide-react';
 
 // Status badge styles
@@ -72,14 +72,8 @@ const ContextCard = ({
     text_content,
     translation,        // New: Chinese translation
     source = 'Unknown',
-    context_type = 'dictionary_example',
     status = 'unseen',
     grammar_pattern,     // New: e.g., "VERB noun"
-    definition,          // New: sense definition
-    definition_cn,       // New: Chinese definition
-    sense_index,         // New: which sense (1, 2, 3...)
-    synonyms = [],       // New: synonyms list
-    audio_endpoint,
     show_actions = true,
     compact = false,
     onStatusChange,

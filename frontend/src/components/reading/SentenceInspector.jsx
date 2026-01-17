@@ -87,7 +87,7 @@ const SentenceInspector = ({
                             } else if (data.type === 'error') {
                                 setError(data.message);
                             }
-                        } catch (e) {
+                        } catch {
                             // Ignore parse errors for incomplete chunks
                         }
                     }

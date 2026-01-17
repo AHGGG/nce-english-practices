@@ -20,8 +20,7 @@ const AUIStreamHydrator = ({
     onComplete
 }) => {
     const [componentSpec, setComponentSpec] = useState(null);
-    const [accumulatedText, setAccumulatedText] = useState({});
-    const [isStreaming, setIsStreaming] = useState(false);
+
     const [error, setError] = useState(null);
 
     // New state for extended events
@@ -142,7 +141,7 @@ const AUIStreamHydrator = ({
                             intention: newDoc.intention,
                             targetLevel: newDoc.target_level || newDoc.targetLevel
                         };
-                    } catch (err) {
+                    } catch {
                         console.error('[AUIStreamHydrator] JSON Patch failed:', err);
                         return prev;
                     }
@@ -151,13 +150,11 @@ const AUIStreamHydrator = ({
 
             case 'aui_stream_end':
                 console.log('[AUIStreamHydrator] Stream ended');
-                setIsStreaming(false);
                 break;
 
             case 'aui_error':
                 console.error('[AUIStreamHydrator] Stream error:', auiEvent.message);
                 setError(auiEvent.message);
-                setIsStreaming(false);
                 if (onError) onError(auiEvent.message);
                 break;
 
@@ -221,7 +218,7 @@ const AUIStreamHydrator = ({
                             ...prev,
                             [auiEvent.activity_id]: newActivity
                         };
-                    } catch (err) {
+                    } catch {
                         console.error('[AUIStreamHydrator] Activity patch failed:', err);
                         return prev;
                     }
@@ -263,13 +260,11 @@ const AUIStreamHydrator = ({
         url: streamUrl,
         params,
         onMessage: handleEvent,
-        onError: (err) => {
+        onError: () => {
             setError('Connection error');
-            setIsStreaming(false);
             if (onError) onError('Connection error');
         },
         onComplete: () => {
-            setIsStreaming(false);
             if (onComplete) onComplete();
         }
     });
@@ -279,7 +274,6 @@ const AUIStreamHydrator = ({
     useEffect(() => {
         if (!streamUrl) return;
 
-        setIsStreaming(true);
         setError(null);
 
         // Reset state for new stream
@@ -584,7 +578,7 @@ const InterruptBanner = ({ interrupt, onAction, useWebSocket = false }) => {
                 setSubmitted(true);
                 if (onAction) onAction(action);
             }
-        } catch (err) {
+        } catch {
             // Silently handle errors
         } finally {
             setIsSubmitting(false);

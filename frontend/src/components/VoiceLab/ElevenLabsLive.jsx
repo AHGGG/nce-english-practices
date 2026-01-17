@@ -193,7 +193,7 @@ const ElevenLabsLive = () => {
         return () => {
             stopSession();
         };
-    }, []);
+    }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
     const getEventColor = (type) => {
         switch (type) {

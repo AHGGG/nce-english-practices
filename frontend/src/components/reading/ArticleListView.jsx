@@ -54,6 +54,7 @@ const ArticleListView = ({
     // Separate completed and non-completed articles
     const completedArticles = articles.filter(a => a.status === 'completed');
     const nonCompletedArticles = articles.filter(a => a.status !== 'completed');
+    const [now] = React.useState(Date.now());
 
     const renderArticleCard = (article, idx, showOriginalIndex = false) => {
         const statusConfig = getStatusConfig(article.status);
@@ -64,7 +65,7 @@ const ArticleListView = ({
             new Date(article.last_read || 0).getTime(),
             new Date(article.last_studied_at || 0).getTime()
         );
-        const isRecent = lastActivity > Date.now() - 24 * 60 * 60 * 1000;
+        const isRecent = lastActivity > now - 24 * 60 * 60 * 1000;
 
         return (
             <button

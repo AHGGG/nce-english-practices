@@ -113,14 +113,14 @@ function sendToBackend(level, message, ...args) {
                 // Safe stringify
                 try {
                     acc[`arg${index}`] = typeof val === 'object' ? JSON.stringify(val) : String(val);
-                } catch (err) {
+                } catch {
                     acc[`arg${index}`] = '[Circular/Unserializable]';
                 }
                 return acc;
             }, {});
             
             data = { ...data, ...argsData };
-        } catch (e) {
+        } catch {
             data = { ...data, serializationError: "Could not serialize args" };
         }
     }
@@ -172,7 +172,7 @@ export function initLogBridge() {
             // Send to backend
             try {
                 sendToBackend(level, ...args);
-            } catch (e) {
+            } catch {
                 // Ignore internal errors
             }
         };
@@ -182,14 +182,14 @@ export function initLogBridge() {
     window.addEventListener('error', (event) => {
         try {
             sendToBackend('error', `[Uncaught] ${event.message}`, event.error);
-        } catch (e) { /* ignore */ }
+        } catch { /* ignore */ }
     });
 
     // 3. Unhandled Promise Rejections
     window.addEventListener('unhandledrejection', (event) => {
         try {
             sendToBackend('error', `[Unhandled Rejection] ${event.reason ? (event.reason.message || event.reason) : 'Unknown'}`, event.reason);
-        } catch (e) { /* ignore */ }
+        } catch { /* ignore */ }
     });
 
     // 4. Vite Error Overlay (Development Only)
@@ -221,6 +221,7 @@ export function initLogBridge() {
                         } catch (e) {
                             originalConsole.error('[LogBridge] Failed to capture Vite error:', e);
                         }
+
                     }
                 });
             });
@@ -237,7 +238,7 @@ export function initLogBridge() {
                     file: detail.filename,
                     source: 'vite-event'
                 });
-            } catch (e) { /* ignore */ }
+            } catch { /* ignore */ }
         });
     }
     

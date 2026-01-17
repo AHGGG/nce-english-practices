@@ -78,7 +78,7 @@ export function useAUITransport({
           urlParams[key] = urlParams[key].split(',').map(w => w.trim());
         }
       }
-    } catch (e) {
+    } catch {
       // Not a valid URL structure, ignore
     }
     
@@ -97,7 +97,14 @@ export function useAUITransport({
   /**
    * Connect using WebSocket with Auto-Reconnect
    */
+  // Use a ref to hold the function to allow recursive calls inside useCallback
+  const connectWebSocketRef = useRef(null);
+  
   const connectWebSocket = useCallback(() => {
+    if (connectWebSocketRef.current) connectWebSocketRef.current();
+  }, []);
+
+  const connectImpl = () => {
     // Clear any pending retry
     if (retryTimeoutRef.current) {
       clearTimeout(retryTimeoutRef.current);
@@ -167,8 +174,8 @@ export function useAUITransport({
                     }
                     callbacksRef.current.onComplete?.();
                 }
-            } catch (e) {
-                // Silently ignore parse errors
+            } catch {
+                 // Silently ignore parse errors
             }
         };
 
@@ -209,7 +216,12 @@ export function useAUITransport({
         console.error("WebSocket creation failed", err);
         // Retry logic for immediate immediate failures too?
     }
-  }, [getWebSocketUrl]);
+    };
+  
+    // Update ref with latest implementation
+    useLayoutEffect(() => {
+        connectWebSocketRef.current = connectImpl;
+    });
 
   /**
    * Connect using WebSocket (Default and only transport)

@@ -329,20 +329,11 @@ const DeepgramVoiceAgent = () => {
         setPendingTranscript('');
     };
 
-    const addMessage = (role, text) => {
-        setMessages(prev => [...prev, { role, text, timestamp: new Date().toISOString() }]);
 
-        // Auto scroll
-        setTimeout(() => {
-            if (chatContainerRef.current) {
-                chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
-            }
-        }, 100);
-    };
 
     useEffect(() => {
         return () => stopAgent();
-    }, []);
+    }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
     // Agent state indicator
     const getStateIndicator = () => {

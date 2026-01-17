@@ -26,9 +26,9 @@ export class GeminiLiveClient {
       this.outputAudioContext = null;
 
       this.onDisconnect = () => {};
-      this.onAudioLevel = (level) => {};
-      this.onTranscript = (text, isUser) => {};
-      this.onError = (err) => {};
+      this.onAudioLevel = () => {};
+      this.onTranscript = () => {};
+      this.onError = () => {};
   }
 
   async connect({ systemInstruction, voiceName = "Puck" }) {
@@ -51,8 +51,8 @@ export class GeminiLiveClient {
       // Security checks omitted for brevity but should be kept in prod
       try {
           this.audioContext = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 16000 });
-      } catch (e) {
-          console.warn("16kHz not supported", e);
+      } catch {
+          console.warn("16kHz not supported");
           this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
       }
       
@@ -65,7 +65,7 @@ export class GeminiLiveClient {
           if (this.outputAudioContext.state === 'suspended') {
               await this.outputAudioContext.resume();
           }
-      } catch (e) {
+      } catch {
           this.outputAudioContext = this.audioContext;
       }
       
@@ -106,7 +106,7 @@ export class GeminiLiveClient {
               this.workletNode.port.onmessage = (event) => { this.processAudioData(event.data); };
               this.source.connect(this.workletNode);
               return;
-          } catch (e) {
+          } catch (e) { // eslint-disable-line no-unused-vars
               console.warn("AudioWorklet failed", e);
           }
       }
@@ -156,7 +156,7 @@ export class GeminiLiveClient {
           else if (msg.type === 'transcript') this.onTranscript(msg.text, msg.isUser);
           else if (msg.type === 'interrupted') this.clearAudioQueue();
           return msg;
-      } catch(e) { return null; }
+      } catch { return null; }
   }
   
   playAudioResponse(base64Data) {

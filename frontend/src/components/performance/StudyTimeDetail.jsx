@@ -13,10 +13,11 @@ const StudyTimeDetail = () => {
     const [days, setDays] = useState(30);
 
     useEffect(() => {
-        setLoading(true);
+        // setLoading(true); // Moved to onClick to avoid synchronous setState warning
         api.get(`/api/performance/study-time?days=${days}`)
             .then(res => {
                 setData(res);
+                // eslint-disable-next-line react/no-did-mount-set-state
                 setLoading(false);
             })
             .catch(err => {
@@ -62,7 +63,10 @@ const StudyTimeDetail = () => {
                     {[7, 14, 30, 90].map(d => (
                         <button
                             key={d}
-                            onClick={() => setDays(d)}
+                            onClick={() => {
+                                setDays(d);
+                                setLoading(true);
+                            }}
                             className={`px-3 py-1 border transition-colors ${days === d
                                 ? 'bg-accent-primary text-black border-accent-primary'
                                 : 'border-border text-text-muted hover:border-text-secondary'

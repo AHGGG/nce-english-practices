@@ -49,7 +49,7 @@ export async function parseJSONSSEStream(response, handlers = {}) {
                             // Handle custom event types (e.g., 'image_check')
                             handlers.onEvent?.(data.type, data);
                         }
-                    } catch (parseError) {
+                    } catch {
                         // Non-JSON line, ignore
                     }
                 }

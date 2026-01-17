@@ -35,7 +35,7 @@ const DictionaryModal = ({ isOpen, onClose, word, contextSentence }) => {
         try {
             const res = await explainInContext(word, contextSentence);
             setAiExplanation(res.explanation);
-        } catch (err) {
+        } catch {
             setAiExplanation("Failed to get AI explanation.");
         } finally {
             setAiLoading(false);

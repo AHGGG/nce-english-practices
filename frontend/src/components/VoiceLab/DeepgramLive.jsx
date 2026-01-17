@@ -51,7 +51,7 @@ const DeepgramLive = () => {
                     } else if (msg.type === 'error') {
                         setError(msg.message);
                     }
-                } catch (e) {
+                } catch {
                     // ignore
                 }
             };
@@ -109,7 +109,7 @@ const DeepgramLive = () => {
         return () => {
             stopDeepgram();
         };
-    }, []);
+    }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
     return (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

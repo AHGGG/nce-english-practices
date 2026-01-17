@@ -16,7 +16,7 @@ const ArticleCard = ({
         source_id,
         sentence_count,
         reading_sessions = 0,
-        last_read,
+
         study_progress = {},
         has_review_items = false,
         status = 'new'

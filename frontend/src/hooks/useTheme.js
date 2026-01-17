@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useGlobalState } from '../context/GlobalContext';
-import { fetchTheme, fetchSentences, fetchStory, fetchScenario, startChat } from '../api/client';
+import { fetchTheme, fetchSentences, fetchScenario, startChat } from '../api/client';
 
 export const useTheme = () => {
   const { state, actions } = useGlobalState();
