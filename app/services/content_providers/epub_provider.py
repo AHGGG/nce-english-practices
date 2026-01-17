@@ -163,6 +163,7 @@ class EpubProvider(BaseContentProvider):
                             "source_id": item.get_name(),
                             "raw_images": images,
                             "raw_html": str(soup),  # Store for structured parsing
+                            "is_toc": bool(soup.find(class_="calibre_feed_list")),
                         }
                     )
                 except Exception:

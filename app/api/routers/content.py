@@ -79,6 +79,11 @@ def list_epub_articles(filename: Optional[str] = None):
             full_text = article.get("full_text", "")
             # Use lenient sentence splitting to filter out TOC/navigation pages
             sentences = provider._split_sentences_lenient(full_text)
+            
+            # Filter out Section TOC pages (Calibre Generated)
+            if article.get("is_toc"):
+                continue
+
             if len(sentences) < 3:
                 continue
 
