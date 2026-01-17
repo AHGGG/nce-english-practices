@@ -165,7 +165,7 @@ const AUIStreamingDemo = () => {
                         >
                             <ChevronLeft className="w-5 h-5" />
                         </button>
-                        <h1 className="text-xl md:text-2xl font-serif font-bold text-white">AUI Streaming Demo</h1>
+                        <h1 className="text-xl md:text-2xl font-serif font-bold text-text-primary">AUI Streaming Demo</h1>
                     </div>
                     <p className="text-xs text-text-muted mt-2">Event Streaming Testbed with Transport Selection</p>
                 </header>
@@ -205,7 +205,7 @@ const AUIStreamingDemo = () => {
                                 onClick={() => handleSelectDemo(demo)}
                                 className={`p-4 md:p-3 text-left rounded border transition-all active:scale-95 ${selectedDemo === demo.id
                                     ? 'bg-accent-primary text-black border-accent-primary font-bold'
-                                    : 'bg-bg-elevated text-text-secondary border-border hover:border-text-muted hover:text-white'
+                                    : 'bg-bg-elevated text-text-secondary border-border hover:border-text-muted hover:text-text-primary'
                                     }`}
                             >
                                 <div className="text-xl md:text-lg mb-1">{demo.icon}</div>
@@ -221,7 +221,7 @@ const AUIStreamingDemo = () => {
                     {streamUrl && (
                         <button
                             onClick={handleReset}
-                            className="w-full bg-bg-elevated text-white border border-border py-2 rounded hover:bg-border transition text-sm"
+                            className="w-full bg-bg-elevated text-text-primary border border-border py-2 rounded hover:bg-border transition text-sm"
                         >
                             RESET STREAM
                         </button>

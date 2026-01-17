@@ -132,9 +132,9 @@ const ReaderView = ({
                         // Dynamic heading level (h1-h4)
                         const level = block.level || 2;
                         const className = level === 1
-                            ? "text-3xl font-serif text-white mt-10 mb-6"
+                            ? "text-3xl font-serif text-text-primary mt-10 mb-6"
                             : level === 2
-                                ? "text-2xl font-serif text-white mt-8 mb-4"
+                                ? "text-2xl font-serif text-text-primary mt-8 mb-4"
                                 : "text-xl font-serif text-text-secondary mt-6 mb-3";
                         return (
                             <div key={`h-${blockIdx}`} className={className}>
@@ -289,7 +289,7 @@ const ReaderView = ({
                                 </span>
                                 <div className="h-[1px] bg-border flex-1"></div>
                             </div>
-                            <h1 className="font-serif text-3xl md:text-4xl text-white mb-4 leading-tight">
+                            <h1 className="font-serif text-3xl md:text-4xl text-text-primary mb-4 leading-tight">
                                 {article.title}
                             </h1>
                             <div className="flex items-center gap-4 text-xs text-text-muted font-mono">

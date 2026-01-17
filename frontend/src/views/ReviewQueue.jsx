@@ -476,7 +476,7 @@ const ReviewQueue = () => {
             <div className="w-20 h-20 rounded-full bg-accent-primary/10 flex items-center justify-center mb-6">
                 <CheckCircle className="w-10 h-10 text-accent-primary" />
             </div>
-            <h2 className="text-xl font-serif text-white mb-2">暂无待复习内容</h2>
+            <h2 className="text-xl font-serif text-text-primary mb-2">暂无待复习内容</h2>
             <p className="text-text-secondary text-sm text-center max-w-xs">
                 太棒了！你已经完成了所有复习任务。继续学习新内容吧！
             </p>
@@ -552,7 +552,7 @@ const ReviewQueue = () => {
                         <div className="flex items-center gap-2">
                             <button
                                 onClick={() => playAudio(currentItem.sentence_text)}
-                                className="flex items-center gap-1 px-2 py-0.5 rounded transition-colors whitespace-nowrap flex-shrink-0 bg-bg-elevated text-text-secondary hover:text-white border border-transparent"
+                                className="flex items-center gap-1 px-2 py-0.5 rounded transition-colors whitespace-nowrap flex-shrink-0 bg-bg-elevated text-text-secondary hover:text-text-primary border border-transparent"
                                 title="播放发音"
                             >
                                 <Volume2 className="w-3 h-3" />
@@ -717,7 +717,7 @@ const ReviewQueue = () => {
                     <ChevronLeft className="w-4 h-4" />
                 </button>
                 <div className="flex flex-col">
-                    <h1 className="text-sm font-bold uppercase tracking-wider text-white">
+                    <h1 className="text-sm font-bold uppercase tracking-wider text-text-primary">
                         复习队列
                     </h1>
                     <span className="text-[10px] text-text-muted uppercase tracking-wider">

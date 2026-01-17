@@ -54,7 +54,7 @@ const OverviewView = ({
             <main className="flex-1 overflow-y-auto p-4 md:p-8">
                 <div className="max-w-2xl w-full mx-auto">
                     {/* Article Title */}
-                    <h1 className="font-serif text-2xl md:text-3xl text-white text-center mb-8">
+                    <h1 className="font-serif text-2xl md:text-3xl text-text-primary text-center mb-8">
                         {article?.title}
                     </h1>
 

@@ -74,7 +74,7 @@ const ExplanationCard = ({
                 animate={{ opacity: 1, y: 0, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.95, transition: { duration: 0.2 } }}
                 transition={{ type: "spring", stiffness: 300, damping: 30 }}
-                className={`w-full mt-8 relative overflow-hidden rounded-xl border border-white/10 shadow-2xl backdrop-blur-md bg-[#0A0A0A]/80`}
+                className={`w-full mt-8 relative overflow-hidden rounded-xl border border-white/10 shadow-2xl backdrop-blur-md bg-bg-surface/80`}
             >
                 {/* Dynamic Gradient Background */}
                 <div className={`absolute inset-0 bg-gradient-to-b ${config.gradient} opacity-20 pointer-events-none`} />

@@ -21,7 +21,7 @@ const Lightbox = memo(function Lightbox({ src, alt, caption, onClose }) {
         >
             {/* Close button */}
             <button
-                className="absolute top-4 right-4 p-3 text-white/70 hover:text-white border border-white/20 hover:border-white/50 transition-colors"
+                className="absolute top-4 right-4 p-3 text-text-secondary hover:text-text-primary border border-border hover:border-text-secondary transition-colors"
                 onClick={onClose}
             >
                 <X className="w-6 h-6" />

@@ -15,9 +15,9 @@ const markdownComponents = {
     strong: ({ children }) => <strong className="text-accent-primary font-bold">{children}</strong>,
     em: ({ children }) => <em className="text-accent-warning not-italic">{children}</em>,
     code: ({ children }) => <code className="bg-bg-elevated px-1 rounded text-accent-primary font-mono text-xs">{children}</code>,
-    h1: ({ children }) => <h1 className="text-lg font-bold mb-2 text-white">{children}</h1>,
-    h2: ({ children }) => <h2 className="text-base font-bold mb-2 text-white">{children}</h2>,
-    h3: ({ children }) => <h3 className="text-sm font-bold mb-2 text-white">{children}</h3>,
+    h1: ({ children }) => <h1 className="text-lg font-bold mb-2 text-text-primary">{children}</h1>,
+    h2: ({ children }) => <h2 className="text-base font-bold mb-2 text-text-primary">{children}</h2>,
+    h3: ({ children }) => <h3 className="text-sm font-bold mb-2 text-text-primary">{children}</h3>,
 };
 
 /**

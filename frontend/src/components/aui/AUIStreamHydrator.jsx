@@ -346,7 +346,7 @@ const AUIStreamHydrator = ({
     if (!componentSpec && !hasExtendedEvents) {
         return (
             <div className="flex items-center justify-center p-8">
-                <div className="animate-pulse text-[#666] font-mono text-sm">
+                <div className="animate-pulse text-text-muted font-mono text-sm">
                     Connecting to stream...
                 </div>
             </div>
@@ -726,7 +726,7 @@ const DynamicComponentRenderer = ({ component, props, onAction, onStatusChange }
 
     if (!Component) {
         return (
-            <div className="text-[#666] font-mono text-sm">
+            <div className="text-text-muted font-mono text-sm">
                 Loading component: {component}...
             </div>
         );
@@ -734,7 +734,7 @@ const DynamicComponentRenderer = ({ component, props, onAction, onStatusChange }
 
     // Wrap lazy-loaded component in Suspense
     return (
-        <React.Suspense fallback={<div className="text-[#666] font-mono text-sm animate-pulse">Rendering {component}...</div>}>
+        <React.Suspense fallback={<div className="text-text-muted font-mono text-sm animate-pulse">Rendering {component}...</div>}>
             <Component
                 {...props}
                 onAction={onAction}

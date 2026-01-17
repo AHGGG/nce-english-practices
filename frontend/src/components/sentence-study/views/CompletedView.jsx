@@ -112,7 +112,7 @@ const CompletedView = ({
             <main className="flex-1 overflow-y-auto p-4 md:p-8">
                 <div className="max-w-3xl mx-auto">
                     {/* Article Title */}
-                    <h1 className="font-serif text-2xl md:text-3xl text-white text-center mb-6">
+                    <h1 className="font-serif text-2xl md:text-3xl text-text-primary text-center mb-6">
                         {article?.title}
                     </h1>
 
@@ -198,7 +198,7 @@ const CompletedView = ({
                         </button>
                         <button
                             onClick={onBack}
-                            className="px-6 py-3 border border-text-muted text-text-secondary hover:text-white hover:border-white transition-colors"
+                            className="px-6 py-3 border border-text-muted text-text-secondary hover:text-text-primary hover:border-text-primary transition-colors"
                         >
                             Back to Chapter List
                         </button>

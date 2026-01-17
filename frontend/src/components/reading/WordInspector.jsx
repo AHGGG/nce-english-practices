@@ -50,7 +50,7 @@ const WordInspector = ({
                 {/* Header */}
                 <div className="p-4 border-b border-border flex items-center justify-between bg-bg-elevated shrink-0">
                     <div className="flex items-center gap-3">
-                        <span className="text-xl font-serif font-bold text-white">{selectedWord}</span>
+                        <span className="text-xl font-serif font-bold text-text-primary">{selectedWord}</span>
                         <button
                             onClick={() => onPlayAudio(selectedWord)}
                             className="w-8 h-8 flex items-center justify-center border border-border text-accent-primary hover:bg-accent-primary hover:text-black transition-colors"
@@ -219,7 +219,7 @@ const WordInspector = ({
                 <div className="p-4 border-t border-border bg-bg-elevated shrink-0 flex gap-2">
                     <button
                         onClick={() => onMarkAsKnown(selectedWord)}
-                        className="flex-1 bg-bg-elevated border border-border text-text-secondary py-3 font-mono text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-2 hover:bg-border hover:text-white transition-all active:translate-y-[1px]"
+                        className="flex-1 bg-bg-elevated border border-border text-text-secondary py-3 font-mono text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-2 hover:bg-border hover:text-text-primary transition-all active:translate-y-[1px]"
                     >
                         Mark Known
                     </button>

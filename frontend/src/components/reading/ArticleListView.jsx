@@ -148,7 +148,7 @@ const ArticleListView = ({
                         </div>
                         <span className="text-accent-primary text-xs font-bold tracking-[0.3em] uppercase">Reading Mode</span>
                     </div>
-                    <h1 className="text-4xl md:text-5xl font-serif font-bold text-white tracking-tight">
+                    <h1 className="text-4xl md:text-5xl font-serif font-bold text-text-primary tracking-tight">
                         Article <span className="italic text-border">/</span> Library
                     </h1>
                 </div>
@@ -167,7 +167,7 @@ const ArticleListView = ({
                         <BookOpen size={14} className="text-text-muted" />
                         <div className="flex flex-col">
                             <span className="text-[10px] text-text-muted uppercase tracking-wider leading-none">Articles</span>
-                            <span className="text-sm font-bold text-white font-mono leading-none mt-1">{articles.length}</span>
+                            <span className="text-sm font-bold text-text-primary font-mono leading-none mt-1">{articles.length}</span>
                         </div>
                     </div>
                 </div>

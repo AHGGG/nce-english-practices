@@ -141,7 +141,7 @@ const StudyingView = ({
                         </button>
                         <button
                             onClick={onUnclear}
-                            className="flex items-center justify-center gap-2 min-w-[140px] px-8 py-4 border border-text-muted text-text-secondary hover:text-white hover:border-white active:scale-95 transition-all touch-manipulation rounded-md"
+                            className="flex items-center justify-center gap-2 min-w-[140px] px-8 py-4 border border-text-muted text-text-secondary hover:text-text-primary hover:border-text-primary active:scale-95 transition-all touch-manipulation rounded-md"
                         >
                             <HelpCircle className="w-5 h-5" />
                             Unclear
