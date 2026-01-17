@@ -257,12 +257,14 @@ async def get_memory_curve_data(user_id: str = "default_user") -> Dict[str, Any]
         try:
             # Time buckets and their interval ranges
             # Bucket name -> (min_interval, max_interval)
+            # SM-2 Optimized Buckets:
+            # SM-2 intervals: 1 → 6 → ~15 → ~37 days
+            # Bucket boundaries designed to capture each SM-2 stage
             bucket_ranges = {
-                1: (0, 2),
-                3: (2, 5),
-                7: (5, 10),
-                14: (10, 21),
-                30: (21, 45),
+                1: (0, 3),     # Day 1: First review (interval=1)
+                6: (3, 10),    # Day 6: Second review (interval=6)
+                15: (10, 25),  # Day 15: Third review (interval≈15)
+                40: (25, 60),  # Day 40: Fourth+ review (interval≈37+)
             }
 
             # ⚡ OPTIMIZATION: Use database aggregation instead of fetching all logs.
@@ -329,7 +331,7 @@ async def get_memory_curve_data(user_id: str = "default_user") -> Dict[str, Any]
             S = 10
             ebbinghaus_curve = [
                 {"day": day, "retention": round(math.exp(-day / S), 2)}
-                for day in [1, 3, 7, 14, 30]
+                for day in [1, 6, 15, 40]  # Match SM-2 bucket days
             ]
 
             return {

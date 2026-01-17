@@ -117,29 +117,38 @@ def calculate_sm2(
     quality: int, ef: float, interval: float, repetition: int
 ) -> Dict[str, Any]:
     """
-    SM-2 algorithm implementation.
+    SM-2 algorithm implementation (matching the original SuperMemo 2 paper).
+
+    Reference: https://github.com/open-spaced-repetition/sm-2
+
+    Algorithm rules:
+    1. EF (Easiness Factor) is ONLY updated on successful reviews (quality >= 3)
+    2. On failure (quality < 3): EF stays unchanged, repetition resets to 0
+    3. Interval progression: 1 day -> 6 days -> (interval * EF)
 
     Args:
         quality: Review quality (1=forgot, 3=remembered, 5=easy)
-        ef: Current easiness factor
+        ef: Current easiness factor (minimum 1.3)
         interval: Current interval in days
         repetition: Number of consecutive successful reviews
 
     Returns:
         Dictionary with new_ef, new_interval, new_repetition
     """
-    # Map our 3-option quality to SM-2 scale (0-5)
-    # 1 (忘了) -> 1, 3 (想起来了) -> 3, 5 (太简单) -> 5
-
-    # Calculate new EF (Easiness Factor)
-    # EF' = EF + (0.1 - (5 - Q) * (0.08 + (5 - Q) * 0.02))
-    new_ef = ef + (0.1 - (5 - quality) * (0.08 + (5 - quality) * 0.02))
-    new_ef = max(1.3, new_ef)  # EF minimum is 1.3
-
     if quality < 3:  # Failed review
+        # On failure: reset repetition, set short interval, but keep EF unchanged
         new_repetition = 0
         new_interval = 1.0  # Reset to 1 day
-    else:  # Successful review
+        new_ef = ef  # EF does NOT change on incorrect responses (per original SM-2)
+    else:  # Successful review (quality >= 3)
+        # Update EF only on success
+        # EF' = EF + (0.1 - (5 - Q) * (0.08 + (5 - Q) * 0.02))
+        # When Q=5: EF increases by 0.1
+        # When Q=4: EF stays same (0.0)
+        # When Q=3: EF decreases by 0.14
+        new_ef = ef + (0.1 - (5 - quality) * (0.08 + (5 - quality) * 0.02))
+        new_ef = max(1.3, new_ef)  # EF minimum is 1.3
+
         new_repetition = repetition + 1
 
         if new_repetition == 1:
@@ -310,13 +319,13 @@ async def get_memory_curve_debug(
     Get detailed debug info for memory curve analysis.
     Shows ReviewLog data, interval distribution, and bucket statistics.
     """
-    # Bucket ranges (same as in get_memory_curve_data)
+    # SM-2 Optimized Buckets (same as in get_memory_curve_data)
+    # SM-2 intervals: 1 → 6 → ~15 → ~37 days
     bucket_ranges = {
-        1: (0, 2),
-        3: (2, 5),
-        7: (5, 10),
-        14: (10, 21),
-        30: (21, 45),
+        1: (0, 3),     # Day 1: First review (interval=1)
+        6: (3, 10),    # Day 6: Second review (interval=6)
+        15: (10, 25),  # Day 15: Third review (interval≈15)
+        40: (25, 60),  # Day 40: Fourth+ review (interval≈37+)
     }
 
     # 1. Get total log count
@@ -347,19 +356,17 @@ async def get_memory_curve_debug(
     for row in dist_rows:
         interval_val = row.interval_at_review
         count = row.count
-        # Group into readable ranges
-        if interval_val < 2:
-            key = "0-2 days"
-        elif interval_val < 5:
-            key = "2-5 days"
+        # Group into SM-2 aligned ranges
+        if interval_val < 3:
+            key = "0-3 days"
         elif interval_val < 10:
-            key = "5-10 days"
-        elif interval_val < 21:
-            key = "10-21 days"
-        elif interval_val < 45:
-            key = "21-45 days"
+            key = "3-10 days"
+        elif interval_val < 25:
+            key = "10-25 days"
+        elif interval_val < 60:
+            key = "25-60 days"
         else:
-            key = "45+ days"
+            key = "60+ days"
         interval_distribution[key] = interval_distribution.get(key, 0) + count
 
     # 3. Get bucket statistics
@@ -436,8 +443,8 @@ async def get_memory_curve_debug(
         "total_buckets": len(buckets),
         "explanation": (
             "Memory curve uses interval_at_review to bucket reviews. "
-            "Day 1 bucket (0-2 days) contains first reviews. "
-            "Later buckets only have data after successful reviews increase the interval."
+            "Buckets are SM-2 aligned: Day 1 (0-3), Day 6 (3-10), Day 15 (10-25), Day 40 (25-60). "
+            "Later buckets have data after successful reviews increase the interval."
         )
     }
 

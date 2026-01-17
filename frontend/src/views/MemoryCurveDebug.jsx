@@ -101,13 +101,25 @@ const MemoryCurveDebug = () => {
                                         本系统使用 <strong>SM-2 算法</strong> 安排复习。每次复习后，系统根据你的反馈调整下次复习的间隔：
                                     </p>
                                     <ul className="text-sm text-text-secondary space-y-1 ml-4 list-disc">
-                                        <li><strong>第1次复习</strong>：间隔 = 1 天</li>
-                                        <li><strong>第2次复习</strong>：间隔 = 6 天</li>
-                                        <li><strong>第3次及以后</strong>：间隔 = 上次间隔 × EF（难度系数，通常2.5左右）</li>
+                                        <li><strong>第1次复习</strong>：间隔 = 1 天 → 落入 <strong className="text-accent-info">Day 1</strong> (0-3天)</li>
+                                        <li><strong>第2次复习</strong>：间隔 = 6 天 → 落入 <strong className="text-accent-info">Day 6</strong> (3-10天)</li>
+                                        <li><strong>第3次复习</strong>：间隔 ≈ 15 天 → 落入 <strong className="text-accent-info">Day 15</strong> (10-25天)</li>
+                                        <li><strong>第4次及以后</strong>：间隔 ≈ 37+ 天 → 落入 <strong className="text-accent-info">Day 40</strong> (25-60天)</li>
                                     </ul>
-                                    <p className="text-sm text-text-muted mt-2">
-                                        💡 因此，如果你刚开始使用系统，所有复习都处于"1天间隔"阶段，记忆曲线只会显示 Day 1 的数据。
-                                    </p>
+                                    <div className="mt-3 p-2 bg-accent-success/10 border border-accent-success/30 text-sm">
+                                        <strong className="text-accent-success">✓ 桶边界已优化</strong>
+                                        <p className="text-text-secondary mt-1">
+                                            系统已针对 SM-2 优化桶边界。每个桶都会捕获对应阶段的复习数据，不会再出现"永远为空"的桶。
+                                        </p>
+                                    </div>
+                                    <div className="mt-3 p-2 bg-neon-cyan/10 border border-neon-cyan/30 text-sm">
+                                        <strong className="text-neon-cyan">💡 日历日期 vs 复习间隔</strong>
+                                        <p className="text-text-secondary mt-1">
+                                            <strong>Recent Logs 里的日期</strong>（如1/13, 1/17）是日历上「何时复习」。
+                                            <strong>Day Label</strong>（如Day 1, Day 6）是复习时该 item 的「间隔是多少天」。
+                                            两者是不同概念！
+                                        </p>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -267,9 +279,9 @@ const MemoryCurveDebug = () => {
                     <div className="mt-4 p-3 bg-bg-surface border border-border text-sm text-text-muted">
                         <strong>💡 如何解读：</strong>
                         <ul className="mt-2 space-y-1 ml-4 list-disc">
-                            <li>如果只有 Day 1 有数据，说明你的复习记录还处于"初始间隔"阶段</li>
-                            <li>Day 3 数据需要在你成功复习后约 6 天才会出现</li>
-                            <li>Day 7/14/30 数据需要更长时间积累（2-4周的持续使用）</li>
+                            <li><strong>Day Label vs Range</strong>：为了画出平滑曲线，我们将相近的复习间隔归类。例如 "Day 1" 对应 "0-3天"，意味着只要复习间隔在0到3天之间（比如1.5天），都会被算作 "Day 1" 的数据点。</li>
+                            <li>如果只有 Day 1 有数据，说明你的复习记录还处于"初始间隔"阶段（SM-2 算法初始间隔为 1 天，正好落在 0-3 范围内）</li>
+                            <li>Day 6 数据需要在你成功完成第一次复习后约 6 天才会出现（对应第二次复习）</li>
                             <li>保持率 ≥70% 表示记忆效果良好，低于 50% 可能需要更频繁复习</li>
                         </ul>
                     </div>

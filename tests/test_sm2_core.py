@@ -4,16 +4,15 @@ from app.api.routers.review import calculate_sm2
 class TestSM2Algorithm:
     """
     Comprehensive tests for the SM-2 Spaced Repetition Algorithm.
-    Logic:
-    EF' = EF + (0.1 - (5 - Q) * (0.08 + (5 - Q) * 0.02))
-    If Q < 3: Interval = 1, Repetition = 0
-    If Q >= 3:
-        Repetition += 1
-        Interval calculation:
-            Rep=1 -> I=1
-            Rep=2 -> I=6
-            Rep>2 -> I = I_prev * EF'
-    Minimum EF = 1.3
+    
+    Reference: https://github.com/open-spaced-repetition/sm-2
+    
+    Key rules (matching original SM-2 paper):
+    1. EF is ONLY updated on successful reviews (Q >= 3)
+    2. On failure (Q < 3): EF stays UNCHANGED, repetition resets to 0, interval = 1
+    3. Interval progression: 1 day -> 6 days -> (interval * EF)
+    4. EF formula: EF' = EF + (0.1 - (5 - Q) * (0.08 + (5 - Q) * 0.02))
+    5. Minimum EF = 1.3
     """
 
     def test_first_successful_review(self):
@@ -66,7 +65,7 @@ class TestSM2Algorithm:
         assert result["new_interval"] == 15.6
 
     def test_fail_review_resets_progress(self):
-        """Failing (Quality < 3) resets interval to 1 and repetition to 0."""
+        """Failing (Quality < 3) resets interval to 1, repetition to 0, but EF stays UNCHANGED."""
         initial_ef = 2.5
         initial_interval = 15.6
         repetition = 3
@@ -76,25 +75,37 @@ class TestSM2Algorithm:
         
         assert result["new_repetition"] == 0
         assert result["new_interval"] == 1.0
-        # EF decreases significantly
-        # EF' = 2.5 + (0.1 - 4 * (0.08 + 4 * 0.02)) = 2.5 + (0.1 - 4 * 0.16) 
-        # = 2.5 + (0.1 - 0.64) = 2.5 - 0.54 = 1.96
-        assert result["new_ef"] == 1.96
+        # Per original SM-2 paper: EF does NOT change on incorrect responses
+        assert result["new_ef"] == initial_ef
 
-    def test_ef_minimum_limit(self):
-        """EF should never drop below 1.3."""
-        initial_ef = 1.4
+    def test_ef_minimum_limit_on_success(self):
+        """EF should never drop below 1.3 (on successful review)."""
+        initial_ef = 1.35  # Close to minimum
         initial_interval = 10.0
         repetition = 5
-        quality = 1  # Standard fail reduces EF
+        quality = 3  # Quality 3 decreases EF by 0.14
         
         # Calculation without min:
-        # EF' = 1.4 + (0.1 - 0.64) = 1.4 - 0.54 = 0.86
+        # EF' = 1.35 + (0.1 - 2 * 0.12) = 1.35 - 0.14 = 1.21
         # Should be clamped to 1.3
         
         result = calculate_sm2(quality, initial_ef, initial_interval, repetition)
         
         assert result["new_ef"] == 1.3
+
+    def test_ef_unchanged_on_failure(self):
+        """EF should stay unchanged on failure (per original SM-2 paper)."""
+        initial_ef = 2.0
+        initial_interval = 10.0
+        repetition = 5
+        quality = 1  # Failed
+        
+        result = calculate_sm2(quality, initial_ef, initial_interval, repetition)
+        
+        # EF unchanged on failure
+        assert result["new_ef"] == initial_ef
+        assert result["new_repetition"] == 0
+        assert result["new_interval"] == 1.0
 
     def test_easy_review_boosts_ef(self):
         """Quality 5 boosts EF."""
