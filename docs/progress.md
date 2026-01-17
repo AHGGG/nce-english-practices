@@ -605,3 +605,22 @@ AI coding assistants often complete changes without verifying correctness, requi
 - **Manual**: Verified `./scripts/dev.ps1` runs on HTTP.
 - **Manual**: Verified `./scripts/dev.ps1 -Https` runs on HTTPS (with certs).
 - **Manual**: Verified `npm run dev` vs `npm run dev:https`.
+
+### ✅ Memory Curve Debugging (Phase 56) (2026-01-17)
+**Created deep diagnostic tools for memory curve validation.**
+
+#### Problem
+User reported that Memory Curve only displayed Day 1 data despite having study history.
+
+#### Diagnosis & Solution
+- **Diagnosis**: Analysis revealed the system was working correctly. Memory curve buckets rely on `interval_at_review`. Users with only recent reviews (interval 1.0) naturally fall entirely into the first bucket (0-2 days). Data for later buckets requires successful reviews over longer periods (6+ days).
+- **Solution**: Implemented a comprehensive debug page to visualize this internal state and prevent future confusion.
+
+#### Implementation
+- **Backend**: `GET /api/review/debug/memory-curve` returning detailed interval histograms and bucket breakdown.
+- **Frontend**: `MemoryCurveDebug.jsx` view with visualization of interval distribution and raw log inspection.
+- **Integration**: Linked from Performance Report header with `CURVE_DEBUG` button.
+
+#### Verification
+- **Manual**: Validated using the new debug page that 100% of logs were indeed in the 0-2 day bucket, confirming the "empty" curve was accurate.
+

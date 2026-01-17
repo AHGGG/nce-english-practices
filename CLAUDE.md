@@ -311,7 +311,9 @@ To support multiple dictionaries (e.g., Collins + LDOCE) in one view:
 
 ### 4. Review Algorithm Debugging
 - **Debug Dashboard**: A dedicated view at `/performance/debug` helps verify the SM-2 algorithm.
+- **Curve Debug**: A dedicated view at `/performance/memory-debug` helps verify data bucket distribution.
 - **Endpoint**: `GET /api/review/debug/schedule` returns the logic trace for upcoming 14 days.
+- **Endpoint**: `GET /api/review/debug/memory-curve` returns interval histograms and bucket stats.
 - **Unit Tests**: `tests/test_sm2_core.py` ensures mathematical correctness of the interval logic.
 
 ### 3. Async/Sync Hybrid

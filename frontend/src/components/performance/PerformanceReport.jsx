@@ -85,16 +85,24 @@ const PerformanceReport = () => {
                             {d} DAYS
                         </button>
                     ))}
+                    {/* Debug Links */}
+                    <div className="flex gap-2 mt-4 pt-4 border-t border-border/50">
+                        <button
+                            onClick={() => navigate('/performance/debug')}
+                            className="px-3 py-1 border border-border text-text-muted hover:border-accent-primary hover:text-accent-primary flex items-center gap-2 font-mono text-xs transition-colors"
+                        >
+                            <RefreshCw className="w-3 h-3" />
+                            ALGO_DEBUG
+                        </button>
+                        <button
+                            onClick={() => navigate('/performance/memory-debug')}
+                            className="px-3 py-1 border border-border text-text-muted hover:border-accent-info hover:text-accent-info flex items-center gap-2 font-mono text-xs transition-colors"
+                        >
+                            <Brain className="w-3 h-3" />
+                            CURVE_DEBUG
+                        </button>
+                    </div>
                 </div>
-
-                {/* Debug Link */}
-                <button
-                    onClick={() => navigate('/performance/debug')}
-                    className="ml-auto px-3 py-1 border border-border text-text-muted hover:border-accent-primary hover:text-accent-primary flex items-center gap-2 font-mono text-xs transition-colors"
-                >
-                    <RefreshCw className="w-3 h-3" />
-                    ALGO_DEBUG
-                </button>
             </header>
 
             {/* Recommendation Banner (from ProfileStats) */}

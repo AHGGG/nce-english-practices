@@ -14,6 +14,7 @@ import LabCalibration from './components/lab/LabCalibration';
 import SentenceStudy from './components/sentence-study';
 import ReviewQueue from './views/ReviewQueue';
 import ReviewDebug from './views/ReviewDebug';
+import MemoryCurveDebug from './views/MemoryCurveDebug';
 
 function App() {
   return (
@@ -36,6 +37,7 @@ function App() {
             <Route path="/aui-stream-demo" element={<AUIStreamingDemo />} />
             <Route path="/review-queue" element={<ReviewQueue />} />
             <Route path="/performance/debug" element={<ReviewDebug />} />
+            <Route path="/performance/memory-debug" element={<MemoryCurveDebug />} />
             <Route path="/profile-stats" element={<Navigate to="/performance" replace />} />
 
             {/* Fallback */}

@@ -271,6 +271,185 @@ async def get_review_schedule_debug(
     return ReviewScheduleResponse(schedule=schedule)
 
 
+class MemoryCurveDebugBucket(BaseModel):
+    """Debug info for a memory curve bucket."""
+    day: int
+    interval_range: str
+    sample_size: int
+    success_count: int
+    retention_rate: Optional[float]
+
+
+class MemoryCurveDebugLog(BaseModel):
+    """Debug info for a single review log."""
+    id: int
+    review_item_id: int
+    interval_at_review: float
+    quality: int
+    reviewed_at: str
+    duration_ms: int
+    sentence_preview: Optional[str] = None
+
+
+class MemoryCurveDebugResponse(BaseModel):
+    """Debug response for memory curve analysis."""
+    total_logs: int
+    interval_distribution: Dict[str, int]  # interval range -> count
+    buckets: List[MemoryCurveDebugBucket]
+    recent_logs: List[MemoryCurveDebugLog]
+    summary: Dict[str, Any]
+
+
+@router.get("/debug/memory-curve", response_model=MemoryCurveDebugResponse)
+async def get_memory_curve_debug(
+    user_id: str = "default_user",
+    limit: int = 100,
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Get detailed debug info for memory curve analysis.
+    Shows ReviewLog data, interval distribution, and bucket statistics.
+    """
+    # Bucket ranges (same as in get_memory_curve_data)
+    bucket_ranges = {
+        1: (0, 2),
+        3: (2, 5),
+        7: (5, 10),
+        14: (10, 21),
+        30: (21, 45),
+    }
+
+    # 1. Get total log count
+    total_stmt = (
+        select(func.count())
+        .select_from(ReviewLog)
+        .join(ReviewItem)
+        .where(ReviewItem.user_id == user_id)
+    )
+    total_result = await db.execute(total_stmt)
+    total_logs = total_result.scalar() or 0
+
+    # 2. Get interval distribution
+    interval_dist_stmt = (
+        select(
+            ReviewLog.interval_at_review,
+            func.count().label("count")
+        )
+        .join(ReviewItem)
+        .where(ReviewItem.user_id == user_id)
+        .group_by(ReviewLog.interval_at_review)
+        .order_by(ReviewLog.interval_at_review)
+    )
+    dist_result = await db.execute(interval_dist_stmt)
+    dist_rows = dist_result.all()
+
+    interval_distribution = {}
+    for row in dist_rows:
+        interval_val = row.interval_at_review
+        count = row.count
+        # Group into readable ranges
+        if interval_val < 2:
+            key = "0-2 days"
+        elif interval_val < 5:
+            key = "2-5 days"
+        elif interval_val < 10:
+            key = "5-10 days"
+        elif interval_val < 21:
+            key = "10-21 days"
+        elif interval_val < 45:
+            key = "21-45 days"
+        else:
+            key = "45+ days"
+        interval_distribution[key] = interval_distribution.get(key, 0) + count
+
+    # 3. Get bucket statistics
+    from sqlalchemy import and_, case
+    buckets = []
+    sorted_days = sorted(bucket_ranges.keys())
+
+    for day in sorted_days:
+        min_int, max_int = bucket_ranges[day]
+        bucket_stmt = (
+            select(
+                func.count().label("total"),
+                func.count(case((ReviewLog.quality >= 3, 1), else_=None)).label("success")
+            )
+            .select_from(ReviewLog)
+            .join(ReviewItem)
+            .where(ReviewItem.user_id == user_id)
+            .where(ReviewLog.interval_at_review >= min_int)
+            .where(ReviewLog.interval_at_review < max_int)
+        )
+        bucket_result = await db.execute(bucket_stmt)
+        bucket_row = bucket_result.one()
+
+        sample_size = bucket_row.total or 0
+        success_count = bucket_row.success or 0
+        retention_rate = round(success_count / sample_size, 2) if sample_size > 0 else None
+
+        buckets.append(MemoryCurveDebugBucket(
+            day=day,
+            interval_range=f"{min_int}-{max_int}",
+            sample_size=sample_size,
+            success_count=success_count,
+            retention_rate=retention_rate
+        ))
+
+    # 4. Get recent logs with sentence preview
+    logs_stmt = (
+        select(ReviewLog, ReviewItem.sentence_text)
+        .join(ReviewItem)
+        .where(ReviewItem.user_id == user_id)
+        .order_by(ReviewLog.reviewed_at.desc())
+        .limit(limit)
+    )
+    logs_result = await db.execute(logs_stmt)
+    logs_rows = logs_result.all()
+
+    recent_logs = []
+    for row in logs_rows:
+        log = row[0]
+        sentence = row[1]
+        recent_logs.append(MemoryCurveDebugLog(
+            id=log.id,
+            review_item_id=log.review_item_id,
+            interval_at_review=log.interval_at_review,
+            quality=log.quality,
+            reviewed_at=log.reviewed_at.isoformat(),
+            duration_ms=log.duration_ms,
+            sentence_preview=sentence[:50] + "..." if sentence and len(sentence) > 50 else sentence
+        ))
+
+    # 5. Summary stats
+    avg_quality_stmt = (
+        select(func.avg(ReviewLog.quality))
+        .join(ReviewItem)
+        .where(ReviewItem.user_id == user_id)
+    )
+    avg_result = await db.execute(avg_quality_stmt)
+    avg_quality = avg_result.scalar()
+
+    summary = {
+        "total_logs": total_logs,
+        "avg_quality": round(avg_quality, 2) if avg_quality else None,
+        "buckets_with_data": sum(1 for b in buckets if b.sample_size > 0),
+        "total_buckets": len(buckets),
+        "explanation": (
+            "Memory curve uses interval_at_review to bucket reviews. "
+            "Day 1 bucket (0-2 days) contains first reviews. "
+            "Later buckets only have data after successful reviews increase the interval."
+        )
+    }
+
+    return MemoryCurveDebugResponse(
+        total_logs=total_logs,
+        interval_distribution=interval_distribution,
+        buckets=buckets,
+        recent_logs=recent_logs,
+        summary=summary
+    )
+
+
 @router.get("/context/{item_id}", response_model=ReviewContextResponse)
 async def get_review_context(item_id: int, db: AsyncSession = Depends(get_db)):
     """
