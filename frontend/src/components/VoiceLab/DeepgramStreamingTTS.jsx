@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Card, Button, Tag, Select } from '../ui';
+import { Card, Button, Tag, Select, Textarea } from '../ui';
 import { Play } from 'lucide-react';
 
 const DeepgramStreamingTTS = () => {
@@ -195,8 +195,8 @@ const DeepgramStreamingTTS = () => {
                         </div>
 
                         <div className="mb-4">
-                            <label className="block text-xs font-mono text-text-muted mb-2">Voice</label>
                             <Select
+                                label="Voice"
                                 value={voice}
                                 onChange={(e) => setVoice(e.target.value)}
                                 disabled={connectionState === 'connected'}
@@ -228,8 +228,8 @@ const DeepgramStreamingTTS = () => {
 
             <Card title="Streaming Input">
                 <div className="flex flex-col h-full space-y-4">
-                    <textarea
-                        className="w-full flex-grow p-3 bg-bg-base border border-border rounded font-serif text-lg focus:border-accent-info outline-none resize-none min-h-[150px]"
+                    <Textarea
+                        className="flex-grow font-serif text-lg resize-none min-h-[150px]"
                         value={textInput}
                         onChange={(e) => setTextInput(e.target.value)}
                         placeholder="Type text to stream..."

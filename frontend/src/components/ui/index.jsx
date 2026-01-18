@@ -129,6 +129,26 @@ export const Tag = ({ children, variant = "solid", color = "green", className = 
     );
 };
 
+export const Textarea = ({ label, error, className = "", ...props }) => {
+    const id = useId();
+    const errorId = useId();
+    const inputId = props.id || id;
+
+    return (
+        <div className={`flex flex-col gap-1.5 ${className}`}>
+            {label && <label htmlFor={inputId} className="text-xs font-mono font-bold text-text-muted uppercase">{label}</label>}
+            <textarea
+                id={inputId}
+                className={`w-full bg-bg-elevated border border-border text-text-primary px-4 py-3 text-sm font-mono rounded-xl focus:outline-none focus:border-accent-primary focus:ring-1 focus:ring-accent-primary transition-all placeholder:text-text-muted/50 ${error ? 'border-accent-danger focus:border-accent-danger focus:ring-accent-danger' : ''}`}
+                aria-invalid={!!error}
+                aria-describedby={error ? errorId : undefined}
+                {...props}
+            />
+            {error && <span id={errorId} role="alert" className="text-[10px] text-accent-danger font-mono">{error}</span>}
+        </div>
+    );
+};
+
 export const Select = ({ label, options = [], className = "", error, ...props }) => {
     const selectId = useId();
     const errorId = useId();
@@ -140,7 +160,7 @@ export const Select = ({ label, options = [], className = "", error, ...props })
             <div className="relative">
                 <select
                     id={inputId}
-                    className={`w-full bg-bg-elevated border border-border text-text-primary px-4 py-2.5 text-sm font-mono focus:outline-none focus:border-accent-primary focus:ring-1 focus:ring-accent-primary transition-all appearance-none cursor-pointer ${error ? 'border-accent-danger focus:border-accent-danger focus:ring-accent-danger' : ''}`}
+                    className={`w-full bg-bg-elevated border border-border text-text-primary px-4 py-2.5 text-sm font-mono rounded-xl focus:outline-none focus:border-accent-primary focus:ring-1 focus:ring-accent-primary transition-all appearance-none cursor-pointer ${error ? 'border-accent-danger focus:border-accent-danger focus:ring-accent-danger' : ''}`}
                     aria-invalid={!!error}
                     aria-describedby={error ? errorId : undefined}
                     {...props}

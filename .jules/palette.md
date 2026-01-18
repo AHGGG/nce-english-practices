@@ -5,3 +5,7 @@
 ## 2025-02-18 - Label Association for Raw Inputs
 **Learning:** Raw `<input>`/`<select>` elements in feature panels often lack `id` and `htmlFor` associations, unlike the base UI components which handle this.
 **Action:** When auditing feature panels, check for disconnected labels on raw form elements and use `useId` to fix them.
+
+## 2025-02-20 - Missing Form Primitives Lead to Inconsistency
+**Learning:** The absence of a base `Textarea` component led to consumers implementing raw `<textarea>` elements with inconsistent styling (fonts, borders, rounded corners) and accessibility (missing `aria-describedby`).
+**Action:** Audit `ui/index.jsx` for missing standard HTML form primitives (Textarea, Checkbox, Radio) and implement them to prevent inconsistent "one-off" implementations.
