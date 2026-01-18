@@ -130,9 +130,23 @@ export async function logout() {
  * Get current user profile
  */
 export async function getCurrentUser() {
-  const token = getAccessToken();
+  let token = getAccessToken();
+  
+  // 1. Proactive check: If token is missing, we can't do anything (unless we try cookie-only refresh? No, design requires token first)
   if (!token) return null;
 
+  // 2. Proactive Refresh: If token is expired, try to refresh BEFORE hitting the API
+  if (isTokenExpired()) {
+    try {
+      await refreshAccessToken();
+      token = getAccessToken(); // Update local var with new token
+    } catch {
+      // Refresh failed (cookie expired?), return null to force login
+      return null;
+    }
+  }
+
+  // 3. Make the request
   const response = await fetch(`${API_BASE}/me`, {
     headers: {
       Authorization: `Bearer ${token}`,
@@ -141,9 +155,10 @@ export async function getCurrentUser() {
 
   if (!response.ok) {
     if (response.status === 401) {
-      // Try to refresh token
+      // 4. Reactive Retry: Token might have been revoked server-side or expired just now
       try {
         await refreshAccessToken();
+        // Recurse once with new token
         return getCurrentUser();
       } catch {
         return null;
