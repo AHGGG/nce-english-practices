@@ -7,6 +7,7 @@ import os
 
 from app.services.dictionary import dict_manager
 from app.api.routers import (
+    auth,
     voice,
     dictionary,
     content,
@@ -29,6 +30,7 @@ from app.api.routers import (
     verify,
     images,
 )
+
 from app.services.log_collector import setup_logging
 import logging
 
@@ -70,6 +72,7 @@ async def lifespan(app: FastAPI):
 app = FastAPI(title="NCE English Practice", lifespan=lifespan)
 
 # Include Routers
+app.include_router(auth.router)  # Auth routes first
 app.include_router(voice.router)
 app.include_router(dictionary.router)
 app.include_router(content.router)

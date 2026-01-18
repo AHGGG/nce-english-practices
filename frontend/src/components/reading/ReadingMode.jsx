@@ -7,11 +7,12 @@ import SentenceInspector from './SentenceInspector';
 import Lightbox from './Lightbox';
 import { HIGHLIGHT_OPTIONS, BATCH_SIZE, mapLevelToOptionIndex } from './constants';
 import useWordExplainer from '../../hooks/useWordExplainer';
+import { authFetch } from '../../api/auth';
 
 // Simple API helper for ReadingTracker
 const api = {
     post: async (url, data) => {
-        const res = await fetch(url, {
+        const res = await authFetch(url, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(data)
@@ -19,7 +20,7 @@ const api = {
         return res.json();
     },
     put: async (url, data) => {
-        const res = await fetch(url, {
+        const res = await authFetch(url, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(data)
@@ -105,7 +106,7 @@ const ReadingMode = () => {
     // Fetch user's calibration level and auto-select highlight option
     const fetchCalibrationLevel = async () => {
         try {
-            const res = await fetch('/api/proficiency/calibration/level');
+            const res = await authFetch('/api/proficiency/calibration/level');
             if (res.ok) {
                 const data = await res.json();
                 if (data.level !== null && data.level !== undefined) {
@@ -134,7 +135,7 @@ const ReadingMode = () => {
     const fetchArticleList = async () => {
         setIsLoading(true);
         try {
-            const res = await fetch('/api/reading/epub/list');
+            const res = await authFetch('/api/reading/epub/list');
             if (res.ok) {
                 const data = await res.json();
                 const articlesData = data.articles || [];
@@ -142,7 +143,7 @@ const ReadingMode = () => {
                 // Fetch article status to get completion info
                 if (data.filename && articlesData.length > 0) {
                     try {
-                        const statusRes = await fetch(`/api/content/article-status?filename=${encodeURIComponent(data.filename)}`);
+                        const statusRes = await authFetch(`/api/content/article-status?filename=${encodeURIComponent(data.filename)}`);
                         if (statusRes.ok) {
                             const statusData = await statusRes.json();
                             // Merge status into articles
@@ -198,7 +199,7 @@ const ReadingMode = () => {
                 }
             }
 
-            const res = await fetch(url);
+            const res = await authFetch(url);
             if (res.ok) {
                 const data = await res.json();
                 // Vocabulary highlights (COCA, CET-4, etc.)

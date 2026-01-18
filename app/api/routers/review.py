@@ -15,6 +15,7 @@ from sqlalchemy.engine import Result
 
 from app.core.db import get_db
 from app.models.orm import ReviewItem, ReviewLog
+from app.api.routers.auth import get_current_user_id
 
 
 router = APIRouter(prefix="/api/review", tags=["review"])
@@ -72,7 +73,6 @@ class CreateReviewRequest(BaseModel):
     sentence_text: str
     highlighted_items: List[str] = []
     difficulty_type: str = "vocabulary"
-    user_id: str = "default_user"
 
 
 class CreateReviewResponse(BaseModel):
@@ -311,7 +311,7 @@ class MemoryCurveDebugResponse(BaseModel):
 
 @router.get("/debug/memory-curve", response_model=MemoryCurveDebugResponse)
 async def get_memory_curve_debug(
-    user_id: str = "default_user",
+    user_id: str = Depends(get_current_user_id),
     limit: int = 100,
     db: AsyncSession = Depends(get_db)
 ):
@@ -551,7 +551,7 @@ async def get_review_context(item_id: int, db: AsyncSession = Depends(get_db)):
 
 @router.get("/queue", response_model=ReviewQueueResponse)
 async def get_review_queue(
-    user_id: str = "default_user", limit: int = 20, db: AsyncSession = Depends(get_db)
+    user_id: str = Depends(get_current_user_id), limit: int = 20, db: AsyncSession = Depends(get_db)
 ):
     """Get review items that are due for review (next_review_at <= now)."""
     now = datetime.utcnow()
@@ -599,7 +599,7 @@ async def get_review_queue(
 
 @router.get("/random", response_model=ReviewQueueResponse)
 async def get_random_review(
-    user_id: str = "default_user", limit: int = 20, db: AsyncSession = Depends(get_db)
+    user_id: str = Depends(get_current_user_id), limit: int = 20, db: AsyncSession = Depends(get_db)
 ):
     """Get random review items for extra practice (does not affect SM-2 schedule)."""
     # Use random ordering
@@ -687,13 +687,15 @@ async def complete_review(
 
 @router.post("/create", response_model=CreateReviewResponse)
 async def create_review_item(
-    req: CreateReviewRequest, db: AsyncSession = Depends(get_db)
+    req: CreateReviewRequest,
+    user_id: str = Depends(get_current_user_id),
+    db: AsyncSession = Depends(get_db)
 ):
     """Create a new review item (typically called when user studies a sentence)."""
     # Check if item already exists (prevent duplicates)
     stmt = (
         select(ReviewItem)
-        .where(ReviewItem.user_id == req.user_id)
+        .where(ReviewItem.user_id == user_id)
         .where(ReviewItem.source_id == req.source_id)
         .where(ReviewItem.sentence_index == req.sentence_index)
     )
@@ -715,7 +717,7 @@ async def create_review_item(
     # Create new review item
     now = datetime.utcnow()
     item = ReviewItem(
-        user_id=req.user_id,
+        user_id=user_id,
         source_id=req.source_id,
         sentence_index=req.sentence_index,
         sentence_text=req.sentence_text,
@@ -738,7 +740,7 @@ async def create_review_item(
 
 @router.get("/memory-curve", response_model=MemoryCurveResponse)
 async def get_memory_curve(
-    user_id: str = "default_user", db: AsyncSession = Depends(get_db)
+    user_id: str = Depends(get_current_user_id), db: AsyncSession = Depends(get_db)
 ):
     """
     Get memory curve statistics comparing theoretical Ebbinghaus curve
@@ -779,7 +781,7 @@ async def get_memory_curve(
 
 @router.get("/stats")
 async def get_review_stats(
-    user_id: str = "default_user", db: AsyncSession = Depends(get_db)
+    user_id: str = Depends(get_current_user_id), db: AsyncSession = Depends(get_db)
 ):
     """Get overall review statistics for the user."""
     # Total items

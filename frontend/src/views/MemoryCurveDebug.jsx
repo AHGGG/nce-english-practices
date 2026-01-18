@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Activity, RotateCw, BarChart2, List, Info, ChevronDown, ChevronRight, CheckCircle, XCircle, BookOpen, HelpCircle } from 'lucide-react';
 import { Card, Tag } from '../components/ui';
+import { authFetch } from '../api/auth';
 
 const MemoryCurveDebug = () => {
     const [data, setData] = useState(null);
@@ -15,7 +16,7 @@ const MemoryCurveDebug = () => {
     const fetchData = async () => {
         setLoading(true);
         try {
-            const res = await fetch('/api/review/debug/memory-curve');
+            const res = await authFetch('/api/review/debug/memory-curve');
             if (res.ok) {
                 const json = await res.json();
                 setData(json);

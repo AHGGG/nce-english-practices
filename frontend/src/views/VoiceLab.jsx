@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, Button, Tag } from '../components/ui';
 
+import { authFetch } from '../api/auth';
+
 import TTSPanel from '../components/VoiceLab/TTSPanel';
 import STTPanel from '../components/VoiceLab/STTPanel';
 import LivePanel from '../components/VoiceLab/LivePanel';
@@ -41,7 +43,7 @@ const VoiceLab = () => {
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        fetch('/api/voice-lab/config')
+        authFetch('/api/voice-lab/config')
             .then(res => res.json())
             .then(data => {
                 setConfig(data);

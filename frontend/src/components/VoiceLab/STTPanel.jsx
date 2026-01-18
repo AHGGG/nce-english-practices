@@ -2,6 +2,7 @@
 import React, { useState, useRef, useId } from 'react';
 import { Card, Button, useToast } from '../ui';
 import { Mic, StopCircle, Upload, FileAudio, RefreshCw } from 'lucide-react';
+import { authFetch } from '../../api/auth';
 
 const STTPanel = ({ config, fixedProvider = null }) => {
     const { addToast } = useToast();
@@ -55,7 +56,7 @@ const STTPanel = ({ config, fixedProvider = null }) => {
             formData.append('provider', provider);
             formData.append('file', audioBlob, 'recording.webm');
 
-            const response = await fetch('/api/voice-lab/stt', {
+            const response = await authFetch('/api/voice-lab/stt', {
                 method: 'POST',
                 body: formData
             });

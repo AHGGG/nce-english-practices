@@ -1,6 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { Mic, Volume2, Play, Square, Loader2, Bot, ArrowRight, MessageSquare, RefreshCw } from 'lucide-react';
 import { Card, Button } from '../ui';
+import { authFetch } from '../../api/auth';
 
 const ConversationLoop = () => {
     // Configuration State
@@ -76,7 +77,7 @@ const ConversationLoop = () => {
             formData.append('file', audioBlob);
             formData.append('provider', sttProvider);
 
-            const sttRes = await fetch('/api/voice-lab/stt', {
+            const sttRes = await authFetch('/api/voice-lab/stt', {
                 method: 'POST',
                 body: formData,
             });
@@ -103,7 +104,7 @@ const ConversationLoop = () => {
             llmFormData.append('text', text);
             if (llmModel) llmFormData.append('model', llmModel);
 
-            const llmRes = await fetch('/api/voice-lab/llm', {
+            const llmRes = await authFetch('/api/voice-lab/llm', {
                 method: 'POST',
                 body: llmFormData
             });
@@ -133,7 +134,7 @@ const ConversationLoop = () => {
                 ttsFormData.append('voice_id', 'default');
             }
 
-            const ttsRes = await fetch('/api/voice-lab/tts', {
+            const ttsRes = await authFetch('/api/voice-lab/tts', {
                 method: 'POST',
                 body: ttsFormData
             });

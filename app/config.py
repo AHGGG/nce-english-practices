@@ -45,6 +45,15 @@ class Settings(BaseSettings):
     TEST_DASHSCOPE_ENABLED: bool = True  # Default: run Dashscope tests
     TEST_GOOGLE_ENABLED: bool = True  # Default: run Google tests
 
+    # Authentication Settings
+    # IMPORTANT: Change SECRET_KEY in production! Generate with: openssl rand -hex 32
+    SECRET_KEY: str = "dev-secret-key-change-in-production-use-openssl-rand-hex-32"
+    ALGORITHM: str = "HS256"
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 15  # Short-lived access token
+    REFRESH_TOKEN_EXPIRE_DAYS: int = 7  # Longer-lived refresh token
+    ALLOW_REGISTRATION: bool = True  # Set to False to disable public registration
+    USE_HTTPS: bool = False  # Set to True if running over HTTPS
+
     model_config = SettingsConfigDict(
         env_file=".env", env_file_encoding="utf-8", extra="ignore"
     )

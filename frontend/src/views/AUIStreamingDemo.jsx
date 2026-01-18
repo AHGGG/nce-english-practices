@@ -8,6 +8,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ChevronLeft } from 'lucide-react';
 import AUIStreamHydrator from '../components/aui/AUIStreamHydrator';
+import { authFetch } from '../api/auth';
 
 const AUIStreamingDemo = () => {
     const navigate = useNavigate();
@@ -20,7 +21,7 @@ const AUIStreamingDemo = () => {
     React.useEffect(() => {
         const fetchBooks = async () => {
             try {
-                const res = await fetch('/api/books/');
+                const res = await authFetch('/api/books/');
                 if (res.ok) {
                     const data = await res.json();
                     setBooks(data);

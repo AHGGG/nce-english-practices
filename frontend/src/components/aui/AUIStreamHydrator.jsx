@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { applyPatch } from 'fast-json-patch';
 import { useAUITransport } from '../../hooks/useAUITransport';
 import { AUIProvider } from './AUIContext';
+import { authFetch } from '../../api/auth';
 
 /**
  * AUIStreamHydrator - Handles streaming events and renders AUI components
@@ -563,7 +564,7 @@ const InterruptBanner = ({ interrupt, onAction, useWebSocket = false }) => {
             }
 
             // Fallback: Send user input via HTTP POST
-            const response = await fetch('/api/aui/input', {
+            const response = await authFetch('/api/aui/input', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({

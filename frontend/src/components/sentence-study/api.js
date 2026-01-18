@@ -3,18 +3,19 @@
  * Unified API calls for the SentenceStudy module
  */
 import { HIGHLIGHT_OPTIONS } from '../reading/constants';
+import { authFetch } from '../../api/auth';
 
 const BASE_URL = '';
 
 export const sentenceStudyApi = {
     async getProgress(sourceId) {
-        const res = await fetch(`${BASE_URL}/api/sentence-study/${encodeURIComponent(sourceId)}/progress`);
+        const res = await authFetch(`${BASE_URL}/api/sentence-study/${encodeURIComponent(sourceId)}/progress`);
         if (!res.ok) throw new Error(`Failed to get progress: ${res.statusText}`);
         return res.json();
     },
 
     async recordLearning(data) {
-        const res = await fetch(`${BASE_URL}/api/sentence-study/record`, {
+        const res = await authFetch(`${BASE_URL}/api/sentence-study/record`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(data)
@@ -24,7 +25,7 @@ export const sentenceStudyApi = {
     },
 
     async simplify(data) {
-        const res = await fetch(`${BASE_URL}/api/sentence-study/simplify`, {
+        const res = await authFetch(`${BASE_URL}/api/sentence-study/simplify`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(data)
@@ -34,7 +35,7 @@ export const sentenceStudyApi = {
     },
 
     async getBooks() {
-        const res = await fetch(`${BASE_URL}/api/reading/epub/books`);
+        const res = await authFetch(`${BASE_URL}/api/reading/epub/books`);
         if (!res.ok) throw new Error(`Failed to get books: ${res.statusText}`);
         return res.json();
     },
@@ -44,7 +45,7 @@ export const sentenceStudyApi = {
         if (filename) {
             url.searchParams.append('filename', filename);
         }
-        const res = await fetch(url);
+        const res = await authFetch(url.toString());
         if (!res.ok) throw new Error(`Failed to get articles: ${res.statusText}`);
         return res.json();
     },
@@ -57,19 +58,19 @@ export const sentenceStudyApi = {
             min_sequence: opt.minSeq || 0,
             max_sequence: opt.maxSeq || 99999
         });
-        const res = await fetch(`${BASE_URL}/api/reading/article?${params}`);
+        const res = await authFetch(`${BASE_URL}/api/reading/article?${params}`);
         if (!res.ok) throw new Error(`Failed to get article: ${res.statusText}`);
         return res.json();
     },
 
     async getCalibration() {
-        const res = await fetch(`${BASE_URL}/api/proficiency/calibration/level`);
+        const res = await authFetch(`${BASE_URL}/api/proficiency/calibration/level`);
         if (!res.ok) return null;
         return res.json();
     },
 
     async getOverview(title, fullText, totalSentences) {
-        const res = await fetch(`${BASE_URL}/api/sentence-study/overview`, {
+        const res = await authFetch(`${BASE_URL}/api/sentence-study/overview`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ title, full_text: fullText, total_sentences: totalSentences })
@@ -78,7 +79,7 @@ export const sentenceStudyApi = {
     },
 
     async getLastSession() {
-        const res = await fetch(`${BASE_URL}/api/sentence-study/last-session`);
+        const res = await authFetch(`${BASE_URL}/api/sentence-study/last-session`);
         if (!res.ok) return null;
         return res.json();
     },
@@ -86,7 +87,7 @@ export const sentenceStudyApi = {
     // Prefetch collocations for upcoming sentences (fire-and-forget)
     prefetchCollocations(sentences) {
         if (!sentences || sentences.length === 0) return;
-        fetch(`${BASE_URL}/api/sentence-study/prefetch-collocations`, {
+        authFetch(`${BASE_URL}/api/sentence-study/prefetch-collocations`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ sentences: sentences.slice(0, 5) })
@@ -95,14 +96,14 @@ export const sentenceStudyApi = {
 
     // Get all words/phrases looked up during study (for COMPLETED view)
     async getStudyHighlights(sourceId, totalSentences) {
-        const res = await fetch(`${BASE_URL}/api/sentence-study/${encodeURIComponent(sourceId)}/study-highlights?total_sentences=${totalSentences}`);
+        const res = await authFetch(`${BASE_URL}/api/sentence-study/${encodeURIComponent(sourceId)}/study-highlights?total_sentences=${totalSentences}`);
         if (!res.ok) return { word_clicks: [], phrase_clicks: [], is_complete: false };
         return res.json();
     },
 
     // Fetch collocations for a sentence
     async detectCollocations(sentence) {
-        const res = await fetch(`${BASE_URL}/api/sentence-study/detect-collocations`, {
+        const res = await authFetch(`${BASE_URL}/api/sentence-study/detect-collocations`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ sentence })
@@ -113,7 +114,7 @@ export const sentenceStudyApi = {
 
     // Stream word explanation
     async streamExplainWord(data) {
-        const res = await fetch(`${BASE_URL}/api/sentence-study/explain-word`, {
+        const res = await authFetch(`${BASE_URL}/api/sentence-study/explain-word`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(data)
@@ -123,7 +124,7 @@ export const sentenceStudyApi = {
 
     // Fetch dictionary entry
     async getDictionary(word) {
-        const res = await fetch(`${BASE_URL}/api/dictionary/ldoce/${encodeURIComponent(word)}`);
+        const res = await authFetch(`${BASE_URL}/api/dictionary/ldoce/${encodeURIComponent(word)}`);
         if (!res.ok) return null;
         return res.json();
     }

@@ -15,12 +15,12 @@ from app.database.core import (
     ReadingSession,
     SentenceLearningRecord,
 )
-from app.models.orm import VoiceSession, ReviewLog
+from app.models.orm import VoiceSession, ReviewLog, ReviewItem
 
 logger = logging.getLogger(__name__)
 
 
-async def get_performance_data(days: int = 30) -> Dict[str, Any]:
+async def get_performance_data(days: int = 30, user_id: str = "default_user") -> Dict[str, Any]:
     """
     Get simplified performance data for dashboard.
     Returns: study time, reading stats, and memory curve data.
@@ -35,11 +35,17 @@ async def get_performance_data(days: int = 30) -> Dict[str, Any]:
             # Now: 1 query using scalar subqueries.
 
             # 1. Sentence Learning Records Subquery
+            # 1. Sentence Learning Records Subquery
             sentence_subq = select(
                 func.sum(SentenceLearningRecord.dwell_time_ms).label("s_time"),
                 func.sum(SentenceLearningRecord.word_count).label("s_words"),
                 func.count(func.distinct(SentenceLearningRecord.source_id)).label("s_articles")
-            ).where(SentenceLearningRecord.created_at >= cutoff).subquery()
+            ).where(
+                and_(
+                    SentenceLearningRecord.created_at >= cutoff,
+                    SentenceLearningRecord.user_id == user_id
+                )
+            ).subquery()
 
             # 2. Reading Sessions Subquery
             # DRY: Reusable filter condition
@@ -50,17 +56,32 @@ async def get_performance_data(days: int = 30) -> Dict[str, Any]:
                 func.sum(case((has_valid_quality, ReadingSession.validated_word_count), else_=0)).label("r_words"),
                 func.count(case((has_valid_quality, ReadingSession.id), else_=None)).label("r_sessions"),
                 func.count(func.distinct(case((has_valid_quality, ReadingSession.source_id), else_=None))).label("r_articles")
-            ).where(ReadingSession.started_at >= cutoff).subquery()
+            ).where(
+                and_(
+                    ReadingSession.started_at >= cutoff,
+                    ReadingSession.user_id == user_id
+                )
+            ).subquery()
 
             # 3. Voice Sessions Subquery
             voice_subq = select(
                 func.sum(VoiceSession.total_active_seconds).label("v_time")
-            ).where(VoiceSession.started_at >= cutoff).subquery()
+            ).where(
+                and_(
+                    VoiceSession.started_at >= cutoff,
+                    VoiceSession.user_id == user_id
+                )
+            ).subquery()
 
             # 4. Review Sessions Subquery
             review_subq = select(
                 func.sum(ReviewLog.duration_ms).label("rv_time")
-            ).where(ReviewLog.reviewed_at >= cutoff).subquery()
+            ).join(ReviewItem).where(
+                and_(
+                    ReviewLog.reviewed_at >= cutoff,
+                    ReviewItem.user_id == user_id
+                )
+            ).subquery()
 
             # Combined Query
             # Selecting columns from multiple subqueries creates a Cartesian product (cross join).
@@ -133,7 +154,7 @@ async def get_performance_data(days: int = 30) -> Dict[str, Any]:
             }
 
 
-async def get_daily_study_time(days: int = 30) -> Dict[str, Any]:
+async def get_daily_study_time(days: int = 30, user_id: str = "default_user") -> Dict[str, Any]:
     """
     Get daily study time breakdown for the last N days.
     Groups by day and mode (sentence study, reading, voice).
@@ -153,7 +174,12 @@ async def get_daily_study_time(days: int = 30) -> Dict[str, Any]:
                     ),
                     func.sum(SentenceLearningRecord.dwell_time_ms),
                 )
-                .where(SentenceLearningRecord.created_at >= cutoff)
+                .where(
+                    and_(
+                        SentenceLearningRecord.created_at >= cutoff,
+                        SentenceLearningRecord.user_id == user_id
+                    )
+                )
                 .group_by("day")
                 .order_by("day")
             )
@@ -168,7 +194,12 @@ async def get_daily_study_time(days: int = 30) -> Dict[str, Any]:
                     func.date_trunc("day", ReadingSession.started_at).label("day"),
                     func.sum(ReadingSession.total_active_seconds),
                 )
-                .where(ReadingSession.started_at >= cutoff)
+                .where(
+                    and_(
+                        ReadingSession.started_at >= cutoff,
+                        ReadingSession.user_id == user_id
+                    )
+                )
                 .group_by("day")
                 .order_by("day")
             )
@@ -183,7 +214,12 @@ async def get_daily_study_time(days: int = 30) -> Dict[str, Any]:
                     func.date_trunc("day", VoiceSession.started_at).label("day"),
                     func.sum(VoiceSession.total_active_seconds),
                 )
-                .where(VoiceSession.started_at >= cutoff)
+                .where(
+                    and_(
+                        VoiceSession.started_at >= cutoff,
+                        VoiceSession.user_id == user_id
+                    )
+                )
                 .group_by("day")
                 .order_by("day")
             )
@@ -196,7 +232,13 @@ async def get_daily_study_time(days: int = 30) -> Dict[str, Any]:
                     func.date_trunc("day", ReviewLog.reviewed_at).label("day"),
                     func.sum(ReviewLog.duration_ms),
                 )
-                .where(ReviewLog.reviewed_at >= cutoff)
+                .join(ReviewItem)
+                .where(
+                    and_(
+                        ReviewLog.reviewed_at >= cutoff,
+                        ReviewItem.user_id == user_id
+                    )
+                )
                 .group_by("day")
                 .order_by("day")
             )
@@ -251,7 +293,7 @@ async def get_memory_curve_data(user_id: str = "default_user") -> Dict[str, Any]
 
     Uses ReviewLog data from the SM-2 spaced repetition system for accurate tracking.
     """
-    from app.models.orm import ReviewItem, ReviewLog
+    from app.models.orm import ReviewItem as ReviewItemLocal
 
     async with AsyncSessionLocal() as session:
         try:
@@ -292,7 +334,7 @@ async def get_memory_curve_data(user_id: str = "default_user") -> Dict[str, Any]
                 select(*selections)
                 .join(ReviewItem)
                 .where(ReviewItem.user_id == user_id)
-                .where(ReviewLog.interval_at_review < 45)
+                .where(ReviewLog.interval_at_review < 60)
             )
 
             result = await session.execute(stmt)

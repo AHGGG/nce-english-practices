@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { X, Loader2, Sparkles, ChevronRight, AlertCircle } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import { getGapTypeInfo } from '../sentence-study/constants';
+import { authFetch } from '../../api/auth';
 
 // Get difficulty type label and color
 
@@ -50,7 +51,7 @@ const SentenceInspector = ({
         abortControllerRef.current = new AbortController();
 
         try {
-            const response = await fetch('/api/sentence-study/simplify', {
+            const response = await authFetch('/api/sentence-study/simplify', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({

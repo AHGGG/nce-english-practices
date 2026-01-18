@@ -2,7 +2,8 @@
 import { Volume2, HelpCircle, ArrowRight, Eye, EyeOff, Play, BookOpen, Languages, SkipForward, ChevronLeft, ChevronRight, Gauge, Layers } from 'lucide-react';
 import { escapeHtml } from '../../utils/security';
 import VoiceSessionTracker from '../../utils/VoiceSessionTracker';
-import * as api from '../../api/client';
+
+import { authFetch } from '../../api/auth';
 
 const NegotiationInterface = () => {
     const [sessionId, setSessionId] = useState(`session-${Date.now()}`);
@@ -68,8 +69,28 @@ const NegotiationInterface = () => {
 
     // Load voices and books on mount
     useEffect(() => {
-        // Initialize tracker
-        trackerRef.current = new VoiceSessionTracker(api);
+        // Initialize tracker with authFetch adapter to support token refresh
+        const trackerApi = {
+            post: async (url, data) => {
+                const res = await authFetch(url, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                if (!res.ok) throw new Error(`Tracker POST failed: ${res.status}`);
+                return res.json();
+            },
+            put: async (url, data) => {
+                const res = await authFetch(url, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                if (!res.ok) throw new Error(`Tracker PUT failed: ${res.status}`);
+                return res.json();
+            }
+        };
+        trackerRef.current = new VoiceSessionTracker(trackerApi);
 
         const loadVoices = () => {
             voicesRef.current = window.speechSynthesis.getVoices();
@@ -78,7 +99,7 @@ const NegotiationInterface = () => {
 
         const fetchBooks = async () => {
             try {
-                const res = await fetch('/api/books/');
+                const res = await authFetch('/api/books/');
                 if (res.ok) {
                     const data = await res.json();
                     setBooks(data);
@@ -175,7 +196,7 @@ const NegotiationInterface = () => {
                 audioUrl = audioCacheRef.current[cacheKey];
             } else {
                 // Fetch from TTS API
-                const response = await fetch(`/api/tts?text=${encodeURIComponent(text)}`);
+                const response = await authFetch(`/api/tts?text=${encodeURIComponent(text)}`);
 
                 if (!response.ok) {
                     throw new Error('TTS request failed');
@@ -265,7 +286,7 @@ const NegotiationInterface = () => {
             }
 
             // Fetch real content from dictionary
-            const contentRes = await fetch(getContentUrl());
+            const contentRes = await authFetch(getContentUrl());
             let content = { text: "The ubiquity of smartphones has changed how we communicate.", source_word: "ubiquity", definition: "", translation: "" };
 
             if (contentRes.ok) {
@@ -350,7 +371,7 @@ const NegotiationInterface = () => {
                 setNeedsContext(false); // Reset flag
             }
 
-            const res = await fetch('/api/negotiation/interact', {
+            const res = await authFetch('/api/negotiation/interact', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(requestBody)
@@ -518,7 +539,7 @@ const NegotiationInterface = () => {
     // Fetch real content from the ContentFeeder API
     const fetchNextContent = async (excludeWord = null, customIndices = null) => {
         try {
-            const res = await fetch(getContentUrl(excludeWord, customIndices));
+            const res = await authFetch(getContentUrl(excludeWord, customIndices));
             if (res.ok) {
                 const data = await res.json();
                 setCurrentText(data.text);
@@ -571,7 +592,7 @@ const NegotiationInterface = () => {
 
         setIsContextLoading(true);
         try {
-            const res = await fetch('/api/negotiation/context', {
+            const res = await authFetch('/api/negotiation/context', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -594,7 +615,7 @@ const NegotiationInterface = () => {
     // Fetch all examples for a word
     const fetchWordExamples = async (word) => {
         try {
-            const res = await fetch(`/api/negotiation/word-examples?word=${encodeURIComponent(word)}`);
+            const res = await authFetch(`/api/negotiation/word-examples?word=${encodeURIComponent(word)}`);
             if (res.ok) {
                 const data = await res.json();
                 setWordExamples(data);
@@ -635,7 +656,7 @@ const NegotiationInterface = () => {
             if (sourceId) params.append('source_id', sourceId);
 
             // Non-blocking: fire and forget (don't await)
-            fetch(`/api/inspect?${params.toString()}`).catch(e => {
+            authFetch(`/api/inspect?${params.toString()}`).catch(e => {
                 console.warn('Failed to log word inspection:', e);
             });
         } catch (e) {
@@ -1128,7 +1149,7 @@ const NegotiationInterface = () => {
                                     if ((isEpubMode || isRssMode) && !definition && highlightedWords.length > 0) {
                                         try {
                                             const wordToLookup = highlightedWords[0];
-                                            const res = await fetch(`/api/negotiation/word-examples?word=${encodeURIComponent(wordToLookup)}`);
+                                            const res = await authFetch(`/api/negotiation/word-examples?word=${encodeURIComponent(wordToLookup)}`);
                                             if (res.ok) {
                                                 const data = await res.json();
                                                 if (data.entries && data.entries.length > 0) {

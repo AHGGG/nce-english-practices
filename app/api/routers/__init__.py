@@ -1,4 +1,5 @@
 from . import (
+    auth as auth,
     voice as voice,
     dictionary as dictionary,
     content as content,

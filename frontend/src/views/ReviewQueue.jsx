@@ -27,21 +27,23 @@ import ExplanationCard from '../components/sentence-study/views/ExplanationCard'
 import { getGapTypeInfo } from '../components/sentence-study/constants';
 import useWordExplainer from '../hooks/useWordExplainer';
 import WordInspector from '../components/reading/WordInspector';
+import { authFetch } from '../api/auth';
 
 // API helpers for SM-2 review system
+// API helpers for SM-2 review system
 const api = {
-    async getQueue(userId = 'default_user', limit = 20) {
-        const res = await fetch(`/api/review/queue?user_id=${userId}&limit=${limit}`);
+    async getQueue(limit = 20) {
+        const res = await authFetch(`/api/review/queue?limit=${limit}`);
         if (!res.ok) throw new Error('Failed to fetch review queue');
         return res.json();
     },
-    async getRandomQueue(userId = 'default_user', limit = 20) {
-        const res = await fetch(`/api/review/random?user_id=${userId}&limit=${limit}`);
+    async getRandomQueue(limit = 20) {
+        const res = await authFetch(`/api/review/random?limit=${limit}`);
         if (!res.ok) throw new Error('Failed to fetch random queue');
         return res.json();
     },
     async complete(itemId, quality, durationMs = 0) {
-        const res = await fetch('/api/review/complete', {
+        const res = await authFetch('/api/review/complete', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ item_id: itemId, quality, duration_ms: durationMs })
@@ -49,13 +51,13 @@ const api = {
         if (!res.ok) throw new Error('Failed to complete review');
         return res.json();
     },
-    async getStats(userId = 'default_user') {
-        const res = await fetch(`/api/review/stats?user_id=${userId}`);
+    async getStats() {
+        const res = await authFetch(`/api/review/stats`);
         if (!res.ok) throw new Error('Failed to fetch stats');
         return res.json();
     },
     async getContext(itemId) {
-        const res = await fetch(`/api/review/context/${itemId}`);
+        const res = await authFetch(`/api/review/context/${itemId}`);
         if (!res.ok) throw new Error('Failed to fetch context');
         return res.json();
     }
@@ -320,7 +322,7 @@ const ReviewQueue = () => {
             if (hasHighlights) {
                 // Explain highlighted items in sentence context
                 const text = currentItem.highlighted_items.join(', ');
-                res = await fetch('/api/sentence-study/explain-word', {
+                res = await authFetch('/api/sentence-study/explain-word', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
@@ -331,7 +333,7 @@ const ReviewQueue = () => {
                 });
             } else {
                 // Explain whole sentence
-                res = await fetch('/api/sentence-study/simplify', {
+                res = await authFetch('/api/sentence-study/simplify', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({

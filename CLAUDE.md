@@ -43,6 +43,32 @@ uv run python scripts/generate_cert.py  # Generate self-signed cert
 ./scripts/test.ps1       # Run All Tests (E2E + Backend)
 ```
 
+## User Administration
+
+Admin CLI for user management (`scripts/user_admin.py`):
+
+```bash
+# List all users
+uv run python scripts/user_admin.py list-users
+
+# Create a new user (when registration is closed)
+uv run python scripts/user_admin.py create-user --email admin@example.com --password secret123 --role admin
+
+# Migrate data from 'default_user' to a registered user
+uv run python scripts/user_admin.py migrate-data --to-user-id 1 --dry-run  # Preview
+uv run python scripts/user_admin.py migrate-data --to-user-id 1            # Execute
+
+# Migrate data between users
+uv run python scripts/user_admin.py migrate-data --from-user "2" --to-user-id 3
+
+# Reset user password
+uv run python scripts/user_admin.py set-password --user-id 1 --password newpassword
+
+# Deactivate/Activate user
+uv run python scripts/user_admin.py deactivate-user --user-id 2
+uv run python scripts/user_admin.py activate-user --user-id 2
+```
+
 ## Testing
 
 ```bash
@@ -76,6 +102,11 @@ DASHSCOPE_API_KEY=your_key # Alibaba Cloud Dashscope (Qwen)
 
 # Database (defaults to local postgres)
 DATABASE_URL=postgresql+asyncpg://postgres:postgres@localhost:5432/nce_practice
+
+# Authentication (IMPORTANT: Change SECRET_KEY in production!)
+# Generate with: openssl rand -hex 32
+SECRET_KEY=your-32-byte-hex-secret-key
+ALLOW_REGISTRATION=true  # Set to false to disable public registration
 ```
 
 ## Database Management
@@ -136,8 +167,52 @@ app/
 - `components/performance/` - 仪表盘 (KPI Cards, Memory Curve)
 - `hooks/useWordExplainer.js` - 词典 + LLM 解释统一逻辑
 - `utils/sseParser.js` - SSE 流解析器
+- `context/AuthContext.jsx` - Authentication state management
+- `views/auth/` - Login/Register pages
 
 
+
+### Authentication System (NEW 2026-01-18)
+
+Multi-user authentication with JWT tokens, designed for future public deployment.
+
+**Backend Components**:
+- **Model**: `app/models/orm.py::User` - User accounts with email, password hash, roles
+- **Schemas**: `app/models/auth_schemas.py` - Registration, login, token DTOs
+- **Service**: `app/services/auth.py` - Password hashing, JWT creation/verification
+- **Router**: `app/api/routers/auth.py` - REST API endpoints
+
+**API Endpoints**:
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/api/auth/register` | POST | Create new account |
+| `/api/auth/login` | POST | Login, returns JWT tokens |
+| `/api/auth/refresh` | POST | Refresh access token |
+| `/api/auth/logout` | POST | Clear refresh token cookie |
+| `/api/auth/me` | GET | Get current user profile |
+| `/api/auth/change-password` | POST | Update password |
+
+**Token Strategy**:
+- **Access Token**: Short-lived (15 min), stored in localStorage
+- **Refresh Token**: Long-lived (7 days), stored in HttpOnly cookie
+- **Auto-refresh**: Frontend `authFetch()` handles token expiry
+
+**Frontend Components**:
+- `src/api/auth.js` - Auth API utilities with auto-refresh
+- `src/context/AuthContext.jsx` - Global auth state provider
+- `src/components/ProtectedRoute.jsx` - Route guard component
+- `src/views/auth/LoginPage.jsx` - Login form with glassmorphism design
+- `src/views/auth/RegisterPage.jsx` - Registration with password strength
+
+**Security Features**:
+- Password strength validation (min 8 chars, letter + digit)
+- Failed login attempt tracking
+- Account locking support
+- Soft delete for users
+
+**Data Migration**:
+- Use admin CLI to migrate existing data: `uv run python scripts/user_admin.py migrate-data --to-user-id <id>`
+- See **User Administration** section for full CLI usage
 
 ### Database Layer
 

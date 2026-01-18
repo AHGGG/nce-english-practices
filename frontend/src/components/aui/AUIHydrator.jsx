@@ -10,11 +10,10 @@ import { getComponent } from './registry';
  * @param {Function} props.onInteract - Callback when user interacts with the component
  */
 export const AUIHydrator = ({ packet, onInteract }) => {
-    // Use useMemo to derive component without causing setState in effect
-    const Component = useMemo(() => {
-        if (!packet || packet.type !== 'aui_render') return null;
-        return getComponent(packet.ui.component);
-    }, [packet]);
+    // Direct lookup - getComponent should be stable or fast
+    const Component = (packet && packet.type === 'aui_render')
+        ? getComponent(packet.ui.component)
+        : null;
 
     if (!packet || packet.type !== 'aui_render') {
         return null;

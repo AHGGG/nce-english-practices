@@ -6,6 +6,8 @@ import Card from './cards/Card';
 import MemoryCurveChart from './widgets/MemoryCurveChart';
 import { formatDuration, formatWordCount } from './utils';
 
+import { authFetch } from '../../api/auth';
+
 /**
  * Unified Learning Analytics Dashboard
  * Combines: Study Time, Reading Stats, Memory Curve, and Sentence Study Profile
@@ -21,7 +23,7 @@ const PerformanceReport = () => {
         // Don't setLoading(true) here - it's either initial true or set by onClick
         Promise.all([
             api.get(`/api/performance?days=${days}`),
-            fetch('/api/sentence-study/profile').then(r => r.ok ? r.json() : null)
+            authFetch('/api/sentence-study/profile').then(r => r.ok ? r.json() : null)
         ])
             .then(([performanceData, profileData]) => {
                 setData(performanceData);

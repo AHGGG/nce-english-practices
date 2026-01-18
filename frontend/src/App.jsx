@@ -1,12 +1,17 @@
-import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { GlobalProvider } from './context/GlobalContext';
 import { DictionaryProvider } from './context/DictionaryContext';
+import { AuthProvider, useAuth } from './context/AuthContext';
+import ProtectedRoute from './components/ProtectedRoute';
+
+// Auth Pages
+import { LoginPage, RegisterPage } from './views/auth';
+
+// Main Pages
 import PerformanceReport from './views/PerformanceReport';
 import StudyTimeDetail from './views/StudyTimeDetail';
 import VoiceLab from './views/VoiceLab';
 import AUIStreamingDemo from './views/AUIStreamingDemo';
-
 import VoiceMode from './views/VoiceMode';
 import ReadingMode from './views/ReadingMode';
 import NavDashboard from './views/NavDashboard';
@@ -16,39 +21,166 @@ import ReviewQueue from './views/ReviewQueue';
 import ReviewDebug from './views/ReviewDebug';
 import MemoryCurveDebug from './views/MemoryCurveDebug';
 
+/**
+ * Public Route - Redirects to nav if already authenticated
+ */
+function PublicRoute({ children }) {
+  const { isAuthenticated, loading } = useAuth();
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-bg-base">
+        <div className="w-12 h-12 border-4 border-accent-primary/30 border-t-accent-primary rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  if (isAuthenticated) {
+    return <Navigate to="/nav" replace />;
+  }
+
+  return children;
+}
+
+function AppRoutes() {
+  return (
+    <Routes>
+      {/* Auth routes (public only) */}
+      <Route
+        path="/login"
+        element={
+          <PublicRoute>
+            <LoginPage />
+          </PublicRoute>
+        }
+      />
+      <Route
+        path="/register"
+        element={
+          <PublicRoute>
+            <RegisterPage />
+          </PublicRoute>
+        }
+      />
+
+      {/* Protected routes */}
+      <Route
+        path="/nav"
+        element={
+          <ProtectedRoute>
+            <NavDashboard />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/voice-lab"
+        element={
+          <ProtectedRoute>
+            <VoiceLab />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/voice"
+        element={
+          <ProtectedRoute>
+            <VoiceMode />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/reading"
+        element={
+          <ProtectedRoute>
+            <ReadingMode />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/sentence-study"
+        element={
+          <ProtectedRoute>
+            <SentenceStudy />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/lab/calibration"
+        element={
+          <ProtectedRoute>
+            <LabCalibration />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/performance"
+        element={
+          <ProtectedRoute>
+            <PerformanceReport />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/performance/time"
+        element={
+          <ProtectedRoute>
+            <StudyTimeDetail />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/aui-stream-demo"
+        element={
+          <ProtectedRoute>
+            <AUIStreamingDemo />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/review-queue"
+        element={
+          <ProtectedRoute>
+            <ReviewQueue />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/performance/debug"
+        element={
+          <ProtectedRoute>
+            <ReviewDebug />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/performance/memory-debug"
+        element={
+          <ProtectedRoute>
+            <MemoryCurveDebug />
+          </ProtectedRoute>
+        }
+      />
+
+      {/* Redirects */}
+      <Route path="/" element={<Navigate to="/nav" replace />} />
+      <Route path="/profile-stats" element={<Navigate to="/performance" replace />} />
+      <Route path="*" element={<Navigate to="/nav" replace />} />
+    </Routes>
+  );
+}
+
 function App() {
   return (
-    <GlobalProvider>
-      <DictionaryProvider>
-        <BrowserRouter>
-          <Routes>
-            {/* Default route */}
-            <Route path="/" element={<Navigate to="/nav" replace />} />
-
-            {/* Main routes */}
-            <Route path="/voice-lab" element={<VoiceLab />} />
-            <Route path="/voice" element={<VoiceMode />} />
-            <Route path="/reading" element={<ReadingMode />} />
-            <Route path="/sentence-study" element={<SentenceStudy />} />
-            <Route path="/lab/calibration" element={<LabCalibration />} />
-            <Route path="/nav" element={<NavDashboard />} />
-            <Route path="/performance" element={<PerformanceReport />} />
-            <Route path="/performance/time" element={<StudyTimeDetail />} />
-            <Route path="/aui-stream-demo" element={<AUIStreamingDemo />} />
-            <Route path="/review-queue" element={<ReviewQueue />} />
-            <Route path="/performance/debug" element={<ReviewDebug />} />
-            <Route path="/performance/memory-debug" element={<MemoryCurveDebug />} />
-            <Route path="/profile-stats" element={<Navigate to="/performance" replace />} />
-
-            {/* Fallback */}
-            <Route path="*" element={<Navigate to="/nav" replace />} />
-          </Routes>
-        </BrowserRouter>
-      </DictionaryProvider>
-    </GlobalProvider>
+    <AuthProvider>
+      <GlobalProvider>
+        <DictionaryProvider>
+          <BrowserRouter>
+            <AppRoutes />
+          </BrowserRouter>
+        </DictionaryProvider>
+      </GlobalProvider>
+    </AuthProvider>
   );
 }
 
 export default App;
-
-

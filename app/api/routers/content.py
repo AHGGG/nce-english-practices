@@ -1,6 +1,8 @@
-from fastapi import APIRouter, HTTPException, Response
+from fastapi import APIRouter, HTTPException, Response, Depends
 from typing import Optional, List, Dict, Any
 from bs4 import BeautifulSoup
+
+from app.api.routers.auth import get_current_user_id
 
 router = APIRouter()
 
@@ -148,7 +150,7 @@ async def get_article_content(
     book_code: Optional[str] = None,
     min_sequence: Optional[int] = None,
     max_sequence: Optional[int] = None,
-    user_id: str = "default_user",
+    user_id: str = Depends(get_current_user_id),
 ):
     """
     Get full article content by source_id.
@@ -363,7 +365,7 @@ from app.models.orm import ReadingSession, SentenceLearningRecord, ReviewItem
 
 
 @router.get("/api/content/article-status")
-async def get_article_status(filename: str, user_id: str = "default_user"):
+async def get_article_status(filename: str, user_id: str = Depends(get_current_user_id)):
     """
     Get combined reading and study status for all articles in an EPUB.
 

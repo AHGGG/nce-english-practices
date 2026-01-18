@@ -18,6 +18,7 @@ from app.models.context_schemas import (
     UpdateLearningStatusRequest,
 )
 from app.services.context_service import context_service
+from app.api.routers.auth import get_current_user_id
 
 
 router = APIRouter(prefix="/api/context", tags=["Context Resources"])
@@ -144,7 +145,7 @@ async def update_learning_status(
 )
 async def get_word_progress(
     word: str,
-    user_id: str = "default_user",
+    user_id: str = Depends(get_current_user_id),
     db: AsyncSession = Depends(get_db),
 ):
     """

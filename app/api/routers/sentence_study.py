@@ -49,6 +49,7 @@ from app.models.sentence_study_schemas import (
     WordToReview,
     ProfileResponse,
 )
+from app.api.routers.auth import get_current_user_id
 
 router = APIRouter(prefix="/api/sentence-study", tags=["sentence-study"])
 
@@ -764,7 +765,7 @@ def _calculate_review_interval(review_count: int, gap_type: str = None) -> timed
 
 @router.get("/queue", response_model=List[ReviewQueueItem])
 async def get_review_queue(
-    user_id: str = "default_user", db: AsyncSession = Depends(get_db)
+    user_id: str = Depends(get_current_user_id), db: AsyncSession = Depends(get_db)
 ):
     """Get sentences due for review (scheduled_review <= now)."""
     now = datetime.utcnow()
@@ -832,9 +833,8 @@ async def complete_review(req: ReviewRequest, db: AsyncSession = Depends(get_db)
 
 @router.get("/profile", response_model=ProfileResponse)
 async def get_user_profile(
-    user_id: str = "default_user", db: AsyncSession = Depends(get_db)
+    user_id: str = Depends(get_current_user_id), db: AsyncSession = Depends(get_db)
 ):
-    """Get user comprehension profile with actionable stats."""
 
     # 1. Get study stats from SentenceLearningRecord
     stats_result = await db.execute(

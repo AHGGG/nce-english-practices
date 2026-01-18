@@ -2,6 +2,7 @@
 import { Card, Button } from "../../ui";
 import { Loader2, CheckCircle2, XCircle, RefreshCw } from "lucide-react";
 import { useAUI } from '../AUIContext';
+import { authFetch } from '../../../api/auth';
 
 /**
  * InteractiveDemo Component
@@ -74,7 +75,7 @@ const InteractiveDemo = ({
             }
 
             // Fallback: Send via HTTP POST
-            const response = await fetch('/api/aui/input', {
+            const response = await authFetch('/api/aui/input', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

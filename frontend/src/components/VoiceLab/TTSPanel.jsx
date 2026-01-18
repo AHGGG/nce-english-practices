@@ -2,6 +2,7 @@
 import React, { useState, useRef, useId } from 'react';
 import { Card, Button, Input } from '../ui';
 import { Play, Download, Loader2, StopCircle, Volume2 } from 'lucide-react';
+import { authFetch } from '../../api/auth';
 
 const TTSPanel = ({ config, fixedProvider = null }) => {
     const [provider, setProvider] = useState(fixedProvider || 'google');
@@ -33,7 +34,7 @@ const TTSPanel = ({ config, fixedProvider = null }) => {
             formData.append('voice_id', voice || defaultVoiceId);
             formData.append('model', 'default');
 
-            const response = await fetch('/api/voice-lab/tts', {
+            const response = await authFetch('/api/voice-lab/tts', {
                 method: 'POST',
                 body: formData
             });

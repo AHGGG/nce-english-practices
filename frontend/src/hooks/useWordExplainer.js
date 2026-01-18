@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { parseJSONSSEStream } from '../utils/sseParser';
+import { authFetch } from '../api/auth';
 
 /**
  * useWordExplainer - Shared hook for word/phrase explanation functionality
@@ -45,8 +46,8 @@ export function useWordExplainer() {
 
         const fetchBothDictionaries = async (word) => {
             const [ldoceRes, collinsRes] = await Promise.all([
-                fetch(`/api/dictionary/ldoce/${encodeURIComponent(word)}`),
-                fetch(`/api/dictionary/collins/${encodeURIComponent(word)}`)
+                authFetch(`/api/dictionary/ldoce/${encodeURIComponent(word)}`),
+                authFetch(`/api/dictionary/collins/${encodeURIComponent(word)}`)
             ]);
 
             const ldoceData = ldoceRes.ok ? await ldoceRes.json() : null;
@@ -121,7 +122,7 @@ export function useWordExplainer() {
 
         const streamExplanation = async () => {
             try {
-                const res = await fetch('/api/sentence-study/explain-word', {
+                const res = await authFetch('/api/sentence-study/explain-word', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
@@ -150,7 +151,7 @@ export function useWordExplainer() {
                                 console.log('[useWordExplainer] Image suitable, generating...');
                                 setIsGeneratingImage(true);
                                 try {
-                                    const genRes = await fetch('/api/generated-images/generate', {
+                                    const genRes = await authFetch('/api/generated-images/generate', {
                                         method: 'POST',
                                         headers: { 'Content-Type': 'application/json' },
                                         body: JSON.stringify({

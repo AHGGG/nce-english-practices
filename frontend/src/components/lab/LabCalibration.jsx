@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Check, X, ArrowRight, Brain, Zap, HelpCircle, BookOpen, ChevronLeft } from 'lucide-react';
 import WordInspector from '../reading/WordInspector';
 import MemoizedSentence from '../reading/MemoizedSentence';
+import { authFetch } from '../../api/auth';
 
 /**
  * Proficiency Lab - Calibration Mission
@@ -32,7 +33,7 @@ const LabCalibration = () => {
 
     const fetchSession = async (level) => {
         try {
-            const res = await fetch(`/api/proficiency/calibration/session?level=${level}&count=5`);
+            const res = await authFetch(`/api/proficiency/calibration/session?level=${level}&count=5`);
             if (res.ok) {
                 const data = await res.json();
                 setSentences(data.sentences);
@@ -63,7 +64,7 @@ const LabCalibration = () => {
         const fetchData = async () => {
             try {
                 // Fetch full dictionary data from LDOCE
-                const res = await fetch(`/api/dictionary/ldoce/${encodeURIComponent(selectedWord)}`);
+                const res = await authFetch(`/api/dictionary/ldoce/${encodeURIComponent(selectedWord)}`);
                 if (!cancelled && res.ok) {
                     const data = await res.json();
                     setInspectorData(data);
@@ -98,7 +99,7 @@ const LabCalibration = () => {
     const handleMarkAsKnown = async (word) => {
         // Just API call, Lab doesn't need to update highlights visually right now (or could?)
         try {
-            await fetch('/api/proficiency/word', {
+            await authFetch('/api/proficiency/word', {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ word: word, status: 'mastered' })
@@ -160,7 +161,7 @@ const LabCalibration = () => {
         setStep('processing');
         try {
             // 1. Analyze calibration data
-            const res = await fetch('/api/proficiency/calibrate', {
+            const res = await authFetch('/api/proficiency/calibrate', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ session_data: finalData })
@@ -169,7 +170,7 @@ const LabCalibration = () => {
             setDiagnosis(data);
 
             // 2. Save calibration level
-            await fetch('/api/proficiency/calibration/level', {
+            await authFetch('/api/proficiency/calibration/level', {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ level: currentLevel })

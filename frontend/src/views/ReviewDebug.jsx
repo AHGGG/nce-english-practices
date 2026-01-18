@@ -1,20 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import { Calendar, RotateCw, Calculator, HelpCircle, ArrowRight } from 'lucide-react';
 import { Card, Tag } from '../components/ui';
+import { authFetch } from '../api/auth';
 
 const ReviewDebug = () => {
     const [schedule, setSchedule] = useState({});
     const [loading, setLoading] = useState(true);
     const [days, setDays] = useState(14);
 
-    useEffect(() => {
-        fetchSchedule();
-    }, [days, fetchSchedule]);
-
     const fetchSchedule = React.useCallback(async () => {
         setLoading(true);
         try {
-            const res = await fetch(`/api/review/debug/schedule?days=${days}`);
+            const res = await authFetch(`/api/review/debug/schedule?days=${days}`);
             if (res.ok) {
                 const json = await res.json();
                 setSchedule(json.schedule || {});
@@ -25,6 +22,10 @@ const ReviewDebug = () => {
             setLoading(false);
         }
     }, [days]);
+
+    useEffect(() => {
+        fetchSchedule();
+    }, [days, fetchSchedule]);
 
     const dates = Object.keys(schedule).sort();
 

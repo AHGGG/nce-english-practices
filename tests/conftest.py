@@ -92,7 +92,14 @@ async def client(db_session) -> AsyncGenerator[AsyncClient, None]:
     async def override_get_db():
         yield db_session
 
+    async def override_get_current_user_id():
+        return "default_user"
+
     app.dependency_overrides[get_db] = override_get_db
+    
+    # Needs to be imported inside/safely to avoid circular imports if any
+    from app.api.routers.auth import get_current_user_id
+    app.dependency_overrides[get_current_user_id] = override_get_current_user_id
 
     async with AsyncClient(
         transport=ASGITransport(app=app), base_url="http://test"

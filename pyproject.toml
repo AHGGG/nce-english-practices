@@ -26,6 +26,12 @@ dependencies = [
     "feedparser>=6.0.12",
     "ebooklib>=0.20",
     "lxml>=6.0.2",
+    "passlib[bcrypt]>=1.7.4",
+    "python-jose[cryptography]>=3.5.0",
+    "email-validator>=2.3.0",
+    "bcrypt>=4.0.0,<5.0.0",
+    "rich>=14.2.0",
+    "click>=8.3.1",
 ]
 
 [project.optional-dependencies]

@@ -14,6 +14,7 @@ import { HIGHLIGHT_OPTIONS, mapLevelToOptionIndex } from '../reading/constants';
 import WordInspector from '../reading/WordInspector';
 import useWordExplainer from '../../hooks/useWordExplainer';
 import { parseJSONSSEStream, isSSEResponse } from '../../utils/sseParser';
+import { authFetch } from '../../api/auth';
 
 // View components
 import {
@@ -94,7 +95,7 @@ const SentenceStudy = () => {
     const fetchStatusAndSort = async (filename, articlesList) => {
         if (!filename || articlesList.length === 0) return articlesList;
         try {
-            const statusRes = await fetch(`/api/content/article-status?filename=${encodeURIComponent(filename)}`);
+            const statusRes = await authFetch(`/api/content/article-status?filename=${encodeURIComponent(filename)}`);
             if (statusRes.ok) {
                 const statusData = await statusRes.json();
                 const statusMap = new Map(
@@ -374,7 +375,7 @@ const SentenceStudy = () => {
         const nextSentence = currentIndex < flatSentences.length - 1 ? flatSentences[currentIndex + 1]?.text : null;
 
         try {
-            const res = await fetch('/api/sentence-study/simplify', {
+            const res = await authFetch('/api/sentence-study/simplify', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
