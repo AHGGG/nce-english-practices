@@ -1,9 +1,12 @@
 from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel
 from typing import List, Optional
+import logging
 
 from app.services.proficiency_service import proficiency_service
 from app.api.routers.auth import get_current_user_id
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(tags=["Proficiency"])
 
@@ -32,7 +35,8 @@ async def update_word_proficiency(payload: WordUpdatePayload, user_id: str = Dep
         )
         return {"status": "success", "word": record.word, "new_status": record.status}
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.error(f"Error updating word proficiency: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Internal processing error")
 
 
 @router.post("/api/proficiency/sweep")
@@ -48,7 +52,8 @@ async def sweep_words(payload: SweepPayload, user_id: str = Depends(get_current_
         )
         return result
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.error(f"Error processing sweep: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Internal processing error")
 
 
 class CalibrationItem(BaseModel):
@@ -75,7 +80,8 @@ async def calibrate_proficiency(payload: CalibrationPayload, user_id: str = Depe
         )
         return result
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.error(f"Error analyzing calibration: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Internal processing error")
 
 
 @router.get("/api/proficiency/calibration/session")
@@ -89,7 +95,8 @@ async def get_calibration_session(level: int = 0, count: int = 5):
         )
         return {"sentences": sentences, "level": level}
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.error(f"Error generating calibration session: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Internal processing error")
 
 
 # --- Calibration Level Persistence ---
@@ -111,7 +118,8 @@ async def save_calibration_level(payload: CalibrationLevelPayload, user_id: str 
         )
         return result
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.error(f"Error saving calibration level: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Internal processing error")
 
 
 @router.get("/api/proficiency/calibration/level")
@@ -126,4 +134,5 @@ async def get_calibration_level(user_id: str = Depends(get_current_user_id)):
             return {"level": None, "message": "No calibration found"}
         return result
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.error(f"Error getting calibration level: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Internal processing error")
