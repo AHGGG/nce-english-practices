@@ -179,10 +179,28 @@ async def get_daily_study_time(
             user_tz = timezone
             
             # Helper function to create timezone-aware date truncation
-            # PostgreSQL: date_trunc('day', timestamp AT TIME ZONE 'timezone')
+            # 
+            # IMPORTANT: PostgreSQL timezone() behavior with timestamp WITHOUT time zone:
+            #   timezone(zone, ts) assumes ts IS in that zone, returns UTC
+            # We need the OPPOSITE: treat ts as UTC, convert TO user's zone
+            #
+            # Solution: First mark as UTC, then convert to user timezone
+            #   timezone('Asia/Shanghai', timezone('UTC', col))
+            # = (col AT TIME ZONE 'UTC') AT TIME ZONE 'Asia/Shanghai'
+            #
+            # Example: col = 2026-01-18 23:00:00 (stored as UTC)
+            #   -> timezone('UTC', col) = 2026-01-18 23:00:00+00
+            #   -> timezone('Asia/Shanghai', ...) = 2026-01-19 07:00:00
+            #   -> date_trunc('day', ...) = 2026-01-19 (correct!)
             def day_trunc_tz(col):
                 """Truncate timestamp to day in user's timezone."""
-                return func.date_trunc("day", func.timezone(user_tz, col))
+                # col is timestamp without timezone, stored as UTC
+                # Step 1: Mark it as UTC (creates timestamptz)
+                # Step 2: Convert to user's timezone
+                # Step 3: Truncate to day
+                utc_aware = func.timezone("UTC", col)
+                user_local = func.timezone(user_tz, utc_aware)
+                return func.date_trunc("day", user_local)
 
             # 1. Sentence Study by Day
             sentence_stmt = (
