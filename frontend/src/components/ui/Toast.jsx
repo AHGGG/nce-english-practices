@@ -1,5 +1,5 @@
 /* eslint-disable react-refresh/only-export-components */
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { X, CheckCircle, AlertTriangle, Info } from 'lucide-react';
 
 const ToastContext = React.createContext(null);
@@ -7,17 +7,19 @@ const ToastContext = React.createContext(null);
 export const ToastProvider = ({ children }) => {
     const [toasts, setToasts] = useState([]);
 
-    const addToast = (message, type = 'info', duration = 3000) => {
+    const addToast = useCallback((message, type = 'info', duration = 3000) => {
         const id = Date.now();
         setToasts(prev => [...prev, { id, message, type, duration }]);
-    };
+    }, []);
 
     const removeToast = (id) => {
         setToasts(prev => prev.filter(t => t.id !== id));
     };
 
+    const contextValue = useMemo(() => ({ addToast }), [addToast]);
+
     return (
-        <ToastContext.Provider value={{ addToast }}>
+        <ToastContext.Provider value={contextValue}>
             {children}
             <div
                 role="region"
@@ -42,6 +44,12 @@ export const useToast = () => {
 
 const ToastItem = ({ message, type, duration, onDismiss }) => {
     const [isVisible, setIsVisible] = useState(false);
+    const onDismissRef = useRef(onDismiss);
+
+    // Keep ref updated
+    useEffect(() => {
+        onDismissRef.current = onDismiss;
+    }, [onDismiss]);
 
     useEffect(() => {
         // Animate in
@@ -49,11 +57,12 @@ const ToastItem = ({ message, type, duration, onDismiss }) => {
 
         const timer = setTimeout(() => {
             setIsVisible(false);
-            setTimeout(onDismiss, 300); // Wait for exit animation
+            // Use ref to avoid effect re-running when onDismiss changes
+            setTimeout(() => onDismissRef.current(), 300); // Wait for exit animation
         }, duration);
 
         return () => clearTimeout(timer);
-    }, [duration, onDismiss]);
+    }, [duration]);
 
     const variants = {
         success: {
