@@ -11,9 +11,32 @@ YELLOW='\033[1;33m'
 RED='\033[0;31m'
 NC='\033[0m' # No Color
 
-echo -e "${YELLOW}Starting Deployment...${NC}"
+# Parse Arguments
+MODE="quick"
+SEED_DATA=false
 
-# 1. Prerequisites Check
+help() {
+    echo "Usage: $0 [OPTIONS]"
+    echo "Options:"
+    echo "  --quick     (Default) Incremental update using cache. Fast."
+    echo "  --full      Clean install. Removes cache, prune resources, reseeds data. Slow."
+    echo "  --help      Show this help message."
+    exit 0
+}
+
+while [[ "$#" -gt 0 ]]; do
+    case $1 in
+        --full) MODE="full"; SEED_DATA=true ;;
+        --quick) MODE="quick" ;;
+        --help) help ;;
+        *) echo "Unknown parameter passed: $1"; help ;;
+    esac
+    shift
+done
+
+echo -e "${YELLOW}Starting Deployment (${MODE} mode)...${NC}"
+
+# 1. Prerequisites Check (Common)
 echo -e "\n${YELLOW}1. Checking prerequisites...${NC}"
 
 if ! command -v docker &> /dev/null; then
@@ -31,16 +54,31 @@ if [ ! -f nginx/ssl/cert.pem ] || [ ! -f nginx/ssl/key.pem ]; then
     exit 1
 fi
 
-# 2. Cleanup old build artifacts
-echo -e "\n${YELLOW}2. Cleaning up old Docker artifacts...${NC}"
-docker compose down --remove-orphans 2>/dev/null || true
-docker system prune -f --filter "until=24h" 2>/dev/null || true
-echo -e "${GREEN}Cleanup complete.${NC}"
+# 2. Cleanup (Conditional)
+if [ "$MODE" == "full" ]; then
+    echo -e "\n${YELLOW}2. Cleaning up old Docker artifacts (Full Mode)...${NC}"
+    # Stop everything first
+    docker compose down --remove-orphans 2>/dev/null || true
+    # Prune unused images to ensure clean slate
+    docker system prune -f --filter "until=24h" 2>/dev/null || true
+    echo -e "${GREEN}Cleanup complete.${NC}"
+else
+    echo -e "\n${YELLOW}2. Skipping exhaustive cleanup (Quick Mode)...${NC}"
+fi
 
 # 3. Build and Start
 echo -e "\n${YELLOW}3. Building and starting services...${NC}"
-docker compose build --no-cache
-docker compose up -d
+
+BUILD_ARGS=""
+if [ "$MODE" == "full" ]; then
+    BUILD_ARGS="--no-cache"
+fi
+
+# Build
+docker compose build $BUILD_ARGS
+
+# Start (recreate changed containers)
+docker compose up -d --remove-orphans
 
 # 4. Wait for Database
 echo -e "\n${YELLOW}4. Waiting for database...${NC}"
@@ -54,9 +92,13 @@ done
 echo -e "\n${YELLOW}5. Running database migrations...${NC}"
 docker compose exec app alembic upgrade head
 
-# 6. Seed Initial Data
-echo -e "\n${YELLOW}6. Seeding initial data...${NC}"
-docker compose exec app uv run python scripts/seed_word_lists.py
+# 6. Seed Initial Data (Conditional)
+if [ "$SEED_DATA" = true ]; then
+    echo -e "\n${YELLOW}6. Seeding initial data...${NC}"
+    docker compose exec app uv run python scripts/seed_word_lists.py
+else
+    echo -e "\n${YELLOW}6. Skipping data seeding (use --full to seed)...${NC}"
+fi
 
 # 7. Status
 echo -e "\n${GREEN}✅ Deployment complete!${NC}"
