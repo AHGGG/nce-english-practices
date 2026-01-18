@@ -32,7 +32,7 @@ uv run python scripts/generate_cert.py  # Generate self-signed cert
 
 ## Local Deployment (Docker)
 
-部署架构见 `deploy/` 目录。一键部署: `cd deploy && ./scripts/deploy.sh`
+部署架构见 `deploy/` 目录。智能部署: `cd deploy && ./scripts/deploy.sh` (默认为快速更新，使用 `--full` 进行全量重置)。
 
 > 详见 [Local Deployment Skill](docs/skills/local-deployment.md)
 

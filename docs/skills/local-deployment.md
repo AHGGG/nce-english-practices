@@ -6,13 +6,22 @@
 
 ## Quick Deploy
 
+**推荐**: 使用智能部署脚本 `deploy/scripts/deploy.sh`，它会自动处理增量更新。
+
 ```bash
 cd deploy
 
-# 1. 一键部署（先检查 prerequisites）
-#   - 清理旧构建 (docker system prune)
-#   - 使用 --no-cache 构建
+# 1. 快速更新 (默认)
+#   - 利用 Docker 缓存，仅构建变动的代码
+#   - 平滑重启变动的容器
+#   - 自动运行数据库迁移
 ./scripts/deploy.sh
+
+# 2. 全量重置 (当遇到环境污染或需要重置数据时)
+#   - 清理所有旧构建和缓存 (--no-cache)
+#   - 清理未使用的 Docker 资源
+#   - 重新播种初始数据 (seed_word_lists)
+./scripts/deploy.sh --full
 ```
 
 ## Maintenance Scripts
