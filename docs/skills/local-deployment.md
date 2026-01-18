@@ -12,7 +12,6 @@ cd deploy
 # 1. 一键部署（先检查 prerequisites）
 #   - 清理旧构建 (docker system prune)
 #   - 使用 --no-cache 构建
-#   - (可选) ./scripts/generate_htpasswd.sh admin password
 ./scripts/deploy.sh
 ```
 
