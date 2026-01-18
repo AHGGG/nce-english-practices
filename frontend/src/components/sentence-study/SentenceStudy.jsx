@@ -128,8 +128,12 @@ const SentenceStudy = () => {
     };
 
     // === Book Selection ===
-    const selectBook = async (book) => {
+    const selectBook = async (bookFilename) => {
         setLoading(true);
+        // Find full book object from filename
+        const book = books.find(b => b.filename === bookFilename);
+        if (!book) return;
+
         setSelectedBook(book);
         try {
             const data = await sentenceStudyApi.getArticles(book.filename);
@@ -159,6 +163,20 @@ const SentenceStudy = () => {
                 ]);
 
                 setBooks(booksData.books || []);
+
+                // Auto-select first book if available and no URL params
+                if (!urlSourceId && booksData.books && booksData.books.length > 0) {
+                    // We need to call selectBook, but we're inside useEffect.
+                    // We can set selectedBook directly and load articles, OR just call selectBook logic.
+                    const defaultBook = booksData.books[0];
+                    setSelectedBook(defaultBook);
+                    // Load articles for default book immediately
+                    const articlesData = await sentenceStudyApi.getArticles(defaultBook.filename);
+                    const filtered = (articlesData.articles || []).filter(a => a.sentence_count > 0);
+                    const sorted = await fetchStatusAndSort(defaultBook.filename, filtered);
+                    setArticles(sorted);
+                    setView(VIEW_STATES.ARTICLE_LIST);
+                }
 
                 if (calibrationData?.level !== undefined) {
                     setHighlightOptionIndex(mapLevelToOptionIndex(calibrationData.level));
@@ -481,9 +499,7 @@ const SentenceStudy = () => {
                 setArticles(sorted);
             }
         } else if (view === VIEW_STATES.ARTICLE_LIST) {
-            setView(VIEW_STATES.BOOK_SHELF);
-            setSelectedBook(null);
-            setArticles([]);
+            navigate('/nav');
         } else {
             navigate('/nav');
         }
@@ -508,6 +524,8 @@ const SentenceStudy = () => {
                         loading={loading}
                         onBack={handleBack}
                         onSelectArticle={startStudying}
+                        books={books}
+                        onSelectBook={selectBook}
                     />
                 );
             case VIEW_STATES.OVERVIEW:

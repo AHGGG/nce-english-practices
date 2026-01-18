@@ -113,7 +113,10 @@ class EpubProvider(BaseContentProvider):
         """Extract all articles/chapters from the book with image positions."""
         articles = []
         for item in book.get_items():
-            if item.get_type() == ebooklib.ITEM_DOCUMENT:
+            if item.get_type() == ebooklib.ITEM_DOCUMENT or (
+                item.get_type() == ebooklib.ITEM_UNKNOWN
+                and item.get_name().lower().endswith((".html", ".xhtml", ".htm"))
+            ):
                 try:
                     content = item.get_content().decode("utf-8")
                     soup = BeautifulSoup(content, "xml")

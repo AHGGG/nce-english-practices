@@ -43,6 +43,10 @@ const ReadingMode = () => {
     const [selectedArticle, setSelectedArticle] = useState(null);
     const [isLoading, setIsLoading] = useState(false);
 
+    // Books
+    const [books, setBooks] = useState([]);
+    const [selectedBookFilename, setSelectedBookFilename] = useState(null);
+
     // Settings
     const [selectedOptionIndex, setSelectedOptionIndex] = useState(0);
     const [showHighlights, setShowHighlights] = useState(true);
@@ -98,10 +102,35 @@ const ReadingMode = () => {
             // Clear URL params to avoid re-triggering on refresh
             window.history.replaceState({}, '', window.location.pathname);
         } else {
-            fetchArticleList();
+            fetchBooks();
         }
         fetchCalibrationLevel();
     }, []);
+
+    // Fetch available books
+    const fetchBooks = async () => {
+        try {
+            const res = await authFetch('/api/reading/epub/books');
+            if (res.ok) {
+                const data = await res.json();
+                setBooks(data.books || []);
+                if (data.books && data.books.length > 0) {
+                    // Default to first book if no selection
+                    // Or could be persistent in localStorage later
+                    setSelectedBookFilename(data.books[0].filename);
+                }
+            }
+        } catch (e) {
+            console.error('Failed to fetch books:', e);
+        }
+    };
+
+    // Fetch articles when book changes
+    useEffect(() => {
+        if (selectedBookFilename) {
+            fetchArticleList(selectedBookFilename);
+        }
+    }, [selectedBookFilename]);
 
     // Fetch user's calibration level and auto-select highlight option
     const fetchCalibrationLevel = async () => {
@@ -132,10 +161,11 @@ const ReadingMode = () => {
 
 
     // --- Actions ---
-    const fetchArticleList = async () => {
+    const fetchArticleList = async (filename) => {
+        if (!filename) return;
         setIsLoading(true);
         try {
-            const res = await authFetch('/api/reading/epub/list');
+            const res = await authFetch(`/api/reading/epub/list?filename=${encodeURIComponent(filename)}`);
             if (res.ok) {
                 const data = await res.json();
                 const articlesData = data.articles || [];
@@ -340,6 +370,9 @@ const ReadingMode = () => {
                 articles={articles}
                 isLoading={isLoading}
                 onArticleClick={(sourceId) => loadArticle(sourceId, selectedOptionIndex)}
+                books={books}
+                selectedBookFilename={selectedBookFilename}
+                onBookSelect={setSelectedBookFilename}
             />
         );
     }
