@@ -154,24 +154,40 @@ async def get_performance_data(days: int = 30, user_id: str = "default_user") ->
             }
 
 
-async def get_daily_study_time(days: int = 30, user_id: str = "default_user") -> Dict[str, Any]:
+async def get_daily_study_time(
+    days: int = 30, 
+    user_id: str = "default_user",
+    timezone: str = "UTC"
+) -> Dict[str, Any]:
     """
     Get daily study time breakdown for the last N days.
     Groups by day and mode (sentence study, reading, voice).
+    
+    Args:
+        days: Number of days to look back
+        user_id: User identifier for filtering
+        timezone: IANA timezone string (e.g., 'Asia/Shanghai', 'America/New_York')
+                  for correct daily grouping. Without this, early morning sessions
+                  would be incorrectly attributed to the previous UTC day.
     """
     async with AsyncSessionLocal() as session:
         try:
             cutoff = datetime.utcnow() - timedelta(days=days)
-
-            # Helper to group by day (compatible with Postgres)
-            # day_group = func.date_trunc("day", SentenceLearningRecord.created_at)
+            
+            # Validate timezone - PostgreSQL will error on invalid timezone
+            # Common valid values: 'UTC', 'Asia/Shanghai', 'America/New_York', 'Europe/London'
+            user_tz = timezone
+            
+            # Helper function to create timezone-aware date truncation
+            # PostgreSQL: date_trunc('day', timestamp AT TIME ZONE 'timezone')
+            def day_trunc_tz(col):
+                """Truncate timestamp to day in user's timezone."""
+                return func.date_trunc("day", func.timezone(user_tz, col))
 
             # 1. Sentence Study by Day
             sentence_stmt = (
                 select(
-                    func.date_trunc("day", SentenceLearningRecord.created_at).label(
-                        "day"
-                    ),
+                    day_trunc_tz(SentenceLearningRecord.created_at).label("day"),
                     func.sum(SentenceLearningRecord.dwell_time_ms),
                 )
                 .where(
@@ -191,7 +207,7 @@ async def get_daily_study_time(days: int = 30, user_id: str = "default_user") ->
             # 2. Reading by Day
             reading_stmt = (
                 select(
-                    func.date_trunc("day", ReadingSession.started_at).label("day"),
+                    day_trunc_tz(ReadingSession.started_at).label("day"),
                     func.sum(ReadingSession.total_active_seconds),
                 )
                 .where(
@@ -211,7 +227,7 @@ async def get_daily_study_time(days: int = 30, user_id: str = "default_user") ->
             # 3. Voice by Day
             voice_stmt = (
                 select(
-                    func.date_trunc("day", VoiceSession.started_at).label("day"),
+                    day_trunc_tz(VoiceSession.started_at).label("day"),
                     func.sum(VoiceSession.total_active_seconds),
                 )
                 .where(
@@ -229,7 +245,7 @@ async def get_daily_study_time(days: int = 30, user_id: str = "default_user") ->
             # 4. Review by Day
             review_stmt = (
                 select(
-                    func.date_trunc("day", ReviewLog.reviewed_at).label("day"),
+                    day_trunc_tz(ReviewLog.reviewed_at).label("day"),
                     func.sum(ReviewLog.duration_ms),
                 )
                 .join(ReviewItem)

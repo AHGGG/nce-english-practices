@@ -12,9 +12,12 @@ const StudyTimeDetail = () => {
     const [loading, setLoading] = useState(true);
     const [days, setDays] = useState(30);
 
+    // Get user's local timezone for correct daily grouping
+    const userTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+
     useEffect(() => {
         // setLoading(true); // Moved to onClick to avoid synchronous setState warning
-        api.get(`/api/performance/study-time?days=${days}`)
+        api.get(`/api/performance/study-time?days=${days}&tz=${encodeURIComponent(userTimezone)}`)
             .then(res => {
                 setData(res);
                 setLoading(false);
@@ -23,7 +26,7 @@ const StudyTimeDetail = () => {
                 console.error("Fetch error:", err);
                 setLoading(false);
             });
-    }, [days]);
+    }, [days, userTimezone]);
 
     if (loading) {
         return (
