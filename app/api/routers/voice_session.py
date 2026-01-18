@@ -12,6 +12,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.db import get_db
 from app.models.orm import VoiceSession
+from app.api.routers.auth import get_current_user_id
 
 router = APIRouter(prefix="/api/voice-session", tags=["Voice Session"])
 
@@ -42,11 +43,16 @@ class EndSessionRequest(BaseModel):
 
 @router.post("/start", response_model=StartSessionResponse)
 async def start_voice_session(
-    req: StartSessionRequest, db: AsyncSession = Depends(get_db)
+    req: StartSessionRequest,
+    user_id: str = Depends(get_current_user_id),
+    db: AsyncSession = Depends(get_db),
 ):
     """Start a new voice learning session."""
     session = VoiceSession(
-        source_type=req.source_type, source_id=req.source_id, is_active=True
+        user_id=user_id,
+        source_type=req.source_type,
+        source_id=req.source_id,
+        is_active=True,
     )
     db.add(session)
     await db.commit()
@@ -56,7 +62,9 @@ async def start_voice_session(
 
 @router.put("/heartbeat")
 async def update_voice_session(
-    req: UpdateSessionRequest, db: AsyncSession = Depends(get_db)
+    req: UpdateSessionRequest,
+    user_id: str = Depends(get_current_user_id),
+    db: AsyncSession = Depends(get_db),
 ):
     """Update voice session with current metrics (called periodically)."""
     update_data = {}
@@ -78,6 +86,7 @@ async def update_voice_session(
         stmt = (
             update(VoiceSession)
             .where(VoiceSession.id == req.session_id)
+            .where(VoiceSession.user_id == user_id)
             .values(**update_data)
         )
         await db.execute(stmt)
@@ -87,11 +96,16 @@ async def update_voice_session(
 
 
 @router.post("/end")
-async def end_voice_session(req: EndSessionRequest, db: AsyncSession = Depends(get_db)):
+async def end_voice_session(
+    req: EndSessionRequest,
+    user_id: str = Depends(get_current_user_id),
+    db: AsyncSession = Depends(get_db),
+):
     """End a voice learning session."""
     stmt = (
         update(VoiceSession)
         .where(VoiceSession.id == req.session_id)
+        .where(VoiceSession.user_id == user_id)
         .values(
             ended_at=datetime.now(),
             total_active_seconds=req.total_active_seconds,

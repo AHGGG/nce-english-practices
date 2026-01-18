@@ -13,7 +13,7 @@ WPM_NON_NATIVE = 150  # Words per minute for non-native reader
 JUMP_THRESHOLD = 5  # Sentences jumped = considered skip
 
 
-async def get_reading_stats(user_id: str = "default_user") -> Dict[str, Any]:
+async def get_reading_stats(user_id: str) -> Dict[str, Any]:
     """
     Calculate reading statistics.
     Uses context_sentence word count as proxy for words read.
@@ -104,6 +104,7 @@ async def start_reading_session(
 
 async def update_reading_session(
     session_id: int,
+    user_id: str,
     max_sentence_reached: int,
     total_active_seconds: int,
     total_idle_seconds: int,
@@ -112,7 +113,9 @@ async def update_reading_session(
     """Update reading session progress (heartbeat)."""
     async with AsyncSessionLocal() as session:
         try:
-            stmt = select(ReadingSession).where(ReadingSession.id == session_id)
+            stmt = select(ReadingSession).where(
+                ReadingSession.id == session_id, ReadingSession.user_id == user_id
+            )
             result = await session.execute(stmt)
             rs = result.scalar_one_or_none()
 
@@ -133,11 +136,13 @@ async def update_reading_session(
             return False
 
 
-async def increment_word_click(session_id: int) -> bool:
+async def increment_word_click(session_id: int, user_id: str) -> bool:
     """Increment word click count for a reading session."""
     async with AsyncSessionLocal() as session:
         try:
-            stmt = select(ReadingSession).where(ReadingSession.id == session_id)
+            stmt = select(ReadingSession).where(
+                ReadingSession.id == session_id, ReadingSession.user_id == user_id
+            )
             result = await session.execute(stmt)
             rs = result.scalar_one_or_none()
 
@@ -212,12 +217,14 @@ def calculate_reading_quality(rs: ReadingSession) -> tuple:
 
 
 async def end_reading_session(
-    session_id: int, final_data: Dict[str, Any] = None
+    session_id: int, user_id: str, final_data: Dict[str, Any] = None
 ) -> Dict[str, Any]:
     """End reading session, calculate quality and validated word count."""
     async with AsyncSessionLocal() as session:
         try:
-            stmt = select(ReadingSession).where(ReadingSession.id == session_id)
+            stmt = select(ReadingSession).where(
+                ReadingSession.id == session_id, ReadingSession.user_id == user_id
+            )
             result = await session.execute(stmt)
             rs = result.scalar_one_or_none()
 
@@ -263,7 +270,7 @@ async def end_reading_session(
             return {"success": False, "error": str(e)}
 
 
-async def get_reading_stats_v2(user_id: str = "default_user") -> Dict[str, Any]:
+async def get_reading_stats_v2(user_id: str) -> Dict[str, Any]:
     """
     Get reading statistics using validated ReadingSession data.
     Falls back to legacy VocabLearningLog if no sessions exist.

@@ -60,11 +60,14 @@ router = APIRouter(prefix="/api/sentence-study", tags=["sentence-study"])
 
 
 @router.get("/last-session", response_model=Optional[LastSessionResponse])
-async def get_last_session(db: AsyncSession = Depends(get_db)):
+async def get_last_session(
+    user_id: str = Depends(get_current_user_id), db: AsyncSession = Depends(get_db)
+):
     """Get the user's last studied article/session."""
     # Find the most recent learning record
     result = await db.execute(
         select(SentenceLearningRecord)
+        .where(SentenceLearningRecord.user_id == user_id)
         .order_by(SentenceLearningRecord.created_at.desc())
         .limit(1)
     )
@@ -81,7 +84,11 @@ async def get_last_session(db: AsyncSession = Depends(get_db)):
 
 
 @router.get("/{source_id:path}/progress", response_model=StudyProgressResponse)
-async def get_study_progress(source_id: str, db: AsyncSession = Depends(get_db)):
+async def get_study_progress(
+    source_id: str,
+    user_id: str = Depends(get_current_user_id),
+    db: AsyncSession = Depends(get_db),
+):
     """Get study progress for an article."""
     # Count studied sentences and clear count
     result = await db.execute(
@@ -90,7 +97,9 @@ async def get_study_progress(source_id: str, db: AsyncSession = Depends(get_db))
             func.sum(
                 case((SentenceLearningRecord.initial_response == "clear", 1), else_=0)
             ).label("clear_count"),
-        ).where(SentenceLearningRecord.source_id == source_id)
+        )
+        .where(SentenceLearningRecord.source_id == source_id)
+        .where(SentenceLearningRecord.user_id == user_id)
     )
     row = result.first()
 
@@ -101,6 +110,7 @@ async def get_study_progress(source_id: str, db: AsyncSession = Depends(get_db))
     last_result = await db.execute(
         select(SentenceLearningRecord.sentence_index)
         .where(SentenceLearningRecord.source_id == source_id)
+        .where(SentenceLearningRecord.user_id == user_id)
         .order_by(SentenceLearningRecord.sentence_index.desc())
         .limit(1)
     )
@@ -122,6 +132,7 @@ async def get_study_progress(source_id: str, db: AsyncSession = Depends(get_db))
 async def get_study_highlights(
     source_id: str,
     total_sentences: int = 0,  # Total sentences in the article (from frontend)
+    user_id: str = Depends(get_current_user_id),
     db: AsyncSession = Depends(get_db),
 ):
     """Get all words/phrases looked up during study of an article.
@@ -132,6 +143,7 @@ async def get_study_highlights(
     result = await db.execute(
         select(SentenceLearningRecord)
         .where(SentenceLearningRecord.source_id == source_id)
+        .where(SentenceLearningRecord.user_id == user_id)
         .order_by(SentenceLearningRecord.sentence_index)
     )
     records = result.scalars().all()
@@ -183,7 +195,11 @@ async def get_study_highlights(
 
 
 @router.post("/record")
-async def record_learning(req: RecordRequest, db: AsyncSession = Depends(get_db)):
+async def record_learning(
+    req: RecordRequest,
+    user_id: str = Depends(get_current_user_id),
+    db: AsyncSession = Depends(get_db),
+):
     """Record a sentence learning result."""
 
     # Deduplicate clicks while preserving order
@@ -191,6 +207,7 @@ async def record_learning(req: RecordRequest, db: AsyncSession = Depends(get_db)
     unique_phrase_clicks = list(dict.fromkeys(req.phrase_clicks))
 
     record = SentenceLearningRecord(
+        user_id=user_id,
         source_type=req.source_type,
         source_id=req.source_id,
         sentence_index=req.sentence_index,
@@ -211,7 +228,7 @@ async def record_learning(req: RecordRequest, db: AsyncSession = Depends(get_db)
 
     diagnosis_result = await _perform_deep_diagnosis(
         db=db,
-        user_id=req.user_id,
+        user_id=user_id,
         initial=req.initial_response,
         choice=req.unclear_choice,
         simplified=req.simplified_response,
@@ -239,7 +256,7 @@ async def record_learning(req: RecordRequest, db: AsyncSession = Depends(get_db)
 
     # --- Update UserComprehensionProfile (Deep Integration) ---
     await _update_user_profile_deep(
-        db, req.user_id, diagnosis_result, unique_word_clicks
+        db, user_id, diagnosis_result, unique_word_clicks
     )
 
     # --- Create ReviewItem for SM-2 based spaced repetition ---
@@ -255,7 +272,7 @@ async def record_learning(req: RecordRequest, db: AsyncSession = Depends(get_db)
         # Check if review item already exists for this sentence
         existing_review = await db.execute(
             select(ReviewItem)
-            .where(ReviewItem.user_id == req.user_id)
+            .where(ReviewItem.user_id == user_id)
             .where(ReviewItem.source_id == req.source_id)
             .where(ReviewItem.sentence_index == req.sentence_index)
         )
@@ -272,7 +289,7 @@ async def record_learning(req: RecordRequest, db: AsyncSession = Depends(get_db)
             # Create new review item
             highlighted = list(set(unique_word_clicks + unique_phrase_clicks))
             review_item = ReviewItem(
-                user_id=req.user_id,
+                user_id=user_id,
                 source_id=req.source_id,
                 sentence_index=req.sentence_index,
                 sentence_text=req.sentence_text,
@@ -799,10 +816,16 @@ async def get_review_queue(
 
 
 @router.post("/review")
-async def complete_review(req: ReviewRequest, db: AsyncSession = Depends(get_db)):
+async def complete_review(
+    req: ReviewRequest,
+    user_id: str = Depends(get_current_user_id),
+    db: AsyncSession = Depends(get_db),
+):
     """Complete a review and reschedule the sentence."""
     result = await db.execute(
-        select(SentenceLearningRecord).where(SentenceLearningRecord.id == req.record_id)
+        select(SentenceLearningRecord)
+        .where(SentenceLearningRecord.id == req.record_id)
+        .where(SentenceLearningRecord.user_id == user_id)
     )
     record = result.scalar_one_or_none()
 

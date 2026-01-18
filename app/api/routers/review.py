@@ -192,6 +192,7 @@ class ReviewScheduleResponse(BaseModel):
 @router.get("/debug/schedule", response_model=ReviewScheduleResponse)
 async def get_review_schedule_debug(
     days: int = 14,
+    user_id: str = Depends(get_current_user_id),
     db: AsyncSession = Depends(get_db)
 ):
     """
@@ -208,6 +209,7 @@ async def get_review_schedule_debug(
     
     stmt = (
         select(ReviewItem)
+        .where(ReviewItem.user_id == user_id)
         .where(ReviewItem.next_review_at <= end_date)
         .order_by(ReviewItem.next_review_at.asc())
         # .limit(200) # Safety limit?
@@ -458,13 +460,17 @@ async def get_memory_curve_debug(
 
 
 @router.get("/context/{item_id}", response_model=ReviewContextResponse)
-async def get_review_context(item_id: int, db: AsyncSession = Depends(get_db)):
+async def get_review_context(
+    item_id: int, 
+    user_id: str = Depends(get_current_user_id),
+    db: AsyncSession = Depends(get_db)
+):
     """
     Get context (surrounding sentences) for a review item.
     Resolves the source content via ContentService.
     """
     # 1. Get Review Item
-    stmt = select(ReviewItem).where(ReviewItem.id == item_id)
+    stmt = select(ReviewItem).where(ReviewItem.id == item_id).where(ReviewItem.user_id == user_id)
     result = await db.execute(stmt)
     item = result.scalar_one_or_none()
 
@@ -635,7 +641,9 @@ async def get_random_review(
 
 @router.post("/complete", response_model=CompleteReviewResponse)
 async def complete_review(
-    req: CompleteReviewRequest, db: AsyncSession = Depends(get_db)
+    req: CompleteReviewRequest,
+    user_id: str = Depends(get_current_user_id),
+    db: AsyncSession = Depends(get_db)
 ):
     """Complete a review and update SM-2 scheduling parameters."""
     # Validate quality: 1=forgot, 2=remembered after help, 3=remembered, 5=easy
@@ -643,7 +651,7 @@ async def complete_review(
         raise HTTPException(status_code=400, detail="Quality must be 1, 2, 3, or 5")
 
     # Get the review item
-    stmt = select(ReviewItem).where(ReviewItem.id == req.item_id)
+    stmt = select(ReviewItem).where(ReviewItem.id == req.item_id).where(ReviewItem.user_id == user_id)
     result = await db.execute(stmt)
     item = result.scalar_one_or_none()
 
