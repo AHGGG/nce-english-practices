@@ -3,6 +3,8 @@
  */
 import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
+import { Mail, Lock } from 'lucide-react';
+import { Input, Button } from '../../components/ui';
 import { useAuth } from '../../context/AuthContext';
 import { checkRegistrationStatus } from '../../api/auth';
 
@@ -63,54 +65,48 @@ export default function LoginPage() {
                     )}
 
                     {/* Login Form */}
-                    <form onSubmit={handleSubmit} className="space-y-5">
-                        <div>
-                            <label htmlFor="email" className="block text-sm font-medium text-text-secondary mb-2">
-                                Email
-                            </label>
-                            <input
-                                id="email"
-                                type="email"
-                                value={email}
-                                onChange={(e) => setEmail(e.target.value)}
-                                required
-                                className="w-full px-4 py-3 bg-bg-base/50 border border-border-subtle rounded-xl text-text-primary placeholder-text-muted focus:outline-none focus:ring-2 focus:ring-accent-primary/50 focus:border-accent-primary transition-all"
-                                placeholder="your@email.com"
-                            />
+                    <form onSubmit={handleSubmit} className="space-y-6">
+                        <div className="space-y-4">
+                            <div>
+                                <label htmlFor="email" className="block text-xs font-mono text-text-muted uppercase mb-1.5 ml-1">
+                                    Email Address
+                                </label>
+                                <Input
+                                    id="email"
+                                    type="email"
+                                    icon={Mail}
+                                    value={email}
+                                    onChange={(e) => setEmail(e.target.value)}
+                                    required
+                                    placeholder="your@email.com"
+                                />
+                            </div>
+
+                            <div>
+                                <label htmlFor="password" className="block text-xs font-mono text-text-muted uppercase mb-1.5 ml-1">
+                                    Password
+                                </label>
+                                <Input
+                                    id="password"
+                                    type="password"
+                                    icon={Lock}
+                                    value={password}
+                                    onChange={(e) => setPassword(e.target.value)}
+                                    required
+                                    placeholder="••••••••"
+                                />
+                            </div>
                         </div>
 
-                        <div>
-                            <label htmlFor="password" className="block text-sm font-medium text-text-secondary mb-2">
-                                Password
-                            </label>
-                            <input
-                                id="password"
-                                type="password"
-                                value={password}
-                                onChange={(e) => setPassword(e.target.value)}
-                                required
-                                className="w-full px-4 py-3 bg-bg-base/50 border border-border-subtle rounded-xl text-text-primary placeholder-text-muted focus:outline-none focus:ring-2 focus:ring-accent-primary/50 focus:border-accent-primary transition-all"
-                                placeholder="••••••••"
-                            />
-                        </div>
-
-                        <button
+                        <Button
                             type="submit"
-                            disabled={loading}
-                            className="w-full py-3 px-4 bg-gradient-to-r from-accent-primary to-accent-secondary text-black font-semibold rounded-xl hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-accent-primary/50 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                            isLoading={loading}
+                            fullWidth
+                            size="lg"
+                            className="bg-gradient-to-r from-accent-primary to-accent-secondary border-none text-bg-base font-bold text-shadow-none hover:opacity-90 hover:shadow-lg hover:shadow-accent-primary/20 rounded-xl"
                         >
-                            {loading ? (
-                                <span className="flex items-center justify-center gap-2">
-                                    <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
-                                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-                                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                                    </svg>
-                                    Signing in...
-                                </span>
-                            ) : (
-                                'Sign In'
-                            )}
-                        </button>
+                            Sign In
+                        </Button>
                     </form>
 
                     {/* Register Link - Only show if registration is allowed */}

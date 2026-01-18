@@ -64,7 +64,7 @@ export const Input = ({ icon: Icon, error, className = "", ...props }) => {
             )}
             <input
                 type="text"
-                className={`w-full bg-bg-elevated border border-border text-text-primary px-4 py-2.5 text-sm font-mono focus:outline-none focus:border-accent-primary focus:ring-1 focus:ring-accent-primary transition-all placeholder:text-text-muted/50 ${Icon ? 'pl-9' : ''} ${error ? 'border-accent-danger focus:border-accent-danger focus:ring-accent-danger' : ''}`}
+                className={`w-full bg-bg-elevated border border-border text-text-primary px-4 py-3 text-sm font-mono rounded-xl focus:outline-none focus:border-accent-primary focus:ring-1 focus:ring-accent-primary transition-all placeholder:text-text-muted/50 ${Icon ? 'pl-9' : ''} ${error ? 'border-accent-danger focus:border-accent-danger focus:ring-accent-danger' : ''}`}
                 aria-invalid={!!error}
                 aria-describedby={error ? errorId : undefined}
                 {...props}
