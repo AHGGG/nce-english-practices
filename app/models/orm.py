@@ -32,7 +32,7 @@ class User(Base):
     )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    email: Mapped[str] = mapped_column(String(255), unique=True, index=True, nullable=False)
+    email: Mapped[str] = mapped_column(String(255), unique=True, nullable=False)
     hashed_password: Mapped[str] = mapped_column(String(255), nullable=False)
     username: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
 
@@ -300,7 +300,7 @@ class VocabLearningLog(Base):
     )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    user_id: Mapped[str] = mapped_column(Text, default="default_user", index=True)
+    user_id: Mapped[str] = mapped_column(Text, default="default_user")
     word: Mapped[str] = mapped_column(Text, index=True)
 
     # Source context
@@ -555,7 +555,7 @@ class ArticleOverviewCache(Base):
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     title_hash: Mapped[str] = mapped_column(
-        String(32), unique=True, index=True
+        String(32), unique=True
     )  # MD5 hash
     title: Mapped[str] = mapped_column(Text)  # Original title for debugging
 
@@ -576,7 +576,7 @@ class SentenceCollocationCache(Base):
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     sentence_hash: Mapped[str] = mapped_column(
-        String(32), unique=True, index=True
+        String(32), unique=True
     )  # MD5 hash
     sentence_preview: Mapped[str] = mapped_column(Text)  # First 100 chars for debugging
 
@@ -599,7 +599,7 @@ class ReviewItem(Base):
     )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    user_id: Mapped[str] = mapped_column(Text, default="default_user", index=True)
+    user_id: Mapped[str] = mapped_column(Text, default="default_user")
 
     # Sentence reference
     source_id: Mapped[str] = mapped_column(Text)  # e.g., "epub:file.epub:3"
