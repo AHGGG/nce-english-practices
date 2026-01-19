@@ -170,6 +170,9 @@ async def get_collins_word(
     - Senses with definitions, examples, translations
     - Synonyms, phrasal verbs
 
+    If the word is a cross-reference (e.g., "unequivocally" -> "unequivocal"),
+    automatically follows the reference and returns the base word's definition.
+
     Example: GET /api/dictionary/collins/simmer
     """
     try:
@@ -190,6 +193,37 @@ async def get_collins_word(
         parsed = collins_parser.parse(
             collins_html, word, include_raw_html=include_raw_html
         )
+
+        # Check if this is a cross-reference with no actual senses
+        if parsed.found and parsed.entry and len(parsed.entry.senses) == 0:
+            # Try to extract cross-reference target
+            from bs4 import BeautifulSoup
+            soup = BeautifulSoup(collins_html, "html.parser")
+            cross_ref = collins_parser._extract_cross_reference(soup)
+            
+            if cross_ref and cross_ref.lower() != word.lower():
+                logger.info(f"Collins cross-reference: '{word}' -> '{cross_ref}'")
+                # Look up the referenced word
+                ref_results = await run_in_threadpool(dict_manager.lookup, cross_ref)
+                ref_html = None
+                for result in ref_results:
+                    if "collins" in result.get("dictionary", "").lower():
+                        ref_html = result.get("definition", "")
+                        break
+                
+                if ref_html:
+                    ref_parsed = collins_parser.parse(
+                        ref_html, cross_ref, include_raw_html=include_raw_html
+                    )
+                    if ref_parsed.found and ref_parsed.entry and len(ref_parsed.entry.senses) > 0:
+                        # Return the referenced word's entry but keep original word
+                        return CollinsWord(
+                            word=word,
+                            found=True,
+                            entry=ref_parsed.entry,
+                            raw_html=collins_html if include_raw_html else None,
+                        )
+
         return parsed
 
     except Exception:

@@ -207,6 +207,31 @@ class CollinsParser:
 
         return inflections
 
+    def _extract_cross_reference(self, soup: BeautifulSoup) -> Optional[str]:
+        """
+        Extract cross-reference target word if this is a "see: xxx" entry.
+        Returns the target word (e.g., "unequivocal" from "→see: unequivocal") or None.
+        """
+        # Look for "see:" pattern in collins_en_cn (not .example)
+        see_block = soup.select_one(".collins_content > .collins_en_cn:not(.example)")
+        if not see_block:
+            return None
+
+        # Check for "see:" text
+        see_text = see_block.select_one(".text_gray")
+        if see_text and "see:" in see_text.get_text().lower():
+            # Find the linked word
+            link = see_block.select_one("a.explain")
+            if link:
+                # Extract word from href like "entry://unequivocal#unequivocally"
+                href = link.get("href", "")
+                if href.startswith("entry://"):
+                    target = href.replace("entry://", "").split("#")[0]
+                    return target
+                # Or just use the link text
+                return link.get_text(strip=True)
+        return None
+
     def _extract_senses(self, soup: BeautifulSoup) -> List[CollinsSense]:
         """Extract all senses/meanings."""
         senses = []
@@ -268,7 +293,7 @@ class CollinsParser:
             return None
 
         return CollinsSense(
-            index=index,
+            index=index if index > 0 else 1,  # Ensure index is at least 1
             definition=definition,
             definition_cn=def_cn,
             part_of_speech=pos,
