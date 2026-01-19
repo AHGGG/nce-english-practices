@@ -41,7 +41,8 @@ export const sentenceStudyApi = {
     },
 
     async getArticles(filename) {
-        const url = new URL('/api/reading/epub/list', window.location.origin);
+        // Use merged endpoint that includes status data (single request instead of two)
+        const url = new URL('/api/reading/epub/list-with-status', window.location.origin);
         if (filename) {
             url.searchParams.append('filename', filename);
         }

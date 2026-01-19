@@ -447,6 +447,12 @@ To support multiple dictionaries (e.g., Collins + LDOCE) in one view:
 - **Do NOT** use `_split_sentences_lenient(full_text)` for logic or status checks, as it often produces different counts than the structured content used in the UI.
 - **Caching**: Use `article.get("block_sentence_count")` which is pre-computed during EPUB loading to avoid O(N) HTML parsing in list endpoints.
 
+### EPUB Provider Caching (Crucial Performance)
+- **Module-Level Caching**: `EpubProvider` uses a module-level `_epub_cache` (Singleton pattern) to store parsed `EpubBook` data.
+- **Instance-Level Fallacy**: Do NOT rely on `self._cached_articles` in a fresh `EpubProvider()` instance without checking the module cache. FastAPI creates a new provider instance for every request.
+- **Strategy**: The `_load_epub` method automatically checks middleware cache before parsing.
+
+
 ### Voice on Mobile
 - **HTTPS Required**: WebSocket with audio requires HTTPS.
 - **Certificate**: Generate with `uv run python scripts/generate_cert.py`.

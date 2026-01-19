@@ -1,5 +1,6 @@
 import re
 import ebooklib
+import time
 from pathlib import Path
 from typing import Optional, List, Dict, Any, Tuple
 from bs4 import BeautifulSoup
@@ -16,6 +17,59 @@ from app.services.content_providers.base import BaseContentProvider
 import logging
 
 logger = logging.getLogger(__name__)
+
+
+# ============================================================
+# Module-level EPUB Cache (Singleton Pattern)
+# ============================================================
+# This prevents re-parsing EPUB files on each API request.
+# Cache entry: {filename: {"data": parsed_data, "mtime": file_mtime, "accessed": timestamp}}
+
+_epub_cache: Dict[str, Dict[str, Any]] = {}
+_CACHE_MAX_ENTRIES = 5
+_CACHE_TTL_SECONDS = 300  # 5 minutes
+
+
+def _get_cached_epub(filename: str, epub_dir: Path) -> Optional[Dict[str, Any]]:
+    """Get cached EPUB data if valid (not expired, file not modified)."""
+    if filename not in _epub_cache:
+        return None
+    
+    entry = _epub_cache[filename]
+    filepath = (epub_dir / filename).resolve()
+    
+    # Check if file still exists and hasn't been modified
+    if not filepath.exists():
+        del _epub_cache[filename]
+        return None
+    
+    current_mtime = filepath.stat().st_mtime
+    if entry["mtime"] != current_mtime:
+        del _epub_cache[filename]
+        return None
+    
+    # Check TTL
+    if time.time() - entry["accessed"] > _CACHE_TTL_SECONDS:
+        del _epub_cache[filename]
+        return None
+    
+    # Update access time
+    entry["accessed"] = time.time()
+    return entry["data"]
+
+
+def _set_cached_epub(filename: str, data: Dict[str, Any], mtime: float) -> None:
+    """Store parsed EPUB in module-level cache with LRU eviction."""
+    # LRU eviction if at capacity
+    if len(_epub_cache) >= _CACHE_MAX_ENTRIES and filename not in _epub_cache:
+        oldest = min(_epub_cache.items(), key=lambda x: x[1]["accessed"])
+        del _epub_cache[oldest[0]]
+    
+    _epub_cache[filename] = {
+        "data": data,
+        "mtime": mtime,
+        "accessed": time.time(),
+    }
 
 
 class EpubProvider(BaseContentProvider):
@@ -38,7 +92,8 @@ class EpubProvider(BaseContentProvider):
         self._cached_images: Dict[str, bytes] = {}  # {image_path: bytes}
 
     def _load_epub(self, filename: str) -> bool:
-        """Load EPUB file if not already loaded."""
+        """Load EPUB file, using module-level cache if available."""
+        # Check if already loaded in this instance
         if self._current_filename == filename and self._current_book:
             return True
 
@@ -50,12 +105,21 @@ class EpubProvider(BaseContentProvider):
                 logger.warning("Path traversal attempt detected: %s", filename)
                 return False
         except (ValueError, RuntimeError):
-            # Handle cases where paths are on different drives or resolution fails
             return False
 
         if not filepath.exists():
             return False
 
+        # Try module-level cache first
+        cached = _get_cached_epub(filename, self.EPUB_DIR)
+        if cached:
+            self._current_filename = filename
+            self._cached_articles = cached["articles"]
+            self._cached_images = cached["images"]
+            # Note: _current_book is not cached (large object, rarely needed after parsing)
+            return True
+
+        # Cache miss - parse EPUB
         try:
             book = epub.read_epub(str(filepath))
             self._current_book = book
@@ -66,6 +130,14 @@ class EpubProvider(BaseContentProvider):
 
             # Extract articles with image position tracking
             self._cached_articles = self._extract_articles(book)
+            
+            # Store in module-level cache
+            _set_cached_epub(
+                filename,
+                {"articles": self._cached_articles, "images": self._cached_images},
+                filepath.stat().st_mtime,
+            )
+            
             return True
         except Exception:
             logger.exception("Error loading EPUB %s", filename)

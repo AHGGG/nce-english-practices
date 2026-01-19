@@ -91,40 +91,19 @@ const SentenceStudy = () => {
         return extractSentencesFromBlocks(currentArticle.blocks);
     }, [currentArticle]);
 
-    // === Helper: Fetch status and sort articles by recent activity ===
-    const fetchStatusAndSort = async (filename, articlesList) => {
-        if (!filename || articlesList.length === 0) return articlesList;
-        try {
-            const statusRes = await authFetch(`/api/content/article-status?filename=${encodeURIComponent(filename)}`);
-            if (statusRes.ok) {
-                const statusData = await statusRes.json();
-                const statusMap = new Map(
-                    statusData.articles?.map(a => [a.source_id, a]) || []
-                );
-                articlesList.forEach(article => {
-                    const status = statusMap.get(article.source_id);
-                    if (status) {
-                        article.last_read = status.last_read;
-                        article.last_studied_at = status.last_studied_at;
-                        article.status = status.status;
-                    }
-                });
-                articlesList.sort((a, b) => {
-                    const timeA = Math.max(
-                        new Date(a.last_read || 0).getTime(),
-                        new Date(a.last_studied_at || 0).getTime()
-                    );
-                    const timeB = Math.max(
-                        new Date(b.last_read || 0).getTime(),
-                        new Date(b.last_studied_at || 0).getTime()
-                    );
-                    return timeB - timeA;
-                });
-            }
-        } catch (e) {
-            console.warn('Could not fetch article status for sorting:', e);
-        }
-        return articlesList;
+    // === Helper: Sort articles by recent activity (status already in API response) ===
+    const sortArticlesByActivity = (articlesList) => {
+        return [...articlesList].sort((a, b) => {
+            const timeA = Math.max(
+                new Date(a.last_read || 0).getTime(),
+                new Date(a.last_studied_at || 0).getTime()
+            );
+            const timeB = Math.max(
+                new Date(b.last_read || 0).getTime(),
+                new Date(b.last_studied_at || 0).getTime()
+            );
+            return timeB - timeA;
+        });
     };
 
     // === Book Selection ===
@@ -138,7 +117,7 @@ const SentenceStudy = () => {
         try {
             const data = await sentenceStudyApi.getArticles(book.filename);
             const articlesList = (data.articles || []).filter(a => a.sentence_count > 0);
-            const sorted = await fetchStatusAndSort(book.filename, articlesList);
+            const sorted = sortArticlesByActivity(articlesList);
             setArticles(sorted);
             setView(VIEW_STATES.ARTICLE_LIST);
         } catch (e) {
@@ -173,7 +152,7 @@ const SentenceStudy = () => {
                     // Load articles for default book immediately
                     const articlesData = await sentenceStudyApi.getArticles(defaultBook.filename);
                     const filtered = (articlesData.articles || []).filter(a => a.sentence_count > 0);
-                    const sorted = await fetchStatusAndSort(defaultBook.filename, filtered);
+                    const sorted = sortArticlesByActivity(filtered);
                     setArticles(sorted);
                     setView(VIEW_STATES.ARTICLE_LIST);
                 }
@@ -192,7 +171,7 @@ const SentenceStudy = () => {
 
                         const articlesData = await sentenceStudyApi.getArticles(filename);
                         const filtered = (articlesData.articles || []).filter(a => a.sentence_count > 0);
-                        const sorted = await fetchStatusAndSort(filename, filtered);
+                        const sorted = sortArticlesByActivity(filtered);
                         setArticles(sorted);
 
                         await startStudying(urlSourceId);
@@ -217,7 +196,7 @@ const SentenceStudy = () => {
 
                         const articlesData = await sentenceStudyApi.getArticles(filename);
                         const filtered = (articlesData.articles || []).filter(a => a.sentence_count > 0);
-                        const sorted = await fetchStatusAndSort(filename, filtered);
+                        const sorted = sortArticlesByActivity(filtered);
                         setArticles(sorted);
 
                         if (sorted.find(a => a.source_id === lastSession.source_id)) {

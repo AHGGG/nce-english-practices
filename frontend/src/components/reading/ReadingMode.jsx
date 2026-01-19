@@ -101,10 +101,12 @@ const ReadingMode = () => {
             loadArticle(urlSourceId, selectedOptionIndex);
             // Clear URL params to avoid re-triggering on refresh
             window.history.replaceState({}, '', window.location.pathname);
+            // Still fetch calibration level in parallel
+            fetchCalibrationLevel();
         } else {
-            fetchBooks();
+            // Parallel fetch for both books and calibration
+            Promise.all([fetchBooks(), fetchCalibrationLevel()]);
         }
-        fetchCalibrationLevel();
     }, []);
 
     // Fetch available books
@@ -165,36 +167,11 @@ const ReadingMode = () => {
         if (!filename) return;
         setIsLoading(true);
         try {
-            const res = await authFetch(`/api/reading/epub/list?filename=${encodeURIComponent(filename)}`);
+            // Use merged endpoint for better performance (single request instead of two)
+            const res = await authFetch(`/api/reading/epub/list-with-status?filename=${encodeURIComponent(filename)}`);
             if (res.ok) {
                 const data = await res.json();
                 const articlesData = data.articles || [];
-
-                // Fetch article status to get completion info
-                if (data.filename && articlesData.length > 0) {
-                    try {
-                        const statusRes = await authFetch(`/api/content/article-status?filename=${encodeURIComponent(data.filename)}`);
-                        if (statusRes.ok) {
-                            const statusData = await statusRes.json();
-                            // Merge status into articles
-                            const statusMap = new Map(
-                                statusData.articles?.map(a => [a.source_id, a]) || []
-                            );
-                            articlesData.forEach(article => {
-                                const status = statusMap.get(article.source_id);
-                                if (status) {
-                                    article.status = status.status;
-                                    article.study_progress = status.study_progress;
-                                    article.reading_sessions = status.reading_sessions;
-                                    article.last_read = status.last_read;
-                                    article.last_studied_at = status.last_studied_at;
-                                }
-                            });
-                        }
-                    } catch (statusErr) {
-                        console.warn('Could not fetch article status:', statusErr);
-                    }
-                }
 
                 setArticles(articlesData.sort((a, b) => {
                     const timeA = Math.max(

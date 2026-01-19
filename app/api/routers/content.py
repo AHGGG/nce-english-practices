@@ -143,6 +143,159 @@ def list_epub_articles(filename: Optional[str] = None):
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@router.get("/api/reading/epub/list-with-status")
+async def list_epub_articles_with_status(
+    filename: Optional[str] = None,
+    user_id: str = Depends(get_current_user_id)
+):
+    """
+    List all articles with their reading/study status in a SINGLE request.
+    Combines /api/reading/epub/list and /api/content/article-status for better performance.
+    """
+    try:
+        from app.services.content_providers.epub_provider import EpubProvider
+        from app.core.db import AsyncSessionLocal
+
+        provider = EpubProvider()
+
+        # If no filename provided, use first available EPUB
+        if not filename:
+            epub_dir = EpubProvider.EPUB_DIR
+            if epub_dir.exists():
+                epub_files = list(epub_dir.glob("*.epub"))
+                if epub_files:
+                    filename = epub_files[0].name
+                else:
+                    return {"filename": None, "total_articles": 0, "articles": []}
+            else:
+                return {"filename": None, "total_articles": 0, "articles": []}
+
+        # Load the EPUB
+        if not provider._load_epub(filename):
+            raise HTTPException(status_code=404, detail=f"EPUB not found: {filename}")
+
+        # Build valid articles list
+        valid_articles = []
+        for i, article in enumerate(provider._cached_articles):
+            if article.get("is_toc"):
+                continue
+            sentence_count = _get_block_sentence_count(article, provider)
+            if sentence_count < 3:
+                continue
+            
+            full_text = article.get("full_text", "")
+            preview_sentences = provider._split_sentences_lenient(full_text)
+            preview = preview_sentences[0] if preview_sentences else full_text[:200] + "..."
+            
+            valid_articles.append({
+                "index": i,
+                "title": article.get("title", f"Chapter {i + 1}"),
+                "preview": preview,
+                "source_id": f"epub:{filename}:{i}",
+                "sentence_count": sentence_count,
+            })
+
+        if not valid_articles:
+            return {"filename": filename, "total_articles": 0, "articles": []}
+
+        source_ids = [a["source_id"] for a in valid_articles]
+
+        # Fetch status data with batch queries
+        async with AsyncSessionLocal() as db:
+            # Batch Query 1: Reading sessions
+            reading_stats_result = await db.execute(
+                select(
+                    ReadingSession.source_id,
+                    func.count(ReadingSession.id).label("session_count"),
+                    func.max(ReadingSession.ended_at).label("last_read"),
+                )
+                .where(ReadingSession.user_id == user_id)
+                .where(ReadingSession.source_id.in_(source_ids))
+                .group_by(ReadingSession.source_id)
+            )
+            reading_stats = {
+                row.source_id: {"count": row.session_count, "last_read": row.last_read}
+                for row in reading_stats_result.fetchall()
+            }
+
+            # Batch Query 2: Study progress
+            study_stats_result = await db.execute(
+                select(
+                    SentenceLearningRecord.source_id,
+                    func.count(SentenceLearningRecord.id).label("studied_count"),
+                    func.count(SentenceLearningRecord.id).filter(
+                        SentenceLearningRecord.initial_response == "clear"
+                    ).label("clear_count"),
+                    func.count(SentenceLearningRecord.id).filter(
+                        SentenceLearningRecord.initial_response == "unclear"
+                    ).label("unclear_count"),
+                    func.max(SentenceLearningRecord.sentence_index).label("max_index"),
+                    func.max(SentenceLearningRecord.updated_at).label("last_studied_at"),
+                )
+                .where(SentenceLearningRecord.user_id == user_id)
+                .where(SentenceLearningRecord.source_id.in_(source_ids))
+                .group_by(SentenceLearningRecord.source_id)
+            )
+            study_stats = {
+                row.source_id: {
+                    "studied_count": row.studied_count or 0,
+                    "clear_count": row.clear_count or 0,
+                    "unclear_count": row.unclear_count or 0,
+                    "max_index": row.max_index,
+                    "last_studied_at": row.last_studied_at,
+                }
+                for row in study_stats_result.fetchall()
+            }
+
+        # Merge status into articles
+        for article in valid_articles:
+            source_id = article["source_id"]
+            total_sentences = article["sentence_count"]
+            
+            reading = reading_stats.get(source_id, {"count": 0, "last_read": None})
+            study = study_stats.get(source_id, {
+                "studied_count": 0, "clear_count": 0, "unclear_count": 0,
+                "max_index": None, "last_studied_at": None,
+            })
+            
+            current_index = (study["max_index"] + 1) if study["max_index"] is not None else 0
+            studied_count = study["studied_count"]
+            
+            # Determine status
+            if current_index >= total_sentences and studied_count > 0:
+                status = "completed"
+            elif studied_count > 0:
+                status = "in_progress"
+            elif reading["count"] > 0:
+                status = "read"
+            else:
+                status = "new"
+            
+            article["reading_sessions"] = reading["count"]
+            article["last_read"] = reading["last_read"].isoformat() if reading["last_read"] else None
+            article["last_studied_at"] = study["last_studied_at"].isoformat() if study["last_studied_at"] else None
+            article["study_progress"] = {
+                "current_index": current_index,
+                "total": total_sentences,
+                "studied_count": studied_count,
+                "clear_count": study["clear_count"],
+                "unclear_count": study["unclear_count"],
+            }
+            article["status"] = status
+
+        return {
+            "filename": filename,
+            "total_articles": len(valid_articles),
+            "articles": valid_articles,
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @router.get("/api/reading/article")
 async def get_article_content(
     source_id: str,
@@ -368,6 +521,8 @@ from app.models.orm import ReadingSession, SentenceLearningRecord, ReviewItem
 async def get_article_status(filename: str, user_id: str = Depends(get_current_user_id)):
     """
     Get combined reading and study status for all articles in an EPUB.
+    
+    Optimized with batch queries (O(1) instead of O(N) per article).
 
     Returns unified status for each article:
     - reading_sessions: number of reading sessions
@@ -386,106 +541,138 @@ async def get_article_status(filename: str, user_id: str = Depends(get_current_u
         if not provider._load_epub(filename):
             raise HTTPException(status_code=404, detail=f"EPUB not found: {filename}")
 
+        # Build list of valid articles and their source_ids
+        valid_articles = []
+        for i, article in enumerate(provider._cached_articles):
+            if article.get("is_toc"):
+                continue
+            sentence_count = _get_block_sentence_count(article, provider)
+            if sentence_count < 3:
+                continue
+            source_id = f"epub:{filename}:{i}"
+            valid_articles.append({
+                "index": i,
+                "title": article.get("title", f"Chapter {i + 1}"),
+                "source_id": source_id,
+                "sentence_count": sentence_count,
+            })
+
+        if not valid_articles:
+            return {"filename": filename, "user_id": user_id, "articles": []}
+
+        source_ids = [a["source_id"] for a in valid_articles]
+
         async with AsyncSessionLocal() as db:
-            articles = []
-
-            for i, article in enumerate(provider._cached_articles):
-                # Filter out TOC pages
-                if article.get("is_toc"):
-                    continue
-                
-                # Use block-based sentence count to match article content
-                sentence_count = _get_block_sentence_count(article, provider)
-                if sentence_count < 3:
-                    continue
-
-                source_id = f"epub:{filename}:{i}"
-
-                # Get reading session count
-                reading_result = await db.execute(
-                    select(func.count(ReadingSession.id))
-                    .where(ReadingSession.user_id == user_id)
-                    .where(ReadingSession.source_id == source_id)
+            # Batch Query 1: Reading sessions stats (count + last_read) grouped by source_id
+            reading_stats_result = await db.execute(
+                select(
+                    ReadingSession.source_id,
+                    func.count(ReadingSession.id).label("session_count"),
+                    func.max(ReadingSession.ended_at).label("last_read"),
                 )
-                reading_sessions = reading_result.scalar() or 0
+                .where(ReadingSession.user_id == user_id)
+                .where(ReadingSession.source_id.in_(source_ids))
+                .group_by(ReadingSession.source_id)
+            )
+            reading_stats = {
+                row.source_id: {"count": row.session_count, "last_read": row.last_read}
+                for row in reading_stats_result.fetchall()
+            }
 
-                # Get last read time
-                last_read_result = await db.execute(
-                    select(ReadingSession.ended_at)
-                    .where(ReadingSession.user_id == user_id)
-                    .where(ReadingSession.source_id == source_id)
-                    .order_by(ReadingSession.ended_at.desc())
-                    .limit(1)
+            # Batch Query 2: Study progress grouped by source_id
+            study_stats_result = await db.execute(
+                select(
+                    SentenceLearningRecord.source_id,
+                    func.count(SentenceLearningRecord.id).label("studied_count"),
+                    func.count(SentenceLearningRecord.id).filter(
+                        SentenceLearningRecord.initial_response == "clear"
+                    ).label("clear_count"),
+                    func.count(SentenceLearningRecord.id).filter(
+                        SentenceLearningRecord.initial_response == "unclear"
+                    ).label("unclear_count"),
+                    func.max(SentenceLearningRecord.sentence_index).label("max_index"),
+                    func.max(SentenceLearningRecord.updated_at).label("last_studied_at"),
                 )
-                last_read = last_read_result.scalar()
+                .where(SentenceLearningRecord.user_id == user_id)
+                .where(SentenceLearningRecord.source_id.in_(source_ids))
+                .group_by(SentenceLearningRecord.source_id)
+            )
+            study_stats = {
+                row.source_id: {
+                    "studied_count": row.studied_count or 0,
+                    "clear_count": row.clear_count or 0,
+                    "unclear_count": row.unclear_count or 0,
+                    "max_index": row.max_index,
+                    "last_studied_at": row.last_studied_at,
+                }
+                for row in study_stats_result.fetchall()
+            }
 
-                # Get study progress
-                study_result = await db.execute(
-                    select(
-                        func.count(SentenceLearningRecord.id),
-                        func.count(SentenceLearningRecord.id).filter(
-                            SentenceLearningRecord.initial_response == "clear"
-                        ),
-                        func.count(SentenceLearningRecord.id).filter(
-                            SentenceLearningRecord.initial_response == "unclear"
-                        ),
-                        func.max(SentenceLearningRecord.sentence_index),
-                        func.max(SentenceLearningRecord.updated_at),
-                    )
-                    .where(SentenceLearningRecord.user_id == user_id)
-                    .where(SentenceLearningRecord.source_id == source_id)
+            # Batch Query 3: Review items count grouped by source_id
+            review_stats_result = await db.execute(
+                select(
+                    ReviewItem.source_id,
+                    func.count(ReviewItem.id).label("review_count"),
                 )
-                study_row = study_result.one()
-                studied_count = study_row[0] or 0
-                clear_count = study_row[1] or 0
-                unclear_count = study_row[2] or 0
-                max_index = study_row[3]
-                last_studied_at = study_row[4]
-                current_index = (max_index + 1) if max_index is not None else 0
+                .where(ReviewItem.user_id == user_id)
+                .where(ReviewItem.source_id.in_(source_ids))
+                .group_by(ReviewItem.source_id)
+            )
+            review_stats = {
+                row.source_id: row.review_count
+                for row in review_stats_result.fetchall()
+            }
 
-                # Check for review items
-                review_result = await db.execute(
-                    select(func.count(ReviewItem.id))
-                    .where(ReviewItem.user_id == user_id)
-                    .where(ReviewItem.source_id == source_id)
-                )
-                review_count = review_result.scalar() or 0
+        # Build response using batch query results
+        articles = []
+        for article in valid_articles:
+            source_id = article["source_id"]
+            total_sentences = article["sentence_count"]
 
-                # Determine status (use block-based sentence count)
-                total_sentences = sentence_count
-                if current_index >= total_sentences and studied_count > 0:
-                    status = "completed"
-                elif studied_count > 0:
-                    status = "in_progress"
-                elif reading_sessions > 0:
-                    status = "read"
-                else:
-                    status = "new"
+            # Get stats from batch results (default to empty if not found)
+            reading = reading_stats.get(source_id, {"count": 0, "last_read": None})
+            study = study_stats.get(source_id, {
+                "studied_count": 0,
+                "clear_count": 0,
+                "unclear_count": 0,
+                "max_index": None,
+                "last_studied_at": None,
+            })
+            review_count = review_stats.get(source_id, 0)
 
-                articles.append(
-                    {
-                        "index": i,
-                        "title": article.get("title", f"Chapter {i + 1}"),
-                        "source_id": source_id,
-                        "sentence_count": total_sentences,
-                        "reading_sessions": reading_sessions,
-                        "last_read": last_read.isoformat() if last_read else None,
-                        "last_studied_at": last_studied_at.isoformat()
-                        if last_studied_at
-                        else None,
-                        "study_progress": {
-                            "current_index": current_index,
-                            "total": total_sentences,
-                            "studied_count": studied_count,
-                            "clear_count": clear_count,
-                            "unclear_count": unclear_count,
-                        },
-                        "has_review_items": review_count > 0,
-                        "status": status,
-                    }
-                )
+            current_index = (study["max_index"] + 1) if study["max_index"] is not None else 0
+            studied_count = study["studied_count"]
 
-            return {"filename": filename, "user_id": user_id, "articles": articles}
+            # Determine status
+            if current_index >= total_sentences and studied_count > 0:
+                status = "completed"
+            elif studied_count > 0:
+                status = "in_progress"
+            elif reading["count"] > 0:
+                status = "read"
+            else:
+                status = "new"
+
+            articles.append({
+                "index": article["index"],
+                "title": article["title"],
+                "source_id": source_id,
+                "sentence_count": total_sentences,
+                "reading_sessions": reading["count"],
+                "last_read": reading["last_read"].isoformat() if reading["last_read"] else None,
+                "last_studied_at": study["last_studied_at"].isoformat() if study["last_studied_at"] else None,
+                "study_progress": {
+                    "current_index": current_index,
+                    "total": total_sentences,
+                    "studied_count": studied_count,
+                    "clear_count": study["clear_count"],
+                    "unclear_count": study["unclear_count"],
+                },
+                "has_review_items": review_count > 0,
+                "status": status,
+            })
+
+        return {"filename": filename, "user_id": user_id, "articles": articles}
 
     except HTTPException:
         raise
