@@ -39,7 +39,7 @@ const ArticleListView = ({
             <div className="flex items-start justify-between">
                 <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1 flex-wrap">
-                        <h3 className="font-serif text-lg text-text-primary truncate group-hover:text-accent-primary">
+                        <h3 className="font-serif text-lg text-text-primary line-clamp-2 leading-tight group-hover:text-accent-primary">
                             {article.title}
                         </h3>
                         {article.status === 'completed' && (

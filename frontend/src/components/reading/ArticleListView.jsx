@@ -111,7 +111,7 @@ const ArticleListView = ({
                     <div className="h-[1px] bg-border flex-1 group-hover:bg-accent-primary/30 transition-colors"></div>
                 </div>
 
-                <h3 className="text-xl md:text-2xl font-serif font-bold text-text-primary group-hover:text-accent-primary transition-colors mb-4 line-clamp-2 leading-tight min-h-[3rem]">
+                <h3 className="text-lg md:text-2xl font-serif font-bold text-text-primary group-hover:text-accent-primary transition-colors mb-4 line-clamp-3 leading-tight min-h-[3rem]">
                     {article.title}
                 </h3>
 

@@ -205,6 +205,7 @@ if __name__ == "__main__":
             host="0.0.0.0",
             port=8000,
             reload=True,
+            reload_excludes=['.git', '__pycache__', 'node_modules'],
             ssl_keyfile=ssl_keyfile,
             ssl_certfile=ssl_certfile,
         )
@@ -214,4 +215,4 @@ if __name__ == "__main__":
             print("WARNING: HTTPS requested but certificates (key.pem/cert.pem) not found.")
         print("For mobile voice, generate cert: uv run python scripts/generate_cert.py")
         print("To enable HTTPS: ./scripts/dev.ps1 -Https")
-        uvicorn.run("app.main:app", host="0.0.0.0", port=8000, reload=True)
+        uvicorn.run("app.main:app", host="0.0.0.0", port=8000, reload=True, reload_excludes=['.git', '__pycache__', 'node_modules'])
