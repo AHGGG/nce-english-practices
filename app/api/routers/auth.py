@@ -6,6 +6,7 @@ from fastapi import APIRouter, Depends, HTTPException, status, Response, Cookie
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import Optional
+from datetime import datetime, timezone
 
 from app.core.db import get_db
 from app.models.auth_schemas import (
@@ -155,7 +156,7 @@ async def login(
         )
 
     # Check if account is locked
-    if user.locked_until and user.locked_until > __import__('datetime').datetime.now(__import__('datetime').timezone.utc):
+    if user.locked_until and user.locked_until > datetime.utcnow():
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Account is temporarily locked due to too many failed login attempts",
