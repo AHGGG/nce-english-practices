@@ -1,3 +1,8 @@
+---
+name: Local Deployment
+description: Instructions for local and intranet deployment using Docker and the intelligent deploy script.
+---
+
 # Local Deployment (Docker)
 
 > **When to use**: 需要将应用部署到本地/内网 Docker 环境时

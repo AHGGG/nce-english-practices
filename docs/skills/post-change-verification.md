@@ -1,3 +1,8 @@
+---
+name: Post-Change Verification
+description: Guidelines for automatically verifying code changes before notifying the user.
+---
+
 # Post-Change Verification Skill
 
 > **Purpose**: Ensure AI automatically verifies code changes before notifying the user.

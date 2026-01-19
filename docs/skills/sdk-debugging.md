@@ -1,3 +1,8 @@
+---
+name: SDK Debugging
+description: Lessons learned and diagnostic steps for debugging third-party SDK integration issues.
+---
+
 # Third-Party SDK Debugging: Lessons Learned
 
 > **When to use**: 第三方 SDK 调用失败，需要诊断问题时

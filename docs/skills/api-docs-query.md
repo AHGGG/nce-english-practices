@@ -1,3 +1,8 @@
+---
+name: API Docs Query
+description: Local CLI tool for querying offline API documentation for ElevenLabs and Deepgram.
+---
+
 # API Documentation Query Tool
 
 > **When to use**: 需要查询 ElevenLabs/Deepgram 离线 API 文档时

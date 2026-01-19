@@ -1,3 +1,8 @@
+---
+name: Voice Integrations
+description: Patterns for using raw `httpx` API calls for ElevenLabs, Deepgram, and Dashscope integrations.
+---
+
 # Voice Integrations (Raw API Pattern)
 
 > **When to use**: 需要调用 ElevenLabs/Deepgram/Gemini/Dashscope 语音 API 时

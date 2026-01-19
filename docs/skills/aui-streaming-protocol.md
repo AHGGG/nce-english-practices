@@ -1,3 +1,8 @@
+---
+name: AUI Streaming Protocol
+description: Architecture and event specifications for Agent-to-UI real-time streaming protocol.
+---
+
 # AUI Streaming Protocol (Agent-to-UI)
 
 > **When to use**: 需要实现或调试 Agent 实时流式 UI 更新时
