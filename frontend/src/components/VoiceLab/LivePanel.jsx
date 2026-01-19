@@ -1,6 +1,6 @@
 
 import React, { useState, useRef, useEffect } from 'react';
-import { Card, Button, Tag } from '../ui';
+import { Card, Button, Tag, Select } from '../ui';
 import { Radio, Activity, XCircle, Terminal } from 'lucide-react';
 
 const LivePanel = ({ config, fixedProvider = null }) => {
@@ -150,24 +150,23 @@ const LivePanel = ({ config, fixedProvider = null }) => {
         }
     };
 
+    const providerOptions = config ? Object.keys(config).map(p => ({
+        value: p,
+        label: p.toUpperCase()
+    })) : [];
+
     return (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <Card title="Socket Control">
                 <div className="space-y-6">
                     {!fixedProvider && (
-                        <div className="space-y-1">
-                            <label className="text-xs font-mono font-bold text-text-muted uppercase">Provider Target</label>
-                            <select
-                                value={provider}
-                                onChange={(e) => setProvider(e.target.value)}
-                                disabled={isConnected}
-                                className="w-full bg-bg-elevated border border-border text-text-primary px-4 py-2.5 text-sm font-mono focus:border-accent-info focus:outline-none disabled:opacity-50"
-                            >
-                                {config && Object.keys(config).map(p => (
-                                    <option key={p} value={p}>{p.toUpperCase()}</option>
-                                ))}
-                            </select>
-                        </div>
+                        <Select
+                            label="Provider Target"
+                            value={provider}
+                            onChange={(e) => setProvider(e.target.value)}
+                            disabled={isConnected}
+                            options={providerOptions}
+                        />
                     )}
 
                     <div className="p-4 bg-bg-elevated rounded border border-border">
