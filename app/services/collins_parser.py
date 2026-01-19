@@ -20,6 +20,15 @@ from app.models.collins_schemas import (
 
 logger = logging.getLogger(__name__)
 
+# ========== PERFORMANCE LIMITS ==========
+# High-frequency words can have many senses and examples.
+# Truncating to reasonable limits improves performance.
+MAX_SENSES_PER_ENTRY = 10
+MAX_EXAMPLES_PER_SENSE = 3
+MAX_SYNONYMS_PER_SENSE = 10
+MAX_PHRASAL_VERBS = 10
+MAX_INFLECTIONS = 10
+
 
 class CollinsParser:
     """
@@ -32,6 +41,13 @@ class CollinsParser:
     - Senses with definitions, examples, translations
     - Synonyms, phrasal verbs
     """
+
+    # ========== LRU CACHE ==========
+    # Cache parsed results to avoid re-parsing the same HTML.
+    # Key: (hash of HTML, word, include_raw_html)
+    # Value: CollinsWord model
+    _parse_cache: dict = {}
+    _cache_max_size: int = 500
 
     def __init__(self):
         pass
@@ -57,8 +73,19 @@ class CollinsParser:
         if html.strip().startswith("@@@LINK="):
             return CollinsWord(word=word, found=False)
 
+        # Check cache (use hash of HTML as key to save memory)
+        import hashlib
+        cache_key = (
+            hashlib.md5(html.encode()).hexdigest(),
+            word.lower(),
+            include_raw_html,
+        )
+        if cache_key in self._parse_cache:
+            return self._parse_cache[cache_key]
+
         try:
-            soup = BeautifulSoup(html, "html.parser")
+            # Use lxml parser for ~5-10x faster parsing
+            soup = BeautifulSoup(html, "lxml")
 
             # Find the main entry container
             word_entry = soup.select_one(".word_entry")
@@ -67,12 +94,24 @@ class CollinsParser:
 
             entry = self._parse_entry(soup, word_entry)
 
-            return CollinsWord(
+            result = CollinsWord(
                 word=word,
                 found=True,
                 entry=entry,
                 raw_html=html if include_raw_html else None,
             )
+
+            # Add to cache (with simple eviction if too large)
+            if len(self._parse_cache) >= self._cache_max_size:
+                # Remove oldest entries (FIFO-ish by clearing half)
+                keys_to_remove = list(self._parse_cache.keys())[
+                    : self._cache_max_size // 2
+                ]
+                for k in keys_to_remove:
+                    del self._parse_cache[k]
+            self._parse_cache[cache_key] = result
+
+            return result
 
         except Exception as e:
             logger.error(f"Error parsing Collins HTML for '{word}': {e}")
@@ -205,7 +244,7 @@ class CollinsParser:
                     CollinsInflection(form=form_text, label=label, audio=audio)
                 )
 
-        return inflections
+        return inflections[:MAX_INFLECTIONS]  # Performance: limit inflections
 
     def _extract_cross_reference(self, soup: BeautifulSoup) -> Optional[str]:
         """
@@ -254,7 +293,7 @@ class CollinsParser:
                         sense.note = note_sense.definition
                         sense.note_examples = note_sense.examples
 
-        return senses
+        return senses[:MAX_SENSES_PER_ENTRY]  # Performance: limit senses
 
     def _parse_sense_block(self, block: Tag) -> Optional[CollinsSense]:
         """Parse a single sense block."""
@@ -263,11 +302,13 @@ class CollinsParser:
             return None
 
         # Index
+        index = 1  # Default to 1
         num_elem = caption.select_one(".num")
-        try:
-            index = int(num_elem.get_text(strip=True)) if num_elem else 0
-        except ValueError:
-            index = 0
+        if num_elem:
+            try:
+                index = int(num_elem.get_text(strip=True))
+            except ValueError:
+                pass  # Keep default
 
         # Part of speech
         pos_elem = caption.select_one(".st")
@@ -293,7 +334,7 @@ class CollinsParser:
             return None
 
         return CollinsSense(
-            index=index if index > 0 else 1,  # Ensure index is at least 1
+            index=index,  # No fallback needed, defaults to 1
             definition=definition,
             definition_cn=def_cn,
             part_of_speech=pos,
@@ -401,7 +442,7 @@ class CollinsParser:
                         )
                     )
 
-        return examples
+        return examples[:MAX_EXAMPLES_PER_SENSE]  # Performance: limit examples
 
     def _extract_example_text(self, p_elem: Tag) -> str:
         """Extract example text from <p>, excluding grammar hints."""
@@ -440,7 +481,7 @@ class CollinsParser:
                 if text:
                     synonyms.append(text)
 
-        return synonyms
+        return synonyms[:MAX_SYNONYMS_PER_SENSE]  # Performance: limit synonyms
 
     def _extract_phrasal_verbs(self, soup: BeautifulSoup) -> List[str]:
         """Extract phrasal verbs."""
@@ -454,7 +495,7 @@ class CollinsParser:
                 if text:
                     phrasal_verbs.append(text)
 
-        return phrasal_verbs
+        return phrasal_verbs[:MAX_PHRASAL_VERBS]  # Performance: limit phrasal verbs
 
     def _make_audio(self, sound_url: str) -> CollinsAudio:
         """Convert sound:// URL to API URL."""
