@@ -344,6 +344,7 @@ To support multiple dictionaries (e.g., Collins + LDOCE) in one view:
 - **Endpoint**: `GET /api/review/debug/schedule` returns the logic trace for upcoming 14 days.
 - **Endpoint**: `GET /api/review/debug/memory-curve` returns interval histograms and bucket stats.
 - **Unit Tests**: `tests/test_sm2_core.py` ensures mathematical correctness of the interval logic.
+- **Undo Logic**: The `/undo` endpoint strictly reverts the last review's SM-2 state changes (Interval, Repetition, EF) and deletes the log. The frontend implements an Undo/Redo toggle for the most recent action.
 
 ### 3. Async/Sync Hybrid
 - **API Routes**: Use `async def` and run blocking LLM calls in thread pools via `run_in_threadpool`.

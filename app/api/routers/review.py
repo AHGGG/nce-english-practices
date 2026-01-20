@@ -639,6 +639,128 @@ async def get_random_review(
     )
 
 
+@router.post("/undo", response_model=ReviewQueueItem)
+async def undo_last_review(
+    user_id: str = Depends(get_current_user_id),
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Undo the last review action for the user.
+    Restores the item's state (interval, rep, EF) and deletes the log.
+    """
+    # 1. Find the latest review log for this user
+    log_stmt = (
+        select(ReviewLog)
+        .join(ReviewItem)
+        .where(ReviewItem.user_id == user_id)
+        .order_by(ReviewLog.reviewed_at.desc())
+        .limit(1)
+    )
+    result = await db.execute(log_stmt)
+    latest_log = result.scalar_one_or_none()
+
+    if not latest_log:
+        raise HTTPException(status_code=404, detail="No review history found to undo")
+
+    item = await db.get(ReviewItem, latest_log.review_item_id)
+    if not item:
+        raise HTTPException(status_code=404, detail="Reviewed item no longer exists")
+
+    # 2. Restore Stats
+    # Restore Interval
+    # The log stores the interval *at the time of review* (i.e. before the update)
+    restored_interval = latest_log.interval_at_review
+    item.interval_days = restored_interval
+
+    # Restore Easiness Factor (EF)
+    # If quality >= 3, EF was modified. We reverse the formula.
+    # NewEF = OldEF + (0.1 - (5-Q)*(0.08+(5-Q)*0.02))
+    # => OldEF = NewEF - (...)
+    if latest_log.quality >= 3:
+        q = latest_log.quality
+        delta = 0.1 - (5 - q) * (0.08 + (5 - q) * 0.02)
+        # We assume the current EF is the NewEF.
+        # Note: EF has a floor of 1.3. If reverting drops it below 1.3, it might be slightly inaccurate
+        # if the original was clipped. But essentially we subtract delta.
+        item.easiness_factor = max(1.3, item.easiness_factor - delta)
+    # If quality < 3, EF was not changed, so we keep current EF.
+
+    # Restore Repetition
+    # Calculates consecutive successes looking back from the *previous* log
+    # We query logs excluding the one we are deleting
+    history_stmt = (
+        select(ReviewLog)
+        .where(ReviewLog.review_item_id == item.id)
+        .where(ReviewLog.id != latest_log.id)  # Exclude current
+        .order_by(ReviewLog.reviewed_at.desc())
+    )
+    history_result = await db.execute(history_stmt)
+    history_logs = history_result.scalars().all()
+
+    consecutive_success = 0
+    prev_review_date = None
+
+    if history_logs:
+        prev_review_date = history_logs[0].reviewed_at
+        for log in history_logs:
+            if log.quality >= 3:
+                consecutive_success += 1
+            else:
+                break
+    else:
+        # No history means this was the first review
+        # Or no previous reviews exist
+        pass
+
+    item.repetition = consecutive_success
+    item.last_reviewed_at = prev_review_date
+
+    # Restore Next Review Date based on restored interval + prev_review_date?
+    # Actually, next_review_at logic depends on when it WAS reviewed.
+    # If we revert to state before review, 'next_review_at' should be the date it was due *before* this review?
+    # Usually: next_review = last_reviewed + interval.
+    # But if we assume it was due "now" (or in past), we can set:
+    # next_review_at = prev_reviewed_at + restored_interval
+    # OR if it was the FIRST review?
+    # If history exists: next_at = prev_reviewed_at + restored_prev_interval?
+    # No, `interval_before` in log IS the interval used to calculate the due date that just passed.
+    # So `next_review_at` (before this review) = `reviewed_at` (approx) - `overdue`?
+    # A simpler approach: state goes back to "Due".
+    # So `next_review_at` should be <= Now.
+    # Let's set it to `now` or keep it at `prev_date + interval`.
+    # `latest_log.interval_at_review` is the interval it had.
+    if prev_review_date:
+         # It was due at prev_reviewed + interval
+         # However, we don't know the interval *prior* to `interval_at_review`.
+         # Wait. `restored_interval` IS the interval it held coming into this review.
+         # So it "should have been reviewed" at `last_reviewed + restored_interval`.
+         item.next_review_at = prev_review_date + timedelta(days=restored_interval)
+    else:
+        # No previous review. It was a new item.
+        # New items usually created with next_review_at = created_at + 1 day?
+        # Or maybe it was just added.
+        # Let's set next_review_at to Now (so it appears in queue immediately)
+        item.next_review_at = datetime.utcnow()
+
+    # 3. Delete the log
+    await db.delete(latest_log)
+    await db.commit()
+    await db.refresh(item)
+
+    return ReviewQueueItem(
+        id=item.id,
+        source_id=item.source_id,
+        sentence_index=item.sentence_index,
+        sentence_text=item.sentence_text,
+        highlighted_items=item.highlighted_items or [],
+        difficulty_type=item.difficulty_type,
+        interval_days=item.interval_days,
+        repetition=item.repetition,
+        next_review_at=item.next_review_at.isoformat(),
+        created_at=item.created_at.isoformat(),
+    )
+
+
 @router.post("/complete", response_model=CompleteReviewResponse)
 async def complete_review(
     req: CompleteReviewRequest,

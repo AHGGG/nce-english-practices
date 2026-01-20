@@ -195,6 +195,12 @@ const ReviewQueue = () => {
     // Timer state
     const [startTime, setStartTime] = useState(Date.now());
 
+    // Undo/Redo state
+    // null = no action to undo
+    // { mode: 'undo', itemId, quality, durationMs } = can undo this action
+    // { mode: 'redo', itemId, quality, durationMs } = can redo this action
+    const [undoState, setUndoState] = useState(null);
+
     // Load queue and stats
     useEffect(() => {
         const load = async () => {
@@ -283,6 +289,14 @@ const ReviewQueue = () => {
             const result = await api.complete(currentItem.id, quality, duration);
             setLastResult(result);
 
+            // Save action for potential undo (only one level)
+            setUndoState({
+                mode: 'undo',
+                itemId: currentItem.id,
+                quality,
+                durationMs: duration
+            });
+
             // Reset help panel and context state
             setShowHelpPanel(false);
             setHelpStage(1);
@@ -298,6 +312,7 @@ const ReviewQueue = () => {
                 const queueData = await api.getQueue();
                 setQueue(queueData.items || []);
                 setCurrentIndex(0);
+                setUndoState(null); // Clear undo when queue reloads
             }
         } catch (e) {
             console.error('Failed to submit review:', e);
@@ -708,6 +723,73 @@ const ReviewQueue = () => {
         );
     };
 
+    // Undo/Redo toggle handler
+    const handleUndoRedo = useCallback(async () => {
+        if (loading || isSubmitting || !undoState) return;
+
+        setIsSubmitting(true);
+        try {
+            if (undoState.mode === 'undo') {
+                // === UNDO: Revert the last review ===
+                const res = await authFetch('/api/review/undo', {
+                    method: 'POST'
+                });
+
+                if (!res.ok) {
+                    if (res.status === 404) {
+                        alert('无可撤销的历史记录');
+                        setUndoState(null);
+                    } else {
+                        throw new Error('Undo failed');
+                    }
+                    return;
+                }
+
+                const restoredItem = await res.json();
+
+                // Add item back to queue at start
+                setQueue(prev => [restoredItem, ...prev]);
+                setCurrentIndex(0);
+                setLastResult(null);
+
+                // Update stats
+                setStats(prev => ({
+                    ...prev,
+                    due_items: prev.due_items + 1,
+                    total_reviews: Math.max(0, prev.total_reviews - 1)
+                }));
+
+                // Switch to Redo mode (save same action info for potential redo)
+                setUndoState(prev => ({ ...prev, mode: 'redo' }));
+
+            } else if (undoState.mode === 'redo') {
+                // === REDO: Re-apply the undone review ===
+                const result = await api.complete(undoState.itemId, undoState.quality, undoState.durationMs);
+                setLastResult(result);
+
+                // Remove item from front of queue (it was just reviewed)
+                setQueue(prev => prev.slice(1));
+                // Index stays at 0 (now showing next item)
+
+                // Update stats
+                setStats(prev => ({
+                    ...prev,
+                    due_items: Math.max(0, prev.due_items - 1),
+                    total_reviews: prev.total_reviews + 1
+                }));
+
+                // Switch back to Undo mode
+                setUndoState(prev => ({ ...prev, mode: 'undo' }));
+            }
+
+        } catch (e) {
+            console.error('Undo/Redo error:', e);
+            alert('操作失败，请重试');
+        } finally {
+            setIsSubmitting(false);
+        }
+    }, [loading, isSubmitting, undoState]);
+
     return (
         <div className="h-screen flex flex-col bg-bg-base text-text-primary font-mono">
             {/* Header */}
@@ -726,13 +808,31 @@ const ReviewQueue = () => {
                         Spaced Repetition Review
                     </span>
                 </div>
-                <button
-                    onClick={refreshQueue}
-                    className="ml-auto p-2 text-text-muted hover:text-accent-primary transition-colors"
-                    title="刷新"
-                >
-                    <RefreshCw className="w-4 h-4" />
-                </button>
+
+                <div className="ml-auto flex items-center gap-2">
+                    {/* Undo/Redo Button - only show when there's an action to undo/redo */}
+                    {!isRandomMode && undoState && (
+                        <button
+                            onClick={handleUndoRedo}
+                            disabled={isSubmitting}
+                            className={`p-2 transition-colors disabled:opacity-30 ${undoState.mode === 'redo'
+                                    ? 'text-accent-primary hover:text-accent-primary/80'
+                                    : 'text-text-muted hover:text-accent-primary'
+                                }`}
+                            title={undoState.mode === 'undo' ? '撤销 (Undo)' : '重做 (Redo)'}
+                        >
+                            <RotateCcw className={`w-4 h-4 ${undoState.mode === 'redo' ? 'scale-x-[-1]' : ''}`} />
+                        </button>
+                    )}
+
+                    <button
+                        onClick={refreshQueue}
+                        className="p-2 text-text-muted hover:text-accent-primary transition-colors"
+                        title="刷新"
+                    >
+                        <RefreshCw className="w-4 h-4" />
+                    </button>
+                </div>
             </header>
 
             {/* Main content */}
