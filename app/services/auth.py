@@ -17,6 +17,10 @@ from app.models.auth_schemas import TokenData
 # Password hashing context
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
+# Constant dummy hash for mitigating timing attacks
+# Generated with pwd_context.hash("sentinel_dummy_password")
+DUMMY_HASH = "$2b$12$AuTyjBYDlXzZl1HCWXs9suxOsQp/c23B3QHmxHVKkeSRWuRKa4.dy"
+
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     """Verify a password against its hash."""
@@ -114,7 +118,11 @@ async def authenticate_user(
     """
     user = await get_user_by_email(db, email)
     if not user:
+        # Prevent timing attacks by simulating password verification
+        # Use a dummy hash to burn the same amount of CPU
+        verify_password(password, DUMMY_HASH)
         return None
+
     if not verify_password(password, user.hashed_password):
         # Increment failed login attempts
         await db.execute(
