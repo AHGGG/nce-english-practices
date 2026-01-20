@@ -191,11 +191,17 @@ async def _get_collins_word_internal(
         include_raw_html: Whether to include raw HTML
         _recursion_depth: Current recursion depth (prevents infinite loops)
     """
+    import time
+    t_start = time.time()
+    
     MAX_CROSS_REF_DEPTH = 2  # Allow max 2 levels of cross-references
     
     try:
         # Lookup in dictionary (runs in threadpool as it may be slow)
+        t1 = time.time()
         results = await run_in_threadpool(dict_manager.lookup, word)
+        t2 = time.time()
+        logger.debug(f"Collins dict_manager.lookup('{word}'): {(t2-t1)*1000:.1f}ms")
 
         # Find Collins dictionary result
         collins_html = None
@@ -208,9 +214,12 @@ async def _get_collins_word_internal(
             return CollinsWord(word=word, found=False)
 
         # Parse the HTML
+        t3 = time.time()
         parsed = collins_parser.parse(
             collins_html, word, include_raw_html=include_raw_html
         )
+        t4 = time.time()
+        logger.debug(f"Collins parser.parse('{word}'): {(t4-t3)*1000:.1f}ms")
 
         # Check if this is a cross-reference with no actual senses
         if parsed.found and parsed.entry and len(parsed.entry.senses) == 0 and _recursion_depth < MAX_CROSS_REF_DEPTH:
@@ -236,7 +245,9 @@ async def _get_collins_word_internal(
                         entry=ref_parsed.entry,
                         raw_html=collins_html if include_raw_html else None,
                     )
-
+        
+        t_total = time.time() - t_start
+        logger.info(f"Collins API total for '{word}': {t_total*1000:.1f}ms")
         return parsed
 
     except Exception:
