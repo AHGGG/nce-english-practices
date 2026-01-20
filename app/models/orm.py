@@ -32,7 +32,8 @@ class User(Base):
     )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    email: Mapped[str] = mapped_column(String(255), unique=True, index=True, nullable=False)
+    # index=True is redundant; unique=True implies a constraint/index, and we have explicit idx_users_email
+    email: Mapped[str] = mapped_column(String(255), unique=True, nullable=False)
     hashed_password: Mapped[str] = mapped_column(String(255), nullable=False)
     username: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
 
@@ -674,7 +675,8 @@ class GeneratedImage(Base):
     __tablename__ = "generated_images"
 
     id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
-    word: Mapped[str] = mapped_column(String(100), index=True, nullable=False)
+    # No separate index needed; covered by composite index ix_generated_images_word_context (prefix)
+    word: Mapped[str] = mapped_column(String(100), nullable=False)
     context_hash: Mapped[str] = mapped_column(String(64), index=True, nullable=False)
     sentence: Mapped[str] = mapped_column(Text, nullable=False)
     image_prompt: Mapped[str] = mapped_column(Text, nullable=False)
