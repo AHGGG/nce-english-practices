@@ -13,7 +13,7 @@ export const Button = ({
     className = "",
     ...props
 }) => {
-    const base = "inline-flex items-center justify-center gap-2 font-mono font-bold uppercase tracking-wider transition-all duration-200 active:translate-y-[2px] disabled:opacity-50 disabled:cursor-not-allowed";
+    const base = "inline-flex items-center justify-center gap-2 font-mono font-bold uppercase tracking-wider transition-all duration-200 active:translate-y-[2px] disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-accent-primary";
 
     const variants = {
         primary: "bg-text-primary text-text-inverse border border-text-primary hover:bg-light-surface hover:text-text-inverse hover:shadow-hard shadow-none",
