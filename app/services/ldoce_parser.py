@@ -410,12 +410,14 @@ class LDOCEParser:
                 audio_url = self._make_audio_url(audio_link.get("href", ""))
 
             # Get text (excluding the audio icon)
-            text = exaen.get_text(strip=True)
+            text = exaen.get_text(separator=" ", strip=True)
             # Remove any speaker icon artifacts
             text = re.sub(r"^[\s\ue000-\uf8ff]+", "", text)
+            text = re.sub(r"\s+", " ", text).strip()
         else:
             # Fallback: get direct text
-            text = example_elem.get_text(strip=True)
+            text = example_elem.get_text(separator=" ", strip=True)
+            text = re.sub(r"\s+", " ", text).strip()
 
         if not text or len(text) < 5:
             return None

@@ -484,6 +484,19 @@ const SentenceStudy = () => {
         }
     }, [view, navigate, selectedBook, articles]);
 
+    const handleUndo = useCallback(() => {
+        if (currentIndex > 0) {
+            setCurrentIndex(prev => prev - 1);
+            setWordClicks([]);
+            setPhraseClicks([]);
+            setStartTime(Date.now());
+            setShowDiagnose(false);
+            setSimplifiedText(null);
+            setSimplifyingType(null);
+            setSimplifyStage(1);
+        }
+    }, [currentIndex]);
+
     // === Render ===
     const renderView = () => {
         switch (view) {
@@ -533,6 +546,7 @@ const SentenceStudy = () => {
                 return (
                     <StudyingView
                         currentSentence={flatSentences[currentIndex]}
+                        prevSentence={currentIndex > 0 ? flatSentences[currentIndex - 1] : null}
                         currentIndex={currentIndex}
                         totalSentences={flatSentences.length}
                         highlightSet={currentArticle?.highlightSet}
@@ -549,6 +563,7 @@ const SentenceStudy = () => {
                         onUnclear={handleUnclear}
                         onDifficultyChoice={handleDifficultyChoice}
                         onSimplifiedResponse={handleSimplifiedResponse}
+                        onUndo={handleUndo}
                     />
                 );
         }

@@ -111,14 +111,14 @@ EXPLAIN_PROMPTS = {
  💡 EXAMPLES:
  - [Example sentence 1]
  - [Example sentence 2]""",
-     "default_phrase": """Define the phrase "{text}" clearly.
+     "default_phrase": """Use the Collins COBUILD style to define the phrase "{text}".
  
  {context}
  
  Respond in this EXACT format (each section on its own line):
  
  📖 MEANING:
- [Clear, concise definition of the phrase. Do NOT start with "In this context".]
+ [COBUILD style full-sentence definition using simple vocabulary. e.g., "If you give up, you stop trying..."]
  
  💡 EXAMPLES:
  - [Example sentence 1]

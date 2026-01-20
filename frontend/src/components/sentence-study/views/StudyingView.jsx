@@ -3,7 +3,7 @@
  * Shows current sentence with Clear/Unclear buttons and simplification flow
  */
 import React from 'react';
-import { ChevronLeft, CheckCircle, HelpCircle } from 'lucide-react';
+import { ChevronLeft, CheckCircle, HelpCircle, RotateCcw } from 'lucide-react';
 import MemoizedSentence from '../../reading/MemoizedSentence';
 import ExplanationCard from './ExplanationCard';
 import { DIFFICULTY_CHOICES } from '../constants';
@@ -13,6 +13,7 @@ import { DIFFICULTY_CHOICES } from '../constants';
 const StudyingView = ({
     // Data
     currentSentence,
+    prevSentence,
     currentIndex,
     totalSentences,
     highlightSet,
@@ -31,7 +32,8 @@ const StudyingView = ({
     onClear,
     onUnclear,
     onDifficultyChoice,
-    onSimplifiedResponse
+    onSimplifiedResponse,
+    onUndo
 }) => {
     const progressPercent = totalSentences > 0 ? ((currentIndex) / totalSentences) * 100 : 0;
 
@@ -47,8 +49,19 @@ const StudyingView = ({
                     <span className="text-xs font-bold uppercase tracking-wider">Exit</span>
                 </button>
 
-                <div className="text-xs text-text-muted">
-                    {currentIndex + 1} / {totalSentences}
+                <div className="flex items-center gap-4">
+                    {currentIndex > 0 && (
+                        <button
+                            onClick={onUndo}
+                            className="p-2 -mr-2 rounded-full text-text-secondary hover:text-accent-primary hover:bg-bg-elevated/50 transition-colors"
+                            title="Undo / Previous"
+                        >
+                            <RotateCcw className="w-4 h-4" />
+                        </button>
+                    )}
+                    <div className="text-xs text-text-muted">
+                        {currentIndex + 1} / {totalSentences}
+                    </div>
                 </div>
             </header>
 
@@ -61,10 +74,16 @@ const StudyingView = ({
             </div>
 
             {/* Main Content Area - Centered when idle, top-aligned when showing content */}
-            {/* Main Content Area - Centered when idle, top-aligned when showing content */}
             <main className="flex-1 overflow-y-auto min-h-0">
                 <div className={`min-h-full flex flex-col items-center p-4 md:p-8 ${showDiagnose || simplifiedText || isSimplifying ? 'justify-start pt-8' : 'justify-center'}`}>
                     <div className="max-w-3xl w-full">
+                        {/* Previous Sentence Context */}
+                        {prevSentence && (
+                            <div className="mb-4 p-4 rounded-lg bg-bg-elevated/50 border border-border/50 text-text-secondary text-base opacity-70 hover:opacity-100 transition-opacity">
+                                <p className="font-serif leading-relaxed">{prevSentence.text}</p>
+                            </div>
+                        )}
+
                         {/* Current Sentence - with subtle glow */}
                         <div
                             ref={sentenceContainerRef}

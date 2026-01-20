@@ -419,6 +419,9 @@ class CollinsParser:
         # Remove patterns like (冲突、争吵等)酝酿，即将爆发
         result = re.sub(r"[\u4e00-\u9fff，；。、]+", "", result)
         result = re.sub(r"\s+", " ", result).strip()
+        
+        # Remove spaces before punctuation (e.g. "word , you mean" -> "word, you mean")
+        result = re.sub(r"\s+([,.;:?!])", r"\1", result)
 
         return result
 

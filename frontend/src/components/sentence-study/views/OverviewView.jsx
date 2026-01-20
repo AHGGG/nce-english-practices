@@ -19,13 +19,40 @@ const OverviewView = ({
         if (!jsonStr) return null;
         const result = {};
 
-        // Extract summary_en
-        const enMatch = jsonStr.match(/"summary_en"\s*:\s*"((?:[^"\\]|\\.)*)"/);
-        if (enMatch) result.summary_en = enMatch[1].replace(/\\"/g, '"');
+        const extractField = (key) => {
+            // Match key and opening quote: "key": "
+            const regex = new RegExp(`"${key}"\\s*:\\s*"`, 'g');
+            const match = regex.exec(jsonStr);
+            if (!match) return null;
 
-        // Extract summary_zh
-        const zhMatch = jsonStr.match(/"summary_zh"\s*:\s*"((?:[^"\\]|\\.)*)"/);
-        if (zhMatch) result.summary_zh = zhMatch[1].replace(/\\"/g, '"');
+            const startIndex = match.index + match[0].length;
+            let content = '';
+            let isEscaped = false;
+
+            for (let i = startIndex; i < jsonStr.length; i++) {
+                const char = jsonStr[i];
+                if (isEscaped) {
+                    content += char;
+                    isEscaped = false;
+                    continue;
+                }
+                if (char === '\\') {
+                    isEscaped = true;
+                    continue; // Skip the backslash itself
+                }
+                if (char === '"') {
+                    break; // Found closing quote
+                }
+                content += char;
+            }
+            return content;
+        };
+
+        result.summary_en = extractField('summary_en');
+        result.summary_zh = extractField('summary_zh');
+
+        // Simple array extraction for key_topics is harder, skipping for streaming
+        // Only streaming text fields is critical
 
         return result;
     };

@@ -93,7 +93,7 @@ async def get_study_progress(
     # Count studied sentences and clear count
     result = await db.execute(
         select(
-            func.count(SentenceLearningRecord.id).label("total"),
+            func.count(func.distinct(SentenceLearningRecord.sentence_index)).label("total"),
             func.sum(
                 case((SentenceLearningRecord.initial_response == "clear", 1), else_=0)
             ).label("clear_count"),
