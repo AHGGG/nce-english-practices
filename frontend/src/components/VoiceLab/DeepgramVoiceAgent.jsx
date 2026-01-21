@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useId } from 'react';
 import { Card, Button, Tag, Select } from '../ui';
 import { Mic, MicOff, Bot, User, Volume2, Loader2, Radio, Wrench } from 'lucide-react';
 
@@ -35,6 +35,11 @@ const DeepgramVoiceAgent = () => {
     const chatContainerRef = useRef(null);
     const pendingAssistantTextRef = useRef('');  // Track assistant turn
     const pendingUserTextRef = useRef('');  // Track user turn
+
+    // IDs for accessibility
+    const systemPromptId = useId();
+    const greetingId = useId();
+    const functionCallingId = useId();
 
     // Audio settings - must match backend (16kHz linear16)
     const SAMPLE_RATE = 16000;
@@ -357,37 +362,36 @@ const DeepgramVoiceAgent = () => {
                 <div className="lg:col-span-4 xl:col-span-3 space-y-4">
                     <Card title="Agent Settings">
                         <div className="space-y-4">
+                            <Select
+                                label="LLM Provider"
+                                value={config.llm_provider}
+                                onChange={e => setConfig({ ...config, llm_provider: e.target.value })}
+                                disabled={isActive}
+                                options={[
+                                    { value: 'default', label: 'Default (GPT-4o-mini)' },
+                                    { value: 'dashscope', label: 'Dashscope (Qwen)' },
+                                    { value: 'deepseek', label: 'DeepSeek' }
+                                ]}
+                            />
+
+                            <Select
+                                label="Voice"
+                                value={config.voice}
+                                onChange={e => setConfig({ ...config, voice: e.target.value })}
+                                disabled={isActive}
+                                options={[
+                                    { value: 'aura-2-asteria-en', label: 'Asteria (Female)' },
+                                    { value: 'aura-2-luna-en', label: 'Luna (Female)' },
+                                    { value: 'aura-2-thalia-en', label: 'Thalia (Female)' },
+                                    { value: 'aura-2-orion-en', label: 'Orion (Male)' },
+                                    { value: 'aura-2-arcas-en', label: 'Arcas (Male)' }
+                                ]}
+                            />
+
                             <div>
-                                <label className="text-xs font-mono text-text-muted">LLM Provider</label>
-                                <Select
-                                    value={config.llm_provider}
-                                    onChange={e => setConfig({ ...config, llm_provider: e.target.value })}
-                                    disabled={isActive}
-                                    options={[
-                                        { value: 'default', label: 'Default (GPT-4o-mini)' },
-                                        { value: 'dashscope', label: 'Dashscope (Qwen)' },
-                                        { value: 'deepseek', label: 'DeepSeek' }
-                                    ]}
-                                />
-                            </div>
-                            <div>
-                                <label className="text-xs font-mono text-text-muted">Voice</label>
-                                <Select
-                                    value={config.voice}
-                                    onChange={e => setConfig({ ...config, voice: e.target.value })}
-                                    disabled={isActive}
-                                    options={[
-                                        { value: 'aura-2-asteria-en', label: 'Asteria (Female)' },
-                                        { value: 'aura-2-luna-en', label: 'Luna (Female)' },
-                                        { value: 'aura-2-thalia-en', label: 'Thalia (Female)' },
-                                        { value: 'aura-2-orion-en', label: 'Orion (Male)' },
-                                        { value: 'aura-2-arcas-en', label: 'Arcas (Male)' }
-                                    ]}
-                                />
-                            </div>
-                            <div>
-                                <label className="text-xs font-mono text-text-muted">System Prompt</label>
+                                <label htmlFor={systemPromptId} className="text-xs font-mono text-text-muted">System Prompt</label>
                                 <textarea
+                                    id={systemPromptId}
                                     className="w-full text-xs p-2 bg-bg-base border border-border rounded resize-none"
                                     value={config.system_prompt}
                                     onChange={e => setConfig({ ...config, system_prompt: e.target.value })}
@@ -396,8 +400,9 @@ const DeepgramVoiceAgent = () => {
                                 />
                             </div>
                             <div>
-                                <label className="text-xs font-mono text-text-muted">Greeting</label>
+                                <label htmlFor={greetingId} className="text-xs font-mono text-text-muted">Greeting</label>
                                 <input
+                                    id={greetingId}
                                     type="text"
                                     className="w-full text-xs p-2 bg-bg-base border border-border rounded"
                                     value={config.greeting}
@@ -407,11 +412,14 @@ const DeepgramVoiceAgent = () => {
                             </div>
                             <div className="flex items-center justify-between py-1">
                                 <div>
-                                    <label className="text-xs font-mono text-text-muted">Function Calling</label>
+                                    <label id={functionCallingId} className="text-xs font-mono text-text-muted">Function Calling</label>
                                     <p className="text-[10px] text-text-muted/60">lookup, examples, end_call</p>
                                 </div>
                                 <button
                                     type="button"
+                                    role="switch"
+                                    aria-checked={config.functions_enabled}
+                                    aria-labelledby={functionCallingId}
                                     className={`relative w-10 h-5 rounded-full transition-colors ${config.functions_enabled ? 'bg-accent-info' : 'bg-bg-elevated/50'}`}
                                     onClick={() => setConfig({ ...config, functions_enabled: !config.functions_enabled })}
                                     disabled={isActive}
@@ -537,4 +545,3 @@ const DeepgramVoiceAgent = () => {
 };
 
 export default DeepgramVoiceAgent;
-
