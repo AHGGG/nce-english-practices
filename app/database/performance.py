@@ -7,7 +7,7 @@ from typing import Dict, Any
 from datetime import datetime, timedelta
 import math
 import logging
-from sqlalchemy import select, func, case, and_
+from sqlalchemy import select, func, case, and_, union_all, literal
 
 
 from app.database.core import (
@@ -175,38 +175,28 @@ async def get_daily_study_time(
             cutoff = datetime.utcnow() - timedelta(days=days)
             
             # Validate timezone - PostgreSQL will error on invalid timezone
-            # Common valid values: 'UTC', 'Asia/Shanghai', 'America/New_York', 'Europe/London'
             user_tz = timezone
             
-            # Helper function to create timezone-aware date truncation
-            # 
-            # IMPORTANT: PostgreSQL timezone() behavior with timestamp WITHOUT time zone:
-            #   timezone(zone, ts) assumes ts IS in that zone, returns UTC
-            # We need the OPPOSITE: treat ts as UTC, convert TO user's zone
-            #
-            # Solution: First mark as UTC, then convert to user timezone
-            #   timezone('Asia/Shanghai', timezone('UTC', col))
-            # = (col AT TIME ZONE 'UTC') AT TIME ZONE 'Asia/Shanghai'
-            #
-            # Example: col = 2026-01-18 23:00:00 (stored as UTC)
-            #   -> timezone('UTC', col) = 2026-01-18 23:00:00+00
-            #   -> timezone('Asia/Shanghai', ...) = 2026-01-19 07:00:00
-            #   -> date_trunc('day', ...) = 2026-01-19 (correct!)
             def day_trunc_tz(col):
                 """Truncate timestamp to day in user's timezone."""
-                # col is timestamp without timezone, stored as UTC
-                # Step 1: Mark it as UTC (creates timestamptz)
-                # Step 2: Convert to user's timezone
-                # Step 3: Truncate to day
                 utc_aware = func.timezone("UTC", col)
                 user_local = func.timezone(user_tz, utc_aware)
                 return func.date_trunc("day", user_local)
 
-            # 1. Sentence Study by Day
+            # ⚡ OPTIMIZATION: Use UNION ALL to combine 4 aggregations into 1 query.
+            # Reduces 4 round-trips to 1.
+
+            # Note: We must ensure all columns in UNION ALL align in type.
+            # Col 1: Day (Timestamp)
+            # Col 2: Seconds (Numeric) - Normalized from ms where needed
+            # Col 3: Type (String)
+
+            # 1. Sentence Study (stored in ms)
             sentence_stmt = (
                 select(
                     day_trunc_tz(SentenceLearningRecord.created_at).label("day"),
-                    func.sum(SentenceLearningRecord.dwell_time_ms),
+                    (func.sum(SentenceLearningRecord.dwell_time_ms) / 1000).label("seconds"),
+                    literal("sentence_study").label("type")
                 )
                 .where(
                     and_(
@@ -215,18 +205,14 @@ async def get_daily_study_time(
                     )
                 )
                 .group_by("day")
-                .order_by("day")
             )
-            sentence_res = await session.execute(sentence_stmt)
-            sentence_days = {
-                row[0].date().isoformat(): (row[1] or 0) // 1000 for row in sentence_res
-            }
 
-            # 2. Reading by Day
+            # 2. Reading (stored in seconds)
             reading_stmt = (
                 select(
                     day_trunc_tz(ReadingSession.started_at).label("day"),
-                    func.sum(ReadingSession.total_active_seconds),
+                    func.sum(ReadingSession.total_active_seconds).label("seconds"),
+                    literal("reading").label("type")
                 )
                 .where(
                     and_(
@@ -235,18 +221,14 @@ async def get_daily_study_time(
                     )
                 )
                 .group_by("day")
-                .order_by("day")
             )
-            reading_res = await session.execute(reading_stmt)
-            reading_days = {
-                row[0].date().isoformat(): row[1] or 0 for row in reading_res
-            }
 
-            # 3. Voice by Day
+            # 3. Voice (stored in seconds)
             voice_stmt = (
                 select(
                     day_trunc_tz(VoiceSession.started_at).label("day"),
-                    func.sum(VoiceSession.total_active_seconds),
+                    func.sum(VoiceSession.total_active_seconds).label("seconds"),
+                    literal("voice").label("type")
                 )
                 .where(
                     and_(
@@ -255,16 +237,14 @@ async def get_daily_study_time(
                     )
                 )
                 .group_by("day")
-                .order_by("day")
             )
-            voice_res = await session.execute(voice_stmt)
-            voice_days = {row[0].date().isoformat(): row[1] or 0 for row in voice_res}
 
-            # 4. Review by Day
+            # 4. Review (stored in ms)
             review_stmt = (
                 select(
                     day_trunc_tz(ReviewLog.reviewed_at).label("day"),
-                    func.sum(ReviewLog.duration_ms),
+                    (func.sum(ReviewLog.duration_ms) / 1000).label("seconds"),
+                    literal("review").label("type")
                 )
                 .join(ReviewItem)
                 .where(
@@ -274,41 +254,53 @@ async def get_daily_study_time(
                     )
                 )
                 .group_by("day")
-                .order_by("day")
-            )
-            review_res = await session.execute(review_stmt)
-            review_days = {
-                row[0].date().isoformat(): (row[1] or 0) // 1000 for row in review_res
-            }
-
-            # Merge all days
-            all_dates = sorted(
-                list(
-                    set(
-                        list(sentence_days.keys())
-                        + list(reading_days.keys())
-                        + list(voice_days.keys())
-                        + list(review_days.keys())
-                    )
-                )
             )
 
-            daily_data = []
-            for date_str in all_dates:
-                s_sec = sentence_days.get(date_str, 0)
-                r_sec = reading_days.get(date_str, 0)
-                v_sec = voice_days.get(date_str, 0)
-                rv_sec = review_days.get(date_str, 0)
-                daily_data.append(
-                    {
-                        "date": date_str,
-                        "sentence_study": s_sec,
-                        "reading": r_sec,
-                        "voice": v_sec,
-                        "review": rv_sec,
-                        "total": s_sec + r_sec + v_sec + rv_sec,
+            # Combine queries
+            combined_stmt = union_all(sentence_stmt, reading_stmt, voice_stmt, review_stmt)
+
+            # Execute
+            res = await session.execute(combined_stmt)
+
+            # Process results
+            # Structure: dates[date_str][type] = seconds
+            dates_map: Dict[str, Dict[str, float]] = {}
+
+            for row in res:
+                # row is (day, seconds, type)
+                day_ts = row[0]
+                seconds = float(row[1] or 0)
+                type_label = row[2]
+
+                if not day_ts:
+                    continue
+
+                date_str = day_ts.date().isoformat()
+
+                if date_str not in dates_map:
+                    dates_map[date_str] = {
+                        "sentence_study": 0,
+                        "reading": 0,
+                        "voice": 0,
+                        "review": 0
                     }
+
+                dates_map[date_str][type_label] += seconds
+
+            # Convert to sorted list
+            daily_data = []
+            for date_str in sorted(dates_map.keys()):
+                entry = dates_map[date_str]
+                entry["date"] = date_str
+
+                total = (
+                    entry["sentence_study"] +
+                    entry["reading"] +
+                    entry["voice"] +
+                    entry["review"]
                 )
+                entry["total"] = total
+                daily_data.append(entry)
 
             return {
                 "daily": daily_data,
