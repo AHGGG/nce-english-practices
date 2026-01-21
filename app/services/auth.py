@@ -17,6 +17,9 @@ from app.models.auth_schemas import TokenData
 # Password hashing context
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
+# Dummy hash for timing attack mitigation (pre-computed bcrypt hash of "dummy")
+DUMMY_HASH = "$2b$12$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36WQoeG6Lruj3vjPGga31lW"
+
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     """Verify a password against its hash."""
@@ -114,30 +117,55 @@ async def authenticate_user(
     """
     user = await get_user_by_email(db, email)
     if not user:
+        # Timing attack mitigation: verify against dummy hash to simulate work
+        verify_password("wrong_password", DUMMY_HASH)
         return None
+
+    # Check if account is locked
+    # Ensure locked_until is offset-aware for comparison, or use naive comparison if DB is naive
+    is_locked = False
+    if user.locked_until:
+        locked_until = user.locked_until
+        if locked_until.tzinfo is None:
+            # Assume naive timestamp from DB is UTC
+            locked_until = locked_until.replace(tzinfo=timezone.utc)
+
+        if locked_until > datetime.now(timezone.utc):
+            is_locked = True
+
+    if is_locked:
+        # Even if locked, we perform verification to avoid timing leaks (optional, but good practice)
+        verify_password(password, user.hashed_password)
+        return None
+
     if not verify_password(password, user.hashed_password):
         # Increment failed login attempts
+        new_failed_count = user.failed_login_attempts + 1
+        values = {"failed_login_attempts": new_failed_count}
+
+        # Lock account if attempts exceed threshold (e.g., 5)
+        if new_failed_count >= 5:
+            values["locked_until"] = datetime.now(timezone.utc) + timedelta(minutes=15)
+
         await db.execute(
             update(User)
             .where(User.id == user.id)
-            .values(failed_login_attempts=User.failed_login_attempts + 1)
+            .values(**values)
         )
         await db.commit()
         return None
 
-    # Reset failed attempts on successful login
-    if user.failed_login_attempts > 0:
-        await db.execute(
-            update(User)
-            .where(User.id == user.id)
-            .values(failed_login_attempts=0, last_login_at=datetime.utcnow())
-        )
-    else:
-        await db.execute(
-            update(User)
-            .where(User.id == user.id)
-            .values(last_login_at=datetime.utcnow())
-        )
+    # Reset failed attempts and unlock on successful login
+    values = {"last_login_at": datetime.now(timezone.utc)}
+    if user.failed_login_attempts > 0 or user.locked_until is not None:
+        values["failed_login_attempts"] = 0
+        values["locked_until"] = None
+
+    await db.execute(
+        update(User)
+        .where(User.id == user.id)
+        .values(**values)
+    )
     await db.commit()
 
     return user
