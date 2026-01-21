@@ -31,28 +31,36 @@ const markdownComponents = {
 
 const STAGE_CONFIG = {
     1: {
-        color: 'text-accent-info',
-        borderColor: 'border-accent-info',
-        bgColor: 'bg-accent-info',
-        icon: Zap,
-        label: 'Simple Explanation',
-        gradient: 'from-accent-info/10 to-transparent'
+        color: 'text-accent-success',
+        borderColor: 'border-accent-success',
+        bgColor: 'bg-accent-success',
+        icon: Sparkles,
+        label: 'Vocabulary Check',
+        gradient: 'from-accent-success/10 to-transparent'
     },
     2: {
         color: 'text-category-blue',
         borderColor: 'border-category-blue',
         bgColor: 'bg-category-blue',
-        icon: BookOpen,
-        label: 'Detailed Breakdown',
+        icon: Zap,
+        label: 'Structure Check',
         gradient: 'from-category-blue/10 to-transparent'
     },
     3: {
         color: 'text-category-indigo',
         borderColor: 'border-category-indigo',
         bgColor: 'bg-category-indigo',
-        icon: Brain,
-        label: 'Deep Analysis',
+        icon: BookOpen,
+        label: 'English Analysis',
         gradient: 'from-category-indigo/10 to-transparent'
+    },
+    4: {
+        color: 'text-category-red',
+        borderColor: 'border-category-red',
+        bgColor: 'bg-category-red',
+        icon: Brain,
+        label: 'Chinese Deep Dive',
+        gradient: 'from-category-red/10 to-transparent'
     }
 };
 
@@ -95,7 +103,7 @@ const ExplanationCard = ({
                                     {config.label}
                                 </h3>
                                 <div className="text-xs text-text-muted flex items-center gap-1.5 mt-0.5">
-                                    <span>Stage {simplifyStage}/3</span>
+                                    <span>Stage {simplifyStage}/4</span>
                                     <span className="w-1 h-1 rounded-full bg-text-muted" />
                                     <span>AI Analysis</span>
                                 </div>
@@ -149,23 +157,23 @@ const ExplanationCard = ({
                             <button
                                 onClick={() => onSimplifiedResponse(true)}
                                 className={`flex items-center justify-center gap-2 px-8 py-3.5 font-bold uppercase text-sm tracking-wide transition-all rounded-lg shadow-lg
-                                    ${config.bgColor} text-text-inverse hover:brightness-110 active:scale-95`}
+                                    ${config.bgColor} text-text-primary hover:brightness-110 active:scale-95`}
                             >
                                 <CheckCircle className="w-4 h-4" />
-                                {simplifyStage === 3 ? 'Understood' : 'Got it'}
+                                {simplifyStage === 4 ? 'Understood' : 'Got it'}
                             </button>
 
                             <button
                                 onClick={() => onSimplifiedResponse(false)}
                                 className={`flex items-center justify-center gap-2 px-8 py-3.5 border-2 transition-all rounded-lg font-bold uppercase text-sm tracking-wide active:scale-95
-                                    ${simplifyStage < 3
+                                    ${simplifyStage < 4
                                         ? `border-white/10 hover:border-${config.color.split('-')[1]}-${config.color.split('-')[2]} text-text-secondary hover:text-text-primary bg-bg-base/20 hover:bg-bg-base/40`
                                         : 'border-white/10 text-text-muted cursor-not-allowed opacity-50'
                                     }`}
-                                disabled={simplifyStage >= 3}
+                                disabled={simplifyStage >= 4}
                             >
                                 <HelpCircle className="w-4 h-4" />
-                                {simplifyStage < 3 ? 'Still Unclear' : 'Max Level'}
+                                {simplifyStage < 4 ? 'Still Unclear' : 'Max Level'}
                             </button>
                         </motion.div>
                     )}

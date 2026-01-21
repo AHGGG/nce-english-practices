@@ -385,6 +385,9 @@ To support multiple dictionaries (e.g., Collins + LDOCE) in one view:
     - **Fix**: Double-check Pydantic schemas or dict keys in backend against React component usage. (e.g., `total_reviews` vs `total_words_analyzed`).
 - **Tailwind CSS Variable Opacity**: Using `bg-color/50` with CSS variables defined as Hex codes (e.g., `--color: #ff0000`) fails silently.
     - **Fix**: Define CSS variables as RGB triplets (e.g., `--color: 255 0 0`) and use `rgb(var(--color) / <alpha-value>)` in `tailwind.config.js`.
+- **Tailwind Color Token Consistency**: When adding new UI components, avoid using raw Tailwind colors (e.g., `text-white`, `bg-green-500`) or undefined tokens (e.g., `category-green` when only `category-blue` is defined).
+    - **Fix**: Always check `tailwind.config.js` to verify the color token exists before using it. Use semantic tokens from the design system (e.g., `text-text-primary`, `bg-accent-success`, `bg-category-blue`).
+    - **Available Category Colors**: `orange`, `blue`, `amber`, `red`, `gray`, `indigo`, `yellow` (NO `green` - use `accent-success` instead).
 
 ### Database Connection
 - **Tests**: Require PostgreSQL running on `localhost:5432` with `nce_practice_test` database.

@@ -39,62 +39,53 @@ _collocation_cache: Dict[str, List[dict]] = {}
 # =============================================================================
 
 SIMPLIFY_PROMPTS = {
-    "vocabulary_stage1": """Rewrite this sentence using simpler vocabulary (COCA 0-3000 most common words), 
-but keep the exact grammatical structure unchanged:
-"{sentence}"
+    # Stage 1: Vocabulary Simplification
+    "stage1": """Rewrite this sentence using simpler vocabulary (COCA 0-2000 most common words).
+Keep the sentence structure exactly the same, only replace difficult words with simpler synonyms.
+
+Original: "{sentence}"
 
 Return ONLY the simplified sentence, no explanation.""",
-    "grammar_stage1": """Break this sentence into 2-3 shorter, simpler sentences 
-while keeping the same vocabulary words:
-"{sentence}"
 
-Return ONLY the simplified sentences, no explanation.""",
-    "meaning_stage1": """The learner knows the words and grammar, but doesn't understand what this sentence MEANS in context.
+    # Stage 2: Grammar Simplification
+    "stage2": """Break this sentence into shorter, simpler sentences (Subject-Verb-Object).
+Keep the meaning but remove complex clauses. Use simple connecting words if needed.
+
+Original: "{sentence}"
+
+Return ONLY the simplified structure (2-3 short sentences), no explanation.""",
+
+    # Stage 3: English Breakdown (Context & Meaning)
+    "stage3": """The learner has seen the simplified vocabulary and grammar but still finds it unclear.
+Provide a clear ENGLISH explanation of the meaning in this specific context.
 
 Sentence: "{sentence}"
 
 Context:
 {context}
 
-Your job: Help them "get it". Provide:
+Respond in this format:
+1. **Meaning**: [Simple English explanation of what it means]
+2. **Key Point**: [The main message or nuance]
+3. **Breakdown**: [Briefly explain 1-2 difficult phrases if any]
 
-1. **Paraphrase**: Restate the sentence in completely different words (same meaning, different expression)
-2. **The Point**: What is the author trying to say? What's the takeaway?
-3. **Hidden Info**: Explain any cultural references, implied assumptions, or "reading between the lines"
+Keep it encouraging and simple.""",
 
-Keep it SHORT and CLEAR. Write like you're explaining to a smart friend who missed something obvious.""",
-    "both_stage1": """Explain this sentence in the simplest possible English (A1 level).
-Context:
-{context}
-
-Return ONLY a simple explanation of the CURRENT sentence, no extra text.""",
-    "stage2": """The learner still doesn't understand this sentence after a simple explanation.
-Please provide a MORE DETAILED explanation with:
-1. Break down the key phrases/idioms
-2. Explain the grammar structure
-3. Give a similar example sentence
-
-Context:
-{context}
-
-Keep explanations in simple English. Format:
-📖 Key phrases: ...
-🔧 Structure: ...
-💡 Similar example: ...""",
-    "stage3": """学习者经过两次解释仍然不理解这个句子，请用中文提供深度解释：
-
+    # Stage 4: Chinese Deep Dive
+    "stage4": """学习者经过前面的英文解释仍然不理解。请用中文提供深度解析。
+    
 句子："{sentence}"
 
 上下文：
 {context}
 
 请提供：
-1. 句子的完整中文翻译
-2. 语法结构分析
-3. 关键词组/搭配的解释
-4. 为什么这个表达对中国学习者可能困难
+1. **中文翻译**：准确顺畅的翻译
+2. **结构分析**：拆解句子成分
+3. **难点精讲**：重点讲解单词或语法难点
+4. **语境提示**：为什么这里用这个表达
 
-用中文回答。""",
+用中文回答，条理清晰。""",
 }
 
 
@@ -294,7 +285,7 @@ class SentenceStudyService:
         Stream LLM simplification with caching support.
         Yields SSE-formatted chunks.
         """
-        stage = max(1, min(3, stage))  # Clamp to 1-3
+        stage = max(1, min(4, stage))  # Clamp to 1-4
         cache_key = self.get_simplify_cache_key(sentence, simplify_type, stage)
 
         # Check cache
@@ -304,7 +295,7 @@ class SentenceStudyService:
                 {
                     "type": "done",
                     "stage": stage,
-                    "has_next_stage": stage < 3,
+                    "has_next_stage": stage < 4,
                     "cached": True,
                 }
             )
@@ -319,22 +310,17 @@ class SentenceStudyService:
             context_parts.append(f'Next sentence: "{next_sentence}"')
         context = "\n".join(context_parts)
 
-        # Select prompt
+        # Select prompt based on stage
         if stage == 1:
-            if simplify_type == "vocabulary":
-                prompt = SIMPLIFY_PROMPTS["vocabulary_stage1"].format(sentence=sentence)
-            elif simplify_type == "grammar":
-                prompt = SIMPLIFY_PROMPTS["grammar_stage1"].format(sentence=sentence)
-            elif simplify_type == "meaning":
-                prompt = SIMPLIFY_PROMPTS["meaning_stage1"].format(
-                    sentence=sentence, context=context
-                )
-            else:
-                prompt = SIMPLIFY_PROMPTS["both_stage1"].format(context=context)
+            prompt = SIMPLIFY_PROMPTS["stage1"].format(sentence=sentence)
         elif stage == 2:
-            prompt = SIMPLIFY_PROMPTS["stage2"].format(context=context)
-        else:
+            prompt = SIMPLIFY_PROMPTS["stage2"].format(sentence=sentence)
+        elif stage == 3:
             prompt = SIMPLIFY_PROMPTS["stage3"].format(
+                sentence=sentence, context=context
+            )
+        else:
+            prompt = SIMPLIFY_PROMPTS["stage4"].format(
                 sentence=sentence, context=context
             )
 
@@ -342,12 +328,14 @@ class SentenceStudyService:
         full_text = ""
         try:
             # Determine max tokens based on stage
-            if stage == 3:
-                max_gen_tokens = 1500
-            elif stage == 2:
-                max_gen_tokens = 800
-            else:
-                max_gen_tokens = 300
+            if stage == 4:  # Chinese deep dive needs more tokens
+                max_gen_tokens = 2000
+            elif stage == 3:  # English analysis
+                max_gen_tokens = 1000
+            elif stage == 2:  # Grammar simplification
+                max_gen_tokens = 400
+            else:  # Stage 1: Vocabulary simplification
+                max_gen_tokens = 200
 
             stream = await self.llm.async_client.chat.completions.create(
                 model=self.llm.model_name,
@@ -366,7 +354,7 @@ class SentenceStudyService:
             # Cache result
             _simplify_cache[cache_key] = full_text
             yield json.dumps(
-                {"type": "done", "stage": stage, "has_next_stage": stage < 3}
+                {"type": "done", "stage": stage, "has_next_stage": stage < 4}
             )
 
         except Exception as e:

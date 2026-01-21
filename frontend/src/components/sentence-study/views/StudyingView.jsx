@@ -6,7 +6,6 @@ import React from 'react';
 import { ChevronLeft, CheckCircle, HelpCircle, RotateCcw, BookOpen } from 'lucide-react';
 import MemoizedSentence from '../../reading/MemoizedSentence';
 import ExplanationCard from './ExplanationCard';
-import { DIFFICULTY_CHOICES } from '../constants';
 
 
 
@@ -20,7 +19,6 @@ const StudyingView = ({
     collocations = [],
     wordClicks = [],
     // State
-    showDiagnose,
     simplifiedText,
     simplifyStage,
     isSimplifying,
@@ -31,7 +29,6 @@ const StudyingView = ({
     onWordClick,
     onClear,
     onUnclear,
-    onDifficultyChoice,
     onSimplifiedResponse,
     onUndo
 }) => {
@@ -66,7 +63,7 @@ const StudyingView = ({
 
             {/* Main Content Area - Centered when idle, top-aligned when showing content */}
             <main className="flex-1 overflow-y-auto min-h-0">
-                <div className={`min-h-full flex flex-col items-center p-4 md:p-8 ${showDiagnose || simplifiedText || isSimplifying ? 'justify-start pt-8' : 'justify-center'}`}>
+                <div className={`min-h-full flex flex-col items-center p-4 md:p-8 ${simplifiedText || isSimplifying ? 'justify-start pt-8' : 'justify-center'}`}>
                     {/* Main Sentence Card */}
                     <div className="max-w-3xl w-full border border-border bg-bg-surface rounded-lg shadow-sm overflow-hidden">
 
@@ -153,28 +150,6 @@ const StudyingView = ({
                             </div>
                         )}
 
-                        {/* Diagnose Mode */}
-                        {showDiagnose && !simplifiedText && !isSimplifying && (
-                            <div className="mt-6 p-4 border border-border bg-bg-surface rounded-lg">
-                                <p className="text-center text-sm text-text-secondary mb-4">
-                                    What's making this tricky?
-                                </p>
-                                <div className="flex flex-wrap justify-center gap-3">
-                                    {DIFFICULTY_CHOICES.map(choice => (
-                                        <button
-                                            key={choice.id}
-                                            onClick={() => onDifficultyChoice(choice.id)}
-                                            className="px-4 py-3 border border-border hover:border-accent-primary hover:bg-accent-primary/10 transition-all text-center rounded-md"
-                                        >
-                                            <div className="text-lg">{choice.label}</div>
-                                            <div className="text-xs text-text-muted">{choice.desc}</div>
-                                        </button>
-                                    ))}
-                                </div>
-                            </div>
-                        )}
-
-
 
                         {/* Simplified version */}
                         <ExplanationCard
@@ -187,28 +162,27 @@ const StudyingView = ({
                 </div>
             </main>
 
-            {/* Fixed Bottom Action Buttons */}
-            {
-                !showDiagnose && (
-                    <footer className="flex-shrink-0 p-4 md:p-6 border-t border-border bg-bg-surface">
-                        <div className="max-w-3xl mx-auto flex flex-wrap justify-center gap-3">
-                            <button
-                                onClick={onClear}
-                                className="flex items-center justify-center gap-2 min-w-[140px] px-8 py-4 bg-accent-primary text-text-inverse font-bold uppercase text-sm hover:bg-accent-primary/80 active:scale-95 transition-all touch-manipulation rounded-md"
-                            >
-                                <CheckCircle className="w-5 h-5" />
-                                Clear
-                            </button>
-                            <button
-                                onClick={onUnclear}
-                                className="flex items-center justify-center gap-2 min-w-[140px] px-8 py-4 border border-text-muted text-text-secondary hover:text-text-primary hover:border-text-primary active:scale-95 transition-all touch-manipulation rounded-md"
-                            >
-                                <HelpCircle className="w-5 h-5" />
-                                Unclear
-                            </button>
-                        </div>
-                    </footer>
-                )
+            {/* Fixed Bottom Action Buttons - hidden when explanation is showing */}
+            {!isSimplifying && !simplifiedText && (
+                <footer className="flex-shrink-0 p-4 md:p-6 border-t border-border bg-bg-surface">
+                    <div className="max-w-3xl mx-auto flex flex-wrap justify-center gap-3">
+                        <button
+                            onClick={onClear}
+                            className="flex items-center justify-center gap-2 min-w-[140px] px-8 py-4 bg-accent-primary text-text-inverse font-bold uppercase text-sm hover:bg-accent-primary/80 active:scale-95 transition-all touch-manipulation rounded-md"
+                        >
+                            <CheckCircle className="w-5 h-5" />
+                            Clear
+                        </button>
+                        <button
+                            onClick={onUnclear}
+                            className="flex items-center justify-center gap-2 min-w-[140px] px-8 py-4 border border-text-muted text-text-secondary hover:text-text-primary hover:border-text-primary active:scale-95 transition-all touch-manipulation rounded-md"
+                        >
+                            <HelpCircle className="w-5 h-5" />
+                            Unclear
+                        </button>
+                    </div>
+                </footer>
+            )
             }
         </div>
     );

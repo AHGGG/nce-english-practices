@@ -324,10 +324,11 @@ async def simplify_sentence(req: SimplifyRequest):
     """Generate simplified version of a sentence using streaming LLM.
 
     Returns Server-Sent Events (SSE) for real-time streaming display.
-    Supports 3 progressive stages:
-    - Stage 1: English simplification (simpler words or shorter sentences)
-    - Stage 2: Detailed English explanation with examples
-    - Stage 3: Chinese deep dive explanation (中文深度解释)
+    Supports 4 progressive stages:
+    - Stage 1: Vocabulary Simplification (simpler words)
+    - Stage 2: Grammar Simplification (shorter sentences)
+    - Stage 3: English Deep Dive (Meaning & Context)
+    - Stage 4: Chinese Deep Dive (Full translation & Analysis)
 
     SSE format:
     - data: {"type": "chunk", "content": "..."}

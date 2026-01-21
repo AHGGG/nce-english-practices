@@ -44,7 +44,7 @@ const SentenceStudy = () => {
     const [wordClicks, setWordClicks] = useState([]);
     const [phraseClicks, setPhraseClicks] = useState([]);
     const [startTime, setStartTime] = useState(null);
-    const [showDiagnose, setShowDiagnose] = useState(false);
+    // showDiagnose is removed in favor of 4-stage flow
     const [simplifiedText, setSimplifiedText] = useState(null);
     const [simplifyingType, setSimplifyingType] = useState(null);
     const [simplifyStage, setSimplifyStage] = useState(1);
@@ -275,8 +275,7 @@ const SentenceStudy = () => {
             setCurrentArticle(article);
             setProgress(progressData);
             setWordClicks([]);
-            setShowDiagnose(false);
-            setSimplifiedText(null);
+            // setSimplifiedText(null);
             setOverviewStreamContent('');
             setOverview(null);
 
@@ -359,11 +358,11 @@ const SentenceStudy = () => {
         advanceToNext('clear');
     }, [currentArticle, currentIndex, wordClicks, phraseClicks, startTime, flatSentences]);
 
-    const handleUnclear = useCallback(() => setShowDiagnose(true), []);
-
     const handleDifficultyChoice = useCallback(async (choice, stage = 1) => {
         setIsSimplifying(true);
-        setSimplifyingType(choice);
+        // Default to 'meaning' if not specified, though backend mainly uses stage now
+        const type = choice || 'meaning';
+        setSimplifyingType(type);
         setSimplifyStage(stage);
         setSimplifiedText('');
 
@@ -377,7 +376,7 @@ const SentenceStudy = () => {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     sentence: currentSentence,
-                    simplify_type: choice,
+                    simplify_type: type,
                     stage,
                     prev_sentence: prevSentence,
                     next_sentence: nextSentence
@@ -402,6 +401,11 @@ const SentenceStudy = () => {
         }
     }, [currentIndex, flatSentences]);
 
+    const handleUnclear = useCallback(() => {
+        // Start directly with Stage 1 (Vocabulary)
+        handleDifficultyChoice('meaning', 1);
+    }, [handleDifficultyChoice]);
+
     const handleSimplifiedResponse = useCallback(async (gotIt) => {
         const dwellTime = Date.now() - startTime;
         const currentSentence = flatSentences[currentIndex];
@@ -413,7 +417,7 @@ const SentenceStudy = () => {
             sentence_index: currentIndex,
             sentence_text: currentSentence?.text,
             initial_response: 'unclear',
-            unclear_choice: simplifyingType,
+            unclear_choice: simplifyingType || 'meaning', // Default to meaning
             simplified_response: gotIt ? 'got_it' : 'still_unclear',
             word_clicks: wordClicks,
             phrase_clicks: phraseClicks,
@@ -424,10 +428,12 @@ const SentenceStudy = () => {
 
         if (gotIt) {
             advanceToNext('unclear');
-        } else if (simplifyStage < 3) {
+        } else if (simplifyStage < 4) {
+            // Move to next stage
             setSimplifiedText(null);
             handleDifficultyChoice(simplifyingType, simplifyStage + 1);
         } else {
+            // Max stage reached
             advanceToNext('unclear');
         }
     }, [currentArticle, currentIndex, wordClicks, phraseClicks, startTime, simplifyingType, simplifyStage, handleDifficultyChoice, flatSentences]);
@@ -446,7 +452,6 @@ const SentenceStudy = () => {
             setWordClicks([]);
             setPhraseClicks([]);
             setStartTime(Date.now());
-            setShowDiagnose(false);
             setSimplifiedText(null);
             setSimplifyingType(null);
             setSimplifyStage(1);
@@ -490,7 +495,6 @@ const SentenceStudy = () => {
             setWordClicks([]);
             setPhraseClicks([]);
             setStartTime(Date.now());
-            setShowDiagnose(false);
             setSimplifiedText(null);
             setSimplifyingType(null);
             setSimplifyStage(1);
@@ -552,7 +556,6 @@ const SentenceStudy = () => {
                         highlightSet={currentArticle?.highlightSet}
                         collocations={collocations}
                         wordClicks={wordClicks}
-                        showDiagnose={showDiagnose}
                         simplifiedText={simplifiedText}
                         simplifyStage={simplifyStage}
                         isSimplifying={isSimplifying}
@@ -561,7 +564,6 @@ const SentenceStudy = () => {
                         onWordClick={handleWordClick}
                         onClear={handleClear}
                         onUnclear={handleUnclear}
-                        onDifficultyChoice={handleDifficultyChoice}
                         onSimplifiedResponse={handleSimplifiedResponse}
                         onUndo={handleUndo}
                     />
