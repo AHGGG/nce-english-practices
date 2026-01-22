@@ -32,7 +32,8 @@ class User(Base):
     )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    email: Mapped[str] = mapped_column(String(255), unique=True, index=True, nullable=False)
+    # index=True is omitted because it is defined in __table_args__
+    email: Mapped[str] = mapped_column(String(255), unique=True, nullable=False)
     hashed_password: Mapped[str] = mapped_column(String(255), nullable=False)
     username: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
 
@@ -126,7 +127,8 @@ class ContextResource(Base):
     )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    word: Mapped[str] = mapped_column(Text, index=True)
+    # index=True is omitted because it is defined in __table_args__
+    word: Mapped[str] = mapped_column(Text)
     sense_label: Mapped[Optional[str]] = mapped_column(
         Text, nullable=True
     )  # e.g., "v. to cook gently"
@@ -554,8 +556,9 @@ class ArticleOverviewCache(Base):
     __table_args__ = (Index("idx_overview_hash", "title_hash", unique=True),)
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    # index=True is omitted because it is defined in __table_args__
     title_hash: Mapped[str] = mapped_column(
-        String(32), unique=True, index=True
+        String(32), unique=True
     )  # MD5 hash
     title: Mapped[str] = mapped_column(Text)  # Original title for debugging
 
@@ -575,8 +578,9 @@ class SentenceCollocationCache(Base):
     __table_args__ = (Index("idx_collocation_hash", "sentence_hash", unique=True),)
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    # index=True is omitted because it is defined in __table_args__
     sentence_hash: Mapped[str] = mapped_column(
-        String(32), unique=True, index=True
+        String(32), unique=True
     )  # MD5 hash
     sentence_preview: Mapped[str] = mapped_column(Text)  # First 100 chars for debugging
 
