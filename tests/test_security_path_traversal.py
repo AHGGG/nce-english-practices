@@ -2,6 +2,7 @@ import pytest
 import os
 from pathlib import Path
 from app.services.content_providers.epub_provider import EpubProvider
+from httpx import AsyncClient
 
 class TestEpubSecurity:
     @pytest.fixture
@@ -75,3 +76,48 @@ class TestEpubSecurity:
         finally:
             if valid_file.exists():
                 valid_file.unlink()
+
+@pytest.mark.asyncio
+class TestSPASecurity:
+    async def test_spa_path_traversal(self, client: AsyncClient):
+        """
+        Verify that the SPA fallback route does not allow path traversal.
+        """
+        # The app is mounted at root.
+        # frontend/dist is the base for static files.
+        # Try to access a file known to exist in the repo root, e.g., pyproject.toml
+        # Path from frontend/dist to root is ../../
+
+        # NOTE: The vulnerability relies on the file physically existing.
+        # In this environment, pyproject.toml exists at root.
+
+        target_file = "pyproject.toml"
+        # We need to construct the URL carefully.
+        # httpx/TestClient might normalize paths.
+        # Try URL encoding to bypass client normalization but tested against server decoding
+        traversal_path = f"%2e%2e/%2e%2e/{target_file}"
+
+        # Note: client.get might encode it again if passed as path.
+        # We should pass it directly if possible? No, client.get takes url.
+        # Let's try raw path.
+
+        response = await client.get(f"/{traversal_path}")
+
+        # If vulnerable, it returns 200 and the content of pyproject.toml
+        # If fixed, it should return 200 (serving index.html) or 404 (if logic changes)
+        # But crucially, the content should NOT be pyproject.toml
+
+        if response.status_code == 200:
+            content = response.text
+            # Check if it looks like pyproject.toml
+            if "[project]" in content or "[tool.uv]" in content:
+                pytest.fail("VULNERABILITY: SPA endpoint returned content of pyproject.toml via path traversal")
+
+            # Check if it looks like index.html (which is what we expect for fallback)
+            # Since index.html might not exist in this test env's frontend/dist,
+            # FileResponse might fail or main.py logic handles missing file?
+            # In app/main.py: if os.path.isfile(file_path): return FileResponse(file_path)
+            # else: return FileResponse(index_html)
+
+            # If neither exist, FileResponse might error 500 or 404.
+            pass
