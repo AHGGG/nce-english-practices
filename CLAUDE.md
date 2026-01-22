@@ -278,6 +278,17 @@ For structured data from Longman LDOCE6++ dictionary:
 To prevent parser regressions, use the golden standard framework: `tests/test_ldoce_parser_golden.py`.
 
 
+### Podcast System (Offline Playback)
+
+**Architecture (2026-01-22 Update)**:
+- **Shared Feed Model**: `PodcastFeed` is global. User subscriptions are tracked in `PodcastFeedSubscription` (Many-to-Many).
+- **Playback State**: `UserEpisodeState` tracks resume position (`current_position_seconds`) and finished status per user/episode.
+- **Offline Strategy**:
+  - **PWA**: `vite-plugin-pwa` + Workbox.
+  - **Audio Cache**: `podcast-audio-cache` (Cache API) stores audio files.
+  - **Progress Tracking**: Backend download endpoint (`/api/podcast/episode/{id}/download`) supports `HEAD` requests for Content-Length.
+  - **Frontend**: `PodcastFeedDetailView` shows download progress/status. `PodcastDownloadsView` manages offline content.
+
 ### Coach Service (Agentic)
 - **Role**: Central orchestrator for the "Neural Link" mode.
 - **Pattern**: Tool-Using Agent. The LLM decides *which* UI component to show (Vocab, Story, Drill) by calling tools.
@@ -388,6 +399,11 @@ To support multiple dictionaries (e.g., Collins + LDOCE) in one view:
 - **Tailwind Color Token Consistency**: When adding new UI components, avoid using raw Tailwind colors (e.g., `text-white`, `bg-green-500`) or undefined tokens (e.g., `category-green` when only `category-blue` is defined).
     - **Fix**: Always check `tailwind.config.js` to verify the color token exists before using it. Use semantic tokens from the design system (e.g., `text-text-primary`, `bg-accent-success`, `bg-category-blue`).
     - **Available Category Colors**: `orange`, `blue`, `amber`, `red`, `gray`, `indigo`, `yellow` (NO `green` - use `accent-success` instead).
+
+- **Authenticated Fetch in PWA/Offline Utils**: Native `fetch()` does not include JWT tokens.
+    - **Fix**: Always pass `authFetch` (from `api/auth.js`) or manually add `Authorization` headers when making requests from utility functions like `downloadEpisodeForOffline`.
+- **Podcast Redirects & Content-Length**: CDNs (like Megaphone) redirect audio requests, and `httpx` follows redirects by default only for some methods or needs explicit config. Also, `Content-Length` is needed for progress bars.
+    - **Fix**: Use `client.stream('GET', ..., follow_redirects=True)` in backend proxy. Perform a `HEAD` request first to get `Content-Length` if the stream response lacks it.
 
 ### Database Connection
 - **Tests**: Require PostgreSQL running on `localhost:5432` with `nce_practice_test` database.

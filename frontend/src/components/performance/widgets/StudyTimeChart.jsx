@@ -32,7 +32,8 @@ const StudyTimeChart = ({ dailyData }) => {
                             READ: {Math.round(d.reading / 60)}m<br />
                             SENT: {Math.round(d.sentence_study / 60)}m<br />
                             VOICE: {Math.round(d.voice / 60)}m<br />
-                            REVIEW: {Math.round((d.review || 0) / 60)}m
+                            REVIEW: {Math.round((d.review || 0) / 60)}m<br />
+                            PODCAST: {Math.round((d.podcast || 0) / 60)}m
                         </div>
 
                         {/* Stacked Bar */}
@@ -41,6 +42,7 @@ const StudyTimeChart = ({ dailyData }) => {
                             <div className="w-full bg-accent-primary/80" style={{ height: `${(d.sentence_study / d.total) * 100}%` }} title="Sentence Study"></div>
                             <div className="w-full bg-accent-danger/80" style={{ height: `${(d.voice / d.total) * 100}%` }} title="Voice"></div>
                             <div className="w-full bg-accent-warning/80" style={{ height: `${((d.review || 0) / d.total) * 100}%` }} title="Review"></div>
+                            <div className="w-full bg-purple-500/80" style={{ height: `${((d.podcast || 0) / d.total) * 100}%` }} title="Podcast"></div>
                         </div>
                     </div>
                 ))}
@@ -63,6 +65,10 @@ const StudyTimeChart = ({ dailyData }) => {
                 <div className="flex items-center gap-2">
                     <div className="w-3 h-3 bg-accent-warning"></div>
                     <span className="text-text-muted">复习</span>
+                </div>
+                <div className="flex items-center gap-2">
+                    <div className="w-3 h-3 bg-purple-500"></div>
+                    <span className="text-text-muted">播客</span>
                 </div>
             </div>
         </div>

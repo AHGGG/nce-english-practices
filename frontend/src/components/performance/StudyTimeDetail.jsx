@@ -115,6 +115,8 @@ const StudyTimeDetail = () => {
                                 <th className="py-2 px-4">READING</th>
                                 <th className="py-2 px-4">SENTENCE</th>
                                 <th className="py-2 px-4">VOICE</th>
+                                <th className="py-2 px-4">REVIEW</th>
+                                <th className="py-2 px-4">PODCAST</th>
                                 <th className="py-2 px-4 text-accent-primary">TOTAL</th>
                             </tr>
                         </thead>
@@ -125,6 +127,8 @@ const StudyTimeDetail = () => {
                                     <td className="py-2 px-4 text-text-muted">{Math.round(d.reading / 60)}m</td>
                                     <td className="py-2 px-4 text-text-muted">{Math.round(d.sentence_study / 60)}m</td>
                                     <td className="py-2 px-4 text-text-muted">{Math.round(d.voice / 60)}m</td>
+                                    <td className="py-2 px-4 text-text-muted">{Math.round((d.review || 0) / 60)}m</td>
+                                    <td className="py-2 px-4 text-text-muted">{Math.round((d.podcast || 0) / 60)}m</td>
                                     <td className="py-2 px-4 text-accent-primary font-bold">{Math.round(d.total / 60)}m</td>
                                 </tr>
                             ))}

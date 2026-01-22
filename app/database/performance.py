@@ -16,6 +16,7 @@ from app.database.core import (
     SentenceLearningRecord,
 )
 from app.models.orm import VoiceSession, ReviewLog, ReviewItem
+from app.models.podcast_orm import PodcastListeningSession
 
 logger = logging.getLogger(__name__)
 
@@ -83,6 +84,16 @@ async def get_performance_data(days: int = 30, user_id: str = "default_user") ->
                 )
             ).subquery()
 
+            # 5. Podcast Listening Sessions Subquery
+            podcast_subq = select(
+                func.sum(PodcastListeningSession.total_listened_seconds).label("p_time")
+            ).where(
+                and_(
+                    PodcastListeningSession.started_at >= cutoff,
+                    PodcastListeningSession.user_id == user_id
+                )
+            ).subquery()
+
             # Combined Query
             # Selecting columns from multiple subqueries creates a Cartesian product (cross join).
             # Since each subquery returns exactly 1 row (aggregate), the result is exactly 1 row.
@@ -95,7 +106,8 @@ async def get_performance_data(days: int = 30, user_id: str = "default_user") ->
                 reading_subq.c.r_sessions,
                 reading_subq.c.r_articles,
                 voice_subq.c.v_time,
-                review_subq.c.rv_time
+                review_subq.c.rv_time,
+                podcast_subq.c.p_time,
             )
 
             res = await session.execute(stmt)
@@ -117,7 +129,9 @@ async def get_performance_data(days: int = 30, user_id: str = "default_user") ->
             review_ms = row.rv_time or 0
             review_seconds = review_ms // 1000
 
-            total_study_seconds = sentence_seconds + reading_seconds + voice_seconds + review_seconds
+            podcast_seconds = row.p_time or 0
+
+            total_study_seconds = sentence_seconds + reading_seconds + voice_seconds + review_seconds + podcast_seconds
 
             result["study_time"] = {
                 "total_seconds": total_study_seconds,
@@ -127,6 +141,7 @@ async def get_performance_data(days: int = 30, user_id: str = "default_user") ->
                     "reading": reading_seconds,
                     "voice": voice_seconds,
                     "review": review_seconds,
+                    "podcast": podcast_seconds,
                 },
             }
 
@@ -281,6 +296,24 @@ async def get_daily_study_time(
                 row[0].date().isoformat(): (row[1] or 0) // 1000 for row in review_res
             }
 
+            # 5. Podcast Listening by Day
+            podcast_stmt = (
+                select(
+                    day_trunc_tz(PodcastListeningSession.started_at).label("day"),
+                    func.sum(PodcastListeningSession.total_listened_seconds),
+                )
+                .where(
+                    and_(
+                        PodcastListeningSession.started_at >= cutoff,
+                        PodcastListeningSession.user_id == user_id
+                    )
+                )
+                .group_by("day")
+                .order_by("day")
+            )
+            podcast_res = await session.execute(podcast_stmt)
+            podcast_days = {row[0].date().isoformat(): row[1] or 0 for row in podcast_res}
+
             # Merge all days
             all_dates = sorted(
                 list(
@@ -289,6 +322,7 @@ async def get_daily_study_time(
                         + list(reading_days.keys())
                         + list(voice_days.keys())
                         + list(review_days.keys())
+                        + list(podcast_days.keys())
                     )
                 )
             )
@@ -299,6 +333,7 @@ async def get_daily_study_time(
                 r_sec = reading_days.get(date_str, 0)
                 v_sec = voice_days.get(date_str, 0)
                 rv_sec = review_days.get(date_str, 0)
+                p_sec = podcast_days.get(date_str, 0)
                 daily_data.append(
                     {
                         "date": date_str,
@@ -306,7 +341,8 @@ async def get_daily_study_time(
                         "reading": r_sec,
                         "voice": v_sec,
                         "review": rv_sec,
-                        "total": s_sec + r_sec + v_sec + rv_sec,
+                        "podcast": p_sec,
+                        "total": s_sec + r_sec + v_sec + rv_sec + p_sec,
                     }
                 )
 

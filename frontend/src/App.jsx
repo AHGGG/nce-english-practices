@@ -21,6 +21,14 @@ import ReviewQueue from './views/ReviewQueue';
 import ReviewDebug from './views/ReviewDebug';
 import MemoryCurveDebug from './views/MemoryCurveDebug';
 
+// Podcast
+import { PodcastProvider } from './context/PodcastContext';
+import PlayerBar from './components/podcast/PlayerBar';
+import PodcastLibraryView from './views/podcast/PodcastLibraryView';
+import PodcastSearchView from './views/podcast/PodcastSearchView';
+import PodcastFeedDetailView from './views/podcast/PodcastFeedDetailView';
+import PodcastDownloadsView from './views/podcast/PodcastDownloadsView';
+
 /**
  * Public Route - Redirects to nav if already authenticated
  */
@@ -161,6 +169,39 @@ function AppRoutes() {
         }
       />
 
+      <Route
+        path="/podcast"
+        element={
+          <ProtectedRoute>
+            <PodcastLibraryView />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/podcast/search"
+        element={
+          <ProtectedRoute>
+            <PodcastSearchView />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/podcast/feed/:feedId"
+        element={
+          <ProtectedRoute>
+            <PodcastFeedDetailView />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/podcast/downloads"
+        element={
+          <ProtectedRoute>
+            <PodcastDownloadsView />
+          </ProtectedRoute>
+        }
+      />
+
       {/* Redirects */}
       <Route path="/" element={<Navigate to="/nav" replace />} />
       <Route path="/profile-stats" element={<Navigate to="/performance" replace />} />
@@ -174,9 +215,12 @@ function App() {
     <AuthProvider>
       <GlobalProvider>
         <DictionaryProvider>
-          <BrowserRouter>
-            <AppRoutes />
-          </BrowserRouter>
+          <PodcastProvider>
+            <BrowserRouter>
+              <AppRoutes />
+              <PlayerBar />
+            </BrowserRouter>
+          </PodcastProvider>
         </DictionaryProvider>
       </GlobalProvider>
     </AuthProvider>

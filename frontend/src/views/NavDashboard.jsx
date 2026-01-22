@@ -152,6 +152,12 @@ const NavDashboard = () => {
             description: "Tech demo for the Agentic UI Streaming protocol."
         },
         {
+            title: "Podcast",
+            path: "/podcast",
+            icon: Headphones,
+            description: "Subscribe to podcasts and listen with transcription study mode."
+        },
+        {
             title: "Review Queue",
             path: "/review-queue",
             icon: Clock,
