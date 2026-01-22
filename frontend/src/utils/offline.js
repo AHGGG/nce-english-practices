@@ -23,6 +23,28 @@ export async function isEpisodeOffline(url) {
 }
 
 /**
+ * Get cached audio as Object URL for direct playback.
+ * This bypasses network requests entirely by reading from Cache API.
+ * @param {string} url - The cached URL to retrieve
+ * @returns {Promise<string|null>} Object URL or null if not cached
+ */
+export async function getCachedAudioUrl(url) {
+  try {
+    const cache = await caches.open(PODCAST_AUDIO_CACHE);
+    const response = await cache.match(url);
+    if (!response) return null;
+    
+    const blob = await response.blob();
+    const objectUrl = URL.createObjectURL(blob);
+    console.log('[Offline] Created Object URL from cache:', url);
+    return objectUrl;
+  } catch (error) {
+    console.error('[Offline] Failed to get cached audio:', error);
+    return null;
+  }
+}
+
+/**
  * Download an episode for offline playback using chunked requests.
  * @param {number} episodeId - The episode ID
  * @param {string} proxyUrl - The backend proxy URL
