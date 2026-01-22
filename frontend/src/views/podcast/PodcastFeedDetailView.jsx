@@ -119,7 +119,9 @@ export default function PodcastFeedDetailView() {
         if (currentEpisode?.id === episode.id) {
             togglePlayPause();
         } else {
-            playEpisode(episode, data.feed);
+            // Pass resume position from episode data
+            const resumePosition = episode.current_position || 0;
+            playEpisode(episode, data.feed, resumePosition);
         }
     }
 

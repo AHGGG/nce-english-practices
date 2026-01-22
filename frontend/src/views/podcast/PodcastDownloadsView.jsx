@@ -105,7 +105,9 @@ export default function PodcastDownloadsView() {
         if (currentEpisode?.id === item.episode.id) {
             togglePlayPause();
         } else {
-            playEpisode(item.episode, item.feed);
+            // Pass resume position from episode data
+            const resumePosition = item.last_position_seconds || item.episode?.current_position || 0;
+            playEpisode(item.episode, item.feed, resumePosition);
         }
     };
 
@@ -243,16 +245,16 @@ export default function PodcastDownloadsView() {
                                 <div
                                     key={ep.id}
                                     className={`flex items-center gap-4 p-4 bg-bg-surface border rounded-xl transition-all ${isCurrentEpisode
-                                            ? 'border-accent-primary shadow-lg shadow-accent-primary/10'
-                                            : 'border-border hover:border-accent-primary/30'
+                                        ? 'border-accent-primary shadow-lg shadow-accent-primary/10'
+                                        : 'border-border hover:border-accent-primary/30'
                                         }`}
                                 >
                                     {/* Play button */}
                                     <button
                                         onClick={() => handlePlay(item)}
                                         className={`flex-shrink-0 w-12 h-12 rounded-full flex items-center justify-center transition-all ${isCurrentEpisode
-                                                ? 'bg-gradient-to-br from-accent-primary to-accent-secondary text-black shadow-lg shadow-accent-primary/30'
-                                                : 'bg-bg-elevated text-text-primary hover:bg-accent-primary/20 hover:text-accent-primary'
+                                            ? 'bg-gradient-to-br from-accent-primary to-accent-secondary text-black shadow-lg shadow-accent-primary/30'
+                                            : 'bg-bg-elevated text-text-primary hover:bg-accent-primary/20 hover:text-accent-primary'
                                             }`}
                                     >
                                         {isCurrentEpisode && isPlaying ? (

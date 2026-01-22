@@ -130,13 +130,13 @@ export default function PlayerBar() {
                     </button>
                 </div>
 
-                {/* Speed control */}
-                <div className="relative hidden md:block">
+                {/* Speed control - visible on all sizes */}
+                <div className="relative">
                     <button
                         onClick={() => setShowSpeedMenu(!showSpeedMenu)}
-                        className="flex items-center gap-1.5 px-3 py-1.5 text-sm bg-bg-elevated rounded-lg text-text-primary hover:bg-bg-base transition-colors border border-border"
+                        className="flex items-center gap-1 px-2 py-1 md:px-3 md:py-1.5 text-xs md:text-sm bg-bg-elevated rounded-lg text-text-primary hover:bg-bg-base transition-colors border border-border"
                     >
-                        <Gauge className="w-4 h-4 text-accent-primary" />
+                        <Gauge className="w-3 h-3 md:w-4 md:h-4 text-accent-primary" />
                         <span className="font-mono">{playbackRate}x</span>
                     </button>
 
@@ -146,7 +146,7 @@ export default function PlayerBar() {
                                 className="fixed inset-0 z-40"
                                 onClick={() => setShowSpeedMenu(false)}
                             />
-                            <div className="absolute bottom-full mb-2 right-0 bg-bg-surface border border-border rounded-lg shadow-xl z-50 overflow-hidden min-w-[100px]">
+                            <div className="absolute bottom-full mb-2 right-0 bg-bg-surface border border-border rounded-lg shadow-xl z-50 overflow-hidden min-w-[80px] md:min-w-[100px]">
                                 {SPEED_OPTIONS.map((speed) => (
                                     <button
                                         key={speed}
@@ -154,9 +154,9 @@ export default function PlayerBar() {
                                             setPlaybackRate(speed);
                                             setShowSpeedMenu(false);
                                         }}
-                                        className={`w-full px-4 py-2 text-sm text-left font-mono transition-colors ${playbackRate === speed
-                                                ? 'bg-accent-primary/20 text-accent-primary'
-                                                : 'text-text-primary hover:bg-bg-elevated'
+                                        className={`w-full px-3 md:px-4 py-1.5 md:py-2 text-xs md:text-sm text-left font-mono transition-colors ${playbackRate === speed
+                                            ? 'bg-accent-primary/20 text-accent-primary'
+                                            : 'text-text-primary hover:bg-bg-elevated'
                                             }`}
                                     >
                                         {speed}x

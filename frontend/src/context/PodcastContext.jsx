@@ -5,6 +5,7 @@
 
 import { createContext, useContext, useState, useRef, useCallback, useEffect } from 'react';
 import * as podcastApi from '../api/podcast';
+import { getOfflineEpisodeIds } from '../utils/offline';
 
 const PodcastContext = createContext(null);
 
@@ -203,9 +204,16 @@ export function PodcastProvider({ children }) {
         // The loadedmetadata event might fire immediately if audio is cached
         audio.addEventListener('loadedmetadata', handleLoaded, { once: true });
 
+        // Check if episode is downloaded offline - use proxy URL for cached playback
+        const offlineIds = getOfflineEpisodeIds();
+        const isOffline = offlineIds.includes(episode.id);
+        const audioSrc = isOffline
+            ? `/api/podcast/episode/${episode.id}/download`  // Cached by SW
+            : episode.audio_url;
+
         // Now set the source - this triggers loading
-        audio.src = episode.audio_url;
-        console.log('[Podcast] Set audio src, resumePosition:', resumePosition);
+        audio.src = audioSrc;
+        console.log('[Podcast] Set audio src, isOffline:', isOffline, 'resumePosition:', resumePosition);
     }, [sessionId, currentEpisode, listenedSeconds]);
 
     // Toggle play/pause

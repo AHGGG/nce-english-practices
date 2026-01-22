@@ -38,6 +38,10 @@ plugins.push(
       ],
     },
     workbox: {
+      // Allow offline navigation (SPA fallback)
+      navigateFallback: '/index.html',
+      navigateFallbackDenylist: [/^\/api/, /^\/dict/, /^\/ws/],
+      
       // Cache API responses
       runtimeCaching: [
         {
