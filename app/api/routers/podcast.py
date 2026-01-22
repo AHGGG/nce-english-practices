@@ -385,6 +385,53 @@ async def get_recently_played(
 # --- Download ---
 
 
+@router.head("/episode/{episode_id}/download")
+async def download_episode_head(
+    episode_id: int,
+    user_id: str = Depends(get_current_user_id),
+):
+    """
+    HEAD request to get Content-Length for progress tracking.
+    Returns headers only, no body.
+    """
+    import httpx
+    from fastapi.responses import Response
+    from sqlalchemy import select
+    from app.models.podcast_orm import PodcastEpisode
+    
+    async with AsyncSessionLocal() as db:
+        stmt = select(PodcastEpisode).where(PodcastEpisode.id == episode_id)
+        result = await db.execute(stmt)
+        episode = result.scalar_one_or_none()
+        
+        if not episode:
+            raise HTTPException(status_code=404, detail="Episode not found")
+        
+        audio_url = episode.audio_url
+
+    # Make a HEAD request to the upstream to get Content-Length
+    try:
+        async with httpx.AsyncClient(timeout=10.0, follow_redirects=True) as client:
+            head_response = await client.head(audio_url)
+            content_length = head_response.headers.get("content-length", "0")
+            content_type = head_response.headers.get("content-type", "audio/mpeg")
+    except Exception:
+        # If HEAD fails, return 0 (frontend will handle gracefully)
+        content_length = "0"
+        content_type = "audio/mpeg"
+
+    return Response(
+        content=b"",
+        status_code=200,
+        headers={
+            "Content-Length": content_length,
+            "Content-Type": content_type,
+            "Accept-Ranges": "bytes",
+            "Access-Control-Expose-Headers": "Content-Length, Accept-Ranges",
+        },
+    )
+
+
 @router.get("/episode/{episode_id}/download")
 async def download_episode(
     episode_id: int,
