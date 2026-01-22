@@ -23,48 +23,80 @@ export async function isEpisodeOffline(url) {
 }
 
 /**
- * Download an episode for offline playback.
- * Uses the backend proxy to avoid CORS issues.
+ * Download an episode for offline playback using chunked requests.
  * @param {number} episodeId - The episode ID
- * @param {string} proxyUrl - The backend proxy URL (e.g., /api/podcast/episode/{id}/download)
+ * @param {string} proxyUrl - The backend proxy URL
  * @param {function} onProgress - Optional progress callback (received, total)
- * @param {function} fetcher - Optional fetch function (use authFetch for authenticated requests)
+ * @param {function} fetcher - Optional fetch function
+ * @param {AbortSignal} signal - Optional abort signal for cancellation
  * @returns {Promise<boolean>} - True if download succeeded
  */
-export async function downloadEpisodeForOffline(episodeId, proxyUrl, onProgress, fetcher = fetch) {
+export async function downloadEpisodeForOffline(episodeId, proxyUrl, onProgress, fetcher = fetch, signal = null) {
   try {
-    const response = await fetcher(proxyUrl);
+    // 1. Get file size
+    const headResponse = await fetcher(proxyUrl, { method: 'HEAD', signal });
+    if (!headResponse.ok) throw new Error(`HEAD failed: ${headResponse.status}`);
     
-    if (!response.ok) {
-      throw new Error(`Download failed: ${response.status}`);
-    }
+    const contentLength = headResponse.headers.get('content-length');
+    const totalSize = contentLength ? parseInt(contentLength, 10) : 0;
     
-    // Get total size for progress tracking
-    const contentLength = response.headers.get('content-length');
-    const total = contentLength ? parseInt(contentLength, 10) : 0;
+    if (!totalSize) throw new Error('Could not determine file size');
+
+    // 2. Download in chunks
+    const CHUNK_SIZE = 3 * 1024 * 1024; // 3MB chunks
+    const chunks = [];
+    let received = 0;
     
-    // Clone response for caching (can only read body once)
-    const responseClone = response.clone();
-    
-    // Stream with progress if callback provided
-    if (onProgress && total > 0) {
-      const reader = response.body.getReader();
-      let received = 0;
+    for (let start = 0; start < totalSize; start += CHUNK_SIZE) {
+      if (signal?.aborted) throw new Error('Download aborted');
       
-      // Just read through to track progress, we'll use the clone for caching
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        received += value.length;
-        onProgress(received, total);
+      const end = Math.min(start + CHUNK_SIZE - 1, totalSize - 1);
+      const range = `bytes=${start}-${end}`;
+      
+      let chunkData = null;
+      let retries = 3;
+      
+      while (retries > 0) {
+        try {
+          const response = await fetcher(proxyUrl, {
+            headers: { Range: range },
+            signal
+          });
+          
+          if (!response.ok && response.status !== 206) {
+             throw new Error(`Chunk failed: ${response.status}`);
+          }
+          
+          chunkData = await response.blob();
+          break; // Success
+        } catch (e) {
+          if (signal?.aborted) throw e;
+          console.warn(`[Offline] Chunk retry ${4 - retries} for ${range}`, e);
+          retries--;
+          if (retries === 0) throw e;
+          // Exponential backoff
+          await new Promise(r => setTimeout(r, 1000 * (4 - retries)));
+        }
       }
+      
+      chunks.push(chunkData);
+      received += chunkData.size;
+      if (onProgress) onProgress(received, totalSize);
     }
     
-    // Store in cache
+    // 3. Assemble and Cache
+    const fullBlob = new Blob(chunks, { type: 'audio/mpeg' }); // Type will be set from actual response if needed
+    const cacheResponse = new Response(fullBlob, {
+      headers: {
+        'content-length': totalSize.toString(),
+        'content-type': headResponse.headers.get('content-type') || 'audio/mpeg'
+      }
+    });
+
     const cache = await caches.open(PODCAST_AUDIO_CACHE);
-    await cache.put(proxyUrl, responseClone);
+    await cache.put(proxyUrl, cacheResponse);
     
-    // Also store metadata in localStorage for quick access
+    // 4. Update Metadata
     const offlineEpisodes = JSON.parse(localStorage.getItem('offline_episodes') || '[]');
     if (!offlineEpisodes.includes(episodeId)) {
       offlineEpisodes.push(episodeId);
@@ -73,9 +105,15 @@ export async function downloadEpisodeForOffline(episodeId, proxyUrl, onProgress,
     
     console.log(`[Offline] Episode ${episodeId} downloaded successfully`);
     return true;
+
   } catch (error) {
-    console.error('[Offline] Download failed:', error);
-    throw error; // Re-throw to allow caller to handle
+    if (signal?.aborted) {
+      console.log('[Offline] Download cancelled by user');
+    } else {
+      console.error('[Offline] Download failed:', error);
+    }
+    // Re-throw to allow component to handle text
+    throw error;
   }
 }
 

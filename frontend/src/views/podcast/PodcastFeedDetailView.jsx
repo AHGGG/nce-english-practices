@@ -123,6 +123,29 @@ export default function PodcastFeedDetailView() {
         }
     }
 
+    // Track abort controllers: { [episodeId]: AbortController }
+    const [abortControllers, setAbortControllers] = useState({});
+
+    // Cleanup abort controllers on unmount
+    useEffect(() => {
+        return () => {
+            Object.values(abortControllers).forEach(controller => controller.abort());
+        };
+    }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+    const handleCancelDownload = useCallback((episodeId) => {
+        const controller = abortControllers[episodeId];
+        if (controller) {
+            controller.abort();
+            setAbortControllers(prev => {
+                const next = { ...prev };
+                delete next[episodeId];
+                return next;
+            });
+            setDownloadState(prev => ({ ...prev, [episodeId]: { status: 'idle', progress: 0 } }));
+        }
+    }, [abortControllers]);
+
     const handleDownload = useCallback(async (episode) => {
         const episodeId = episode.id;
         const proxyUrl = `/api/podcast/episode/${episodeId}/download`;
@@ -143,6 +166,8 @@ export default function PodcastFeedDetailView() {
         }
 
         // Start download
+        const controller = new AbortController();
+        setAbortControllers(prev => ({ ...prev, [episodeId]: controller }));
         setDownloadState(prev => ({ ...prev, [episodeId]: { status: 'downloading', progress: 0 } }));
 
         try {
@@ -153,7 +178,8 @@ export default function PodcastFeedDetailView() {
                     const progress = Math.round((received / total) * 100);
                     setDownloadState(prev => ({ ...prev, [episodeId]: { status: 'downloading', progress } }));
                 },
-                authFetch  // Pass authenticated fetch
+                authFetch,
+                controller.signal
             );
 
             if (success) {
@@ -161,11 +187,17 @@ export default function PodcastFeedDetailView() {
                 setOfflineEpisodes(prev => new Set([...prev, episodeId]));
                 // Update storage info
                 getStorageEstimate().then(setStorageInfo);
-            } else {
-                throw new Error('Download failed');
             }
         } catch (e) {
+            // If aborted, the UI is already reset by handleCancelDownload usually
+            // but we check here just in case natural abort happened
             let errorMsg = e.message || 'Unknown error';
+
+            if (controller.signal.aborted) {
+                // Aborted by user
+                setDownloadState(prev => ({ ...prev, [episodeId]: { status: 'idle', progress: 0 } }));
+                return;
+            }
 
             // Handle quota exceeded error
             if (e.name === 'QuotaExceededError' || errorMsg.includes('quota')) {
@@ -178,6 +210,13 @@ export default function PodcastFeedDetailView() {
             }));
 
             console.error('[Download] Failed:', e);
+        } finally {
+            // Cleanup controller ref
+            setAbortControllers(prev => {
+                const next = { ...prev };
+                delete next[episodeId];
+                return next;
+            });
         }
     }, [offlineEpisodes]);
 
@@ -189,7 +228,7 @@ export default function PodcastFeedDetailView() {
         if (state.status === 'downloading') {
             return (
                 <div className="flex-shrink-0 flex items-center gap-2">
-                    <div className="relative w-10 h-10">
+                    <div className="relative w-10 h-10 group">
                         {/* Progress ring */}
                         <svg className="w-10 h-10 -rotate-90">
                             <circle
@@ -213,9 +252,23 @@ export default function PodcastFeedDetailView() {
                                 strokeLinecap="round"
                             />
                         </svg>
-                        <span className="absolute inset-0 flex items-center justify-center text-xs font-mono text-accent-primary">
+
+                        {/* Progress Text (shown by default) */}
+                        <span className="absolute inset-0 flex items-center justify-center text-[10px] font-mono text-accent-primary group-hover:opacity-0 transition-opacity">
                             {state.progress}%
                         </span>
+
+                        {/* Cancel Button (shown on hover) */}
+                        <button
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                handleCancelDownload(episode.id);
+                            }}
+                            className="absolute inset-0 flex items-center justify-center bg-bg-surface/80 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                            title="Cancel download"
+                        >
+                            <span className="text-red-400 font-bold text-xs">✕</span>
+                        </button>
                     </div>
                 </div>
             );

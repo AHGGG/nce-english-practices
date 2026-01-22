@@ -388,12 +388,13 @@ async def get_recently_played(
 @router.get("/episode/{episode_id}/download")
 async def download_episode(
     episode_id: int,
+    request: Request,
     user_id: str = Depends(get_current_user_id),
 ):
     """
     Proxy download for an episode audio file.
     Streams the audio through the server for offline storage.
-    Includes Content-Length header for progress tracking.
+    Supports Range requests for resumable downloads.
     """
     import httpx
     from fastapi.responses import StreamingResponse
@@ -409,54 +410,77 @@ async def download_episode(
             raise HTTPException(status_code=404, detail="Episode not found")
         
         audio_url = episode.audio_url
-    
-    # First, make a HEAD request to get content-length for progress tracking
-    content_length = None
-    final_url = audio_url
-    
-    try:
-        async with httpx.AsyncClient(timeout=10.0, follow_redirects=True) as client:
-            head_response = await client.head(audio_url)
-            if head_response.status_code == 200:
-                content_length = head_response.headers.get("content-length")
-                # Get final URL after redirects
-                final_url = str(head_response.url)
-    except Exception:
-        # HEAD failed, proceed without content-length
-        pass
-    
-    # Stream the audio file (follow_redirects=True for CDN 302s)
+
+    # Check for Range header
+    range_header = request.headers.get("range")
+    headers_to_upstream = {}
+    if range_header:
+        headers_to_upstream["Range"] = range_header
+
+    # Stream the audio file
     async def stream_audio():
         async with httpx.AsyncClient(timeout=None, follow_redirects=True) as client:
-            async with client.stream("GET", final_url) as response:
-                response.raise_for_status()
-                async for chunk in response.aiter_bytes(chunk_size=65536):
-                    yield chunk
-    
-    # Guess content type from URL
-    content_type = "audio/mpeg"
-    if audio_url.endswith(".m4a"):
-        content_type = "audio/mp4"
-    elif audio_url.endswith(".ogg"):
-        content_type = "audio/ogg"
-    elif audio_url.endswith(".wav"):
-        content_type = "audio/wav"
-    
-    # Generate filename
-    filename = f"episode_{episode_id}.mp3"
-    
-    # Build headers
-    headers = {
-        "Content-Disposition": f'attachment; filename="{filename}"',
-        "Access-Control-Expose-Headers": "Content-Length",  # Allow frontend to read
+            # We use stream() context manager, which will be closed when this generator closes
+            async with client.stream("GET", audio_url, headers=headers_to_upstream) as response:
+                
+                # Check if upstream accepted the range
+                status_code = response.status_code
+                response_headers = response.headers
+
+                # Yield initial status and headers for custom handling if needed, 
+                # but FastAPI StreamingResponse expects just body bytes.
+                # So we just forward the chunks.
+                # However, we need to set the response status code and headers BEFORE yielding.
+                # LIMITATION: In FastAPI/Starlette, we can't easily change status code of StreamingResponse 
+                # after it starts. But here we are inside the generator.
+                
+                # Actually, capturing headers here is tricky because StreamingResponse takes headers in __init__.
+                # BETTER APPROACH: Do a HEAD first to get size, OR start the stream and inspect before returning StreamingResponse.
+                # But to fully stream, we should just return the StreamingResponse that iterates this.
+                # The issue is passing the upstream status code (206 vs 200) to the client.
+                
+                # Let's pivot: We will initiate the request BEFORE creating StreamingResponse.
+                pass
+
+    # RE-IMPLEMENTATION with efficient header forwarding
+    client = httpx.AsyncClient(timeout=None, follow_redirects=True)
+    req = client.build_request("GET", audio_url, headers=headers_to_upstream)
+    r = await client.send(req, stream=True)
+
+    async def iter_response():
+        try:
+            async for chunk in r.aiter_bytes(chunk_size=65536):
+                yield chunk
+        finally:
+            await r.aclose()
+            await client.aclose()
+
+    # Forward relevant headers
+    response_headers = {
+        "Content-Disposition": f'attachment; filename="episode_{episode_id}.mp3"',
+        "Accept-Ranges": "bytes",
+        "Access-Control-Expose-Headers": "Content-Length, Content-Range, Accept-Ranges",
     }
-    if content_length:
-        headers["Content-Length"] = content_length
     
+    # Forward upstream headers if present
+    for key in ["Content-Length", "Content-Range", "Content-Type"]:
+        if key in r.headers:
+            response_headers[key] = r.headers[key]
+
+    # If no content type, guess it
+    if "Content-Type" not in response_headers:
+        content_type = "audio/mpeg"
+        if audio_url.endswith(".m4a"):
+            content_type = "audio/mp4"
+        elif audio_url.endswith(".ogg"):
+            content_type = "audio/ogg"
+        response_headers["Content-Type"] = content_type
+
     return StreamingResponse(
-        stream_audio(),
-        media_type=content_type,
-        headers=headers,
+        iter_response(),
+        status_code=r.status_code,
+        headers=response_headers,
+        media_type=response_headers["Content-Type"],
     )
 
 
