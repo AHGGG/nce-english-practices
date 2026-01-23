@@ -8,12 +8,15 @@ import { Plus, RefreshCw, Upload, Download, Headphones, Loader2, Rss } from 'luc
 import * as podcastApi from '../../api/podcast';
 import PodcastLayout from '../../components/podcast/PodcastLayout';
 import RecentlyPlayed from '../../components/podcast/RecentlyPlayed';
+import { useToast } from '../../components/ui';
 
 export default function PodcastLibraryView() {
     const navigate = useNavigate();
     const [feeds, setFeeds] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
+
+    const { addToast } = useToast();
 
     useEffect(() => {
         loadFeeds();
@@ -37,10 +40,10 @@ export default function PodcastLibraryView() {
 
         try {
             const result = await podcastApi.importOPML(file);
-            alert(`Imported ${result.imported} podcasts (${result.skipped} skipped)`);
+            addToast(`Imported ${result.imported} podcasts (${result.skipped} skipped)`, 'success');
             loadFeeds();
         } catch (err) {
-            alert('Import failed: ' + err.message);
+            addToast('Import failed: ' + err.message, 'error');
         }
     }
 
@@ -53,8 +56,9 @@ export default function PodcastLibraryView() {
             a.download = 'podcasts.opml';
             a.click();
             URL.revokeObjectURL(url);
+            addToast('OPML export started', 'info');
         } catch (err) {
-            alert('Export failed: ' + err.message);
+            addToast('Export failed: ' + err.message, 'error');
         }
     }
 

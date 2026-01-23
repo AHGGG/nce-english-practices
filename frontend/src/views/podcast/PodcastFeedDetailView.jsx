@@ -19,6 +19,7 @@ import {
     removeOfflineEpisode,
     getStorageEstimate
 } from '../../utils/offline';
+import { useToast, Dialog, DialogButton } from '../../components/ui';
 
 function formatDuration(seconds) {
     if (!seconds) return '';
@@ -44,11 +45,15 @@ export default function PodcastFeedDetailView() {
     const { feedId } = useParams();
     const navigate = useNavigate();
     const { currentEpisode, isPlaying, currentTime, duration, playEpisode, togglePlayPause } = usePodcast();
+    const { addToast } = useToast();
 
     const [data, setData] = useState(null);
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
     const [error, setError] = useState(null);
+
+    // Confirmation Dialog State
+    const [confirmAction, setConfirmAction] = useState(null); // { isOpen, title, message, onConfirm, confirmText, isDanger }
 
     // Download state: { [episodeId]: { status: 'idle'|'downloading'|'done'|'error', progress: 0-100, error?: string } }
     const [downloadState, setDownloadState] = useState({});
@@ -87,23 +92,33 @@ export default function PodcastFeedDetailView() {
             if (result.new_episodes > 0) {
                 loadFeed();
             }
-            alert(`Found ${result.new_episodes} new episodes`);
+            addToast(`Found ${result.new_episodes} new episodes`, 'success');
         } catch (e) {
-            alert('Refresh failed: ' + e.message);
+            addToast('Refresh failed: ' + e.message, 'error');
         } finally {
             setRefreshing(false);
         }
     }
 
-    async function handleUnsubscribe() {
-        if (!confirm('Unsubscribe from this podcast?')) return;
-
-        try {
-            await podcastApi.unsubscribeFromPodcast(feedId);
-            navigate('/podcast');
-        } catch (e) {
-            alert('Failed to unsubscribe: ' + e.message);
-        }
+    function requestUnsubscribe() {
+        setConfirmAction({
+            isOpen: true,
+            title: "Unsubscribe Podcast",
+            message: "Are you sure you want to unsubscribe from this podcast? This action cannot be undone.",
+            confirmText: "Unsubscribe",
+            isDanger: true,
+            onConfirm: async () => {
+                try {
+                    await podcastApi.unsubscribeFromPodcast(feedId);
+                    addToast('Unsubscribed successfully', 'success');
+                    navigate('/podcast');
+                } catch (e) {
+                    addToast('Failed to unsubscribe: ' + e.message, 'error');
+                } finally {
+                    setConfirmAction(null);
+                }
+            }
+        });
     }
 
     function handlePlayEpisode(episode) {
@@ -146,15 +161,24 @@ export default function PodcastFeedDetailView() {
         // Check if already downloaded
         if (offlineEpisodes.has(episodeId)) {
             // Offer to remove
-            if (confirm('Episode already downloaded. Remove from offline storage?')) {
-                await removeOfflineEpisode(episodeId, proxyUrl);
-                setOfflineEpisodes(prev => {
-                    const next = new Set(prev);
-                    next.delete(episodeId);
-                    return next;
-                });
-                setDownloadState(prev => ({ ...prev, [episodeId]: { status: 'idle', progress: 0 } }));
-            }
+            setConfirmAction({
+                isOpen: true,
+                title: "Remove Download",
+                message: "Are you sure you want to remove this episode from offline storage?",
+                confirmText: "Remove",
+                isDanger: true,
+                onConfirm: async () => {
+                    await removeOfflineEpisode(episodeId, proxyUrl);
+                    setOfflineEpisodes(prev => {
+                        const next = new Set(prev);
+                        next.delete(episodeId);
+                        return next;
+                    });
+                    setDownloadState(prev => ({ ...prev, [episodeId]: { status: 'idle', progress: 0 } }));
+                    setConfirmAction(null);
+                    addToast('Download removed', 'info');
+                }
+            });
             return;
         }
 
@@ -431,7 +455,7 @@ export default function PodcastFeedDetailView() {
                             )}
 
                             <button
-                                onClick={handleUnsubscribe}
+                                onClick={requestUnsubscribe}
                                 className="flex items-center gap-2 px-4 py-2 text-sm text-red-400 hover:bg-red-500/10 rounded-lg transition-colors border border-transparent hover:border-red-500/30"
                             >
                                 <Trash2 className="w-4 h-4" />
@@ -543,6 +567,31 @@ export default function PodcastFeedDetailView() {
                     </div>
                 </div>
             </main>
+
+            {/* Confirmation Dialog */}
+            <Dialog
+                isOpen={confirmAction?.isOpen}
+                onClose={() => setConfirmAction(null)}
+                title={confirmAction?.title}
+                footer={
+                    <>
+                        <DialogButton
+                            variant="ghost"
+                            onClick={() => setConfirmAction(null)}
+                        >
+                            Cancel
+                        </DialogButton>
+                        <DialogButton
+                            variant={confirmAction?.isDanger ? "danger" : "primary"}
+                            onClick={confirmAction?.onConfirm}
+                        >
+                            {confirmAction?.confirmText || "Confirm"}
+                        </DialogButton>
+                    </>
+                }
+            >
+                <p>{confirmAction?.message}</p>
+            </Dialog>
         </div>
     );
 }
