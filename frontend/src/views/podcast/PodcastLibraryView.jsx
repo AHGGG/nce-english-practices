@@ -16,6 +16,10 @@ export default function PodcastLibraryView() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
 
+    // Import progress state
+    const [importing, setImporting] = useState(false);
+    const [importProgress, setImportProgress] = useState({ current: 0, total: 0, title: '' });
+
     const { addToast } = useToast();
 
     useEffect(() => {
@@ -38,12 +42,33 @@ export default function PodcastLibraryView() {
         const file = e.target.files?.[0];
         if (!file) return;
 
+        // Reset file input
+        e.target.value = '';
+
         try {
-            const result = await podcastApi.importOPML(file);
+            setImporting(true);
+            setImportProgress({ current: 0, total: 0, title: 'Parsing OPML...' });
+
+            const result = await podcastApi.importOPMLStreaming(file, (event) => {
+                switch (event.type) {
+                    case 'start':
+                        setImportProgress({ current: 0, total: event.total, title: 'Starting import...' });
+                        break;
+                    case 'progress':
+                        setImportProgress({ current: event.current, total: event.total, title: event.title });
+                        break;
+                    case 'complete':
+                        setImportProgress({ current: event.total, total: event.total, title: 'Complete!' });
+                        break;
+                }
+            });
+
             addToast(`Imported ${result.imported} podcasts (${result.skipped} skipped)`, 'success');
             loadFeeds();
         } catch (err) {
             addToast('Import failed: ' + err.message, 'error');
+        } finally {
+            setImporting(false);
         }
     }
 
@@ -64,6 +89,47 @@ export default function PodcastLibraryView() {
 
     return (
         <PodcastLayout title="My Library">
+            {/* Import Progress Overlay */}
+            {importing && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+                    <div className="bg-bg-surface border border-border rounded-2xl p-8 max-w-md w-full mx-4 shadow-2xl">
+                        <div className="space-y-4">
+                            <div className="flex items-center gap-3">
+                                <Loader2 className="w-6 h-6 animate-spin text-accent-primary" />
+                                <h3 className="text-lg font-medium text-text-primary">Importing Podcasts</h3>
+                            </div>
+
+                            {importProgress.total > 0 && (
+                                <>
+                                    <div className="space-y-2">
+                                        <div className="flex justify-between text-sm">
+                                            <span className="text-text-muted">Progress</span>
+                                            <span className="text-accent-primary font-mono">
+                                                {importProgress.current} / {importProgress.total}
+                                            </span>
+                                        </div>
+                                        <div className="h-2 bg-bg-elevated rounded-full overflow-hidden">
+                                            <div
+                                                className="h-full bg-gradient-to-r from-accent-primary to-accent-secondary transition-all duration-300"
+                                                style={{ width: `${(importProgress.current / importProgress.total) * 100}%` }}
+                                            />
+                                        </div>
+                                    </div>
+
+                                    <p className="text-sm text-text-muted truncate" title={importProgress.title}>
+                                        {importProgress.title}
+                                    </p>
+                                </>
+                            )}
+
+                            {importProgress.total === 0 && (
+                                <p className="text-sm text-text-muted">{importProgress.title || 'Parsing OPML file...'}</p>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            )}
+
             {loading ? (
                 <div className="flex items-center justify-center h-64">
                     <Loader2 className="w-8 h-8 animate-spin text-accent-primary" />

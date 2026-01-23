@@ -253,6 +253,70 @@ async def import_opml(
         return OPMLImportResult(**result)
 
 
+@router.post("/opml/import/stream")
+async def import_opml_streaming(
+    file: UploadFile = File(...),
+    user_id: str = Depends(get_current_user_id),
+):
+    """
+    Import podcasts from OPML file with SSE streaming progress.
+    
+    Yields JSON events:
+    - {"type": "start", "total": N} - Import started with N feeds
+    - {"type": "progress", "current": i, "total": N, "title": "...", "rss_url": "..."} - Processing feed i
+    - {"type": "result", "success": true/false, "title": "...", "error": "..."} - Feed result
+    - {"type": "complete", "imported": X, "skipped": Y, "total": N} - Import complete
+    """
+    from fastapi.responses import StreamingResponse
+    import json
+    
+    content = await file.read()
+    try:
+        opml_text = content.decode("utf-8")
+    except UnicodeDecodeError:
+        raise HTTPException(status_code=400, detail="Invalid file encoding")
+    
+    # Parse OPML to get feeds list
+    feeds = podcast_service.parse_opml(opml_text)
+    
+    async def event_generator():
+        """Generate SSE events for import progress."""
+        # Start event
+        yield f"data: {json.dumps({'type': 'start', 'total': len(feeds)})}\n\n"
+        
+        imported = 0
+        skipped = 0
+        
+        async with AsyncSessionLocal() as db:
+            for i, feed_info in enumerate(feeds):
+                title = feed_info.get("title", "Unknown")
+                rss_url = feed_info.get("rss_url", "")
+                
+                # Progress event
+                yield f"data: {json.dumps({'type': 'progress', 'current': i + 1, 'total': len(feeds), 'title': title, 'rss_url': rss_url})}\n\n"
+                
+                try:
+                    await podcast_service.subscribe(db, user_id, rss_url)
+                    imported += 1
+                    yield f"data: {json.dumps({'type': 'result', 'success': True, 'title': title})}\n\n"
+                except Exception as e:
+                    skipped += 1
+                    yield f"data: {json.dumps({'type': 'result', 'success': False, 'title': title, 'error': str(e)})}\n\n"
+        
+        # Complete event
+        yield f"data: {json.dumps({'type': 'complete', 'imported': imported, 'skipped': skipped, 'total': len(feeds)})}\n\n"
+    
+    return StreamingResponse(
+        event_generator(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            "X-Accel-Buffering": "no",  # Disable nginx buffering
+        },
+    )
+
+
 @router.get("/opml/export")
 async def export_opml(
     user_id: str = Depends(get_current_user_id),

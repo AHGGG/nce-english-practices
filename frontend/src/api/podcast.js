@@ -88,6 +88,64 @@ export async function importOPML(file) {
 }
 
 /**
+ * Import OPML file with streaming progress.
+ * @param {File} file - OPML file to import
+ * @param {function} onProgress - Callback for progress events: ({type, current, total, title, success, error, imported, skipped})
+ * @returns {Promise<{imported: number, skipped: number, total: number}>}
+ */
+export async function importOPMLStreaming(file, onProgress) {
+  const formData = new FormData();
+  formData.append('file', file);
+  
+  // Get token for auth header
+  const token = localStorage.getItem('access_token');
+  
+  const response = await fetch(`${BASE_URL}/opml/import/stream`, {
+    method: 'POST',
+    headers: token ? { 'Authorization': `Bearer ${token}` } : {},
+    body: formData,
+  });
+  
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({ detail: 'Import failed' }));
+    throw new Error(error.detail || 'Import failed');
+  }
+  
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = '';
+  let result = { imported: 0, skipped: 0, total: 0 };
+  
+  while (true) {
+    const { value, done } = await reader.read();
+    if (done) break;
+    
+    buffer += decoder.decode(value, { stream: true });
+    
+    // Process complete SSE events
+    const lines = buffer.split('\n\n');
+    buffer = lines.pop() || ''; // Keep incomplete event in buffer
+    
+    for (const line of lines) {
+      if (line.startsWith('data: ')) {
+        try {
+          const data = JSON.parse(line.slice(6));
+          if (onProgress) onProgress(data);
+          
+          if (data.type === 'complete') {
+            result = { imported: data.imported, skipped: data.skipped, total: data.total };
+          }
+        } catch (e) {
+          console.error('SSE parse error:', e);
+        }
+      }
+    }
+  }
+  
+  return result;
+}
+
+/**
  * Export subscriptions as OPML.
  */
 export async function exportOPML() {
