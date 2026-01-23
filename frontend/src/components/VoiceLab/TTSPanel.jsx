@@ -1,7 +1,7 @@
 
-import React, { useState, useRef, useId } from 'react';
-import { Card, Button, Input } from '../ui';
-import { Play, Download, Loader2, StopCircle, Volume2 } from 'lucide-react';
+import React, { useState, useRef, useMemo, useId } from 'react';
+import { Card, Button, Select, Textarea } from '../ui';
+import { Play, Download, Volume2, Wand2 } from 'lucide-react';
 import { authFetch } from '../../api/auth';
 
 const TTSPanel = ({ config, fixedProvider = null }) => {
@@ -12,15 +12,32 @@ const TTSPanel = ({ config, fixedProvider = null }) => {
     const [audioUrl, setAudioUrl] = useState(null);
     const audioRef = useRef(null);
 
-    const providerId = useId();
-    const voiceId = useId();
     const textId = useId();
 
     // Get voices for selected provider
-    const availableVoices = config?.[provider]?.voices || [];
+    const availableVoices = useMemo(() => config?.[provider]?.voices || [], [config, provider]);
+
+    // Transform options for Select components
+    const providerOptions = useMemo(() => {
+        if (!config) return [];
+        return Object.keys(config).map(p => ({
+            value: p,
+            label: p.toUpperCase()
+        }));
+    }, [config]);
+
+    const voiceOptions = useMemo(() => {
+        const options = [{ value: "", label: "-- Select Voice --" }];
+        availableVoices.forEach(v => {
+            const id = typeof v === 'object' ? v.id : v;
+            const name = typeof v === 'object' ? v.name : v;
+            options.push({ value: id, label: name });
+        });
+        return options;
+    }, [availableVoices]);
 
     const handleGenerate = async () => {
-        if (!text || !voice && availableVoices.length > 0) return;
+        if (!text || (!voice && availableVoices.length > 0)) return;
 
         setLoading(true);
         setAudioUrl(null);
@@ -64,48 +81,31 @@ const TTSPanel = ({ config, fixedProvider = null }) => {
                 <div className="space-y-4">
                     {/* Provider Select - Show only if no fixed provider */}
                     {!fixedProvider && (
-                        <div className="space-y-1">
-                            <label htmlFor={providerId} className="text-xs font-mono font-bold text-text-muted uppercase">Provider</label>
-                            <select
-                                id={providerId}
-                                value={provider}
-                                onChange={(e) => { setProvider(e.target.value); setVoice(''); }}
-                                className="w-full bg-bg-elevated border border-border text-text-primary px-4 py-2.5 text-sm font-mono focus:border-accent-info focus:outline-none"
-                            >
-                                {config && Object.keys(config).map(p => (
-                                    <option key={p} value={p}>{p.toUpperCase()}</option>
-                                ))}
-                            </select>
-                        </div>
+                        <Select
+                            label="Provider"
+                            options={providerOptions}
+                            value={provider}
+                            onChange={(e) => { setProvider(e.target.value); setVoice(''); }}
+                        />
                     )}
 
                     {/* Voice Select */}
-                    <div className="space-y-1">
-                        <label htmlFor={voiceId} className="text-xs font-mono font-bold text-text-muted uppercase">Voice Model</label>
-                        <select
-                            id={voiceId}
-                            value={voice}
-                            onChange={(e) => setVoice(e.target.value)}
-                            className="w-full bg-bg-elevated border border-border text-text-primary px-4 py-2.5 text-sm font-mono focus:border-accent-info focus:outline-none"
-                        >
-                            <option value="">-- Select Voice --</option>
-                            {availableVoices.map(v => {
-                                const id = typeof v === 'object' ? v.id : v;
-                                const name = typeof v === 'object' ? v.name : v;
-                                return <option key={id} value={id}>{name}</option>
-                            })}
-                        </select>
-                    </div>
+                    <Select
+                        label="Voice Model"
+                        options={voiceOptions}
+                        value={voice}
+                        onChange={(e) => setVoice(e.target.value)}
+                    />
 
                     {/* Text Input */}
                     <div className="space-y-1">
                         <label htmlFor={textId} className="text-xs font-mono font-bold text-text-muted uppercase">Input Text</label>
-                        <textarea
+                        <Textarea
                             id={textId}
                             value={text}
                             onChange={(e) => setText(e.target.value)}
                             rows={5}
-                            className="w-full bg-bg-elevated border border-border text-text-primary px-4 py-3 text-sm focus:border-accent-info focus:outline-none resize-none font-serif leading-relaxed"
+                            inputClassName="focus:border-accent-info resize-none font-serif leading-relaxed"
                         />
                     </div>
 
@@ -113,12 +113,11 @@ const TTSPanel = ({ config, fixedProvider = null }) => {
                         fullWidth
                         variant="primary"
                         onClick={() => {
-                            // Handle default voice if none selected
-                            // Logic is handled inside handleGenerate or requires user selection
                             handleGenerate();
                         }}
                         isLoading={loading}
                         disabled={loading}
+                        icon={Wand2}
                     >
                         {loading ? 'Synthesizing...' : 'Generate Audio'}
                     </Button>
