@@ -39,7 +39,7 @@ function formatBytes(bytes) {
 
 export default function PodcastDownloadsView() {
     const navigate = useNavigate();
-    const { currentEpisode, isPlaying, playEpisode, togglePlayPause } = usePodcast();
+    const { currentEpisode, isPlaying, currentTime, duration, playEpisode, togglePlayPause } = usePodcast();
 
     const [episodes, setEpisodes] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -278,6 +278,30 @@ export default function PodcastDownloadsView() {
                                                     {formatDuration(ep.duration_seconds)}
                                                 </span>
                                             )}
+                                            {(() => {
+                                                const isCurrentEp = currentEpisode?.id === ep.id;
+                                                // Use actual audio duration for current episode (RSS metadata may differ)
+                                                const episodeDuration = isCurrentEp && duration > 0 ? duration : (ep.duration_seconds || 1);
+                                                const position = isCurrentEp ? currentTime : (item.last_position_seconds || ep.current_position || 0);
+                                                const progressPercent = Math.min(100, Math.round((position / episodeDuration) * 100));
+                                                const isFinished = item.is_finished || (position > 0 && progressPercent >= 99);
+
+                                                if (isFinished) {
+                                                    return (
+                                                        <span className="text-accent-success font-mono bg-accent-success/10 px-2 py-0.5 rounded-md text-[10px] tracking-wide">
+                                                            ✓ COMPLETED
+                                                        </span>
+                                                    );
+                                                }
+                                                if (position > 0) {
+                                                    return (
+                                                        <span className="text-accent-primary font-mono bg-accent-primary/10 px-2 py-0.5 rounded-md text-[10px] tracking-wide">
+                                                            {progressPercent}% PLAYED
+                                                        </span>
+                                                    );
+                                                }
+                                                return null;
+                                            })()}
                                             <span className="flex items-center gap-1 text-accent-success">
                                                 <CloudOff className="w-3 h-3" />
                                                 Offline

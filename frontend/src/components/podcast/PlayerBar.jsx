@@ -46,21 +46,22 @@ export default function PlayerBar() {
         <div className="fixed bottom-0 left-0 right-0 bg-gradient-to-r from-bg-surface via-bg-surface to-bg-elevated border-t border-accent-primary/30 z-50 shadow-2xl shadow-accent-primary/10">
             {/* Progress bar */}
             <div
-                className="h-1.5 bg-bg-base cursor-pointer group relative"
+                className="h-2 bg-bg-base cursor-pointer group relative"
                 onClick={(e) => {
                     const rect = e.currentTarget.getBoundingClientRect();
                     const percent = (e.clientX - rect.left) / rect.width;
                     seek(percent * duration);
                 }}
             >
+                {/* Progress fill */}
                 <div
                     className="h-full bg-gradient-to-r from-accent-primary to-accent-secondary transition-all"
                     style={{ width: `${progress}%` }}
                 />
-                {/* Hover indicator */}
+                {/* Prominent thumb indicator - always visible */}
                 <div
-                    className="absolute top-0 h-full w-1 bg-white opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"
-                    style={{ left: `${progress}%`, transform: 'translateX(-50%)' }}
+                    className="absolute top-1/2 -translate-y-1/2 w-4 h-4 rounded-full bg-accent-primary shadow-lg shadow-accent-primary/50 border-2 border-white/80 transition-transform hover:scale-125"
+                    style={{ left: `${progress}%`, transform: `translateX(-50%) translateY(-50%)` }}
                 />
             </div>
 
