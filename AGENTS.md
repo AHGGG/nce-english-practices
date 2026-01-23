@@ -404,6 +404,8 @@ To support multiple dictionaries (e.g., Collins + LDOCE) in one view:
     - **Fix**: Always pass `authFetch` (from `api/auth.js`) or manually add `Authorization` headers when making requests from utility functions like `downloadEpisodeForOffline`.
 - **Podcast Redirects & Content-Length**: CDNs (like Megaphone) redirect audio requests, and `httpx` follows redirects by default only for some methods or needs explicit config. Also, `Content-Length` is needed for progress bars.
     - **Fix**: Use `client.stream('GET', ..., follow_redirects=True)` in backend proxy. Perform a `HEAD` request first to get `Content-Length` if the stream response lacks it.
+- **Podcast RSS Episode Limits**: iTunes Search API returns historical total counts (e.g., 100+), but many RSS feeds only provide the most recent episodes (e.g., 4) to save bandwidth. This is NOT a bug.
+    - **Fix**: UI should differentiate between "Total Episodes" (iTunes) and "Available Episodes" (RSS), or provide a tooltip explanation.
 
 ### Database Connection
 - **Tests**: Require PostgreSQL running on `localhost:5432` with `nce_practice_test` database.

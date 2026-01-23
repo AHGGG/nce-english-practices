@@ -4,7 +4,7 @@
  */
 
 import { useState } from 'react';
-import { Search, Plus, Check, Loader2, Headphones } from 'lucide-react';
+import { Search, Plus, Check, Loader2, Headphones, Info } from 'lucide-react';
 import * as podcastApi from '../../api/podcast';
 import PodcastLayout from '../../components/podcast/PodcastLayout';
 
@@ -101,8 +101,12 @@ export default function PodcastSearchView() {
                                         <span className="text-xs text-accent-primary/70 font-mono">
                                             {podcast.genre}
                                         </span>
-                                        <span className="text-xs text-text-muted">
+                                        <span
+                                            className="flex items-center gap-1 text-xs text-text-muted group/eps cursor-help"
+                                            title="This is the iTunes total count. RSS feeds often only provide recent episodes."
+                                        >
                                             {podcast.episode_count || 0} episodes
+                                            <Info className="w-3 h-3 opacity-0 group-hover/eps:opacity-60 transition-opacity" />
                                         </span>
                                     </div>
                                 </div>
@@ -111,8 +115,8 @@ export default function PodcastSearchView() {
                                     onClick={() => handleSubscribe(podcast)}
                                     disabled={!podcast.rss_url || subscribing[podcast.itunes_id] || subscribed[podcast.itunes_id]}
                                     className={`flex items-center gap-2 px-5 py-2.5 rounded-lg font-medium transition-all ${subscribed[podcast.itunes_id]
-                                            ? 'bg-accent-success/20 text-accent-success border border-accent-success/30'
-                                            : 'bg-gradient-to-r from-accent-primary to-accent-secondary text-black hover:shadow-lg hover:shadow-accent-primary/20'
+                                        ? 'bg-accent-success/20 text-accent-success border border-accent-success/30'
+                                        : 'bg-gradient-to-r from-accent-primary to-accent-secondary text-black hover:shadow-lg hover:shadow-accent-primary/20'
                                         } disabled:opacity-50`}
                                 >
                                     {subscribing[podcast.itunes_id] ? (

@@ -8,7 +8,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import {
     ArrowLeft, Play, Pause, RefreshCw, Trash2, Loader2,
     Clock, Headphones, Rss, ExternalLink, Download,
-    CheckCircle2, AlertCircle, CloudOff, HardDrive
+    CheckCircle2, AlertCircle, CloudOff, HardDrive, Info
 } from 'lucide-react';
 import * as podcastApi from '../../api/podcast';
 import { authFetch } from '../../api/auth';
@@ -474,7 +474,16 @@ export default function PodcastFeedDetailView() {
 
                 {/* Episodes list */}
                 <div className="space-y-4">
-                    <h2 className="text-lg font-bold font-serif text-text-primary">Episodes</h2>
+                    <div className="flex items-center justify-between gap-4">
+                        <h2 className="text-lg font-bold font-serif text-text-primary">Episodes</h2>
+                        <div
+                            className="flex items-center gap-1.5 text-xs text-text-muted/60 cursor-help"
+                            title="RSS feeds typically only include recent episodes. The full archive may be available on the podcast's website or streaming platforms."
+                        >
+                            <Info className="w-3.5 h-3.5" />
+                            <span className="hidden sm:inline">RSS feeds show recent episodes only</span>
+                        </div>
+                    </div>
 
                     <div className="space-y-2">
                         {episodes.map((episode) => {
