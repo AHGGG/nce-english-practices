@@ -10,6 +10,7 @@ Uses the Shared Feed Model:
 
 import logging
 import hashlib
+import asyncio
 from datetime import datetime
 from typing import List, Optional, Dict, Any
 from xml.etree import ElementTree as ET
@@ -17,6 +18,7 @@ from xml.etree import ElementTree as ET
 import httpx
 import feedparser
 
+from app.core.utils import validate_url_security
 from sqlalchemy import select, func, and_
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -106,6 +108,11 @@ class PodcastService:
         Returns feed metadata and list of episodes.
         """
         try:
+            # SSRF Protection: Validate URL before fetching
+            await asyncio.get_running_loop().run_in_executor(
+                None, validate_url_security, rss_url
+            )
+
             async with httpx.AsyncClient(timeout=30.0) as client:
                 response = await client.get(rss_url)
                 response.raise_for_status()
