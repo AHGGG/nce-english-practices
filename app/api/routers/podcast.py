@@ -76,6 +76,7 @@ class ListeningSessionUpdateRequest(BaseModel):
     session_id: int
     total_listened_seconds: int
     last_position_seconds: float
+    is_finished: bool = False
 
 
 class OPMLImportResult(BaseModel):
@@ -299,6 +300,7 @@ async def update_session(
             req.session_id,
             req.total_listened_seconds,
             req.last_position_seconds,
+            req.is_finished,
         )
         if not session:
             raise HTTPException(status_code=404, detail="Session not found")
@@ -333,6 +335,9 @@ async def update_session_beacon(
                 session_id,
                 listened_seconds,
                 position_seconds,
+                # Beacon updates are rarely "finished" updates, but we could support it if needed.
+                # Default to False for beacon.
+                False,
             )
             return {"success": session is not None}
     except Exception as e:
@@ -352,6 +357,7 @@ async def end_session(
             req.session_id,
             req.total_listened_seconds,
             req.last_position_seconds,
+            req.is_finished,
         )
         if not session:
             raise HTTPException(status_code=404, detail="Session not found")

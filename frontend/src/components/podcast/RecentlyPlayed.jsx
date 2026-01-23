@@ -8,7 +8,7 @@ import * as podcastApi from '../../api/podcast';
 import { usePodcast } from '../../context/PodcastContext';
 
 function formatTime(seconds) {
-    if (!seconds || !isFinite(seconds)) return '0:00';
+    if (!seconds || !isFinite(seconds) || seconds < 0) return '0:00';
     const mins = Math.floor(seconds / 60);
     const secs = Math.floor(seconds % 60);
     return `${mins}:${secs.toString().padStart(2, '0')}`;
@@ -16,11 +16,11 @@ function formatTime(seconds) {
 
 function formatProgress(position, duration) {
     if (!duration) return 0;
-    return Math.round((position / duration) * 100);
+    return Math.min(100, Math.round((position / duration) * 100));
 }
 
 export default function RecentlyPlayed() {
-    const { playEpisode, currentEpisode } = usePodcast();
+    const { playEpisode, currentEpisode, currentTime, duration } = usePodcast();
     const [items, setItems] = useState([]);
     const [loading, setLoading] = useState(true);
 
@@ -32,7 +32,18 @@ export default function RecentlyPlayed() {
         try {
             setLoading(true);
             const data = await podcastApi.getRecentlyPlayed(5);
-            setItems(data);
+
+            // Filter out completed episodes (where position >= duration)
+            // This handles legacy data where is_finished might be false in DB
+            const filtered = data.filter(item => {
+                const position = item.last_position_seconds || 0;
+                const duration = item.episode.duration_seconds || 0;
+                if (!duration) return true; // Keep if unknown duration
+                const remaining = Math.max(0, duration - position);
+                return remaining > 10; // Filter if less than 10 seconds remaining (effectively finished)
+            });
+
+            setItems(filtered);
         } catch (e) {
             console.error('Failed to load recently played:', e);
         } finally {
@@ -83,14 +94,21 @@ export default function RecentlyPlayed() {
 
             <div className="flex gap-3 overflow-x-auto pb-2 -mx-4 px-4 scrollbar-thin">
                 {items.map((item) => {
-                    const isPlaying = currentEpisode?.id === item.episode.id;
-                    const progress = formatProgress(item.last_position_seconds, item.episode.duration_seconds);
+                    const isCurrentEp = currentEpisode?.id === item.episode.id;
+
+                    // For currently playing episode, use real-time values from audio context
+                    // This avoids mismatch between RSS metadata duration and actual audio duration
+                    const position = isCurrentEp ? currentTime : (item.last_position_seconds || 0);
+                    const episodeDuration = isCurrentEp && duration > 0 ? duration : (item.episode.duration_seconds || 0);
+
+                    const progress = formatProgress(position, episodeDuration);
+                    const remainingTime = Math.max(0, episodeDuration - position); // Clamp to 0
 
                     return (
                         <button
                             key={item.episode.id}
                             onClick={() => handleResume(item)}
-                            className={`flex-shrink-0 w-48 bg-bg-surface border rounded-xl overflow-hidden hover:border-accent-primary/50 transition-all group ${isPlaying ? 'border-accent-primary' : 'border-border'
+                            className={`flex-shrink-0 w-48 bg-bg-surface border rounded-xl overflow-hidden hover:border-accent-primary/50 transition-all group ${isCurrentEp ? 'border-accent-primary' : 'border-border'
                                 }`}
                         >
                             <div className="relative aspect-square">
@@ -117,7 +135,7 @@ export default function RecentlyPlayed() {
                                 <div className="absolute bottom-0 left-0 right-0 h-1 bg-bg-base/80">
                                     <div
                                         className="h-full bg-accent-primary"
-                                        style={{ width: `${progress}%` }}
+                                        style={{ width: `${Math.min(100, progress)}%` }}
                                     />
                                 </div>
                             </div>
@@ -130,7 +148,7 @@ export default function RecentlyPlayed() {
                                     {item.feed.title}
                                 </p>
                                 <p className="text-xs text-accent-primary/70 font-mono mt-1">
-                                    {formatTime((item.episode.duration_seconds || 0) - (item.last_position_seconds || 0))} left
+                                    {remainingTime > 0 ? `${formatTime(remainingTime)} left` : '✓ Completed'}
                                 </p>
                             </div>
                         </button>

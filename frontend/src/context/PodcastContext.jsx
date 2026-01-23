@@ -26,6 +26,24 @@ export function PodcastProvider({ children }) {
     const [listenedSeconds, setListenedSeconds] = useState(0);
     const lastUpdateRef = useRef(0);
 
+    // Refs for use in ended event (avoids stale closures)
+    const sessionIdRef = useRef(null);
+    const currentEpisodeRef = useRef(null);
+    const listenedSecondsRef = useRef(0);
+
+    // Keep refs in sync with state
+    useEffect(() => {
+        sessionIdRef.current = sessionId;
+    }, [sessionId]);
+
+    useEffect(() => {
+        currentEpisodeRef.current = currentEpisode;
+    }, [currentEpisode]);
+
+    useEffect(() => {
+        listenedSecondsRef.current = listenedSeconds;
+    }, [listenedSeconds]);
+
     // Audio element ref
     const audioRef = useRef(null);
 
@@ -51,8 +69,23 @@ export function PodcastProvider({ children }) {
                 }
             });
 
-            audioRef.current.addEventListener('ended', () => {
+            audioRef.current.addEventListener('ended', async () => {
                 setIsPlaying(false);
+                // Mark episode as finished when playback completes
+                if (sessionIdRef.current && currentEpisodeRef.current) {
+                    try {
+                        const currentPos = audioRef.current?.duration || 0;
+                        await podcastApi.endListeningSession(
+                            sessionIdRef.current,
+                            listenedSecondsRef.current,
+                            currentPos,
+                            true
+                        );
+                        console.log('[Podcast] Episode finished, marked completed');
+                    } catch (e) {
+                        console.error('Failed to mark episode finished:', e);
+                    }
+                }
             });
 
             audioRef.current.addEventListener('error', (e) => {

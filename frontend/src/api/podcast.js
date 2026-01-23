@@ -114,7 +114,7 @@ export async function startListeningSession(episodeId) {
 /**
  * Update listening progress.
  */
-export async function updateListeningSession(sessionId, totalSeconds, position) {
+export async function updateListeningSession(sessionId, totalSeconds, position, isFinished = false) {
   const response = await authFetch(`${BASE_URL}/session/update`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -122,6 +122,7 @@ export async function updateListeningSession(sessionId, totalSeconds, position) 
       session_id: sessionId,
       total_listened_seconds: Math.floor(totalSeconds),
       last_position_seconds: position,
+      is_finished: isFinished,
     }),
   });
   if (!response.ok) throw new Error('Failed to update session');
@@ -131,7 +132,7 @@ export async function updateListeningSession(sessionId, totalSeconds, position) 
 /**
  * End a listening session.
  */
-export async function endListeningSession(sessionId, totalSeconds, position) {
+export async function endListeningSession(sessionId, totalSeconds, position, isFinished = false) {
   const response = await authFetch(`${BASE_URL}/session/end`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -139,6 +140,7 @@ export async function endListeningSession(sessionId, totalSeconds, position) {
       session_id: sessionId,
       total_listened_seconds: Math.floor(totalSeconds),
       last_position_seconds: position,
+      is_finished: isFinished,
     }),
   });
   if (!response.ok) throw new Error('Failed to end session');

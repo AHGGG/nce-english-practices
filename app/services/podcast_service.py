@@ -551,6 +551,7 @@ class PodcastService:
         session_id: int,
         total_listened_seconds: int,
         last_position_seconds: float,
+        is_finished: bool = False,
     ) -> Optional[PodcastListeningSession]:
         """Update listening session with progress."""
         stmt = select(PodcastListeningSession).where(
@@ -573,6 +574,7 @@ class PodcastService:
             session.user_id,
             session.episode_id,
             last_position_seconds,
+            is_finished=is_finished,
         )
 
         return session
@@ -583,6 +585,7 @@ class PodcastService:
         session_id: int,
         total_listened_seconds: int,
         last_position_seconds: float,
+        is_finished: bool = False,
     ) -> Optional[PodcastListeningSession]:
         """End a listening session."""
         stmt = select(PodcastListeningSession).where(
@@ -606,6 +609,7 @@ class PodcastService:
             session.user_id,
             session.episode_id,
             last_position_seconds,
+            is_finished=is_finished,
         )
 
         return session
