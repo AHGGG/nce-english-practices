@@ -7,7 +7,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
     Play, Pause, Trash2, Loader2, CloudOff, HardDrive,
-    Clock, AlertCircle, Music, RefreshCw
+    Clock, AlertCircle, Music, RefreshCw, Check
 } from 'lucide-react';
 import PodcastLayout from '../../components/podcast/PodcastLayout';
 import { usePodcast } from '../../context/PodcastContext';
@@ -241,12 +241,21 @@ export default function PodcastDownloadsView() {
                             const isCurrentEpisode = currentEpisode?.id === item.episode.id;
                             const ep = item.episode;
 
+                            // Calculate completion status
+                            const isCurrentEp = currentEpisode?.id === ep.id;
+                            const episodeDuration = isCurrentEp && duration > 0 ? duration : (ep.duration_seconds || 1);
+                            const position = isCurrentEp ? currentTime : (item.last_position_seconds || ep.current_position || 0);
+                            const progressPercent = Math.min(100, Math.round((position / episodeDuration) * 100));
+                            const isFinished = item.is_finished || (position > 0 && progressPercent >= 99);
+
                             return (
                                 <div
                                     key={ep.id}
-                                    className={`flex items-center gap-4 p-4 bg-bg-surface border rounded-xl transition-all ${isCurrentEpisode
-                                        ? 'border-accent-primary shadow-lg shadow-accent-primary/10'
-                                        : 'border-border hover:border-accent-primary/30'
+                                    className={`relative flex items-center gap-4 p-4 rounded-xl transition-all duration-300 ${isCurrentEpisode
+                                        ? 'bg-accent-primary/10 border border-accent-primary/30 shadow-lg shadow-accent-primary/10'
+                                        : isFinished
+                                            ? 'opacity-50 bg-bg-surface/50'
+                                            : 'bg-bg-surface border border-transparent hover:border-accent-primary/20 hover:shadow-lg'
                                         }`}
                                 >
                                     {/* Play button */}
@@ -254,11 +263,15 @@ export default function PodcastDownloadsView() {
                                         onClick={() => handlePlay(item)}
                                         className={`flex-shrink-0 w-12 h-12 rounded-full flex items-center justify-center transition-all ${isCurrentEpisode
                                             ? 'bg-gradient-to-br from-accent-primary to-accent-secondary text-black shadow-lg shadow-accent-primary/30'
-                                            : 'bg-bg-elevated text-text-primary hover:bg-accent-primary/20 hover:text-accent-primary'
+                                            : isFinished
+                                                ? 'bg-transparent border-2 border-accent-success/40 text-accent-success hover:border-accent-success hover:bg-accent-success/10'
+                                                : 'bg-bg-elevated/30 border border-white/10 text-text-primary hover:bg-bg-elevated hover:border-white/20 hover:scale-105'
                                             }`}
                                     >
                                         {isCurrentEpisode && isPlaying ? (
                                             <Pause className="w-5 h-5" />
+                                        ) : isFinished && !isCurrentEpisode ? (
+                                            <Check className="w-5 h-5 stroke-[2.5]" />
                                         ) : (
                                             <Play className="w-5 h-5 ml-0.5" />
                                         )}
@@ -266,7 +279,11 @@ export default function PodcastDownloadsView() {
 
                                     {/* Episode info */}
                                     <div className="flex-1 min-w-0">
-                                        <h3 className={`font-medium truncate ${isCurrentEpisode ? 'text-accent-primary' : 'text-text-primary'
+                                        <h3 className={`truncate ${isCurrentEpisode
+                                            ? 'text-accent-primary font-medium'
+                                            : isFinished
+                                                ? 'text-gray-400 line-through decoration-accent-success/60 decoration-2'
+                                                : 'text-text-primary font-medium'
                                             }`}>
                                             {ep.title}
                                         </h3>
@@ -279,19 +296,8 @@ export default function PodcastDownloadsView() {
                                                 </span>
                                             )}
                                             {(() => {
-                                                const isCurrentEp = currentEpisode?.id === ep.id;
-                                                // Use actual audio duration for current episode (RSS metadata may differ)
-                                                const episodeDuration = isCurrentEp && duration > 0 ? duration : (ep.duration_seconds || 1);
-                                                const position = isCurrentEp ? currentTime : (item.last_position_seconds || ep.current_position || 0);
-                                                const progressPercent = Math.min(100, Math.round((position / episodeDuration) * 100));
-                                                const isFinished = item.is_finished || (position > 0 && progressPercent >= 99);
-
                                                 if (isFinished) {
-                                                    return (
-                                                        <span className="text-accent-success font-mono bg-accent-success/10 px-2 py-0.5 rounded-md text-[10px] tracking-wide">
-                                                            ✓ COMPLETED
-                                                        </span>
-                                                    );
+                                                    return null;
                                                 }
                                                 if (position > 0) {
                                                     return (

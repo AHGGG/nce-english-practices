@@ -8,7 +8,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import {
     ArrowLeft, Play, Pause, RefreshCw, Trash2, Loader2,
     Clock, Headphones, Rss, ExternalLink, Download,
-    CheckCircle2, AlertCircle, CloudOff, HardDrive, Info
+    CheckCircle2, AlertCircle, CloudOff, HardDrive, Info, Check
 } from 'lucide-react';
 import * as podcastApi from '../../api/podcast';
 import { authFetch } from '../../api/auth';
@@ -490,35 +490,49 @@ export default function PodcastFeedDetailView() {
                             const isCurrentEpisode = currentEpisode?.id === episode.id;
                             const isOffline = offlineEpisodes.has(episode.id);
 
+                            // Calculate completion status
+                            const isCurrentEp = currentEpisode?.id === episode.id;
+                            // Use actual audio duration for current episode (RSS metadata may differ)
+                            const episodeDuration = isCurrentEp && duration > 0 ? duration : (episode.duration_seconds || 1);
+                            const position = isCurrentEp ? currentTime : episode.current_position;
+                            const progressPercent = Math.min(100, Math.round((position / episodeDuration) * 100));
+                            const isFinished = episode.is_finished || (position > 0 && progressPercent >= 99);
+
                             return (
                                 <div
                                     key={episode.id}
-                                    className={`group relative flex items-center gap-4 p-4 rounded-2xl transition-all duration-300 border border-transparent ${isCurrentEpisode
-                                        ? 'bg-accent-primary/5 border-accent-primary/20 shadow-[0_0_20px_rgba(var(--color-accent-primary),0.05)]'
-                                        : 'hover:bg-bg-elevated/40 hover:border-white/5'
+                                    className={`group relative flex items-center gap-4 p-4 rounded-xl transition-all duration-300 ${isCurrentEpisode
+                                        ? 'bg-accent-primary/10 border border-accent-primary/30 shadow-lg shadow-accent-primary/10'
+                                        : isFinished
+                                            ? 'opacity-50 bg-bg-surface/50'
+                                            : 'bg-bg-surface border border-transparent hover:border-accent-primary/20 hover:shadow-lg hover:shadow-accent-primary/5'
                                         }`}
                                 >
-                                    {/* Active Indicator Stripe */}
-                                    {isCurrentEpisode && (
-                                        <div className="absolute left-0 top-3 bottom-3 w-1 bg-accent-primary rounded-r-full" />
-                                    )}
 
                                     <button
                                         onClick={() => handlePlayEpisode(episode)}
                                         className={`flex-shrink-0 w-12 h-12 rounded-xl flex items-center justify-center transition-all duration-300 ${isCurrentEpisode
                                             ? 'bg-accent-primary text-black shadow-lg shadow-accent-primary/30 scale-105'
-                                            : 'bg-bg-elevated/50 text-text-muted group-hover:bg-accent-primary/10 group-hover:text-accent-primary group-hover:scale-105 group-hover:shadow-lg group-hover:shadow-accent-primary/10'
+                                            : isFinished
+                                                ? 'bg-transparent border-2 border-accent-success/40 text-accent-success hover:border-accent-success hover:bg-accent-success/10'
+                                                : 'bg-bg-elevated/30 border border-white/10 text-text-primary hover:bg-bg-elevated hover:border-white/20 hover:scale-105 hover:shadow-lg'
                                             }`}
                                     >
                                         {isCurrentEpisode && isPlaying ? (
                                             <Pause className="w-5 h-5 fill-current" />
+                                        ) : isFinished && !isCurrentEpisode ? (
+                                            <Check className="w-5 h-5 stroke-[2.5]" />
                                         ) : (
                                             <Play className="w-5 h-5 ml-0.5 fill-current" />
                                         )}
                                     </button>
 
                                     <div className="flex-1 min-w-0 py-1">
-                                        <h3 className={`text-base font-bold line-clamp-2 leading-relaxed mb-1.5 transition-colors ${isCurrentEpisode ? 'text-accent-primary' : 'text-text-primary group-hover:text-text-primary'
+                                        <h3 className={`text-base line-clamp-2 leading-relaxed mb-1.5 transition-colors ${isCurrentEpisode
+                                            ? 'text-accent-primary font-bold'
+                                            : isFinished
+                                                ? 'text-gray-400 line-through decoration-accent-success/60 decoration-2'
+                                                : 'text-text-primary font-bold group-hover:text-white'
                                             }`} title={episode.title}>
                                             {episode.title}
                                             {isOffline && (
@@ -539,20 +553,9 @@ export default function PodcastFeedDetailView() {
                                                 </span>
                                             )}
                                             {(() => {
-                                                // For currently playing episode, show real-time progress
-                                                const isCurrentEp = currentEpisode?.id === episode.id;
-                                                // Use actual audio duration for current episode (RSS metadata may differ)
-                                                const episodeDuration = isCurrentEp && duration > 0 ? duration : (episode.duration_seconds || 1);
-                                                const position = isCurrentEp ? currentTime : episode.current_position;
-                                                const progressPercent = Math.min(100, Math.round((position / episodeDuration) * 100));
-                                                const isFinished = episode.is_finished || (position > 0 && progressPercent >= 99);
-
                                                 if (isFinished) {
-                                                    return (
-                                                        <span className="text-accent-success font-mono bg-accent-success/10 px-2 py-0.5 rounded-md text-[10px] tracking-wide">
-                                                            ✓ COMPLETED
-                                                        </span>
-                                                    );
+                                                    // Badge removed in favor of Solid Green Check Button
+                                                    return null;
                                                 }
                                                 if (position > 0) {
                                                     return (
