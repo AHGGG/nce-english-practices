@@ -15,7 +15,6 @@ import { authFetch } from '../../api/auth';
 import { usePodcast } from '../../context/PodcastContext';
 import {
     downloadEpisodeForOffline,
-    isEpisodeOffline,
     getOfflineEpisodeIds,
     removeOfflineEpisode,
     getStorageEstimate
@@ -39,14 +38,6 @@ function formatDate(dateStr) {
         month: 'short',
         day: 'numeric',
     });
-}
-
-function formatBytes(bytes) {
-    if (bytes === 0) return '0 B';
-    const k = 1024;
-    const sizes = ['B', 'KB', 'MB', 'GB'];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
 }
 
 export default function PodcastFeedDetailView() {
@@ -469,53 +460,63 @@ export default function PodcastFeedDetailView() {
                             return (
                                 <div
                                     key={episode.id}
-                                    className={`flex items-center gap-4 p-4 bg-bg-surface border rounded-xl transition-all ${isCurrentEpisode
-                                        ? 'border-accent-primary shadow-lg shadow-accent-primary/10'
-                                        : 'border-border hover:border-accent-primary/30'
+                                    className={`group relative flex items-center gap-4 p-4 rounded-2xl transition-all duration-300 border border-transparent ${isCurrentEpisode
+                                        ? 'bg-accent-primary/5 border-accent-primary/20 shadow-[0_0_20px_rgba(var(--color-accent-primary),0.05)]'
+                                        : 'hover:bg-bg-elevated/40 hover:border-white/5'
                                         }`}
                                 >
+                                    {/* Active Indicator Stripe */}
+                                    {isCurrentEpisode && (
+                                        <div className="absolute left-0 top-3 bottom-3 w-1 bg-accent-primary rounded-r-full" />
+                                    )}
+
                                     <button
                                         onClick={() => handlePlayEpisode(episode)}
-                                        className={`flex-shrink-0 w-12 h-12 rounded-full flex items-center justify-center transition-all ${isCurrentEpisode
-                                            ? 'bg-gradient-to-br from-accent-primary to-accent-secondary text-black shadow-lg shadow-accent-primary/30'
-                                            : 'bg-bg-elevated text-text-primary hover:bg-accent-primary/20 hover:text-accent-primary'
+                                        className={`flex-shrink-0 w-12 h-12 rounded-xl flex items-center justify-center transition-all duration-300 ${isCurrentEpisode
+                                            ? 'bg-accent-primary text-black shadow-lg shadow-accent-primary/30 scale-105'
+                                            : 'bg-bg-elevated/50 text-text-muted group-hover:bg-accent-primary/10 group-hover:text-accent-primary group-hover:scale-105 group-hover:shadow-lg group-hover:shadow-accent-primary/10'
                                             }`}
                                     >
                                         {isCurrentEpisode && isPlaying ? (
-                                            <Pause className="w-5 h-5" />
+                                            <Pause className="w-5 h-5 fill-current" />
                                         ) : (
-                                            <Play className="w-5 h-5 ml-0.5" />
+                                            <Play className="w-5 h-5 ml-0.5 fill-current" />
                                         )}
                                     </button>
 
-                                    <div className="flex-1 min-w-0">
-                                        <h3 className={`font-medium truncate ${isCurrentEpisode ? 'text-accent-primary' : 'text-text-primary'
-                                            }`}>
+                                    <div className="flex-1 min-w-0 py-1">
+                                        <h3 className={`text-base font-bold line-clamp-2 leading-relaxed mb-1.5 transition-colors ${isCurrentEpisode ? 'text-accent-primary' : 'text-text-primary group-hover:text-text-primary'
+                                            }`} title={episode.title}>
                                             {episode.title}
                                             {isOffline && (
-                                                <CloudOff className="inline-block w-4 h-4 ml-2 text-accent-success" />
+                                                <CloudOff className="inline-block w-3.5 h-3.5 ml-2 text-accent-success" />
                                             )}
                                         </h3>
-                                        <div className="flex items-center gap-3 text-xs text-text-muted mt-1">
+                                        <div className="flex items-center gap-4 text-xs font-medium text-text-muted/60">
                                             {episode.published_at && (
-                                                <span>{formatDate(episode.published_at)}</span>
+                                                <span className="flex items-center gap-1.5">
+                                                    <span className="w-1 h-1 rounded-full bg-border-subtle group-hover:bg-accent-primary/50 transition-colors" />
+                                                    {formatDate(episode.published_at)}
+                                                </span>
                                             )}
                                             {episode.duration_seconds && (
-                                                <span className="flex items-center gap-1 font-mono">
+                                                <span className="flex items-center gap-1.5 font-mono">
                                                     <Clock className="w-3 h-3" />
                                                     {formatDuration(episode.duration_seconds)}
                                                 </span>
                                             )}
                                             {episode.current_position > 0 && !episode.is_finished && (
-                                                <span className="text-accent-primary font-mono">
-                                                    {Math.round((episode.current_position / episode.duration_seconds) * 100)}% played
+                                                <span className="text-accent-primary font-mono bg-accent-primary/10 px-2 py-0.5 rounded-md text-[10px] tracking-wide">
+                                                    {Math.round((episode.current_position / episode.duration_seconds) * 100)}% PLAYED
                                                 </span>
                                             )}
                                         </div>
                                     </div>
 
-                                    {/* Download button with status */}
-                                    {renderDownloadButton(episode)}
+                                    {/* Download button - always visible, but styled cleanly */}
+                                    <div className="opacity-70 hover:opacity-100 transition-opacity">
+                                        {renderDownloadButton(episode)}
+                                    </div>
                                 </div>
                             );
                         })}
