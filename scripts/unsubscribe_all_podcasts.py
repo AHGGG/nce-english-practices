@@ -20,6 +20,9 @@ async def unsubscribe_all(user_id: str, force: bool = False, clean_history: bool
 
     # Basic usage (unsubscribe only)
     uv run python scripts/unsubscribe_all_podcasts.py <user_id>
+    # Docker compose usage (unsubscribe only)
+    docker compose exec app uv run python scripts/unsubscribe_all_podcasts.py <user_id>
+
     # Automated run (no prompt)
     uv run python scripts/unsubscribe_all_podcasts.py <user_id> --force
     # Complete clean slate (unsubscribe + delete history)
