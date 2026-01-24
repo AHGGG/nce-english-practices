@@ -4,14 +4,15 @@
  */
 
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Search, Plus, Check, Loader2, Headphones, Info } from 'lucide-react';
 import * as podcastApi from '../../api/podcast';
 import PodcastLayout from '../../components/podcast/PodcastLayout';
 import { useToast } from '../../components/ui';
 
 export default function PodcastSearchView() {
-    const [query, setQuery] = useState('');
+    const [searchParams, setSearchParams] = useSearchParams();
+    const [query, setQuery] = useState(searchParams.get('q') || '');
     const [results, setResults] = useState([]);
     const [loading, setLoading] = useState(false);
     const [subscribing, setSubscribing] = useState({});
@@ -23,16 +24,29 @@ export default function PodcastSearchView() {
     const { addToast } = useToast();
     const navigate = useNavigate();
 
-    // Load categories and trending on mount
+    // Sync local state if URL changes externally
+    useEffect(() => {
+        const urlQuery = searchParams.get('q') || '';
+        if (urlQuery !== query) {
+            setQuery(urlQuery);
+        }
+    }, [searchParams]);
+
+    // Load categories on mount
     useEffect(() => {
         podcastApi.getCategories().then(setCategories).catch(console.error);
-        loadTrending();
     }, []);
 
-    // Reload trending when category changes
+    // Perform search or load trending when URL query or category changes
     useEffect(() => {
-        loadTrending();
-    }, [selectedCategory]);
+        const urlQuery = searchParams.get('q');
+        
+        if (urlQuery && urlQuery.trim()) {
+            performSearch(urlQuery);
+        } else {
+            loadTrending();
+        }
+    }, [searchParams, selectedCategory]);
 
     async function loadTrending() {
         try {
@@ -48,24 +62,28 @@ export default function PodcastSearchView() {
         }
     }
 
-    async function handleSearch(e) {
-        e.preventDefault();
-        // If query is empty, just load trending (already done via effect if we clear query)
-        if (!query.trim()) {
-            loadTrending();
-            return;
-        }
-
+    async function performSearch(searchQuery) {
         try {
             setLoading(true);
-            const data = await podcastApi.searchPodcasts(query, {
+            const data = await podcastApi.searchPodcasts(searchQuery, {
                 category: selectedCategory?.id
             });
             setResults(data);
         } catch (err) {
             console.error('Search failed:', err);
+            addToast('Search failed: ' + err.message, 'error');
         } finally {
             setLoading(false);
+        }
+    }
+
+    async function handleSearch(e) {
+        e.preventDefault();
+        const trimmed = query.trim();
+        if (trimmed) {
+            setSearchParams({ q: trimmed });
+        } else {
+            setSearchParams({});
         }
     }
 

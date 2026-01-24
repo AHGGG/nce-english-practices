@@ -460,7 +460,13 @@ export default function PodcastFeedDetailView() {
                 <div className="max-w-5xl mx-auto px-4 py-4">
                     <div className="flex items-center gap-4">
                         <button
-                            onClick={() => navigate('/podcast')}
+                            onClick={() => {
+                                if (window.history.length > 1) {
+                                    navigate(-1);
+                                } else {
+                                    navigate('/podcast');
+                                }
+                            }}
                             className="p-2 -ml-2 text-text-muted hover:text-text-primary transition-colors"
                         >
                             <ArrowLeft className="w-5 h-5" />

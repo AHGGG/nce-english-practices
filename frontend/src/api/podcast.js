@@ -6,15 +6,41 @@ import { authFetch } from './auth';
 
 const BASE_URL = '/api/podcast';
 
+// Simple in-memory cache for search results to avoid redundant calls on navigation
+const searchCache = new Map();
+const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+
 /**
  * Search podcasts via iTunes.
  */
 export async function searchPodcasts(query, { limit = 20, country = 'US', category = null } = {}) {
+  const cacheKey = JSON.stringify({ query, limit, country, category });
+  const now = Date.now();
+  
+  // Check cache
+  if (searchCache.has(cacheKey)) {
+    const { timestamp, data } = searchCache.get(cacheKey);
+    if (now - timestamp < CACHE_TTL) {
+      return data;
+    }
+    searchCache.delete(cacheKey);
+  }
+
   const params = new URLSearchParams({ q: query, limit, country });
   if (category) params.append('category', category);
   const response = await authFetch(`${BASE_URL}/search?${params}`);
   if (!response.ok) throw new Error('Search failed');
-  return response.json();
+  
+  const data = await response.json();
+  
+  // Update cache (limit size to 20 entries to prevent leaks)
+  if (searchCache.size > 20) {
+    const firstKey = searchCache.keys().next().value;
+    searchCache.delete(firstKey);
+  }
+  searchCache.set(cacheKey, { timestamp: now, data });
+  
+  return data;
 }
 
 /**
