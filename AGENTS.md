@@ -407,6 +407,24 @@ To support multiple dictionaries (e.g., Collins + LDOCE) in one view:
 - **Podcast RSS Episode Limits**: iTunes Search API returns historical total counts (e.g., 100+), but many RSS feeds only provide the most recent episodes (e.g., 4) to save bandwidth. This is NOT a bug.
     - **Fix**: UI should differentiate between "Total Episodes" (iTunes) and "Available Episodes" (RSS), or provide a tooltip explanation.
 
+### Production Network & Proxy Strategy (NEW 2026-01-24)
+
+- **SOCKS5 Proxy Support**: Standard `httpx` does not support SOCKS5.
+    - **Fix**: Must install `httpx[socks]` dependency.
+    - **Configuration**: Use `PROXY_URL` env var (e.g., `socks5://172.17.0.1:7890`).
+- **SSL Issues with RSS Feeds**: Many older podcast servers have expired/incomplete certificate chains that fail in strict production environments (Linux/Docker) but pass on local dev (Mac/Windows).
+    - **Fix**: Implement an auto-retry mechanism: Try standard SSL first; if it fails, catch `httpx.ConnectError/SSLError` and retry with `verify=False`.
+- **User-Agent Blocking**: CDNs (Cloudflare) often block default Python User-Agents.
+    - **Fix**: Always set a full Browser User-Agent header (e.g., Chrome/123.0) for RSS fetches.
+- **Proxy Architecture (Sidecar Pattern)**: Do NOT embed VLESS/Shadowsocks clients into the application container.
+    - **Best Practice**: Run the proxy client (Xray/Clash) as a separate "Sidecar" container or standalone service on the host. The application should only know about the standard HTTP/SOCKS interface.
+    - **Ref**: See `docs/skills/setup-proxy-client.md`.
+
+### Docker Dependency Management
+- **`uv.lock` vs `pyproject.toml`**: During rapid dev, `uv.lock` might lag behind `pyproject.toml`.
+    - **Pitfall**: Using `uv sync --frozen` in Dockerfile causes build failures if lockfile is stale.
+    - **Fix**: Remove `--frozen` in Dockerfile unless you have a strict CI process to ensure lockfile currency.
+
 ### Database Connection
 - **Tests**: Require PostgreSQL running on `localhost:5432` with `nce_practice_test` database.
 - **Fixture**: `conftest.py` drops/creates all tables per test function for isolation.
