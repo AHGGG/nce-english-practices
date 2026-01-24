@@ -90,6 +90,13 @@ class Settings(BaseSettings):
         return self.home_dir / "progress.json"
 
     @property
+    def podcast_cache_dir(self) -> Path:
+        """Directory for caching podcast assets (images, audio)."""
+        path = self.home_dir / "cache" / "podcasts"
+        path.mkdir(parents=True, exist_ok=True)
+        return path
+
+    @property
     def export_file(self) -> Path:
         return self.home_dir / "exported_practice.csv"
 

@@ -5,20 +5,34 @@ from pathlib import Path
 from unittest.mock import MagicMock, patch, AsyncMock
 from fastapi import HTTPException
 from app.api.routers.podcast import _proxy_image
+from app.config import settings
 
 # Test setup
-CACHE_DIR = Path("resources/cache/podcast_images")
+# We override the podcast_cache_dir for testing to avoid cluttering the real cache
+TEST_CACHE_DIR = Path("tests/temp_cache")
 
 
 @pytest.fixture(autouse=True)
 def clean_cache():
     """Clean up cache directory before and after tests."""
-    if CACHE_DIR.exists():
-        shutil.rmtree(CACHE_DIR)
-    CACHE_DIR.mkdir(parents=True, exist_ok=True)
-    yield
-    if CACHE_DIR.exists():
-        shutil.rmtree(CACHE_DIR)
+    # Since settings is already instantiated in podcast.py, patching Settings.podcast_cache_dir property
+    # might not work if it's accessed via the instance.
+    # Instead, we patch the 'settings' object in app.api.routers.podcast directly.
+
+    with patch("app.api.routers.podcast.settings") as mock_settings:
+        mock_settings.podcast_cache_dir = TEST_CACHE_DIR
+        # Also need to mock other settings accessed
+        mock_settings.PROXY_URL = None
+        mock_settings.SECRET_KEY = "test-secret"
+
+        if TEST_CACHE_DIR.exists():
+            shutil.rmtree(TEST_CACHE_DIR)
+        TEST_CACHE_DIR.mkdir(parents=True, exist_ok=True)
+
+        yield
+
+        if TEST_CACHE_DIR.exists():
+            shutil.rmtree(TEST_CACHE_DIR)
 
 
 @pytest.mark.asyncio
@@ -63,7 +77,7 @@ async def test_proxy_image_cache_miss_then_hit():
         import hashlib
 
         url_hash = hashlib.md5(url.encode("utf-8")).hexdigest()
-        expected_path = CACHE_DIR / f"{url_hash}.jpg"
+        expected_path = TEST_CACHE_DIR / f"{url_hash}.jpg"
         assert expected_path.exists()
         assert expected_path.read_bytes() == dummy_content
 

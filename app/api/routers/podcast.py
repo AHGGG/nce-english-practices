@@ -130,10 +130,7 @@ async def _proxy_image(url: str, filename: str = "image.jpg"):
         raise HTTPException(status_code=400, detail="Invalid URL protocol")
 
     # Cache Configuration
-    CACHE_DIR = Path("resources/cache/podcast_images")
-    # Ensure directory exists (non-blocking usually, but safe to check)
-    if not CACHE_DIR.exists():
-        CACHE_DIR.mkdir(parents=True, exist_ok=True)
+    CACHE_DIR = settings.podcast_cache_dir
 
     # Generate Cache Key (Hash)
     url_hash = hashlib.md5(url.encode("utf-8")).hexdigest()
