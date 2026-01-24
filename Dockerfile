@@ -39,7 +39,8 @@ COPY --from=ghcr.io/astral-sh/uv:latest /uv /bin/uv
 
 # Install Python dependencies
 # We install the 'dictionary' extra to ensure all features are available
-RUN uv sync --frozen --extra dictionary
+# Removed --frozen to allow picking up pyproject.toml changes without updating uv.lock locally first
+RUN uv sync --extra dictionary
 
 # Copy application code
 COPY . .
