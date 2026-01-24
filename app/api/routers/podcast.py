@@ -91,7 +91,106 @@ class OPMLImportResult(BaseModel):
     errors: List[dict]
 
 
+# --- Proxy Helpers ---
+
+
+async def _proxy_image(url: str, filename: str = "image.jpg"):
+    """
+    Stream an image from a remote URL through the server.
+    Used to bypass CORS/Network restrictions for podcast covers.
+    """
+    import httpx
+    from fastapi.responses import StreamingResponse
+
+    if not url:
+        raise HTTPException(status_code=404, detail="No image URL")
+
+    # Security: basic check to prevent local file access
+    if not url.startswith("http"):
+        raise HTTPException(status_code=400, detail="Invalid URL protocol")
+
+    proxies = settings.PROXY_URL if settings.PROXY_URL else None
+
+    # Create client for this request
+    # Note: We create a new client per request to ensure isolation,
+    # but for high load we might want a global client.
+    client = httpx.AsyncClient(
+        timeout=10.0, follow_redirects=True, proxy=proxies, verify=False
+    )
+
+    # Build request
+    req = client.build_request("GET", url)
+    r = await client.send(req, stream=True)
+
+    if r.status_code != 200:
+        await r.aclose()
+        await client.aclose()
+        # Fallback or error?
+        # If we return 404, the browser shows broken image.
+        # Maybe redirect to a placeholder?
+        raise HTTPException(status_code=404, detail="Image not found upstream")
+
+    async def iter_response():
+        try:
+            async for chunk in r.aiter_bytes(chunk_size=8192):
+                yield chunk
+        except Exception:
+            pass
+        finally:
+            await r.aclose()
+            await client.aclose()
+
+    # Forward Content-Type
+    content_type = r.headers.get("content-type", "image/jpeg")
+
+    return StreamingResponse(
+        iter_response(),
+        media_type=content_type,
+        headers={
+            "Cache-Control": "public, max-age=604800",  # Cache for 7 days
+            "Content-Disposition": f'inline; filename="{filename}"',
+        },
+    )
+
+
 # --- Endpoints ---
+
+
+@router.get("/feed/{feed_id}/image")
+async def get_feed_image(feed_id: int):
+    """Proxy feed image."""
+    # Note: Public endpoint (no auth) to allow easy use in <img> tags
+    async with AsyncSessionLocal() as db:
+        from app.models.podcast_orm import PodcastFeed
+        from sqlalchemy import select
+
+        stmt = select(PodcastFeed.image_url).where(PodcastFeed.id == feed_id)
+        result = await db.execute(stmt)
+        image_url = result.scalar_one_or_none()
+
+        if not image_url:
+            # Return 404 so browser can show alt text or default
+            raise HTTPException(status_code=404, detail="Feed has no image")
+
+        return await _proxy_image(image_url, f"feed_{feed_id}.jpg")
+
+
+@router.get("/episode/{episode_id}/image")
+async def get_episode_image(episode_id: int):
+    """Proxy episode image."""
+    # Note: Public endpoint (no auth)
+    async with AsyncSessionLocal() as db:
+        from app.models.podcast_orm import PodcastEpisode
+        from sqlalchemy import select
+
+        stmt = select(PodcastEpisode.image_url).where(PodcastEpisode.id == episode_id)
+        result = await db.execute(stmt)
+        image_url = result.scalar_one_or_none()
+
+        if not image_url:
+            raise HTTPException(status_code=404, detail="Episode has no image")
+
+        return await _proxy_image(image_url, f"episode_{episode_id}.jpg")
 
 
 @router.get("/search")
@@ -130,7 +229,9 @@ async def subscribe_to_podcast(
                 title=feed.title,
                 description=feed.description,
                 author=feed.author,
-                image_url=feed.image_url,
+                image_url=f"/api/podcast/feed/{feed.id}/image"
+                if feed.image_url
+                else None,
                 rss_url=feed.rss_url,
                 episode_count=episode_count,
             )
@@ -163,7 +264,14 @@ async def get_subscriptions(
         feeds = await podcast_service.get_subscriptions(db, user_id)
 
         # Service now returns dicts with episode_count included
-        return [FeedResponse(**feed) for feed in feeds]
+        response_feeds = []
+        for feed in feeds:
+            # Use proxy URL for image
+            if feed.get("image_url"):
+                feed["image_url"] = f"/api/podcast/feed/{feed['id']}/image"
+            response_feeds.append(FeedResponse(**feed))
+
+        return response_feeds
 
 
 @router.post("/episodes/batch")
@@ -176,7 +284,19 @@ async def get_episodes_batch(
     Used for efficient bulk loading (e.g., downloads page).
     """
     async with AsyncSessionLocal() as db:
-        return await podcast_service.get_episodes_batch(db, user_id, req.episode_ids)
+        items = await podcast_service.get_episodes_batch(db, user_id, req.episode_ids)
+
+        # Rewrite image URLs to use proxy
+        for item in items:
+            ep = item["episode"]
+            if ep.get("image_url"):
+                ep["image_url"] = f"/api/podcast/episode/{ep['id']}/image"
+
+            feed = item["feed"]
+            if feed.get("image_url"):
+                feed["image_url"] = f"/api/podcast/feed/{feed['id']}/image"
+
+        return items
 
 
 @router.get("/feed/{feed_id}")
@@ -199,7 +319,9 @@ async def get_feed_detail(
                 title=feed.title,
                 description=feed.description,
                 author=feed.author,
-                image_url=feed.image_url,
+                image_url=f"/api/podcast/feed/{feed.id}/image"
+                if feed.image_url
+                else None,
                 rss_url=feed.rss_url,
                 episode_count=len(episodes),
             ),
@@ -211,7 +333,9 @@ async def get_feed_detail(
                     description=ep["description"],
                     audio_url=ep["audio_url"],
                     duration_seconds=ep["duration_seconds"],
-                    image_url=ep["image_url"],
+                    image_url=f"/api/podcast/episode/{ep['id']}/image"
+                    if ep.get("image_url")
+                    else None,
                     published_at=ep["published_at"],
                     transcript_status=ep["transcript_status"],
                     current_position=ep["current_position"],
@@ -498,7 +622,19 @@ async def get_recently_played(
 ):
     """Get recently played episodes with resume positions."""
     async with AsyncSessionLocal() as db:
-        return await podcast_service.get_recently_played(db, user_id, limit=limit)
+        items = await podcast_service.get_recently_played(db, user_id, limit=limit)
+
+        # Rewrite image URLs
+        for item in items:
+            ep = item["episode"]
+            if ep.get("image_url"):
+                ep["image_url"] = f"/api/podcast/episode/{ep['id']}/image"
+
+            feed = item["feed"]
+            if feed.get("image_url"):
+                feed["image_url"] = f"/api/podcast/feed/{feed['id']}/image"
+
+        return items
 
 
 # --- Download ---
