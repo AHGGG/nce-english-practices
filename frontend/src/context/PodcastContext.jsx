@@ -30,6 +30,7 @@ export function PodcastProvider({ children }) {
     const sessionIdRef = useRef(null);
     const currentEpisodeRef = useRef(null);
     const listenedSecondsRef = useRef(0);
+    const isFinishingRef = useRef(false);
 
     // Keep refs in sync with state
     useEffect(() => {
@@ -70,15 +71,19 @@ export function PodcastProvider({ children }) {
             });
 
             audioRef.current.addEventListener('ended', async () => {
+                console.log('[Podcast] Ended event fired');
+                isFinishingRef.current = true;
                 setIsPlaying(false);
+                
                 // Mark episode as finished when playback completes
                 if (sessionIdRef.current && currentEpisodeRef.current) {
                     try {
-                        const currentPos = audioRef.current?.duration || 0;
+                        // Ensure we send the full duration as position to avoid "99%" issues
+                        const finalPosition = audioRef.current?.duration || 0;
                         await podcastApi.endListeningSession(
                             sessionIdRef.current,
                             listenedSecondsRef.current,
-                            currentPos,
+                            finalPosition,
                             true
                         );
                         console.log('[Podcast] Episode finished, marked completed');
@@ -111,6 +116,12 @@ export function PodcastProvider({ children }) {
 
         // Function to save current position
         const savePosition = () => {
+            // Skip saving if we are in the process of finishing (handled by 'ended' event)
+            if (isFinishingRef.current) {
+                console.log('[Podcast] Skipping savePosition (episode finishing)');
+                return;
+            }
+
             const currentPos = audioRef.current?.currentTime || 0;
             if (currentPos > 0) {
                 console.log('[Podcast] Saving position:', currentPos);
@@ -167,6 +178,7 @@ export function PodcastProvider({ children }) {
         if (!episode?.audio_url) return;
 
         setIsLoading(true);
+        isFinishingRef.current = false; // Reset finishing flag
 
         // End previous session if exists
         if (sessionId && currentEpisode) {

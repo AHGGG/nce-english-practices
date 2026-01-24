@@ -3,7 +3,7 @@
  * Enhanced with offline download support and progress tracking.
  */
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
     ArrowLeft, Play, Pause, RefreshCw, Trash2, Loader2,
@@ -52,6 +52,44 @@ export default function PodcastFeedDetailView() {
     const [refreshing, setRefreshing] = useState(false);
     const [subscribing, setSubscribing] = useState(false);
     const [error, setError] = useState(null);
+
+    // Local progress state to track updates for episodes that are no longer current
+    // { [episodeId]: { current_position: number, is_finished: boolean } }
+    const [localProgress, setLocalProgress] = useState({});
+    
+    // Refs to capture latest values for effect cleanup
+    const lastTimeRef = useRef(0);
+    const lastDurationRef = useRef(0);
+
+    // Update refs on every render
+    lastTimeRef.current = currentTime;
+    lastDurationRef.current = duration;
+
+    // Capture progress when switching episodes
+    useEffect(() => {
+        const prevEp = currentEpisode;
+        
+        return () => {
+            if (prevEp) {
+                // When switching away from an episode, save its final state locally
+                // This ensures the UI doesn't revert to the stale DB state until a refresh
+                const finalTime = lastTimeRef.current;
+                const finalDuration = lastDurationRef.current;
+                // If we are very close to the end (within 2s) or it was already finished, mark it
+                // Note: We don't have access to 'is_finished' from context directly here without more refs, 
+                // but time check is usually sufficient for UI feedback.
+                const isFinished = finalDuration > 0 && finalTime >= (finalDuration - 2);
+                
+                setLocalProgress(prev => ({
+                    ...prev,
+                    [prevEp.id]: {
+                        current_position: finalTime,
+                        is_finished: isFinished
+                    }
+                }));
+            }
+        };
+    }, [currentEpisode]);
 
     // Confirmation Dialog State
     const [confirmAction, setConfirmAction] = useState(null); // { isOpen, title, message, onConfirm, confirmText, isDanger }
@@ -517,12 +555,27 @@ export default function PodcastFeedDetailView() {
                             const isOffline = offlineEpisodes.has(episode.id);
 
                             // Calculate completion status
-                            const isCurrentEp = currentEpisode?.id === episode.id;
+                            // Priority: Current Playback -> Local Progress -> DB Data
+                            const localState = localProgress[episode.id];
+                            
                             // Use actual audio duration for current episode (RSS metadata may differ)
-                            const episodeDuration = isCurrentEp && duration > 0 ? duration : (episode.duration_seconds || 1);
-                            const position = isCurrentEp ? currentTime : episode.current_position;
+                            const episodeDuration = isCurrentEpisode && duration > 0 ? duration : (episode.duration_seconds || 1);
+                            
+                            let position = episode.current_position;
+                            let isFinished = episode.is_finished;
+
+                            if (isCurrentEpisode) {
+                                position = currentTime;
+                                // Visual check for current episode
+                                isFinished = isFinished || (duration > 0 && currentTime >= duration - 2);
+                            } else if (localState) {
+                                position = localState.current_position;
+                                isFinished = localState.is_finished || isFinished;
+                            }
+
                             const progressPercent = Math.min(100, Math.round((position / episodeDuration) * 100));
-                            const isFinished = episode.is_finished || (position > 0 && progressPercent >= 99);
+                            // Final safety check for visual completion (99% rule)
+                            isFinished = isFinished || (position > 0 && progressPercent >= 99);
 
                             return (
                                 <div

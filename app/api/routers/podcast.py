@@ -18,6 +18,9 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+# Standard User-Agent to avoid blocking by CDNs (Cloudflare, etc.)
+BROWSER_USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36"
+
 router = APIRouter(prefix="/api/podcast", tags=["podcast"])
 
 # --- Pydantic Schemas ---
@@ -155,9 +158,7 @@ async def _proxy_image(url: str, filename: str = "image.jpg"):
     # Cache Miss - Fetch from Upstream
     proxies = settings.PROXY_URL if settings.PROXY_URL else None
 
-    headers = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36"
-    }
+    headers = {"User-Agent": BROWSER_USER_AGENT}
 
     try:
         async with httpx.AsyncClient(
@@ -930,8 +931,10 @@ async def download_episode_head(
     # Make a HEAD request to the upstream to get Content-Length
     try:
         proxies = settings.PROXY_URL if settings.PROXY_URL else None
+        headers = {"User-Agent": BROWSER_USER_AGENT}
+
         async with httpx.AsyncClient(
-            timeout=10.0, follow_redirects=True, proxy=proxies
+            timeout=10.0, follow_redirects=True, proxy=proxies, headers=headers
         ) as client:
             head_response = await client.head(audio_url)
             content_length = head_response.headers.get("content-length", "0")
@@ -981,7 +984,7 @@ async def download_episode(
 
     # Check for Range header
     range_header = request.headers.get("range")
-    headers_to_upstream = {}
+    headers_to_upstream = {"User-Agent": BROWSER_USER_AGENT}
     if range_header:
         headers_to_upstream["Range"] = range_header
 

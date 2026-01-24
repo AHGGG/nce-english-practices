@@ -842,7 +842,11 @@ class PodcastService:
             constraint="uq_user_episode_state",
             set_={
                 "current_position_seconds": position,
-                "is_finished": is_finished,
+                # Make is_finished sticky: once true, stays true (unless we add specific un-finish logic later)
+                # This prevents playback updates (is_finished=False) from overwriting "Played" status
+                "is_finished": func.greatest(
+                    UserEpisodeState.is_finished, stmt.excluded.is_finished
+                ),
                 "listened_at": datetime.utcnow(),
                 "updated_at": datetime.utcnow(),
             },
