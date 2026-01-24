@@ -183,6 +183,7 @@ export default function PodcastSearchView() {
                                         <img
                                             src={podcast.artwork_url}
                                             alt=""
+                                            referrerPolicy="no-referrer"
                                             className="w-20 h-20 rounded-lg object-cover flex-shrink-0 border border-border"
                                         />
                                     ) : (

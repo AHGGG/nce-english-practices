@@ -73,6 +73,7 @@ export default function PlayerBar() {
                             <img
                                 src={currentEpisode.image_url || currentFeed?.image_url}
                                 alt=""
+                                referrerPolicy="no-referrer"
                                 className="w-14 h-14 rounded-lg object-cover border border-border"
                             />
                         ) : (

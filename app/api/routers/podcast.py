@@ -335,12 +335,7 @@ async def search_podcasts(
             db, q, user_id, limit=limit, country=country
         )
 
-        # Rewrite artwork URLs to use signed proxy
-        for r in results:
-            if r.get("artwork_url"):
-                token = sign_url(r["artwork_url"])
-                r["artwork_url"] = f"/api/podcast/proxy/image?token={token}"
-
+        # Return results directly (frontend handles images)
         return [ItunesSearchResult(**r) for r in results]
 
 
@@ -409,9 +404,7 @@ async def preview_podcast(
                     title=feed_obj.title,
                     description=feed_obj.description,
                     author=feed_obj.author,
-                    image_url=f"/api/podcast/feed/{feed_obj.id}/image"
-                    if feed_obj.image_url
-                    else None,
+                    image_url=feed_obj.image_url,
                     rss_url=feed_obj.rss_url,
                     episode_count=len(episodes),
                     category=feed_obj.category,
@@ -424,9 +417,7 @@ async def preview_podcast(
                         description=ep["description"],
                         audio_url=ep["audio_url"],
                         duration_seconds=ep["duration_seconds"],
-                        image_url=f"/api/podcast/episode/{ep['id']}/image"
-                        if ep.get("image_url")
-                        else None,
+                        image_url=ep.get("image_url"),
                         published_at=ep["published_at"],
                         transcript_status=ep["transcript_status"],
                         current_position=ep["current_position"],
@@ -455,12 +446,7 @@ async def get_trending_podcasts(
             db, user_id, category, limit=limit
         )
 
-        # Rewrite artwork URLs to use signed proxy
-        for r in results:
-            if r.get("artwork_url"):
-                token = sign_url(r["artwork_url"])
-                r["artwork_url"] = f"/api/podcast/proxy/image?token={token}"
-
+        # Return results directly (frontend handles images)
         return [ItunesSearchResult(**r) for r in results]
 
 
@@ -489,9 +475,7 @@ async def subscribe_to_podcast(
                 title=feed.title,
                 description=feed.description,
                 author=feed.author,
-                image_url=f"/api/podcast/feed/{feed.id}/image"
-                if feed.image_url
-                else None,
+                image_url=feed.image_url,
                 rss_url=feed.rss_url,
                 episode_count=episode_count,
                 category=feed.category,
@@ -527,9 +511,6 @@ async def get_subscriptions(
         # Service now returns dicts with episode_count included
         response_feeds = []
         for feed in feeds:
-            # Use proxy URL for image
-            if feed.get("image_url"):
-                feed["image_url"] = f"/api/podcast/feed/{feed['id']}/image"
             response_feeds.append(FeedResponse(**feed))
 
         return response_feeds
@@ -546,17 +527,6 @@ async def get_episodes_batch(
     """
     async with AsyncSessionLocal() as db:
         items = await podcast_service.get_episodes_batch(db, user_id, req.episode_ids)
-
-        # Rewrite image URLs to use proxy
-        for item in items:
-            ep = item["episode"]
-            if ep.get("image_url"):
-                ep["image_url"] = f"/api/podcast/episode/{ep['id']}/image"
-
-            feed = item["feed"]
-            if feed.get("image_url"):
-                feed["image_url"] = f"/api/podcast/feed/{feed['id']}/image"
-
         return items
 
 
@@ -581,9 +551,7 @@ async def get_feed_detail(
                 title=feed.title,
                 description=feed.description,
                 author=feed.author,
-                image_url=f"/api/podcast/feed/{feed.id}/image"
-                if feed.image_url
-                else None,
+                image_url=feed.image_url,
                 rss_url=feed.rss_url,
                 episode_count=len(episodes),
                 category=feed.category,
@@ -596,9 +564,7 @@ async def get_feed_detail(
                     description=ep["description"],
                     audio_url=ep["audio_url"],
                     duration_seconds=ep["duration_seconds"],
-                    image_url=f"/api/podcast/episode/{ep['id']}/image"
-                    if ep.get("image_url")
-                    else None,
+                    image_url=ep.get("image_url"),
                     published_at=ep["published_at"],
                     transcript_status=ep["transcript_status"],
                     current_position=ep["current_position"],
@@ -887,17 +853,6 @@ async def get_recently_played(
     """Get recently played episodes with resume positions."""
     async with AsyncSessionLocal() as db:
         items = await podcast_service.get_recently_played(db, user_id, limit=limit)
-
-        # Rewrite image URLs
-        for item in items:
-            ep = item["episode"]
-            if ep.get("image_url"):
-                ep["image_url"] = f"/api/podcast/episode/{ep['id']}/image"
-
-            feed = item["feed"]
-            if feed.get("image_url"):
-                feed["image_url"] = f"/api/podcast/feed/{feed['id']}/image"
-
         return items
 
 

@@ -116,6 +116,7 @@ export default function RecentlyPlayed() {
                                     <img
                                         src={item.episode.image_url || item.feed.image_url}
                                         alt=""
+                                        referrerPolicy="no-referrer"
                                         className="w-full h-full object-cover"
                                     />
                                 ) : (

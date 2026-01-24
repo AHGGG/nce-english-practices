@@ -291,6 +291,7 @@ export default function PodcastLibraryView() {
                                             <img
                                                 src={feed.image_url}
                                                 alt={feed.title}
+                                                referrerPolicy="no-referrer"
                                                 className="w-full h-full object-cover"
                                             />
                                         ) : (

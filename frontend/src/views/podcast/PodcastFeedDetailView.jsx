@@ -455,6 +455,7 @@ export default function PodcastFeedDetailView() {
                         <img
                             src={feed.image_url}
                             alt={feed.title}
+                            referrerPolicy="no-referrer"
                             className="w-32 h-32 sm:w-40 sm:h-40 rounded-xl object-cover flex-shrink-0 mx-auto sm:mx-0 border border-border"
                         />
                     ) : (
