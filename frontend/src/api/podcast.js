@@ -46,7 +46,7 @@ export async function searchPodcasts(query, { limit = 20, country = 'US', catego
 /**
  * Get trending podcasts.
  */
-export async function getTrendingPodcasts({ limit = 20, country = 'US', category = null } = {}) {
+export async function getTrendingPodcasts({ limit = 100, country = 'US', category = null } = {}) {
   const params = new URLSearchParams({ limit, country });
   if (category) params.append('category', category);
   const response = await authFetch(`${BASE_URL}/trending?${params}`);

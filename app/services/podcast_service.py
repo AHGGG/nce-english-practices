@@ -39,6 +39,37 @@ ITUNES_SEARCH_URL = "https://itunes.apple.com/search"
 class PodcastService:
     """Service for podcast management."""
 
+    # --- Cache ---
+    _trending_cache: Dict[str, Dict[str, Any]] = {}  # key -> {timestamp, data}
+    CACHE_TTL = 12 * 3600  # 12 hours
+    CACHE_SIZE = 100  # Safe limit for both V1 and V2 APIs (V2 fails at 200)
+
+    # Categories for background refresh (ID only)
+    CATEGORY_IDS = [
+        "1301",
+        "1303",
+        "1304",
+        "1305",
+        "1309",
+        "1310",
+        "1311",
+        "1314",
+        "1315",
+        "1316",
+        "1318",
+        "1321",
+        "1323",
+        "1324",
+        "1325",
+        "1482",
+        "1483",
+        "1484",
+        "1486",
+        "1487",
+        "1488",
+        "1489",
+    ]
+
     # --- iTunes Search ---
 
     async def search_itunes(
@@ -582,6 +613,223 @@ class PodcastService:
 
     # --- Trending / Top Charts ---
 
+    async def start_cache_refresher(self):
+        """Background task to refresh trending cache every 12 hours."""
+        import asyncio
+
+        while True:
+            try:
+                logger.info(
+                    f"Starting trending podcast cache refresh (Limit: {self.CACHE_SIZE})..."
+                )
+                await self.refresh_trending_cache()
+                logger.info("Trending podcast cache refresh complete.")
+            except Exception as e:
+                logger.error(f"Error refreshing trending cache: {e}")
+
+            # Sleep 12 hours
+            await asyncio.sleep(12 * 3600)
+
+    async def refresh_trending_cache(self):
+        """Force refresh of all trending categories."""
+        # Global
+        await self._fetch_trending_upstream(
+            category_id=None, limit=self.CACHE_SIZE, force_refresh=True
+        )
+        # Categories
+        for cat_id in self.CATEGORY_IDS:
+            # Add a small delay to be nice to the API
+            import asyncio
+
+            await asyncio.sleep(1.0)
+            await self._fetch_trending_upstream(
+                category_id=cat_id, limit=self.CACHE_SIZE, force_refresh=True
+            )
+
+    async def _fetch_trending_upstream(
+        self,
+        category_id: Optional[str] = None,
+        limit: int = 20,
+        force_refresh: bool = False,
+    ) -> List[Dict[str, Any]]:
+        """
+        Fetch trending podcasts from upstream API (V1 for Genre, V2 for Top).
+        Handles caching and slices results if larger cache exists.
+        Returns raw list of results (without subscription status).
+        """
+        # Cache key is just the category (we store the 'max' version)
+        cache_key = str(category_id) if category_id else "global"
+        now = datetime.utcnow()
+
+        # Check cache (if not forcing refresh)
+        if not force_refresh and cache_key in self._trending_cache:
+            entry = self._trending_cache[cache_key]
+            # If cache is valid AND has enough items
+            if (now - entry["timestamp"]).total_seconds() < self.CACHE_TTL:
+                cached_data = entry["data"]
+                if len(cached_data) >= limit:
+                    return cached_data[:limit]
+                # If we need more than cached, strictly speaking we should fetch,
+                # but falling back to what we have might be acceptable behavior in some cases.
+                # For now, let's fetch upstream if we need more than we have.
+
+        proxies = settings.PROXY_URL if settings.PROXY_URL else None
+        results = []
+
+        try:
+            if category_id and str(category_id).isdigit():
+                # Use V1 API for Genre Filtering (V2 param is unreliable)
+                # https://itunes.apple.com/us/rss/toppodcasts/limit=X/genre=Y/json
+                url = f"https://itunes.apple.com/us/rss/toppodcasts/limit={limit}/genre={category_id}/json"
+
+                async with httpx.AsyncClient(
+                    timeout=15.0, proxy=proxies, follow_redirects=True, verify=False
+                ) as client:
+                    response = await client.get(url)
+                    response.raise_for_status()
+                    data = response.json()
+
+                # Parse V1 Response
+                feed = data.get("feed", {})
+                entries = feed.get("entry", [])
+
+                # Handle single entry edge case (dict instead of list)
+                if isinstance(entries, dict):
+                    entries = [entries]
+
+                for entry in entries:
+                    try:
+                        # Safe extraction with defaults
+                        im_name = entry.get("im:name", {})
+                        title = (
+                            im_name.get("label")
+                            if isinstance(im_name, dict)
+                            else im_name
+                        )
+
+                        im_artist = entry.get("im:artist", {})
+                        author = (
+                            im_artist.get("label")
+                            if isinstance(im_artist, dict)
+                            else im_artist
+                        )
+
+                        # Images: get the last one (largest)
+                        images = entry.get("im:image", [])
+                        artwork_url = None
+                        if images and isinstance(images, list):
+                            last_img = images[-1]
+                            artwork_url = (
+                                last_img.get("label")
+                                if isinstance(last_img, dict)
+                                else last_img
+                            )
+
+                        # ID
+                        id_node = entry.get("id", {})
+                        itunes_id = id_node.get("attributes", {}).get("im:id")
+
+                        # Genre
+                        cat_node = entry.get("category", {})
+                        genre = cat_node.get("attributes", {}).get("label")
+
+                        if itunes_id:
+                            results.append(
+                                {
+                                    "itunes_id": itunes_id,
+                                    "title": title,
+                                    "author": author,
+                                    "rss_url": None,  # V1 doesn't provide RSS URL
+                                    "artwork_url": artwork_url,
+                                    "genre": genre,
+                                    "is_subscribed": False,
+                                }
+                            )
+                    except Exception as e:
+                        logger.warning(f"Failed to parse V1 entry: {e}")
+                        continue
+
+            else:
+                # Use V2 API for Global Top Charts
+                # https://rss.applemarketingtools.com/api/v2/us/podcasts/top/{limit}/podcasts.json
+                url = f"https://rss.applemarketingtools.com/api/v2/us/podcasts/top/{limit}/podcasts.json"
+
+                async with httpx.AsyncClient(
+                    timeout=10.0, proxy=proxies, follow_redirects=True, verify=False
+                ) as client:
+                    response = await client.get(url)
+                    response.raise_for_status()
+                    data = response.json()
+
+                feed = data.get("feed", {})
+                for item in feed.get("results", []):
+                    genres = item.get("genres", [])
+                    primary_genre = genres[0].get("name") if genres else None
+
+                    results.append(
+                        {
+                            "itunes_id": item.get("id"),
+                            "title": item.get("name"),
+                            "author": item.get("artistName"),
+                            "rss_url": None,
+                            "artwork_url": item.get("artworkUrl100"),
+                            "genre": primary_genre,
+                            "is_subscribed": False,
+                        }
+                    )
+
+            # Common: Lookup RSS URLs for all results
+            # Both V1 and V2 Top Charts APIs often omit the direct RSS feed URL.
+            # We must lookup by ID to get the feedUrl.
+            if results:
+                ids = [r["itunes_id"] for r in results if r.get("itunes_id")]
+                if ids:
+                    # Batch lookup (iTunes allows ~200 IDs per request, but let's be safe with 150)
+                    chunk_size = 150
+                    id_map = {}
+
+                    for i in range(0, len(ids), chunk_size):
+                        chunk = ids[i : i + chunk_size]
+                        ids_str = ",".join(chunk)
+                        lookup_url = f"https://itunes.apple.com/lookup?id={ids_str}"
+
+                        try:
+                            async with httpx.AsyncClient(
+                                timeout=20.0, proxy=proxies, verify=False
+                            ) as client:
+                                l_res = await client.get(lookup_url)
+                                if l_res.status_code == 200:
+                                    l_data = l_res.json()
+                                    # Merge into main map
+                                    for item in l_data.get("results", []):
+                                        c_id = str(item.get("collectionId"))
+                                        if item.get("feedUrl"):
+                                            id_map[c_id] = item.get("feedUrl")
+                        except Exception as e:
+                            logger.warning(f"Failed to lookup feed URLs batch {i}: {e}")
+
+                    # Update results from map
+                    for r in results:
+                        if r.get("itunes_id") in id_map:
+                            r["rss_url"] = id_map[r.get("itunes_id")]
+
+            # Update Cache
+            # Only update cache if we fetched a significant amount (e.g. >= 20)
+            # This prevents a small ad-hoc query from overwriting a large background cache
+            if limit >= 20:
+                self._trending_cache[cache_key] = {"timestamp": now, "data": results}
+
+            return results
+
+        except Exception as e:
+            logger.error(f"Trending fetch failed: {e}")
+            # Return stale cache if available?
+            # Return slice of cache if it exists, even if stale or smaller?
+            if cache_key in self._trending_cache:
+                cached = self._trending_cache[cache_key]["data"]
+                return cached[:limit]
+            return []
+
     async def get_trending_podcasts(
         self,
         db: AsyncSession,
@@ -590,88 +838,20 @@ class PodcastService:
         limit: int = 20,
     ) -> List[Dict[str, Any]]:
         """
-        Get trending podcasts from iTunes Top Charts.
-        Optional category_id (iTunes genre ID).
-        Enriches with is_subscribed status.
+        Get trending podcasts.
         """
-        # Base URL for iTunes RSS Generator
-        # https://rss.applemarketingtools.com/
-        # api/v2/us/podcasts/top/10/podcasts.json
+        # Fetch raw data (cached)
+        results = await self._fetch_trending_upstream(category_id, limit)
 
-        # Note: The domain redirects to rss.marketingtools.apple.com
-        # Using query param ?genre=ID seems to be the reliable way now (v2)
-        url = f"https://rss.applemarketingtools.com/api/v2/us/podcasts/top/{limit}/podcasts.json"
+        # Deep copy to avoid modifying cache when adding is_subscribed
+        # or just create new list of dicts
+        final_results = [r.copy() for r in results]
 
-        params = {}
-        if category_id and str(category_id).isdigit():
-            params["genre"] = category_id
-
-        try:
-            proxies = settings.PROXY_URL if settings.PROXY_URL else None
-            # Need follow_redirects=True because applemarketingtools.com -> marketingtools.apple.com
-            async with httpx.AsyncClient(
-                timeout=10.0, proxy=proxies, follow_redirects=True
-            ) as client:
-                # httpx merges params into the URL
-                response = await client.get(url, params=params)
-                response.raise_for_status()
-                data = response.json()
-
-            results = []
-            feed = data.get("feed", {})
-            for item in feed.get("results", []):
-                # Map to our structure
-                # iTunes RSS item structure:
-                # { "artistName": "...", "id": "...", "name": "...", "artworkUrl100": "...", "genres": [...] }
-
-                genres = item.get("genres", [])
-                primary_genre = genres[0].get("name") if genres else None
-
-                results.append(
-                    {
-                        "itunes_id": item.get("id"),
-                        "title": item.get("name"),
-                        "author": item.get("artistName"),
-                        "rss_url": None,  # Top Charts RSS JSON doesn't always have feedUrl. We might need to lookup.
-                        # Wait, the new API often doesn't give feedUrl.
-                        # We might need to do a lookup by ID to get the feedUrl if user clicks.
-                        # But for display we are fine.
-                        "artwork_url": item.get("artworkUrl100"),
-                        "genre": primary_genre,
-                        "is_subscribed": False,
-                    }
-                )
-
-            # Lookup RSS URLs (iTunes Top Charts often miss feedUrl)
-            if results:
-                ids = [r["itunes_id"] for r in results if r.get("itunes_id")]
-                if ids:
-                    ids_str = ",".join(ids)
-                    lookup_url = f"https://itunes.apple.com/lookup?id={ids_str}"
-                    try:
-                        async with httpx.AsyncClient(
-                            timeout=10.0, proxy=proxies
-                        ) as client:
-                            l_res = await client.get(lookup_url)
-                            if l_res.status_code == 200:
-                                l_data = l_res.json()
-                                # Create map id -> feedUrl
-                                id_map = {
-                                    str(i.get("collectionId")): i.get("feedUrl")
-                                    for i in l_data.get("results", [])
-                                }
-
-                                # Update results
-                                for r in results:
-                                    if r.get("itunes_id") in id_map:
-                                        r["rss_url"] = id_map[r.get("itunes_id")]
-                    except Exception as e:
-                        logger.warning(f"Failed to lookup feed URLs for trending: {e}")
-
-            # Enrich with subscription status if user_id is provided
-            if user_id and db and results:
-                rss_urls = [r["rss_url"] for r in results if r.get("rss_url")]
-                if rss_urls:
+        # Enrich with subscription status if user_id is provided
+        if user_id and db and final_results:
+            rss_urls = [r["rss_url"] for r in final_results if r.get("rss_url")]
+            if rss_urls:
+                try:
                     stmt = (
                         select(PodcastFeed.rss_url)
                         .join(
@@ -686,15 +866,13 @@ class PodcastService:
                     result = await db.execute(stmt)
                     subscribed_urls = set(result.scalars().all())
 
-                    for r in results:
+                    for r in final_results:
                         if r.get("rss_url") in subscribed_urls:
                             r["is_subscribed"] = True
+                except Exception as e:
+                    logger.error(f"Failed to check subscription status: {e}")
 
-            return results
-
-        except Exception as e:
-            logger.error(f"Trending fetch failed: {e}")
-            return []
+        return final_results
 
     async def refresh_feed(self, db: AsyncSession, user_id: str, feed_id: int) -> int:
         """

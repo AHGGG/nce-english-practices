@@ -288,10 +288,6 @@ To prevent parser regressions, use the golden standard framework: `tests/test_ld
   - **Audio Cache**: `podcast-audio-cache` (Cache API) stores audio files.
   - **Progress Tracking**: Backend download endpoint (`/api/podcast/episode/{id}/download`) supports `HEAD` requests for Content-Length.
   - **Frontend**: `PodcastFeedDetailView` shows download progress/status. `PodcastDownloadsView` manages offline content.
-  - **Image Proxy & Caching**: 
-    - Proxies external images via `/api/podcast/proxy/image` to solve CORS and Mixed Content issues.
-    - **Caching**: Images are cached locally in `~/.english_tense_practice/cache/podcasts/` (via `settings.podcast_cache_dir`) to improve performance and reduce upstream requests.
-    - **Security**: URLs are signed with HMAC-SHA256 to prevent open relay abuse.
 
 ### Coach Service (Agentic)
 - **Role**: Central orchestrator for the "Neural Link" mode.
@@ -469,6 +465,7 @@ To support multiple dictionaries (e.g., Collins + LDOCE) in one view:
 | Local Deployment | [docs/skills/local-deployment.md](docs/skills/local-deployment.md) | Docker 本地/内网部署 |
 | Voice Integrations | [docs/skills/voice-integrations.md](docs/skills/voice-integrations.md) | 调用 ElevenLabs/Deepgram/Gemini/Dashscope 语音 API |
 | AUI Streaming Protocol | [docs/skills/aui-streaming-protocol.md](docs/skills/aui-streaming-protocol.md) | 实现或调试 Agent 实时流式 UI 更新 |
+| Podcast Architecture | [docs/skills/podcast-architecture.md](docs/skills/podcast-architecture.md) | **Podcast 开发** - Apple API 策略与缓存机制 |
 | SDK Debugging | [docs/skills/sdk-debugging.md](docs/skills/sdk-debugging.md) | 第三方 SDK 调用失败的诊断方法 |
 | API Docs Query | [docs/skills/api-docs-query.md](docs/skills/api-docs-query.md) | 查询 ElevenLabs/Deepgram 离线 API 文档 |
 

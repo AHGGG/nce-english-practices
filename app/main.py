@@ -64,6 +64,11 @@ async def lifespan(app: FastAPI):
 
     await input_service.start_listener()
 
+    # Start Podcast Trending Cache Refresher (Every 12 hours)
+    from app.services.podcast_service import podcast_service
+
+    asyncio.create_task(podcast_service.start_cache_refresher())
+
     yield
 
     # Cleanup
@@ -207,14 +212,22 @@ if __name__ == "__main__":
             host="0.0.0.0",
             port=8000,
             reload=True,
-            reload_excludes=['.git', '__pycache__', 'node_modules'],
+            reload_excludes=[".git", "__pycache__", "node_modules"],
             ssl_keyfile=ssl_keyfile,
             ssl_certfile=ssl_certfile,
         )
     else:
         print("Starting with HTTP (Default)")
         if use_https:
-            print("WARNING: HTTPS requested but certificates (key.pem/cert.pem) not found.")
+            print(
+                "WARNING: HTTPS requested but certificates (key.pem/cert.pem) not found."
+            )
         print("For mobile voice, generate cert: uv run python scripts/generate_cert.py")
         print("To enable HTTPS: ./scripts/dev.ps1 -Https")
-        uvicorn.run("app.main:app", host="0.0.0.0", port=8000, reload=True, reload_excludes=['.git', '__pycache__', 'node_modules'])
+        uvicorn.run(
+            "app.main:app",
+            host="0.0.0.0",
+            port=8000,
+            reload=True,
+            reload_excludes=[".git", "__pycache__", "node_modules"],
+        )
