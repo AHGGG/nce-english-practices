@@ -28,6 +28,7 @@ services:
       ACCESS_TOKEN_EXPIRE_MINUTES: ${ACCESS_TOKEN_EXPIRE_MINUTES:-15}
       REFRESH_TOKEN_EXPIRE_DAYS: ${REFRESH_TOKEN_EXPIRE_DAYS:-7}
       ALLOW_REGISTRATION: ${ALLOW_REGISTRATION:-True}
+      PROXY_URL: ${PROXY_URL:-}
     volumes:
       - ../resources:/app/resources:ro  # Read-only mount
       - app-logs:/app/logs

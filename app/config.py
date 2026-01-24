@@ -28,7 +28,9 @@ class Settings(BaseSettings):
     DEEPGRAM_API_KEY: str = ""
     DASHSCOPE_API_KEY: str = ""
     ZHIPU_API_KEY: str = ""
-    ENABLE_IMAGE_GENERATION: bool = False  # Feature flag: set to True to enable AI image generation
+    ENABLE_IMAGE_GENERATION: bool = (
+        False  # Feature flag: set to True to enable AI image generation
+    )
     # For Google Cloud Speech/TTS (Unified with Gemini usually, but separate if using standard Google Cloud APIs)
     GOOGLE_APPLICATION_CREDENTIALS: str = ""
 
@@ -53,6 +55,11 @@ class Settings(BaseSettings):
     REFRESH_TOKEN_EXPIRE_DAYS: int = 7  # Longer-lived refresh token
     ALLOW_REGISTRATION: bool = True  # Set to False to disable public registration
     USE_HTTPS: bool = False  # Set to True if running over HTTPS
+
+    # Network Settings
+    # Optional proxy for outbound requests (RSS, Audio download)
+    # Format: http://user:pass@host:port or http://host:port
+    PROXY_URL: str = ""
 
     model_config = SettingsConfigDict(
         env_file=".env", env_file_encoding="utf-8", extra="ignore"

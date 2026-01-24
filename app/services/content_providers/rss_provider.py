@@ -3,6 +3,7 @@ import re
 import feedparser
 import httpx
 from typing import Any, List
+from app.config import settings
 from app.models.content_schemas import ContentBundle, ContentSentence, SourceType
 from app.services.content_providers.base import BaseContentProvider
 
@@ -46,11 +47,51 @@ class RssProvider(BaseContentProvider):
         }
 
         try:
-            # Use 45s timeout (safe margin below Nginx default 60s)
-            async with httpx.AsyncClient(timeout=45.0, follow_redirects=True) as client:
-                response = await client.get(url, headers=headers)
-                response.raise_for_status()
-                content = response.content
+            proxies = settings.PROXY_URL if settings.PROXY_URL else None
+            content = None
+
+            # Attempt 1: Standard compliant request
+            try:
+                # Use 45s timeout (safe margin below Nginx default 60s)
+                async with httpx.AsyncClient(
+                    timeout=45.0, follow_redirects=True, proxy=proxies
+                ) as client:
+                    response = await client.get(url, headers=headers)
+                    response.raise_for_status()
+                    content = response.content
+            except Exception as e:
+                # Check if retryable (SSL, Timeout)
+                is_ssl_error = (
+                    "ssl" in str(e).lower() or "certificate" in str(e).lower()
+                )
+                is_conn_error = isinstance(
+                    e,
+                    (
+                        httpx.ConnectError,
+                        httpx.ReadTimeout,
+                        httpx.ConnectTimeout,
+                        httpx.NetworkError,
+                    ),
+                )
+
+                if is_ssl_error or is_conn_error:
+                    # Attempt 2: Relaxed Security
+                    try:
+                        async with httpx.AsyncClient(
+                            timeout=45.0,
+                            follow_redirects=True,
+                            verify=False,
+                            proxy=proxies,
+                        ) as client:
+                            response = await client.get(url, headers=headers)
+                            response.raise_for_status()
+                            content = response.content
+                    except Exception as e2:
+                        raise ValueError(
+                            f"Failed to fetch RSS feed {url} (after retry): {str(e2)}"
+                        )
+                else:
+                    raise e
 
             # Parse content (run in executor to avoid blocking event loop)
             loop = asyncio.get_event_loop()

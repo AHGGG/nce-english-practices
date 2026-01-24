@@ -9,6 +9,7 @@ from pydantic import BaseModel
 from typing import List, Optional
 
 from app.api.routers.auth import get_current_user_id
+from app.config import settings
 from app.core.db import AsyncSessionLocal
 from app.services.podcast_service import podcast_service
 
@@ -532,7 +533,10 @@ async def download_episode_head(
 
     # Make a HEAD request to the upstream to get Content-Length
     try:
-        async with httpx.AsyncClient(timeout=10.0, follow_redirects=True) as client:
+        proxies = settings.PROXY_URL if settings.PROXY_URL else None
+        async with httpx.AsyncClient(
+            timeout=10.0, follow_redirects=True, proxy=proxies
+        ) as client:
             head_response = await client.head(audio_url)
             content_length = head_response.headers.get("content-length", "0")
             content_type = head_response.headers.get("content-type", "audio/mpeg")
@@ -612,7 +616,8 @@ async def download_episode(
                 pass
 
     # RE-IMPLEMENTATION with efficient header forwarding
-    client = httpx.AsyncClient(timeout=None, follow_redirects=True)
+    proxies = settings.PROXY_URL if settings.PROXY_URL else None
+    client = httpx.AsyncClient(timeout=None, follow_redirects=True, proxy=proxies)
     req = client.build_request("GET", audio_url, headers=headers_to_upstream)
     r = await client.send(req, stream=True)
 

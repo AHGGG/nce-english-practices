@@ -21,6 +21,7 @@ from sqlalchemy import select, func, and_
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.config import settings
 from app.models.podcast_orm import (
     PodcastFeed,
     PodcastFeedSubscription,
@@ -56,7 +57,8 @@ class PodcastService:
         }
 
         try:
-            async with httpx.AsyncClient(timeout=15.0) as client:
+            proxies = settings.PROXY_URL if settings.PROXY_URL else None
+            async with httpx.AsyncClient(timeout=15.0, proxy=proxies) as client:
                 response = await client.get(ITUNES_SEARCH_URL, params=params)
                 response.raise_for_status()
                 data = response.json()
@@ -113,11 +115,57 @@ class PodcastService:
             "Accept": "application/rss+xml, application/xml, application/atom+xml, text/xml;q=0.9, */*;q=0.8",
         }
         try:
-            # Use 45s timeout (safe margin below Nginx default 60s)
-            async with httpx.AsyncClient(timeout=45.0, follow_redirects=True) as client:
-                response = await client.get(rss_url, headers=headers)
-                response.raise_for_status()
-                content = response.text
+            proxies = settings.PROXY_URL if settings.PROXY_URL else None
+            content = None
+
+            # Attempt 1: Standard compliant request
+            try:
+                # Use 45s timeout (safe margin below Nginx default 60s)
+                async with httpx.AsyncClient(
+                    timeout=45.0, follow_redirects=True, proxy=proxies
+                ) as client:
+                    response = await client.get(rss_url, headers=headers)
+                    response.raise_for_status()
+                    content = response.text
+            except Exception as e:
+                # Check if retryable (SSL, Timeout, or just connection issues common with proxies)
+                is_ssl_error = (
+                    "ssl" in str(e).lower() or "certificate" in str(e).lower()
+                )
+                is_conn_error = isinstance(
+                    e,
+                    (
+                        httpx.ConnectError,
+                        httpx.ReadTimeout,
+                        httpx.ConnectTimeout,
+                        httpx.NetworkError,
+                    ),
+                )
+
+                # If using proxy, network errors are common, so we retry with verify=False might not help for network,
+                # but sometimes it helps if the proxy itself has issues with strict SSL upstream.
+                # However, usually verify=False is for the target server.
+
+                if is_ssl_error or is_conn_error:
+                    logger.warning(
+                        f"Standard fetch failed for {rss_url}: {e}. Retrying with verify=False."
+                    )
+                    try:
+                        # Attempt 2: Relaxed Security
+                        async with httpx.AsyncClient(
+                            timeout=45.0,
+                            follow_redirects=True,
+                            verify=False,
+                            proxy=proxies,
+                        ) as client:
+                            response = await client.get(rss_url, headers=headers)
+                            response.raise_for_status()
+                            content = response.text
+                    except Exception as e2:
+                        logger.error(f"Fallback fetch failed for {rss_url}: {e2}")
+                        raise ValueError(f"Failed to fetch feed: {e2}")
+                else:
+                    raise ValueError(f"Failed to fetch feed: {e}")
 
             feed = feedparser.parse(content)
 
