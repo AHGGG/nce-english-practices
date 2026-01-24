@@ -46,7 +46,8 @@ class RssProvider(BaseContentProvider):
         }
 
         try:
-            async with httpx.AsyncClient(timeout=60.0, follow_redirects=True) as client:
+            # Use 45s timeout (safe margin below Nginx default 60s)
+            async with httpx.AsyncClient(timeout=45.0, follow_redirects=True) as client:
                 response = await client.get(url, headers=headers)
                 response.raise_for_status()
                 content = response.content

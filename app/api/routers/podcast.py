@@ -281,6 +281,8 @@ async def import_opml_streaming(
     # Parse OPML to get feeds list
     feeds = podcast_service.parse_opml(opml_text)
 
+    import asyncio  # Needed for wait_for
+
     async def event_generator():
         """Generate SSE events for import progress."""
         # Start event
@@ -298,7 +300,20 @@ async def import_opml_streaming(
                 yield f"data: {json.dumps({'type': 'progress', 'current': i + 1, 'total': len(feeds), 'title': title, 'rss_url': rss_url})}\n\n"
 
                 try:
-                    feed, is_new = await podcast_service.subscribe(db, user_id, rss_url)
+                    # Run subscription with heartbeat to keep Nginx connection alive
+                    # If it takes long, we send ": keep-alive" comments
+                    task = asyncio.create_task(
+                        podcast_service.subscribe(db, user_id, rss_url)
+                    )
+
+                    while not task.done():
+                        done, _ = await asyncio.wait([task], timeout=2.0)
+                        if not done:
+                            yield ": keep-alive\n\n"
+
+                    # Get result (or raise exception)
+                    feed, is_new = task.result()
+
                     if is_new:
                         imported += 1
                         yield f"data: {json.dumps({'type': 'result', 'success': True, 'title': title, 'status': 'imported'})}\n\n"

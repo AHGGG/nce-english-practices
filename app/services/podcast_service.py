@@ -113,7 +113,8 @@ class PodcastService:
             "Accept": "application/rss+xml, application/xml, application/atom+xml, text/xml;q=0.9, */*;q=0.8",
         }
         try:
-            async with httpx.AsyncClient(timeout=60.0, follow_redirects=True) as client:
+            # Use 45s timeout (safe margin below Nginx default 60s)
+            async with httpx.AsyncClient(timeout=45.0, follow_redirects=True) as client:
                 response = await client.get(rss_url, headers=headers)
                 response.raise_for_status()
                 content = response.text
@@ -456,11 +457,9 @@ class PodcastService:
 
         for feed_info in feeds:
             try:
-                feed, is_new = await self.subscribe(db, user_id, feed_info["rss_url"])
-                if is_new:
-                    imported += 1
-                else:
-                    skipped += 1
+                # We can safely discard the return value here as we just want to subscribe
+                await self.subscribe(db, user_id, feed_info["rss_url"])
+                imported += 1
             except Exception as e:
                 errors.append(
                     {
