@@ -291,6 +291,31 @@ async def import_opml_streaming(
         imported = 0
         skipped = 0
 
+        # Optimization: Pre-fetch existing subscriptions to skip DB calls for duplicates
+        # This makes re-importing identical files instant.
+        existing_urls = set()
+        all_rss_urls = [f.get("rss_url") for f in feeds if f.get("rss_url")]
+
+        if all_rss_urls:
+            async with AsyncSessionLocal() as db:
+                from sqlalchemy import select
+                from app.models.podcast_orm import PodcastFeed, PodcastFeedSubscription
+
+                # Query all RSS URLs that this user is already subscribed to
+                stmt = (
+                    select(PodcastFeed.rss_url)
+                    .join(
+                        PodcastFeedSubscription,
+                        PodcastFeedSubscription.feed_id == PodcastFeed.id,
+                    )
+                    .where(
+                        PodcastFeedSubscription.user_id == user_id,
+                        PodcastFeed.rss_url.in_(all_rss_urls),
+                    )
+                )
+                result = await db.execute(stmt)
+                existing_urls = set(result.scalars().all())
+
         async with AsyncSessionLocal() as db:
             for i, feed_info in enumerate(feeds):
                 title = feed_info.get("title", "Unknown")
@@ -298,6 +323,12 @@ async def import_opml_streaming(
 
                 # Progress event
                 yield f"data: {json.dumps({'type': 'progress', 'current': i + 1, 'total': len(feeds), 'title': title, 'rss_url': rss_url})}\n\n"
+
+                # Check cache first (Optimization)
+                if rss_url in existing_urls:
+                    skipped += 1
+                    yield f"data: {json.dumps({'type': 'result', 'success': True, 'title': title, 'status': 'skipped'})}\n\n"
+                    continue
 
                 try:
                     # Run subscription with heartbeat to keep Nginx connection alive
