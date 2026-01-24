@@ -7,7 +7,7 @@ from typing import Dict, Any
 from datetime import datetime, timedelta
 import math
 import logging
-from sqlalchemy import select, func, case, and_
+from sqlalchemy import select, func, case, and_, union_all, literal
 
 
 from app.database.core import (
@@ -217,11 +217,15 @@ async def get_daily_study_time(
                 user_local = func.timezone(user_tz, utc_aware)
                 return func.date_trunc("day", user_local)
 
+            # ⚡ OPTIMIZATION: Combine 5 grouped aggregations into ONE database round-trip using UNION ALL.
+            # Reduces latency significantly compared to sequential queries.
+
             # 1. Sentence Study by Day
             sentence_stmt = (
                 select(
                     day_trunc_tz(SentenceLearningRecord.created_at).label("day"),
-                    func.sum(SentenceLearningRecord.dwell_time_ms),
+                    func.sum(SentenceLearningRecord.dwell_time_ms).label("duration"),
+                    literal("sentence").label("type")
                 )
                 .where(
                     and_(
@@ -230,18 +234,14 @@ async def get_daily_study_time(
                     )
                 )
                 .group_by("day")
-                .order_by("day")
             )
-            sentence_res = await session.execute(sentence_stmt)
-            sentence_days = {
-                row[0].date().isoformat(): (row[1] or 0) // 1000 for row in sentence_res
-            }
 
             # 2. Reading by Day
             reading_stmt = (
                 select(
                     day_trunc_tz(ReadingSession.started_at).label("day"),
-                    func.sum(ReadingSession.total_active_seconds),
+                    func.sum(ReadingSession.total_active_seconds).label("duration"),
+                    literal("reading").label("type")
                 )
                 .where(
                     and_(
@@ -250,18 +250,14 @@ async def get_daily_study_time(
                     )
                 )
                 .group_by("day")
-                .order_by("day")
             )
-            reading_res = await session.execute(reading_stmt)
-            reading_days = {
-                row[0].date().isoformat(): row[1] or 0 for row in reading_res
-            }
 
             # 3. Voice by Day
             voice_stmt = (
                 select(
                     day_trunc_tz(VoiceSession.started_at).label("day"),
-                    func.sum(VoiceSession.total_active_seconds),
+                    func.sum(VoiceSession.total_active_seconds).label("duration"),
+                    literal("voice").label("type")
                 )
                 .where(
                     and_(
@@ -270,16 +266,14 @@ async def get_daily_study_time(
                     )
                 )
                 .group_by("day")
-                .order_by("day")
             )
-            voice_res = await session.execute(voice_stmt)
-            voice_days = {row[0].date().isoformat(): row[1] or 0 for row in voice_res}
 
             # 4. Review by Day
             review_stmt = (
                 select(
                     day_trunc_tz(ReviewLog.reviewed_at).label("day"),
-                    func.sum(ReviewLog.duration_ms),
+                    func.sum(ReviewLog.duration_ms).label("duration"),
+                    literal("review").label("type")
                 )
                 .join(ReviewItem)
                 .where(
@@ -289,18 +283,14 @@ async def get_daily_study_time(
                     )
                 )
                 .group_by("day")
-                .order_by("day")
             )
-            review_res = await session.execute(review_stmt)
-            review_days = {
-                row[0].date().isoformat(): (row[1] or 0) // 1000 for row in review_res
-            }
 
             # 5. Podcast Listening by Day
             podcast_stmt = (
                 select(
                     day_trunc_tz(PodcastListeningSession.started_at).label("day"),
-                    func.sum(PodcastListeningSession.total_listened_seconds),
+                    func.sum(PodcastListeningSession.total_listened_seconds).label("duration"),
+                    literal("podcast").label("type")
                 )
                 .where(
                     and_(
@@ -309,42 +299,70 @@ async def get_daily_study_time(
                     )
                 )
                 .group_by("day")
-                .order_by("day")
-            )
-            podcast_res = await session.execute(podcast_stmt)
-            podcast_days = {row[0].date().isoformat(): row[1] or 0 for row in podcast_res}
-
-            # Merge all days
-            all_dates = sorted(
-                list(
-                    set(
-                        list(sentence_days.keys())
-                        + list(reading_days.keys())
-                        + list(voice_days.keys())
-                        + list(review_days.keys())
-                        + list(podcast_days.keys())
-                    )
-                )
             )
 
-            daily_data = []
-            for date_str in all_dates:
-                s_sec = sentence_days.get(date_str, 0)
-                r_sec = reading_days.get(date_str, 0)
-                v_sec = voice_days.get(date_str, 0)
-                rv_sec = review_days.get(date_str, 0)
-                p_sec = podcast_days.get(date_str, 0)
-                daily_data.append(
-                    {
-                        "date": date_str,
-                        "sentence_study": s_sec,
-                        "reading": r_sec,
-                        "voice": v_sec,
-                        "review": rv_sec,
-                        "podcast": p_sec,
-                        "total": s_sec + r_sec + v_sec + rv_sec + p_sec,
+            # Combine all queries
+            combined_stmt = union_all(
+                sentence_stmt,
+                reading_stmt,
+                voice_stmt,
+                review_stmt,
+                podcast_stmt
+            )
+
+            result = await session.execute(combined_stmt)
+
+            # Aggregate results in Python
+            # Structure: { date_str: { 'sentence_study': 0, 'reading': 0, ... } }
+            aggregated = {}
+
+            for row in result:
+                # row is (day, duration, type)
+                day_val = row[0]
+                duration = row[1] or 0
+                record_type = row[2]
+
+                date_str = day_val.date().isoformat()
+
+                if date_str not in aggregated:
+                    aggregated[date_str] = {
+                        "sentence_study": 0,
+                        "reading": 0,
+                        "voice": 0,
+                        "review": 0,
+                        "podcast": 0
                     }
-                )
+
+                # Handle ms vs seconds conversion
+                seconds = 0
+                if record_type in ['sentence', 'review']:
+                    seconds = duration // 1000
+                else:
+                    seconds = duration
+
+                # Map record_type to dictionary key
+                key_map = {
+                    'sentence': 'sentence_study',
+                    'reading': 'reading',
+                    'voice': 'voice',
+                    'review': 'review',
+                    'podcast': 'podcast'
+                }
+
+                key = key_map.get(record_type)
+                if key:
+                    aggregated[date_str][key] += seconds
+
+            # Format for response
+            daily_data = []
+            for date_str in sorted(aggregated.keys()):
+                day_stats = aggregated[date_str]
+                total = sum(day_stats.values())
+                daily_data.append({
+                    "date": date_str,
+                    **day_stats,
+                    "total": total
+                })
 
             return {
                 "daily": daily_data,
