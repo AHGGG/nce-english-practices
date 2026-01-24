@@ -9,10 +9,47 @@ const BASE_URL = '/api/podcast';
 /**
  * Search podcasts via iTunes.
  */
-export async function searchPodcasts(query, { limit = 20, country = 'US' } = {}) {
+export async function searchPodcasts(query, { limit = 20, country = 'US', category = null } = {}) {
   const params = new URLSearchParams({ q: query, limit, country });
+  if (category) params.append('category', category);
   const response = await authFetch(`${BASE_URL}/search?${params}`);
   if (!response.ok) throw new Error('Search failed');
+  return response.json();
+}
+
+/**
+ * Get trending podcasts.
+ */
+export async function getTrendingPodcasts({ limit = 20, country = 'US', category = null } = {}) {
+  const params = new URLSearchParams({ limit, country });
+  if (category) params.append('category', category);
+  const response = await authFetch(`${BASE_URL}/trending?${params}`);
+  if (!response.ok) throw new Error('Failed to get trending podcasts');
+  return response.json();
+}
+
+/**
+ * Get podcast categories.
+ */
+export async function getCategories() {
+  const response = await authFetch(`${BASE_URL}/categories`);
+  if (!response.ok) throw new Error('Failed to get categories');
+  return response.json();
+}
+
+/**
+ * Preview a podcast by RSS URL (without subscribing).
+ */
+export async function previewPodcast(rssUrl) {
+  const response = await authFetch(`${BASE_URL}/preview`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ rss_url: rssUrl }),
+  });
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.detail || 'Preview failed');
+  }
   return response.json();
 }
 

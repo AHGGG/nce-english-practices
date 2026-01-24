@@ -42,11 +42,17 @@ class PodcastService:
     # --- iTunes Search ---
 
     async def search_itunes(
-        self, query: str, limit: int = 20, country: str = "US"
+        self,
+        db: AsyncSession,
+        query: str,
+        user_id: Optional[str] = None,
+        limit: int = 20,
+        country: str = "US",
     ) -> List[Dict[str, Any]]:
         """
         Search podcasts via iTunes Search API.
-        Returns a list of podcast results with rss_url, title, author, artwork.
+        Returns a list of podcast results with rss_url, title, author, artwork,
+        AND is_subscribed status if user_id and db are provided.
         """
         params = {
             "term": query,
@@ -64,19 +70,47 @@ class PodcastService:
                 data = response.json()
 
             results = []
+            rss_urls = []
+
             for item in data.get("results", []):
+                rss_url = item.get("feedUrl")
                 results.append(
                     {
                         "itunes_id": item.get("collectionId"),
                         "title": item.get("collectionName"),
                         "author": item.get("artistName"),
-                        "rss_url": item.get("feedUrl"),
+                        "rss_url": rss_url,
                         "artwork_url": item.get("artworkUrl600")
                         or item.get("artworkUrl100"),
                         "genre": item.get("primaryGenreName"),
                         "episode_count": item.get("trackCount"),
+                        "is_subscribed": False,  # Default
                     }
                 )
+                if rss_url:
+                    rss_urls.append(rss_url)
+
+            # Enrich with subscription status if user_id is provided
+            if user_id and rss_urls and db:
+                # Find which of these RSS URLs are subscribed by the user
+                stmt = (
+                    select(PodcastFeed.rss_url)
+                    .join(
+                        PodcastFeedSubscription,
+                        PodcastFeedSubscription.feed_id == PodcastFeed.id,
+                    )
+                    .where(
+                        PodcastFeedSubscription.user_id == user_id,
+                        PodcastFeed.rss_url.in_(rss_urls),
+                    )
+                )
+                result = await db.execute(stmt)
+                subscribed_urls = set(result.scalars().all())
+
+                for r in results:
+                    if r.get("rss_url") in subscribed_urls:
+                        r["is_subscribed"] = True
+
             return results
 
         except Exception as e:
@@ -534,38 +568,37 @@ class PodcastService:
     # --- Trending / Top Charts ---
 
     async def get_trending_podcasts(
-        self, category_id: Optional[str] = None, limit: int = 20
+        self,
+        db: AsyncSession,
+        user_id: Optional[str] = None,
+        category_id: Optional[str] = None,
+        limit: int = 20,
     ) -> List[Dict[str, Any]]:
         """
         Get trending podcasts from iTunes Top Charts.
         Optional category_id (iTunes genre ID).
+        Enriches with is_subscribed status.
         """
         # Base URL for iTunes RSS Generator
         # https://rss.applemarketingtools.com/
         # api/v2/us/podcasts/top/10/podcasts.json
 
+        # Note: The domain redirects to rss.marketingtools.apple.com
+        # Using query param ?genre=ID seems to be the reliable way now (v2)
         url = f"https://rss.applemarketingtools.com/api/v2/us/podcasts/top/{limit}/podcasts.json"
 
-        # If category is provided, the URL structure might be different or we need to filter
-        # Actually iTunes RSS Generator allows genre:
-        # https://rss.applemarketingtools.com/api/v2/us/podcasts/top/10/podcasts.json?genre=1310 (Music)
-        # Wait, the official API v2 path with genre is:
-        # https://rss.applemarketingtools.com/api/v2/us/podcasts/top/{limit}/{genre}/podcasts.json
-        # Genre needs to be the ID (e.g., 1301 for Arts, 1318 for Technology)
-        # But user might pass "Technology". We need a mapping or just pass ID.
-        # For simplicity, let's assume category_id is passed if we want filtering,
-        # but user interface might send "Technology".
-        # iTunes Search API "genreId" is what we need.
-
-        if category_id:
-            # Just append it if it's numeric, otherwise ignore for now as we don't have mapping
-            if str(category_id).isdigit():
-                url = f"https://rss.applemarketingtools.com/api/v2/us/podcasts/top/{limit}/podcasts/{category_id}.json"
+        params = {}
+        if category_id and str(category_id).isdigit():
+            params["genre"] = category_id
 
         try:
             proxies = settings.PROXY_URL if settings.PROXY_URL else None
-            async with httpx.AsyncClient(timeout=10.0, proxy=proxies) as client:
-                response = await client.get(url)
+            # Need follow_redirects=True because applemarketingtools.com -> marketingtools.apple.com
+            async with httpx.AsyncClient(
+                timeout=10.0, proxy=proxies, follow_redirects=True
+            ) as client:
+                # httpx merges params into the URL
+                response = await client.get(url, params=params)
                 response.raise_for_status()
                 data = response.json()
 
@@ -590,33 +623,57 @@ class PodcastService:
                         # But for display we are fine.
                         "artwork_url": item.get("artworkUrl100"),
                         "genre": primary_genre,
+                        "is_subscribed": False,
                     }
                 )
 
-            # Note: Missing RSS URL is a problem if we want to "Preview".
-            # We can do a second lookup or just let the frontend call /search?term=ID to get it?
-            # Or backend can do batch lookup?
-            # Actually, `lookup` API is better: https://itunes.apple.com/lookup?id=123,456
-
+            # Lookup RSS URLs (iTunes Top Charts often miss feedUrl)
             if results:
                 ids = [r["itunes_id"] for r in results if r.get("itunes_id")]
                 if ids:
                     ids_str = ",".join(ids)
                     lookup_url = f"https://itunes.apple.com/lookup?id={ids_str}"
-                    async with httpx.AsyncClient(timeout=10.0, proxy=proxies) as client:
-                        l_res = await client.get(lookup_url)
-                        if l_res.status_code == 200:
-                            l_data = l_res.json()
-                            # Create map id -> feedUrl
-                            id_map = {
-                                str(i.get("collectionId")): i.get("feedUrl")
-                                for i in l_data.get("results", [])
-                            }
+                    try:
+                        async with httpx.AsyncClient(
+                            timeout=10.0, proxy=proxies
+                        ) as client:
+                            l_res = await client.get(lookup_url)
+                            if l_res.status_code == 200:
+                                l_data = l_res.json()
+                                # Create map id -> feedUrl
+                                id_map = {
+                                    str(i.get("collectionId")): i.get("feedUrl")
+                                    for i in l_data.get("results", [])
+                                }
 
-                            # Update results
-                            for r in results:
-                                if r.get("itunes_id") in id_map:
-                                    r["rss_url"] = id_map[r.get("itunes_id")]
+                                # Update results
+                                for r in results:
+                                    if r.get("itunes_id") in id_map:
+                                        r["rss_url"] = id_map[r.get("itunes_id")]
+                    except Exception as e:
+                        logger.warning(f"Failed to lookup feed URLs for trending: {e}")
+
+            # Enrich with subscription status if user_id is provided
+            if user_id and db and results:
+                rss_urls = [r["rss_url"] for r in results if r.get("rss_url")]
+                if rss_urls:
+                    stmt = (
+                        select(PodcastFeed.rss_url)
+                        .join(
+                            PodcastFeedSubscription,
+                            PodcastFeedSubscription.feed_id == PodcastFeed.id,
+                        )
+                        .where(
+                            PodcastFeedSubscription.user_id == user_id,
+                            PodcastFeed.rss_url.in_(rss_urls),
+                        )
+                    )
+                    result = await db.execute(stmt)
+                    subscribed_urls = set(result.scalars().all())
+
+                    for r in results:
+                        if r.get("rss_url") in subscribed_urls:
+                            r["is_subscribed"] = True
 
             return results
 

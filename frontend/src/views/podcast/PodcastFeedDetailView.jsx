@@ -8,7 +8,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import {
     ArrowLeft, Play, Pause, RefreshCw, Trash2, Loader2,
     Clock, Headphones, Rss, ExternalLink, Download,
-    CheckCircle2, AlertCircle, CloudOff, HardDrive, Info, Check
+    CheckCircle2, AlertCircle, CloudOff, HardDrive, Info, Check, Plus
 } from 'lucide-react';
 import * as podcastApi from '../../api/podcast';
 import { authFetch } from '../../api/auth';
@@ -50,6 +50,7 @@ export default function PodcastFeedDetailView() {
     const [data, setData] = useState(null);
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
+    const [subscribing, setSubscribing] = useState(false);
     const [error, setError] = useState(null);
 
     // Confirmation Dialog State
@@ -97,6 +98,20 @@ export default function PodcastFeedDetailView() {
             addToast('Refresh failed: ' + e.message, 'error');
         } finally {
             setRefreshing(false);
+        }
+    }
+
+    async function handleSubscribe() {
+        try {
+            setSubscribing(true);
+            await podcastApi.subscribeToPodcast(data.feed.rss_url);
+            addToast('Subscribed successfully', 'success');
+            // Refresh data to update is_subscribed status
+            loadFeed();
+        } catch (e) {
+            addToast('Subscribe failed: ' + e.message, 'error');
+        } finally {
+            setSubscribing(false);
         }
     }
 
@@ -454,13 +469,24 @@ export default function PodcastFeedDetailView() {
                                 </a>
                             )}
 
-                            <button
-                                onClick={requestUnsubscribe}
-                                className="flex items-center gap-2 px-4 py-2 text-sm text-red-400 hover:bg-red-500/10 rounded-lg transition-colors border border-transparent hover:border-red-500/30"
-                            >
-                                <Trash2 className="w-4 h-4" />
-                                Unsubscribe
-                            </button>
+                            {data.is_subscribed ? (
+                                <button
+                                    onClick={requestUnsubscribe}
+                                    className="flex items-center gap-2 px-4 py-2 text-sm text-red-400 hover:bg-red-500/10 rounded-lg transition-colors border border-transparent hover:border-red-500/30"
+                                >
+                                    <Trash2 className="w-4 h-4" />
+                                    Unsubscribe
+                                </button>
+                            ) : (
+                                <button
+                                    onClick={handleSubscribe}
+                                    disabled={subscribing}
+                                    className="flex items-center gap-2 px-4 py-2 text-sm bg-accent-primary text-black font-medium rounded-lg hover:shadow-lg hover:shadow-accent-primary/20 transition-colors"
+                                >
+                                    {subscribing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
+                                    Subscribe
+                                </button>
+                            )}
                         </div>
                     </div>
                 </div>

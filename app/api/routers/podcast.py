@@ -24,13 +24,19 @@ router = APIRouter(prefix="/api/podcast", tags=["podcast"])
 
 
 class ItunesSearchResult(BaseModel):
-    itunes_id: Optional[int]
+    itunes_id: Optional[int] = None
     title: str
-    author: Optional[str]
-    rss_url: Optional[str]
-    artwork_url: Optional[str]
-    genre: Optional[str]
-    episode_count: Optional[int]
+    author: Optional[str] = None
+    rss_url: Optional[str] = None
+    artwork_url: Optional[str] = None
+    genre: Optional[str] = None
+    episode_count: Optional[int] = None
+    is_subscribed: bool = False
+
+
+class Category(BaseModel):
+    id: str
+    name: str
 
 
 class SubscribeRequest(BaseModel):
@@ -184,7 +190,72 @@ async def _proxy_image(url: str, filename: str = "image.jpg"):
     )
 
 
+# --- Signing Helper ---
+
+
+def sign_url(url: str) -> str:
+    """Sign a URL with HMAC-SHA256 for secure proxying."""
+    import hmac
+    import hashlib
+    import base64
+
+    if not url:
+        return ""
+
+    secret = settings.SECRET_KEY.encode("utf-8")
+    msg = url.encode("utf-8")
+    signature = hmac.new(secret, msg, hashlib.sha256).hexdigest()
+
+    # URL-safe base64 encoding of the URL itself
+    encoded_url = base64.urlsafe_b64encode(msg).decode("utf-8")
+
+    return f"{encoded_url}.{signature}"
+
+
+def verify_signed_url(signed_token: str) -> Optional[str]:
+    """Verify and decode a signed URL token."""
+    import hmac
+    import hashlib
+    import base64
+
+    try:
+        parts = signed_token.split(".")
+        if len(parts) != 2:
+            return None
+
+        encoded_url, signature = parts
+
+        # Decode URL
+        url_bytes = base64.urlsafe_b64decode(encoded_url)
+        url = url_bytes.decode("utf-8")
+
+        # Verify signature
+        secret = settings.SECRET_KEY.encode("utf-8")
+        expected_signature = hmac.new(secret, url_bytes, hashlib.sha256).hexdigest()
+
+        if not hmac.compare_digest(signature, expected_signature):
+            return None
+
+        return url
+    except Exception:
+        return None
+
+
 # --- Endpoints ---
+
+
+@router.get("/proxy/image")
+async def proxy_external_image(token: str):
+    """
+    Proxy an arbitrary external image URL using a signed token.
+    This allows frontend to load images from third-party domains (iTunes, etc)
+    without CORS/Mixed Content issues, while preventing open relay abuse.
+    """
+    url = verify_signed_url(token)
+    if not url:
+        raise HTTPException(status_code=400, detail="Invalid or expired token")
+
+    return await _proxy_image(url, filename="artwork.jpg")
 
 
 @router.get("/feed/{feed_id}/image")
@@ -229,47 +300,117 @@ async def search_podcasts(
     q: str,
     limit: int = 20,
     country: str = "US",
+    user_id: str = Depends(get_current_user_id),
 ) -> List[ItunesSearchResult]:
-    """Search podcasts via iTunes."""
-    results = await podcast_service.search_itunes(q, limit=limit, country=country)
-    return [ItunesSearchResult(**r) for r in results]
+    """
+    Search podcasts via iTunes.
+    Includes subscription status for the current user.
+    """
+    async with AsyncSessionLocal() as db:
+        results = await podcast_service.search_itunes(
+            db, q, user_id, limit=limit, country=country
+        )
+
+        # Rewrite artwork URLs to use signed proxy
+        for r in results:
+            if r.get("artwork_url"):
+                token = sign_url(r["artwork_url"])
+                r["artwork_url"] = f"/api/podcast/proxy/image?token={token}"
+
+        return [ItunesSearchResult(**r) for r in results]
+
+
+@router.get("/categories")
+async def get_categories() -> List[Category]:
+    """Get list of iTunes podcast categories for exploration."""
+    return [
+        Category(id="1301", name="Arts"),
+        Category(id="1303", name="Comedy"),
+        Category(id="1304", name="Education"),
+        Category(id="1305", name="Kids & Family"),
+        Category(id="1309", name="TV & Film"),
+        Category(id="1310", name="Music"),
+        Category(id="1311", name="News"),
+        Category(id="1314", name="Religion & Spirituality"),
+        Category(id="1315", name="Science"),
+        Category(id="1316", name="Sports"),
+        Category(id="1318", name="Technology"),
+        Category(id="1321", name="Business"),
+        Category(id="1323", name="Games"),
+        Category(id="1324", name="Society & Culture"),
+        Category(id="1325", name="Government"),
+        Category(id="1482", name="Health & Fitness"),
+        Category(id="1483", name="Fiction"),
+        Category(id="1484", name="History"),
+        Category(id="1486", name="True Crime"),
+        Category(id="1487", name="Leisure"),
+        Category(id="1488", name="Science Fiction"),
+        Category(id="1489", name="Drama"),
+    ]
 
 
 @router.post("/preview")
 async def preview_podcast(
     req: PreviewRequest,
     user_id: str = Depends(get_current_user_id),
-) -> FeedResponse:
+) -> FeedDetailResponse:
     """
     Preview a podcast by RSS URL.
     Fetches and parses the feed, stores it in DB (for caching/proxy),
-    but does NOT subscribe the user.
+    and returns full details including episodes.
+    Does NOT subscribe the user.
     """
     async with AsyncSessionLocal() as db:
         try:
+            # Get or create feed (parses and saves episodes if new)
             feed = await podcast_service.preview_feed(db, req.rss_url)
 
-            # Count episodes
-            from sqlalchemy import select, func
-            from app.models.podcast_orm import PodcastEpisode
+            # Get full details (reuse get_feed_with_episodes logic)
+            # This handles getting episodes with user state (if any)
+            data = await podcast_service.get_feed_with_episodes(db, user_id, feed.id)
 
-            count_stmt = select(func.count(PodcastEpisode.id)).where(
-                PodcastEpisode.feed_id == feed.id
-            )
-            count_result = await db.execute(count_stmt)
-            episode_count = count_result.scalar_one()
+            if not data:
+                # Should not happen as we just created it
+                raise HTTPException(
+                    status_code=404, detail="Feed not found after creation"
+                )
 
-            return FeedResponse(
-                id=feed.id,
-                title=feed.title,
-                description=feed.description,
-                author=feed.author,
-                image_url=f"/api/podcast/feed/{feed.id}/image"
-                if feed.image_url
-                else None,
-                rss_url=feed.rss_url,
-                episode_count=episode_count,
-                category=feed.category,
+            feed_obj = data["feed"]
+            episodes = data["episodes"]
+            is_subscribed = data["is_subscribed"]
+
+            return FeedDetailResponse(
+                feed=FeedResponse(
+                    id=feed_obj.id,
+                    title=feed_obj.title,
+                    description=feed_obj.description,
+                    author=feed_obj.author,
+                    image_url=f"/api/podcast/feed/{feed_obj.id}/image"
+                    if feed_obj.image_url
+                    else None,
+                    rss_url=feed_obj.rss_url,
+                    episode_count=len(episodes),
+                    category=feed_obj.category,
+                ),
+                episodes=[
+                    EpisodeResponse(
+                        id=ep["id"],
+                        guid=ep["guid"],
+                        title=ep["title"],
+                        description=ep["description"],
+                        audio_url=ep["audio_url"],
+                        duration_seconds=ep["duration_seconds"],
+                        image_url=f"/api/podcast/episode/{ep['id']}/image"
+                        if ep.get("image_url")
+                        else None,
+                        published_at=ep["published_at"],
+                        transcript_status=ep["transcript_status"],
+                        current_position=ep["current_position"],
+                        is_finished=ep["is_finished"],
+                    )
+                    for ep in episodes
+                ],
+                is_subscribed=is_subscribed,
             )
         except ValueError as e:
             raise HTTPException(status_code=400, detail=str(e))
@@ -283,9 +424,20 @@ async def get_trending_podcasts(
 ) -> List[ItunesSearchResult]:
     """
     Get trending podcasts from iTunes Top Charts.
+    Includes subscription status for the current user.
     """
-    results = await podcast_service.get_trending_podcasts(category, limit=limit)
-    return [ItunesSearchResult(**r) for r in results]
+    async with AsyncSessionLocal() as db:
+        results = await podcast_service.get_trending_podcasts(
+            db, user_id, category, limit=limit
+        )
+
+        # Rewrite artwork URLs to use signed proxy
+        for r in results:
+            if r.get("artwork_url"):
+                token = sign_url(r["artwork_url"])
+                r["artwork_url"] = f"/api/podcast/proxy/image?token={token}"
+
+        return [ItunesSearchResult(**r) for r in results]
 
 
 @router.post("/subscribe")

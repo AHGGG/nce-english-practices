@@ -3,7 +3,8 @@
  * Enhanced with PodcastLayout wrapper.
  */
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Search, Plus, Check, Loader2, Headphones, Info } from 'lucide-react';
 import * as podcastApi from '../../api/podcast';
 import PodcastLayout from '../../components/podcast/PodcastLayout';
@@ -14,16 +15,52 @@ export default function PodcastSearchView() {
     const [results, setResults] = useState([]);
     const [loading, setLoading] = useState(false);
     const [subscribing, setSubscribing] = useState({});
-    const [subscribed, setSubscribed] = useState({});
+    const [subscribed, setSubscribed] = useState({}); // Local override for search results
+    const [categories, setCategories] = useState([]);
+    const [selectedCategory, setSelectedCategory] = useState(null);
+    const [trending, setTrending] = useState([]);
+    const [previewing, setPreviewing] = useState(null); // iTunes ID of podcast being previewed
     const { addToast } = useToast();
+    const navigate = useNavigate();
+
+    // Load categories and trending on mount
+    useEffect(() => {
+        podcastApi.getCategories().then(setCategories).catch(console.error);
+        loadTrending();
+    }, []);
+
+    // Reload trending when category changes
+    useEffect(() => {
+        loadTrending();
+    }, [selectedCategory]);
+
+    async function loadTrending() {
+        try {
+            setLoading(true);
+            const data = await podcastApi.getTrendingPodcasts({ 
+                category: selectedCategory?.id 
+            });
+            setTrending(data);
+        } catch (err) {
+            console.error('Failed to load trending:', err);
+        } finally {
+            setLoading(false);
+        }
+    }
 
     async function handleSearch(e) {
         e.preventDefault();
-        if (!query.trim()) return;
+        // If query is empty, just load trending (already done via effect if we clear query)
+        if (!query.trim()) {
+            loadTrending();
+            return;
+        }
 
         try {
             setLoading(true);
-            const data = await podcastApi.searchPodcasts(query);
+            const data = await podcastApi.searchPodcasts(query, {
+                category: selectedCategory?.id
+            });
             setResults(data);
         } catch (err) {
             console.error('Search failed:', err);
@@ -32,7 +69,8 @@ export default function PodcastSearchView() {
         }
     }
 
-    async function handleSubscribe(podcast) {
+    async function handleSubscribe(e, podcast) {
+        e.stopPropagation(); // Prevent preview click
         if (!podcast.rss_url || subscribing[podcast.itunes_id]) return;
 
         try {
@@ -46,6 +84,30 @@ export default function PodcastSearchView() {
             setSubscribing(prev => ({ ...prev, [podcast.itunes_id]: false }));
         }
     }
+
+    async function handlePreview(podcast) {
+        if (!podcast.rss_url) {
+            addToast('Cannot preview this podcast (missing RSS)', 'error');
+            return;
+        }
+        
+        try {
+            setPreviewing(podcast.itunes_id);
+            // Call preview API to get/create feed and get ID
+            const result = await podcastApi.previewPodcast(podcast.rss_url);
+            // Result is FeedDetailResponse -> feed.id
+            navigate(`/podcast/feed/${result.feed.id}`);
+        } catch (err) {
+            console.error(err);
+            addToast('Preview failed: ' + err.message, 'error');
+        } finally {
+            setPreviewing(null);
+        }
+    }
+
+    // Determine which list to show
+    const displayList = query.trim() ? results : trending;
+    const isTrending = !query.trim();
 
     return (
         <PodcastLayout title="Search">
@@ -71,97 +133,117 @@ export default function PodcastSearchView() {
                     </button>
                 </form>
 
-                {/* Results */}
-                {results.length > 0 && (
-                    <div className="space-y-3">
-                        <p className="text-sm text-text-muted">{results.length} results</p>
-
-                        {results.map((podcast) => (
-                            <div
-                                key={podcast.itunes_id}
-                                className="flex items-center gap-4 p-4 bg-bg-surface border border-border rounded-xl hover:border-accent-primary/30 transition-colors"
+                {/* Categories */}
+                {categories.length > 0 && (
+                    <div className="flex gap-2 overflow-x-auto pb-2 custom-scrollbar">
+                        <button
+                            onClick={() => setSelectedCategory(null)}
+                            className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${
+                                !selectedCategory
+                                    ? 'bg-accent-primary text-black'
+                                    : 'bg-bg-surface border border-border text-text-muted hover:text-text-primary hover:border-text-primary/30'
+                            }`}
+                        >
+                            All
+                        </button>
+                        {categories.map(cat => (
+                            <button
+                                key={cat.id}
+                                onClick={() => setSelectedCategory(cat)}
+                                className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${
+                                    selectedCategory?.id === cat.id
+                                        ? 'bg-accent-primary text-black'
+                                        : 'bg-bg-surface border border-border text-text-muted hover:text-text-primary hover:border-text-primary/30'
+                                }`}
                             >
-                                {podcast.artwork_url ? (
-                                    <img
-                                        src={podcast.artwork_url}
-                                        alt=""
-                                        className="w-20 h-20 rounded-lg object-cover flex-shrink-0 border border-border"
-                                    />
-                                ) : (
-                                    <div className="w-20 h-20 rounded-lg bg-bg-elevated flex items-center justify-center flex-shrink-0 border border-border">
-                                        <Headphones className="w-8 h-8 text-text-muted" />
-                                    </div>
-                                )}
-
-                                <div className="flex-1 min-w-0">
-                                    <h3 className="font-medium text-text-primary truncate">
-                                        {podcast.title}
-                                    </h3>
-                                    <p className="text-sm text-text-muted truncate">
-                                        {podcast.author}
-                                    </p>
-                                    <div className="flex items-center gap-3 mt-1">
-                                        <span className="text-xs text-accent-primary/70 font-mono">
-                                            {podcast.genre}
-                                        </span>
-                                        <span
-                                            className="flex items-center gap-1 text-xs text-text-muted group/eps cursor-help"
-                                            title="This is the iTunes total count. RSS feeds often only provide recent episodes."
-                                        >
-                                            {podcast.episode_count || 0} episodes
-                                            <Info className="w-3 h-3 opacity-0 group-hover/eps:opacity-60 transition-opacity" />
-                                        </span>
-                                    </div>
-                                </div>
-
-                                <button
-                                    onClick={() => handleSubscribe(podcast)}
-                                    disabled={!podcast.rss_url || subscribing[podcast.itunes_id] || subscribed[podcast.itunes_id]}
-                                    className={`flex items-center gap-2 px-5 py-2.5 rounded-lg font-medium transition-all ${subscribed[podcast.itunes_id]
-                                        ? 'bg-accent-success/20 text-accent-success border border-accent-success/30'
-                                        : 'bg-gradient-to-r from-accent-primary to-accent-secondary text-black hover:shadow-lg hover:shadow-accent-primary/20'
-                                        } disabled:opacity-50`}
-                                >
-                                    {subscribing[podcast.itunes_id] ? (
-                                        <Loader2 className="w-4 h-4 animate-spin" />
-                                    ) : subscribed[podcast.itunes_id] ? (
-                                        <>
-                                            <Check className="w-4 h-4" />
-                                            Added
-                                        </>
-                                    ) : (
-                                        <>
-                                            <Plus className="w-4 h-4" />
-                                            Add
-                                        </>
-                                    )}
-                                </button>
-                            </div>
+                                {cat.name}
+                            </button>
                         ))}
                     </div>
                 )}
 
-                {/* Empty state */}
-                {results.length === 0 && query && !loading && (
-                    <div className="text-center py-12">
-                        <p className="text-text-muted">No results found for "{query}"</p>
-                    </div>
-                )}
+                {/* Results / Trending */}
+                <div className="space-y-3">
+                    {loading ? (
+                        <div className="py-12 text-center">
+                            <Loader2 className="w-8 h-8 animate-spin text-accent-primary mx-auto" />
+                        </div>
+                    ) : displayList.length > 0 ? (
+                        <>
+                            <h2 className="text-lg font-bold font-serif text-text-primary">
+                                {isTrending ? (selectedCategory ? `Trending in ${selectedCategory.name}` : 'Trending Podcasts') : 'Search Results'}
+                            </h2>
+                            {displayList.map((podcast) => (
+                                <div
+                                    key={podcast.itunes_id}
+                                    onClick={() => handlePreview(podcast)}
+                                    className="group flex items-center gap-4 p-4 bg-bg-surface border border-border rounded-xl hover:border-accent-primary/30 transition-colors cursor-pointer"
+                                >
+                                    {podcast.artwork_url ? (
+                                        <img
+                                            src={podcast.artwork_url}
+                                            alt=""
+                                            className="w-20 h-20 rounded-lg object-cover flex-shrink-0 border border-border"
+                                        />
+                                    ) : (
+                                        <div className="w-20 h-20 rounded-lg bg-bg-elevated flex items-center justify-center flex-shrink-0 border border-border">
+                                            <Headphones className="w-8 h-8 text-text-muted" />
+                                        </div>
+                                    )}
 
-                {/* Initial state */}
-                {results.length === 0 && !query && !loading && (
-                    <div className="text-center py-16 space-y-4">
-                        <div className="inline-flex p-6 bg-gradient-to-br from-accent-primary/10 to-accent-secondary/10 rounded-2xl">
-                            <Search className="w-12 h-12 text-accent-primary" />
-                        </div>
-                        <div className="space-y-2">
-                            <h3 className="text-lg font-medium text-text-primary">Find podcasts</h3>
-                            <p className="text-text-muted max-w-sm mx-auto">
-                                Search for podcasts by name, topic, or host
-                            </p>
-                        </div>
-                    </div>
-                )}
+                                    <div className="flex-1 min-w-0">
+                                        <h3 className="font-medium text-text-primary truncate group-hover:text-accent-primary transition-colors">
+                                            {podcast.title}
+                                        </h3>
+                                        <p className="text-sm text-text-muted truncate">
+                                            {podcast.author}
+                                        </p>
+                                        <div className="flex items-center gap-3 mt-1">
+                                            <span className="text-xs text-accent-primary/70 font-mono">
+                                                {podcast.genre}
+                                            </span>
+                                            {podcast.episode_count > 0 && (
+                                                <span className="text-xs text-text-muted">
+                                                    {podcast.episode_count} eps
+                                                </span>
+                                            )}
+                                        </div>
+                                    </div>
+
+                                    <button
+                                        onClick={(e) => handleSubscribe(e, podcast)}
+                                        disabled={!podcast.rss_url || subscribing[podcast.itunes_id] || subscribed[podcast.itunes_id] || podcast.is_subscribed}
+                                        className={`flex items-center gap-2 px-5 py-2.5 rounded-lg font-medium transition-all ${
+                                            subscribed[podcast.itunes_id] || podcast.is_subscribed
+                                            ? 'bg-accent-success/20 text-accent-success border border-accent-success/30 cursor-default'
+                                            : 'bg-gradient-to-r from-accent-primary to-accent-secondary text-black hover:shadow-lg hover:shadow-accent-primary/20'
+                                        } disabled:opacity-50`}
+                                    >
+                                        {subscribing[podcast.itunes_id] || previewing === podcast.itunes_id ? (
+                                            <Loader2 className="w-4 h-4 animate-spin" />
+                                        ) : subscribed[podcast.itunes_id] || podcast.is_subscribed ? (
+                                            <>
+                                                <Check className="w-4 h-4" />
+                                                Added
+                                            </>
+                                        ) : (
+                                            <>
+                                                <Plus className="w-4 h-4" />
+                                                Add
+                                            </>
+                                        )}
+                                    </button>
+                                </div>
+                            ))}
+                        </>
+                    ) : (
+                        query && (
+                            <div className="text-center py-12">
+                                <p className="text-text-muted">No results found for "{query}"</p>
+                            </div>
+                        )
+                    )}
+                </div>
             </div>
         </PodcastLayout>
     );
