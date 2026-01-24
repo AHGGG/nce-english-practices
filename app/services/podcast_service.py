@@ -335,19 +335,101 @@ class PodcastService:
 
     async def get_subscriptions(
         self, db: AsyncSession, user_id: str
-    ) -> List[PodcastFeed]:
-        """Get all feeds that user is subscribed to."""
+    ) -> List[Dict[str, Any]]:
+        """
+        Get all feeds that user is subscribed to, with episode counts.
+        Optimized to use a single query instead of N+1.
+        """
         stmt = (
-            select(PodcastFeed)
+            select(PodcastFeed, func.count(PodcastEpisode.id).label("episode_count"))
             .join(
                 PodcastFeedSubscription,
                 PodcastFeedSubscription.feed_id == PodcastFeed.id,
             )
+            .outerjoin(PodcastEpisode, PodcastEpisode.feed_id == PodcastFeed.id)
             .where(PodcastFeedSubscription.user_id == user_id)
+            .group_by(PodcastFeed.id)
             .order_by(PodcastFeed.title)
         )
+
         result = await db.execute(stmt)
-        return list(result.scalars().all())
+        rows = result.all()
+
+        subscriptions = []
+        for feed, count in rows:
+            # Create a dict merging feed data with episode count
+            feed_dict = {
+                "id": feed.id,
+                "title": feed.title,
+                "description": feed.description,
+                "author": feed.author,
+                "image_url": feed.image_url,
+                "rss_url": feed.rss_url,
+                "episode_count": count,
+            }
+            subscriptions.append(feed_dict)
+
+        return subscriptions
+
+    async def get_episodes_batch(
+        self, db: AsyncSession, user_id: str, episode_ids: List[int]
+    ) -> List[Dict[str, Any]]:
+        """
+        Get details for multiple episodes by ID.
+        Includes user state (playback position).
+        Used for downloads page to fetch metadata efficiently.
+        """
+        if not episode_ids:
+            return []
+
+        stmt = (
+            select(PodcastEpisode, PodcastFeed, UserEpisodeState)
+            .join(PodcastFeed, PodcastEpisode.feed_id == PodcastFeed.id)
+            .outerjoin(
+                UserEpisodeState,
+                and_(
+                    UserEpisodeState.episode_id == PodcastEpisode.id,
+                    UserEpisodeState.user_id == user_id,
+                ),
+            )
+            .where(PodcastEpisode.id.in_(episode_ids))
+        )
+
+        result = await db.execute(stmt)
+        rows = result.all()
+
+        episodes = []
+        for episode, feed, state in rows:
+            ep_dict = {
+                "episode": {
+                    "id": episode.id,
+                    "guid": episode.guid,
+                    "title": episode.title,
+                    "description": episode.description,
+                    "audio_url": episode.audio_url,
+                    "duration_seconds": episode.duration_seconds,
+                    "image_url": episode.image_url,
+                    "published_at": episode.published_at.isoformat()
+                    if episode.published_at
+                    else None,
+                    "transcript_status": episode.transcript_status,
+                    "current_position": state.current_position_seconds
+                    if state
+                    else 0.0,
+                    "is_finished": state.is_finished if state else False,
+                },
+                "feed": {
+                    "id": feed.id,
+                    "title": feed.title,
+                    "image_url": feed.image_url,
+                },
+                "last_position_seconds": state.current_position_seconds
+                if state
+                else 0.0,
+            }
+            episodes.append(ep_dict)
+
+        return episodes
 
     async def get_feed_with_episodes(
         self, db: AsyncSession, user_id: str, feed_id: int

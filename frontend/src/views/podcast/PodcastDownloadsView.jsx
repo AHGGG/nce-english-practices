@@ -61,36 +61,8 @@ export default function PodcastDownloadsView() {
                 return;
             }
 
-            // Get recently played to get episode details
-            // Note: In a real app, you'd store episode metadata in IndexedDB
-            const recentlyPlayed = await podcastApi.getRecentlyPlayed(50);
-
-            // Filter to only show offline episodes
-            const offlineEpisodes = recentlyPlayed.filter(
-                item => offlineIds.includes(item.episode.id)
-            );
-
-            // Also get feeds to include episodes that haven't been played yet
-            const feeds = await podcastApi.getSubscriptions();
-
-            for (const feed of feeds) {
-                try {
-                    const feedDetail = await podcastApi.getFeedDetail(feed.id);
-                    for (const ep of feedDetail.episodes) {
-                        if (offlineIds.includes(ep.id) &&
-                            !offlineEpisodes.find(oe => oe.episode.id === ep.id)) {
-                            offlineEpisodes.push({
-                                episode: ep,
-                                feed: { id: feed.id, title: feed.title, image_url: feed.image_url },
-                                last_position_seconds: ep.current_position || 0,
-                            });
-                        }
-                    }
-                } catch (e) {
-                    console.warn(`Failed to load feed ${feed.id}:`, e);
-                }
-            }
-
+            // Efficiently fetch details for all offline episodes in one batch request
+            const offlineEpisodes = await podcastApi.getEpisodesBatch(offlineIds);
             setEpisodes(offlineEpisodes);
         } catch (e) {
             console.error('Failed to load offline episodes:', e);

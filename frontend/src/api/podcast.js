@@ -220,6 +220,20 @@ export async function getEpisodePosition(episodeId) {
 }
 
 /**
+ * Get details for multiple episodes by ID.
+ * Used for efficient bulk loading (e.g., downloads page).
+ */
+export async function getEpisodesBatch(episodeIds) {
+  const response = await authFetch(`${BASE_URL}/episodes/batch`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ episode_ids: episodeIds }),
+  });
+  if (!response.ok) throw new Error('Failed to get episodes');
+  return response.json();
+}
+
+/**
  * Get recently played episodes with resume positions.
  */
 export async function getRecentlyPlayed(limit = 10) {

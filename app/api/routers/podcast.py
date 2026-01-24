@@ -73,6 +73,10 @@ class ListeningSessionRequest(BaseModel):
     episode_id: int
 
 
+class BatchEpisodesRequest(BaseModel):
+    episode_ids: List[int]
+
+
 class ListeningSessionUpdateRequest(BaseModel):
     session_id: int
     total_listened_seconds: int
@@ -151,35 +155,28 @@ async def unsubscribe_from_podcast(
 async def get_subscriptions(
     user_id: str = Depends(get_current_user_id),
 ) -> List[FeedResponse]:
-    """Get all subscribed podcasts."""
+    """
+    Get all subscribed podcasts.
+    Optimized to fetch episode counts in a single query.
+    """
     async with AsyncSessionLocal() as db:
         feeds = await podcast_service.get_subscriptions(db, user_id)
 
-        # Get episode counts
-        from sqlalchemy import select, func
-        from app.models.podcast_orm import PodcastEpisode
+        # Service now returns dicts with episode_count included
+        return [FeedResponse(**feed) for feed in feeds]
 
-        result = []
-        for feed in feeds:
-            count_stmt = select(func.count(PodcastEpisode.id)).where(
-                PodcastEpisode.feed_id == feed.id
-            )
-            count_result = await db.execute(count_stmt)
-            episode_count = count_result.scalar_one()
 
-            result.append(
-                FeedResponse(
-                    id=feed.id,
-                    title=feed.title,
-                    description=feed.description,
-                    author=feed.author,
-                    image_url=feed.image_url,
-                    rss_url=feed.rss_url,
-                    episode_count=episode_count,
-                )
-            )
-
-        return result
+@router.post("/episodes/batch")
+async def get_episodes_batch(
+    req: BatchEpisodesRequest,
+    user_id: str = Depends(get_current_user_id),
+):
+    """
+    Get details for multiple episodes by ID.
+    Used for efficient bulk loading (e.g., downloads page).
+    """
+    async with AsyncSessionLocal() as db:
+        return await podcast_service.get_episodes_batch(db, user_id, req.episode_ids)
 
 
 @router.get("/feed/{feed_id}")
