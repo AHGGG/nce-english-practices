@@ -8,6 +8,7 @@ import Lightbox from './Lightbox';
 import { HIGHLIGHT_OPTIONS, BATCH_SIZE, mapLevelToOptionIndex } from './constants';
 import useWordExplainer from '../../hooks/useWordExplainer';
 import { authFetch } from '../../api/auth';
+import { useToast, Dialog, DialogButton } from '../ui';
 
 // Simple API helper for ReadingTracker
 const api = {
@@ -88,6 +89,10 @@ const ReadingMode = () => {
     // Sentence Inspector state (for unclear sentences)
     const [selectedSentence, setSelectedSentence] = useState(null);
     const [selectedSentenceInfo, setSelectedSentenceInfo] = useState(null);
+
+    // Dialog & Toast
+    const [confirmAction, setConfirmAction] = useState(null);
+    const { addToast } = useToast();
 
     // --- Effects ---
     useEffect(() => {
@@ -278,14 +283,23 @@ const ReadingMode = () => {
         const sweptWords = allHighlights.filter(w => !inspectedWordsRef.current.has(w));
 
         if (sweptWords.length === 0) {
-            alert("No words to sweep!");
+            addToast("No words to sweep!", "info");
             return;
         }
 
-        if (!window.confirm(`Mark ${sweptWords.length} remaining highlighted words as Known?`)) {
-            return;
-        }
+        setConfirmAction({
+            isOpen: true,
+            title: "Sweep Words",
+            message: `Mark ${sweptWords.length} remaining highlighted words as Known?`,
+            confirmText: "Sweep",
+            onConfirm: async () => {
+                setConfirmAction(null);
+                await executeSweep(sweptWords, inspected);
+            }
+        });
+    }, [selectedArticle, addToast]); // executeSweep closure handled by defining it inside or via another useCallback
 
+    const executeSweep = async (sweptWords, inspected) => {
         // Optimistic clear
         setSelectedArticle(prev => ({
             ...prev,
@@ -298,22 +312,32 @@ const ReadingMode = () => {
                 inspected_words: inspected
             });
 
+            addToast(`Marked ${sweptWords.length} words as known`, 'success');
+
             // Show recommendation if any
             if (res.recommendation) {
                 const { bands } = res.recommendation;
                 if (bands && bands.length > 0) {
                     // Determine range labels
                     const ranges = bands.map(b => `${b}-${b + 1000}`).join(", ");
-                    if (window.confirm(`Expert Detected! You swept most words in the ${ranges} frequency bands. Mark ALL words in these bands as Mastered?`)) {
-                        // TODO: Call API to master bands (Future Phase)
-                        alert("Global mastery update coming in next phase!");
-                    }
+                    
+                    setConfirmAction({
+                        isOpen: true,
+                        title: "Expert Detected!",
+                        message: `You swept most words in the ${ranges} frequency bands. Mark ALL words in these bands as Mastered?`,
+                        confirmText: "Master Bands",
+                        onConfirm: () => {
+                            setConfirmAction(null);
+                            addToast("Global mastery update coming in next phase!", "info");
+                        }
+                    });
                 }
             }
         } catch (e) {
             console.error("Sweep failed", e);
+            addToast("Sweep failed: " + e.message, "error");
         }
-    }, [selectedArticle]);
+    };
 
     const handleBackToLibrary = useCallback(async () => {
         if (trackerRef.current) {
@@ -411,6 +435,30 @@ const ReadingMode = () => {
                     setSelectedSentenceInfo(null);
                 }}
             />
+
+            <Dialog
+                isOpen={confirmAction?.isOpen}
+                onClose={() => setConfirmAction(null)}
+                title={confirmAction?.title}
+                footer={
+                    <>
+                        <DialogButton
+                            variant="ghost"
+                            onClick={() => setConfirmAction(null)}
+                        >
+                            Cancel
+                        </DialogButton>
+                        <DialogButton
+                            variant="primary"
+                            onClick={confirmAction?.onConfirm}
+                        >
+                            {confirmAction?.confirmText || "Confirm"}
+                        </DialogButton>
+                    </>
+                }
+            >
+                <p>{confirmAction?.message}</p>
+            </Dialog>
         </>
     );
 };

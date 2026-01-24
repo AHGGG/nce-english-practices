@@ -1,6 +1,6 @@
 
 import React, { useState, useRef, useId } from 'react';
-import { Card, Button, Input } from '../ui';
+import { Card, Button, Input, useToast } from '../ui';
 import { Play, Download, Loader2, StopCircle, Volume2 } from 'lucide-react';
 import { authFetch } from '../../api/auth';
 
@@ -11,6 +11,7 @@ const TTSPanel = ({ config, fixedProvider = null }) => {
     const [loading, setLoading] = useState(false);
     const [audioUrl, setAudioUrl] = useState(null);
     const audioRef = useRef(null);
+    const { addToast } = useToast();
 
     const providerId = useId();
     const voiceId = useId();
@@ -52,7 +53,7 @@ const TTSPanel = ({ config, fixedProvider = null }) => {
 
         } catch (err) {
             console.error(err);
-            alert("Generation Failed");
+            addToast("Generation Failed", "error");
         } finally {
             setLoading(false);
         }

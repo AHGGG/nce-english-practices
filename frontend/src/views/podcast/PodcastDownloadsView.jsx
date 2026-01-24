@@ -18,6 +18,7 @@ import {
     clearPodcastCache
 } from '../../utils/offline';
 import * as podcastApi from '../../api/podcast';
+import { useToast, Dialog, DialogButton } from '../../components/ui';
 
 function formatDuration(seconds) {
     if (!seconds) return '';
@@ -40,12 +41,14 @@ function formatBytes(bytes) {
 export default function PodcastDownloadsView() {
     const navigate = useNavigate();
     const { currentEpisode, isPlaying, currentTime, duration, playEpisode, togglePlayPause } = usePodcast();
+    const { addToast } = useToast();
 
     const [episodes, setEpisodes] = useState([]);
     const [loading, setLoading] = useState(true);
     const [storageInfo, setStorageInfo] = useState(null);
     const [deleting, setDeleting] = useState({});
     const [clearing, setClearing] = useState(false);
+    const [showClearConfirm, setShowClearConfirm] = useState(false);
 
     // Load offline episodes
     const loadOfflineEpisodes = useCallback(async () => {
@@ -121,23 +124,28 @@ export default function PodcastDownloadsView() {
             await removeOfflineEpisode(episodeId, proxyUrl);
             setEpisodes(prev => prev.filter(ep => ep.episode.id !== episodeId));
             getStorageEstimate().then(setStorageInfo);
+            addToast('Episode removed', 'success');
         } catch (e) {
-            alert('Failed to remove: ' + e.message);
+            addToast('Failed to remove: ' + e.message, 'error');
         } finally {
             setDeleting(prev => ({ ...prev, [episodeId]: false }));
         }
     };
 
-    const handleClearAll = async () => {
-        if (!confirm('Remove all downloaded episodes? This cannot be undone.')) return;
+    const handleClearAll = () => {
+        setShowClearConfirm(true);
+    };
 
+    const performClearAll = async () => {
         setClearing(true);
+        setShowClearConfirm(false);
         try {
             await clearPodcastCache();
             setEpisodes([]);
             getStorageEstimate().then(setStorageInfo);
+            addToast('All downloads cleared', 'success');
         } catch (e) {
-            alert('Failed to clear cache: ' + e.message);
+            addToast('Failed to clear cache: ' + e.message, 'error');
         } finally {
             setClearing(false);
         }
@@ -333,6 +341,30 @@ export default function PodcastDownloadsView() {
                         })}
                     </div>
                 )}
+
+                <Dialog
+                    isOpen={showClearConfirm}
+                    onClose={() => setShowClearConfirm(false)}
+                    title="Clear All Downloads"
+                    footer={
+                        <>
+                            <DialogButton
+                                variant="ghost"
+                                onClick={() => setShowClearConfirm(false)}
+                            >
+                                Cancel
+                            </DialogButton>
+                            <DialogButton
+                                variant="danger"
+                                onClick={performClearAll}
+                            >
+                                Clear All
+                            </DialogButton>
+                        </>
+                    }
+                >
+                    <p>Are you sure you want to remove all downloaded episodes? This cannot be undone.</p>
+                </Dialog>
             </div>
         </PodcastLayout>
     );

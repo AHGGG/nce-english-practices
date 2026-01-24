@@ -7,6 +7,7 @@ import { useState } from 'react';
 import { Search, Plus, Check, Loader2, Headphones, Info } from 'lucide-react';
 import * as podcastApi from '../../api/podcast';
 import PodcastLayout from '../../components/podcast/PodcastLayout';
+import { useToast } from '../../components/ui';
 
 export default function PodcastSearchView() {
     const [query, setQuery] = useState('');
@@ -14,6 +15,7 @@ export default function PodcastSearchView() {
     const [loading, setLoading] = useState(false);
     const [subscribing, setSubscribing] = useState({});
     const [subscribed, setSubscribed] = useState({});
+    const { addToast } = useToast();
 
     async function handleSearch(e) {
         e.preventDefault();
@@ -37,8 +39,9 @@ export default function PodcastSearchView() {
             setSubscribing(prev => ({ ...prev, [podcast.itunes_id]: true }));
             await podcastApi.subscribeToPodcast(podcast.rss_url);
             setSubscribed(prev => ({ ...prev, [podcast.itunes_id]: true }));
+            addToast(`Subscribed to ${podcast.title}`, 'success');
         } catch (err) {
-            alert('Subscribe failed: ' + err.message);
+            addToast('Subscribe failed: ' + err.message, 'error');
         } finally {
             setSubscribing(prev => ({ ...prev, [podcast.itunes_id]: false }));
         }

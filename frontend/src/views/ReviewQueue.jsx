@@ -28,6 +28,7 @@ import { getGapTypeInfo } from '../components/sentence-study/constants';
 import useWordExplainer from '../hooks/useWordExplainer';
 import WordInspector from '../components/reading/WordInspector';
 import { authFetch } from '../api/auth';
+import { useToast } from '../components/ui';
 
 // API helpers for SM-2 review system
 // API helpers for SM-2 review system
@@ -163,6 +164,7 @@ const ReviewQueue = () => {
     const [contextData, setContextData] = useState(null);
     const [showContext, setShowContext] = useState(false);
     const [loadingContext, setLoadingContext] = useState(false);
+    const { addToast } = useToast();
 
 
     // Help panel state
@@ -737,7 +739,7 @@ const ReviewQueue = () => {
 
                 if (!res.ok) {
                     if (res.status === 404) {
-                        alert('无可撤销的历史记录');
+                        addToast('无可撤销的历史记录', 'warning');
                         setUndoState(null);
                     } else {
                         throw new Error('Undo failed');
@@ -784,7 +786,7 @@ const ReviewQueue = () => {
 
         } catch (e) {
             console.error('Undo/Redo error:', e);
-            alert('操作失败，请重试');
+            addToast('操作失败，请重试', 'error');
         } finally {
             setIsSubmitting(false);
         }
