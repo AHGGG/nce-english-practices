@@ -290,6 +290,7 @@ async def import_opml_streaming(
 
         imported = 0
         skipped = 0
+        failed = 0
 
         # Optimization: Pre-fetch existing subscriptions to skip DB calls for duplicates
         # This makes re-importing identical files instant.
@@ -352,11 +353,11 @@ async def import_opml_streaming(
                         skipped += 1
                         yield f"data: {json.dumps({'type': 'result', 'success': True, 'title': title, 'status': 'skipped'})}\n\n"
                 except Exception as e:
-                    skipped += 1
+                    failed += 1
                     yield f"data: {json.dumps({'type': 'result', 'success': False, 'title': title, 'error': str(e), 'rss_url': rss_url})}\n\n"
 
         # Complete event
-        yield f"data: {json.dumps({'type': 'complete', 'imported': imported, 'skipped': skipped, 'total': len(feeds)})}\n\n"
+        yield f"data: {json.dumps({'type': 'complete', 'imported': imported, 'skipped': skipped, 'failed': failed, 'total': len(feeds)})}\n\n"
 
     return StreamingResponse(
         event_generator(),

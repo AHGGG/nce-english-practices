@@ -133,7 +133,12 @@ export async function importOPMLStreaming(file, onProgress) {
           if (onProgress) onProgress(data);
           
           if (data.type === 'complete') {
-            result = { imported: data.imported, skipped: data.skipped, total: data.total };
+            result = { 
+              imported: data.imported, 
+              skipped: data.skipped, 
+              failed: data.failed || 0,
+              total: data.total 
+            };
           }
         } catch (e) {
           console.error('SSE parse error:', e);

@@ -63,7 +63,10 @@ export default function PodcastLibraryView() {
                 }
             });
 
-            addToast(`Imported ${result.imported} podcasts (${result.skipped} skipped)`, 'success');
+            // Show detailed status
+            const statusType = result.failed > 0 ? 'warning' : 'success';
+            addToast(`Import Complete: ${result.imported} imported, ${result.skipped} skipped, ${result.failed} failed (Total: ${result.total})`, statusType);
+            
             loadFeeds();
         } catch (err) {
             addToast('Import failed: ' + err.message, 'error');
