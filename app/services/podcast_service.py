@@ -177,6 +177,7 @@ class PodcastService:
                 "author": feed.feed.get("author") or feed.feed.get("itunes_author"),
                 "image_url": None,
                 "website_url": feed.feed.get("link"),
+                "category": None,
             }
 
             # Try to get image from various sources
@@ -185,7 +186,21 @@ class PodcastService:
             elif hasattr(feed.feed, "itunes_image"):
                 feed_data["image_url"] = feed.feed.itunes_image.get("href")
 
+            # Extract category (iTunes category often nested)
+            if hasattr(feed.feed, "itunes_category"):
+                # Handle single category or list
+                cat = feed.feed.get("itunes_category")
+                if isinstance(cat, dict):
+                    feed_data["category"] = cat.get("text")
+                elif isinstance(cat, list) and cat:
+                    feed_data["category"] = (
+                        cat[0].get("text") if isinstance(cat[0], dict) else str(cat[0])
+                    )
+            elif hasattr(feed.feed, "category"):
+                feed_data["category"] = feed.feed.category
+
             # Extract episodes
+
             episodes = []
             for entry in feed.entries:
                 # Find audio enclosure
@@ -247,15 +262,10 @@ class PodcastService:
 
     # --- Subscription Management (Shared Feed Model) ---
 
-    async def subscribe(
-        self, db: AsyncSession, user_id: str, rss_url: str
-    ) -> Tuple[PodcastFeed, bool]:
+    async def get_or_create_feed(self, db: AsyncSession, rss_url: str) -> PodcastFeed:
         """
-        Subscribe to a podcast feed.
-        Uses the Shared Feed Model:
-        1. Get or create the global PodcastFeed
-        2. Create a PodcastFeedSubscription for the user
-        Returns (feed, is_new_subscription)
+        Get existing feed or parse and create new one (Shared Feed Model).
+        Does NOT create subscription.
         """
         # Check if feed exists globally
         stmt = select(PodcastFeed).where(PodcastFeed.rss_url == rss_url)
@@ -275,6 +285,7 @@ class PodcastService:
                 author=feed_data["author"],
                 image_url=feed_data["image_url"],
                 website_url=feed_data["website_url"],
+                category=feed_data["category"],
                 last_fetched_at=datetime.utcnow(),
             )
             db.add(feed)
@@ -293,6 +304,20 @@ class PodcastService:
                     published_at=ep_data["published_at"],
                 )
                 db.add(episode)
+
+        return feed
+
+    async def subscribe(
+        self, db: AsyncSession, user_id: str, rss_url: str
+    ) -> Tuple[PodcastFeed, bool]:
+        """
+        Subscribe to a podcast feed.
+        Uses the Shared Feed Model:
+        1. Get or create the global PodcastFeed
+        2. Create a PodcastFeedSubscription for the user
+        Returns (feed, is_new_subscription)
+        """
+        feed = await self.get_or_create_feed(db, rss_url)
 
         # Check if user is already subscribed
         sub_stmt = select(PodcastFeedSubscription).where(
@@ -316,6 +341,16 @@ class PodcastService:
         await db.commit()
         await db.refresh(feed)
         return feed, True
+
+    async def preview_feed(self, db: AsyncSession, rss_url: str) -> PodcastFeed:
+        """
+        Preview a feed (fetch and store, but don't subscribe).
+        Returns the feed object.
+        """
+        feed = await self.get_or_create_feed(db, rss_url)
+        await db.commit()
+        await db.refresh(feed)
+        return feed
 
     async def unsubscribe(self, db: AsyncSession, user_id: str, feed_id: int) -> bool:
         """Remove user's subscription to a feed."""
@@ -434,15 +469,17 @@ class PodcastService:
     async def get_feed_with_episodes(
         self, db: AsyncSession, user_id: str, feed_id: int
     ) -> Optional[Dict[str, Any]]:
-        """Get a feed with its episodes (only if user is subscribed)."""
-        # Verify user is subscribed
+        """
+        Get a feed with its episodes.
+        Returns feed details, subscription status, and episodes with user state.
+        """
+        # Check if user is subscribed
         sub_stmt = select(PodcastFeedSubscription).where(
             PodcastFeedSubscription.feed_id == feed_id,
             PodcastFeedSubscription.user_id == user_id,
         )
         sub_result = await db.execute(sub_stmt)
-        if not sub_result.scalar_one_or_none():
-            return None
+        is_subscribed = sub_result.scalar_one_or_none() is not None
 
         # Get feed
         feed_stmt = select(PodcastFeed).where(PodcastFeed.id == feed_id)
@@ -490,8 +527,102 @@ class PodcastService:
 
         return {
             "feed": feed,
+            "is_subscribed": is_subscribed,
             "episodes": episodes,
         }
+
+    # --- Trending / Top Charts ---
+
+    async def get_trending_podcasts(
+        self, category_id: Optional[str] = None, limit: int = 20
+    ) -> List[Dict[str, Any]]:
+        """
+        Get trending podcasts from iTunes Top Charts.
+        Optional category_id (iTunes genre ID).
+        """
+        # Base URL for iTunes RSS Generator
+        # https://rss.applemarketingtools.com/
+        # api/v2/us/podcasts/top/10/podcasts.json
+
+        url = f"https://rss.applemarketingtools.com/api/v2/us/podcasts/top/{limit}/podcasts.json"
+
+        # If category is provided, the URL structure might be different or we need to filter
+        # Actually iTunes RSS Generator allows genre:
+        # https://rss.applemarketingtools.com/api/v2/us/podcasts/top/10/podcasts.json?genre=1310 (Music)
+        # Wait, the official API v2 path with genre is:
+        # https://rss.applemarketingtools.com/api/v2/us/podcasts/top/{limit}/{genre}/podcasts.json
+        # Genre needs to be the ID (e.g., 1301 for Arts, 1318 for Technology)
+        # But user might pass "Technology". We need a mapping or just pass ID.
+        # For simplicity, let's assume category_id is passed if we want filtering,
+        # but user interface might send "Technology".
+        # iTunes Search API "genreId" is what we need.
+
+        if category_id:
+            # Just append it if it's numeric, otherwise ignore for now as we don't have mapping
+            if str(category_id).isdigit():
+                url = f"https://rss.applemarketingtools.com/api/v2/us/podcasts/top/{limit}/podcasts/{category_id}.json"
+
+        try:
+            proxies = settings.PROXY_URL if settings.PROXY_URL else None
+            async with httpx.AsyncClient(timeout=10.0, proxy=proxies) as client:
+                response = await client.get(url)
+                response.raise_for_status()
+                data = response.json()
+
+            results = []
+            feed = data.get("feed", {})
+            for item in feed.get("results", []):
+                # Map to our structure
+                # iTunes RSS item structure:
+                # { "artistName": "...", "id": "...", "name": "...", "artworkUrl100": "...", "genres": [...] }
+
+                genres = item.get("genres", [])
+                primary_genre = genres[0].get("name") if genres else None
+
+                results.append(
+                    {
+                        "itunes_id": item.get("id"),
+                        "title": item.get("name"),
+                        "author": item.get("artistName"),
+                        "rss_url": None,  # Top Charts RSS JSON doesn't always have feedUrl. We might need to lookup.
+                        # Wait, the new API often doesn't give feedUrl.
+                        # We might need to do a lookup by ID to get the feedUrl if user clicks.
+                        # But for display we are fine.
+                        "artwork_url": item.get("artworkUrl100"),
+                        "genre": primary_genre,
+                    }
+                )
+
+            # Note: Missing RSS URL is a problem if we want to "Preview".
+            # We can do a second lookup or just let the frontend call /search?term=ID to get it?
+            # Or backend can do batch lookup?
+            # Actually, `lookup` API is better: https://itunes.apple.com/lookup?id=123,456
+
+            if results:
+                ids = [r["itunes_id"] for r in results if r.get("itunes_id")]
+                if ids:
+                    ids_str = ",".join(ids)
+                    lookup_url = f"https://itunes.apple.com/lookup?id={ids_str}"
+                    async with httpx.AsyncClient(timeout=10.0, proxy=proxies) as client:
+                        l_res = await client.get(lookup_url)
+                        if l_res.status_code == 200:
+                            l_data = l_res.json()
+                            # Create map id -> feedUrl
+                            id_map = {
+                                str(i.get("collectionId")): i.get("feedUrl")
+                                for i in l_data.get("results", [])
+                            }
+
+                            # Update results
+                            for r in results:
+                                if r.get("itunes_id") in id_map:
+                                    r["rss_url"] = id_map[r.get("itunes_id")]
+
+            return results
+
+        except Exception as e:
+            logger.error(f"Trending fetch failed: {e}")
+            return []
 
     async def refresh_feed(self, db: AsyncSession, user_id: str, feed_id: int) -> int:
         """

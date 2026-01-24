@@ -11,10 +11,14 @@ from typing import List, Optional
 from app.api.routers.auth import get_current_user_id
 from app.config import settings
 from app.core.db import AsyncSessionLocal
+
 from app.services.podcast_service import podcast_service
 
-router = APIRouter(prefix="/api/podcast", tags=["podcast"])
+import logging
 
+logger = logging.getLogger(__name__)
+
+router = APIRouter(prefix="/api/podcast", tags=["podcast"])
 
 # --- Pydantic Schemas ---
 
@@ -33,6 +37,10 @@ class SubscribeRequest(BaseModel):
     rss_url: str
 
 
+class PreviewRequest(BaseModel):
+    rss_url: str
+
+
 class FeedResponse(BaseModel):
     id: int
     title: str
@@ -41,6 +49,7 @@ class FeedResponse(BaseModel):
     image_url: Optional[str]
     rss_url: str
     episode_count: Optional[int] = None
+    category: Optional[str] = None
 
     class Config:
         from_attributes = True
@@ -67,6 +76,7 @@ class EpisodeResponse(BaseModel):
 class FeedDetailResponse(BaseModel):
     feed: FeedResponse
     episodes: List[EpisodeResponse]
+    is_subscribed: bool = False
 
 
 class ListeningSessionRequest(BaseModel):
@@ -114,17 +124,38 @@ async def _proxy_image(url: str, filename: str = "image.jpg"):
     # Create client for this request
     # Note: We create a new client per request to ensure isolation,
     # but for high load we might want a global client.
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36"
+    }
+
     client = httpx.AsyncClient(
-        timeout=10.0, follow_redirects=True, proxy=proxies, verify=False
+        timeout=10.0,
+        follow_redirects=True,
+        proxy=proxies,
+        verify=False,
+        headers=headers,
     )
 
     # Build request
     req = client.build_request("GET", url)
-    r = await client.send(req, stream=True)
+    try:
+        r = await client.send(req, stream=True)
+    except (httpx.ConnectError, httpx.TimeoutException, httpx.NetworkError) as e:
+        await client.aclose()
+        # Log the error but return 502 so frontend handles it gracefully
+        logger.warning(f"Proxy fetch failed for {url}: {e}")
+        raise HTTPException(
+            status_code=502, detail=f"Failed to fetch upstream image: {str(e)}"
+        )
+    except Exception as e:
+        await client.aclose()
+        logger.error(f"Proxy unexpected error for {url}: {e}")
+        raise HTTPException(status_code=500, detail="Internal proxy error")
 
     if r.status_code != 200:
         await r.aclose()
         await client.aclose()
+        logger.warning(f"Proxy upstream returned {r.status_code} for {url}")
         # Fallback or error?
         # If we return 404, the browser shows broken image.
         # Maybe redirect to a placeholder?
@@ -204,6 +235,59 @@ async def search_podcasts(
     return [ItunesSearchResult(**r) for r in results]
 
 
+@router.post("/preview")
+async def preview_podcast(
+    req: PreviewRequest,
+    user_id: str = Depends(get_current_user_id),
+) -> FeedResponse:
+    """
+    Preview a podcast by RSS URL.
+    Fetches and parses the feed, stores it in DB (for caching/proxy),
+    but does NOT subscribe the user.
+    """
+    async with AsyncSessionLocal() as db:
+        try:
+            feed = await podcast_service.preview_feed(db, req.rss_url)
+
+            # Count episodes
+            from sqlalchemy import select, func
+            from app.models.podcast_orm import PodcastEpisode
+
+            count_stmt = select(func.count(PodcastEpisode.id)).where(
+                PodcastEpisode.feed_id == feed.id
+            )
+            count_result = await db.execute(count_stmt)
+            episode_count = count_result.scalar_one()
+
+            return FeedResponse(
+                id=feed.id,
+                title=feed.title,
+                description=feed.description,
+                author=feed.author,
+                image_url=f"/api/podcast/feed/{feed.id}/image"
+                if feed.image_url
+                else None,
+                rss_url=feed.rss_url,
+                episode_count=episode_count,
+                category=feed.category,
+            )
+        except ValueError as e:
+            raise HTTPException(status_code=400, detail=str(e))
+
+
+@router.get("/trending")
+async def get_trending_podcasts(
+    category: Optional[str] = None,
+    limit: int = 20,
+    user_id: str = Depends(get_current_user_id),
+) -> List[ItunesSearchResult]:
+    """
+    Get trending podcasts from iTunes Top Charts.
+    """
+    results = await podcast_service.get_trending_podcasts(category, limit=limit)
+    return [ItunesSearchResult(**r) for r in results]
+
+
 @router.post("/subscribe")
 async def subscribe_to_podcast(
     req: SubscribeRequest,
@@ -234,6 +318,7 @@ async def subscribe_to_podcast(
                 else None,
                 rss_url=feed.rss_url,
                 episode_count=episode_count,
+                category=feed.category,
             )
         except ValueError as e:
             raise HTTPException(status_code=400, detail=str(e))
@@ -312,6 +397,7 @@ async def get_feed_detail(
 
         feed = data["feed"]
         episodes = data["episodes"]  # Now a list of dicts with user state
+        is_subscribed = data["is_subscribed"]
 
         return FeedDetailResponse(
             feed=FeedResponse(
@@ -324,6 +410,7 @@ async def get_feed_detail(
                 else None,
                 rss_url=feed.rss_url,
                 episode_count=len(episodes),
+                category=feed.category,
             ),
             episodes=[
                 EpisodeResponse(
@@ -343,6 +430,7 @@ async def get_feed_detail(
                 )
                 for ep in episodes
             ],
+            is_subscribed=is_subscribed,
         )
 
 

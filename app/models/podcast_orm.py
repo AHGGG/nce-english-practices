@@ -34,9 +34,7 @@ class PodcastFeed(Base):
     """
 
     __tablename__ = "podcast_feeds"
-    __table_args__ = (
-        Index("idx_podcast_feed_url", "rss_url"),
-    )
+    __table_args__ = (Index("idx_podcast_feed_url", "rss_url"),)
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
 
@@ -47,10 +45,17 @@ class PodcastFeed(Base):
     author: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     image_url: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     website_url: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    category: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    itunes_id: Mapped[Optional[int]] = mapped_column(
+        Integer, unique=True, nullable=True
+    )
 
     # Cache control
+
     etag: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
-    last_fetched_at: Mapped[Optional[datetime]] = mapped_column(TIMESTAMP, nullable=True)
+    last_fetched_at: Mapped[Optional[datetime]] = mapped_column(
+        TIMESTAMP, nullable=True
+    )
 
     # Timestamps
     created_at: Mapped[datetime] = mapped_column(TIMESTAMP, server_default=func.now())
@@ -74,9 +79,7 @@ class PodcastFeedSubscription(Base):
     """
 
     __tablename__ = "podcast_feed_subscriptions"
-    __table_args__ = (
-        Index("idx_pfs_user", "user_id"),
-    )
+    __table_args__ = (Index("idx_pfs_user", "user_id"),)
 
     user_id: Mapped[str] = mapped_column(Text, primary_key=True)
     feed_id: Mapped[int] = mapped_column(
@@ -129,7 +132,9 @@ class PodcastEpisode(Base):
         "UserEpisodeState", back_populates="episode", cascade="all, delete-orphan"
     )
     listening_sessions: Mapped[List["PodcastListeningSession"]] = relationship(
-        "PodcastListeningSession", back_populates="episode", cascade="all, delete-orphan"
+        "PodcastListeningSession",
+        back_populates="episode",
+        cascade="all, delete-orphan",
     )
 
 
@@ -175,9 +180,7 @@ class PodcastListeningSession(Base):
     """
 
     __tablename__ = "podcast_listening_sessions"
-    __table_args__ = (
-        Index("idx_pls_user_started", "user_id", "started_at"),
-    )
+    __table_args__ = (Index("idx_pls_user_started", "user_id", "started_at"),)
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     user_id: Mapped[str] = mapped_column(Text, index=True)
