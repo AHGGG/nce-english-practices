@@ -5,3 +5,7 @@
 ## 2025-02-18 - Label Association for Raw Inputs
 **Learning:** Raw `<input>`/`<select>` elements in feature panels often lack `id` and `htmlFor` associations, unlike the base UI components which handle this.
 **Action:** When auditing feature panels, check for disconnected labels on raw form elements and use `useId` to fix them.
+
+## 2025-05-23 - Textarea Component Standardization
+**Learning:** Feature panels often used raw `textarea` elements with inconsistent styling because the design system lacked a dedicated component.
+**Action:** Created `Textarea` in `ui/index.jsx` following the `Select` pattern (handling internal labels and validation) to unify form designs.
