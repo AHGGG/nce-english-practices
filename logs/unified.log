@@ -102,3 +102,4 @@ ebooklib.epub.EpubException: 'Bad Zip file'
 2026-01-16 17:18:36.377 [BA] [INFO] [agent_ou] httpx: HTTP Request: POST http://testserver/api/voice-lab/tts "HTTP/1.1 200 OK"
 2026-01-16 17:18:36.383 [BA] [INFO] [user_inp] httpx: HTTP Request: POST http://testserver/api/voice-lab/stt "HTTP/1.1 422 Unprocessable Entity"
 2026-01-16 17:18:36.442 [BA] [INFO] [network] httpx: HTTP Request: POST http://testserver/api/voice/token "HTTP/1.1 200 OK"
+2026-01-24 10:39:15.170 [BA] [INFO] [general] app.services.aui_input: Stopping AUI Postgres Listener...
