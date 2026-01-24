@@ -113,10 +113,14 @@ class OPMLImportResult(BaseModel):
 async def _proxy_image(url: str, filename: str = "image.jpg"):
     """
     Stream an image from a remote URL through the server.
-    Used to bypass CORS/Network restrictions for podcast covers.
+    Caches the image locally to improve performance.
     """
     import httpx
-    from fastapi.responses import StreamingResponse
+    import mimetypes
+    import hashlib
+    from pathlib import Path
+    from fastapi.responses import FileResponse
+    from fastapi.concurrency import run_in_threadpool
 
     if not url:
         raise HTTPException(status_code=404, detail="No image URL")
@@ -125,69 +129,81 @@ async def _proxy_image(url: str, filename: str = "image.jpg"):
     if not url.startswith("http"):
         raise HTTPException(status_code=400, detail="Invalid URL protocol")
 
+    # Cache Configuration
+    CACHE_DIR = Path("resources/cache/podcast_images")
+    # Ensure directory exists (non-blocking usually, but safe to check)
+    if not CACHE_DIR.exists():
+        CACHE_DIR.mkdir(parents=True, exist_ok=True)
+
+    # Generate Cache Key (Hash)
+    url_hash = hashlib.md5(url.encode("utf-8")).hexdigest()
+
+    # Check cache (try common extensions)
+    # We prioritize jpg/png/webp
+    for ext in [".jpg", ".jpeg", ".png", ".webp", ".gif"]:
+        candidate = CACHE_DIR / f"{url_hash}{ext}"
+        if candidate.exists():
+            return FileResponse(
+                path=candidate,
+                filename=filename,
+                headers={"Cache-Control": "public, max-age=604800"},
+            )
+
+    # Cache Miss - Fetch from Upstream
     proxies = settings.PROXY_URL if settings.PROXY_URL else None
 
-    # Create client for this request
-    # Note: We create a new client per request to ensure isolation,
-    # but for high load we might want a global client.
     headers = {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36"
     }
 
-    client = httpx.AsyncClient(
-        timeout=10.0,
-        follow_redirects=True,
-        proxy=proxies,
-        verify=False,
-        headers=headers,
-    )
-
-    # Build request
-    req = client.build_request("GET", url)
     try:
-        r = await client.send(req, stream=True)
-    except (httpx.ConnectError, httpx.TimeoutException, httpx.NetworkError) as e:
-        await client.aclose()
-        # Log the error but return 502 so frontend handles it gracefully
+        async with httpx.AsyncClient(
+            timeout=10.0,
+            follow_redirects=True,
+            proxy=proxies,
+            verify=False,
+            headers=headers,
+        ) as client:
+            r = await client.get(url)
+
+            if r.status_code != 200:
+                logger.warning(f"Proxy upstream returned {r.status_code} for {url}")
+                raise HTTPException(status_code=404, detail="Image not found upstream")
+
+            # Determine extension
+            content_type = r.headers.get("content-type", "image/jpeg")
+            ext = mimetypes.guess_extension(content_type) or ".jpg"
+            if ext == ".jpe":
+                ext = ".jpg"
+
+            save_path = CACHE_DIR / f"{url_hash}{ext}"
+            content = r.content
+
+            # Write to disk (in threadpool to avoid blocking event loop)
+            def write_file():
+                with open(save_path, "wb") as f:
+                    f.write(content)
+
+            await run_in_threadpool(write_file)
+
+            return FileResponse(
+                path=save_path,
+                media_type=content_type,
+                filename=filename,
+                headers={"Cache-Control": "public, max-age=604800"},
+            )
+
+    except HTTPException:
+        raise
+    except httpx.RequestError as e:
         logger.warning(f"Proxy fetch failed for {url}: {e}")
         raise HTTPException(
             status_code=502, detail=f"Failed to fetch upstream image: {str(e)}"
         )
     except Exception as e:
-        await client.aclose()
         logger.error(f"Proxy unexpected error for {url}: {e}")
+        # Return generic error
         raise HTTPException(status_code=500, detail="Internal proxy error")
-
-    if r.status_code != 200:
-        await r.aclose()
-        await client.aclose()
-        logger.warning(f"Proxy upstream returned {r.status_code} for {url}")
-        # Fallback or error?
-        # If we return 404, the browser shows broken image.
-        # Maybe redirect to a placeholder?
-        raise HTTPException(status_code=404, detail="Image not found upstream")
-
-    async def iter_response():
-        try:
-            async for chunk in r.aiter_bytes(chunk_size=8192):
-                yield chunk
-        except Exception:
-            pass
-        finally:
-            await r.aclose()
-            await client.aclose()
-
-    # Forward Content-Type
-    content_type = r.headers.get("content-type", "image/jpeg")
-
-    return StreamingResponse(
-        iter_response(),
-        media_type=content_type,
-        headers={
-            "Cache-Control": "public, max-age=604800",  # Cache for 7 days
-            "Content-Disposition": f'inline; filename="{filename}"',
-        },
-    )
 
 
 # --- Signing Helper ---
