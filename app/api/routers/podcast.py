@@ -135,16 +135,22 @@ async def _proxy_image(url: str, filename: str = "image.jpg"):
     # Generate Cache Key (Hash)
     url_hash = hashlib.md5(url.encode("utf-8")).hexdigest()
 
-    # Check cache (try common extensions)
-    # We prioritize jpg/png/webp
-    for ext in [".jpg", ".jpeg", ".png", ".webp", ".gif"]:
-        candidate = CACHE_DIR / f"{url_hash}{ext}"
-        if candidate.exists():
+    # Check cache (Search for any extension with this hash)
+    # This is more robust than checking a hardcoded list of extensions
+    try:
+        # Use iterator with next() for performance (stops at first match)
+        candidate = next(CACHE_DIR.glob(f"{url_hash}.*"), None)
+        if candidate and candidate.exists():
+            # logger.debug(f"Cache HIT for {url} -> {candidate}")
             return FileResponse(
                 path=candidate,
                 filename=filename,
-                headers={"Cache-Control": "public, max-age=604800"},
+                headers={"Cache-Control": "public, max-age=604800, immutable"},
             )
+    except Exception as e:
+        logger.warning(f"Cache lookup failed for {url}: {e}")
+
+    logger.info(f"Cache MISS for {url} - Fetching from upstream")
 
     # Cache Miss - Fetch from Upstream
     proxies = settings.PROXY_URL if settings.PROXY_URL else None
@@ -178,8 +184,12 @@ async def _proxy_image(url: str, filename: str = "image.jpg"):
 
             # Write to disk (in threadpool to avoid blocking event loop)
             def write_file():
-                with open(save_path, "wb") as f:
-                    f.write(content)
+                try:
+                    with open(save_path, "wb") as f:
+                        f.write(content)
+                    logger.info(f"Saved to cache: {save_path}")
+                except Exception as e:
+                    logger.error(f"Failed to write cache file {save_path}: {e}")
 
             await run_in_threadpool(write_file)
 
@@ -187,7 +197,7 @@ async def _proxy_image(url: str, filename: str = "image.jpg"):
                 path=save_path,
                 media_type=content_type,
                 filename=filename,
-                headers={"Cache-Control": "public, max-age=604800"},
+                headers={"Cache-Control": "public, max-age=604800, immutable"},
             )
 
     except HTTPException:
