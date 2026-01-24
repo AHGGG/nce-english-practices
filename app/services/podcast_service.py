@@ -11,7 +11,7 @@ Uses the Shared Feed Model:
 import logging
 import hashlib
 from datetime import datetime
-from typing import List, Optional, Dict, Any
+from typing import List, Optional, Dict, Any, Tuple
 from xml.etree import ElementTree as ET
 
 import httpx
@@ -63,15 +63,18 @@ class PodcastService:
 
             results = []
             for item in data.get("results", []):
-                results.append({
-                    "itunes_id": item.get("collectionId"),
-                    "title": item.get("collectionName"),
-                    "author": item.get("artistName"),
-                    "rss_url": item.get("feedUrl"),
-                    "artwork_url": item.get("artworkUrl600") or item.get("artworkUrl100"),
-                    "genre": item.get("primaryGenreName"),
-                    "episode_count": item.get("trackCount"),
-                })
+                results.append(
+                    {
+                        "itunes_id": item.get("collectionId"),
+                        "title": item.get("collectionName"),
+                        "author": item.get("artistName"),
+                        "rss_url": item.get("feedUrl"),
+                        "artwork_url": item.get("artworkUrl600")
+                        or item.get("artworkUrl100"),
+                        "genre": item.get("primaryGenreName"),
+                        "episode_count": item.get("trackCount"),
+                    }
+                )
             return results
 
         except Exception as e:
@@ -105,9 +108,13 @@ class PodcastService:
         Fetch and parse an RSS feed.
         Returns feed metadata and list of episodes.
         """
+        headers = {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36",
+            "Accept": "application/rss+xml, application/xml, application/atom+xml, text/xml;q=0.9, */*;q=0.8",
+        }
         try:
-            async with httpx.AsyncClient(timeout=30.0) as client:
-                response = await client.get(rss_url)
+            async with httpx.AsyncClient(timeout=60.0, follow_redirects=True) as client:
+                response = await client.get(rss_url, headers=headers)
                 response.raise_for_status()
                 content = response.text
 
@@ -116,7 +123,8 @@ class PodcastService:
             # Extract feed metadata
             feed_data = {
                 "title": feed.feed.get("title", "Unknown Podcast"),
-                "description": feed.feed.get("description") or feed.feed.get("subtitle"),
+                "description": feed.feed.get("description")
+                or feed.feed.get("subtitle"),
                 "author": feed.feed.get("author") or feed.feed.get("itunes_author"),
                 "image_url": None,
                 "website_url": feed.feed.get("link"),
@@ -134,7 +142,10 @@ class PodcastService:
                 # Find audio enclosure
                 audio_url = None
                 for link in entry.get("links", []):
-                    if link.get("type", "").startswith("audio/") or link.get("rel") == "enclosure":
+                    if (
+                        link.get("type", "").startswith("audio/")
+                        or link.get("rel") == "enclosure"
+                    ):
                         audio_url = link.get("href")
                         break
 
@@ -157,23 +168,27 @@ class PodcastService:
                         pass
 
                 # Generate stable GUID
-                guid = entry.get("id") or entry.get("guid") or hashlib.md5(
-                    audio_url.encode("utf-8")
-                ).hexdigest()
+                guid = (
+                    entry.get("id")
+                    or entry.get("guid")
+                    or hashlib.md5(audio_url.encode("utf-8")).hexdigest()
+                )
 
-                episodes.append({
-                    "guid": guid,
-                    "title": entry.get("title", "Untitled Episode"),
-                    "description": entry.get("summary") or entry.get("description"),
-                    "audio_url": audio_url,
-                    "duration_seconds": self._parse_duration(
-                        entry.get("itunes_duration")
-                    ),
-                    "image_url": entry.get("itunes_image", {}).get("href")
-                    if isinstance(entry.get("itunes_image"), dict)
-                    else None,
-                    "published_at": published_at,
-                })
+                episodes.append(
+                    {
+                        "guid": guid,
+                        "title": entry.get("title", "Untitled Episode"),
+                        "description": entry.get("summary") or entry.get("description"),
+                        "audio_url": audio_url,
+                        "duration_seconds": self._parse_duration(
+                            entry.get("itunes_duration")
+                        ),
+                        "image_url": entry.get("itunes_image", {}).get("href")
+                        if isinstance(entry.get("itunes_image"), dict)
+                        else None,
+                        "published_at": published_at,
+                    }
+                )
 
             return {"feed": feed_data, "episodes": episodes}
 
@@ -185,12 +200,13 @@ class PodcastService:
 
     async def subscribe(
         self, db: AsyncSession, user_id: str, rss_url: str
-    ) -> PodcastFeed:
+    ) -> Tuple[PodcastFeed, bool]:
         """
         Subscribe to a podcast feed.
         Uses the Shared Feed Model:
         1. Get or create the global PodcastFeed
         2. Create a PodcastFeedSubscription for the user
+        Returns (feed, is_new_subscription)
         """
         # Check if feed exists globally
         stmt = select(PodcastFeed).where(PodcastFeed.rss_url == rss_url)
@@ -237,21 +253,22 @@ class PodcastService:
         sub_result = await db.execute(sub_stmt)
         existing_sub = sub_result.scalar_one_or_none()
 
-        if not existing_sub:
-            # Create subscription
-            subscription = PodcastFeedSubscription(
-                user_id=user_id,
-                feed_id=feed.id,
-            )
-            db.add(subscription)
+        if existing_sub:
+            # Already subscribed
+            return feed, False
+
+        # Create subscription
+        subscription = PodcastFeedSubscription(
+            user_id=user_id,
+            feed_id=feed.id,
+        )
+        db.add(subscription)
 
         await db.commit()
         await db.refresh(feed)
-        return feed
+        return feed, True
 
-    async def unsubscribe(
-        self, db: AsyncSession, user_id: str, feed_id: int
-    ) -> bool:
+    async def unsubscribe(self, db: AsyncSession, user_id: str, feed_id: int) -> bool:
         """Remove user's subscription to a feed."""
         stmt = select(PodcastFeedSubscription).where(
             PodcastFeedSubscription.feed_id == feed_id,
@@ -273,7 +290,10 @@ class PodcastService:
         """Get all feeds that user is subscribed to."""
         stmt = (
             select(PodcastFeed)
-            .join(PodcastFeedSubscription, PodcastFeedSubscription.feed_id == PodcastFeed.id)
+            .join(
+                PodcastFeedSubscription,
+                PodcastFeedSubscription.feed_id == PodcastFeed.id,
+            )
             .where(PodcastFeedSubscription.user_id == user_id)
             .order_by(PodcastFeed.title)
         )
@@ -327,7 +347,9 @@ class PodcastService:
                 "audio_url": episode.audio_url,
                 "duration_seconds": episode.duration_seconds,
                 "image_url": episode.image_url,
-                "published_at": episode.published_at.isoformat() if episode.published_at else None,
+                "published_at": episode.published_at.isoformat()
+                if episode.published_at
+                else None,
                 "transcript_status": episode.transcript_status,
                 # User state
                 "current_position": state.current_position_seconds if state else 0.0,
@@ -340,9 +362,7 @@ class PodcastService:
             "episodes": episodes,
         }
 
-    async def refresh_feed(
-        self, db: AsyncSession, user_id: str, feed_id: int
-    ) -> int:
+    async def refresh_feed(self, db: AsyncSession, user_id: str, feed_id: int) -> int:
         """
         Refresh a feed to check for new episodes.
         Returns the number of new episodes added.
@@ -369,9 +389,7 @@ class PodcastService:
         episodes_data = parsed["episodes"]
 
         # Get existing GUIDs
-        guid_stmt = select(PodcastEpisode.guid).where(
-            PodcastEpisode.feed_id == feed_id
-        )
+        guid_stmt = select(PodcastEpisode.guid).where(PodcastEpisode.feed_id == feed_id)
         guid_result = await db.execute(guid_stmt)
         existing_guids = set(guid_result.scalars().all())
 
@@ -409,10 +427,14 @@ class PodcastService:
             for outline in root.iter("outline"):
                 xml_url = outline.get("xmlUrl")
                 if xml_url:
-                    feeds.append({
-                        "title": outline.get("text") or outline.get("title") or "Unknown",
-                        "rss_url": xml_url,
-                    })
+                    feeds.append(
+                        {
+                            "title": outline.get("text")
+                            or outline.get("title")
+                            or "Unknown",
+                            "rss_url": xml_url,
+                        }
+                    )
         except ET.ParseError as e:
             logger.error(f"OPML parse error: {e}")
             raise ValueError(f"Invalid OPML format: {e}")
@@ -434,10 +456,19 @@ class PodcastService:
 
         for feed_info in feeds:
             try:
-                await self.subscribe(db, user_id, feed_info["rss_url"])
-                imported += 1
+                feed, is_new = await self.subscribe(db, user_id, feed_info["rss_url"])
+                if is_new:
+                    imported += 1
+                else:
+                    skipped += 1
             except Exception as e:
-                errors.append({"title": feed_info["title"], "error": str(e)})
+                errors.append(
+                    {
+                        "title": feed_info["title"],
+                        "error": str(e),
+                        "rss_url": feed_info["rss_url"],
+                    }
+                )
                 skipped += 1
 
         return {
@@ -447,9 +478,7 @@ class PodcastService:
             "errors": errors,
         }
 
-    async def export_opml(
-        self, db: AsyncSession, user_id: str
-    ) -> str:
+    async def export_opml(self, db: AsyncSession, user_id: str) -> str:
         """Generate OPML file content from user's subscriptions."""
         feeds = await self.get_subscriptions(db, user_id)
 
@@ -638,22 +667,26 @@ class PodcastService:
 
         recently_played = []
         for episode, feed, state in rows:
-            recently_played.append({
-                "episode": {
-                    "id": episode.id,
-                    "title": episode.title,
-                    "audio_url": episode.audio_url,
-                    "duration_seconds": episode.duration_seconds,
-                    "image_url": episode.image_url,
-                },
-                "feed": {
-                    "id": feed.id,
-                    "title": feed.title,
-                    "image_url": feed.image_url,
-                },
-                "last_position_seconds": state.current_position_seconds,
-                "last_played_at": state.listened_at.isoformat() if state.listened_at else None,
-            })
+            recently_played.append(
+                {
+                    "episode": {
+                        "id": episode.id,
+                        "title": episode.title,
+                        "audio_url": episode.audio_url,
+                        "duration_seconds": episode.duration_seconds,
+                        "image_url": episode.image_url,
+                    },
+                    "feed": {
+                        "id": feed.id,
+                        "title": feed.title,
+                        "image_url": feed.image_url,
+                    },
+                    "last_position_seconds": state.current_position_seconds,
+                    "last_played_at": state.listened_at.isoformat()
+                    if state.listened_at
+                    else None,
+                }
+            )
 
         return recently_played
 

@@ -108,18 +108,18 @@ async def subscribe_to_podcast(
     """Subscribe to a podcast by RSS URL."""
     async with AsyncSessionLocal() as db:
         try:
-            feed = await podcast_service.subscribe(db, user_id, req.rss_url)
-            
+            feed, is_new = await podcast_service.subscribe(db, user_id, req.rss_url)
+
             # Count episodes
             from sqlalchemy import select, func
             from app.models.podcast_orm import PodcastEpisode
-            
+
             count_stmt = select(func.count(PodcastEpisode.id)).where(
                 PodcastEpisode.feed_id == feed.id
             )
             count_result = await db.execute(count_stmt)
             episode_count = count_result.scalar_one()
-            
+
             return FeedResponse(
                 id=feed.id,
                 title=feed.title,
@@ -153,11 +153,11 @@ async def get_subscriptions(
     """Get all subscribed podcasts."""
     async with AsyncSessionLocal() as db:
         feeds = await podcast_service.get_subscriptions(db, user_id)
-        
+
         # Get episode counts
         from sqlalchemy import select, func
         from app.models.podcast_orm import PodcastEpisode
-        
+
         result = []
         for feed in feeds:
             count_stmt = select(func.count(PodcastEpisode.id)).where(
@@ -165,17 +165,19 @@ async def get_subscriptions(
             )
             count_result = await db.execute(count_stmt)
             episode_count = count_result.scalar_one()
-            
-            result.append(FeedResponse(
-                id=feed.id,
-                title=feed.title,
-                description=feed.description,
-                author=feed.author,
-                image_url=feed.image_url,
-                rss_url=feed.rss_url,
-                episode_count=episode_count,
-            ))
-        
+
+            result.append(
+                FeedResponse(
+                    id=feed.id,
+                    title=feed.title,
+                    description=feed.description,
+                    author=feed.author,
+                    image_url=feed.image_url,
+                    rss_url=feed.rss_url,
+                    episode_count=episode_count,
+                )
+            )
+
         return result
 
 
@@ -189,10 +191,10 @@ async def get_feed_detail(
         data = await podcast_service.get_feed_with_episodes(db, user_id, feed_id)
         if not data:
             raise HTTPException(status_code=404, detail="Feed not found")
-        
+
         feed = data["feed"]
         episodes = data["episodes"]  # Now a list of dicts with user state
-        
+
         return FeedDetailResponse(
             feed=FeedResponse(
                 id=feed.id,
@@ -247,7 +249,7 @@ async def import_opml(
         opml_text = content.decode("utf-8")
     except UnicodeDecodeError:
         raise HTTPException(status_code=400, detail="Invalid file encoding")
-    
+
     async with AsyncSessionLocal() as db:
         result = await podcast_service.import_opml(db, user_id, opml_text)
         return OPMLImportResult(**result)
@@ -260,52 +262,56 @@ async def import_opml_streaming(
 ):
     """
     Import podcasts from OPML file with SSE streaming progress.
-    
+
     Yields JSON events:
     - {"type": "start", "total": N} - Import started with N feeds
     - {"type": "progress", "current": i, "total": N, "title": "...", "rss_url": "..."} - Processing feed i
-    - {"type": "result", "success": true/false, "title": "...", "error": "..."} - Feed result
+    - {"type": "result", "success": true/false, "title": "...", "error": "...", "status": "imported|skipped"} - Feed result
     - {"type": "complete", "imported": X, "skipped": Y, "total": N} - Import complete
     """
     from fastapi.responses import StreamingResponse
     import json
-    
+
     content = await file.read()
     try:
         opml_text = content.decode("utf-8")
     except UnicodeDecodeError:
         raise HTTPException(status_code=400, detail="Invalid file encoding")
-    
+
     # Parse OPML to get feeds list
     feeds = podcast_service.parse_opml(opml_text)
-    
+
     async def event_generator():
         """Generate SSE events for import progress."""
         # Start event
         yield f"data: {json.dumps({'type': 'start', 'total': len(feeds)})}\n\n"
-        
+
         imported = 0
         skipped = 0
-        
+
         async with AsyncSessionLocal() as db:
             for i, feed_info in enumerate(feeds):
                 title = feed_info.get("title", "Unknown")
                 rss_url = feed_info.get("rss_url", "")
-                
+
                 # Progress event
                 yield f"data: {json.dumps({'type': 'progress', 'current': i + 1, 'total': len(feeds), 'title': title, 'rss_url': rss_url})}\n\n"
-                
+
                 try:
-                    await podcast_service.subscribe(db, user_id, rss_url)
-                    imported += 1
-                    yield f"data: {json.dumps({'type': 'result', 'success': True, 'title': title})}\n\n"
+                    feed, is_new = await podcast_service.subscribe(db, user_id, rss_url)
+                    if is_new:
+                        imported += 1
+                        yield f"data: {json.dumps({'type': 'result', 'success': True, 'title': title, 'status': 'imported'})}\n\n"
+                    else:
+                        skipped += 1
+                        yield f"data: {json.dumps({'type': 'result', 'success': True, 'title': title, 'status': 'skipped'})}\n\n"
                 except Exception as e:
                     skipped += 1
-                    yield f"data: {json.dumps({'type': 'result', 'success': False, 'title': title, 'error': str(e)})}\n\n"
-        
+                    yield f"data: {json.dumps({'type': 'result', 'success': False, 'title': title, 'error': str(e), 'rss_url': rss_url})}\n\n"
+
         # Complete event
         yield f"data: {json.dumps({'type': 'complete', 'imported': imported, 'skipped': skipped, 'total': len(feeds)})}\n\n"
-    
+
     return StreamingResponse(
         event_generator(),
         media_type="text/event-stream",
@@ -327,9 +333,7 @@ async def export_opml(
         return Response(
             content=opml_content,
             media_type="application/xml",
-            headers={
-                "Content-Disposition": "attachment; filename=podcasts.opml"
-            },
+            headers={"Content-Disposition": "attachment; filename=podcasts.opml"},
         )
 
 
@@ -381,18 +385,18 @@ async def update_session_beacon(
     Note: No auth since sendBeacon can't set headers - we rely on session_id validation.
     """
     import json
-    
+
     try:
         body = await request.body()
         data = json.loads(body.decode("utf-8"))
-        
+
         session_id = data.get("session_id")
         listened_seconds = data.get("listened_seconds", 0)
         position_seconds = data.get("position_seconds", 0)
-        
+
         if not session_id:
             return {"success": False, "error": "Missing session_id"}
-        
+
         async with AsyncSessionLocal() as db:
             session = await podcast_service.update_listening_session(
                 db,
@@ -468,15 +472,15 @@ async def download_episode_head(
     from fastapi.responses import Response
     from sqlalchemy import select
     from app.models.podcast_orm import PodcastEpisode
-    
+
     async with AsyncSessionLocal() as db:
         stmt = select(PodcastEpisode).where(PodcastEpisode.id == episode_id)
         result = await db.execute(stmt)
         episode = result.scalar_one_or_none()
-        
+
         if not episode:
             raise HTTPException(status_code=404, detail="Episode not found")
-        
+
         audio_url = episode.audio_url
 
     # Make a HEAD request to the upstream to get Content-Length
@@ -517,15 +521,15 @@ async def download_episode(
     from fastapi.responses import StreamingResponse
     from sqlalchemy import select
     from app.models.podcast_orm import PodcastEpisode
-    
+
     async with AsyncSessionLocal() as db:
         stmt = select(PodcastEpisode).where(PodcastEpisode.id == episode_id)
         result = await db.execute(stmt)
         episode = result.scalar_one_or_none()
-        
+
         if not episode:
             raise HTTPException(status_code=404, detail="Episode not found")
-        
+
         audio_url = episode.audio_url
 
     # Check for Range header
@@ -538,24 +542,25 @@ async def download_episode(
     async def stream_audio():
         async with httpx.AsyncClient(timeout=None, follow_redirects=True) as client:
             # We use stream() context manager, which will be closed when this generator closes
-            async with client.stream("GET", audio_url, headers=headers_to_upstream) as response:
-                
+            async with client.stream(
+                "GET", audio_url, headers=headers_to_upstream
+            ) as response:
                 # Check if upstream accepted the range
                 status_code = response.status_code
                 response_headers = response.headers
 
-                # Yield initial status and headers for custom handling if needed, 
+                # Yield initial status and headers for custom handling if needed,
                 # but FastAPI StreamingResponse expects just body bytes.
                 # So we just forward the chunks.
                 # However, we need to set the response status code and headers BEFORE yielding.
-                # LIMITATION: In FastAPI/Starlette, we can't easily change status code of StreamingResponse 
+                # LIMITATION: In FastAPI/Starlette, we can't easily change status code of StreamingResponse
                 # after it starts. But here we are inside the generator.
-                
+
                 # Actually, capturing headers here is tricky because StreamingResponse takes headers in __init__.
                 # BETTER APPROACH: Do a HEAD first to get size, OR start the stream and inspect before returning StreamingResponse.
                 # But to fully stream, we should just return the StreamingResponse that iterates this.
                 # The issue is passing the upstream status code (206 vs 200) to the client.
-                
+
                 # Let's pivot: We will initiate the request BEFORE creating StreamingResponse.
                 pass
 
@@ -578,7 +583,7 @@ async def download_episode(
         "Accept-Ranges": "bytes",
         "Access-Control-Expose-Headers": "Content-Length, Content-Range, Accept-Ranges",
     }
-    
+
     # Forward upstream headers if present
     for key in ["Content-Length", "Content-Range", "Content-Type"]:
         if key in r.headers:
@@ -599,5 +604,3 @@ async def download_episode(
         headers=response_headers,
         media_type=response_headers["Content-Type"],
     )
-
-
