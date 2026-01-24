@@ -288,6 +288,10 @@ To prevent parser regressions, use the golden standard framework: `tests/test_ld
   - **Audio Cache**: `podcast-audio-cache` (Cache API) stores audio files.
   - **Progress Tracking**: Backend download endpoint (`/api/podcast/episode/{id}/download`) supports `HEAD` requests for Content-Length.
   - **Frontend**: `PodcastFeedDetailView` shows download progress/status. `PodcastDownloadsView` manages offline content.
+  - **Image Proxy & Caching**: 
+    - Proxies external images via `/api/podcast/proxy/image` to solve CORS and Mixed Content issues.
+    - **Caching**: Images are cached locally in `~/.english_tense_practice/cache/podcasts/` (via `settings.podcast_cache_dir`) to improve performance and reduce upstream requests.
+    - **Security**: URLs are signed with HMAC-SHA256 to prevent open relay abuse.
 
 ### Coach Service (Agentic)
 - **Role**: Central orchestrator for the "Neural Link" mode.
