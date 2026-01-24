@@ -195,23 +195,23 @@ export default function PodcastSearchView() {
                                 <div
                                     key={podcast.itunes_id}
                                     onClick={() => handlePreview(podcast)}
-                                    className="group flex items-center gap-4 p-4 bg-bg-surface border border-border rounded-xl hover:border-accent-primary/30 transition-colors cursor-pointer"
+                                    className="group flex items-center gap-3 p-3 sm:gap-4 sm:p-4 bg-bg-surface border border-border rounded-xl hover:border-accent-primary/30 transition-colors cursor-pointer"
                                 >
                                     {podcast.artwork_url ? (
                                         <img
                                             src={podcast.artwork_url}
                                             alt=""
                                             referrerPolicy="no-referrer"
-                                            className="w-20 h-20 rounded-lg object-cover flex-shrink-0 border border-border"
+                                            className="w-16 h-16 sm:w-20 sm:h-20 rounded-lg object-cover flex-shrink-0 border border-border"
                                         />
                                     ) : (
-                                        <div className="w-20 h-20 rounded-lg bg-bg-elevated flex items-center justify-center flex-shrink-0 border border-border">
-                                            <Headphones className="w-8 h-8 text-text-muted" />
+                                        <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-lg bg-bg-elevated flex items-center justify-center flex-shrink-0 border border-border">
+                                            <Headphones className="w-6 h-6 sm:w-8 sm:h-8 text-text-muted" />
                                         </div>
                                     )}
 
                                     <div className="flex-1 min-w-0">
-                                        <h3 className="font-medium text-text-primary truncate group-hover:text-accent-primary transition-colors">
+                                        <h3 className="font-medium text-text-primary line-clamp-2 leading-tight mb-0.5 group-hover:text-accent-primary transition-colors" title={podcast.title}>
                                             {podcast.title}
                                         </h3>
                                         <p className="text-sm text-text-muted truncate">
@@ -232,10 +232,10 @@ export default function PodcastSearchView() {
                                     <button
                                         onClick={(e) => handleSubscribe(e, podcast)}
                                         disabled={!podcast.rss_url || subscribing[podcast.itunes_id] || subscribed[podcast.itunes_id] || podcast.is_subscribed}
-                                        className={`flex items-center gap-2 px-5 py-2.5 rounded-lg font-medium transition-all ${
+                                        className={`flex items-center justify-center gap-1.5 px-3 py-2 sm:px-5 sm:py-2.5 rounded-lg text-sm sm:text-base font-medium transition-all shrink-0 border ${
                                             subscribed[podcast.itunes_id] || podcast.is_subscribed
-                                            ? 'bg-accent-success/20 text-accent-success border border-accent-success/30 cursor-default'
-                                            : 'bg-gradient-to-r from-accent-primary to-accent-secondary text-black hover:shadow-lg hover:shadow-accent-primary/20'
+                                            ? 'bg-accent-success/10 text-accent-success border-accent-success/20 cursor-default'
+                                            : 'bg-accent-primary/10 text-accent-primary border-accent-primary/20 hover:bg-accent-primary hover:text-black hover:border-accent-primary'
                                         } disabled:opacity-50`}
                                     >
                                         {subscribing[podcast.itunes_id] || previewing === podcast.itunes_id ? (

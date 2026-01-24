@@ -108,7 +108,7 @@ export default function RecentlyPlayed() {
                         <button
                             key={item.episode.id}
                             onClick={() => handleResume(item)}
-                            className={`flex-shrink-0 w-48 bg-bg-surface border rounded-xl overflow-hidden hover:border-accent-primary/50 transition-all group ${isCurrentEp ? 'border-accent-primary' : 'border-border'
+                            className={`flex-shrink-0 w-32 sm:w-48 bg-bg-surface border rounded-xl overflow-hidden hover:border-accent-primary/50 transition-all group ${isCurrentEp ? 'border-accent-primary' : 'border-border'
                                 }`}
                         >
                             <div className="relative aspect-square">
@@ -127,8 +127,8 @@ export default function RecentlyPlayed() {
 
                                 {/* Play overlay */}
                                 <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                                    <div className="w-12 h-12 bg-accent-primary rounded-full flex items-center justify-center">
-                                        <Play className="w-5 h-5 text-black ml-0.5" />
+                                    <div className="w-8 h-8 sm:w-12 sm:h-12 bg-accent-primary rounded-full flex items-center justify-center">
+                                        <Play className="w-4 h-4 sm:w-5 sm:h-5 text-black ml-0.5" />
                                     </div>
                                 </div>
 
@@ -141,14 +141,14 @@ export default function RecentlyPlayed() {
                                 </div>
                             </div>
 
-                            <div className="p-3 text-left">
-                                <p className="text-sm font-medium text-text-primary truncate">
+                            <div className="p-2 sm:p-3 text-left">
+                                <p className="text-xs sm:text-sm font-medium text-text-primary truncate">
                                     {item.episode.title}
                                 </p>
-                                <p className="text-xs text-text-muted truncate">
+                                <p className="text-[10px] sm:text-xs text-text-muted truncate">
                                     {item.feed.title}
                                 </p>
-                                <p className="text-xs text-accent-primary/70 font-mono mt-1">
+                                <p className="text-[10px] sm:text-xs text-accent-primary/70 font-mono mt-0.5 sm:mt-1">
                                     {remainingTime > 0 ? `${formatTime(remainingTime)} left` : '✓ Completed'}
                                 </p>
                             </div>

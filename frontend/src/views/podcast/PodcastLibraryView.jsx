@@ -279,7 +279,7 @@ export default function PodcastLibraryView() {
 
                     {/* Grid of podcasts */}
                     {feeds.length > 0 && (
-                        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                        <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 sm:gap-4">
                             {feeds.map((feed) => (
                                 <Link
                                     key={feed.id}
@@ -306,7 +306,7 @@ export default function PodcastLibraryView() {
                                     </div>
 
                                     <div className="p-3">
-                                        <h3 className="font-medium text-text-primary truncate group-hover:text-accent-primary transition-colors">
+                                        <h3 className="font-medium text-text-primary line-clamp-2 text-sm leading-tight h-9 mb-1 group-hover:text-accent-primary transition-colors" title={feed.title}>
                                             {feed.title}
                                         </h3>
                                         <p className="text-xs text-text-muted truncate">
