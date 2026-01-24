@@ -92,8 +92,8 @@ export async function getSubscriptions() {
 /**
  * Get feed details with episodes.
  */
-export async function getFeedDetail(feedId) {
-  const response = await authFetch(`${BASE_URL}/feed/${feedId}`);
+export async function getFeedDetail(feedId, limit = 50, offset = 0) {
+  const response = await authFetch(`${BASE_URL}/feed/${feedId}?limit=${limit}&offset=${offset}`);
   if (!response.ok) throw new Error('Failed to get feed');
   return response.json();
 }

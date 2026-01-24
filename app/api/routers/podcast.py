@@ -86,6 +86,7 @@ class FeedDetailResponse(BaseModel):
     feed: FeedResponse
     episodes: List[EpisodeResponse]
     is_subscribed: bool = False
+    total_episodes: int = 0  # Added for pagination support
 
 
 class ListeningSessionRequest(BaseModel):
@@ -533,17 +534,22 @@ async def get_episodes_batch(
 @router.get("/feed/{feed_id}")
 async def get_feed_detail(
     feed_id: int,
+    limit: int = 50,
+    offset: int = 0,
     user_id: str = Depends(get_current_user_id),
 ) -> FeedDetailResponse:
     """Get feed details with episodes (includes user state for resume)."""
     async with AsyncSessionLocal() as db:
-        data = await podcast_service.get_feed_with_episodes(db, user_id, feed_id)
+        data = await podcast_service.get_feed_with_episodes(
+            db, user_id, feed_id, limit=limit, offset=offset
+        )
         if not data:
             raise HTTPException(status_code=404, detail="Feed not found")
 
         feed = data["feed"]
         episodes = data["episodes"]  # Now a list of dicts with user state
         is_subscribed = data["is_subscribed"]
+        total_episodes = data.get("total_episodes", len(episodes))
 
         return FeedDetailResponse(
             feed=FeedResponse(
@@ -553,7 +559,7 @@ async def get_feed_detail(
                 author=feed.author,
                 image_url=feed.image_url,
                 rss_url=feed.rss_url,
-                episode_count=len(episodes),
+                episode_count=total_episodes,
                 category=feed.category,
             ),
             episodes=[
@@ -573,6 +579,7 @@ async def get_feed_detail(
                 for ep in episodes
             ],
             is_subscribed=is_subscribed,
+            total_episodes=total_episodes,
         )
 
 

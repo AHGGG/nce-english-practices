@@ -47,11 +47,19 @@ export default function PodcastFeedDetailView() {
     const { currentEpisode, isPlaying, currentTime, duration, playEpisode, togglePlayPause } = usePodcast();
     const { addToast } = useToast();
 
-    const [data, setData] = useState(null);
+    const [feed, setFeed] = useState(null);
+    const [episodes, setEpisodes] = useState([]);
+    const [isSubscribed, setIsSubscribed] = useState(false);
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
     const [subscribing, setSubscribing] = useState(false);
     const [error, setError] = useState(null);
+
+    // Pagination
+    const PAGE_SIZE = 50;
+    const [offset, setOffset] = useState(0);
+    const [totalEpisodes, setTotalEpisodes] = useState(0);
+    const [loadingMore, setLoadingMore] = useState(false);
 
     // Local progress state to track updates for episodes that are no longer current
     // { [episodeId]: { current_position: number, is_finished: boolean } }
@@ -109,18 +117,48 @@ export default function PodcastFeedDetailView() {
     }, []);
 
     useEffect(() => {
-        loadFeed();
+        loadFeed(true);
     }, [feedId]);
 
-    async function loadFeed() {
+    async function loadFeed(reset = false) {
         try {
-            setLoading(true);
-            const result = await podcastApi.getFeedDetail(feedId);
-            setData(result);
+            if (reset) {
+                setLoading(true);
+                setOffset(0);
+                setEpisodes([]);
+            }
+            
+            const result = await podcastApi.getFeedDetail(feedId, PAGE_SIZE, 0);
+            
+            setFeed(result.feed);
+            setEpisodes(result.episodes);
+            setIsSubscribed(result.is_subscribed);
+            setTotalEpisodes(result.total_episodes || result.episodes.length); // Fallback
+            setOffset(PAGE_SIZE); // Prepare next offset
+            
         } catch (e) {
             setError(e.message);
         } finally {
-            setLoading(false);
+            if (reset) setLoading(false);
+        }
+    }
+
+    async function loadMoreEpisodes() {
+        if (loadingMore || offset >= totalEpisodes) return;
+
+        try {
+            setLoadingMore(true);
+            const result = await podcastApi.getFeedDetail(feedId, PAGE_SIZE, offset);
+            
+            setEpisodes(prev => [...prev, ...result.episodes]);
+            setOffset(prev => prev + PAGE_SIZE);
+            // Optionally update total in case it changed
+            if (result.total_episodes) setTotalEpisodes(result.total_episodes);
+
+        } catch (e) {
+            addToast('Failed to load more episodes: ' + e.message, 'error');
+        } finally {
+            setLoadingMore(false);
         }
     }
 
@@ -129,7 +167,7 @@ export default function PodcastFeedDetailView() {
             setRefreshing(true);
             const result = await podcastApi.refreshFeed(feedId);
             if (result.new_episodes > 0) {
-                loadFeed();
+                loadFeed(true); // Reset to top
             }
             addToast(`Found ${result.new_episodes} new episodes`, 'success');
         } catch (e) {
@@ -142,10 +180,10 @@ export default function PodcastFeedDetailView() {
     async function handleSubscribe() {
         try {
             setSubscribing(true);
-            await podcastApi.subscribeToPodcast(data.feed.rss_url);
+            await podcastApi.subscribeToPodcast(feed.rss_url);
             addToast('Subscribed successfully', 'success');
             // Refresh data to update is_subscribed status
-            loadFeed();
+            setIsSubscribed(true);
         } catch (e) {
             addToast('Subscribe failed: ' + e.message, 'error');
         } finally {
@@ -399,7 +437,7 @@ export default function PodcastFeedDetailView() {
         );
     }
 
-    if (error || !data) {
+    if (error || !feed) {
         return (
             <div className="min-h-screen bg-bg-base flex items-center justify-center">
                 <div className="text-center space-y-4">
@@ -414,8 +452,6 @@ export default function PodcastFeedDetailView() {
             </div>
         );
     }
-
-    const { feed, episodes } = data;
 
     return (
         <div className="min-h-screen bg-bg-base pb-32">
@@ -476,7 +512,7 @@ export default function PodcastFeedDetailView() {
 
                         <div className="flex items-center gap-4 text-sm">
                             <span className="text-accent-primary/70 font-mono">
-                                {episodes.length} episodes
+                                {totalEpisodes} episodes
                             </span>
                             {offlineEpisodes.size > 0 && (
                                 <span className="flex items-center gap-1 text-accent-success font-mono">
@@ -508,7 +544,7 @@ export default function PodcastFeedDetailView() {
                                 </a>
                             )}
 
-                            {data.is_subscribed ? (
+                            {isSubscribed ? (
                                 <button
                                     onClick={requestUnsubscribe}
                                     className="flex items-center gap-2 px-4 py-2 text-sm text-red-400 hover:bg-red-500/10 rounded-lg transition-colors border border-transparent hover:border-red-500/30"
@@ -657,6 +693,31 @@ export default function PodcastFeedDetailView() {
                             );
                         })}
                     </div>
+                    
+                    {/* Load More Button */}
+                    {offset < totalEpisodes && (
+                        <div className="flex justify-center pt-4">
+                            <button
+                                onClick={loadMoreEpisodes}
+                                disabled={loadingMore}
+                                className="px-6 py-3 bg-bg-surface hover:bg-bg-elevated border border-border rounded-xl text-text-primary font-medium transition-colors flex items-center gap-2"
+                            >
+                                {loadingMore ? (
+                                    <>
+                                        <Loader2 className="w-4 h-4 animate-spin" />
+                                        Loading more...
+                                    </>
+                                ) : (
+                                    <>
+                                        <span>Load More Episodes</span>
+                                        <span className="text-text-muted text-xs">
+                                            ({Math.min(offset, totalEpisodes)} / {totalEpisodes})
+                                        </span>
+                                    </>
+                                )}
+                            </button>
+                        </div>
+                    )}
                 </div>
             </main>
 

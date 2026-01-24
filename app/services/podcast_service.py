@@ -501,10 +501,15 @@ class PodcastService:
         return episodes
 
     async def get_feed_with_episodes(
-        self, db: AsyncSession, user_id: str, feed_id: int
+        self,
+        db: AsyncSession,
+        user_id: str,
+        feed_id: int,
+        limit: int = 50,
+        offset: int = 0,
     ) -> Optional[Dict[str, Any]]:
         """
-        Get a feed with its episodes.
+        Get a feed with its episodes (paginated).
         Returns feed details, subscription status, and episodes with user state.
         """
         # Check if user is subscribed
@@ -523,7 +528,14 @@ class PodcastService:
         if not feed:
             return None
 
-        # Get episodes with user states
+        # Get total episode count
+        count_stmt = select(func.count(PodcastEpisode.id)).where(
+            PodcastEpisode.feed_id == feed_id
+        )
+        count_result = await db.execute(count_stmt)
+        total_episodes = count_result.scalar_one()
+
+        # Get episodes with user states (Paginated)
         ep_stmt = (
             select(PodcastEpisode, UserEpisodeState)
             .outerjoin(
@@ -535,6 +547,8 @@ class PodcastService:
             )
             .where(PodcastEpisode.feed_id == feed_id)
             .order_by(PodcastEpisode.published_at.desc())
+            .limit(limit)
+            .offset(offset)
         )
         ep_result = await db.execute(ep_stmt)
         rows = ep_result.all()
@@ -563,6 +577,7 @@ class PodcastService:
             "feed": feed,
             "is_subscribed": is_subscribed,
             "episodes": episodes,
+            "total_episodes": total_episodes,
         }
 
     # --- Trending / Top Charts ---
