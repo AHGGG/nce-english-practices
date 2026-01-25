@@ -46,7 +46,6 @@ Keep the sentence structure exactly the same, only replace difficult words with 
 Original: "{sentence}"
 
 Return ONLY the simplified sentence, no explanation.""",
-
     # Stage 2: Grammar Simplification
     "stage2": """Break this sentence into shorter, simpler sentences (Subject-Verb-Object).
 Keep the meaning but remove complex clauses. Use simple connecting words if needed.
@@ -54,7 +53,6 @@ Keep the meaning but remove complex clauses. Use simple connecting words if need
 Original: "{sentence}"
 
 Return ONLY the simplified structure (2-3 short sentences), no explanation.""",
-
     # Stage 3: English Breakdown (Context & Meaning)
     "stage3": """The learner has seen the simplified vocabulary and grammar but still finds it unclear.
 Provide a clear ENGLISH explanation of the meaning in this specific context.
@@ -70,7 +68,6 @@ Respond in this format:
 3. **Breakdown**: [Briefly explain 1-2 difficult phrases if any]
 
 Keep it encouraging and simple.""",
-
     # Stage 4: Chinese Deep Dive
     "stage4": """学习者经过前面的英文解释仍然不理解。请用中文提供深度解析。
     
@@ -102,7 +99,7 @@ EXPLAIN_PROMPTS = {
  💡 EXAMPLES:
  - [Example sentence 1]
  - [Example sentence 2]""",
-     "default_phrase": """Use the Collins COBUILD style to define the phrase "{text}".
+    "default_phrase": """Use the Collins COBUILD style to define the phrase "{text}".
  
  {context}
  
@@ -205,7 +202,6 @@ Respond in this exact JSON format:
 }}
 
 Return ONLY the JSON, no markdown formatting."""
-
 
 
 IMAGE_DETECTION_PROMPT = """You are helping an English learner understand the word "{word}" in the following sentence.
@@ -329,13 +325,13 @@ class SentenceStudyService:
         try:
             # Determine max tokens based on stage
             if stage == 4:  # Chinese deep dive needs more tokens
-                max_gen_tokens = 2000
+                max_gen_tokens = 4000
             elif stage == 3:  # English analysis
-                max_gen_tokens = 1000
+                max_gen_tokens = 2000
             elif stage == 2:  # Grammar simplification
-                max_gen_tokens = 400
+                max_gen_tokens = 500
             else:  # Stage 1: Vocabulary simplification
-                max_gen_tokens = 200
+                max_gen_tokens = 300
 
             stream = await self.llm.async_client.chat.completions.create(
                 model=self.llm.model_name,
@@ -380,16 +376,18 @@ class SentenceStudyService:
         import asyncio
         import json
         from app.config import settings
-        
+
         # Start parallel image check ONLY if feature is enabled
         detect_task = None
         if settings.ENABLE_IMAGE_GENERATION:
             context_parts_img = []
-            if prev_sentence: context_parts_img.append(prev_sentence)
+            if prev_sentence:
+                context_parts_img.append(prev_sentence)
             context_parts_img.append(sentence)
-            if next_sentence: context_parts_img.append(next_sentence)
+            if next_sentence:
+                context_parts_img.append(next_sentence)
             full_context = " ".join(context_parts_img)
-            
+
             detect_task = asyncio.create_task(
                 self.detect_image_suitability(text, sentence, full_context)
             )
@@ -416,24 +414,31 @@ class SentenceStudyService:
             item_type = "短语" if is_phrase else "单词"
             item_type_en = "phrase" if is_phrase else "word"
 
-            # Select prompt based on style
+            # Select prompt and max_tokens based on style
+            max_gen_tokens = 1000
+
             if style == "brief":
                 prompt = EXPLAIN_PROMPTS["brief"].format(text=text, context=context)
+                max_gen_tokens = 300
             elif style == "detailed":
                 prompt = EXPLAIN_PROMPTS["detailed"].format(
                     text=text, context=context, item_type=item_type
                 )
+                max_gen_tokens = 2000  # Chinese detailed explanation needs more tokens
             elif style == "simple":
                 prompt = EXPLAIN_PROMPTS["simple"].format(
                     text=text, context=context, item_type=item_type_en
                 )
+                max_gen_tokens = 500
             elif style == "chinese_deep":
                 prompt = EXPLAIN_PROMPTS["chinese_deep"].format(
                     text=text, context=context, item_type=item_type
                 )
+                max_gen_tokens = 2000  # Deep dive needs more tokens
             else:
                 template = "default_phrase" if is_phrase else "default_word"
                 prompt = EXPLAIN_PROMPTS[template].format(text=text, context=context)
+                max_gen_tokens = 1000
 
             # Stream from LLM
             full_text = ""
@@ -441,7 +446,7 @@ class SentenceStudyService:
                 stream = await self.llm.async_client.chat.completions.create(
                     model=self.llm.model_name,
                     messages=[{"role": "user", "content": prompt}],
-                    max_tokens=1000,
+                    max_tokens=max_gen_tokens,
                     temperature=0.3,
                     stream=True,
                 )
@@ -451,17 +456,19 @@ class SentenceStudyService:
                         content = chunk.choices[0].delta.content
                         full_text += content
                         yield json.dumps({"type": "chunk", "content": content})
-                    
+
                     # Check if image detection completed during streaming
                     if detect_task and not image_check_sent and detect_task.done():
                         try:
                             result = detect_task.result()
                             if result and result.get("suitable"):
-                                yield json.dumps({
-                                    "type": "image_check", 
-                                    "suitable": True,
-                                    "image_prompt": result.get("image_prompt")
-                                })
+                                yield json.dumps(
+                                    {
+                                        "type": "image_check",
+                                        "suitable": True,
+                                        "image_prompt": result.get("image_prompt"),
+                                    }
+                                )
                             image_check_sent = True
                         except Exception as e:
                             logger.error(f"Image check task error during stream: {e}")
@@ -477,38 +484,51 @@ class SentenceStudyService:
         # Parallel Task Result: Check if image check completed (fallback if not sent during stream)
         if detect_task and not image_check_sent:
             try:
-                 result = await detect_task
-                 if result and result.get("suitable"):
-                     yield json.dumps({
-                         "type": "image_check", 
-                         "suitable": True,
-                         "image_prompt": result.get("image_prompt")
-                     })
+                result = await detect_task
+                if result and result.get("suitable"):
+                    yield json.dumps(
+                        {
+                            "type": "image_check",
+                            "suitable": True,
+                            "image_prompt": result.get("image_prompt"),
+                        }
+                    )
             except Exception as e:
                 logger.error(f"Image check task error: {e}")
 
-    async def detect_image_suitability(self, word: str, sentence: str, context: str = "") -> dict:
+    async def detect_image_suitability(
+        self, word: str, sentence: str, context: str = ""
+    ) -> dict:
         """Check if a word is suitable for image generation."""
         try:
-             prompt = IMAGE_DETECTION_PROMPT.format(word=word, sentence=sentence, context=context)
-             
-             response = await self.llm.async_client.chat.completions.create(
+            prompt = IMAGE_DETECTION_PROMPT.format(
+                word=word, sentence=sentence, context=context
+            )
+
+            response = await self.llm.async_client.chat.completions.create(
                 model=self.llm.model_name,
                 messages=[{"role": "user", "content": prompt}],
                 max_tokens=200,  # Increased for longer prompts
                 temperature=0.1,
                 response_format={"type": "json_object"},
-             )
+            )
              content = response.choices[0].message.content
+             if not content:
+                 return {"suitable": False, "image_prompt": None}
+
              try:
                  result = json.loads(content)
-                 # Log the result for debugging
-                 logger.info(f"[Image Detection] word='{word}', reasoning={result.get('reasoning')}, suitable={result.get('suitable')}, prompt={result.get('image_prompt')[:80] if result.get('image_prompt') else 'N/A'}...")
-                 return result
-             except:
-                 logger.warning(f"[Image Detection] Failed to parse JSON: {content[:200]}")
-                 return {"suitable": False, "image_prompt": None}
-                 
+                # Log the result for debugging
+                logger.info(
+                    f"[Image Detection] word='{word}', reasoning={result.get('reasoning')}, suitable={result.get('suitable')}, prompt={result.get('image_prompt')[:80] if result.get('image_prompt') else 'N/A'}..."
+                )
+                return result
+            except:
+                logger.warning(
+                    f"[Image Detection] Failed to parse JSON: {content[:200]}"
+                )
+                return {"suitable": False, "image_prompt": None}
+
         except Exception as e:
             logger.error(f"Image detection error: {e}")
             return {"suitable": False, "image_prompt": None}
