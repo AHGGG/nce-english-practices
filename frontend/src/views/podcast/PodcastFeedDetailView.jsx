@@ -11,14 +11,7 @@ import {
     CheckCircle2, AlertCircle, CloudOff, HardDrive, Info, Check, Plus
 } from 'lucide-react';
 import * as podcastApi from '../../api/podcast';
-import { authFetch } from '../../api/auth';
 import { usePodcast } from '../../context/PodcastContext';
-import {
-    downloadEpisodeForOffline,
-    getOfflineEpisodeIds,
-    removeOfflineEpisode,
-    getStorageEstimate
-} from '../../utils/offline';
 import { useToast, Dialog, DialogButton } from '../../components/ui';
 
 function formatDuration(seconds) {
@@ -44,7 +37,11 @@ function formatDate(dateStr) {
 export default function PodcastFeedDetailView() {
     const { feedId } = useParams();
     const navigate = useNavigate();
-    const { currentEpisode, isPlaying, currentTime, duration, playEpisode, togglePlayPause } = usePodcast();
+    const { 
+        currentEpisode, isPlaying, currentTime, duration, playEpisode, togglePlayPause,
+        // Context now handles downloads
+        downloadState, offlineEpisodes, storageInfo, startDownload, cancelDownload, removeDownload
+    } = usePodcast();
     const { addToast } = useToast();
 
     const [feed, setFeed] = useState(null);
@@ -101,20 +98,6 @@ export default function PodcastFeedDetailView() {
 
     // Confirmation Dialog State
     const [confirmAction, setConfirmAction] = useState(null); // { isOpen, title, message, onConfirm, confirmText, isDanger }
-
-    // Download state: { [episodeId]: { status: 'idle'|'downloading'|'done'|'error', progress: 0-100, error?: string } }
-    const [downloadState, setDownloadState] = useState({});
-    const [offlineEpisodes, setOfflineEpisodes] = useState(new Set());
-    const [storageInfo, setStorageInfo] = useState(null);
-
-    // Load offline episodes on mount
-    useEffect(() => {
-        const ids = getOfflineEpisodeIds();
-        setOfflineEpisodes(new Set(ids));
-
-        // Get storage estimate
-        getStorageEstimate().then(setStorageInfo);
-    }, []);
 
     useEffect(() => {
         loadFeed(true);
@@ -223,32 +206,8 @@ export default function PodcastFeedDetailView() {
         }
     }
 
-    // Track abort controllers: { [episodeId]: AbortController }
-    const [abortControllers, setAbortControllers] = useState({});
-
-    // Cleanup abort controllers on unmount
-    useEffect(() => {
-        return () => {
-            Object.values(abortControllers).forEach(controller => controller.abort());
-        };
-    }, []); // eslint-disable-line react-hooks/exhaustive-deps
-
-    const handleCancelDownload = useCallback((episodeId) => {
-        const controller = abortControllers[episodeId];
-        if (controller) {
-            controller.abort();
-            setAbortControllers(prev => {
-                const next = { ...prev };
-                delete next[episodeId];
-                return next;
-            });
-            setDownloadState(prev => ({ ...prev, [episodeId]: { status: 'idle', progress: 0 } }));
-        }
-    }, [abortControllers]);
-
-    const handleDownload = useCallback(async (episode) => {
+    const handleDownloadClick = useCallback(async (episode) => {
         const episodeId = episode.id;
-        const proxyUrl = `/api/podcast/episode/${episodeId}/download`;
 
         // Check if already downloaded
         if (offlineEpisodes.has(episodeId)) {
@@ -260,13 +219,7 @@ export default function PodcastFeedDetailView() {
                 confirmText: "Remove",
                 isDanger: true,
                 onConfirm: async () => {
-                    await removeOfflineEpisode(episodeId, proxyUrl);
-                    setOfflineEpisodes(prev => {
-                        const next = new Set(prev);
-                        next.delete(episodeId);
-                        return next;
-                    });
-                    setDownloadState(prev => ({ ...prev, [episodeId]: { status: 'idle', progress: 0 } }));
+                    await removeDownload(episodeId);
                     setConfirmAction(null);
                     addToast('Download removed', 'info');
                 }
@@ -274,60 +227,16 @@ export default function PodcastFeedDetailView() {
             return;
         }
 
-        // Start download
-        const controller = new AbortController();
-        setAbortControllers(prev => ({ ...prev, [episodeId]: controller }));
-        setDownloadState(prev => ({ ...prev, [episodeId]: { status: 'downloading', progress: 0 } }));
-
-        try {
-            const success = await downloadEpisodeForOffline(
-                episodeId,
-                proxyUrl,
-                (received, total) => {
-                    const progress = Math.round((received / total) * 100);
-                    setDownloadState(prev => ({ ...prev, [episodeId]: { status: 'downloading', progress } }));
-                },
-                authFetch,
-                controller.signal
-            );
-
-            if (success) {
-                setDownloadState(prev => ({ ...prev, [episodeId]: { status: 'done', progress: 100 } }));
-                setOfflineEpisodes(prev => new Set([...prev, episodeId]));
-                // Update storage info
-                getStorageEstimate().then(setStorageInfo);
-            }
-        } catch (e) {
-            // If aborted, the UI is already reset by handleCancelDownload usually
-            // but we check here just in case natural abort happened
-            let errorMsg = e.message || 'Unknown error';
-
-            if (controller.signal.aborted) {
-                // Aborted by user
-                setDownloadState(prev => ({ ...prev, [episodeId]: { status: 'idle', progress: 0 } }));
-                return;
-            }
-
-            // Handle quota exceeded error
-            if (e.name === 'QuotaExceededError' || errorMsg.includes('quota')) {
-                errorMsg = 'Storage full. Please free up space.';
-            }
-
-            setDownloadState(prev => ({
-                ...prev,
-                [episodeId]: { status: 'error', progress: 0, error: errorMsg }
-            }));
-
-            console.error('[Download] Failed:', e);
-        } finally {
-            // Cleanup controller ref
-            setAbortControllers(prev => {
-                const next = { ...prev };
-                delete next[episodeId];
-                return next;
-            });
+        // Check if currently downloading (handled by render, but safety)
+        const state = downloadState[episodeId];
+        if (state?.status === 'downloading') {
+            cancelDownload(episodeId);
+            return;
         }
-    }, [offlineEpisodes]);
+
+        // Start download
+        startDownload(episode);
+    }, [offlineEpisodes, downloadState, removeDownload, startDownload, cancelDownload, addToast]);
 
     // Render download button with status
     const renderDownloadButton = (episode) => {
@@ -371,7 +280,7 @@ export default function PodcastFeedDetailView() {
                         <button
                             onClick={(e) => {
                                 e.stopPropagation();
-                                handleCancelDownload(episode.id);
+                                cancelDownload(episode.id);
                             }}
                             className="absolute inset-0 flex items-center justify-center bg-bg-surface/80 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
                             title="Cancel download"
@@ -389,8 +298,7 @@ export default function PodcastFeedDetailView() {
                     onClick={(e) => {
                         e.stopPropagation();
                         // Retry download
-                        setDownloadState(prev => ({ ...prev, [episode.id]: { status: 'idle', progress: 0 } }));
-                        handleDownload(episode);
+                        handleDownloadClick(episode);
                     }}
                     className="flex-shrink-0 p-3 text-red-400 hover:bg-red-500/10 rounded-lg transition-colors"
                     title={state.error || 'Download failed. Click to retry.'}
@@ -405,7 +313,7 @@ export default function PodcastFeedDetailView() {
                 <button
                     onClick={(e) => {
                         e.stopPropagation();
-                        handleDownload(episode); // Will offer to remove
+                        handleDownloadClick(episode); // Will offer to remove
                     }}
                     className="flex-shrink-0 p-3 text-accent-success hover:bg-accent-success/10 rounded-lg transition-colors"
                     title="Downloaded. Click to remove."
@@ -420,7 +328,7 @@ export default function PodcastFeedDetailView() {
             <button
                 onClick={(e) => {
                     e.stopPropagation();
-                    handleDownload(episode);
+                    handleDownloadClick(episode);
                 }}
                 className="flex-shrink-0 p-3 text-text-muted hover:text-accent-primary hover:bg-accent-primary/10 rounded-lg transition-colors"
                 title="Download for offline"

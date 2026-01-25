@@ -7,16 +7,10 @@ import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
     Play, Pause, Trash2, Loader2, CloudOff, HardDrive,
-    Clock, AlertCircle, Music, RefreshCw, Check
+    Clock, AlertCircle, Music, RefreshCw, Check, Download
 } from 'lucide-react';
 import PodcastLayout from '../../components/podcast/PodcastLayout';
 import { usePodcast } from '../../context/PodcastContext';
-import {
-    getOfflineEpisodeIds,
-    removeOfflineEpisode,
-    getStorageEstimate,
-    clearPodcastCache
-} from '../../utils/offline';
 import * as podcastApi from '../../api/podcast';
 import { useToast, Dialog, DialogButton } from '../../components/ui';
 
@@ -40,41 +34,65 @@ function formatBytes(bytes) {
 
 export default function PodcastDownloadsView() {
     const navigate = useNavigate();
-    const { currentEpisode, isPlaying, currentTime, duration, playEpisode, togglePlayPause } = usePodcast();
+    const { 
+        currentEpisode, isPlaying, currentTime, duration, playEpisode, togglePlayPause,
+        // Use context for offline state and downloads
+        offlineEpisodes, storageInfo, removeDownload, clearAllDownloads,
+        downloadState, cancelDownload
+    } = usePodcast();
     const { addToast } = useToast();
 
     const [episodes, setEpisodes] = useState([]);
+    const [downloadingEpisodes, setDownloadingEpisodes] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [storageInfo, setStorageInfo] = useState(null);
+    // storageInfo is now from context
     const [deleting, setDeleting] = useState({});
     const [clearing, setClearing] = useState(false);
     const [showClearConfirm, setShowClearConfirm] = useState(false);
 
     // Load offline episodes
-    const loadOfflineEpisodes = useCallback(async () => {
+    const loadEpisodes = useCallback(async () => {
+        // Collect IDs: both completed (offlineEpisodes) and currently downloading (downloadState)
+        const offlineIds = Array.from(offlineEpisodes);
+        const downloadingIds = Object.keys(downloadState).map(Number);
+        
+        // Merge unique IDs
+        const allIds = [...new Set([...offlineIds, ...downloadingIds])];
+
+        if (allIds.length === 0) {
+            setEpisodes([]);
+            setLoading(false);
+            return;
+        }
+
         setLoading(true);
         try {
-            const offlineIds = getOfflineEpisodeIds();
-
-            if (offlineIds.length === 0) {
-                setEpisodes([]);
-                return;
-            }
-
-            // Efficiently fetch details for all offline episodes in one batch request
-            const offlineEpisodes = await podcastApi.getEpisodesBatch(offlineIds);
-            setEpisodes(offlineEpisodes);
+            // Efficiently fetch details for all episodes in one batch request
+            const episodesData = await podcastApi.getEpisodesBatch(allIds);
+            setEpisodes(episodesData);
         } catch (e) {
-            console.error('Failed to load offline episodes:', e);
+            console.error('Failed to load episodes:', e);
         } finally {
             setLoading(false);
         }
-    }, []);
+    }, [offlineEpisodes, downloadState]);
 
     useEffect(() => {
-        loadOfflineEpisodes();
-        getStorageEstimate().then(setStorageInfo);
-    }, [loadOfflineEpisodes]);
+        // Only trigger full reload if the SET of IDs changes, not on every progress update
+        // We handle progress updates via the downloadState object directly in render
+        
+        // This effect might be too aggressive if triggered on every downloadState change (progress)
+        // Ideally we only reload if a NEW episode starts downloading or finishes (and wasn't in list)
+        
+        // Simplification: Load once on mount, and then rely on context updates?
+        // No, we need the episode METADATA (title, image) which isn't in context.
+        
+        // Optimization: Debounce or check if IDs actually changed?
+        // For now, let's trust that users don't have 100s of active downloads.
+        // We can optimize by only fetching NEW ids.
+        
+        loadEpisodes();
+    }, [offlineEpisodes.size, Object.keys(downloadState).length]); // Only reload when counts change
 
     const handlePlay = (item) => {
         if (currentEpisode?.id === item.episode.id) {
@@ -88,15 +106,26 @@ export default function PodcastDownloadsView() {
 
     const handleDelete = async (item) => {
         const episodeId = item.episode.id;
-        const proxyUrl = `/api/podcast/episode/${episodeId}/download`;
+        
+        // If it's downloading, cancel it
+        if (downloadState[episodeId]?.status === 'downloading') {
+            cancelDownload(episodeId);
+            setEpisodes(prev => prev.filter(ep => ep.episode.id !== episodeId));
+            return;
+        }
 
         setDeleting(prev => ({ ...prev, [episodeId]: true }));
 
         try {
-            await removeOfflineEpisode(episodeId, proxyUrl);
-            setEpisodes(prev => prev.filter(ep => ep.episode.id !== episodeId));
-            getStorageEstimate().then(setStorageInfo);
-            addToast('Episode removed', 'success');
+            const success = await removeDownload(episodeId);
+            if (success) {
+                // List update is handled by useEffect on offlineEpisodes change
+                // but we can optimistically filter locally to avoid flicker
+                setEpisodes(prev => prev.filter(ep => ep.episode.id !== episodeId));
+                addToast('Episode removed', 'success');
+            } else {
+                addToast('Failed to remove episode', 'error');
+            }
         } catch (e) {
             addToast('Failed to remove: ' + e.message, 'error');
         } finally {
@@ -112,10 +141,13 @@ export default function PodcastDownloadsView() {
         setClearing(true);
         setShowClearConfirm(false);
         try {
-            await clearPodcastCache();
-            setEpisodes([]);
-            getStorageEstimate().then(setStorageInfo);
-            addToast('All downloads cleared', 'success');
+            const success = await clearAllDownloads();
+            if (success) {
+                setEpisodes([]);
+                addToast('All downloads cleared', 'success');
+            } else {
+                addToast('Failed to clear cache', 'error');
+            }
         } catch (e) {
             addToast('Failed to clear cache: ' + e.message, 'error');
         } finally {
@@ -165,7 +197,7 @@ export default function PodcastDownloadsView() {
                             {/* Actions */}
                             <div className="flex items-center gap-2">
                                 <button
-                                    onClick={loadOfflineEpisodes}
+                                    onClick={loadEpisodes}
                                     className="p-2 text-text-muted hover:text-text-primary hover:bg-bg-elevated rounded-lg transition-colors"
                                     title="Refresh list"
                                 >
@@ -193,7 +225,7 @@ export default function PodcastDownloadsView() {
                 </div>
 
                 {/* Episode list */}
-                {loading ? (
+                {loading && episodes.length === 0 ? (
                     <div className="flex items-center justify-center py-16">
                         <Loader2 className="w-8 h-8 animate-spin text-accent-primary" />
                     </div>
@@ -220,6 +252,9 @@ export default function PodcastDownloadsView() {
                         {episodes.map((item) => {
                             const isCurrentEpisode = currentEpisode?.id === item.episode.id;
                             const ep = item.episode;
+                            const dState = downloadState[ep.id];
+                            const isDownloading = dState?.status === 'downloading';
+                            const isError = dState?.status === 'error';
 
                             // Calculate completion status
                             const isCurrentEp = currentEpisode?.id === ep.id;
@@ -238,24 +273,46 @@ export default function PodcastDownloadsView() {
                                             : 'bg-bg-surface border border-transparent hover:border-accent-primary/20 hover:shadow-lg'
                                         }`}
                                 >
-                                    {/* Play button */}
-                                    <button
-                                        onClick={() => handlePlay(item)}
-                                        className={`flex-shrink-0 w-12 h-12 rounded-full flex items-center justify-center transition-all ${isCurrentEpisode
-                                            ? 'bg-gradient-to-br from-accent-primary to-accent-secondary text-black shadow-lg shadow-accent-primary/30'
-                                            : isFinished
-                                                ? 'bg-transparent border-2 border-accent-success/40 text-accent-success hover:border-accent-success hover:bg-accent-success/10'
-                                                : 'bg-bg-elevated/30 border border-white/10 text-text-primary hover:bg-bg-elevated hover:border-white/20 hover:scale-105'
-                                            }`}
-                                    >
-                                        {isCurrentEpisode && isPlaying ? (
-                                            <Pause className="w-5 h-5" />
-                                        ) : isFinished && !isCurrentEpisode ? (
-                                            <Check className="w-5 h-5 stroke-[2.5]" />
-                                        ) : (
-                                            <Play className="w-5 h-5 ml-0.5" />
-                                        )}
-                                    </button>
+                                    {/* Play button or Download Spinner */}
+                                    {isDownloading ? (
+                                        <div className="flex-shrink-0 w-12 h-12 flex items-center justify-center">
+                                            <div className="relative w-10 h-10">
+                                                <svg className="w-10 h-10 -rotate-90">
+                                                    <circle
+                                                        cx="20" cy="20" r="16" strokeWidth="3"
+                                                        stroke="currentColor" fill="none" className="text-bg-elevated"
+                                                    />
+                                                    <circle
+                                                        cx="20" cy="20" r="16" strokeWidth="3"
+                                                        stroke="currentColor" fill="none" className="text-accent-primary"
+                                                        strokeDasharray={`${dState.progress} 100`}
+                                                        strokeLinecap="round"
+                                                    />
+                                                </svg>
+                                                <span className="absolute inset-0 flex items-center justify-center text-[10px] font-mono text-accent-primary">
+                                                    {dState.progress}%
+                                                </span>
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <button
+                                            onClick={() => handlePlay(item)}
+                                            className={`flex-shrink-0 w-12 h-12 rounded-full flex items-center justify-center transition-all ${isCurrentEpisode
+                                                ? 'bg-gradient-to-br from-accent-primary to-accent-secondary text-black shadow-lg shadow-accent-primary/30'
+                                                : isFinished
+                                                    ? 'bg-transparent border-2 border-accent-success/40 text-accent-success hover:border-accent-success hover:bg-accent-success/10'
+                                                    : 'bg-bg-elevated/30 border border-white/10 text-text-primary hover:bg-bg-elevated hover:border-white/20 hover:scale-105'
+                                                }`}
+                                        >
+                                            {isCurrentEpisode && isPlaying ? (
+                                                <Pause className="w-5 h-5" />
+                                            ) : isFinished && !isCurrentEpisode ? (
+                                                <Check className="w-5 h-5 stroke-[2.5]" />
+                                            ) : (
+                                                <Play className="w-5 h-5 ml-0.5" />
+                                            )}
+                                        </button>
+                                    )}
 
                                     {/* Episode info */}
                                     <div className="flex-1 min-w-0">
@@ -276,6 +333,7 @@ export default function PodcastDownloadsView() {
                                                 </span>
                                             )}
                                             {(() => {
+                                                if (isDownloading) return null;
                                                 if (isFinished) {
                                                     return null;
                                                 }
@@ -288,19 +346,32 @@ export default function PodcastDownloadsView() {
                                                 }
                                                 return null;
                                             })()}
-                                            <span className="flex items-center gap-1 text-accent-success">
-                                                <CloudOff className="w-3 h-3" />
-                                                Offline
-                                            </span>
+                                            
+                                            {isDownloading ? (
+                                                <span className="flex items-center gap-1 text-accent-primary animate-pulse">
+                                                    <Download className="w-3 h-3" />
+                                                    Downloading...
+                                                </span>
+                                            ) : isError ? (
+                                                <span className="flex items-center gap-1 text-red-400">
+                                                    <AlertCircle className="w-3 h-3" />
+                                                    Failed
+                                                </span>
+                                            ) : (
+                                                <span className="flex items-center gap-1 text-accent-success">
+                                                    <CloudOff className="w-3 h-3" />
+                                                    Offline
+                                                </span>
+                                            )}
                                         </div>
                                     </div>
 
-                                    {/* Delete button */}
+                                    {/* Delete/Cancel button */}
                                     <button
                                         onClick={() => handleDelete(item)}
                                         disabled={deleting[ep.id]}
                                         className="flex-shrink-0 p-3 text-text-muted hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors"
-                                        title="Remove download"
+                                        title={isDownloading ? "Cancel download" : "Remove download"}
                                     >
                                         {deleting[ep.id] ? (
                                             <Loader2 className="w-5 h-5 animate-spin" />

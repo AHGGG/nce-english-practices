@@ -1,15 +1,26 @@
 /**
  * Podcast Context.
- * Manages global audio playback state for the persistent player.
+ * Manages global audio playback state and background downloads.
  */
 
 import { createContext, useContext, useState, useRef, useCallback, useEffect } from 'react';
 import * as podcastApi from '../api/podcast';
-import { getCachedAudioUrl } from '../utils/offline';
+import { authFetch } from '../api/auth';
+import { useToast } from '../components/ui';
+import {
+    getCachedAudioUrl,
+    downloadEpisodeForOffline,
+    getOfflineEpisodeIds,
+    removeOfflineEpisode,
+    getStorageEstimate,
+    clearPodcastCache
+} from '../utils/offline';
 
 const PodcastContext = createContext(null);
 
 export function PodcastProvider({ children }) {
+    const { addToast } = useToast();
+
     // Current track info
     const [currentEpisode, setCurrentEpisode] = useState(null);
     const [currentFeed, setCurrentFeed] = useState(null);
@@ -31,6 +42,13 @@ export function PodcastProvider({ children }) {
     const currentEpisodeRef = useRef(null);
     const listenedSecondsRef = useRef(0);
     const isFinishingRef = useRef(false);
+
+    // Download state
+    // { [episodeId]: { status: 'idle'|'downloading'|'done'|'error', progress: 0-100, error?: string } }
+    const [downloadState, setDownloadState] = useState({});
+    const [offlineEpisodes, setOfflineEpisodes] = useState(new Set());
+    const [storageInfo, setStorageInfo] = useState(null);
+    const abortControllersRef = useRef({});
 
     // Keep refs in sync with state
     useEffect(() => {
@@ -171,6 +189,121 @@ export function PodcastProvider({ children }) {
             savePosition();
         };
     }, [sessionId, isPlaying, listenedSeconds]);
+
+    // Load offline episodes and storage info on mount
+    useEffect(() => {
+        const ids = getOfflineEpisodeIds();
+        setOfflineEpisodes(new Set(ids));
+        getStorageEstimate().then(setStorageInfo);
+
+        // Cleanup abort controllers on unmount (context rarely unmounts, but good practice)
+        return () => {
+            Object.values(abortControllersRef.current).forEach(controller => controller.abort());
+        };
+    }, []);
+
+    // --- Download Actions ---
+
+    const cancelDownload = useCallback((episodeId) => {
+        const controller = abortControllersRef.current[episodeId];
+        if (controller) {
+            controller.abort();
+            delete abortControllersRef.current[episodeId];
+            setDownloadState(prev => {
+                const next = { ...prev };
+                delete next[episodeId]; // Or set to idle/cancelled
+                return next;
+            });
+            // Just reset to idle so it disappears from active list
+            setDownloadState(prev => ({ ...prev, [episodeId]: { status: 'idle', progress: 0 } }));
+        }
+    }, []);
+
+    const startDownload = useCallback(async (episode) => {
+        const episodeId = episode.id;
+        const proxyUrl = `/api/podcast/episode/${episodeId}/download`;
+
+        // Check if already downloaded (should be handled by UI, but safety check)
+        if (offlineEpisodes.has(episodeId)) {
+            console.warn('[Podcast] Episode already downloaded:', episodeId);
+            return;
+        }
+
+        // Setup controller
+        const controller = new AbortController();
+        abortControllersRef.current[episodeId] = controller;
+        
+        setDownloadState(prev => ({ ...prev, [episodeId]: { status: 'downloading', progress: 0 } }));
+        addToast('Downloading in background...', 'info');
+
+        try {
+            const success = await downloadEpisodeForOffline(
+                episodeId,
+                proxyUrl,
+                (received, total) => {
+                    const progress = Math.round((received / total) * 100);
+                    setDownloadState(prev => ({ ...prev, [episodeId]: { status: 'downloading', progress } }));
+                },
+                authFetch,
+                controller.signal
+            );
+
+            if (success) {
+                setDownloadState(prev => ({ ...prev, [episodeId]: { status: 'done', progress: 100 } }));
+                setOfflineEpisodes(prev => new Set([...prev, episodeId]));
+                // Update storage info
+                getStorageEstimate().then(setStorageInfo);
+                addToast(`Downloaded "${episode.title}"`, 'success');
+            }
+        } catch (e) {
+            if (controller.signal.aborted) {
+                // Aborted by user - handled by cancelDownload usually, but ensure state is clean
+                setDownloadState(prev => ({ ...prev, [episodeId]: { status: 'idle', progress: 0 } }));
+                return;
+            }
+
+            let errorMsg = e.message || 'Unknown error';
+            // Handle quota exceeded error
+            if (e.name === 'QuotaExceededError' || errorMsg.includes('quota')) {
+                errorMsg = 'Storage full. Please free up space.';
+            }
+
+            setDownloadState(prev => ({
+                ...prev,
+                [episodeId]: { status: 'error', progress: 0, error: errorMsg }
+            }));
+            addToast(`Download failed: ${errorMsg}`, 'error');
+            console.error('[Download] Failed:', e);
+        } finally {
+            delete abortControllersRef.current[episodeId];
+        }
+    }, [offlineEpisodes, addToast]);
+
+    const removeDownload = useCallback(async (episodeId) => {
+        const proxyUrl = `/api/podcast/episode/${episodeId}/download`;
+        const success = await removeOfflineEpisode(episodeId, proxyUrl);
+        
+        if (success) {
+            setOfflineEpisodes(prev => {
+                const next = new Set(prev);
+                next.delete(episodeId);
+                return next;
+            });
+            setDownloadState(prev => ({ ...prev, [episodeId]: { status: 'idle', progress: 0 } }));
+            getStorageEstimate().then(setStorageInfo);
+        }
+        return success;
+    }, []);
+
+    const clearAllDownloads = useCallback(async () => {
+        const success = await clearPodcastCache();
+        if (success) {
+            setOfflineEpisodes(new Set());
+            setDownloadState({});
+            getStorageEstimate().then(setStorageInfo);
+        }
+        return success;
+    }, []);
 
     // Play an episode
     // startPosition: optional position in seconds to start from (for resume)
@@ -326,7 +459,7 @@ export function PodcastProvider({ children }) {
     }, [sessionId, listenedSeconds]);
 
     const value = {
-        // State
+        // Playback State
         currentEpisode,
         currentFeed,
         isPlaying,
@@ -336,13 +469,24 @@ export function PodcastProvider({ children }) {
         listenedSeconds,
         playbackRate,
 
-        // Actions
+        // Download State
+        downloadState,
+        offlineEpisodes,
+        storageInfo,
+
+        // Playback Actions
         playEpisode,
         togglePlayPause,
         seek,
         skip,
         stop,
         setPlaybackRate,
+
+        // Download Actions
+        startDownload,
+        cancelDownload,
+        removeDownload,
+        clearAllDownloads,
     };
 
     return (

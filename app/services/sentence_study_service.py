@@ -512,12 +512,12 @@ class SentenceStudyService:
                 temperature=0.1,
                 response_format={"type": "json_object"},
             )
-             content = response.choices[0].message.content
-             if not content:
-                 return {"suitable": False, "image_prompt": None}
+            content = response.choices[0].message.content
+            if not content:
+                return {"suitable": False, "image_prompt": None}
 
-             try:
-                 result = json.loads(content)
+            try:
+                result = json.loads(content)
                 # Log the result for debugging
                 logger.info(
                     f"[Image Detection] word='{word}', reasoning={result.get('reasoning')}, suitable={result.get('suitable')}, prompt={result.get('image_prompt')[:80] if result.get('image_prompt') else 'N/A'}..."
