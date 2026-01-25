@@ -248,7 +248,7 @@ const ReadingMode = () => {
 
 
 
-    const playAudio = useCallback((text) => {
+    const playTtsAudio = useCallback((text) => {
         if (!text) return;
         if (audioRef.current) {
             audioRef.current.pause();
@@ -260,10 +260,10 @@ const ReadingMode = () => {
     }, []);
 
     const handleWordClick = useCallback((word, sentence) => {
-        playAudio(word);
+        playTtsAudio(word);
         hookHandleWordClick(word, sentence);
         inspectedWordsRef.current.add(word.toLowerCase());
-    }, [hookHandleWordClick, playAudio]);
+    }, [hookHandleWordClick, playTtsAudio]);
 
     const handleMarkAsKnown = useCallback(async (word) => {
         // 1. Optimistic Update
@@ -413,7 +413,7 @@ const ReadingMode = () => {
                 inspectorData={inspectorData}
                 isInspecting={isInspecting}
                 onClose={closeInspector}
-                onPlayAudio={playAudio}
+                onPlayAudio={playTtsAudio}
                 onMarkAsKnown={handleMarkAsKnown}
                 contextExplanation={contextExplanation}
                 isExplaining={isExplaining}
