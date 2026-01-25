@@ -247,9 +247,10 @@ const ReadingMode = () => {
     };
 
     const handleWordClick = useCallback((word, sentence) => {
+        playAudio(word);
         hookHandleWordClick(word, sentence);
         inspectedWordsRef.current.add(word.toLowerCase());
-    }, [hookHandleWordClick]);
+    }, [hookHandleWordClick, playAudio]);
 
     const handleMarkAsKnown = useCallback(async (word) => {
         // 1. Optimistic Update

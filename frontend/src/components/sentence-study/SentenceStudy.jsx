@@ -327,6 +327,8 @@ const SentenceStudy = () => {
         const cleanWord = word.toLowerCase().trim();
         if (cleanWord.length < 2) return;
 
+        playAudio(cleanWord);
+
         const hasMultipleWords = cleanWord.includes(' ');
 
         // Track for study metrics
@@ -338,7 +340,7 @@ const SentenceStudy = () => {
 
         // Delegate to shared hook for inspector logic
         baseHandleWordClick(cleanWord, sentence || flatSentences[currentIndex]?.text || '', keyWord);
-    }, [wordClicks, phraseClicks, baseHandleWordClick, flatSentences, currentIndex]);
+    }, [wordClicks, phraseClicks, baseHandleWordClick, flatSentences, currentIndex, playAudio]);
 
     const handleClear = useCallback(async () => {
         const dwellTime = Date.now() - startTime;
