@@ -123,6 +123,7 @@ export default function PodcastFeedDetailView() {
     async function loadFeed(reset = false) {
         try {
             if (reset) {
+                window.scrollTo(0, 0);
                 setLoading(true);
                 setOffset(0);
                 setEpisodes([]);
@@ -218,7 +219,7 @@ export default function PodcastFeedDetailView() {
         } else {
             // Pass resume position from episode data
             const resumePosition = episode.current_position || 0;
-            playEpisode(episode, data.feed, resumePosition);
+            playEpisode(episode, feed, resumePosition);
         }
     }
 
