@@ -109,6 +109,21 @@ const DictionaryResults = ({ word, source, entries = [] }) => {
                                 {entry.pronunciation_us && <span>US: /{entry.pronunciation_us}/</span>}
                             </div>
                         )}
+                        {/* Inflections (e.g. plural form) */}
+                        {entry.inflections && (
+                            <span className="text-sm text-text-muted italic font-serif">
+                                {Array.isArray(entry.inflections)
+                                    ? entry.inflections.map((inf, i) => (
+                                        <span key={i} className="mr-2">
+                                            {inf.form}
+                                            {inf.label && <span className="ml-1 text-xs not-italic text-text-secondary">({inf.label})</span>}
+                                            {i < entry.inflections.length - 1 ? ',' : ''}
+                                        </span>
+                                    ))
+                                    : entry.inflections
+                                }
+                            </span>
+                        )}
                     </div>
 
                     {/* Senses */}
@@ -208,6 +223,12 @@ const DictionaryResults = ({ word, source, entries = [] }) => {
                                 </button>
                                 {isSectionExpanded(idx, 'verb_table') && (
                                     <div className="mt-2 p-3 bg-bg-elevated rounded">
+                                        <div className="mb-3 pb-2 border-b border-border/50">
+                                            <span className="text-xs text-text-muted mr-2">Base Form (Prototype):</span>
+                                            <span className="text-sm font-bold text-accent-primary font-serif">
+                                                {entry.verb_table.lemma}
+                                            </span>
+                                        </div>
                                         <div className="text-xs font-mono">
                                             {entry.verb_table.simple_forms?.length > 0 && (
                                                 <div className="mb-3">
