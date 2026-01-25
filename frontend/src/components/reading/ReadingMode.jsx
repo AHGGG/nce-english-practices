@@ -246,6 +246,19 @@ const ReadingMode = () => {
         setIsLoading(false);
     };
 
+
+
+    const playAudio = useCallback((text) => {
+        if (!text) return;
+        if (audioRef.current) {
+            audioRef.current.pause();
+        }
+        const url = `/api/tts?text=${encodeURIComponent(text)}`;
+        const audio = new Audio(url);
+        audioRef.current = audio;
+        audio.play().catch(e => console.error(e));
+    }, []);
+
     const handleWordClick = useCallback((word, sentence) => {
         playAudio(word);
         hookHandleWordClick(word, sentence);
@@ -352,16 +365,7 @@ const ReadingMode = () => {
         closeInspector();
     }, []);
 
-    const playAudio = useCallback((text) => {
-        if (!text) return;
-        if (audioRef.current) {
-            audioRef.current.pause();
-        }
-        const url = `/api/tts?text=${encodeURIComponent(text)}`;
-        const audio = new Audio(url);
-        audioRef.current = audio;
-        audio.play().catch(e => console.error(e));
-    }, []);
+
 
     const handleImageClick = useCallback((src, alt, caption) => {
         setLightboxImage({ src, alt, caption });
