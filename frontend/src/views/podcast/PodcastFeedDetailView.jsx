@@ -623,7 +623,7 @@ export default function PodcastFeedDetailView() {
                             return (
                                 <div
                                     key={episode.id}
-                                    className={`group relative flex items-center gap-4 p-4 rounded-xl transition-all duration-300 ${isCurrentEpisode
+                                    className={`group relative flex items-center gap-3 p-3 sm:p-4 rounded-xl transition-all duration-300 ${isCurrentEpisode
                                         ? 'bg-accent-primary/10 border border-accent-primary/30 shadow-lg shadow-accent-primary/10'
                                         : isFinished
                                             ? 'opacity-50 bg-bg-surface/50'
@@ -633,7 +633,7 @@ export default function PodcastFeedDetailView() {
 
                                     <button
                                         onClick={() => handlePlayEpisode(episode)}
-                                        className={`flex-shrink-0 w-12 h-12 rounded-xl flex items-center justify-center transition-all duration-300 ${isCurrentEpisode
+                                        className={`flex-shrink-0 w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-300 ${isCurrentEpisode
                                             ? 'bg-accent-primary text-black shadow-lg shadow-accent-primary/30 scale-105'
                                             : isFinished
                                                 ? 'bg-transparent border-2 border-accent-success/40 text-accent-success hover:border-accent-success hover:bg-accent-success/10'

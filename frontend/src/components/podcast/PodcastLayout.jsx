@@ -66,10 +66,10 @@ export default function PodcastLayout({ children, title, showBackButton = true }
                     </div>
 
                     {/* Nav tabs */}
-                    <nav className="flex items-center gap-1 mt-4 -mb-4 border-b border-transparent">
+                    <nav className="flex items-center gap-1 mt-4 -mb-4 border-b border-transparent overflow-x-auto w-full no-scrollbar">
                         <button
                             onClick={() => navigate('/podcast')}
-                            className={`flex items-center gap-2 px-4 py-2 rounded-t-lg text-sm font-medium transition-colors border-b-2 ${isLibrary
+                            className={`flex-shrink-0 flex items-center gap-2 px-4 py-2 rounded-t-lg text-sm font-medium transition-colors border-b-2 whitespace-nowrap ${isLibrary
                                 ? 'border-accent-primary text-accent-primary bg-accent-primary/10'
                                 : 'border-transparent text-text-muted hover:text-text-primary'
                                 }`}
@@ -80,7 +80,7 @@ export default function PodcastLayout({ children, title, showBackButton = true }
 
                         <button
                             onClick={() => navigate('/podcast/search')}
-                            className={`flex items-center gap-2 px-4 py-2 rounded-t-lg text-sm font-medium transition-colors border-b-2 ${isSearch
+                            className={`flex-shrink-0 flex items-center gap-2 px-4 py-2 rounded-t-lg text-sm font-medium transition-colors border-b-2 whitespace-nowrap ${isSearch
                                 ? 'border-accent-primary text-accent-primary bg-accent-primary/10'
                                 : 'border-transparent text-text-muted hover:text-text-primary'
                                 }`}
@@ -91,7 +91,7 @@ export default function PodcastLayout({ children, title, showBackButton = true }
 
                         <button
                             onClick={() => navigate('/podcast/downloads')}
-                            className={`flex items-center gap-2 px-4 py-2 rounded-t-lg text-sm font-medium transition-colors border-b-2 ${isDownloads
+                            className={`flex-shrink-0 flex items-center gap-2 px-4 py-2 rounded-t-lg text-sm font-medium transition-colors border-b-2 whitespace-nowrap ${isDownloads
                                 ? 'border-accent-primary text-accent-primary bg-accent-primary/10'
                                 : 'border-transparent text-text-muted hover:text-text-primary'
                                 }`}
