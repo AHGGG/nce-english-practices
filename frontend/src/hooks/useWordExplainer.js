@@ -29,6 +29,7 @@ export function useWordExplainer() {
     const [explainStyle, setExplainStyle] = useState('default');
     const [generatedImage, setGeneratedImage] = useState(null);
     const [isGeneratingImage, setIsGeneratingImage] = useState(false);
+    const [imagePrompt, setImagePrompt] = useState(null);
     
     // Request ID ref for cancelling stale streaming requests
     const explainRequestIdRef = useRef(0);
@@ -119,6 +120,7 @@ export function useWordExplainer() {
 
         setIsExplaining(true);
         setContextExplanation('');
+        setImagePrompt(null);
 
         const streamExplanation = async () => {
             try {
@@ -146,36 +148,11 @@ export function useWordExplainer() {
                     onEvent: async (type, data) => {
                         console.log('[useWordExplainer] SSE Event:', type, data);
                         if (type === 'image_check' && explainRequestIdRef.current === currentRequestId) {
-                            // If suitable for image, trigger generation
+                            // If suitable for image, store prompt but wait for user trigger
                             if (data.suitable && data.image_prompt) {
-                                console.log('[useWordExplainer] Image suitable, generating...');
-                                setIsGeneratingImage(true);
-                                try {
-                                    const genRes = await authFetch('/api/generated-images/generate', {
-                                        method: 'POST',
-                                        headers: { 'Content-Type': 'application/json' },
-                                        body: JSON.stringify({
-                                            word: selectedWord,
-                                            sentence: currentSentenceContext,
-                                            image_prompt: data.image_prompt
-                                        })
-                                    });
-                                    
-                                    if (genRes.ok) {
-                                        const genData = await genRes.json();
-                                        console.log('[useWordExplainer] Image URL received:', genData.image_url);
-                                        if (explainRequestIdRef.current === currentRequestId) {
-                                            setGeneratedImage(genData.image_url);
-                                        }
-                                    } else {
-                                        console.error('[useWordExplainer] Generate API failed:', genRes.status);
-                                    }
-                                } catch (e) {
-                                    console.error('[useWordExplainer] Image generation failed', e);
-                                } finally {
-                                    if (explainRequestIdRef.current === currentRequestId) {
-                                        setIsGeneratingImage(false);
-                                    }
+                                console.log('[useWordExplainer] Image suitable, prompt received');
+                                if (explainRequestIdRef.current === currentRequestId) {
+                                    setImagePrompt(data.image_prompt);
                                 }
                             }
                         }
@@ -208,6 +185,7 @@ export function useWordExplainer() {
         setContextExplanation('');
         setGeneratedImage(null);
         setIsGeneratingImage(false);
+        setImagePrompt(null);
         setExplainStyle('default');
         
         setSelectedWord(cleanWord);
@@ -226,6 +204,7 @@ export function useWordExplainer() {
         setInspectorData(null);
         setContextExplanation('');
         setGeneratedImage(null);
+        setImagePrompt(null);
         setIsPhrase(false);
     }, []);
 
@@ -235,6 +214,35 @@ export function useWordExplainer() {
         // Re-trigger explanation by incrementing request ID
         // The effect will re-run because explainStyle changed
     }, []);
+
+    const generateImage = useCallback(async () => {
+        if (!imagePrompt || !selectedWord) return;
+        
+        setIsGeneratingImage(true);
+        try {
+            const genRes = await authFetch('/api/generated-images/generate', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    word: selectedWord,
+                    sentence: currentSentenceContext,
+                    image_prompt: imagePrompt
+                })
+            });
+            
+            if (genRes.ok) {
+                const genData = await genRes.json();
+                console.log('[useWordExplainer] Image URL received:', genData.image_url);
+                setGeneratedImage(genData.image_url);
+            } else {
+                console.error('[useWordExplainer] Generate API failed:', genRes.status);
+            }
+        } catch (e) {
+            console.error('[useWordExplainer] Image generation failed', e);
+        } finally {
+            setIsGeneratingImage(false);
+        }
+    }, [imagePrompt, selectedWord, currentSentenceContext]);
 
     return {
         // State
@@ -248,12 +256,14 @@ export function useWordExplainer() {
         explainStyle,
         generatedImage,
         isGeneratingImage,
+        imagePrompt,
         // Actions
         handleWordClick,
         closeInspector,
         changeExplainStyle,
         setCurrentSentenceContext,
-        setExtraContext  // For SentenceStudy's prev/next sentence context
+        setExtraContext,  // For SentenceStudy's prev/next sentence context
+        generateImage
     };
 }
 

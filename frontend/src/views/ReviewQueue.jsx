@@ -188,7 +188,9 @@ const ReviewQueue = () => {
         closeInspector,
         changeExplainStyle,
         generatedImage,
-        isGeneratingImage
+        isGeneratingImage,
+        imagePrompt,
+        generateImage
     } = useWordExplainer();
 
     // Audio ref
@@ -866,6 +868,8 @@ const ReviewQueue = () => {
                     currentStyle={explainStyle}
                     generatedImage={generatedImage}
                     isGeneratingImage={isGeneratingImage}
+                    canGenerateImage={!!imagePrompt}
+                    onGenerateImage={generateImage}
                 />
             )}
         </div>

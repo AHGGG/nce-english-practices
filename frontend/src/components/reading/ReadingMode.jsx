@@ -65,7 +65,9 @@ const ReadingMode = () => {
         closeInspector,
         changeExplainStyle,
         generatedImage,
-        isGeneratingImage
+        isGeneratingImage,
+        imagePrompt,
+        generateImage
     } = useWordExplainer();
 
     // Progressive loading
@@ -415,6 +417,8 @@ const ReadingMode = () => {
                 currentStyle={explainStyle}
                 generatedImage={generatedImage}
                 isGeneratingImage={isGeneratingImage}
+                canGenerateImage={!!imagePrompt}
+                onGenerateImage={generateImage}
             />
 
             {lightboxImage && (

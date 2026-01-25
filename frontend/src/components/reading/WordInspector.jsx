@@ -1,4 +1,4 @@
-﻿import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Volume2, X, Bookmark, Loader2, Sparkles } from 'lucide-react';
 import DictionaryResults from '../aui/DictionaryResults';
 import ReactMarkdown from 'react-markdown';
@@ -22,7 +22,9 @@ const WordInspector = ({
     currentStyle = 'default',   // default, simple, chinese_deep
     // Image generation props
     generatedImage = null,
-    isGeneratingImage = false
+    isGeneratingImage = false,
+    canGenerateImage = false,
+    onGenerateImage = () => {}
 }) => {
     // Derive default tab from inspectorData (memoized to avoid recalculation)
     const defaultTab = useMemo(() => {
@@ -106,7 +108,7 @@ const WordInspector = ({
                             </div>
 
                             {/* Generated Image Section */}
-                            {(isGeneratingImage || generatedImage) && (
+                            {(isGeneratingImage || generatedImage || canGenerateImage) && (
                                 <div className="mt-4 border-t border-accent-primary/20 pt-3">
                                     <div className="flex items-center gap-2 mb-2">
                                         <Sparkles className="w-3 h-3 text-accent-warning" />
@@ -120,7 +122,7 @@ const WordInspector = ({
                                             <Loader2 className="w-5 h-5 animate-spin text-accent-warning mb-2" />
                                             <span className="text-[10px] text-text-muted uppercase font-mono tracking-widest">Generating Image...</span>
                                         </div>
-                                    ) : (
+                                    ) : generatedImage ? (
                                         <div className="relative group overflow-hidden rounded border border-border">
                                             <img
                                                 src={generatedImage}
@@ -128,6 +130,14 @@ const WordInspector = ({
                                                 className="w-full h-auto object-cover max-h-[200px]"
                                             />
                                         </div>
+                                    ) : (
+                                        <button 
+                                            onClick={onGenerateImage}
+                                            className="w-full py-2 bg-accent-warning/10 border border-accent-warning/30 text-accent-warning hover:bg-accent-warning/20 transition-colors rounded text-xs font-mono uppercase tracking-wider flex items-center justify-center gap-2"
+                                        >
+                                            <Sparkles className="w-3 h-3" />
+                                            Generate Visualization
+                                        </button>
                                     )}
                                 </div>
                             )}

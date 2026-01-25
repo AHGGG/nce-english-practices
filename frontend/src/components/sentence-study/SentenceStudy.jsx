@@ -68,6 +68,8 @@ const SentenceStudy = () => {
         explainStyle,
         generatedImage,
         isGeneratingImage,
+        imagePrompt,
+        generateImage,
         handleWordClick: baseHandleWordClick,
         closeInspector,
         changeExplainStyle,
@@ -591,6 +593,8 @@ const SentenceStudy = () => {
                     currentStyle={explainStyle}
                     generatedImage={generatedImage}
                     isGeneratingImage={isGeneratingImage}
+                    canGenerateImage={!!imagePrompt}
+                    onGenerateImage={generateImage}
                 />
             )}
         </>
