@@ -17,6 +17,10 @@ import { Mic, Volume2, Radio, Server, Beaker, GraduationCap, Cloud, Zap, Globe, 
 
 const TabButton = ({ id, icon: Icon, label, activeTab, setActiveTab }) => ( // eslint-disable-line no-unused-vars
     <button
+        role="tab"
+        id={`tab-${id}`}
+        aria-selected={activeTab === id}
+        aria-controls={`panel-${id}`}
         onClick={() => setActiveTab(id)}
         className={`flex items-center gap-2 px-6 py-3 font-mono font-bold uppercase transition-all whitespace-nowrap ${activeTab === id
             ? 'text-accent-primary border-b-2 border-accent-primary bg-accent-primary/5'
@@ -82,7 +86,7 @@ const VoiceLab = () => {
                 </div>
 
                 {/* Tabs */}
-                <div className="flex border-b border-border mb-6 overflow-x-auto no-scrollbar">
+                <div role="tablist" aria-label="Voice Lab Sections" className="flex border-b border-border mb-6 overflow-x-auto no-scrollbar">
                     <TabButton id="loop" icon={RefreshCw} label="Conversation Loop" activeTab={activeTab} setActiveTab={setActiveTab} />
                     <TabButton id="google" icon={Globe} label="Google Gemini" activeTab={activeTab} setActiveTab={setActiveTab} />
                     <TabButton id="deepgram" icon={Zap} label="Deepgram" activeTab={activeTab} setActiveTab={setActiveTab} />
@@ -100,12 +104,14 @@ const VoiceLab = () => {
                         <div className="space-y-12">
                             {/* CONVERSATION LOOP VIEW */}
                             {activeTab === 'loop' && (
-                                <ConversationLoop config={config} />
+                                <div role="tabpanel" id="panel-loop" aria-labelledby="tab-loop" tabIndex="0">
+                                    <ConversationLoop config={config} />
+                                </div>
                             )}
 
                             {/* GOOGLE VIEW */}
                             {activeTab === 'google' && (
-                                <div className="space-y-12 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                                <div role="tabpanel" id="panel-google" aria-labelledby="tab-google" tabIndex="0" className="space-y-12 animate-in fade-in slide-in-from-bottom-4 duration-500">
                                     <section>
                                         <SectionHeader title="Text-to-Speech (Multimodal)" icon={Volume2} />
                                         <TTSPanel config={config} fixedProvider="google" />
@@ -126,12 +132,16 @@ const VoiceLab = () => {
 
                             {/* Deepgram Content */}
                             {activeTab === 'deepgram' && (
-                                <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                                <div role="tabpanel" id="panel-deepgram" aria-labelledby="tab-deepgram" tabIndex="0" className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
                                     {/* Sub-tabs for Deepgram */}
-                                    <div className="flex justify-center space-x-2 mb-6">
+                                    <div role="tablist" aria-label="Deepgram Modes" className="flex justify-center space-x-2 mb-6">
                                         {['live', 'agent', 'tools'].map((sub) => (
                                             <button
                                                 key={sub}
+                                                role="tab"
+                                                id={`dg-tab-${sub}`}
+                                                aria-selected={deepgramSubTab === sub}
+                                                aria-controls={`dg-panel-${sub}`}
                                                 onClick={() => setDeepgramSubTab(sub)}
                                                 className={`px-4 py-2 text-xs font-mono border transition-all duration-300 ${deepgramSubTab === sub
                                                     ? 'bg-accent-primary/20 border-accent-primary text-accent-primary shadow-[0_0_10px_rgba(0,255,148,0.3)]'
@@ -146,23 +156,23 @@ const VoiceLab = () => {
                                     </div>
 
                                     {deepgramSubTab === 'live' && (
-                                        <>
+                                        <div role="tabpanel" id="dg-panel-live" aria-labelledby="dg-tab-live" tabIndex="0" className="space-y-8">
                                             <SectionHeader title="Real-time Transcription" icon={Mic} />
                                             <DeepgramUnified />
-                                        </>
+                                        </div>
                                     )}
 
                                     {deepgramSubTab === 'agent' && (
-                                        <>
+                                        <div role="tabpanel" id="dg-panel-agent" aria-labelledby="dg-tab-agent" tabIndex="0" className="space-y-8">
                                             <SectionHeader title="Voice Agent API (End-to-End)" icon={Bot} />
                                             <div className="p-4 border border-border rounded bg-bg-elevated/50">
                                                 <DeepgramVoiceAgent />
                                             </div>
-                                        </>
+                                        </div>
                                     )}
 
                                     {deepgramSubTab === 'tools' && (
-                                        <>
+                                        <div role="tabpanel" id="dg-panel-tools" aria-labelledby="dg-tab-tools" tabIndex="0" className="space-y-8">
                                             <SectionHeader title="Developer Tools & REST APIs" icon={TestTube2} />
                                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                                 <div className="space-y-6">
@@ -183,14 +193,14 @@ const VoiceLab = () => {
                                                     </div>
                                                 </div>
                                             </div>
-                                        </>
+                                        </div>
                                     )}
                                 </div>
                             )}
 
                             {/* ELEVENLABS VIEW */}
                             {activeTab === 'elevenlabs' && (
-                                <div className="space-y-12 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                                <div role="tabpanel" id="panel-elevenlabs" aria-labelledby="tab-elevenlabs" tabIndex="0" className="space-y-12 animate-in fade-in slide-in-from-bottom-4 duration-500">
                                     <section>
                                         <SectionHeader title="Text-to-Speech (Turbo v2.5)" icon={Volume2} />
                                         <TTSPanel config={config} fixedProvider="elevenlabs" />
@@ -217,7 +227,7 @@ const VoiceLab = () => {
 
                             {/* DASHSCOPE VIEW */}
                             {activeTab === 'dashscope' && (
-                                <div className="space-y-12 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                                <div role="tabpanel" id="panel-dashscope" aria-labelledby="tab-dashscope" tabIndex="0" className="space-y-12 animate-in fade-in slide-in-from-bottom-4 duration-500">
                                     <section>
                                         <SectionHeader title="Text-to-Speech (Qwen3-TTS)" icon={Volume2} />
                                         <TTSPanel config={config} fixedProvider="dashscope" />
