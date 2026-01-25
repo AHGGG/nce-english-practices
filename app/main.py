@@ -4,6 +4,7 @@ from contextlib import asynccontextmanager
 import asyncio
 from dotenv import load_dotenv
 import os
+from pathlib import Path
 
 from app.services.dictionary import dict_manager
 from app.api.routers import (
@@ -182,10 +183,17 @@ if os.path.exists(frontend_dist):
     @app.get("/{full_path:path}")
     async def serve_spa(full_path: str):
         """SPA fallback: serve index.html for all non-API routes."""
-        # Try to serve static file first
-        file_path = os.path.join(frontend_dist, full_path)
-        if os.path.isfile(file_path):
-            return FileResponse(file_path)
+        # Security: Prevent path traversal
+        try:
+            requested_path = (Path(frontend_dist) / full_path).resolve()
+            dist_root = Path(frontend_dist).resolve()
+
+            # Ensure requested path is within dist_root
+            if requested_path.is_relative_to(dist_root) and requested_path.is_file():
+                return FileResponse(str(requested_path))
+        except Exception:
+            pass
+
         # Fallback to index.html for SPA routing
         return FileResponse(index_html)
 
