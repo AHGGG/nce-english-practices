@@ -252,6 +252,7 @@ export function PodcastProvider({ children }) {
             const success = await downloadEpisodeForOffline(
                 episodeId,
                 proxyUrl,
+                episode.audio_url,
                 (received, total) => {
                     const progress = Math.round((received / total) * 100);
                     setDownloadState(prev => ({ ...prev, [episodeId]: { status: 'downloading', progress } }));

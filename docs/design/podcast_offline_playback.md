@@ -105,8 +105,9 @@ export async function saveEpisodeMetadata(episode) {
 
 ### Q1: 跨域资源 (CORS) 怎么办？
 大多数 Podcast 托管商（如 AWS S3）未必配置了允许你的域名访问的 CORS 头。
-*   **直接 Fetch**: 会失败或得到 Opaque Response（无法用于 Audio Context 分析，也无法获取大小）。
-*   **解决方案**: **保留并利用现有的 Backend Proxy**。
+*   **混合下载策略 (Hybrid Strategy)**:
+    1.  **优先尝试直连 (Direct)**: 前端先尝试对原始 URL 发起 `HEAD` 请求。如果支持 CORS 且能获取 Content-Length，则直接下载，节省服务器带宽。
+    2.  **自动回退代理 (Proxy Fallback)**: 如果直连失败（CORS 错误或 Mixed Content），则自动切换到后端代理下载。
     *   前端请求：`<audio src="/api/podcast/proxy?url=ORIGINAL_URL">`
     *   后端 (FastAPI)：转发请求流，并添加 `Access-Control-Allow-Origin: *`。
     *   这样 Service Worker 就能完美缓存 Response，且支持 Range Requests。

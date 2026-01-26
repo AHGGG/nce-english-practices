@@ -69,7 +69,18 @@ export default function PodcastDownloadsView() {
         try {
             // Efficiently fetch details for all episodes in one batch request
             const episodesData = await podcastApi.getEpisodesBatch(allIds);
-            setEpisodes(episodesData);
+            
+            // Sort by recently added (reverse order of allIds)
+            // offlineEpisodes preserves insertion order (oldest -> newest)
+            // downloadingIds are added at the end
+            // We want Newest -> Oldest
+            const epMap = new Map(episodesData.map(e => [e.episode.id, e]));
+            
+            const sortedEpisodes = [...allIds].reverse()
+                .map(id => epMap.get(id))
+                .filter(Boolean); // Remove undefined if id not found in response
+
+            setEpisodes(sortedEpisodes);
         } catch (e) {
             console.error('Failed to load episodes:', e);
         } finally {
