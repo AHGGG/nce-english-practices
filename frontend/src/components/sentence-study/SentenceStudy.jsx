@@ -13,7 +13,9 @@ import { VIEW_STATES, DIFFICULTY_CHOICES, extractSentencesFromBlocks } from './c
 import { HIGHLIGHT_OPTIONS, mapLevelToOptionIndex } from '../reading/constants';
 import WordInspector from '../reading/WordInspector';
 import useWordExplainer from '../../hooks/useWordExplainer';
+import { useGlobalState } from '../../context/GlobalContext';
 import { parseJSONSSEStream, isSSEResponse } from '../../utils/sseParser';
+
 import { authFetch } from '../../api/auth';
 
 // View components
@@ -78,10 +80,13 @@ const SentenceStudy = () => {
 
     // Collocations
     const [collocations, setCollocations] = useState([]);
+    
+    const { state: { settings } } = useGlobalState();
 
 
     // Refs
     const audioRef = useRef(null);
+
     const sentenceContainerRef = useRef(null);
 
     // Highlight settings
@@ -327,11 +332,14 @@ const SentenceStudy = () => {
         const cleanWord = word.toLowerCase().trim();
         if (cleanWord.length < 2) return;
 
-        playAudio(cleanWord);
+        if (settings.autoPronounce) {
+            playAudio(cleanWord);
+        }
 
         const hasMultipleWords = cleanWord.includes(' ');
 
         // Track for study metrics
+
         if (hasMultipleWords) {
             if (!phraseClicks.includes(cleanWord)) setPhraseClicks(prev => [...prev, cleanWord]);
         } else {
@@ -340,7 +348,8 @@ const SentenceStudy = () => {
 
         // Delegate to shared hook for inspector logic
         baseHandleWordClick(cleanWord, sentence || flatSentences[currentIndex]?.text || '', keyWord);
-    }, [wordClicks, phraseClicks, baseHandleWordClick, flatSentences, currentIndex, playAudio]);
+    }, [wordClicks, phraseClicks, baseHandleWordClick, flatSentences, currentIndex, playAudio, settings.autoPronounce]);
+
 
     const handleClear = useCallback(async () => {
         const dwellTime = Date.now() - startTime;

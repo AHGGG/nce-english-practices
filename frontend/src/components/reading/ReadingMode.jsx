@@ -7,7 +7,9 @@ import SentenceInspector from './SentenceInspector';
 import Lightbox from './Lightbox';
 import { HIGHLIGHT_OPTIONS, BATCH_SIZE, mapLevelToOptionIndex } from './constants';
 import useWordExplainer from '../../hooks/useWordExplainer';
+import { useGlobalState } from '../../context/GlobalContext';
 import { authFetch } from '../../api/auth';
+
 import { useToast, Dialog, DialogButton } from '../ui';
 
 // Simple API helper for ReadingTracker
@@ -95,8 +97,10 @@ const ReadingMode = () => {
     // Dialog & Toast
     const [confirmAction, setConfirmAction] = useState(null);
     const { addToast } = useToast();
+    const { state: { settings } } = useGlobalState();
 
     // --- Effects ---
+
     useEffect(() => {
         // Check URL params for cross-mode navigation
         const urlParams = new URLSearchParams(window.location.search);
@@ -260,10 +264,12 @@ const ReadingMode = () => {
     }, []);
 
     const handleWordClick = useCallback((word, sentence) => {
-        playTtsAudio(word);
+        if (settings.autoPronounce) {
+            playTtsAudio(word);
+        }
         hookHandleWordClick(word, sentence);
         inspectedWordsRef.current.add(word.toLowerCase());
-    }, [hookHandleWordClick, playTtsAudio]);
+    }, [hookHandleWordClick, playTtsAudio, settings.autoPronounce]);
 
     const handleMarkAsKnown = useCallback(async (word) => {
         // 1. Optimistic Update

@@ -20,9 +20,11 @@ import SentenceStudy from './components/sentence-study';
 import ReviewQueue from './views/ReviewQueue';
 import ReviewDebug from './views/ReviewDebug';
 import MemoryCurveDebug from './views/MemoryCurveDebug';
+import SettingsPage from './views/SettingsPage';
 
 // Podcast
 import { PodcastProvider } from './context/PodcastContext';
+
 import PlayerBar from './components/podcast/PlayerBar';
 import PodcastLibraryView from './views/podcast/PodcastLibraryView';
 import PodcastSearchView from './views/podcast/PodcastSearchView';
@@ -168,9 +170,18 @@ function AppRoutes() {
           </ProtectedRoute>
         }
       />
+      <Route
+        path="/settings"
+        element={
+          <ProtectedRoute>
+            <SettingsPage />
+          </ProtectedRoute>
+        }
+      />
 
       <Route
         path="/podcast"
+
         element={
           <ProtectedRoute>
             <PodcastLibraryView />

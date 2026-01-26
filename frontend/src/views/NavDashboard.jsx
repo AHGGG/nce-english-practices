@@ -10,8 +10,10 @@ import {
     Clock,
     User,
     LogOut,
-    ChevronDown
+    ChevronDown,
+    Settings
 } from 'lucide-react';
+
 import { useAuth } from '../context/AuthContext';
 
 const NavCard = ({ title, path, icon: Icon, description }) => { // eslint-disable-line no-unused-vars
@@ -162,10 +164,17 @@ const NavDashboard = () => {
             path: "/review-queue",
             icon: Clock,
             description: "Spaced repetition queue for sentences due for review."
+        },
+        {
+            title: "System Settings",
+            path: "/settings",
+            icon: Settings,
+            description: "Configure application preferences and defaults."
         }
     ];
 
     return (
+
         <div className="min-h-screen bg-bg-base p-8 md:p-12 overflow-y-auto">
             <div className="max-w-7xl mx-auto">
                 <header className="mb-12 flex flex-col sm:flex-row sm:items-start sm:justify-between gap-6">

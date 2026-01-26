@@ -4,6 +4,7 @@
  */
 
 import { createContext, useContext, useState, useRef, useCallback, useEffect } from 'react';
+import { useGlobalState } from './GlobalContext';
 import * as podcastApi from '../api/podcast';
 import { authFetch } from '../api/auth';
 import { useToast } from '../components/ui';
@@ -20,6 +21,7 @@ const PodcastContext = createContext(null);
 
 export function PodcastProvider({ children }) {
     const { addToast } = useToast();
+    const { state: { settings }, actions: { updateSetting } } = useGlobalState();
 
     // Current track info
     const [currentEpisode, setCurrentEpisode] = useState(null);
@@ -30,7 +32,17 @@ export function PodcastProvider({ children }) {
     const [currentTime, setCurrentTime] = useState(0);
     const [duration, setDuration] = useState(0);
     const [isLoading, setIsLoading] = useState(false);
-    const [playbackRate, setPlaybackRateState] = useState(1);
+    const [playbackRate, setPlaybackRateState] = useState(settings.podcastSpeed || 1);
+
+    // Update playback rate when settings change (in case changed from Settings page while playing)
+    useEffect(() => {
+        if (settings.podcastSpeed && settings.podcastSpeed !== playbackRate) {
+            setPlaybackRateState(settings.podcastSpeed);
+            if (audioRef.current) {
+                audioRef.current.playbackRate = settings.podcastSpeed;
+            }
+        }
+    }, [settings.podcastSpeed]);
 
     // Session tracking
     const [sessionId, setSessionId] = useState(null);
@@ -430,7 +442,8 @@ export function PodcastProvider({ children }) {
             audioRef.current.playbackRate = rate;
         }
         setPlaybackRateState(rate);
-    }, []);
+        updateSetting('podcastSpeed', rate);
+    }, [updateSetting]);
 
     // Stop and cleanup
     const stop = useCallback(async () => {
