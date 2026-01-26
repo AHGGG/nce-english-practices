@@ -8,24 +8,24 @@ const TenseTimeline = ({ tense, complexity = "high" }) => {
         const configs = {
             "Present Perfect": {
                 events: [
-                    { label: "Past Action", time: -3, color: "var(--color-accent-danger)", type: "point", tooltip: "Action happened in the past" },
-                    { label: "Effect Continues", time: 0, color: "var(--color-accent-primary)", type: "range", start: -3, end: 1, tooltip: "Relevance extends to now" }
+                    { label: "Past Action", time: -3, color: "rgb(var(--color-accent-danger))", type: "point", tooltip: "Action happened in the past" },
+                    { label: "Effect Continues", time: 0, color: "rgb(var(--color-accent-primary))", type: "range", start: -3, end: 1, tooltip: "Relevance extends to now" }
                 ],
                 formula: "have/has + V3",
                 description: "Links past action to present relevance"
             },
             "Past Perfect": {
                 events: [
-                    { label: "Earlier Past", time: -4, color: "var(--color-accent-danger)", type: "point", tooltip: "First action completed" },
-                    { label: "Later Past", time: -1, color: "var(--color-accent-info)", type: "point", tooltip: "Second action (reference point)" }
+                    { label: "Earlier Past", time: -4, color: "rgb(var(--color-accent-danger))", type: "point", tooltip: "First action completed" },
+                    { label: "Later Past", time: -1, color: "rgb(var(--color-accent-info))", type: "point", tooltip: "Second action (reference point)" }
                 ],
                 formula: "had + V3",
                 description: "Action completed before another past action"
             },
             "Future Perfect": {
                 events: [
-                    { label: "Future Point", time: 3, color: "var(--color-accent-info)", type: "point", tooltip: "Reference time in future" },
-                    { label: "Completion", time: 2, color: "var(--color-accent-primary)", type: "point", tooltip: "Action completes before reference time" }
+                    { label: "Future Point", time: 3, color: "rgb(var(--color-accent-info))", type: "point", tooltip: "Reference time in future" },
+                    { label: "Completion", time: 2, color: "rgb(var(--color-accent-primary))", type: "point", tooltip: "Action completes before reference time" }
                 ],
                 formula: "will have + V3",
                 description: "Action will be completed before a future time"
@@ -75,14 +75,14 @@ const TenseTimeline = ({ tense, complexity = "high" }) => {
                     y1={centerY}
                     x2={width - padding}
                     y2={centerY}
-                    stroke="var(--color-border)"
+                    stroke="var(--color-border-default)"
                     strokeWidth="2"
                 />
 
                 {/* Arrow */}
                 <polygon
                     points={`${width - padding},${centerY} ${width - padding - 10},${centerY - 5} ${width - padding - 10},${centerY + 5}`}
-                    fill="var(--color-border)"
+                    fill="var(--color-border-default)"
                 />
 
                 {/* "Now" marker at center */}
