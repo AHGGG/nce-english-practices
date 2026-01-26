@@ -75,6 +75,22 @@ export const Input = ({ icon: Icon, error, className = "", ...props }) => {
     );
 };
 
+export const Textarea = ({ error, className = "", inputClassName = "", ...props }) => {
+    const errorId = useId();
+
+    return (
+        <div className={`relative group flex-grow ${className}`}>
+            <textarea
+                className={`w-full bg-bg-elevated border border-border text-text-primary px-4 py-3 text-sm font-mono rounded-xl focus:outline-none focus:border-accent-primary focus:ring-1 focus:ring-accent-primary transition-all placeholder:text-text-muted/50 ${error ? 'border-accent-danger focus:border-accent-danger focus:ring-accent-danger' : ''} ${inputClassName}`}
+                aria-invalid={!!error}
+                aria-describedby={error ? errorId : undefined}
+                {...props}
+            />
+            {error && <span id={errorId} role="alert" className="absolute -bottom-5 left-0 text-[10px] text-accent-danger font-mono">{error}</span>}
+        </div>
+    );
+};
+
 export const Card = ({ children, title, subtitle, variant = "default", className = "", actions }) => {
     const variants = {
         default: "bg-bg-surface border border-border hover:border-text-muted",
