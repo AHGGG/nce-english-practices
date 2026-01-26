@@ -8,9 +8,18 @@ Contains LLM streaming, caching, and diagnosis utilities.
 import hashlib
 import json
 import logging
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Any
 from datetime import timedelta
 
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select, func, case
+from app.models.orm import (
+    ArticleOverviewCache,
+    SentenceCollocationCache,
+    SentenceLearningRecord,
+    UserComprehensionProfile,
+    WordProficiency,
+)
 
 from app.services.llm import llm_service
 
@@ -537,25 +546,563 @@ class SentenceStudyService:
     # SRS Interval Calculation
     # -------------------------------------------------------------------------
 
+    # -------------------------------------------------------------------------
+    # Overview Generation
+    # -------------------------------------------------------------------------
+
+    async def get_or_generate_overview(
+        self, db: AsyncSession, title: str, full_text: str, total_sentences: int
+    ) -> Dict[str, Any]:
+        """
+        Generate article overview with English summary and Chinese translation.
+        Cache priority: in-memory -> DB -> LLM generation.
+        """
+        cache_key = self.get_overview_cache_key(title)
+
+        # 1. Check in-memory cache (hot path)
+        if cache_key in _overview_cache:
+            return _overview_cache[cache_key]
+
+        # 2. Check DB cache
+        db_result = await db.execute(
+            select(ArticleOverviewCache).where(
+                ArticleOverviewCache.title_hash == cache_key
+            )
+        )
+        db_cache = db_result.scalar_one_or_none()
+        if db_cache:
+            cached = {
+                "summary_en": db_cache.summary_en,
+                "summary_zh": db_cache.summary_zh,
+                "key_topics": db_cache.key_topics,
+                "difficulty_hint": db_cache.difficulty_hint,
+            }
+            _overview_cache[cache_key] = cached  # Warm in-memory cache
+            return cached
+
+        # 3. Generate via LLM (streaming)
+        # Truncate to first ~500 words for efficiency
+        words = full_text.split()
+        text_excerpt = " ".join(words[:500]) + ("..." if len(words) > 500 else "")
+
+        prompt = OVERVIEW_PROMPT.format(
+            title=title, total_sentences=total_sentences, excerpt=text_excerpt
+        )
+
+        full_content = ""
+        try:
+            stream = await self.llm.async_client.chat.completions.create(
+                model=self.llm.model_name,
+                messages=[{"role": "user", "content": prompt}],
+                max_tokens=500,
+                temperature=0.3,
+                stream=True,
+            )
+
+            async for chunk in stream:
+                if chunk.choices and chunk.choices[0].delta.content:
+                    text = chunk.choices[0].delta.content
+                    full_content += text
+                    # We are not streaming back to the router here directly in this method structure,
+                    # but the router expects a generator if it wants to stream.
+                    # However, to simplify, let's just await the full result for the service method
+                    # OR we can change the design.
+                    # The original router streamed the overview generation.
+                    # For now, let's keep it simple: collect and return.
+                    # If streaming is strictly required for UX, we might need a separate stream method.
+                    # But typically overview is fast enough or we can live with a short wait.
+                    # Wait, the router implementation `generate_overview` returns a StreamingResponse.
+                    # If I move this to service, I should probably expose a generator.
+
+            # Parse the accumulated content
+            content = full_content.strip()
+            if content.startswith("```"):
+                content = content.split("\n", 1)[1].rsplit("```", 1)[0]
+
+            try:
+                data = json.loads(content)
+                result = {
+                    "summary_en": data.get("summary_en", "Unable to generate summary."),
+                    "summary_zh": data.get("summary_zh", "无法生成摘要。"),
+                    "key_topics": data.get("key_topics", []),
+                    "difficulty_hint": data.get("difficulty_hint", ""),
+                }
+            except json.JSONDecodeError:
+                result = {
+                    "summary_en": "This article covers various topics. Study the sentences to learn more.",
+                    "summary_zh": "本文涵盖多个主题。通过逐句学习了解更多。",
+                    "key_topics": [],
+                    "difficulty_hint": "Unable to analyze difficulty.",
+                }
+
+            # Cache in-memory
+            _overview_cache[cache_key] = result
+
+            # Persist to DB
+            try:
+                db.add(
+                    ArticleOverviewCache(
+                        title_hash=cache_key,
+                        title=title,
+                        summary_en=result["summary_en"],
+                        summary_zh=result["summary_zh"],
+                        key_topics=result["key_topics"],
+                        difficulty_hint=result["difficulty_hint"],
+                    )
+                )
+                await db.commit()
+            except Exception:
+                await db.rollback()  # Ignore duplicate key errors
+
+            return result
+
+        except Exception as e:
+            logger.error(f"Overview generation error: {e}")
+            raise e
+
+    async def stream_overview_generation(
+        self, db: AsyncSession, title: str, full_text: str, total_sentences: int
+    ):
+        """
+        Streams overview generation chunks.
+        Yields:
+            - JSON string for cached result (immediate done)
+            - OR JSON chunks for streaming generation
+        """
+        cache_key = self.get_overview_cache_key(title)
+
+        # 1. Check caches
+        result = None
+        if cache_key in _overview_cache:
+            result = _overview_cache[cache_key]
+        else:
+            db_result = await db.execute(
+                select(ArticleOverviewCache).where(
+                    ArticleOverviewCache.title_hash == cache_key
+                )
+            )
+            db_cache = db_result.scalar_one_or_none()
+            if db_cache:
+                result = {
+                    "summary_en": db_cache.summary_en,
+                    "summary_zh": db_cache.summary_zh,
+                    "key_topics": db_cache.key_topics,
+                    "difficulty_hint": db_cache.difficulty_hint,
+                }
+                _overview_cache[cache_key] = result
+
+        if result:
+            yield json.dumps({"type": "done", "overview": result, "cached": True})
+            return
+
+        # 2. Generate
+        words = full_text.split()
+        text_excerpt = " ".join(words[:500]) + ("..." if len(words) > 500 else "")
+        prompt = OVERVIEW_PROMPT.format(
+            title=title, total_sentences=total_sentences, excerpt=text_excerpt
+        )
+
+        full_content = ""
+        try:
+            stream = await self.llm.async_client.chat.completions.create(
+                model=self.llm.model_name,
+                messages=[{"role": "user", "content": prompt}],
+                max_tokens=500,
+                temperature=0.3,
+                stream=True,
+            )
+
+            async for chunk in stream:
+                if chunk.choices and chunk.choices[0].delta.content:
+                    text = chunk.choices[0].delta.content
+                    full_content += text
+                    yield json.dumps({"type": "chunk", "content": text})
+
+            # Parse and Save
+            content = full_content.strip()
+            if content.startswith("```"):
+                content = content.split("\n", 1)[1].rsplit("```", 1)[0]
+
+            try:
+                data = json.loads(content)
+                final_result = {
+                    "summary_en": data.get("summary_en", "Unable to generate summary."),
+                    "summary_zh": data.get("summary_zh", "无法生成摘要。"),
+                    "key_topics": data.get("key_topics", []),
+                    "difficulty_hint": data.get("difficulty_hint", ""),
+                }
+            except json.JSONDecodeError:
+                final_result = {
+                    "summary_en": "This article covers various topics. Study the sentences to learn more.",
+                    "summary_zh": "本文涵盖多个主题。通过逐句学习了解更多。",
+                    "key_topics": [],
+                    "difficulty_hint": "Unable to analyze difficulty.",
+                }
+
+            _overview_cache[cache_key] = final_result
+
+            try:
+                db.add(
+                    ArticleOverviewCache(
+                        title_hash=cache_key,
+                        title=title,
+                        summary_en=final_result["summary_en"],
+                        summary_zh=final_result["summary_zh"],
+                        key_topics=final_result["key_topics"],
+                        difficulty_hint=final_result["difficulty_hint"],
+                    )
+                )
+                await db.commit()
+            except Exception:
+                await db.rollback()
+
+            yield json.dumps({"type": "done", "overview": final_result})
+
+        except Exception as e:
+            logger.error(f"Overview stream error: {e}")
+            yield json.dumps({"type": "error", "message": str(e)})
+
+    # -------------------------------------------------------------------------
+    # Collocation Detection
+    # -------------------------------------------------------------------------
+
+    async def get_or_detect_collocations(
+        self, db: AsyncSession, sentence: str
+    ) -> List[Dict[str, Any]]:
+        """
+        Detect collocations with caching (Memory -> DB -> LLM).
+        """
+        cache_key = self.get_collocation_cache_key(sentence)
+
+        # 1. Check in-memory
+        if cache_key in _collocation_cache:
+            return _collocation_cache[cache_key]
+
+        # 2. Check DB
+        db_result = await db.execute(
+            select(SentenceCollocationCache).where(
+                SentenceCollocationCache.sentence_hash == cache_key
+            )
+        )
+        db_cache = db_result.scalar_one_or_none()
+        if db_cache:
+            _collocation_cache[cache_key] = db_cache.collocations
+            return db_cache.collocations
+
+        # 3. Generate
+        words = sentence.split()
+        word_list_str = "\n".join([f"{i}: {w}" for i, w in enumerate(words)])
+        prompt = COLLOCATION_PROMPT.format(sentence=sentence, word_list=word_list_str)
+
+        try:
+            response = await self.llm.async_client.chat.completions.create(
+                model=self.llm.model_name,
+                messages=[{"role": "user", "content": prompt}],
+                max_tokens=300,
+                temperature=0.1,
+            )
+            content = response.choices[0].message.content.strip()
+
+            if content.startswith("```"):
+                content = content.split("\n", 1)[1].rsplit("```", 1)[0]
+
+            collocations = json.loads(content)
+
+            # Validation
+            valid_collocations = []
+            for c in collocations:
+                if all(k in c for k in ["text", "start_word_idx", "end_word_idx"]):
+                    valid_collocations.append(c)
+
+            # Cache
+            _collocation_cache[cache_key] = valid_collocations
+
+            try:
+                db.add(
+                    SentenceCollocationCache(
+                        sentence_hash=cache_key,
+                        sentence_preview=sentence[:100],
+                        collocations=valid_collocations,
+                    )
+                )
+                await db.commit()
+            except Exception:
+                await db.rollback()
+
+            return valid_collocations
+
+        except Exception as e:
+            logger.error(f"Collocation detection error: {e}")
+            return []
+
+    # -------------------------------------------------------------------------
+    # Diagnosis & Profiling
+    # -------------------------------------------------------------------------
+
+    async def analyze_user_history(
+        self, db: AsyncSession, user_id: str
+    ) -> Dict[str, Optional[str]]:
+        """
+        Analyze recent user history to find patterns in learning gaps.
+        """
+        try:
+            result = await db.execute(
+                select(SentenceLearningRecord)
+                .where(
+                    SentenceLearningRecord.user_id == user_id,
+                    SentenceLearningRecord.initial_response == "unclear",
+                )
+                .order_by(SentenceLearningRecord.created_at.desc())
+                .limit(20)
+            )
+            records = result.scalars().all()
+
+            if not records:
+                return {"common_gap": None}
+
+            vocab_count = 0
+            structure_count = 0
+
+            for r in records:
+                if r.diagnosed_gap_type == "vocabulary":
+                    vocab_count += 1
+                elif r.diagnosed_gap_type == "structure":
+                    structure_count += 1
+
+            total = len(records)
+            if vocab_count / total > 0.6:
+                return {"common_gap": "vocabulary"}
+            elif structure_count / total > 0.4:
+                return {"common_gap": "structure"}
+
+            # Length correlation
+            long_sentence_fail_count = sum(1 for r in records if r.word_count > 20)
+            if long_sentence_fail_count / total > 0.5:
+                return {"common_gap": "structure"}
+
+            return {"common_gap": "mixed"}
+
+        except Exception:
+            return {"common_gap": None}
+
+    async def perform_deep_diagnosis(
+        self,
+        db: AsyncSession,
+        user_id: str,
+        initial: str,
+        choice: Optional[str],
+        simplified: Optional[str],
+        word_clicks: List[str],
+        phrase_clicks: List[str],
+        interactions: List[Dict],
+        dwell_ms: int,
+        word_count: int,
+        max_simplify_stage: Optional[int] = None,
+    ) -> Dict[str, Any]:
+        """
+        Comprehensive diagnosis logic.
+        """
+        gap_type = None
+        confidence = 0.0
+        patterns = []
+
+        # 1. Base Diagnosis
+        if initial == "clear":
+            gap_type = None
+            confidence = 1.0
+        elif choice == "vocabulary":
+            gap_type = "vocabulary"
+            confidence = 0.9 if simplified == "got_it" else 0.7
+        elif choice == "grammar":
+            gap_type = "structure"
+            confidence = 0.9 if simplified == "got_it" else 0.7
+        elif choice == "meaning":
+            gap_type = "meaning"
+            confidence = 0.9 if simplified == "got_it" else 0.7
+        elif choice == "collocation":
+            gap_type = "collocation"
+            confidence = 0.9
+        elif choice == "both":
+            gap_type = "fundamental"
+            confidence = 0.7
+
+        # 2. Implicit Signals
+        if phrase_clicks:
+            gap_type = "collocation"
+            confidence = 0.85
+            patterns.append("phrase_lookup")
+
+        for event in interactions:
+            target = event.get("text") or event.get("word")
+            if target and isinstance(target, str) and " " in target.strip():
+                if gap_type != "collocation":
+                    gap_type = "collocation"
+                    confidence = 0.8
+                    patterns.append("multi_word_query")
+                break
+
+        if word_count > 0:
+            ms_per_word = dwell_ms / word_count
+            if ms_per_word > 800 and initial == "clear":
+                confidence = 0.6
+                patterns.append("slow_reading")
+
+        deep_dive_count = sum(
+            1 for e in interactions if e.get("style") in ["chinese_deep", "simple"]
+        )
+        if deep_dive_count > 0:
+            if gap_type is None:
+                gap_type = "vocabulary"
+                confidence = 0.6
+                patterns.append("deep_dive_needed")
+            elif gap_type == "vocabulary":
+                patterns.append("nuance_confusion")
+
+        if max_simplify_stage is not None:
+            if max_simplify_stage >= 3:
+                patterns.append("chinese_dive_needed")
+                confidence = min(1.0, confidence * 1.2)
+            elif max_simplify_stage == 2:
+                patterns.append("detailed_explanation_needed")
+                confidence = min(1.0, confidence * 1.1)
+
+        # 3. History
+        if gap_type == "fundamental" or choice == "both":
+            history = await self.analyze_user_history(db, user_id)
+            if history["common_gap"]:
+                patterns.append(f"history_{history['common_gap']}")
+                if history["common_gap"] == "vocabulary":
+                    gap_type = "fundamental (vocab-heavy)"
+                elif history["common_gap"] == "structure":
+                    gap_type = "fundamental (structure-heavy)"
+
+        # 4. Length Bias
+        if word_count > 25 and gap_type in [
+            "fundamental",
+            "fundamental (structure-heavy)",
+        ]:
+            patterns.append("long_sentence_struggle")
+            gap_type = "structure"
+            confidence = 0.8
+
+        return {"gap_type": gap_type, "confidence": confidence, "patterns": patterns}
+
+    async def update_user_profile_deep(
+        self,
+        db: AsyncSession,
+        user_id: str,
+        diagnosis: Dict[str, Any],
+        word_clicks: List[str],
+    ):
+        """
+        Updates profile with granular insights from the deep diagnosis.
+        """
+        result = await db.execute(
+            select(UserComprehensionProfile).where(
+                UserComprehensionProfile.user_id == user_id
+            )
+        )
+        profile = result.scalar_one_or_none()
+
+        if not profile:
+            profile = UserComprehensionProfile(user_id=user_id)
+            db.add(profile)
+
+        gap = diagnosis["gap_type"]
+        patterns = diagnosis["patterns"]
+
+        # 1. Update Scores
+        if gap == "vocabulary" or gap == "collocation":
+            current_vocab = float(profile.vocabulary_score or 0.0)
+            profile.vocabulary_score = max(0.0, current_vocab - 0.1)
+        elif gap == "structure":
+            current_grammar = float(profile.grammar_score or 0.0)
+            profile.grammar_score = max(0.0, current_grammar - 0.1)
+        elif gap is None:
+            current_overall = float(profile.overall_score or 0.0)
+            profile.overall_score = current_overall + 0.01
+
+        # 2. Update Weak Topics
+        if word_clicks:
+            current_weak_topics = (
+                list(profile.weak_vocabulary_topics)
+                if profile.weak_vocabulary_topics
+                else []
+            )
+            for word in word_clicks:
+                if word not in current_weak_topics:
+                    current_weak_topics.append(word)
+            profile.weak_vocabulary_topics = current_weak_topics[-50:]
+
+            # Word Proficiency
+            for word in word_clicks:
+                wp_result = await db.execute(
+                    select(WordProficiency).where(
+                        WordProficiency.user_id == user_id, WordProficiency.word == word
+                    )
+                )
+                wp = wp_result.scalar_one_or_none()
+                if wp:
+                    wp.exposure_count += 1
+                    wp.huh_count += 1
+                    wp.last_seen_at = func.now()
+                    wp.difficulty_score = float(wp.huh_count) / max(
+                        1, wp.exposure_count
+                    )
+                    if wp.difficulty_score > 0.3:
+                        wp.status = "learning"
+                else:
+                    db.add(
+                        WordProficiency(
+                            user_id=user_id,
+                            word=word,
+                            exposure_count=1,
+                            huh_count=1,
+                            difficulty_score=1.0,
+                            status="new",
+                        )
+                    )
+
+        # 3. Update Common Gaps
+        if patterns:
+            current_gaps = (
+                list(profile.common_grammar_gaps) if profile.common_grammar_gaps else []
+            )
+            for p in patterns:
+                current_gaps.append(p)
+            profile.common_grammar_gaps = current_gaps[-20:]
+
+    # -------------------------------------------------------------------------
+    # SRS Interval Calculation
+    # -------------------------------------------------------------------------
+
     def calculate_review_interval(
         self, review_count: int, gap_type: Optional[str] = None
     ) -> timedelta:
         """
         Smart SRS interval based on review count and gap type.
-        Collocations are harder to remember, use shorter intervals.
+        - Collocations: hardest to retain, shortest intervals
+        - Meaning: medium difficulty (context understanding)
+        - Vocabulary/Structure: default intervals
         """
-        base_intervals = [1, 3, 7, 14, 30, 60]  # days
+        base_intervals = [
+            1,
+            3,
+            7,
+            14,
+            30,
+            60,
+        ]  # days (default for vocabulary, structure, fundamental)
 
-        if review_count >= len(base_intervals):
-            interval_days = base_intervals[-1]
-        else:
-            interval_days = base_intervals[review_count]
-
-        # Collocations need more practice
         if gap_type == "collocation":
-            interval_days = max(1, int(interval_days * 0.7))
+            # Collocations are hardest to remember
+            base_intervals = [1, 2, 4, 7, 14, 30]
+        elif gap_type == "meaning":
+            # Context/meaning gaps need slightly shorter intervals (harder than vocab)
+            base_intervals = [1, 2, 5, 10, 21, 45]
 
-        return timedelta(days=interval_days)
+        idx = min(review_count, len(base_intervals) - 1)
+        return timedelta(days=base_intervals[idx])
 
 
 # =============================================================================
