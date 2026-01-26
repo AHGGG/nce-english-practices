@@ -18,6 +18,16 @@ import os  # noqa: E402
 TEST_DATABASE_URL = "sqlite+aiosqlite:///./test.db"
 os.environ["DATABASE_URL"] = TEST_DATABASE_URL
 
+# Ensure dummy frontend dist exists for SPA routes to register (required for test_spa_traversal)
+# This mimics the production build environment.
+frontend_dist = os.path.join(os.getcwd(), "apps", "web", "dist")
+os.makedirs(frontend_dist, exist_ok=True)
+if not os.path.exists(os.path.join(frontend_dist, "index.html")):
+    with open(os.path.join(frontend_dist, "index.html"), "w") as f:
+        f.write("<html></html>")
+if not os.path.exists(os.path.join(frontend_dist, "assets")):
+    os.makedirs(os.path.join(frontend_dist, "assets"), exist_ok=True)
+
 from app.core.db import Base, get_db  # noqa: E402
 import app.models.orm  # noqa: E402
 from app.main import app  # noqa: E402
