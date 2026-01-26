@@ -1,35 +1,41 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { parseJSONSSEStream } from '../utils/sseParser';
-import { authFetch } from '../api/auth';
+import { authFetch } from '@nce/api';
+
+export interface ExtraContext {
+    prevSentence: string | null;
+    nextSentence: string | null;
+}
+
+export interface InspectorData {
+    word: string;
+    ldoce: any;
+    collins: any;
+    found: boolean;
+}
 
 /**
  * useWordExplainer - Shared hook for word/phrase explanation functionality
- * 
- * Used by both SentenceStudy and ReadingMode to provide:
- * - Dictionary lookup for single words
- * - Streaming LLM context explanation
- * - Progressive explanation styles (default -> simple -> chinese_deep)
- * - Phrase detection
  */
 export function useWordExplainer() {
     // State
-    const [selectedWord, setSelectedWord] = useState(null);
-    const [lookupWord, setLookupWord] = useState(null); // The word to actually look up in dictionary
+    const [selectedWord, setSelectedWord] = useState<string | null>(null);
+    const [lookupWord, setLookupWord] = useState<string | null>(null);
     const [isPhrase, setIsPhrase] = useState(false);
-    const [inspectorData, setInspectorData] = useState(null);
+    const [inspectorData, setInspectorData] = useState<InspectorData | null>(null);
     const [isInspecting, setIsInspecting] = useState(false);
     const [currentSentenceContext, setCurrentSentenceContext] = useState('');
     
-    // Extra context for enhanced explanations (prev/next sentences)
-    const [extraContext, setExtraContext] = useState({ prevSentence: null, nextSentence: null });
+    // Extra context for enhanced explanations
+    const [extraContext, setExtraContext] = useState<ExtraContext>({ prevSentence: null, nextSentence: null });
     
     // Streaming explanation state
     const [contextExplanation, setContextExplanation] = useState('');
     const [isExplaining, setIsExplaining] = useState(false);
     const [explainStyle, setExplainStyle] = useState('default');
-    const [generatedImage, setGeneratedImage] = useState(null);
+    const [generatedImage, setGeneratedImage] = useState<string | null>(null);
     const [isGeneratingImage, setIsGeneratingImage] = useState(false);
-    const [imagePrompt, setImagePrompt] = useState(null);
+    const [imagePrompt, setImagePrompt] = useState<string | null>(null);
     
     // Request ID ref for cancelling stale streaming requests
     const explainRequestIdRef = useRef(0);
@@ -45,7 +51,7 @@ export function useWordExplainer() {
         let cancelled = false;
         setIsInspecting(true);
 
-        const fetchBothDictionaries = async (word) => {
+        const fetchBothDictionaries = async (word: string): Promise<InspectorData> => {
             const [ldoceRes, collinsRes] = await Promise.all([
                 authFetch(`/api/dictionary/ldoce/${encodeURIComponent(word)}`),
                 authFetch(`/api/dictionary/collins/${encodeURIComponent(word)}`)
@@ -58,7 +64,7 @@ export function useWordExplainer() {
                 word,
                 ldoce: ldoceData,
                 collins: collinsData,
-                found: (ldoceData?.found || collinsData?.found)
+                found: !!(ldoceData?.found || collinsData?.found)
             };
         };
 
@@ -69,7 +75,6 @@ export function useWordExplainer() {
 
                 // 2. Heuristic Fallback: If not found and it's a phrase, try to find a key word
                 if (!combinedData.found && lookupWord.includes(' ')) {
-                    // Split phrase and filter stop words
                     const stopWords = new Set([
                         'of', 'the', 'a', 'an', 'in', 'on', 'at', 'to', 'for', 'with', 'by', 'and', 'or', 'is', 'are', 'was', 'were', 'be', 'been', 'being',
                         'have', 'has', 'had', 'do', 'does', 'did', 'will', 'would', 'shall', 'should', 'can', 'could', 'may', 'might', 'must',
@@ -85,7 +90,7 @@ export function useWordExplainer() {
                     const tokens = lookupWord.split(/[^a-zA-Z0-9-]/).filter(t => t && t.length > 2);
                     const candidates = tokens.filter(t => !stopWords.has(t.toLowerCase()));
                     
-                    // Sort by length descending (longest words are usually most significant)
+                    // Sort by length descending
                     candidates.sort((a, b) => b.length - a.length);
                     
                     if (candidates.length > 0) {
@@ -145,10 +150,9 @@ export function useWordExplainer() {
                             setContextExplanation(prev => prev + text);
                         }
                     },
-                    onEvent: async (type, data) => {
+                    onEvent: (type: string, data: any) => {
                         console.log('[useWordExplainer] SSE Event:', type, data);
                         if (type === 'image_check' && explainRequestIdRef.current === currentRequestId) {
-                            // If suitable for image, store prompt but wait for user trigger
                             if (data.suitable && data.image_prompt) {
                                 console.log('[useWordExplainer] Image suitable, prompt received');
                                 if (explainRequestIdRef.current === currentRequestId) {
@@ -172,7 +176,7 @@ export function useWordExplainer() {
     }, [selectedWord, currentSentenceContext, explainStyle, extraContext]);
 
     // Handle word/phrase click
-    const handleWordClick = useCallback((word, sentence, keyWord) => {
+    const handleWordClick = useCallback((word: string, sentence: string, keyWord?: string) => {
         if (!word) return;
         const cleanWord = word.toLowerCase().trim();
         if (cleanWord.length < 2) return;
@@ -190,8 +194,6 @@ export function useWordExplainer() {
         
         setSelectedWord(cleanWord);
         
-        // If a specific key word was provided (from backend collocation detection), use it
-        // Otherwise use the clicked word/phrase itself
         const wordToLookup = keyWord && keyWord.trim() ? keyWord.toLowerCase().trim() : cleanWord;
         setLookupWord(wordToLookup);
         
@@ -208,11 +210,9 @@ export function useWordExplainer() {
         setIsPhrase(false);
     }, []);
 
-    // Change explanation style (triggers re-fetch)
-    const changeExplainStyle = useCallback((newStyle) => {
+    // Change explanation style
+    const changeExplainStyle = useCallback((newStyle: string) => {
         setExplainStyle(newStyle);
-        // Re-trigger explanation by incrementing request ID
-        // The effect will re-run because explainStyle changed
     }, []);
 
     const generateImage = useCallback(async () => {
@@ -245,7 +245,6 @@ export function useWordExplainer() {
     }, [imagePrompt, selectedWord, currentSentenceContext]);
 
     return {
-        // State
         selectedWord,
         isPhrase,
         inspectorData,
@@ -257,12 +256,11 @@ export function useWordExplainer() {
         generatedImage,
         isGeneratingImage,
         imagePrompt,
-        // Actions
         handleWordClick,
         closeInspector,
         changeExplainStyle,
         setCurrentSentenceContext,
-        setExtraContext,  // For SentenceStudy's prev/next sentence context
+        setExtraContext,
         generateImage
     };
 }

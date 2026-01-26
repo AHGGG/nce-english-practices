@@ -1,15 +1,14 @@
-version: '3.8'
+version: "3.8"
 
 services:
   nginx:
     image: nginx:alpine
     ports:
       - "443:443"
-      - "80:80"  # Redirects to HTTPS
+      - "80:80" # Redirects to HTTPS
     volumes:
       - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
       - ./nginx/ssl:/etc/nginx/ssl:ro
-      - ./nginx/conf.d:/etc/nginx/conf.d:ro
     depends_on:
       - app
     restart: unless-stopped
@@ -30,7 +29,7 @@ services:
       ALLOW_REGISTRATION: ${ALLOW_REGISTRATION:-True}
       PROXY_URL: ${PROXY_URL:-}
     volumes:
-      - ../resources:/app/resources:ro  # Read-only mount
+      - ../resources:/app/resources:ro # Read-only mount
       - app-logs:/app/logs
     depends_on:
       postgres:

@@ -31,23 +31,27 @@ curl https://localhost:8000/api/verify/health
 ```
 
 **Check the response:**
+
 - `status: "healthy"` → Continue to next step
 - `status: "unhealthy"` → Read the `summary` and `frontend_errors`/`backend_errors`, fix the issues, then re-verify
 
 ### Step 3: Visual Verification (When Needed)
 
 **Do this when:**
+
 - ✅ You modified UI components (`.jsx`, `.css`)
 - ✅ You changed layouts or styling
 - ✅ You added new pages or modified routes
 
 **Skip this when:**
+
 - ❌ Pure backend logic changes
 - ❌ Utility functions or helpers
 - ❌ Configuration files
 - ❌ Tests only
 
 **How to verify:**
+
 1. Use Chrome DevTools MCP to navigate to the affected page
 2. Take a screenshot
 3. Look at the page snapshot - does it look correct?
@@ -56,11 +60,13 @@ curl https://localhost:8000/api/verify/health
 ### Step 4: Interaction Verification (When Needed)
 
 **Do this when:**
+
 - ✅ You modified button click handlers
 - ✅ You changed form submissions
 - ✅ You updated navigation flows
 
 **How to verify:**
+
 1. Use Chrome DevTools `click` and `fill` tools
 2. Simulate the user interaction
 3. Verify the expected result happens
@@ -69,15 +75,15 @@ curl https://localhost:8000/api/verify/health
 
 Infer which page to verify based on the files you changed:
 
-| File Pattern | Page to Verify |
-|--------------|----------------|
-| `frontend/src/components/reading/*` | `/reading` |
-| `frontend/src/components/sentence-study/*` | `/sentence-study` |
-| `frontend/src/components/review/*` | `/review` |
-| `frontend/src/components/performance/*` | Check via route |
-| `app/api/routers/review.py` | `/review` |
-| `app/api/routers/reading.py` | `/reading` |
-| `app/services/*.py` | Health check only |
+| File Pattern                               | Page to Verify    |
+| ------------------------------------------ | ----------------- |
+| `apps/web/src/components/reading/*`        | `/reading`        |
+| `apps/web/src/components/sentence-study/*` | `/sentence-study` |
+| `apps/web/src/components/review/*`         | `/review`         |
+| `apps/web/src/components/performance/*`    | Check via route   |
+| `app/api/routers/review.py`                | `/review`         |
+| `app/api/routers/reading.py`               | `/reading`        |
+| `app/services/*.py`                        | Health check only |
 
 ## Decision Tree
 

@@ -1,0 +1,10 @@
+{
+  "name": "@nce/backend",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "cd ../.. && uv run python -m app.main",
+    "lint": "cd ../.. && uv run ruff check .",
+    "start": "cd ../.. && uv run python app/main.py"
+  }
+}

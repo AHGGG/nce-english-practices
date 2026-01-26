@@ -166,7 +166,7 @@ from fastapi.staticfiles import StaticFiles  # noqa: E402
 from fastapi.responses import FileResponse  # noqa: E402
 
 frontend_dist = os.path.normpath(
-    os.path.join(os.path.dirname(__file__), "..", "frontend", "dist")
+    os.path.join(os.path.dirname(__file__), "..", "apps", "web", "dist")
 )
 index_html = os.path.join(frontend_dist, "index.html")
 

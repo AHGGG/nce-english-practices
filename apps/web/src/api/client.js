@@ -25,9 +25,9 @@ const onTokenRefreshed = (token) => {
 };
 
 // Handle refresh failure
-const onRefreshFailed = () => {
+const onRefreshFailed = async () => {
   refreshSubscribers = [];
-  clearTokens();
+  await clearTokens();
   // Dispatch custom event to notify app of auth failure
   window.dispatchEvent(new CustomEvent('auth:session-expired'));
 };
@@ -35,14 +35,14 @@ const onRefreshFailed = () => {
 // Add request interceptor to inject token and check expiry
 client.interceptors.request.use(
   async (config) => {
-    let token = getAccessToken();
+    let token = await getAccessToken();
     
     // Proactively refresh if token is about to expire (within 60s buffer)
-    if (token && isTokenExpired() && !isRefreshing) {
+    if (token && (await isTokenExpired()) && !isRefreshing) {
       isRefreshing = true;
       try {
         await refreshAccessToken();
-        token = getAccessToken();
+        token = await getAccessToken();
       } catch {
         // Refresh failed, will be handled by response interceptor
       } finally {
@@ -73,7 +73,7 @@ client.interceptors.response.use(
         
         try {
           await refreshAccessToken();
-          const newToken = getAccessToken();
+          const newToken = await getAccessToken();
           isRefreshing = false;
           onTokenRefreshed(newToken);
           
@@ -82,7 +82,7 @@ client.interceptors.response.use(
           return client(originalRequest);
         } catch {
           isRefreshing = false;
-          onRefreshFailed();
+          await onRefreshFailed();
           return Promise.reject(new Error('Session expired. Please log in again.'));
         }
       } else {

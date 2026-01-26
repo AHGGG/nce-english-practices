@@ -15,26 +15,79 @@ The backend is built with **FastAPI** and the frontend is a **React** Single Pag
 ## Development Setup
 
 ```bash
-# Install dependencies
+# Install dependencies (Root)
+pnpm install
 uv sync
 
-# Run the Web Application
-uv run python -m app.main
-# OR (Windows Powershell)
-./scripts/dev.ps1
+# Run the Full Stack (Frontend + Backend)
+pnpm turbo dev
 
-# For HTTPS (mobile voice requires HTTPS)
-uv run python scripts/generate_cert.py  # Generate self-signed cert
-./scripts/dev.ps1 -Https                # Start with HTTPS
+# Run specific parts
+pnpm turbo dev --filter=@nce/web      # Web only
+pnpm turbo dev --filter=@nce/backend  # Backend only
 ```
 
+## Architecture (Monorepo)
+
+The project follows a **Monorepo** structure using `pnpm workspaces` and `Turborepo`.
+
+### Workspace Structure
+
+```
+/
+├── apps/
+│   ├── web/                # React Vite App (Moved from frontend/)
+│   ├── mobile/             # (Planned) Expo React Native
+│   └── backend/            # Logical proxy for Python backend
+├── packages/
+│   ├── api/                # Shared API Logic (Auth, Types, Client)
+│   ├── shared/             # Shared Hooks, Utils, Stores (Zustand)
+│   └── ui-tokens/          # (Planned) Shared Design Tokens
+├── backend/                # (Physical) Python Backend Code (app/, scripts/)
+└── turbo.json              # Build orchestration
 ```
 
-## Local Deployment (Docker)
+### Backend (`app/` in root)
 
-部署架构见 `deploy/` 目录。智能部署: `cd deploy && ./scripts/deploy.sh` (默认为快速更新，使用 `--full` 进行全量重置)。
+- **Entry**: `app/main.py`
+- **Run via Turbo**: `apps/backend` package proxies commands to root-level `uv` scripts.
+- **API Contract**: Pydantic models -> OpenAPI -> TypeScript Types.
 
-> 详见 [Local Deployment Skill](docs/skills/local-deployment.md)
+### Frontend (`apps/web`)
+
+- **Tech**: React + Vite + TailwindCSS.
+- **Dependencies**: Consumes `@nce/shared` and `@nce/api`.
+- **Note**: Vite automatically handles `workspace:*` symlinks.
+
+## Shared Logic & Patterns (CRITICAL MEMORY)
+
+### 1. Type Safety Contract (OpenAPI -> TypeScript)
+**Workflow**:
+1. Backend: Update Pydantic models in `app/models/`.
+2. Root: Run `pnpm turbo gen:types`.
+3. Frontend: `@nce/api/src/schema.d.ts` is updated.
+4. Result: Types are available via `import { components } from '../schema'`.
+
+### 2. Async Authentication & Token Storage
+**Context**: To support React Native (Async Storage) and Web (LocalStorage) with one logic codebase (`packages/api`).
+**Pattern**: `AuthService` methods (`getAccessToken`, `isTokenExpired`) are **ASYNC** (return Promises).
+**Pitfall**: Legacy axios interceptors in Web often expect sync tokens.
+**Fix**: ALWAYS `await` token retrieval in interceptors.
+```javascript
+// BAD
+const token = getAccessToken();
+config.headers.Authorization = `Bearer ${token}`; // "[object Promise]" -> 401 Error
+
+// GOOD
+const token = await getAccessToken();
+config.headers.Authorization = `Bearer ${token}`;
+```
+
+### 3. Shared Hooks (View Model Pattern)
+**Location**: `packages/shared/src/hooks/`
+**Pattern**: Pure logic hooks (no UI).
+**Example**: `useWordExplainer` returns `{ data, actions }`.
+**Web Integration**: Re-export from `apps/web/src/hooks/` or import directly.
 
 ## Shortcuts (Windows)
 ```powershell
@@ -103,44 +156,19 @@ The system uses **Edge-TTS** for audio.
 - **Voice**: `en-US-AndrewMultilingualNeural`.
 - **Flow**: Backend streams bytes -> Frontend plays Blob via Web Audio API.
 
-## Architecture
-
-### Package Structure (`app/`)
+### Backend Internal Structure (`app/`)
 
 ```
 app/
-├── main.py, config.py          # 入口 & 配置
+├── main.py, config.py          # Entry & Config
 ├── core/db.py                  # SQLAlchemy async session
-├── services/
-│   ├── llm.py                  # DeepSeek + Gemini 统一客户端
-│   ├── dictionary.py           # MDX/MDD 多词典
-│   ├── voice.py, tts.py        # WebSocket 语音 + Edge-TTS
-│   ├── voice_lab.py            # 多厂商集成 (ElevenLabs/Deepgram/Dashscope)
-│   ├── content_service.py      # Content Provider 工厂
-│   └── aui/                    # Agent-to-UI 流式渲染
-├── services/content_providers/ # EPUB/RSS/Podcast/PlainText
-├── models/
-│   ├── schemas.py, orm.py      # Pydantic DTOs + SQLAlchemy ORM
-│   └── *_schemas.py            # 按领域拆分的 schema
-├── database/                   # DB 操作封装
-└── api/routers/
-    ├── sentence_study.py       # 核心学习 API (SSE streaming, 两级缓存)
-    ├── review.py               # SM-2 间隔重复
-    ├── reading.py, content.py  # 阅读 & EPUB
-    ├── voice_session.py        # 语音会话
-    └── deepgram/               # Deepgram WebSocket 代理
+├── services/                   # Business Logic
+│   ├── llm.py                  # DeepSeek + Gemini Client
+│   ├── dictionary.py           # MDX/MDD Dictionary Manager
+│   └── ...
+├── api/routers/                # FastAPI Routers
+└── models/                     # Pydantic & ORM Models
 ```
-
-**Frontend** (`frontend/src/`):
-- `components/sentence-study/` - 句子学习 UI (3-stage simplification, streaming)
-- `components/reading/` - 阅读模式 (WordInspector, SentenceInspector)
-- `components/performance/` - 仪表盘 (KPI Cards, Memory Curve)
-- `hooks/useWordExplainer.js` - 词典 + LLM 解释统一逻辑
-- `utils/sseParser.js` - SSE 流解析器
-- `context/AuthContext.jsx` - Authentication state management
-- `views/auth/` - Login/Register pages
-
-
 
 ### Authentication System (NEW 2026-01-18)
 

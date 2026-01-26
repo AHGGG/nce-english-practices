@@ -17,7 +17,7 @@ cd /opt/proxy-client
 Create `docker-compose.yml`:
 
 ```yaml
-version: '3.8'
+version: "3.8"
 
 services:
   xray:
@@ -119,6 +119,7 @@ docker compose up -d
 ```
 
 Verify it's running:
+
 ```bash
 docker logs proxy-client
 # Should see "Xray ... started"
@@ -153,9 +154,12 @@ cd /path/to/nce-english-practices/deploy
 
 1.  **Connectivity Check**:
     Inside the app container, verify you can reach the proxy:
+
     ```bash
-    docker exec -it nce-english-practices-app-1 curl -v telnet://172.17.0.1:7890
+    # Find your app container name: docker ps | grep app
+    docker exec -it deploy-app-1 curl -v telnet://172.17.0.1:7890
     ```
+
     If it connects, the network path is open.
 
 2.  **Proxy Functionality**:

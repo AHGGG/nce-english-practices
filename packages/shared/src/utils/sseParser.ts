@@ -1,29 +1,27 @@
-/**
- * SSE Stream Parser Utility
- * 
- * Unified parsing of Server-Sent Events (SSE) streams used throughout the app.
- * Handles both JSON-based SSE (with type field) and raw text SSE formats.
- */
+export interface SSEHandlers {
+    onChunk?: (content: string) => void;
+    onDone?: (data: any) => void;
+    onError?: (error: Error) => void;
+    onEvent?: (type: string, data: any) => void;
+}
+
+export interface TextSSEHandlers {
+    onText?: (text: string) => void;
+    onDone?: () => void;
+    onError?: (error: Error) => void;
+}
+
+export interface TextSSEOptions {
+    abortCheck?: () => boolean;
+}
 
 /**
- * Parse a JSON-based SSE stream (used by overview, simplify endpoints)
- * 
- * @param {Response} response - fetch Response object
- * @param {Object} handlers - Callback handlers
- * @param {Function} handlers.onChunk - Called with content string for each chunk
- * @param {Function} handlers.onDone - Called with done data object when stream ends
- * @param {Function} handlers.onError - Called if an error occurs
- * @returns {Promise<void>}
- * 
- * @example
- * await parseJSONSSEStream(response, {
- *     onChunk: (content) => setText(prev => prev + content),
- *     onDone: (data) => setFinalData(data.overview)
- * });
+ * Parse a JSON-based SSE stream
  */
-export async function parseJSONSSEStream(response, handlers = {}) {
-    const { onChunk, onDone, onError } = handlers;
+export async function parseJSONSSEStream(response: Response, handlers: SSEHandlers = {}) {
+    const { onChunk, onDone, onError, onEvent } = handlers;
     
+    if (!response.body) return;
     const reader = response.body.getReader();
     const decoder = new TextDecoder();
     
@@ -46,8 +44,7 @@ export async function parseJSONSSEStream(response, handlers = {}) {
                         } else if (data.type === 'error') {
                             onError?.(new Error(data.message || 'Stream error'));
                         } else {
-                            // Handle custom event types (e.g., 'image_check')
-                            handlers.onEvent?.(data.type, data);
+                            onEvent?.(data.type, data);
                         }
                     } catch {
                         // Non-JSON line, ignore
@@ -56,38 +53,23 @@ export async function parseJSONSSEStream(response, handlers = {}) {
             }
         }
     } catch (error) {
-        onError?.(error);
+        onError?.(error instanceof Error ? error : new Error(String(error)));
     }
 }
 
 /**
- * Parse a raw text SSE stream (used by explain-word endpoint)
- * 
- * @param {Response} response - fetch Response object
- * @param {Object} handlers - Callback handlers
- * @param {Function} handlers.onText - Called with each text chunk
- * @param {Function} handlers.onDone - Called when stream ends normally
- * @param {Function} handlers.onError - Called if an error occurs
- * @param {Object} options - Additional options
- * @param {Object} options.abortCheck - Function returning true if stream should be aborted
- * @returns {Promise<void>}
- * 
- * @example
- * await parseTextSSEStream(response, {
- *     onText: (text) => setExplanation(prev => prev + text),
- *     onDone: () => setIsStreaming(false)
- * });
+ * Parse a raw text SSE stream
  */
-export async function parseTextSSEStream(response, handlers = {}, options = {}) {
+export async function parseTextSSEStream(response: Response, handlers: TextSSEHandlers = {}, options: TextSSEOptions = {}) {
     const { onText, onDone, onError } = handlers;
     const { abortCheck } = options;
     
+    if (!response.body) return;
     const reader = response.body.getReader();
     const decoder = new TextDecoder();
     
     try {
         while (true) {
-            // Check if we should abort
             if (abortCheck?.()) {
                 await reader.cancel();
                 return;
@@ -117,7 +99,6 @@ export async function parseTextSSEStream(response, handlers = {}, options = {}) 
                         onError?.(new Error(text));
                         return;
                     } else {
-                        // Decode [NL] markers back to actual newlines (preserves markdown formatting)
                         const decodedText = text.replace(/\[NL\]/g, '\n');
                         onText?.(decodedText);
                     }
@@ -125,22 +106,11 @@ export async function parseTextSSEStream(response, handlers = {}, options = {}) 
             }
         }
     } catch (error) {
-        onError?.(error);
+        onError?.(error instanceof Error ? error : new Error(String(error)));
     }
 }
 
-/**
- * Check if a response is an SSE stream
- * @param {Response} response - fetch Response object
- * @returns {boolean}
- */
-export function isSSEResponse(response) {
+export function isSSEResponse(response: Response): boolean {
     const contentType = response.headers.get('content-type') || '';
     return contentType.includes('text/event-stream');
 }
-
-export default {
-    parseJSONSSEStream,
-    parseTextSSEStream,
-    isSSEResponse
-};
