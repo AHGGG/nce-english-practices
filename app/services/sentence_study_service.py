@@ -106,8 +106,8 @@ EXPLAIN_PROMPTS = {
  [Clear, concise dictionary definition. If the word has multiple meanings, choose the one matching the context. Do NOT start with "In this context".]
  
  💡 EXAMPLES:
- - [Example sentence 1]
- - [Example sentence 2]""",
+ - [Example sentence 1 (Do NOT use the context sentences provided above)]
+ - [Example sentence 2 (Do NOT use the context sentences provided above)]""",
     "default_phrase": """Use the Collins COBUILD style to define the phrase "{text}".
  
  {context}
@@ -118,8 +118,8 @@ EXPLAIN_PROMPTS = {
  [COBUILD style full-sentence definition using simple vocabulary. e.g., "If you give up, you stop trying..."]
  
  💡 EXAMPLES:
- - [Example sentence 1]
- - [Example sentence 2]""",
+ - [Example sentence 1 (Do NOT use the context sentences provided above)]
+ - [Example sentence 2 (Do NOT use the context sentences provided above)]""",
     "simple": """Explain the {item_type} "{text}" in the context of the sentence below.
 Explanation must be in SIMPLE ENGLISH, suitable for a beginner learner.
 Use simple vocabulary and short sentences.
@@ -141,20 +141,20 @@ Target: "{text}"
 Respond in simple English, one sentence only.""",
     # Detailed style - Stage 3 for Review Queue (Chinese deep explanation)
     "detailed": """请详细讲解句子中"{text}"这个{item_type}的含义和用法。
-结合以下上下文进行全方位的中文讲解：
-
-上下文：
-{context}
-
-讲解要求：
-1. 解释在当前语境下的确切含义
-2. 分析语法结构或搭配用法
-3. 给出一个类似用法的例句
-4. 为什么这个表达对中国学习者可能困难
-
-目标词汇："{text}"
-
-直接给出讲解内容，不要有多余的开场白。""",
+ 结合以下上下文进行全方位的中文讲解：
+ 
+ 上下文：
+ {context}
+ 
+ 讲解要求：
+ 1. 解释在当前语境下的确切含义
+ 2. 分析语法结构或搭配用法
+ 3. 给出一个类似用法的例句 (不要使用上面的原句)
+ 4. 为什么这个表达对中国学习者可能困难
+ 
+ 目标词汇："{text}"
+ 
+ 直接给出讲解内容，不要有多余的开场白。""",
     "chinese_deep": """请详细讲解句子中"{text}"这个{item_type}的含义和用法。
 结合以下上下文进行全方位的中文讲解：
 
