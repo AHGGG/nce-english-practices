@@ -347,7 +347,7 @@ const ReviewQueue = () => {
                     body: JSON.stringify({
                         text,
                         sentence: currentItem.sentence_text,
-                        style: stage === 1 ? 'brief' : stage === 2 ? 'default' : 'detailed'
+                        style: stage === 1 ? 'brief' : stage === 2 ? 'default' : stage === 3 ? 'simple' : 'chinese_deep'
                     })
                 });
             } else {
@@ -431,11 +431,11 @@ const ReviewQueue = () => {
         if (remembered) {
             // User remembered after help - quality 2
             await handleRating(2);
-        } else if (helpStage < 3) {
+        } else if (helpStage < 4) {
             // Show next stage
             streamExplanation(helpStage + 1);
         } else {
-            // Stage 3 exhausted - quality 1
+            // Stage 4 exhausted - quality 1
             await handleRating(1);
         }
     }, [helpStage, handleRating, streamExplanation]);
