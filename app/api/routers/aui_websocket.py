@@ -223,6 +223,7 @@ async def handle_interactive_stream(
                             session_id=session_id_from_msg,
                             action=action,
                             payload=payload,
+                            client_timestamp=None,
                         )
 
                         # Create a fresh DB session for this operation
