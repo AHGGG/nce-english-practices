@@ -1,11 +1,9 @@
 import pytest
-import os
 import shutil
 from pathlib import Path
 from unittest.mock import MagicMock, patch, AsyncMock
 from fastapi import HTTPException
 from app.api.routers.podcast import _proxy_image
-from app.config import settings
 
 # Test setup
 # We override the podcast_cache_dir for testing to avoid cluttering the real cache

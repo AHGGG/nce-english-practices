@@ -12,7 +12,7 @@ from typing import Dict, List, Optional, Any
 from datetime import timedelta
 
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func, case
+from sqlalchemy import select, func
 from app.models.orm import (
     ArticleOverviewCache,
     SentenceCollocationCache,

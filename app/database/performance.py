@@ -363,7 +363,6 @@ async def get_memory_curve_data(user_id: str = "default_user") -> Dict[str, Any]
 
     Uses ReviewLog data from the SM-2 spaced repetition system for accurate tracking.
     """
-    from app.models.orm import ReviewItem as ReviewItemLocal
 
     async with AsyncSessionLocal() as session:
         try:

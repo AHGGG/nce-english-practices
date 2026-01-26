@@ -37,7 +37,7 @@ async def interact(request: NegotiationRequest):
         return response
     except HTTPException:
         raise
-    except Exception as e:
+    except Exception:
         # In production log this
         logger.exception("Negotiation Error")
         raise HTTPException(status_code=500, detail="Internal Server Error")
@@ -89,7 +89,7 @@ async def get_next_content(
         raise HTTPException(status_code=404, detail="No content available")
     except HTTPException:
         raise
-    except Exception as e:
+    except Exception:
         logger.exception("ContentFeeder Error")
         raise HTTPException(status_code=500, detail="Internal Server Error")
 
@@ -116,7 +116,7 @@ async def get_difficult_words(limit: int = 20):
         ]
     except HTTPException:
         raise
-    except Exception as e:
+    except Exception:
         logger.exception("Proficiency Error")
         raise HTTPException(status_code=500, detail="Internal Server Error")
 
@@ -141,7 +141,7 @@ async def get_word_examples(word: str):
         raise HTTPException(status_code=404, detail=f"No examples found for '{word}'")
     except HTTPException:
         raise
-    except Exception as e:
+    except Exception:
         logger.exception("WordExamples Error")
         raise HTTPException(status_code=500, detail="Internal Server Error")
 
@@ -162,6 +162,6 @@ async def generate_context(request: ContextRequest):
         return ContextResponse(scenario=scenario)
     except HTTPException:
         raise
-    except Exception as e:
+    except Exception:
         logger.exception("Context Generation Error")
         raise HTTPException(status_code=500, detail="Internal Server Error")

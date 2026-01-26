@@ -8,7 +8,7 @@ Schemas extracted to: app/models/sentence_study_schemas.py
 
 from fastapi import APIRouter, HTTPException, Depends
 from fastapi.responses import StreamingResponse
-from typing import Optional, List, Dict, Any
+from typing import Optional, List
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, case
 from datetime import datetime
@@ -26,7 +26,6 @@ from app.models.sentence_study_schemas import (
     RecordRequest,
     SimplifyRequest,
     OverviewRequest,
-    OverviewResponse,
     ExplainWordRequest,
     LastSessionResponse,
     UnclearSentenceInfo,

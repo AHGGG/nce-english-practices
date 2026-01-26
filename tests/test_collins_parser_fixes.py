@@ -1,5 +1,4 @@
 
-import pytest
 from bs4 import BeautifulSoup
 from app.services.collins_parser import collins_parser
 

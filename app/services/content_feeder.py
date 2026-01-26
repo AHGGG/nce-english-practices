@@ -9,6 +9,12 @@ from pydantic import BaseModel, Field
 
 from app.services.dictionary import dict_manager
 from app.services.collins_parser import collins_parser
+from app.models.word_example_schemas import (
+    WordExampleSet,
+    WordEntry,
+    SenseWithExamples,
+    ExampleItem,
+)
 import logging
 
 logger = logging.getLogger(__name__)
@@ -371,7 +377,7 @@ Reply with ONLY the number, nothing else."""
         self._used_examples.clear()
         self._current_index = 0
 
-    def get_all_examples(self, word: str) -> Optional["WordExampleSet"]:
+    def get_all_examples(self, word: str) -> Optional[WordExampleSet]:
         """
         Get ALL examples for a word, grouped by sense.
 
@@ -381,13 +387,6 @@ Reply with ONLY the number, nothing else."""
         Returns:
             WordExampleSet with all senses and examples, or None if not found.
         """
-        from app.models.word_example_schemas import (
-            WordExampleSet,
-            WordEntry,
-            SenseWithExamples,
-            ExampleItem,
-        )
-
         results = dict_manager.lookup(word)
 
         if not results:

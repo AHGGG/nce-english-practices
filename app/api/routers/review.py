@@ -11,7 +11,6 @@ from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.engine import Result
 
 from app.core.db import get_db
 from app.models.orm import ReviewItem, ReviewLog
@@ -372,7 +371,7 @@ async def get_memory_curve_debug(
         interval_distribution[key] = interval_distribution.get(key, 0) + count
 
     # 3. Get bucket statistics
-    from sqlalchemy import and_, case
+    from sqlalchemy import case
     buckets = []
     sorted_days = sorted(bucket_ranges.keys())
 

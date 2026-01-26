@@ -61,7 +61,7 @@ async def unsubscribe_all(user_id: str, force: bool = False, clean_history: bool
         
         # Confirm deletion
         if not force:
-            prompt = f"Are you sure you want to DELETE ALL subscriptions"
+            prompt = "Are you sure you want to DELETE ALL subscriptions"
             if clean_history:
                 prompt += " AND HISTORY"
             prompt += f" for user '{user_id}'? (y/N): "

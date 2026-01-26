@@ -1,8 +1,12 @@
 from fastapi import APIRouter, HTTPException, Response, Depends
-from typing import Optional, List, Dict, Any
+from typing import Optional, Dict, Any
 from bs4 import BeautifulSoup
+from sqlalchemy import select, func
 
 from app.api.routers.auth import get_current_user_id
+from app.services.content_service import content_service
+from app.models.content_schemas import SourceType
+from app.models.orm import ReadingSession, SentenceLearningRecord, ReviewItem
 
 router = APIRouter()
 
@@ -10,9 +14,6 @@ router = APIRouter()
 # ============================================================
 # Reading Mode API Endpoints (Phase 2)
 # ============================================================
-
-from app.services.content_service import content_service
-from app.models.content_schemas import SourceType
 
 
 def _get_block_sentence_count(article: Dict[str, Any], provider) -> int:
@@ -24,21 +25,21 @@ def _get_block_sentence_count(article: Dict[str, Any], provider) -> int:
     # Use cached value if available (set during EPUB loading)
     if "block_sentence_count" in article:
         return article["block_sentence_count"]
-    
+
     # Fallback: compute from raw_html
     raw_html = article.get("raw_html", "")
     if not raw_html:
         # Final fallback to lenient splitting if no HTML available
         return len(provider._split_sentences_lenient(article.get("full_text", "")))
-    
+
     soup = BeautifulSoup(raw_html, "lxml-xml")
     blocks = provider._extract_structured_blocks(soup)
-    
+
     sentence_count = 0
     for block in blocks:
         if block.type.value == "paragraph" and block.sentences:
             sentence_count += len(block.sentences)
-    
+
     return sentence_count
 
 
@@ -107,20 +108,22 @@ def list_epub_articles(filename: Optional[str] = None):
         articles = []
         for i, article in enumerate(provider._cached_articles):
             full_text = article.get("full_text", "")
-            
+
             # Filter out Section TOC pages (Calibre Generated)
             if article.get("is_toc"):
                 continue
-            
+
             # Use block-based sentence count to match how article content works
             sentence_count = _get_block_sentence_count(article, provider)
-            
+
             if sentence_count < 3:
                 continue
-            
+
             # Get preview from first sentences of full_text
             preview_sentences = provider._split_sentences_lenient(full_text)
-            preview = preview_sentences[0] if preview_sentences else full_text[:200] + "..."
+            preview = (
+                preview_sentences[0] if preview_sentences else full_text[:200] + "..."
+            )
 
             articles.append(
                 {
@@ -145,8 +148,7 @@ def list_epub_articles(filename: Optional[str] = None):
 
 @router.get("/api/reading/epub/list-with-status")
 async def list_epub_articles_with_status(
-    filename: Optional[str] = None,
-    user_id: str = Depends(get_current_user_id)
+    filename: Optional[str] = None, user_id: str = Depends(get_current_user_id)
 ):
     """
     List all articles with their reading/study status in a SINGLE request.
@@ -182,18 +184,22 @@ async def list_epub_articles_with_status(
             sentence_count = _get_block_sentence_count(article, provider)
             if sentence_count < 3:
                 continue
-            
+
             full_text = article.get("full_text", "")
             preview_sentences = provider._split_sentences_lenient(full_text)
-            preview = preview_sentences[0] if preview_sentences else full_text[:200] + "..."
-            
-            valid_articles.append({
-                "index": i,
-                "title": article.get("title", f"Chapter {i + 1}"),
-                "preview": preview,
-                "source_id": f"epub:{filename}:{i}",
-                "sentence_count": sentence_count,
-            })
+            preview = (
+                preview_sentences[0] if preview_sentences else full_text[:200] + "..."
+            )
+
+            valid_articles.append(
+                {
+                    "index": i,
+                    "title": article.get("title", f"Chapter {i + 1}"),
+                    "preview": preview,
+                    "source_id": f"epub:{filename}:{i}",
+                    "sentence_count": sentence_count,
+                }
+            )
 
         if not valid_articles:
             return {"filename": filename, "total_articles": 0, "articles": []}
@@ -223,14 +229,16 @@ async def list_epub_articles_with_status(
                 select(
                     SentenceLearningRecord.source_id,
                     func.count(SentenceLearningRecord.id).label("studied_count"),
-                    func.count(SentenceLearningRecord.id).filter(
-                        SentenceLearningRecord.initial_response == "clear"
-                    ).label("clear_count"),
-                    func.count(SentenceLearningRecord.id).filter(
-                        SentenceLearningRecord.initial_response == "unclear"
-                    ).label("unclear_count"),
+                    func.count(SentenceLearningRecord.id)
+                    .filter(SentenceLearningRecord.initial_response == "clear")
+                    .label("clear_count"),
+                    func.count(SentenceLearningRecord.id)
+                    .filter(SentenceLearningRecord.initial_response == "unclear")
+                    .label("unclear_count"),
                     func.max(SentenceLearningRecord.sentence_index).label("max_index"),
-                    func.max(SentenceLearningRecord.updated_at).label("last_studied_at"),
+                    func.max(SentenceLearningRecord.updated_at).label(
+                        "last_studied_at"
+                    ),
                 )
                 .where(SentenceLearningRecord.user_id == user_id)
                 .where(SentenceLearningRecord.source_id.in_(source_ids))
@@ -251,16 +259,24 @@ async def list_epub_articles_with_status(
         for article in valid_articles:
             source_id = article["source_id"]
             total_sentences = article["sentence_count"]
-            
+
             reading = reading_stats.get(source_id, {"count": 0, "last_read": None})
-            study = study_stats.get(source_id, {
-                "studied_count": 0, "clear_count": 0, "unclear_count": 0,
-                "max_index": None, "last_studied_at": None,
-            })
-            
-            current_index = (study["max_index"] + 1) if study["max_index"] is not None else 0
+            study = study_stats.get(
+                source_id,
+                {
+                    "studied_count": 0,
+                    "clear_count": 0,
+                    "unclear_count": 0,
+                    "max_index": None,
+                    "last_studied_at": None,
+                },
+            )
+
+            current_index = (
+                (study["max_index"] + 1) if study["max_index"] is not None else 0
+            )
             studied_count = study["studied_count"]
-            
+
             # Determine status
             if current_index >= total_sentences and studied_count > 0:
                 status = "completed"
@@ -270,10 +286,16 @@ async def list_epub_articles_with_status(
                 status = "read"
             else:
                 status = "new"
-            
+
             article["reading_sessions"] = reading["count"]
-            article["last_read"] = reading["last_read"].isoformat() if reading["last_read"] else None
-            article["last_studied_at"] = study["last_studied_at"].isoformat() if study["last_studied_at"] else None
+            article["last_read"] = (
+                reading["last_read"].isoformat() if reading["last_read"] else None
+            )
+            article["last_studied_at"] = (
+                study["last_studied_at"].isoformat()
+                if study["last_studied_at"]
+                else None
+            )
             article["study_progress"] = {
                 "current_index": current_index,
                 "total": total_sentences,
@@ -292,6 +314,7 @@ async def list_epub_articles_with_status(
         raise
     except Exception as e:
         import traceback
+
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -513,15 +536,14 @@ def get_epub_image(filename: str, image_path: str):
 # Unified Article Status API (Cross-Mode Integration)
 # ============================================================
 
-from sqlalchemy import select, func
-from app.models.orm import ReadingSession, SentenceLearningRecord, ReviewItem
-
 
 @router.get("/api/content/article-status")
-async def get_article_status(filename: str, user_id: str = Depends(get_current_user_id)):
+async def get_article_status(
+    filename: str, user_id: str = Depends(get_current_user_id)
+):
     """
     Get combined reading and study status for all articles in an EPUB.
-    
+
     Optimized with batch queries (O(1) instead of O(N) per article).
 
     Returns unified status for each article:
@@ -550,12 +572,14 @@ async def get_article_status(filename: str, user_id: str = Depends(get_current_u
             if sentence_count < 3:
                 continue
             source_id = f"epub:{filename}:{i}"
-            valid_articles.append({
-                "index": i,
-                "title": article.get("title", f"Chapter {i + 1}"),
-                "source_id": source_id,
-                "sentence_count": sentence_count,
-            })
+            valid_articles.append(
+                {
+                    "index": i,
+                    "title": article.get("title", f"Chapter {i + 1}"),
+                    "source_id": source_id,
+                    "sentence_count": sentence_count,
+                }
+            )
 
         if not valid_articles:
             return {"filename": filename, "user_id": user_id, "articles": []}
@@ -584,14 +608,16 @@ async def get_article_status(filename: str, user_id: str = Depends(get_current_u
                 select(
                     SentenceLearningRecord.source_id,
                     func.count(SentenceLearningRecord.id).label("studied_count"),
-                    func.count(SentenceLearningRecord.id).filter(
-                        SentenceLearningRecord.initial_response == "clear"
-                    ).label("clear_count"),
-                    func.count(SentenceLearningRecord.id).filter(
-                        SentenceLearningRecord.initial_response == "unclear"
-                    ).label("unclear_count"),
+                    func.count(SentenceLearningRecord.id)
+                    .filter(SentenceLearningRecord.initial_response == "clear")
+                    .label("clear_count"),
+                    func.count(SentenceLearningRecord.id)
+                    .filter(SentenceLearningRecord.initial_response == "unclear")
+                    .label("unclear_count"),
                     func.max(SentenceLearningRecord.sentence_index).label("max_index"),
-                    func.max(SentenceLearningRecord.updated_at).label("last_studied_at"),
+                    func.max(SentenceLearningRecord.updated_at).label(
+                        "last_studied_at"
+                    ),
                 )
                 .where(SentenceLearningRecord.user_id == user_id)
                 .where(SentenceLearningRecord.source_id.in_(source_ids))
@@ -631,16 +657,21 @@ async def get_article_status(filename: str, user_id: str = Depends(get_current_u
 
             # Get stats from batch results (default to empty if not found)
             reading = reading_stats.get(source_id, {"count": 0, "last_read": None})
-            study = study_stats.get(source_id, {
-                "studied_count": 0,
-                "clear_count": 0,
-                "unclear_count": 0,
-                "max_index": None,
-                "last_studied_at": None,
-            })
+            study = study_stats.get(
+                source_id,
+                {
+                    "studied_count": 0,
+                    "clear_count": 0,
+                    "unclear_count": 0,
+                    "max_index": None,
+                    "last_studied_at": None,
+                },
+            )
             review_count = review_stats.get(source_id, 0)
 
-            current_index = (study["max_index"] + 1) if study["max_index"] is not None else 0
+            current_index = (
+                (study["max_index"] + 1) if study["max_index"] is not None else 0
+            )
             studied_count = study["studied_count"]
 
             # Determine status
@@ -653,24 +684,30 @@ async def get_article_status(filename: str, user_id: str = Depends(get_current_u
             else:
                 status = "new"
 
-            articles.append({
-                "index": article["index"],
-                "title": article["title"],
-                "source_id": source_id,
-                "sentence_count": total_sentences,
-                "reading_sessions": reading["count"],
-                "last_read": reading["last_read"].isoformat() if reading["last_read"] else None,
-                "last_studied_at": study["last_studied_at"].isoformat() if study["last_studied_at"] else None,
-                "study_progress": {
-                    "current_index": current_index,
-                    "total": total_sentences,
-                    "studied_count": studied_count,
-                    "clear_count": study["clear_count"],
-                    "unclear_count": study["unclear_count"],
-                },
-                "has_review_items": review_count > 0,
-                "status": status,
-            })
+            articles.append(
+                {
+                    "index": article["index"],
+                    "title": article["title"],
+                    "source_id": source_id,
+                    "sentence_count": total_sentences,
+                    "reading_sessions": reading["count"],
+                    "last_read": reading["last_read"].isoformat()
+                    if reading["last_read"]
+                    else None,
+                    "last_studied_at": study["last_studied_at"].isoformat()
+                    if study["last_studied_at"]
+                    else None,
+                    "study_progress": {
+                        "current_index": current_index,
+                        "total": total_sentences,
+                        "studied_count": studied_count,
+                        "clear_count": study["clear_count"],
+                        "unclear_count": study["unclear_count"],
+                    },
+                    "has_review_items": review_count > 0,
+                    "status": status,
+                }
+            )
 
         return {"filename": filename, "user_id": user_id, "articles": articles}
 

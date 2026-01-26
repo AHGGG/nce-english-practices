@@ -105,8 +105,8 @@ app.include_router(verify.router)
 app.include_router(images.router)
 app.include_router(podcast.router)
 
-from app.models.schemas import RemoteLog
-from app.services.log_collector import (
+from app.models.schemas import RemoteLog  # noqa: E402
+from app.services.log_collector import (  # noqa: E402
     log_collector,
     LogEntry,
     LogSource,
@@ -114,7 +114,7 @@ from app.services.log_collector import (
     LogCategory,
     detect_category,
 )
-from datetime import datetime
+from datetime import datetime  # noqa: E402
 
 
 @app.post("/api/logs")
@@ -162,8 +162,8 @@ async def receive_remote_log(log: RemoteLog):
 
 # --- Static File Serving for Frontend SPA ---
 # Must be mounted AFTER all API routes to avoid shadowing them
-from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles  # noqa: E402
+from fastapi.responses import FileResponse  # noqa: E402
 
 frontend_dist = os.path.normpath(
     os.path.join(os.path.dirname(__file__), "..", "frontend", "dist")

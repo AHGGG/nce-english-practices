@@ -122,7 +122,6 @@ async def _proxy_image(url: str, filename: str = "image.jpg"):
     import httpx
     import mimetypes
     import hashlib
-    from pathlib import Path
     from fastapi.responses import FileResponse
     from fastapi.concurrency import run_in_threadpool
 
@@ -951,31 +950,6 @@ async def download_episode(
         headers_to_upstream["Range"] = range_header
 
     # Stream the audio file
-    async def stream_audio():
-        async with httpx.AsyncClient(timeout=None, follow_redirects=True) as client:
-            # We use stream() context manager, which will be closed when this generator closes
-            async with client.stream(
-                "GET", audio_url, headers=headers_to_upstream
-            ) as response:
-                # Check if upstream accepted the range
-                status_code = response.status_code
-                response_headers = response.headers
-
-                # Yield initial status and headers for custom handling if needed,
-                # but FastAPI StreamingResponse expects just body bytes.
-                # So we just forward the chunks.
-                # However, we need to set the response status code and headers BEFORE yielding.
-                # LIMITATION: In FastAPI/Starlette, we can't easily change status code of StreamingResponse
-                # after it starts. But here we are inside the generator.
-
-                # Actually, capturing headers here is tricky because StreamingResponse takes headers in __init__.
-                # BETTER APPROACH: Do a HEAD first to get size, OR start the stream and inspect before returning StreamingResponse.
-                # But to fully stream, we should just return the StreamingResponse that iterates this.
-                # The issue is passing the upstream status code (206 vs 200) to the client.
-
-                # Let's pivot: We will initiate the request BEFORE creating StreamingResponse.
-                pass
-
     # RE-IMPLEMENTATION with efficient header forwarding
     proxies = settings.PROXY_URL if settings.PROXY_URL else None
     client = httpx.AsyncClient(timeout=None, follow_redirects=True, proxy=proxies)

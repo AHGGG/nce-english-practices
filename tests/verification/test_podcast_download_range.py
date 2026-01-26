@@ -1,7 +1,5 @@
 import pytest
 from httpx import AsyncClient
-from app.main import app
-from app.services.podcast_service import podcast_service
 
 # Mock the podcast service or database if needed, but for integration test
 # we want to test the router logic.

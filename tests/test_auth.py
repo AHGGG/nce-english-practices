@@ -1,7 +1,6 @@
 """
 Tests for authentication system.
 """
-import pytest
 from app.services.auth import (
     get_password_hash,
     verify_password,

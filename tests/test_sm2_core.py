@@ -1,4 +1,3 @@
-import pytest
 from app.api.routers.review import calculate_sm2
 
 class TestSM2Algorithm:

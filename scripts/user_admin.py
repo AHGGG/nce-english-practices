@@ -68,7 +68,7 @@ def create_user(email: str, password: str, username: str, role: str):
                     username=username,
                     role=role,
                 )
-                console.print(f"[green]✓[/green] User created successfully!")
+                console.print("[green]✓[/green] User created successfully!")
                 console.print(f"  ID: {user.id}")
                 console.print(f"  Email: {user.email}")
                 console.print(f"  Username: {user.username or '(none)'}")
@@ -136,7 +136,6 @@ def migrate_data(from_user: str, to_user_id: int, dry_run: bool):
     async def _migrate():
         from sqlalchemy import select, update, func
         from app.models.orm import (
-            User,
             ContextLearningRecord,
             WordProficiency,
             VocabLearningLog,
@@ -157,7 +156,7 @@ def migrate_data(from_user: str, to_user_id: int, dry_run: bool):
                 console.print(f"[red]Error:[/red] Target user ID {to_user_id} not found.")
                 return False
             
-            console.print(f"\n[bold]Migration Plan[/bold]")
+            console.print("\n[bold]Migration Plan[/bold]")
             console.print(f"  From: [cyan]{from_user}[/cyan]")
             console.print(f"  To:   [cyan]{target_user.email}[/cyan] (ID: {to_user_id})")
             console.print()

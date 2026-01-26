@@ -6,21 +6,21 @@ import asyncio
 # Apply nest_asyncio to allow nested event loops (required for TestClient/AsyncClient on Windows)
 nest_asyncio.apply()
 
-from typing import AsyncGenerator
-from httpx import AsyncClient, ASGITransport
-from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncSession
-from sqlalchemy import text
+from typing import AsyncGenerator  # noqa: E402
+from httpx import AsyncClient, ASGITransport  # noqa: E402
+from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncSession  # noqa: E402
+from sqlalchemy import text  # noqa: E402
 
-import os
+import os  # noqa: E402
 
 # FORCE Test Database via Environment Variable (Must be done before app imports)
 # Use SQLite for portable testing in CI/Sandbox
 TEST_DATABASE_URL = "sqlite+aiosqlite:///./test.db"
 os.environ["DATABASE_URL"] = TEST_DATABASE_URL
 
-from app.core.db import Base, get_db
-import app.models.orm  # Ensure models are registered with Base
-from app.main import app
+from app.core.db import Base, get_db  # noqa: E402
+import app.models.orm  # noqa: E402
+from app.main import app  # noqa: E402
 
 
 # FORCE Test Database
@@ -96,9 +96,10 @@ async def client(db_session) -> AsyncGenerator[AsyncClient, None]:
         return "default_user"
 
     app.dependency_overrides[get_db] = override_get_db
-    
+
     # Needs to be imported inside/safely to avoid circular imports if any
     from app.api.routers.auth import get_current_user_id
+
     app.dependency_overrides[get_current_user_id] = override_get_current_user_id
 
     async with AsyncClient(

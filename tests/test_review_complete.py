@@ -2,7 +2,6 @@ import pytest
 from httpx import AsyncClient
 from sqlalchemy import select
 from app.models.orm import ReviewLog, ReviewItem
-from app.api.routers.review import calculate_sm2
 from datetime import datetime, timedelta
 from unittest.mock import patch
 

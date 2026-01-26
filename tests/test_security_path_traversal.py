@@ -1,5 +1,4 @@
 import pytest
-import os
 from pathlib import Path
 from app.services.content_providers.epub_provider import EpubProvider
 
