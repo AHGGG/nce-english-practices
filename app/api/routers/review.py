@@ -176,6 +176,7 @@ def calculate_theoretical_retention(days: int, stability: float = 10.0) -> float
 # API Endpoints
 # ============================================================
 
+
 class ReviewScheduleItem(BaseModel):
     id: int
     text: str
@@ -185,14 +186,16 @@ class ReviewScheduleItem(BaseModel):
     repetition: int
     last_review: Optional[Dict[str, Any]] = None
 
+
 class ReviewScheduleResponse(BaseModel):
     schedule: Dict[str, List[ReviewScheduleItem]]
+
 
 @router.get("/debug/schedule", response_model=ReviewScheduleResponse)
 async def get_review_schedule_debug(
     days: int = 14,
     user_id: str = Depends(get_current_user_id),
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
 ):
     """
     Get detailed review schedule for debugging purposes.
@@ -205,7 +208,7 @@ async def get_review_schedule_debug(
     # We want everything that IS due or WILL BE due shortly.
     # Actually, let's just fetch all active items sorted by date for simplicity of debugging?
     # No, limit to range.
-    
+
     stmt = (
         select(ReviewItem)
         .where(ReviewItem.user_id == user_id)
@@ -213,7 +216,7 @@ async def get_review_schedule_debug(
         .order_by(ReviewItem.next_review_at.asc())
         # .limit(200) # Safety limit?
     )
-    
+
     result = await db.execute(stmt)
     items = result.scalars().all()
 
@@ -221,16 +224,14 @@ async def get_review_schedule_debug(
     # We can do a second query or join. N+1 is okay for debug endpoint usually, but let's be efficient.
     # Group ids
     item_ids = [item.id for item in items]
-    
+
     # Fetch latest log for each item
     # This is a bit complex in SQL (Window function), let's just lazy load or separate queries for now.
     # Since it's a debug page, let's fetch logs in bulk where item_id IN (...)
     # And allow multiple logs? No, just need the last one.
-    
+
     logs_map = {}
     if item_ids:
-
-        
         # Simple approach: fetch all logs for these items, sort desc, pick first in python
         # (Not efficient for production, fine for debug)
         log_stmt = (
@@ -240,22 +241,22 @@ async def get_review_schedule_debug(
         )
         log_result = await db.execute(log_stmt)
         all_logs = log_result.scalars().all()
-        
+
         for log in all_logs:
             if log.review_item_id not in logs_map:
                 logs_map[log.review_item_id] = log
 
     # 3. Group by Day
     schedule: Dict[str, List[ReviewScheduleItem]] = {}
-    
+
     for item in items:
         # Determine Key (Date)
         # Convert to YYYY-MM-DD
         due_date = item.next_review_at.strftime("%Y-%m-%d")
-        
+
         if due_date not in schedule:
             schedule[due_date] = []
-            
+
         last_log = logs_map.get(item.id)
         last_review_info = None
         if last_log:
@@ -263,9 +264,9 @@ async def get_review_schedule_debug(
                 "date": last_log.reviewed_at.isoformat(),
                 "quality": last_log.quality,
                 "duration_ms": last_log.duration_ms,
-                "interval_before": last_log.interval_at_review
+                "interval_before": last_log.interval_at_review,
             }
-            
+
         schedule[due_date].append(
             ReviewScheduleItem(
                 id=item.id,
@@ -274,7 +275,7 @@ async def get_review_schedule_debug(
                 ef=item.easiness_factor,
                 interval=item.interval_days,
                 repetition=item.repetition,
-                last_review=last_review_info
+                last_review=last_review_info,
             )
         )
 
@@ -283,6 +284,7 @@ async def get_review_schedule_debug(
 
 class MemoryCurveDebugBucket(BaseModel):
     """Debug info for a memory curve bucket."""
+
     day: int
     interval_range: str
     sample_size: int
@@ -292,6 +294,7 @@ class MemoryCurveDebugBucket(BaseModel):
 
 class MemoryCurveDebugLog(BaseModel):
     """Debug info for a single review log."""
+
     id: int
     review_item_id: int
     interval_at_review: float
@@ -303,6 +306,7 @@ class MemoryCurveDebugLog(BaseModel):
 
 class MemoryCurveDebugResponse(BaseModel):
     """Debug response for memory curve analysis."""
+
     total_logs: int
     interval_distribution: Dict[str, int]  # interval range -> count
     buckets: List[MemoryCurveDebugBucket]
@@ -314,7 +318,7 @@ class MemoryCurveDebugResponse(BaseModel):
 async def get_memory_curve_debug(
     user_id: str = Depends(get_current_user_id),
     limit: int = 100,
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
 ):
     """
     Get detailed debug info for memory curve analysis.
@@ -323,8 +327,8 @@ async def get_memory_curve_debug(
     # SM-2 Optimized Buckets (same as in get_memory_curve_data)
     # SM-2 intervals: 1 → 6 → ~15 → ~37 days
     bucket_ranges = {
-        1: (0, 3),     # Day 1: First review (interval=1)
-        6: (3, 10),    # Day 6: Second review (interval=6)
+        1: (0, 3),  # Day 1: First review (interval=1)
+        6: (3, 10),  # Day 6: Second review (interval=6)
         15: (10, 25),  # Day 15: Third review (interval≈15)
         40: (25, 60),  # Day 40: Fourth+ review (interval≈37+)
     }
@@ -341,10 +345,7 @@ async def get_memory_curve_debug(
 
     # 2. Get interval distribution
     interval_dist_stmt = (
-        select(
-            ReviewLog.interval_at_review,
-            func.count().label("count")
-        )
+        select(ReviewLog.interval_at_review, func.count().label("count"))
         .join(ReviewItem)
         .where(ReviewItem.user_id == user_id)
         .group_by(ReviewLog.interval_at_review)
@@ -372,6 +373,7 @@ async def get_memory_curve_debug(
 
     # 3. Get bucket statistics
     from sqlalchemy import case
+
     buckets = []
     sorted_days = sorted(bucket_ranges.keys())
 
@@ -380,7 +382,9 @@ async def get_memory_curve_debug(
         bucket_stmt = (
             select(
                 func.count().label("total"),
-                func.count(case((ReviewLog.quality >= 3, 1), else_=None)).label("success")
+                func.count(case((ReviewLog.quality >= 3, 1), else_=None)).label(
+                    "success"
+                ),
             )
             .select_from(ReviewLog)
             .join(ReviewItem)
@@ -393,15 +397,19 @@ async def get_memory_curve_debug(
 
         sample_size = bucket_row.total or 0
         success_count = bucket_row.success or 0
-        retention_rate = round(success_count / sample_size, 2) if sample_size > 0 else None
+        retention_rate = (
+            round(success_count / sample_size, 2) if sample_size > 0 else None
+        )
 
-        buckets.append(MemoryCurveDebugBucket(
-            day=day,
-            interval_range=f"{min_int}-{max_int}",
-            sample_size=sample_size,
-            success_count=success_count,
-            retention_rate=retention_rate
-        ))
+        buckets.append(
+            MemoryCurveDebugBucket(
+                day=day,
+                interval_range=f"{min_int}-{max_int}",
+                sample_size=sample_size,
+                success_count=success_count,
+                retention_rate=retention_rate,
+            )
+        )
 
     # 4. Get recent logs with sentence preview
     logs_stmt = (
@@ -418,15 +426,19 @@ async def get_memory_curve_debug(
     for row in logs_rows:
         log = row[0]
         sentence = row[1]
-        recent_logs.append(MemoryCurveDebugLog(
-            id=log.id,
-            review_item_id=log.review_item_id,
-            interval_at_review=log.interval_at_review,
-            quality=log.quality,
-            reviewed_at=log.reviewed_at.isoformat(),
-            duration_ms=log.duration_ms,
-            sentence_preview=sentence[:50] + "..." if sentence and len(sentence) > 50 else sentence
-        ))
+        recent_logs.append(
+            MemoryCurveDebugLog(
+                id=log.id,
+                review_item_id=log.review_item_id,
+                interval_at_review=log.interval_at_review,
+                quality=log.quality,
+                reviewed_at=log.reviewed_at.isoformat(),
+                duration_ms=log.duration_ms,
+                sentence_preview=sentence[:50] + "..."
+                if sentence and len(sentence) > 50
+                else sentence,
+            )
+        )
 
     # 5. Summary stats
     avg_quality_stmt = (
@@ -446,7 +458,7 @@ async def get_memory_curve_debug(
             "Memory curve uses interval_at_review to bucket reviews. "
             "Buckets are SM-2 aligned: Day 1 (0-3), Day 6 (3-10), Day 15 (10-25), Day 40 (25-60). "
             "Later buckets have data after successful reviews increase the interval."
-        )
+        ),
     }
 
     return MemoryCurveDebugResponse(
@@ -454,22 +466,26 @@ async def get_memory_curve_debug(
         interval_distribution=interval_distribution,
         buckets=buckets,
         recent_logs=recent_logs,
-        summary=summary
+        summary=summary,
     )
 
 
 @router.get("/context/{item_id}", response_model=ReviewContextResponse)
 async def get_review_context(
-    item_id: int, 
+    item_id: int,
     user_id: str = Depends(get_current_user_id),
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
 ):
     """
     Get context (surrounding sentences) for a review item.
     Resolves the source content via ContentService.
     """
     # 1. Get Review Item
-    stmt = select(ReviewItem).where(ReviewItem.id == item_id).where(ReviewItem.user_id == user_id)
+    stmt = (
+        select(ReviewItem)
+        .where(ReviewItem.id == item_id)
+        .where(ReviewItem.user_id == user_id)
+    )
     result = await db.execute(stmt)
     item = result.scalar_one_or_none()
 
@@ -556,7 +572,9 @@ async def get_review_context(
 
 @router.get("/queue", response_model=ReviewQueueResponse)
 async def get_review_queue(
-    user_id: str = Depends(get_current_user_id), limit: int = 20, db: AsyncSession = Depends(get_db)
+    user_id: str = Depends(get_current_user_id),
+    limit: int = 20,
+    db: AsyncSession = Depends(get_db),
 ):
     """Get review items that are due for review (next_review_at <= now)."""
     now = datetime.utcnow()
@@ -604,7 +622,9 @@ async def get_review_queue(
 
 @router.get("/random", response_model=ReviewQueueResponse)
 async def get_random_review(
-    user_id: str = Depends(get_current_user_id), limit: int = 20, db: AsyncSession = Depends(get_db)
+    user_id: str = Depends(get_current_user_id),
+    limit: int = 20,
+    db: AsyncSession = Depends(get_db),
 ):
     """Get random review items for extra practice (does not affect SM-2 schedule)."""
     # Use random ordering
@@ -640,8 +660,7 @@ async def get_random_review(
 
 @router.post("/undo", response_model=ReviewQueueItem)
 async def undo_last_review(
-    user_id: str = Depends(get_current_user_id),
-    db: AsyncSession = Depends(get_db)
+    user_id: str = Depends(get_current_user_id), db: AsyncSession = Depends(get_db)
 ):
     """
     Undo the last review action for the user.
@@ -714,34 +733,33 @@ async def undo_last_review(
     item.repetition = consecutive_success
     item.last_reviewed_at = prev_review_date
 
-    # Restore Next Review Date based on restored interval + prev_review_date?
-    # Actually, next_review_at logic depends on when it WAS reviewed.
-    # If we revert to state before review, 'next_review_at' should be the date it was due *before* this review?
-    # Usually: next_review = last_reviewed + interval.
-    # But if we assume it was due "now" (or in past), we can set:
-    # next_review_at = prev_reviewed_at + restored_interval
-    # OR if it was the FIRST review?
-    # If history exists: next_at = prev_reviewed_at + restored_prev_interval?
-    # No, `interval_before` in log IS the interval used to calculate the due date that just passed.
-    # So `next_review_at` (before this review) = `reviewed_at` (approx) - `overdue`?
-    # A simpler approach: state goes back to "Due".
-    # So `next_review_at` should be <= Now.
-    # Let's set it to `now` or keep it at `prev_date + interval`.
-    # `latest_log.interval_at_review` is the interval it had.
-    if prev_review_date:
-         # It was due at prev_reviewed + interval
-         # However, we don't know the interval *prior* to `interval_at_review`.
-         # Wait. `restored_interval` IS the interval it held coming into this review.
-         # So it "should have been reviewed" at `last_reviewed + restored_interval`.
-         item.next_review_at = prev_review_date + timedelta(days=restored_interval)
-    else:
-        # No previous review. It was a new item.
-        # New items usually created with next_review_at = created_at + 1 day?
-        # Or maybe it was just added.
-        # Let's set next_review_at to Now (so it appears in queue immediately)
-        item.next_review_at = datetime.utcnow()
+    # 3. Prioritize the restored item
+    # To ensure the undone item appears at the top of the queue (immediate re-review),
+    # we set its next_review_at to be slightly earlier than the most overdue item.
+    # If we simply restored the original date, it might end up at the tail of the overdue queue.
 
-    # 3. Delete the log
+    # Find the earliest next_review_at currently in the user's queue
+    min_date_stmt = (
+        select(func.min(ReviewItem.next_review_at)).where(ReviewItem.user_id == user_id)
+        # We only care about items that are actually due (or about to be)
+        # But simply taking the absolute min of all items works too and ensures priority.
+    )
+    min_date_result = await db.execute(min_date_stmt)
+    earliest_date = min_date_result.scalar()
+
+    now = datetime.utcnow()
+
+    if earliest_date:
+        # Ensure we are earlier than the earliest item
+        # If earliest_date is in the future (no overdue items), this makes it due now-ish (earlier than future)
+        # If earliest_date is in the past (overdue backlog), this puts us at the front of the backlog.
+        # We assume earliest_date is naive UTC or consistent timezone.
+        item.next_review_at = earliest_date - timedelta(seconds=1)
+    else:
+        # No items in queue, set to now
+        item.next_review_at = now
+
+    # 4. Delete the log
     await db.delete(latest_log)
     await db.commit()
     await db.refresh(item)
@@ -764,7 +782,7 @@ async def undo_last_review(
 async def complete_review(
     req: CompleteReviewRequest,
     user_id: str = Depends(get_current_user_id),
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
 ):
     """Complete a review and update SM-2 scheduling parameters."""
     # Validate quality: 1=forgot, 2=remembered after help, 3=remembered, 5=easy
@@ -772,7 +790,11 @@ async def complete_review(
         raise HTTPException(status_code=400, detail="Quality must be 1, 2, 3, or 5")
 
     # Get the review item
-    stmt = select(ReviewItem).where(ReviewItem.id == req.item_id).where(ReviewItem.user_id == user_id)
+    stmt = (
+        select(ReviewItem)
+        .where(ReviewItem.id == req.item_id)
+        .where(ReviewItem.user_id == user_id)
+    )
     result = await db.execute(stmt)
     item = result.scalar_one_or_none()
 
@@ -818,7 +840,7 @@ async def complete_review(
 async def create_review_item(
     req: CreateReviewRequest,
     user_id: str = Depends(get_current_user_id),
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
 ):
     """Create a new review item (typically called when user studies a sentence)."""
     # Check if item already exists (prevent duplicates)
