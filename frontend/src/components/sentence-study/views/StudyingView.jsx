@@ -6,6 +6,7 @@ import React from 'react';
 import { ChevronLeft, CheckCircle, HelpCircle, RotateCcw, BookOpen } from 'lucide-react';
 import MemoizedSentence from '../../reading/MemoizedSentence';
 import ExplanationCard from './ExplanationCard';
+import { usePodcast } from '../../../context/PodcastContext';
 
 
 
@@ -32,6 +33,7 @@ const StudyingView = ({
     onSimplifiedResponse,
     onUndo
 }) => {
+    const { currentEpisode } = usePodcast();
     const [showContext, setShowContext] = React.useState(false);
 
     const progressPercent = totalSentences > 0 ? ((currentIndex) / totalSentences) * 100 : 0;
@@ -62,7 +64,7 @@ const StudyingView = ({
             </div>
 
             {/* Main Content Area - Centered when idle, top-aligned when showing content */}
-            <main className="flex-1 overflow-y-auto min-h-0">
+            <main className="flex-1 overflow-y-auto custom-scrollbar min-h-0">
                 <div className={`min-h-full flex flex-col items-center p-4 md:p-8 ${simplifiedText || isSimplifying ? 'justify-start pt-8' : 'justify-center'}`}>
                     {/* Main Sentence Card */}
                     <div className="max-w-3xl w-full border border-border bg-bg-surface rounded-lg shadow-sm overflow-hidden">
@@ -164,7 +166,7 @@ const StudyingView = ({
 
             {/* Fixed Bottom Action Buttons - hidden when explanation is showing */}
             {!isSimplifying && !simplifiedText && (
-                <footer className="flex-shrink-0 p-4 md:p-6 border-t border-border bg-bg-surface">
+                <footer className={`flex-shrink-0 p-4 md:p-6 border-t border-border bg-bg-surface ${currentEpisode ? 'pb-32' : ''}`}>
                     <div className="max-w-3xl mx-auto flex flex-wrap justify-center gap-3">
                         <button
                             onClick={onClear}

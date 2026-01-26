@@ -4,6 +4,7 @@
  */
 import React from 'react';
 import { ChevronLeft, BookOpen, Loader2, GraduationCap } from 'lucide-react';
+import { usePodcast } from '../../../context/PodcastContext';
 
 const OverviewView = ({
     article,
@@ -12,6 +13,7 @@ const OverviewView = ({
     onBack,
     onStartStudying
 }) => {
+    const { currentEpisode } = usePodcast();
     const sentenceCount = article?.sentence_count || article?.sentences?.length || 0;
 
     // Helper to extract fields from partial JSON string
@@ -78,7 +80,7 @@ const OverviewView = ({
             </header>
 
             {/* Main Content */}
-            <main className="flex-1 overflow-y-auto p-4 md:p-8">
+            <main className={`flex-1 overflow-y-auto custom-scrollbar p-4 md:p-8 ${currentEpisode ? 'pb-32' : ''}`}>
                 <div className="max-w-2xl w-full mx-auto">
                     {/* Article Title */}
                     <h1 className="font-serif text-2xl md:text-3xl text-text-primary text-center mb-8">

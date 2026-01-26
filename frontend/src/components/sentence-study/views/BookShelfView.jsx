@@ -5,12 +5,14 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ChevronLeft, BookOpen, Loader2, GraduationCap } from 'lucide-react';
+import { usePodcast } from '../../../context/PodcastContext';
 
 const BookShelfView = ({
     books = [],
     loading = false,
     onSelectBook
 }) => {
+    const { currentEpisode } = usePodcast();
     const navigate = useNavigate();
 
     return (
@@ -26,7 +28,7 @@ const BookShelfView = ({
                 <h1 className="text-sm font-bold uppercase tracking-wider">Sentence Study Library</h1>
             </header>
 
-            <main className="flex-1 overflow-y-auto p-4 md:p-8">
+            <main className={`flex-1 overflow-y-auto custom-scrollbar p-4 md:p-8 ${currentEpisode ? 'pb-32' : ''}`}>
                 <div className="max-w-2xl mx-auto">
                     <p className="text-text-secondary text-sm mb-6">
                         Select a book to start studying.

@@ -4,6 +4,7 @@
  */
 import React, { useState } from 'react';
 import { ChevronLeft, BookOpen, Loader2, Zap, Check, ChevronDown } from 'lucide-react';
+import { usePodcast } from '../../../context/PodcastContext';
 
 const ArticleListView = ({
     selectedBook,
@@ -14,6 +15,7 @@ const ArticleListView = ({
     books = [],
     onSelectBook
 }) => {
+    const { currentEpisode } = usePodcast();
     const [isBookMenuOpen, setIsBookMenuOpen] = useState(false);
     // Check if article was recently accessed (within 24 hours)
     const isRecent = (article) => {
@@ -134,7 +136,7 @@ const ArticleListView = ({
                 </div>
             </header>
 
-            <main className="flex-1 overflow-y-auto p-4 md:p-8">
+            <main className={`flex-1 overflow-y-auto custom-scrollbar p-4 md:p-8 ${currentEpisode ? 'pb-32' : ''}`}>
                 <div className="max-w-2xl mx-auto">
                     {loading ? (
                         <div className="flex items-center justify-center py-12">

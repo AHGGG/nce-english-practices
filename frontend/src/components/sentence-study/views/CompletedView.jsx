@@ -7,6 +7,7 @@ import React, { useState } from 'react';
 import { ChevronLeft, CheckCircle, BookMarked, AlertCircle } from 'lucide-react';
 import SentenceInspector from '../../reading/SentenceInspector';
 import { getGapTypeInfo, DIFFICULTY_CHOICES } from '../constants';
+import { usePodcast } from '../../../context/PodcastContext';
 
 // Get border/bg class based on unclear type
 const getUnclearSentenceStyle = (unclearChoice) => {
@@ -59,6 +60,7 @@ const CompletedView = ({
     onBack,
     onWordClick
 }) => {
+    const { currentEpisode } = usePodcast();
     // Sentence Inspector state
     const [selectedSentence, setSelectedSentence] = useState(null);
     const [selectedSentenceInfo, setSelectedSentenceInfo] = useState(null);
@@ -109,7 +111,7 @@ const CompletedView = ({
             </header>
 
             {/* Main Content */}
-            <main className="flex-1 overflow-y-auto p-4 md:p-8">
+            <main className={`flex-1 overflow-y-auto custom-scrollbar p-4 md:p-8 ${currentEpisode ? 'pb-32' : ''}`}>
                 <div className="max-w-3xl mx-auto">
                     {/* Article Title */}
                     <h1 className="font-serif text-2xl md:text-3xl text-text-primary text-center mb-6">
