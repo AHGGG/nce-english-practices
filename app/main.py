@@ -64,10 +64,10 @@ async def lifespan(app: FastAPI):
 
     await input_service.start_listener()
 
-    # Start Podcast Trending Cache Refresher (Every 12 hours)
+    # Start Podcast Trending Cache Refresher (Every 12 hours, start after 1h delay)
     from app.services.podcast_service import podcast_service
 
-    asyncio.create_task(podcast_service.start_cache_refresher())
+    asyncio.create_task(podcast_service.start_cache_refresher(initial_delay=3600))
 
     yield
 

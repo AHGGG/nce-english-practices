@@ -613,9 +613,15 @@ class PodcastService:
 
     # --- Trending / Top Charts ---
 
-    async def start_cache_refresher(self):
+    async def start_cache_refresher(self, initial_delay: int = 0):
         """Background task to refresh trending cache every 12 hours."""
         import asyncio
+
+        if initial_delay > 0:
+            logger.info(
+                f"Podcast cache refresher: Waiting {initial_delay}s before first run..."
+            )
+            await asyncio.sleep(initial_delay)
 
         while True:
             try:
