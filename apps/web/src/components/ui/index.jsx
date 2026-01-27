@@ -53,24 +53,30 @@ export const Button = ({
     );
 };
 
-export const Input = ({ icon: Icon, error, className = "", ...props }) => {
+export const Input = ({ icon: Icon, label, error, className = "", id, ...props }) => {
+    const generatedId = useId();
+    const inputId = id || generatedId;
     const errorId = useId();
 
     return (
-        <div className={`relative group flex-grow ${className}`}>
-            {Icon && (
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <Icon className="w-4 h-4 text-border group-focus-within:text-accent-primary transition-colors" />
-                </div>
-            )}
-            <input
-                type="text"
-                className={`w-full bg-bg-elevated border border-border text-text-primary px-4 py-3 text-sm font-mono rounded-xl focus:outline-none focus:border-accent-primary focus:ring-1 focus:ring-accent-primary transition-all placeholder:text-text-muted/50 ${Icon ? 'pl-9' : ''} ${error ? 'border-accent-danger focus:border-accent-danger focus:ring-accent-danger' : ''}`}
-                aria-invalid={!!error}
-                aria-describedby={error ? errorId : undefined}
-                {...props}
-            />
-            {error && <span id={errorId} role="alert" className="absolute -bottom-5 left-0 text-[10px] text-accent-danger font-mono">{error}</span>}
+        <div className={`flex flex-col gap-1.5 ${className}`}>
+            {label && <label htmlFor={inputId} className="text-xs font-mono text-text-muted uppercase">{label}</label>}
+            <div className="relative group flex-grow">
+                {Icon && (
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <Icon className="w-4 h-4 text-border group-focus-within:text-accent-primary transition-colors" />
+                    </div>
+                )}
+                <input
+                    id={inputId}
+                    type="text"
+                    className={`w-full bg-bg-elevated border border-border text-text-primary px-4 py-3 text-sm font-mono rounded-xl focus:outline-none focus:border-accent-primary focus:ring-1 focus:ring-accent-primary transition-all placeholder:text-text-muted/50 ${Icon ? 'pl-9' : ''} ${error ? 'border-accent-danger focus:border-accent-danger focus:ring-accent-danger' : ''}`}
+                    aria-invalid={!!error}
+                    aria-describedby={error ? errorId : undefined}
+                    {...props}
+                />
+                {error && <span id={errorId} role="alert" className="absolute -bottom-5 left-0 text-[10px] text-accent-danger font-mono">{error}</span>}
+            </div>
         </div>
     );
 };

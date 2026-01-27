@@ -67,35 +67,27 @@ export default function LoginPage() {
                     {/* Login Form */}
                     <form onSubmit={handleSubmit} className="space-y-6">
                         <div className="space-y-4">
-                            <div>
-                                <label htmlFor="email" className="block text-xs font-mono text-text-muted uppercase mb-1.5 ml-1">
-                                    Email Address
-                                </label>
-                                <Input
-                                    id="email"
-                                    type="email"
-                                    icon={Mail}
-                                    value={email}
-                                    onChange={(e) => setEmail(e.target.value)}
-                                    required
-                                    placeholder="your@email.com"
-                                />
-                            </div>
+                            <Input
+                                id="email"
+                                label="Email Address"
+                                type="email"
+                                icon={Mail}
+                                value={email}
+                                onChange={(e) => setEmail(e.target.value)}
+                                required
+                                placeholder="your@email.com"
+                            />
 
-                            <div>
-                                <label htmlFor="password" className="block text-xs font-mono text-text-muted uppercase mb-1.5 ml-1">
-                                    Password
-                                </label>
-                                <Input
-                                    id="password"
-                                    type="password"
-                                    icon={Lock}
-                                    value={password}
-                                    onChange={(e) => setPassword(e.target.value)}
-                                    required
-                                    placeholder="••••••••"
-                                />
-                            </div>
+                            <Input
+                                id="password"
+                                label="Password"
+                                type="password"
+                                icon={Lock}
+                                value={password}
+                                onChange={(e) => setPassword(e.target.value)}
+                                required
+                                placeholder="••••••••"
+                            />
                         </div>
 
                         <Button
