@@ -77,6 +77,25 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title="NCE English Practice", lifespan=lifespan)
 
+# Configure CORS
+from fastapi.middleware.cors import CORSMiddleware
+
+origins = [
+    "http://localhost:3000",  # Web App
+    "http://localhost:5173",  # Vite Dev Server
+    "http://localhost:8081",  # Mobile Web (Expo)
+    "http://127.0.0.1:3000",
+    "http://127.0.0.1:8081",
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 # Include Routers
 app.include_router(auth.router)  # Auth routes first
 app.include_router(voice.router)

@@ -1,0 +1,17 @@
+{
+  "name": "@nce/ui-tokens",
+  "version": "0.1.0",
+  "private": true,
+  "main": "./tailwind.config.js",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": "./tailwind.config.js",
+    "./colors": "./src/colors.ts",
+    "./typography": "./src/typography.ts",
+    "./css": "./src/css-variables.ts"
+  },
+  "devDependencies": {
+    "tailwindcss": "^3.4.0",
+    "typescript": "^5.9.3"
+  }
+}
