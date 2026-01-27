@@ -935,42 +935,47 @@ async def get_review_stats(
     user_id: str = Depends(get_current_user_id), db: AsyncSession = Depends(get_db)
 ):
     """Get overall review statistics for the user."""
-    # Total items
-    total_stmt = (
+    now = datetime.utcnow()
+
+    # Subqueries for aggregation
+    total_items_subq = (
         select(func.count())
         .select_from(ReviewItem)
         .where(ReviewItem.user_id == user_id)
+        .scalar_subquery()
     )
-    total_result = await db.execute(total_stmt)
-    total_items = total_result.scalar() or 0
 
-    # Due items
-    now = datetime.utcnow()
-    due_stmt = (
+    due_items_subq = (
         select(func.count())
         .select_from(ReviewItem)
         .where(ReviewItem.user_id == user_id)
         .where(ReviewItem.next_review_at <= now)
+        .scalar_subquery()
     )
-    due_result = await db.execute(due_stmt)
-    due_items = due_result.scalar() or 0
 
-    # Total reviews done
-    reviews_stmt = (
+    total_reviews_subq = (
         select(func.count())
         .select_from(ReviewLog)
         .join(ReviewItem)
         .where(ReviewItem.user_id == user_id)
+        .scalar_subquery()
     )
-    reviews_result = await db.execute(reviews_stmt)
-    total_reviews = reviews_result.scalar() or 0
 
-    # Average EF
-    avg_ef_stmt = select(func.avg(ReviewItem.easiness_factor)).where(
-        ReviewItem.user_id == user_id
+    avg_ef_subq = (
+        select(func.avg(ReviewItem.easiness_factor))
+        .where(ReviewItem.user_id == user_id)
+        .scalar_subquery()
     )
-    avg_ef_result = await db.execute(avg_ef_stmt)
-    avg_ef = avg_ef_result.scalar() or 2.5
+
+    # Execute single combined query
+    stmt = select(total_items_subq, due_items_subq, total_reviews_subq, avg_ef_subq)
+    result = await db.execute(stmt)
+    row = result.one()
+
+    total_items = row[0] or 0
+    due_items = row[1] or 0
+    total_reviews = row[2] or 0
+    avg_ef = row[3] or 2.5
 
     return {
         "total_items": total_items,
