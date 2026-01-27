@@ -36,59 +36,61 @@ def clean_cache():
 @pytest.mark.asyncio
 async def test_proxy_image_cache_miss_then_hit():
     """Test that image is fetched, cached, and then served from cache."""
+    # We must patch validate_url_security to allow the example.com URL
+    with patch("app.core.utils.validate_url_security"):
 
-    url = "http://example.com/image.jpg"
-    dummy_content = b"\xff\xd8\xff\xe0\x00\x10JFIF"  # Fake JPEG header
+        url = "http://example.com/image.jpg"
+        dummy_content = b"\xff\xd8\xff\xe0\x00\x10JFIF"  # Fake JPEG header
 
-    # Mock httpx.AsyncClient
-    with patch("httpx.AsyncClient") as mock_client_cls:
-        # Create an AsyncMock for the client instance
-        mock_client = AsyncMock()
+        # Mock httpx.AsyncClient
+        with patch("httpx.AsyncClient") as mock_client_cls:
+            # Create an AsyncMock for the client instance
+            mock_client = AsyncMock()
 
-        # Configure __aenter__ to return the mock client itself
-        mock_client.__aenter__.return_value = mock_client
-        mock_client.__aexit__.return_value = None
+            # Configure __aenter__ to return the mock client itself
+            mock_client.__aenter__.return_value = mock_client
+            mock_client.__aexit__.return_value = None
 
-        # Mock Response
-        mock_response = MagicMock()
-        mock_response.status_code = 200
-        mock_response.content = dummy_content
-        mock_response.headers = {"content-type": "image/jpeg"}
+            # Mock Response
+            mock_response = MagicMock()
+            mock_response.status_code = 200
+            mock_response.content = dummy_content
+            mock_response.headers = {"content-type": "image/jpeg"}
 
-        # Ensure client.get returns the mock response
-        mock_client.get.return_value = mock_response
+            # Ensure client.get returns the mock response
+            mock_client.get.return_value = mock_response
 
-        # Configure the class to return our mock instance
-        mock_client_cls.return_value = mock_client
+            # Configure the class to return our mock instance
+            mock_client_cls.return_value = mock_client
 
-        # 1. First Call: Cache Miss
-        response = await _proxy_image(url)
+            # 1. First Call: Cache Miss
+            response = await _proxy_image(url)
 
-        # Verify response
-        assert response.status_code == 200  # FileResponse usually sets 200
-        assert "image.jpg" in response.headers["content-disposition"]
+            # Verify response
+            assert response.status_code == 200  # FileResponse usually sets 200
+            assert "image.jpg" in response.headers["content-disposition"]
 
-        # Verify network call
-        mock_client.get.assert_called_once_with(url)
+            # Verify network call
+            mock_client.get.assert_called_once_with(url)
 
-        # Verify file creation
-        import hashlib
+            # Verify file creation
+            import hashlib
 
-        url_hash = hashlib.md5(url.encode("utf-8")).hexdigest()
-        expected_path = TEST_CACHE_DIR / f"{url_hash}.jpg"
-        assert expected_path.exists()
-        assert expected_path.read_bytes() == dummy_content
+            url_hash = hashlib.md5(url.encode("utf-8")).hexdigest()
+            expected_path = TEST_CACHE_DIR / f"{url_hash}.jpg"
+            assert expected_path.exists()
+            assert expected_path.read_bytes() == dummy_content
 
-        # 2. Second Call: Cache Hit
-        mock_client.get.reset_mock()
+            # 2. Second Call: Cache Hit
+            mock_client.get.reset_mock()
 
-        response2 = await _proxy_image(url)
+            response2 = await _proxy_image(url)
 
-        # Verify response
-        assert str(response2.path) == str(expected_path)
+            # Verify response
+            assert str(response2.path) == str(expected_path)
 
-        # Verify NO network call
-        mock_client.get.assert_not_called()
+            # Verify NO network call
+            mock_client.get.assert_not_called()
 
 
 @pytest.mark.asyncio
@@ -102,18 +104,32 @@ async def test_proxy_image_invalid_url():
 @pytest.mark.asyncio
 async def test_proxy_image_upstream_404():
     """Test upstream 404 handling."""
-    url = "http://example.com/notfound.jpg"
+    # Patch validate_url_security
+    with patch("app.core.utils.validate_url_security"):
+        url = "http://example.com/notfound.jpg"
 
-    with patch("httpx.AsyncClient") as mock_client_cls:
-        mock_client = AsyncMock()
-        mock_client.__aenter__.return_value = mock_client
-        mock_client.__aexit__.return_value = None
+        with patch("httpx.AsyncClient") as mock_client_cls:
+            mock_client = AsyncMock()
+            mock_client.__aenter__.return_value = mock_client
+            mock_client.__aexit__.return_value = None
 
-        mock_response = MagicMock()
-        mock_response.status_code = 404
-        mock_client.get.return_value = mock_response
-        mock_client_cls.return_value = mock_client
+            mock_response = MagicMock()
+            mock_response.status_code = 404
+            mock_client.get.return_value = mock_response
+            mock_client_cls.return_value = mock_client
 
+            with pytest.raises(HTTPException) as exc:
+                await _proxy_image(url)
+            assert exc.value.status_code == 404
+
+@pytest.mark.asyncio
+async def test_proxy_image_ssrf_protection():
+    """Test that internal IPs are blocked."""
+
+    # Simulate validate_url_security raising ValueError
+    with patch("app.core.utils.validate_url_security", side_effect=ValueError("Access to private/local IP 192.168.1.1 is forbidden")):
         with pytest.raises(HTTPException) as exc:
-            await _proxy_image(url)
-        assert exc.value.status_code == 404
+            await _proxy_image("http://192.168.1.1/image.jpg")
+
+        assert exc.value.status_code == 400
+        assert "Access to private/local IP 192.168.1.1 is forbidden" in exc.value.detail

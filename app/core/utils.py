@@ -1,5 +1,8 @@
 import json
 import re
+import socket
+import ipaddress
+from urllib.parse import urlparse
 from typing import Dict, List, Union, Any
 from fastapi import HTTPException
 
@@ -31,6 +34,59 @@ def validate_input(
         raise HTTPException(status_code=400, detail=f"{field_name} contains invalid characters")
 
     return text
+
+
+def validate_url_security(url: str) -> str:
+    """
+    Validates that a URL does not point to a private, loopback, or reserved IP address.
+    Prevents SSRF attacks.
+    """
+    try:
+        parsed = urlparse(url)
+    except Exception:
+         raise ValueError("Invalid URL format")
+
+    if parsed.scheme not in ('http', 'https'):
+        raise ValueError("Invalid URL scheme (only http/https allowed)")
+
+    hostname = parsed.hostname
+    if not hostname:
+        raise ValueError("Invalid URL: no hostname")
+
+    try:
+        # Resolve to IP
+        # use getaddrinfo to support IPv4 and IPv6
+        # proto=socket.IPPROTO_TCP ensures we only get TCP results (common for HTTP)
+        addr_info = socket.getaddrinfo(hostname, None, proto=socket.IPPROTO_TCP)
+
+        for _, _, _, _, sockaddr in addr_info:
+            ip = sockaddr[0]
+            # Strip scope_id for IPv6 if present (e.g., fe80::1%lo0)
+            if '%' in ip:
+                ip = ip.split('%')[0]
+
+            ip_obj = ipaddress.ip_address(ip)
+
+            if (ip_obj.is_private or
+                ip_obj.is_loopback or
+                ip_obj.is_reserved or
+                ip_obj.is_link_local or
+                ip_obj.is_multicast):
+                 raise ValueError(f"Access to private/local IP {ip} is forbidden")
+
+            # Explicit check for 0.0.0.0 (unspecified) if not covered by is_reserved/private depending on python version/OS
+            if str(ip_obj) == "0.0.0.0":
+                raise ValueError(f"Access to 0.0.0.0 is forbidden")
+
+    except socket.gaierror:
+        raise ValueError(f"Failed to resolve hostname: {hostname}")
+    except ValueError as e:
+        # Re-raise our own ValueErrors
+        raise e
+    except Exception as e:
+         raise ValueError(f"URL validation failed: {str(e)}")
+
+    return url
 
 
 def parse_llm_json(content: str) -> Union[Dict[str, Any], List[Any]]:
