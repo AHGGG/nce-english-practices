@@ -8,18 +8,22 @@
 
 ## Implementation Status
 
-| Component             | Status   | Location                               |
-| --------------------- | -------- | -------------------------------------- |
-| `@nce/store`          | **DONE** | `packages/store/`                      |
-| `@nce/ui-tokens`      | **DONE** | `packages/ui-tokens/`                  |
-| `@nce/api` endpoints  | **DONE** | `packages/api/src/endpoints/`          |
-| Platform Adapter      | **DONE** | `packages/shared/src/platform/`        |
-| `useReadingTracker`   | **DONE** | `packages/shared/src/hooks/`           |
-| Mobile initialization | **DONE** | `apps/mobile/src/lib/platform-init.ts` |
-| `useArticleList`      | **DONE** | `packages/shared/src/hooks/`           |
-| `useArticleReader`    | **DONE** | `packages/shared/src/hooks/`           |
-| Mobile Article List   | **DONE** | `apps/mobile/app/(tabs)/library.tsx`   |
-| Mobile Article Reader | **DONE** | `apps/mobile/app/reading/[id].tsx`     |
+| Component              | Status   | Location                               |
+| ---------------------- | -------- | -------------------------------------- |
+| `@nce/store`           | **DONE** | `packages/store/`                      |
+| `@nce/ui-tokens`       | **DONE** | `packages/ui-tokens/`                  |
+| `@nce/api` endpoints   | **DONE** | `packages/api/src/endpoints/`          |
+| Platform Adapter       | **DONE** | `packages/shared/src/platform/`        |
+| `useReadingTracker`    | **DONE** | `packages/shared/src/hooks/`           |
+| Mobile initialization  | **DONE** | `apps/mobile/src/lib/platform-init.ts` |
+| `useArticleList`       | **DONE** | `packages/shared/src/hooks/`           |
+| `useArticleReader`     | **DONE** | `packages/shared/src/hooks/`           |
+| `useReviewQueue`       | **DONE** | `packages/shared/src/hooks/`           |
+| `usePerformanceStats`  | **DONE** | `packages/shared/src/hooks/`           |
+| Mobile Article List    | **DONE** | `apps/mobile/app/(tabs)/library.tsx`   |
+| Mobile Article Reader  | **DONE** | `apps/mobile/app/reading/[id].tsx`     |
+| Mobile Review Queue    | **DONE** | `apps/mobile/app/(tabs)/index.tsx`     |
+| Mobile Stats Dashboard | **DONE** | `apps/mobile/app/(tabs)/stats.tsx`     |
 
 ---
 
@@ -494,11 +498,11 @@ setPlatformAdapter({
 | **Auth**           | Complete   | Basic         | `packages/store/modules/auth`               |
 | **Article List**   | Complete   | Basic         | `packages/shared/hooks/useArticleList`      |
 | **Article Reader** | Complete   | Basic         | `packages/shared/hooks/useArticleReader`    |
-| **Word Inspector** | Complete   | Basic         | `packages/shared/hooks/useWordExplainer`    |
+| **Word Inspector** | Complete   | **Complete**  | `packages/shared/hooks/useWordExplainer`    |
 | **Deep Study**     | Complete   | Basic         | `packages/shared/hooks/useSentenceStudy`    |
-| **Review Queue**   | Complete   | Missing       | `packages/shared/hooks/useReviewQueue`      |
+| **Review Queue**   | Complete   | **Complete**  | `packages/shared/hooks/useReviewQueue`      |
 | **Podcast**        | Complete   | Missing       | `packages/shared/hooks/usePodcastPlayer`    |
-| **Performance**    | Complete   | Missing       | `packages/shared/hooks/usePerformanceStats` |
+| **Performance**    | Complete   | **Complete**  | `packages/shared/hooks/usePerformanceStats` |
 | **Voice Lab**      | Complete   | Missing       | Platform-specific (WebSocket)               |
 | **Settings**       | Complete   | Missing       | `packages/store/modules/settings`           |
 
@@ -506,15 +510,15 @@ setPlatformAdapter({
 
 **P0 - Core Reading Flow** (Week 5):
 
-1. Article List with proper book grouping
-2. Article Reader with full WebView
-3. Word Inspector (already uses `useWordExplainer`)
+1. Article List with proper book grouping [DONE]
+2. Article Reader with full WebView [DONE]
+3. Word Inspector (already uses `useWordExplainer`) [DONE]
 4. Deep Study with TTS
 
 **P1 - Learning Retention** (Week 6):
 
-1. Review Queue (SM-2 flashcard system)
-2. Performance Dashboard (basic stats)
+1. Review Queue (SM-2 flashcard system) [DONE]
+2. Performance Dashboard (basic stats) [DONE]
 
 **P2 - Content Discovery** (Week 7):
 
