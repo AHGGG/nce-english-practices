@@ -1,7 +1,7 @@
 import { View, Text, FlatList, TouchableOpacity, ActivityIndicator } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useArticleList } from "@nce/shared";
-import { BookOpen, CheckCircle } from "lucide-react-native";
+import { BookOpen, CheckCircle, Settings } from "lucide-react-native";
 import { useRouter } from "expo-router";
 
 export default function LibraryScreen() {
@@ -53,8 +53,11 @@ export default function LibraryScreen() {
       <View className="flex-1 px-4 pt-4">
         <View className="flex-row items-center justify-between mb-6">
             <Text className="text-text-primary text-2xl font-bold font-sans">Library</Text>
-            <TouchableOpacity className="bg-bg-surface p-2 rounded-full border border-border">
-                <BookOpen size={20} color="#E0E0E0" />
+            <TouchableOpacity 
+              className="bg-bg-surface p-2 rounded-full border border-border"
+              onPress={() => router.push("/settings")}
+            >
+                <Settings size={20} color="#E0E0E0" />
             </TouchableOpacity>
         </View>
 

@@ -25,6 +25,7 @@
 | Mobile Review Queue    | **DONE** | `apps/mobile/app/(tabs)/index.tsx`     |
 | Mobile Stats Dashboard | **DONE** | `apps/mobile/app/(tabs)/stats.tsx`     |
 | Mobile Podcast         | **DONE** | `apps/mobile/app/(tabs)/podcast.tsx`   |
+| Mobile Voice Mode      | **DONE** | `apps/mobile/app/(tabs)/voice.tsx`     |
 
 ---
 
@@ -715,7 +716,7 @@ nce-english-practices/
 ### Week 7-8: Mobile Feature Parity (Extended)
 
 - [x] Implement Podcast features on mobile
-- [ ] Implement Voice Lab on mobile
+- [x] Implement Voice Lab/Mode on mobile
 - [ ] Implement Settings on mobile
 
 ---
