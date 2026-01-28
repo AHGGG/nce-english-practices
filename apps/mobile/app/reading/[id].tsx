@@ -89,20 +89,31 @@ export default function ReadingScreen() {
           {article.title}
         </Text>
 
-        <TouchableOpacity
-          className="p-2 -mr-2"
-          onPress={() => {
-            // Toggle highlights or show menu
-            setShowHighlights(!showHighlights);
-            // Inject JS to update highlights without reload
-            webViewRef.current?.injectJavaScript(`
-                window.updateHighlights(${!showHighlights});
-                true;
-              `);
-          }}
-        >
-          <MoreHorizontal color="#E0E0E0" size={24} />
-        </TouchableOpacity>
+        <View className="flex-row items-center">
+          <TouchableOpacity
+            className="p-2 mr-1"
+            onPress={() =>
+              router.push(`/study/${encodeURIComponent(article.source_id)}`)
+            }
+          >
+            <Text className="text-accent-primary font-bold text-xs">STUDY</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            className="p-2 -mr-2"
+            onPress={() => {
+              // Toggle highlights or show menu
+              setShowHighlights(!showHighlights);
+              // Inject JS to update highlights without reload
+              webViewRef.current?.injectJavaScript(`
+                    window.updateHighlights(${!showHighlights});
+                    true;
+                  `);
+            }}
+          >
+            <MoreHorizontal color="#E0E0E0" size={24} />
+          </TouchableOpacity>
+        </View>
       </View>
 
       {/* WebView */}
