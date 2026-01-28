@@ -7,3 +7,4 @@ export * from "./platform";
 // Hooks
 export * from "./hooks/useWordExplainer";
 export * from "./hooks/useReadingTracker";
+export * from "./hooks/useReviewSession";

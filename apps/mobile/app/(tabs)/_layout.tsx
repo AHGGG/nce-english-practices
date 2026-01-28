@@ -1,0 +1,38 @@
+import { Tabs } from "expo-router";
+import { BookOpen, Search } from "lucide-react-native";
+
+export default function TabsLayout() {
+  return (
+    <Tabs
+      screenOptions={{
+        headerShown: false,
+        tabBarStyle: {
+          backgroundColor: "#050505", // bg-base
+          borderTopColor: "#333333", // border-default
+          paddingTop: 5,
+        },
+        tabBarActiveTintColor: "#00FF94", // accent-primary
+        tabBarInactiveTintColor: "#666666", // text-muted
+        tabBarLabelStyle: {
+          fontFamily: "Inter",
+          fontSize: 12,
+        },
+      }}
+    >
+      <Tabs.Screen
+        name="index"
+        options={{
+          title: "Review",
+          tabBarIcon: ({ color }) => <BookOpen size={24} color={color} />,
+        }}
+      />
+      <Tabs.Screen
+        name="dictionary"
+        options={{
+          title: "Dictionary",
+          tabBarIcon: ({ color }) => <Search size={24} color={color} />,
+        }}
+      />
+    </Tabs>
+  );
+}
