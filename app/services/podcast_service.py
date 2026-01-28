@@ -16,8 +16,10 @@ from xml.etree import ElementTree as ET
 
 import httpx
 import feedparser
+import asyncio
 
 from sqlalchemy import select, func, and_
+from app.core.utils import validate_url_security
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -175,6 +177,9 @@ class PodcastService:
         Fetch and parse an RSS feed.
         Returns feed metadata and list of episodes.
         """
+        # Security: Check for SSRF
+        await asyncio.to_thread(validate_url_security, rss_url)
+
         headers = {
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36",
             "Accept": "application/rss+xml, application/xml, application/atom+xml, text/xml;q=0.9, */*;q=0.8",

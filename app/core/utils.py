@@ -1,5 +1,8 @@
 import json
 import re
+import socket
+import ipaddress
+from urllib.parse import urlparse
 from typing import Dict, List, Union, Any
 from fastapi import HTTPException
 
@@ -75,3 +78,37 @@ def parse_llm_json(content: str) -> Union[Dict[str, Any], List[Any]]:
         raise RuntimeError(
             f"Failed to parse LLM JSON: {e}. Content snippet: {cleaned[:100]}..."
         ) from e
+
+
+def validate_url_security(url: str) -> None:
+    """
+    Validates that a URL is safe to fetch (no private/loopback IPs).
+    Raises HTTPException(400) if unsafe.
+    This is a blocking I/O operation and should be run in a threadpool.
+    """
+    try:
+        parsed = urlparse(url)
+        if parsed.scheme not in ("http", "https"):
+            raise ValueError("Invalid URL scheme")
+
+        hostname = parsed.hostname
+        if not hostname:
+            raise ValueError("Missing hostname")
+
+        # Resolve IP (blocking)
+        # Use getaddrinfo to handle both IPv4 and IPv6
+        addr_info = socket.getaddrinfo(hostname, None)
+        for _, _, _, _, sockaddr in addr_info:
+            ip = sockaddr[0]
+            try:
+                ip_obj = ipaddress.ip_address(ip)
+            except ValueError:
+                # If getaddrinfo returned something that ip_address can't parse (unlikely but possible), skip or block.
+                # Usually sockaddr[0] is the IP string.
+                continue
+
+            if ip_obj.is_private or ip_obj.is_loopback or ip_obj.is_link_local:
+                raise ValueError(f"Blocked restricted IP: {ip}")
+
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Security check failed: {str(e)}")
