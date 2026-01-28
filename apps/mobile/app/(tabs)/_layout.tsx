@@ -1,5 +1,5 @@
 import { Tabs } from "expo-router";
-import { BookOpen, Search } from "lucide-react-native";
+import { BookOpen, Search, Layers } from "lucide-react-native";
 
 export default function TabsLayout() {
   return (
@@ -20,10 +20,17 @@ export default function TabsLayout() {
       }}
     >
       <Tabs.Screen
+        name="library"
+        options={{
+          title: "Library",
+          tabBarIcon: ({ color }) => <BookOpen size={24} color={color} />,
+        }}
+      />
+      <Tabs.Screen
         name="index"
         options={{
           title: "Review",
-          tabBarIcon: ({ color }) => <BookOpen size={24} color={color} />,
+          tabBarIcon: ({ color }) => <Layers size={24} color={color} />,
         }}
       />
       <Tabs.Screen
@@ -36,3 +43,4 @@ export default function TabsLayout() {
     </Tabs>
   );
 }
+

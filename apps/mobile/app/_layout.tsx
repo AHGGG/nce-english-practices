@@ -20,10 +20,15 @@ import {
   setApiBaseUrl,
 } from "../src/lib/platform-init";
 
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+
+// Create a client
+const queryClient = new QueryClient();
+
 // Initialize platform adapters EARLY
 initializePlatformAdapters();
 // Default to localhost for now, user can change later or we can detect
-setApiBaseUrl("http://localhost:8000");
+// setApiBaseUrl("http://localhost:8000");
 
 // Keep the splash screen visible while we fetch resources
 SplashScreen.preventAutoHideAsync();
@@ -89,8 +94,10 @@ function RootContent() {
 
 export default function RootLayout() {
   return (
-    <SafeAreaProvider>
-      <RootContent />
-    </SafeAreaProvider>
+    <QueryClientProvider client={queryClient}>
+      <SafeAreaProvider>
+        <RootContent />
+      </SafeAreaProvider>
+    </QueryClientProvider>
   );
 }

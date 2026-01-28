@@ -16,6 +16,10 @@
 | Platform Adapter      | **DONE** | `packages/shared/src/platform/`        |
 | `useReadingTracker`   | **DONE** | `packages/shared/src/hooks/`           |
 | Mobile initialization | **DONE** | `apps/mobile/src/lib/platform-init.ts` |
+| `useArticleList`      | **DONE** | `packages/shared/src/hooks/`           |
+| `useArticleReader`    | **DONE** | `packages/shared/src/hooks/`           |
+| Mobile Article List   | **DONE** | `apps/mobile/app/(tabs)/library.tsx`   |
+| Mobile Article Reader | **DONE** | `apps/mobile/app/reading/[id].tsx`     |
 
 ---
 
@@ -692,14 +696,14 @@ nce-english-practices/
 
 ### Week 3-4: API & Hooks
 
-- [ ] Expand `packages/api` with all endpoints
-- [ ] Create `useArticleList`, `useArticleReader` hooks
-- [ ] Move `useReadingTracker` to shared with platform adapter
+- [x] Expand `packages/api` with all endpoints
+- [x] Create `useArticleList`, `useArticleReader` hooks
+- [x] Move `useReadingTracker` to shared with platform adapter
 - [ ] Create `useSentenceStudy`, `useReviewQueue` hooks
 
 ### Week 5-6: Mobile Feature Parity (Core)
 
-- [ ] Implement full Article Reader on mobile
+- [x] Implement full Article Reader on mobile
 - [ ] Implement Review Queue on mobile
 - [ ] Implement Performance Dashboard on mobile
 

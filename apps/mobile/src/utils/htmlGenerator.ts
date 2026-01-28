@@ -1,4 +1,4 @@
-import { ContentBlock, ArticleDetail } from "../modules/study/types";
+import { ContentBlock, ArticleDetail } from "@nce/shared";
 
 const CSS_STYLES = `
 :root {

@@ -10,6 +10,7 @@ import { setPlatformAdapter } from "@nce/shared";
 import { authService } from "@nce/api";
 import { setStorageAdapter } from "@nce/store";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import Constants from "expo-constants";
 
 /**
  * Initialize all platform adapters
@@ -42,13 +43,36 @@ export function initializePlatformAdapters() {
   });
 
   console.log("[Platform] Adapters initialized for React Native");
+
+  // 3. Auto-detect and set API URL
+  const url = detectApiUrl();
+  setApiBaseUrl(url);
 }
 
 /**
  * Set the API base URL for mobile
- * Call this after determining the server address
  */
 export function setApiBaseUrl(url: string) {
   authService.setBaseUrl(url);
   console.log("[Platform] API base URL set to:", url);
+}
+
+function detectApiUrl() {
+  // 1. Check for manual override (uncomment to force specific IP)
+  // return "http://192.168.0.100:8000";
+
+  // 2. Use Expo's auto-detected host
+  if (Constants.expoConfig?.hostUri) {
+    const ip = Constants.expoConfig.hostUri.split(":")[0];
+    const url = `http://${ip}:8000`;
+    console.log(
+      `[Platform] Auto-detected host: ${url} (from ${Constants.expoConfig.hostUri})`,
+    );
+    return url;
+  }
+
+  // 3. Fallback for physical device on same network (hardcoded based on dev machine)
+  const fallbackUrl = "http://192.168.0.100:8000";
+  console.log(`[Platform] Using fallback URL: ${fallbackUrl}`);
+  return fallbackUrl;
 }

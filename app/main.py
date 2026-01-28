@@ -86,6 +86,11 @@ origins = [
     "http://localhost:8081",  # Mobile Web (Expo)
     "http://127.0.0.1:3000",
     "http://127.0.0.1:8081",
+    # Add local network IPs for mobile dev
+    "http://192.168.0.100:8081",
+    "http://192.168.0.100:3000",
+    "http://192.168.0.100:8000",
+    "exp://192.168.0.100:8081",
 ]
 
 app.add_middleware(

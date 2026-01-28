@@ -5,10 +5,11 @@
   "main": "./src/index.ts",
   "types": "./src/index.ts",
   "dependencies": {
-    "react": "^19.2.0",
-    "zustand": "^4.5.2",
+    "@nce/api": "workspace:*",
+    "@tanstack/react-query": "^5.90.20",
     "axios": "^1.13.2",
-    "@nce/api": "workspace:*"
+    "react": "^19.2.0",
+    "zustand": "^4.5.2"
   },
   "devDependencies": {
     "typescript": "^5.9.3"

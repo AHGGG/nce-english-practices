@@ -104,10 +104,7 @@ export function DictionaryModal({
                           key={i}
                           className="mb-2 pl-3 border-l-2 border-accent-warning/30"
                         >
-                          <Text
-                            key={i}
-                            className="text-text-primary text-base font-serif leading-6"
-                          >
+                          <Text className="text-text-primary text-base font-serif leading-6">
                             {sense.definition?.en}
                           </Text>
                         </View>

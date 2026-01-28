@@ -23,7 +23,8 @@
         "backgroundColor": "#ffffff"
       },
       "edgeToEdgeEnabled": true,
-      "package": "com.nce.practice"
+      "package": "com.nce.practice",
+      "usesCleartextTraffic": true
     },
     "web": {
       "favicon": "./assets/favicon.png",

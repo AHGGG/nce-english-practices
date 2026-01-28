@@ -173,12 +173,12 @@ setFeedbackAdapter({
 
 以下文件应该删除，逻辑移到 `packages/` 中:
 
-| 当前位置                                             | 目标位置                                         | 优先级 |
-| ---------------------------------------------------- | ------------------------------------------------ | ------ |
-| `apps/mobile/src/modules/study/api.ts`               | `packages/api/src/endpoints/reading.ts`          | P0     |
-| `apps/mobile/src/modules/study/useReadingTracker.ts` | `packages/shared/src/hooks/useReadingTracker.ts` | P0     |
-| `apps/mobile/src/context/AuthContext.tsx`            | `packages/store/src/modules/auth/`               | P1     |
-| `apps/web/src/context/AuthContext.jsx`               | `packages/store/src/modules/auth/`               | P1     |
+| 当前位置                                             | 目标位置                                         | 状态      |
+| ---------------------------------------------------- | ------------------------------------------------ | --------- |
+| `apps/mobile/src/modules/study/api.ts`               | `packages/api/src/endpoints/reading.ts`          | ✅ 已完成 |
+| `apps/mobile/src/modules/study/useReadingTracker.ts` | `packages/shared/src/hooks/useReadingTracker.ts` | ✅ 已完成 |
+| `apps/mobile/src/context/AuthContext.tsx`            | `packages/store/src/modules/auth/`               | P1        |
+| `apps/web/src/context/AuthContext.jsx`               | `packages/store/src/modules/auth/`               | P1        |
 
 ---
 

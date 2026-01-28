@@ -31,3 +31,5 @@ test.db-wal
 .agent/skills/*
 .turbo/
 .expo/
+
+.idea
