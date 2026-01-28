@@ -1,29 +1,14 @@
-import { View, Text, StyleSheet } from "react-native";
+import { View, Text } from "react-native";
 
 export default function HomeScreen() {
   return (
-    <View style={styles.container}>
-      <Text style={styles.text}>Mobile App Reset</Text>
-      <Text style={styles.subtext}>Official Monorepo Config</Text>
-      <Text style={styles.subtext}>No NativeWind / No Custom Logic</Text>
+    <View className="flex-1 justify-center items-center bg-gray-100">
+      <Text className="text-2xl font-bold text-blue-600 mb-4">
+        NativeWind is Working!
+      </Text>
+      <Text className="text-base text-gray-500">
+        Official Monorepo Config + NativeWind v4
+      </Text>
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: "#f0f0f0",
-  },
-  text: {
-    fontSize: 24,
-    fontWeight: "bold",
-    marginBottom: 10,
-  },
-  subtext: {
-    fontSize: 16,
-    color: "#666",
-  },
-});
