@@ -11,8 +11,9 @@
     "gen:types": "turbo gen:types"
   },
   "devDependencies": {
-    "turbo": "^2.3.3",
-    "prettier": "^3.2.5"
+    "cross-env": "^10.1.0",
+    "prettier": "^3.2.5",
+    "turbo": "^2.3.3"
   },
   "engines": {
     "node": ">=18"

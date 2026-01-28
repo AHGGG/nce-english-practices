@@ -171,7 +171,7 @@ export class AuthService {
   /**
    * Get current user profile
    */
-  async getCurrentUser() {
+  async getCurrentUser(): Promise<UserProfile | null> {
     let token = await this.getAccessToken();
 
     // 1. Proactive check

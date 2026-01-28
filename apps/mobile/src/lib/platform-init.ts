@@ -8,13 +8,14 @@
 import { AppState, AppStateStatus } from "react-native";
 import { setPlatformAdapter } from "@nce/shared";
 import { authService } from "@nce/api";
+import { setStorageAdapter } from "@nce/store";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 /**
  * Initialize all platform adapters
  */
 export function initializePlatformAdapters() {
-  // 1. Set storage adapter for auth tokens
+  // 1. Set storage adapter for auth tokens and store persistence
   const asyncStorageAdapter = {
     getItem: async (key: string) => AsyncStorage.getItem(key),
     setItem: async (key: string, value: string) =>
@@ -23,6 +24,7 @@ export function initializePlatformAdapters() {
   };
 
   authService.setStorage(asyncStorageAdapter);
+  setStorageAdapter(asyncStorageAdapter);
 
   // 2. Set platform adapter for shared hooks
   setPlatformAdapter({

@@ -30,3 +30,4 @@ test.db-shm
 test.db-wal
 .agent/skills/*
 .turbo/
+.expo/
