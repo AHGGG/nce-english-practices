@@ -717,7 +717,7 @@ nce-english-practices/
 
 - [x] Implement Podcast features on mobile
 - [x] Implement Voice Lab/Mode on mobile
-- [ ] Implement Settings on mobile
+- [x] Implement Settings on mobile
 
 ---
 
