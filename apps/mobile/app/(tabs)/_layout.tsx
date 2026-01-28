@@ -41,10 +41,10 @@ export default function TabsLayout() {
         }}
       />
       <Tabs.Screen
-        name="dictionary"
+        name="voice"
         options={{
-          title: "Dict",
-          tabBarIcon: ({ color }) => <Search size={24} color={color} />,
+          title: "Voice",
+          tabBarIcon: ({ color }) => <Mic size={24} color={color} />,
         }}
       />
       <Tabs.Screen
