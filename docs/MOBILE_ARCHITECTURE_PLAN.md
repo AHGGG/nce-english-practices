@@ -501,7 +501,7 @@ setPlatformAdapter({
 | **Article List**   | Complete   | Basic         | `packages/shared/hooks/useArticleList`      |
 | **Article Reader** | Complete   | Basic         | `packages/shared/hooks/useArticleReader`    |
 | **Word Inspector** | Complete   | **Complete**  | `packages/shared/hooks/useWordExplainer`    |
-| **Deep Study**     | Complete   | Basic         | `packages/shared/hooks/useSentenceStudy`    |
+| **Deep Study**     | Complete   | **Complete**  | `packages/shared/hooks/useSentenceStudy`    |
 | **Review Queue**   | Complete   | **Complete**  | `packages/shared/hooks/useReviewQueue`      |
 | **Podcast**        | Complete   | Missing       | `packages/shared/hooks/usePodcastPlayer`    |
 | **Performance**    | Complete   | **Complete**  | `packages/shared/hooks/usePerformanceStats` |
@@ -515,7 +515,7 @@ setPlatformAdapter({
 1. Article List with proper book grouping [DONE]
 2. Article Reader with full WebView [DONE]
 3. Word Inspector (already uses `useWordExplainer`) [DONE]
-4. Deep Study with TTS
+4. Deep Study with TTS [DONE]
 
 **P1 - Learning Retention** (Week 6):
 
