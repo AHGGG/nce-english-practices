@@ -49,10 +49,17 @@ export function initializePlatformAdapters() {
   setApiBaseUrl(url);
 }
 
+export let currentApiBaseUrl = "";
+
+export function getApiBaseUrl() {
+  return currentApiBaseUrl;
+}
+
 /**
  * Set the API base URL for mobile
  */
 export function setApiBaseUrl(url: string) {
+  currentApiBaseUrl = url;
   authService.setBaseUrl(url);
   console.log("[Platform] API base URL set to:", url);
 }

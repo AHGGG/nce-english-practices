@@ -56,7 +56,7 @@ export const readingApi = {
    */
   async getArticleDetail(id: string) {
     const res = await authFetch(
-      `/api/reading/article?id=${encodeURIComponent(id)}`,
+      `/api/reading/article?source_id=${encodeURIComponent(id)}`,
     );
     if (!res.ok) throw new Error("Failed to fetch article");
     return res.json();

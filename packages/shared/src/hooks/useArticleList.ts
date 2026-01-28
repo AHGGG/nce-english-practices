@@ -2,16 +2,19 @@ import { useQuery } from "@tanstack/react-query";
 import { readingApi } from "@nce/api";
 
 export interface Article {
-  id: string;
+  id?: string;
+  source_id: string;
   title: string;
-  book_id: string;
-  book_title: string;
-  chapter: string;
+  book_id?: string;
+  book_title?: string;
+  chapter?: string;
+  index?: number;
   sentence_count: number;
-  word_count: number;
-  is_read: boolean;
+  word_count?: number;
+  is_read?: boolean;
   read_at?: string;
   difficulty?: number;
+  status?: string; // "new", "read", "in_progress", "completed"
 }
 
 export interface UseArticleListOptions {
@@ -24,11 +27,6 @@ export function useArticleList(options: UseArticleListOptions = {}) {
     queryKey: ["articles", options.bookId, options.searchQuery],
     queryFn: async () => {
       const data = await readingApi.getArticlesWithStatus();
-      // The API returns { articles: [...] } or just [...]?
-      // Let's assume the API returns { articles: [...] } based on common patterns
-      // But checking reading.ts: return res.json();
-      // I should check what the backend returns.
-      // Based on the plan example: const articles = data.articles || [];
       return data;
     },
     select: (data) => {
@@ -36,6 +34,21 @@ export function useArticleList(options: UseArticleListOptions = {}) {
       let articles: Article[] = Array.isArray(data)
         ? data
         : (data as any).articles || [];
+
+      const filename = (data as any).filename;
+      if (filename) {
+        // Format filename as title: TheEconomist.2025.12.27.epub -> The Economist 2025.12.27
+        const formattedTitle = filename
+          .replace(/\.epub$/i, "")
+          .replace(/[._-]/g, " ");
+
+        articles = articles.map((a) => ({
+          ...a,
+          book_title: a.book_title || formattedTitle,
+          is_read: a.status === "read" || a.status === "completed",
+          word_count: a.word_count || a.sentence_count * 15, // Estimate if missing
+        }));
+      }
 
       if (options.bookId) {
         articles = articles.filter((a) => a.book_id === options.bookId);

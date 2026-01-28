@@ -11,12 +11,12 @@ export default function LibraryScreen() {
   const renderItem = ({ item }: { item: any }) => (
     <TouchableOpacity
       className="bg-bg-surface p-4 rounded-xl border border-border mb-3 active:bg-bg-elevated"
-      onPress={() => router.push(`/reading/${item.id}`)}
+      onPress={() => router.push(`/reading/${encodeURIComponent(item.source_id)}`)}
     >
       <View className="flex-row justify-between items-start">
         <View className="flex-1 mr-4">
           <Text className="text-text-secondary text-xs font-mono mb-1">
-            {item.book_title} • {item.chapter}
+            {item.book_title || "Unknown Book"} • {item.chapter || `Chapter ${item.index + 1}`}
           </Text>
           <Text className="text-text-primary text-lg font-serif mb-2" numberOfLines={2}>
             {item.title}
