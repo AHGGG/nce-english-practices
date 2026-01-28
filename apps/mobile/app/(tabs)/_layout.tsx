@@ -1,5 +1,5 @@
 import { Tabs } from "expo-router";
-import { BookOpen, Search, Layers, BarChart2 } from "lucide-react-native";
+import { BookOpen, Search, Layers, BarChart2, Mic } from "lucide-react-native";
 
 export default function TabsLayout() {
   return (
@@ -27,6 +27,13 @@ export default function TabsLayout() {
         }}
       />
       <Tabs.Screen
+        name="podcast"
+        options={{
+          title: "Podcast",
+          tabBarIcon: ({ color }) => <Mic size={24} color={color} />,
+        }}
+      />
+      <Tabs.Screen
         name="index"
         options={{
           title: "Review",
@@ -36,7 +43,7 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="dictionary"
         options={{
-          title: "Dictionary",
+          title: "Dict",
           tabBarIcon: ({ color }) => <Search size={24} color={color} />,
         }}
       />
