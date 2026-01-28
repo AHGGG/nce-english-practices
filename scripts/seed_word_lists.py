@@ -9,6 +9,7 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 from app.core.db import AsyncSessionLocal
 from app.models.orm import WordBook, WordBookEntry
+from app.config import settings
 
 # Sources
 SOURCES = [
@@ -38,7 +39,11 @@ SOURCES = [
 
 async def seed_lists():
     async with AsyncSessionLocal() as session:
-        client = httpx.AsyncClient(verify=False)  # Skip SSL verify if needed
+        # Use proxy if configured
+        proxy_url = settings.PROXY_URL if settings.PROXY_URL else None
+        client = httpx.AsyncClient(
+            verify=False, proxy=proxy_url
+        )  # Skip SSL verify if needed
 
         for source in SOURCES:
             print(f"Processing {source['name']}...")

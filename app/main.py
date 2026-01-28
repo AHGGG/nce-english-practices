@@ -80,22 +80,38 @@ app = FastAPI(title="NCE English Practice", lifespan=lifespan)
 # Configure CORS
 from fastapi.middleware.cors import CORSMiddleware
 
+# Define origins that are explicitly allowed
 origins = [
     "http://localhost:3000",  # Web App
     "http://localhost:5173",  # Vite Dev Server
     "http://localhost:8081",  # Mobile Web (Expo)
     "http://127.0.0.1:3000",
     "http://127.0.0.1:8081",
-    # Add local network IPs for mobile dev
-    "http://192.168.0.100:8081",
-    "http://192.168.0.100:3000",
-    "http://192.168.0.100:8000",
-    "exp://192.168.0.100:8081",
 ]
+
+# Allow all local network IPs dynamically for development convenience
+# This is important for Expo Go on physical devices
+import socket
+
+try:
+    hostname = socket.gethostname()
+    local_ip = socket.gethostbyname(hostname)
+    # Add common local subnets if needed, or just rely on regex/allow_origin_regex if FastAPI supported it better.
+    # Since FastAPI CORSMiddleware is strict, we can add wildcard "*" for development
+    # OR we just add the specific local IP detected.
+    origins.append(f"http://{local_ip}:8081")
+    origins.append(f"http://{local_ip}:3000")
+    origins.append(f"http://{local_ip}:8000")
+    origins.append(f"exp://{local_ip}:8081")
+except Exception:
+    pass
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,
+    # In production, you might want to be stricter.
+    # For a dev/home server context, allowing "*" is often necessary for mobile apps
+    # because they might not send an Origin header, or it might be null.
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
