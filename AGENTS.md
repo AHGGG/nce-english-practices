@@ -508,6 +508,40 @@ To support multiple dictionaries (e.g., Collins + LDOCE) in one view:
 - **Instance-Level Fallacy**: Do NOT rely on `self._cached_articles` in a fresh `EpubProvider()` instance without checking the module cache. FastAPI creates a new provider instance for every request.
 - **Strategy**: The `_load_epub` method automatically checks middleware cache before parsing.
 
+## Mobile Architecture & Guidelines (2025)
+
+The mobile app (`apps/mobile`) shares 95% of its business logic with the web app (`apps/web`) via `@nce/shared` and `@nce/store`.
+
+### 1. Audio & Background Tasks (Crucial)
+
+- **Expo Go Limitation**: Background audio (e.g., Podcast playback while screen off) **DOES NOT WORK** in the standard Expo Go client. You MUST use a **Development Build**.
+- **Configuration**:
+  - **iOS**: `UIBackgroundModes: ["audio"]` in `app.json`.
+  - **Android**: `FOREGROUND_SERVICE` & `FOREGROUND_SERVICE_MEDIA_PLAYBACK` permissions (Android 14+ requirement).
+- **Service Pattern**: Use `staysActiveInBackground: true` in `Audio.setAudioModeAsync()`. Ideally, migrate to `react-native-track-player` for native Lock Screen controls.
+
+### 2. WebView Bridge Strategy
+
+For heavy data transfer (like passing a 2MB book content to the Reader):
+
+- **Data Transfer**: Use `postMessage` (Native -> Web). It is more performant than `injectJavaScript` for large JSON payloads.
+- **State Updates**: Use `injectJavaScript` for small, frequent updates (e.g., toggling highlights).
+- **Android Limit**: Be aware of string length limits in older Android WebViews.
+
+### 3. Voice Implementation (Push-to-Talk)
+
+- **Architecture**: We use a **Push-to-Talk (PTT)** model for stability on Expo.
+  - **Input**: Record AAC (Android) or WAV (iOS) via `expo-av`.
+  - **Transport**: Send Base64 encoded audio chunks over WebSocket to `app/services/voice_session.py`.
+  - **Output**: Receive PCM, wrap in WAV header (using `audioUtils.ts`), and play via `expo-av` queue.
+- **MIME Types**: The backend supports dynamic `mime_type` ("audio/aac", "audio/wav") to handle cross-platform formats without transcoding on the client.
+
+### 4. Shared State Persistence
+
+- **Pattern**: Zustand with `persist` middleware.
+- **Adapter**: You MUST use `createJSONStorage(() => AsyncStorage)` adapter in `apps/mobile`. Standard `localStorage` will fail.
+- **Initialization**: Mobile app initializes platform adapters in `src/lib/platform-init.ts` called from `_layout.tsx`.
+
 ### Voice on Mobile
 
 > See [Mobile Voice Debugging Skill](docs/skills/mobile-voice-debugging.md) for HTTPS setup and troubleshooting.

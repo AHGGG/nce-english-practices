@@ -56,6 +56,37 @@ Step 4: 在 apps/web 和 apps/mobile 各写 UI
 | `apps/web`           | Web UI    | React 组件 (div/span) |
 | `apps/mobile`        | Mobile UI | RN 组件 (View/Text)   |
 
+### 4. 关键配置参考 (2025)
+
+#### Background Audio (app.json)
+
+```json
+{
+  "expo": {
+    "ios": {
+      "infoPlist": {
+        "UIBackgroundModes": ["audio", "fetch"]
+      }
+    },
+    "android": {
+      "permissions": ["FOREGROUND_SERVICE", "FOREGROUND_SERVICE_MEDIA_PLAYBACK"]
+    }
+  }
+}
+```
+
+#### Audio Mode Initialization
+
+```typescript
+await Audio.setAudioModeAsync({
+  allowsRecordingIOS: true,
+  playsInSilentModeIOS: true,
+  staysActiveInBackground: true, // Key for podcast
+  interruptionModeIOS: InterruptionModeIOS.DuckOthers,
+  shouldDuckAndroid: true,
+});
+```
+
 ---
 
 ## 常见任务模板
