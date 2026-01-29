@@ -151,7 +151,14 @@ document.addEventListener('click', (e) => {
         return;
     }
 
-    // 2. Sentence Click (for Unclear Sentences)
+    // 2. Image Click
+    if (target.tagName === 'IMG') {
+        e.stopPropagation();
+        notifyNative('imageClick', { src: target.src });
+        return;
+    }
+
+    // 3. Sentence Click (for Unclear Sentences)
     const sentenceEl = target.closest('.sentence');
     if (sentenceEl && sentenceEl.getAttribute('data-unclear') === 'true') {
         const sentenceText = sentenceEl.innerText;

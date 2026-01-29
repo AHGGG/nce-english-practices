@@ -1,6 +1,6 @@
 import { View, Text, TouchableOpacity, ScrollView } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useAuthStore } from "@nce/store";
+import { useAuthStore, useSettingsStore } from "@nce/store";
 import {
   LogOut,
   ChevronRight,
@@ -8,17 +8,29 @@ import {
   Bell,
   Volume2,
   Moon,
+  Clock,
 } from "lucide-react-native";
 import { useRouter } from "expo-router";
 
 export default function SettingsScreen() {
   const logout = useAuthStore((state) => state.logout);
   const user = useAuthStore((state) => state.user);
+  const { theme, ttsRate, setTheme, setTtsRate } = useSettingsStore();
   const router = useRouter();
 
   const handleLogout = () => {
     logout();
     router.replace("/auth/login");
+  };
+
+  const toggleTheme = () => {
+    setTheme(theme === "dark" ? "light" : "dark");
+  };
+
+  const cycleSpeed = () => {
+    const speeds = [0.5, 0.75, 1.0, 1.25, 1.5, 2.0];
+    const nextIndex = (speeds.indexOf(ttsRate) + 1) % speeds.length;
+    setTtsRate(speeds[nextIndex]);
   };
 
   const Section = ({ title, children }: any) => (
@@ -75,9 +87,20 @@ export default function SettingsScreen() {
         </Section>
 
         <Section title="Preferences">
-          <Item icon={Volume2} label="Voice Settings" value="Andrew (Neural)" />
+          <Item
+            icon={Clock}
+            label="TTS Speed"
+            value={`${ttsRate}x`}
+            onPress={cycleSpeed}
+          />
           <Item icon={Bell} label="Notifications" value="On" />
-          <Item icon={Moon} label="Appearance" value="Dark" isLast />
+          <Item
+            icon={Moon}
+            label="Appearance"
+            value={theme === "dark" ? "Dark" : "Light"}
+            onPress={toggleTheme}
+            isLast
+          />
         </Section>
 
         <TouchableOpacity

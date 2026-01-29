@@ -12,6 +12,7 @@ import { UniversalWebView } from "../../src/components/UniversalWebView";
 import { generateArticleHTML } from "../../src/utils/htmlGenerator";
 import { DictionaryModal } from "../../src/components/DictionaryModal";
 import { SentenceInspectorModal } from "../../src/components/SentenceInspectorModal";
+import ImageLightbox from "../../src/components/ImageLightbox";
 import { getApiBaseUrl } from "../../src/lib/platform-init";
 import { useRef, useState, useEffect } from "react";
 import { ChevronLeft, MoreHorizontal } from "lucide-react-native";
@@ -33,6 +34,10 @@ export default function ReadingScreen() {
   const [inspectorVisible, setInspectorVisible] = useState(false);
   const [selectedSentence, setSelectedSentence] = useState<string | null>(null);
 
+  // Image Lightbox State
+  const [lightboxVisible, setLightboxVisible] = useState(false);
+  const [lightboxImage, setLightboxImage] = useState<string | null>(null);
+
   const webViewRef = useRef<any>(null);
 
   // Generate HTML
@@ -53,6 +58,12 @@ export default function ReadingScreen() {
         case "sentenceClick":
           const { text } = data.payload;
           handleSentenceClick(text);
+          break;
+        case "imageClick":
+          if (data.payload.src) {
+            setLightboxImage(data.payload.src);
+            setLightboxVisible(true);
+          }
           break;
         case "sentenceView":
           tracker.onSentenceView(data.payload);
@@ -161,6 +172,13 @@ export default function ReadingScreen() {
         visible={inspectorVisible}
         onClose={() => setInspectorVisible(false)}
         sentence={selectedSentence}
+      />
+
+      {/* Image Lightbox */}
+      <ImageLightbox
+        visible={lightboxVisible}
+        imageUrl={lightboxImage}
+        onClose={() => setLightboxVisible(false)}
       />
     </SafeAreaView>
   );

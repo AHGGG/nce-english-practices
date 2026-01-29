@@ -33,3 +33,6 @@ export * from "./modules/auth";
 
 // Podcast module
 export * from "./modules/podcast";
+
+// Settings module
+export * from "./modules/settings";
