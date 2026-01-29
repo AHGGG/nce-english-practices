@@ -30,3 +30,6 @@ export {
 
 // Auth module
 export * from "./modules/auth";
+
+// Podcast module
+export * from "./modules/podcast";

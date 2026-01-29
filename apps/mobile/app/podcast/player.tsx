@@ -10,8 +10,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useQuery } from "@tanstack/react-query";
 import { podcastApi } from "@nce/api";
-import { Audio } from "expo-av";
-import { useState, useEffect, useRef } from "react";
+import { useEffect, useState } from "react";
 import {
   ChevronDown,
   Play,
@@ -20,116 +19,58 @@ import {
   SkipForward,
 } from "lucide-react-native";
 import { formatDuration } from "@nce/shared";
+import {
+  usePodcastStore,
+  selectCurrentEpisode,
+  selectIsPlaying,
+  selectProgress,
+} from "@nce/store";
+import { audioService } from "../../src/services/AudioService";
 
 export default function PodcastPlayerScreen() {
   const { episodeId } = useLocalSearchParams<{ episodeId: string }>();
   const router = useRouter();
   const id = parseInt(episodeId, 10);
 
-  // Fetch Episode
+  // Fetch Episode Details (ensure we have full data)
   const { data: episode, isLoading } = useQuery({
     queryKey: ["podcast", "episode", id],
     queryFn: () => podcastApi.getEpisode(id),
     enabled: !!id,
   });
 
-  // Audio State
-  const soundRef = useRef<Audio.Sound | null>(null);
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [position, setPosition] = useState(0);
-  const [duration, setDuration] = useState(1);
-  const [isBuffering, setIsBuffering] = useState(false);
-  const [sessionId, setSessionId] = useState<number | null>(null);
+  // Global State
+  const currentEpisode = usePodcastStore(selectCurrentEpisode);
+  const isPlaying = usePodcastStore(selectIsPlaying);
+  const { position, duration } = usePodcastStore(selectProgress);
+  const isBuffering = usePodcastStore((state) => state.isBuffering);
 
-  // Initialize Audio
+  // Display Episode (Prefer store if matching, else fetched)
+  const displayEpisode = currentEpisode?.id === id ? currentEpisode : episode;
+
+  // Initialize Audio if needed
   useEffect(() => {
     if (!episode) return;
 
-    const initAudio = async () => {
-      try {
-        await Audio.setAudioModeAsync({
-          playsInSilentModeIOS: true,
-          staysActiveInBackground: true,
-        });
-
-        // Start Session
-        const session = await podcastApi.session.start(id);
-        setSessionId(session.session_id);
-
-        // Create Sound
-        const { sound } = await Audio.Sound.createAsync(
-          { uri: episode.audio_url },
-          {
-            shouldPlay: true,
-            positionMillis: (episode.current_position || 0) * 1000,
-          },
-          onPlaybackStatusUpdate,
-        );
-        soundRef.current = sound;
-        setIsPlaying(true);
-      } catch (e) {
-        console.error("Audio init failed", e);
-      }
-    };
-
-    initAudio();
-
-    return () => {
-      if (soundRef.current) {
-        soundRef.current.unloadAsync();
-      }
-      // End session? Handled by periodically updating or backend timeout?
-      // Better to explicit end on unmount if playing?
-    };
-  }, [episode]);
-
-  // Sync Progress & Session Heartbeat
-  useEffect(() => {
-    if (!sessionId || !isPlaying) return;
-
-    const interval = setInterval(() => {
-      podcastApi.session.update(sessionId, 10, position / 1000); // +10s listened (approx)
-    }, 10000);
-
-    return () => clearInterval(interval);
-  }, [sessionId, isPlaying, position]);
-
-  const onPlaybackStatusUpdate = (status: any) => {
-    if (status.isLoaded) {
-      setPosition(status.positionMillis);
-      setDuration(status.durationMillis || 1);
-      setIsBuffering(status.isBuffering);
-      setIsPlaying(status.isPlaying);
-
-      if (status.didJustFinish) {
-        setIsPlaying(false);
-        if (sessionId) {
-          podcastApi.session.end(
-            sessionId,
-            0,
-            status.positionMillis / 1000,
-            true,
-          );
-        }
-      }
+    // If no episode playing, or playing different episode, start this one
+    if (!currentEpisode || currentEpisode.id !== episode.id) {
+      audioService.playEpisode(episode);
     }
-  };
+  }, [episode, currentEpisode]);
 
   const togglePlay = async () => {
-    if (!soundRef.current) return;
     if (isPlaying) {
-      await soundRef.current.pauseAsync();
+      await audioService.pause();
     } else {
-      await soundRef.current.playAsync();
+      await audioService.resume();
     }
   };
 
   const seek = async (millis: number) => {
-    if (!soundRef.current) return;
-    await soundRef.current.setPositionAsync(millis);
+    await audioService.seek(millis);
   };
 
-  if (isLoading || !episode) {
+  if (isLoading && !displayEpisode) {
     return (
       <View className="flex-1 bg-bg-base justify-center items-center">
         <ActivityIndicator color="#00FF94" size="large" />
@@ -137,7 +78,9 @@ export default function PodcastPlayerScreen() {
     );
   }
 
-  const progressPercent = (position / duration) * 100;
+  if (!displayEpisode) return null;
+
+  const progressPercent = duration > 0 ? (position / duration) * 100 : 0;
 
   return (
     <SafeAreaView className="flex-1 bg-bg-base">
@@ -157,7 +100,8 @@ export default function PodcastPlayerScreen() {
         <View className="w-72 h-72 rounded-2xl bg-bg-surface border border-border-default shadow-xl mb-10 overflow-hidden">
           <Image
             source={{
-              uri: episode.image_url || "https://via.placeholder.com/300",
+              uri:
+                displayEpisode.image_url || "https://via.placeholder.com/300",
             }}
             className="w-full h-full"
           />
@@ -169,7 +113,7 @@ export default function PodcastPlayerScreen() {
             className="text-text-primary text-2xl font-bold font-serif text-center mb-2"
             numberOfLines={2}
           >
-            {episode.title}
+            {displayEpisode.title}
           </Text>
           <Text
             className="text-text-secondary text-sm text-center"

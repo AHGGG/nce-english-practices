@@ -19,6 +19,8 @@ import {
   initializePlatformAdapters,
   setApiBaseUrl,
 } from "../src/lib/platform-init";
+import PlayerBar from "../src/components/PlayerBar";
+import { audioService } from "../src/services/AudioService";
 
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
@@ -50,9 +52,10 @@ function RootContent() {
     "Inter-Bold": Inter_700Bold,
   });
 
-  // Init Auth
+  // Init Auth & Audio
   useEffect(() => {
     initializeAuth();
+    audioService.init();
   }, []);
 
   // Auth Guard
@@ -85,10 +88,14 @@ function RootContent() {
   }
 
   return (
-    <Stack screenOptions={{ headerShown: false }}>
-      <Stack.Screen name="(tabs)" />
-      <Stack.Screen name="auth/login" />
-    </Stack>
+    <View style={{ flex: 1 }}>
+      <Stack screenOptions={{ headerShown: false }}>
+        <Stack.Screen name="(tabs)" />
+        <Stack.Screen name="auth/login" />
+        <Stack.Screen name="auth/register" />
+      </Stack>
+      <PlayerBar />
+    </View>
   );
 }
 
