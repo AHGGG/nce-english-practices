@@ -381,10 +381,15 @@ class SentenceStudyService:
         """
         Stream LLM explanation of a word/phrase with caching.
         Yields JSON chunks: {"type": "chunk", "content": ...} OR {"type": "image_check", ...}
+
+        CRITICAL: Must use LLM stream=True directly, not call sync methods.
+        See AGENTS.md "React Native SSE Streaming" section.
         """
         import asyncio
         import json
         from app.config import settings
+
+        cache_key = self.get_explain_cache_key(text, sentence, style)
 
         # Start parallel image check ONLY if feature is enabled
         detect_task = None
@@ -401,26 +406,83 @@ class SentenceStudyService:
                 self.detect_image_suitability(text, sentence, full_context)
             )
 
-        cache_key = self.get_explain_cache_key(text, sentence, style)
-        image_check_sent = False  # Track if we already sent image_check
-
         # Check cache
         if cache_key in _explain_cache:
             cached = _explain_cache[cache_key]
-            # Yield cached content as chunks
-            yield json.dumps({"type": "chunk", "content": cached})
+            # Simulate streaming by yielding cached content in chunks (100 chars each)
+            chunk_size = 100
+            for i in range(0, len(cached), chunk_size):
+                yield json.dumps(
+                    {"type": "chunk", "content": cached[i : i + chunk_size]}
+                )
+            yield json.dumps({"type": "done"})
         else:
-            explanation = await self.explain_word_sync(
-                text=text,
-                sentence=sentence,
-                style=style,
-                prev_sentence=prev_sentence,
-                next_sentence=next_sentence,
-            )
-            yield json.dumps({"type": "chunk", "content": explanation})
+            # Build context for explanation
+            context_parts = []
+            if prev_sentence:
+                context_parts.append(f'Previous: "{prev_sentence}"')
+            context_parts.append(f'Current: "{sentence}"')
+            if next_sentence:
+                context_parts.append(f'Next: "{next_sentence}"')
+            context = "\n".join(context_parts)
+
+            is_phrase = " " in text.strip()
+            item_type = "短语" if is_phrase else "单词"
+            item_type_en = "phrase" if is_phrase else "word"
+
+            max_gen_tokens = 1000
+            if style == "brief":
+                prompt = EXPLAIN_PROMPTS["brief"].format(text=text, context=context)
+                max_gen_tokens = 300
+            elif style == "detailed":
+                prompt = EXPLAIN_PROMPTS["detailed"].format(
+                    text=text, context=context, item_type=item_type
+                )
+                max_gen_tokens = 2000
+            elif style == "simple":
+                prompt = EXPLAIN_PROMPTS["simple"].format(
+                    text=text, context=context, item_type=item_type_en
+                )
+                max_gen_tokens = 500
+            elif style == "chinese_deep":
+                prompt = EXPLAIN_PROMPTS["chinese_deep"].format(
+                    text=text, context=context, item_type=item_type
+                )
+                max_gen_tokens = 2000
+            else:
+                template = "default_phrase" if is_phrase else "default_word"
+                prompt = EXPLAIN_PROMPTS[template].format(text=text, context=context)
+                max_gen_tokens = 1000
+
+            # DIRECT STREAM from LLM - CRITICAL for React Native SSE
+            full_text = ""
+            try:
+                stream = await self.llm.async_client.chat.completions.create(
+                    model=self.llm.model_name,
+                    messages=[{"role": "user", "content": prompt}],
+                    max_tokens=max_gen_tokens,
+                    temperature=0.3,
+                    stream=True,  # MUST be True for real streaming
+                )
+
+                async for chunk in stream:
+                    if chunk.choices and chunk.choices[0].delta.content:
+                        content = chunk.choices[0].delta.content
+                        full_text += content
+                        yield json.dumps({"type": "chunk", "content": content})
+
+                # Cache the complete response
+                _explain_cache[cache_key] = full_text
+                logger.info(
+                    f"[stream_word_explanation] Cached new explanation, length={len(full_text)}"
+                )
+
+            except Exception as e:
+                logger.error(f"Stream word explanation error: {e}")
+                yield json.dumps({"type": "error", "message": str(e)})
 
         # Parallel Task Result: Check if image check completed
-        if detect_task and not image_check_sent:
+        if detect_task:
             try:
                 result = await detect_task
                 if result and result.get("suitable"):
@@ -433,6 +495,9 @@ class SentenceStudyService:
                     )
             except Exception as e:
                 logger.error(f"Image check task error: {e}")
+
+        # Signal stream completion
+        yield json.dumps({"type": "done"})
 
     async def explain_word_sync(
         self,

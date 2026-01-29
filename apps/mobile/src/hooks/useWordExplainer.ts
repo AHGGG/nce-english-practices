@@ -307,19 +307,20 @@ export function useWordExplainer() {
         const parsed = JSON.parse(data);
 
         if (parsed.type === "chunk") {
-          // Immediately update state for real-time rendering
           setContextExplanation((prev) => prev + parsed.content);
         } else if (parsed.type === "image_check") {
           if (parsed.suitable && parsed.image_prompt) {
             setImagePrompt(parsed.image_prompt);
           }
+        } else if (parsed.type === "done") {
+          setIsExplaining(false);
         }
       } catch {
         // Ignore parse errors
       }
     });
 
-    es.addEventListener("error", (event) => {
+    es.addEventListener("error", (event: any) => {
       if (requestIdRef.current !== currentRequestId) return;
 
       if (event.type === "error") {
@@ -329,14 +330,7 @@ export function useWordExplainer() {
       }
     });
 
-    es.addEventListener("done", () => {
-      console.log("[SSE] Stream done");
-      if (requestIdRef.current === currentRequestId) {
-        setIsExplaining(false);
-      }
-    });
-
-    es.addEventListener("close", () => {
+    es.addEventListener("close" as any, () => {
       console.log("[SSE] Connection closed");
       if (requestIdRef.current === currentRequestId) {
         setIsExplaining(false);
