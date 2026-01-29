@@ -1,31 +1,72 @@
 # Mobile Architecture Plan - Cross-Platform Code Reuse
 
-> **Status**: Implemented v1.0  
-> **Date**: 2026-01-27  
+> **Status**: v2.0 - Feature Parity Phase  
+> **Last Updated**: 2026-01-29  
 > **Goal**: Minimize mobile-specific code, maximize "write once, run everywhere"
 
 ---
 
-## Implementation Status
+## Quick Status Overview
 
-| Component              | Status   | Location                               |
-| ---------------------- | -------- | -------------------------------------- |
-| `@nce/store`           | **DONE** | `packages/store/`                      |
-| `@nce/ui-tokens`       | **DONE** | `packages/ui-tokens/`                  |
-| `@nce/api` endpoints   | **DONE** | `packages/api/src/endpoints/`          |
-| Platform Adapter       | **DONE** | `packages/shared/src/platform/`        |
-| `useReadingTracker`    | **DONE** | `packages/shared/src/hooks/`           |
-| Mobile initialization  | **DONE** | `apps/mobile/src/lib/platform-init.ts` |
-| `useArticleList`       | **DONE** | `packages/shared/src/hooks/`           |
-| `useArticleReader`     | **DONE** | `packages/shared/src/hooks/`           |
-| `useReviewQueue`       | **DONE** | `packages/shared/src/hooks/`           |
-| `usePerformanceStats`  | **DONE** | `packages/shared/src/hooks/`           |
-| Mobile Article List    | **DONE** | `apps/mobile/app/(tabs)/library.tsx`   |
-| Mobile Article Reader  | **DONE** | `apps/mobile/app/reading/[id].tsx`     |
-| Mobile Review Queue    | **DONE** | `apps/mobile/app/(tabs)/index.tsx`     |
-| Mobile Stats Dashboard | **DONE** | `apps/mobile/app/(tabs)/stats.tsx`     |
-| Mobile Podcast         | **DONE** | `apps/mobile/app/(tabs)/podcast.tsx`   |
-| Mobile Voice Mode      | **DONE** | `apps/mobile/app/(tabs)/voice.tsx`     |
+| Metric                    | Current | Target | Notes                            |
+| ------------------------- | ------- | ------ | -------------------------------- |
+| **Mobile 屏幕数**         | 16      | 20     | 缺少注册、词典独立页等           |
+| **共享 Hooks 使用率**     | 100%    | 100%   | ✅ 所有11个hooks已被Mobile使用   |
+| **API 复用率**            | 100%    | 100%   | ✅ 全部通过@nce/api              |
+| **业务逻辑复用率**        | 95%+    | 95%+   | ✅ 仅UI层平台特定                |
+| **@nce/ui-tokens 使用率** | 50%     | 90%    | ⚠️ 存在但未完全集成到tailwind    |
+| **Web 功能对等度**        | 80%     | 95%    | 缺少注册、离线下载、全局播放条等 |
+
+---
+
+## Implementation Status (Infrastructure)
+
+| Component                | Status   | Location                                 |
+| ------------------------ | -------- | ---------------------------------------- |
+| `@nce/store`             | **DONE** | `packages/store/`                        |
+| `@nce/ui-tokens`         | **DONE** | `packages/ui-tokens/`                    |
+| `@nce/api` endpoints     | **DONE** | `packages/api/src/endpoints/`            |
+| Platform Adapter         | **DONE** | `packages/shared/src/platform/`          |
+| Mobile initialization    | **DONE** | `apps/mobile/src/lib/platform-init.ts`   |
+| SSE Parser (with buffer) | **DONE** | `packages/shared/src/utils/sseParser.ts` |
+
+## Implementation Status (Shared Hooks)
+
+| Hook                    | Status   | Location                     | Mobile Usage |
+| ----------------------- | -------- | ---------------------------- | ------------ |
+| `useWordExplainer`      | **DONE** | `packages/shared/src/hooks/` | ✅ Active    |
+| `useArticleList`        | **DONE** | `packages/shared/src/hooks/` | ✅ Active    |
+| `useArticleReader`      | **DONE** | `packages/shared/src/hooks/` | ✅ Active    |
+| `useReadingTracker`     | **DONE** | `packages/shared/src/hooks/` | ✅ Active    |
+| `useSentenceStudy`      | **DONE** | `packages/shared/src/hooks/` | ✅ Active    |
+| `useSentenceExplainer`  | **DONE** | `packages/shared/src/hooks/` | ✅ Active    |
+| `useReviewQueue`        | **DONE** | `packages/shared/src/hooks/` | ✅ Active    |
+| `usePerformanceStats`   | **DONE** | `packages/shared/src/hooks/` | ✅ Active    |
+| `useNegotiationSession` | **DONE** | `packages/shared/src/hooks/` | ✅ Active    |
+| `usePodcast*` (5个)     | **DONE** | `packages/shared/src/hooks/` | ✅ Active    |
+
+## Implementation Status (Mobile Screens)
+
+| Screen                   | Status   | Location                    | Web Equivalent              |
+| ------------------------ | -------- | --------------------------- | --------------------------- |
+| Root Layout              | **DONE** | `app/_layout.tsx`           | -                           |
+| Login                    | **DONE** | `app/auth/login.tsx`        | `LoginPage.jsx`             |
+| **Register**             | **TODO** | -                           | `RegisterPage.jsx`          |
+| Tab Navigation           | **DONE** | `app/(tabs)/_layout.tsx`    | `NavDashboard.jsx`          |
+| Library (Article List)   | **DONE** | `app/(tabs)/library.tsx`    | `ArticleListView.jsx`       |
+| Reading                  | **DONE** | `app/reading/[id].tsx`      | `ReaderView.jsx`            |
+| Sentence Study           | **DONE** | `app/study/[id].tsx`        | `SentenceStudy.jsx`         |
+| Review Queue             | **DONE** | `app/(tabs)/index.tsx`      | `ReviewQueue.jsx`           |
+| Stats Dashboard          | **DONE** | `app/(tabs)/stats.tsx`      | `PerformanceReport.jsx`     |
+| Podcast Discovery        | **DONE** | `app/(tabs)/podcast.tsx`    | `PodcastLibraryView.jsx`    |
+| Podcast Detail           | **DONE** | `app/podcast/[id].tsx`      | `PodcastFeedDetailView.jsx` |
+| Podcast Preview          | **DONE** | `app/podcast/preview.tsx`   | (Same)                      |
+| Podcast Player           | **DONE** | `app/podcast/player.tsx`    | Context-based               |
+| Voice Mode               | **DONE** | `app/(tabs)/voice.tsx`      | `NegotiationInterface.jsx`  |
+| Settings                 | **DONE** | `app/settings.tsx`          | `SettingsPage.jsx`          |
+| Dictionary (Placeholder) | **TODO** | `app/(tabs)/dictionary.tsx` | `DictionaryModal.jsx`       |
+| **Podcast Downloads**    | **TODO** | -                           | `PodcastDownloadsView.jsx`  |
+| **Global Player Bar**    | **TODO** | -                           | `PlayerBar.jsx`             |
 
 ---
 
@@ -491,50 +532,105 @@ setPlatformAdapter({
 
 ---
 
-## Phase 3: Feature Parity Matrix (Week 5-8)
+## Phase 3: Feature Parity Matrix (Updated 2026-01-29)
 
-### Current Features to Port to Mobile
+### Complete Feature Comparison
 
-| Feature            | Web Status | Mobile Status | Shared Logic Location                       |
-| ------------------ | ---------- | ------------- | ------------------------------------------- |
-| **Auth**           | Complete   | Basic         | `packages/store/modules/auth`               |
-| **Article List**   | Complete   | Basic         | `packages/shared/hooks/useArticleList`      |
-| **Article Reader** | Complete   | Basic         | `packages/shared/hooks/useArticleReader`    |
-| **Word Inspector** | Complete   | **Complete**  | `packages/shared/hooks/useWordExplainer`    |
-| **Deep Study**     | Complete   | **Complete**  | `packages/shared/hooks/useSentenceStudy`    |
-| **Review Queue**   | Complete   | **Complete**  | `packages/shared/hooks/useReviewQueue`      |
-| **Podcast**        | Complete   | Missing       | `packages/shared/hooks/usePodcastPlayer`    |
-| **Performance**    | Complete   | **Complete**  | `packages/shared/hooks/usePerformanceStats` |
-| **Voice Lab**      | Complete   | Missing       | Platform-specific (WebSocket)               |
-| **Settings**       | Complete   | Missing       | `packages/store/modules/settings`           |
+| Feature                 | Web Status  | Mobile Status  | Shared Hook/Logic                      | Notes              |
+| ----------------------- | ----------- | -------------- | -------------------------------------- | ------------------ |
+| **Login**               | ✅ Complete | ✅ Complete    | `@nce/store/useAuthStore`              |                    |
+| **Register**            | ✅ Complete | ❌ Missing     | `@nce/store/useAuthStore`              | **Task M-01**      |
+| **Article List**        | ✅ Complete | ✅ Complete    | `@nce/shared/useArticleList`           |                    |
+| **Article Reader**      | ✅ Complete | ✅ Complete    | `@nce/shared/useArticleReader`         | WebView实现        |
+| **Word Inspector**      | ✅ Complete | ✅ Complete    | `@nce/shared/useWordExplainer`         | Modal形式          |
+| **Sentence Inspector**  | ✅ Complete | ✅ Complete    | `@nce/shared/useSentenceExplainer`     | Modal形式          |
+| **Sentence Study**      | ✅ Complete | ✅ Complete    | `@nce/shared/useSentenceStudy`         | 4阶段AI辅助        |
+| **Review Queue**        | ✅ Complete | ✅ Complete    | `@nce/shared/useReviewQueue`           | SM-2算法           |
+| **Performance Stats**   | ✅ Complete | ✅ Complete    | `@nce/shared/usePerformanceStats`      |                    |
+| **Podcast Discovery**   | ✅ Complete | ✅ Complete    | `@nce/shared/usePodcast*`              | 搜索+订阅          |
+| **Podcast Detail**      | ✅ Complete | ✅ Complete    | `@nce/shared/usePodcastFeed`           |                    |
+| **Podcast Player**      | ✅ Complete | ✅ Complete    | Context-based                          | 全屏播放器         |
+| **Global Player Bar**   | ✅ Complete | ❌ Missing     | -                                      | **Task M-02**      |
+| **Podcast Downloads**   | ✅ Complete | ❌ Missing     | `@nce/shared/usePodcast*` + FileSystem | **Task M-03**      |
+| **Voice Mode**          | ✅ Complete | ✅ Complete    | `@nce/shared/useNegotiationSession`    | 协商式听力         |
+| **Voice Lab**           | ✅ Complete | ❌ Missing     | Platform-specific                      | **Task M-08** (P2) |
+| **Dictionary (Screen)** | ✅ Complete | ⚠️ Placeholder | `@nce/shared/useWordExplainer`         | **Task M-04**      |
+| **Settings**            | ✅ Complete | ✅ Basic       | `@nce/store/useAuthStore`              | 仅登出，缺偏好设置 |
+| **Image Lightbox**      | ✅ Complete | ❌ Missing     | -                                      | **Task M-05**      |
+| **Sweep (Bulk Mark)**   | ✅ Complete | ❌ Missing     | -                                      | **Task M-06**      |
+| **Proficiency Lab**     | ✅ Complete | ❌ Missing     | -                                      | **Task M-09** (P2) |
+| **AUI Demo**            | ✅ Complete | ❌ Missing     | -                                      | **Task M-10** (P3) |
 
-### Priority Order for Mobile Implementation
+### Task Backlog for Mobile Feature Parity
 
-**P0 - Core Reading Flow** (Week 5):
+#### P0 - Critical Missing (用户无法完成核心流程)
 
-1. Article List with proper book grouping [DONE]
-2. Article Reader with full WebView [DONE]
-3. Word Inspector (already uses `useWordExplainer`) [DONE]
-4. Deep Study with TTS [DONE]
+| Task ID  | Feature           | Description                                 | Effort | Dependencies    |
+| -------- | ----------------- | ------------------------------------------- | ------ | --------------- |
+| **M-01** | Register Screen   | 创建注册页面，复用`useAuthStore.register()` | 0.5d   | None            |
+| **M-02** | Global Player Bar | 底部持久化播放条，跨页面播放控制            | 2d     | Expo AV Context |
+| **M-03** | Podcast Downloads | 离线下载管理(进度显示、删除、空间统计)      | 3d     | FileSystem API  |
 
-**P1 - Learning Retention** (Week 6):
+#### P1 - Important Enhancement (体验提升)
 
-1. Review Queue (SM-2 flashcard system) [DONE]
-2. Performance Dashboard (basic stats) [DONE]
+| Task ID  | Feature           | Description                         | Effort | Dependencies            |
+| -------- | ----------------- | ----------------------------------- | ------ | ----------------------- |
+| **M-04** | Dictionary Screen | 独立词典页面(非Modal)，支持搜索历史 | 1d     | useWordExplainer        |
+| **M-05** | Image Lightbox    | 阅读中图片点击放大(Pinch-to-zoom)   | 1d     | react-native-reanimated |
+| **M-06** | Sweep Bulk Mark   | 阅读模式批量标记已知词              | 0.5d   | None                    |
+| **M-07** | Rich Settings     | 偏好设置(TTS语速、主题、通知)       | 1d     | AsyncStorage            |
 
-**P2 - Content Discovery** (Week 7):
+#### P2 - Advanced Features (高级功能)
 
-1. Podcast Browse/Subscribe
-2. Podcast Player with offline support
+| Task ID  | Feature         | Description                 | Effort | Dependencies       |
+| -------- | --------------- | --------------------------- | ------ | ------------------ |
+| **M-08** | Voice Lab       | 多厂商语音测试界面          | 3d     | expo-av, WebSocket |
+| **M-09** | Proficiency Lab | 能力校准界面(阅读测试→分级) | 2d     | None               |
 
-**P3 - Advanced Features** (Week 8):
+#### P3 - Optional (可选)
 
-1. Voice Lab (Gemini Live API)
-2. Settings & Preferences
+| Task ID  | Feature     | Description                                | Effort | Dependencies         |
+| -------- | ----------- | ------------------------------------------ | ------ | -------------------- |
+| **M-10** | AUI Demo    | Agent流式UI演示                            | 2d     | WebSocket            |
+| **M-11** | Debug Views | ReviewDebug, MemoryCurveDebug (开发者工具) | 1d     | None                 |
+| **M-12** | OPML Import | 播客订阅导入/导出                          | 1d     | expo-document-picker |
 
 ---
 
 ## Phase 4: Developer Guidelines
+
+> **Expo Official**: [Using Libraries](https://docs.expo.dev/workflow/using-libraries/)
+
+### 4.0 Expo Library Selection Guidelines
+
+选择第三方库时遵循以下优先级:
+
+1. **Expo SDK 优先**: 优先使用 `expo-*` 包 (如 `expo-av`, `expo-file-system`)
+2. **React Native Directory**: 查阅 [reactnative.directory](https://reactnative.directory/) 确认兼容性
+3. **Development Build**: 需要原生代码的库必须使用 Development Build，不能在 Expo Go 中运行
+4. **版本兼容**: 使用 `npx expo install` 而非 `npm install`，确保版本兼容
+
+```bash
+# 安装库的正确方式
+npx expo install @react-native-async-storage/async-storage
+
+# 检查库的GitHub页面
+npx npm-home --github react-native-track-player
+```
+
+**当前项目使用的 Expo SDK 库**:
+
+- `expo-av` - 音频播放 (Podcast)
+- `expo-font` - 自定义字体
+- `@react-native-async-storage/async-storage` - 本地存储
+- `react-native-webview` - WebView (阅读器)
+- `lucide-react-native` - 图标
+
+**待评估的库 (用于待实现功能)**:
+
+- `expo-file-system` - 离线下载 (M-03)
+- `react-native-reanimated` - 手势动画 (M-05)
+- `expo-document-picker` - OPML导入 (M-12)
 
 ### 4.1 Adding a New Feature Checklist
 
@@ -691,49 +787,244 @@ nce-english-practices/
 
 ---
 
-## Migration Roadmap
+## Migration Roadmap (Updated 2026-01-29)
 
-### Week 1-2: Foundation
+### Phase 1-2: Foundation (COMPLETED)
 
-- [ ] Create `packages/store` with Zustand
-- [ ] Create `packages/ui-tokens` with shared Tailwind preset
-- [ ] Migrate auth from Context to Zustand store
-- [ ] Update both apps to use shared tokens
+- [x] Create `packages/store` with Zustand
+- [x] Create `packages/ui-tokens` with shared Tailwind preset
+- [x] Migrate auth from Context to Zustand store
+- [x] Update both apps to use shared tokens
 
-### Week 3-4: API & Hooks
+### Phase 3-4: API & Hooks (COMPLETED)
 
 - [x] Expand `packages/api` with all endpoints
 - [x] Create `useArticleList`, `useArticleReader` hooks
 - [x] Move `useReadingTracker` to shared with platform adapter
-- [ ] Create `useSentenceStudy`, `useReviewQueue` hooks
+- [x] Create `useSentenceStudy`, `useReviewQueue` hooks
+- [x] Create `usePodcast*` hooks (5个)
+- [x] Create `useSentenceExplainer` hook
+- [x] Fix SSE streaming buffer issue (`sseParser.ts`)
 
-### Week 5-6: Mobile Feature Parity (Core)
+### Phase 5-6: Mobile Core (COMPLETED)
 
-- [x] Implement full Article Reader on mobile
-- [ ] Implement Review Queue on mobile
-- [ ] Implement Performance Dashboard on mobile
+- [x] Implement full Article Reader on mobile (WebView)
+- [x] Implement Review Queue on mobile (SM-2)
+- [x] Implement Performance Dashboard on mobile
+- [x] Implement Podcast features on mobile (Discovery + Player)
+- [x] Implement Voice Mode on mobile
+- [x] Implement Settings on mobile (Basic)
 
-### Week 7-8: Mobile Feature Parity (Extended)
+### Phase 7: Feature Parity (CURRENT - 2026-02)
 
-- [x] Implement Podcast features on mobile
-- [x] Implement Voice Lab/Mode on mobile
-- [x] Implement Settings on mobile
+> **Goal**: Close the remaining 20% feature gap with Web
+
+**Sprint 7.1 (Week 1)** - P0 Critical:
+
+- [ ] **M-01**: Register Screen (0.5d)
+- [ ] **M-02**: Global Player Bar (2d) - 需要重构Podcast Context
+- [ ] **M-03**: Podcast Downloads View (3d)
+
+**Sprint 7.2 (Week 2)** - P1 Enhancement:
+
+- [ ] **M-04**: Dictionary Screen (1d)
+- [ ] **M-05**: Image Lightbox (1d)
+- [ ] **M-06**: Sweep Bulk Mark (0.5d)
+- [ ] **M-07**: Rich Settings (1d)
+
+### Phase 8: Polish & QA (2026-03)
+
+- [ ] Cross-device testing (iOS/Android/Tablet)
+- [ ] Performance optimization (Bundle size, Memory)
+- [ ] Accessibility audit (VoiceOver, TalkBack)
+- [ ] Store submission preparation
 
 ---
 
-## Success Metrics
+## Task Implementation Guides
 
-| Metric                               | Current | Target |
-| ------------------------------------ | ------- | ------ |
-| Lines of duplicated code             | ~500+   | <50    |
-| Shared packages used by both apps    | 2       | 5      |
-| Time to add new feature to both apps | 2x      | 1.2x   |
-| Mobile feature parity (%)            | 30%     | 90%    |
+> 以下是各任务的详细实现指南，供后续开发者参考。
+
+### M-01: Register Screen
+
+**目标**: 创建用户注册页面
+
+**文件位置**: `apps/mobile/app/auth/register.tsx`
+
+**实现步骤**:
+
+1. 复制 `login.tsx` 作为模板
+2. 添加 `username` 输入框 (可选)
+3. 添加密码确认输入框
+4. 添加密码强度指示器 (参考 Web 版 `RegisterPage.jsx`)
+5. 调用 `useAuthStore().register(email, password, username)`
+6. 成功后自动登录并跳转
+
+**参考代码**:
+
+```tsx
+// apps/mobile/app/auth/register.tsx
+import { useAuthStore } from "@nce/store";
+
+export default function RegisterScreen() {
+  const { register, isLoading, error } = useAuthStore();
+
+  const handleRegister = async () => {
+    await register(email, password, username);
+    // 成功后 _layout.tsx 会自动检测登录状态并跳转
+  };
+}
+```
+
+---
+
+### M-02: Global Player Bar
+
+**目标**: 创建持久化的底部播放条，支持跨页面播放
+
+**实现策略**: 使用 Expo AV 的全局 `Sound` 实例 + Zustand Store
+
+**文件位置**:
+
+- `apps/mobile/src/components/PlayerBar.tsx` - UI组件
+- `packages/store/src/modules/podcast/` - 播放状态
+
+**实现步骤**:
+
+1. 在 `@nce/store` 中创建 `usePodcastPlayerStore`:
+   ```typescript
+   interface PodcastPlayerState {
+     currentEpisode: Episode | null;
+     isPlaying: boolean;
+     position: number;
+     duration: number;
+     playbackRate: number;
+     // Actions
+     play: (episode: Episode) => Promise<void>;
+     pause: () => void;
+     seek: (position: number) => void;
+     setRate: (rate: number) => void;
+   }
+   ```
+2. 在 `_layout.tsx` 中添加全局播放条 (放在 Tabs 外层)
+3. 实现 mini 和 expanded 两种状态
+4. 处理后台播放 (可能需要 `expo-audio` 的新 API 或 `react-native-track-player`)
+
+**注意事项**:
+
+- Expo AV 的 `Sound` 不支持后台播放，需要 Development Build + 原生配置
+- 考虑使用 `react-native-track-player` 作为替代
+
+---
+
+### M-03: Podcast Downloads View
+
+**目标**: 管理离线下载的播客剧集
+
+**文件位置**: `apps/mobile/app/podcast/downloads.tsx`
+
+**技术栈**:
+
+- `expo-file-system` - 文件下载和存储
+- `@nce/store` - 下载状态管理
+
+**实现步骤**:
+
+1. 创建下载任务队列 Store:
+   ```typescript
+   interface DownloadTask {
+     episodeId: string;
+     progress: number; // 0-100
+     status: "pending" | "downloading" | "completed" | "failed";
+     localPath?: string;
+   }
+   ```
+2. 实现下载功能:
+
+   ```typescript
+   import * as FileSystem from "expo-file-system";
+
+   const downloadEpisode = async (episode) => {
+     const callback = (progress) => {
+       const percent =
+         progress.totalBytesWritten / progress.totalBytesExpectedToWrite;
+       updateProgress(episode.id, percent * 100);
+     };
+
+     const downloadResumable = FileSystem.createDownloadResumable(
+       episode.audio_url,
+       FileSystem.documentDirectory + `podcasts/${episode.id}.mp3`,
+       {},
+       callback,
+     );
+
+     await downloadResumable.downloadAsync();
+   };
+   ```
+
+3. 创建下载管理页面 (列表 + 进度 + 删除)
+4. 在 Tab 导航中添加入口 (可作为 Podcast Tab 的子页面)
+
+---
+
+### M-04: Dictionary Screen
+
+**目标**: 独立的词典查询页面 (非 Modal)
+
+**文件位置**: `apps/mobile/app/(tabs)/dictionary.tsx` (替换占位符)
+
+**实现步骤**:
+
+1. 添加搜索框 (TextInput + 防抖)
+2. 复用 `useWordExplainer` hook
+3. 显示搜索历史 (AsyncStorage)
+4. 结果展示 (Collins + LDOCE 切换)
+
+---
+
+### M-05: Image Lightbox
+
+**目标**: 阅读模式中图片点击放大
+
+**技术栈**: `react-native-reanimated` + `react-native-gesture-handler`
+
+**实现步骤**:
+
+1. 安装依赖: `npx expo install react-native-reanimated react-native-gesture-handler`
+2. 在 `htmlGenerator.ts` 中为图片添加点击事件
+3. 创建 `ImageLightbox.tsx` 组件 (支持 Pinch-to-zoom, Pan)
+4. 在 `reading/[id].tsx` 中处理 `imageClick` 消息
+
+---
+
+### M-06: Sweep Bulk Mark
+
+**目标**: 批量标记已知词
+
+**实现步骤**:
+
+1. 在阅读器顶部添加 "Sweep" 按钮
+2. 调用 `readingApi.markAllKnown(articleId)` (需后端支持)
+3. 刷新高亮状态
+
+---
+
+## Success Metrics (Updated)
+
+| Metric                               | Baseline | Current | Target |
+| ------------------------------------ | -------- | ------- | ------ |
+| Lines of duplicated code             | ~500+    | <50     | <50    |
+| Shared packages used by both apps    | 2        | 4       | 4      |
+| Time to add new feature to both apps | 2x       | 1.3x    | 1.2x   |
+| Mobile feature parity (%)            | 30%      | 80%     | 95%    |
+| Shared hooks usage                   | 0%       | 100%    | 100%   |
 
 ---
 
 ## References
 
+- [Expo - Using Libraries](https://docs.expo.dev/workflow/using-libraries/)
+- [React Native Directory](https://reactnative.directory/)
 - [Folo Project Architecture](D:/Documents/GitHub/js/Folo/TECHNICAL_ARCHITECTURE.md)
 - [Zustand Documentation](https://zustand-demo.pmnd.rs/)
 - [TanStack Query for React Native](https://tanstack.com/query/latest/docs/react/react-native)

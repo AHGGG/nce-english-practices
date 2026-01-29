@@ -1,6 +1,26 @@
 # Mobile Development Quick Reference
 
-> **目标**: 一端开发，多端使用。Mobile 开发者只写 UI，业务逻辑全部复用。
+> **目标**: 一端开发，多端使用。Mobile 开发者只写 UI，业务逻辑全部复用。  
+> **Last Updated**: 2026-01-29
+
+---
+
+## 当前状态速览
+
+| 指标                | 值    | 说明                              |
+| ------------------- | ----- | --------------------------------- |
+| **共享 Hooks 使用** | 11/11 | ✅ 100% 业务逻辑已共享            |
+| **API 复用**        | 100%  | ✅ 全部通过 `@nce/api`            |
+| **功能对等度**      | 80%   | ⚠️ 缺少注册、离线下载、全局播放条 |
+| **待完成任务**      | 12 个 | 见 MOBILE_ARCHITECTURE_PLAN.md    |
+
+### P0 待完成 (阻塞核心流程)
+
+| Task | Feature           | Effort |
+| ---- | ----------------- | ------ |
+| M-01 | Register Screen   | 0.5d   |
+| M-02 | Global Player Bar | 2d     |
+| M-03 | Podcast Downloads | 3d     |
 
 ---
 
@@ -177,8 +197,27 @@ setFeedbackAdapter({
 | ---------------------------------------------------- | ------------------------------------------------ | --------- |
 | `apps/mobile/src/modules/study/api.ts`               | `packages/api/src/endpoints/reading.ts`          | ✅ 已完成 |
 | `apps/mobile/src/modules/study/useReadingTracker.ts` | `packages/shared/src/hooks/useReadingTracker.ts` | ✅ 已完成 |
-| `apps/mobile/src/context/AuthContext.tsx`            | `packages/store/src/modules/auth/`               | P1        |
-| `apps/web/src/context/AuthContext.jsx`               | `packages/store/src/modules/auth/`               | P1        |
+| `apps/mobile/src/context/AuthContext.tsx`            | `packages/store/src/modules/auth/`               | ✅ 已完成 |
+| `apps/web/src/context/AuthContext.jsx`               | `packages/store/src/modules/auth/`               | ✅ 已完成 |
+
+> **注意**: 目前没有需要迁移的重复代码，所有业务逻辑已在共享包中。
+
+---
+
+## 共享 Hooks 清单 (11个)
+
+| Hook                    | 用途           | Mobile 使用位置                 |
+| ----------------------- | -------------- | ------------------------------- |
+| `useWordExplainer`      | 词典+AI解释    | `reading/[id].tsx`, `index.tsx` |
+| `useArticleList`        | 文章列表       | `(tabs)/library.tsx`            |
+| `useArticleReader`      | 文章详情+追踪  | `reading/[id].tsx`              |
+| `useReadingTracker`     | 阅读会话追踪   | `reading/[id].tsx`              |
+| `useSentenceStudy`      | 句子精读流程   | `study/[id].tsx`                |
+| `useSentenceExplainer`  | 句子多阶段解释 | `SentenceInspectorModal.tsx`    |
+| `useReviewQueue`        | SM-2复习队列   | `(tabs)/index.tsx`              |
+| `usePerformanceStats`   | 学习数据统计   | `(tabs)/stats.tsx`              |
+| `useNegotiationSession` | 语音协商模式   | `(tabs)/voice.tsx`              |
+| `usePodcast*` (5个)     | 播客全功能     | `podcast/*.tsx`                 |
 
 ---
 
@@ -244,8 +283,40 @@ if (moduleName === "react-native-webview" && platform === "web") {
 
 ## 资源链接
 
-- [完整架构规划](./MOBILE_ARCHITECTURE_PLAN.md)
-- [Folo 项目参考](D:/Documents/GitHub/js/Folo)
+- [完整架构规划](./MOBILE_ARCHITECTURE_PLAN.md) - 包含详细任务列表和实现指南
+- [Expo Using Libraries](https://docs.expo.dev/workflow/using-libraries/) - 官方库选择指南
+- [React Native Directory](https://reactnative.directory/) - 第三方库兼容性查询
 - [Zustand 文档](https://zustand-demo.pmnd.rs/)
 - [TanStack Query 文档](https://tanstack.com/query)
 - [NativeWind 文档](https://www.nativewind.dev/)
+
+---
+
+## Expo 库安装规范
+
+```bash
+# 正确方式 - 使用 expo install 确保版本兼容
+npx expo install expo-file-system
+
+# 错误方式 - 可能导致版本不兼容
+npm install expo-file-system
+```
+
+### 当前使用的库
+
+| 库                            | 用途       | Expo Go 兼容 |
+| ----------------------------- | ---------- | ------------ |
+| `expo-av`                     | 音频播放   | ✅           |
+| `expo-font`                   | 自定义字体 | ✅           |
+| `@react-native-async-storage` | 本地存储   | ✅           |
+| `react-native-webview`        | WebView    | ✅           |
+| `lucide-react-native`         | 图标       | ✅           |
+
+### 待评估的库 (用于待实现功能)
+
+| 库                          | 用途     | 需要 Dev Build |
+| --------------------------- | -------- | -------------- |
+| `expo-file-system`          | 离线下载 | ❌             |
+| `react-native-reanimated`   | 手势动画 | ❌             |
+| `react-native-track-player` | 后台播放 | ✅ 需要        |
+| `expo-document-picker`      | OPML导入 | ❌             |
