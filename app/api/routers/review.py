@@ -934,43 +934,57 @@ async def get_memory_curve(
 async def get_review_stats(
     user_id: str = Depends(get_current_user_id), db: AsyncSession = Depends(get_db)
 ):
-    """Get overall review statistics for the user."""
-    # Total items
-    total_stmt = (
+    """
+    Get overall review statistics for the user.
+    Optimized to fetch all metrics in a single database round-trip.
+    """
+    now = datetime.utcnow()
+
+    # Define scalar subqueries for each metric
+
+    # 1. Total items count
+    total_subq = (
         select(func.count())
         .select_from(ReviewItem)
         .where(ReviewItem.user_id == user_id)
+        .scalar_subquery()
     )
-    total_result = await db.execute(total_stmt)
-    total_items = total_result.scalar() or 0
 
-    # Due items
-    now = datetime.utcnow()
-    due_stmt = (
+    # 2. Due items count (next_review_at <= now)
+    due_subq = (
         select(func.count())
         .select_from(ReviewItem)
         .where(ReviewItem.user_id == user_id)
         .where(ReviewItem.next_review_at <= now)
+        .scalar_subquery()
     )
-    due_result = await db.execute(due_stmt)
-    due_items = due_result.scalar() or 0
 
-    # Total reviews done
-    reviews_stmt = (
+    # 3. Total reviews done (count of logs)
+    reviews_subq = (
         select(func.count())
         .select_from(ReviewLog)
         .join(ReviewItem)
         .where(ReviewItem.user_id == user_id)
+        .scalar_subquery()
     )
-    reviews_result = await db.execute(reviews_stmt)
-    total_reviews = reviews_result.scalar() or 0
 
-    # Average EF
-    avg_ef_stmt = select(func.avg(ReviewItem.easiness_factor)).where(
-        ReviewItem.user_id == user_id
+    # 4. Average Easiness Factor (EF)
+    avg_ef_subq = (
+        select(func.avg(ReviewItem.easiness_factor))
+        .where(ReviewItem.user_id == user_id)
+        .scalar_subquery()
     )
-    avg_ef_result = await db.execute(avg_ef_stmt)
-    avg_ef = avg_ef_result.scalar() or 2.5
+
+    # Combine into single query
+    stmt = select(total_subq, due_subq, reviews_subq, avg_ef_subq)
+
+    result = await db.execute(stmt)
+    row = result.first()
+
+    total_items = row[0] or 0
+    due_items = row[1] or 0
+    total_reviews = row[2] or 0
+    avg_ef = row[3] or 2.5
 
     return {
         "total_items": total_items,
