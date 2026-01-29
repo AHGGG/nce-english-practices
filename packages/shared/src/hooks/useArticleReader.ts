@@ -29,6 +29,7 @@ export interface ArticleDetail {
   word_count: number;
   highlightSet?: Record<string, number>;
   studyHighlightSet?: Record<string, boolean>;
+  unclearSentenceMap?: Record<number, any>;
   metadata: {
     filename: string;
     [key: string]: any;

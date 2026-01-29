@@ -48,15 +48,19 @@ h3 { font-size: 20px; color: var(--color-text-secondary); }
   overflow: hidden;
   border: 1px solid #333;
   background: var(--color-bg-surface);
-  padding: 10px;
   text-align: center;
+}
+.image-container img {
+  max-width: 100%;
+  height: auto;
+  display: block;
 }
 
 .image-caption {
   font-family: 'JetBrains Mono', monospace;
   font-size: 12px;
   color: var(--color-text-muted);
-  margin-top: 8px;
+  padding: 8px;
   font-style: italic;
 }
 
@@ -83,6 +87,12 @@ h3 { font-size: 20px; color: var(--color-text-secondary); }
 
 .highlight-new {
   color: rgb(var(--color-accent-info));
+}
+
+/* Unclear Sentence (Dashed Underline) */
+.sentence[data-unclear="true"] {
+  border-bottom: 1px dashed rgb(var(--color-accent-warning));
+  cursor: help;
 }
 
 /* Header Badge */
@@ -124,18 +134,29 @@ function notifyNative(type, payload) {
     }
 }
 
-// Handle Word Clicks
+// Handle Clicks (Delegation)
 document.addEventListener('click', (e) => {
     const target = e.target;
+    
+    // 1. Word Click
     if (target.classList.contains('word')) {
+        e.stopPropagation(); // Prevent bubbling to sentence
         const word = target.innerText;
-        // Find parent sentence context
-        const sentence = target.parentElement.innerText;
+        const sentence = target.closest('.sentence')?.innerText || target.parentElement.innerText;
         notifyNative('wordClick', { word, sentence });
         
-        // Add temporary active class
+        // Visual feedback
         document.querySelectorAll('.word').forEach(el => el.style.backgroundColor = '');
         target.style.backgroundColor = 'rgba(0, 255, 148, 0.2)';
+        return;
+    }
+
+    // 2. Sentence Click (for Unclear Sentences)
+    const sentenceEl = target.closest('.sentence');
+    if (sentenceEl && sentenceEl.getAttribute('data-unclear') === 'true') {
+        const sentenceText = sentenceEl.innerText;
+        const index = sentenceEl.getAttribute('data-index');
+        notifyNative('sentenceClick', { text: sentenceText, index });
     }
 });
 
@@ -200,6 +221,7 @@ function renderSentence(
 export function generateArticleHTML(
   article: ArticleDetail,
   showHighlights: boolean,
+  baseUrl: string = "",
 ) {
   let globalSentenceIndex = 0;
 
@@ -212,17 +234,21 @@ export function generateArticleHTML(
           return `<div class="subtitle">${block.text}</div>`;
         case "paragraph":
           const sentencesHtml = block.sentences
-            ?.map(
-              (s) =>
-                `<span class="sentence" data-index="${globalSentenceIndex++}">${renderSentence(s, article.highlightSet, article.studyHighlightSet)}</span>`,
-            )
+            ?.map((s) => {
+              const idx = globalSentenceIndex++;
+              const isUnclear = article.unclearSentenceMap?.[idx];
+              // Use data-unclear attribute for detection
+              return `<span class="sentence" data-index="${idx}" data-unclear="${!!isUnclear}">${renderSentence(s, article.highlightSet, article.studyHighlightSet)}</span>`;
+            })
             .join(" ");
           return `<p>${sentencesHtml}</p>`;
         case "image":
+          // Construct Image URL: /api/reading/epub/image?filename=...
+          const imageUrl = `${baseUrl}/api/reading/epub/image?filename=${encodeURIComponent(article.metadata?.filename || "")}&image_path=${encodeURIComponent(block.image_path || "")}`;
           return `
                     <div class="image-container">
-                        <div class="image-caption">[Image: ${block.alt}]</div>
-                        <div class="image-caption">(Images load via Native View in future)</div>
+                        <img src="${imageUrl}" alt="${block.alt || "Article Image"}" loading="lazy" />
+                        ${block.caption ? `<div class="image-caption">${block.caption}</div>` : ""}
                     </div>
                 `;
         default:

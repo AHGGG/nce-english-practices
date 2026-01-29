@@ -14,3 +14,4 @@ export * from "./hooks/usePodcast";
 export * from "./hooks/useNegotiationSession";
 export * from "./hooks/useSentenceStudy";
 export * from "./hooks/useArticleReader";
+export * from "./hooks/useSentenceExplainer";

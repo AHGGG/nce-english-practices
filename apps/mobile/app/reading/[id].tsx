@@ -11,6 +11,8 @@ import { useArticleReader, useWordExplainer } from "@nce/shared";
 import { UniversalWebView } from "../../src/components/UniversalWebView";
 import { generateArticleHTML } from "../../src/utils/htmlGenerator";
 import { DictionaryModal } from "../../src/components/DictionaryModal";
+import { SentenceInspectorModal } from "../../src/components/SentenceInspectorModal";
+import { getApiBaseUrl } from "../../src/lib/platform-init";
 import { useRef, useState, useEffect } from "react";
 import { ChevronLeft, MoreHorizontal } from "lucide-react-native";
 import { WebViewMessageEvent } from "react-native-webview";
@@ -26,11 +28,16 @@ export default function ReadingScreen() {
   // State
   const [showHighlights, setShowHighlights] = useState(true);
   const [modalVisible, setModalVisible] = useState(false);
+
+  // Sentence Inspector State
+  const [inspectorVisible, setInspectorVisible] = useState(false);
+  const [selectedSentence, setSelectedSentence] = useState<string | null>(null);
+
   const webViewRef = useRef<any>(null);
 
   // Generate HTML
   const htmlSource = article
-    ? { html: generateArticleHTML(article, showHighlights) }
+    ? { html: generateArticleHTML(article, showHighlights, getApiBaseUrl()) }
     : undefined;
 
   // Handle WebView Messages
@@ -42,6 +49,10 @@ export default function ReadingScreen() {
         case "wordClick":
           const { word, sentence } = data.payload;
           handleWordClick(word, sentence);
+          break;
+        case "sentenceClick":
+          const { text } = data.payload;
+          handleSentenceClick(text);
           break;
         case "sentenceView":
           tracker.onSentenceView(data.payload);
@@ -57,6 +68,11 @@ export default function ReadingScreen() {
     setModalVisible(true);
     // Use EPUB ID logic (e.g., epub:filename:chapter)
     await explainer.handleWordClick(word, sentence);
+  };
+
+  const handleSentenceClick = (text: string) => {
+    setSelectedSentence(text);
+    setInspectorVisible(true);
   };
 
   const handleCloseModal = () => {
@@ -138,6 +154,13 @@ export default function ReadingScreen() {
         contextExplanation={explainer.contextExplanation}
         isInspecting={explainer.isInspecting}
         isExplaining={explainer.isExplaining}
+      />
+
+      {/* Sentence Inspector Modal */}
+      <SentenceInspectorModal
+        visible={inspectorVisible}
+        onClose={() => setInspectorVisible(false)}
+        sentence={selectedSentence}
       />
     </SafeAreaView>
   );
