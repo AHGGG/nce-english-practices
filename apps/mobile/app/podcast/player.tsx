@@ -17,6 +17,8 @@ import {
   Pause,
   SkipBack,
   SkipForward,
+  Download,
+  CheckCircle,
 } from "lucide-react-native";
 import { formatDuration } from "@nce/shared";
 import {
@@ -24,8 +26,10 @@ import {
   selectCurrentEpisode,
   selectIsPlaying,
   selectProgress,
+  useDownloadStore,
 } from "@nce/store";
 import { audioService } from "../../src/services/AudioService";
+import { downloadService } from "../../src/services/DownloadService";
 
 export default function PodcastPlayerScreen() {
   const { episodeId } = useLocalSearchParams<{ episodeId: string }>();
@@ -45,7 +49,12 @@ export default function PodcastPlayerScreen() {
   const { position, duration } = usePodcastStore(selectProgress);
   const isBuffering = usePodcastStore((state) => state.isBuffering);
 
+  // Download State
+  const download = useDownloadStore((state) => state.downloads[id]);
+  const activeDownload = useDownloadStore((state) => state.activeDownloads[id]);
+
   // Display Episode (Prefer store if matching, else fetched)
+
   const displayEpisode = currentEpisode?.id === id ? currentEpisode : episode;
 
   // Initialize Audio if needed
@@ -70,6 +79,14 @@ export default function PodcastPlayerScreen() {
     await audioService.seek(millis);
   };
 
+  const handleDownload = () => {
+    if (download) {
+      downloadService.deleteDownload(id);
+    } else if (displayEpisode) {
+      downloadService.downloadEpisode(displayEpisode);
+    }
+  };
+
   if (isLoading && !displayEpisode) {
     return (
       <View className="flex-1 bg-bg-base justify-center items-center">
@@ -92,7 +109,15 @@ export default function PodcastPlayerScreen() {
         <Text className="text-text-muted text-xs font-bold tracking-widest">
           NOW PLAYING
         </Text>
-        <View className="w-8" />
+        <TouchableOpacity onPress={handleDownload}>
+          {download ? (
+            <CheckCircle color="#00FF94" size={24} />
+          ) : activeDownload ? (
+            <ActivityIndicator size="small" color="#00FF94" />
+          ) : (
+            <Download color="#E0E0E0" size={24} />
+          )}
+        </TouchableOpacity>
       </View>
 
       <View className="flex-1 justify-center items-center px-8">

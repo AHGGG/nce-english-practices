@@ -1,7 +1,7 @@
 import { View, Text, FlatList, TouchableOpacity, Image, TextInput, ActivityIndicator, ScrollView } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useSubscriptions, useTrendingPodcasts, usePodcastSearch } from "@nce/shared";
-import { Search, Mic, ChevronRight } from "lucide-react-native";
+import { Search, Mic, ChevronRight, Download } from "lucide-react-native";
 import { useState } from "react";
 import { useRouter } from "expo-router";
 import { getApiBaseUrl } from "../../src/lib/platform-init";
@@ -61,9 +61,17 @@ export default function PodcastScreen() {
         {/* Header */}
         <View className="flex-row items-center justify-between mb-6">
             <Text className="text-text-primary text-2xl font-bold font-serif">Podcasts</Text>
-            <TouchableOpacity className="bg-bg-surface p-2 rounded-full border border-border-default">
-                <Mic size={20} color="#00FF94" />
-            </TouchableOpacity>
+            <View className="flex-row">
+              <TouchableOpacity 
+                onPress={() => router.push("/podcast/downloads")}
+                className="bg-bg-surface p-2 rounded-full border border-border-default mr-2"
+              >
+                  <Download size={20} color="#00FF94" />
+              </TouchableOpacity>
+              <TouchableOpacity className="bg-bg-surface p-2 rounded-full border border-border-default">
+                  <Mic size={20} color="#00FF94" />
+              </TouchableOpacity>
+            </View>
         </View>
 
         {/* Search Bar */}

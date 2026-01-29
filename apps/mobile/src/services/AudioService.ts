@@ -1,6 +1,7 @@
 import { Audio, InterruptionModeIOS, InterruptionModeAndroid } from "expo-av";
-import { usePodcastStore } from "@nce/store";
+import { usePodcastStore, useDownloadStore } from "@nce/store";
 import type { PodcastEpisode } from "@nce/api";
+import * as FileSystem from "expo-file-system";
 
 class AudioService {
   private sound: Audio.Sound | null = null;
@@ -43,9 +44,22 @@ class AudioService {
     store.setEpisode(episode);
     store.setBuffering(true);
 
+    // Determine URI (Local vs Network)
+    let uri = episode.audio_url;
+    const downloadState = useDownloadStore.getState();
+    const download = downloadState.downloads[episode.id];
+
+    if (download) {
+      const fileInfo = await FileSystem.getInfoAsync(download.localPath);
+      if (fileInfo.exists) {
+        console.log("Playing from local cache:", download.localPath);
+        uri = download.localPath;
+      }
+    }
+
     try {
       const { sound } = await Audio.Sound.createAsync(
-        { uri: episode.audio_url },
+        { uri },
         {
           shouldPlay: true,
           positionMillis: startPosition * 1000,

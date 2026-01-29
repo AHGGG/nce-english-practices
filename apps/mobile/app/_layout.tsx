@@ -21,6 +21,7 @@ import {
 } from "../src/lib/platform-init";
 import PlayerBar from "../src/components/PlayerBar";
 import { audioService } from "../src/services/AudioService";
+import { downloadService } from "../src/services/DownloadService";
 
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
@@ -52,10 +53,11 @@ function RootContent() {
     "Inter-Bold": Inter_700Bold,
   });
 
-  // Init Auth & Audio
+  // Init Auth & Services
   useEffect(() => {
     initializeAuth();
     audioService.init();
+    downloadService.init();
   }, []);
 
   // Auth Guard

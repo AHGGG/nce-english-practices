@@ -7,8 +7,17 @@ import {
   ActivityIndicator,
 } from "react-native";
 import { FeedDetailResponse, PodcastEpisode } from "@nce/api";
-import { PlayCircle, Plus, Check, Clock } from "lucide-react-native";
+import {
+  PlayCircle,
+  Plus,
+  Check,
+  Clock,
+  Download,
+  CheckCircle,
+} from "lucide-react-native";
 import { formatDuration } from "@nce/shared";
+import { useDownloadStore } from "@nce/store";
+import { downloadService } from "../../services/DownloadService";
 
 interface Props {
   data: FeedDetailResponse;
@@ -17,6 +26,42 @@ interface Props {
   isSubscribing?: boolean;
   onPlayEpisode: (episode: PodcastEpisode) => void;
 }
+
+const DownloadButton = ({ episode }: { episode: PodcastEpisode }) => {
+  const download = useDownloadStore((s) => s.downloads[episode.id]);
+  const active = useDownloadStore((s) => s.activeDownloads[episode.id]);
+
+  if (download) {
+    return (
+      <TouchableOpacity
+        onPress={() => downloadService.deleteDownload(episode.id)}
+        className="p-2"
+      >
+        <CheckCircle size={20} color="#00FF94" />
+      </TouchableOpacity>
+    );
+  }
+
+  if (active) {
+    return (
+      <View className="flex-row items-center p-2">
+        <ActivityIndicator size="small" color="#00FF94" />
+        <Text className="text-text-muted text-[10px] ml-1">
+          {Math.round(active.progress * 100)}%
+        </Text>
+      </View>
+    );
+  }
+
+  return (
+    <TouchableOpacity
+      onPress={() => downloadService.downloadEpisode(episode)}
+      className="p-2"
+    >
+      <Download size={20} color="#666" />
+    </TouchableOpacity>
+  );
+};
 
 export const PodcastDetailView = ({
   data,
@@ -116,20 +161,25 @@ export const PodcastDetailView = ({
           <Text className="text-text-secondary text-xs mb-3" numberOfLines={2}>
             {item.description?.replace(/<[^>]*>/g, "")}
           </Text>
-          <View className="flex-row items-center">
-            <View className="bg-bg-elevated rounded-full p-1 mr-2">
-              <PlayCircle size={16} color="#00FF94" />
-            </View>
-            <Text className="text-accent-primary text-xs font-bold">PLAY</Text>
-
-            {item.current_position > 0 && (
-              <View className="ml-4 flex-row items-center">
-                <Clock size={12} color="#F59E0B" />
-                <Text className="text-accent-warning text-[10px] ml-1">
-                  RESUME {Math.round(item.current_position / 60)}m
-                </Text>
+          <View className="flex-row items-center justify-between">
+            <View className="flex-row items-center">
+              <View className="bg-bg-elevated rounded-full p-1 mr-2">
+                <PlayCircle size={16} color="#00FF94" />
               </View>
-            )}
+              <Text className="text-accent-primary text-xs font-bold">
+                PLAY
+              </Text>
+
+              {item.current_position > 0 && (
+                <View className="ml-4 flex-row items-center">
+                  <Clock size={12} color="#F59E0B" />
+                  <Text className="text-accent-warning text-[10px] ml-1">
+                    RESUME {Math.round(item.current_position / 60)}m
+                  </Text>
+                </View>
+              )}
+            </View>
+            <DownloadButton episode={item} />
           </View>
         </TouchableOpacity>
       )}
