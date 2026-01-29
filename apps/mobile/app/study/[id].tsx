@@ -266,6 +266,17 @@ export default function StudyScreen() {
         contextExplanation={explainer.contextExplanation}
         isInspecting={explainer.isInspecting}
         isExplaining={explainer.isExplaining}
+        selectedWord={explainer.selectedWord}
+        isPhrase={explainer.isPhrase}
+        explainStyle={explainer.explainStyle}
+        generatedImage={explainer.generatedImage}
+        isGeneratingImage={explainer.isGeneratingImage}
+        imagePrompt={explainer.imagePrompt}
+        onExplainStyle={explainer.changeExplainStyle}
+        onGenerateImage={explainer.generateImage}
+        onMarkAsKnown={explainer.closeInspector}
+        onPlayAudio={() => {}}
+        currentSentenceContext={""}
       />
     </SafeAreaView>
   );

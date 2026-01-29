@@ -1,6 +1,21 @@
 import { authFetch } from "../auth";
 
 export const sentenceStudyApi = {
+  // Get books for sentence study
+  async getBooks() {
+    const res = await authFetch("/api/reading/epub/books");
+    if (!res.ok) throw new Error("Failed to get books");
+    return res.json();
+  },
+
+  // Get articles for a book (with status)
+  async getArticles(filename?: string) {
+    const params = filename ? `?filename=${encodeURIComponent(filename)}` : "";
+    const res = await authFetch(`/api/reading/epub/list-with-status${params}`);
+    if (!res.ok) throw new Error("Failed to get articles");
+    return res.json();
+  },
+
   // Get study progress
   async getProgress(sourceId: string) {
     const res = await authFetch(

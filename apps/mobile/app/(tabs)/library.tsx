@@ -1,7 +1,7 @@
 import { View, Text, FlatList, TouchableOpacity, ActivityIndicator } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useArticleList } from "@nce/shared";
-import { BookOpen, CheckCircle, Settings } from "lucide-react-native";
+import { BookOpen, CheckCircle, Settings, GraduationCap } from "lucide-react-native";
 import { useRouter } from "expo-router";
 
 export default function LibraryScreen() {
@@ -27,13 +27,13 @@ export default function LibraryScreen() {
              </View>
              {item.is_read && (
                  <View className="flex-row items-center">
-                    <CheckCircle size={12} color="#00FF94" />
-                    <Text className="text-accent-primary text-[10px] ml-1 font-mono">READ</Text>
+                     <CheckCircle size={12} color="#00FF94" />
+                     <Text className="text-accent-primary text-[10px] ml-1 font-mono">READ</Text>
                  </View>
              )}
           </View>
         </View>
-        
+
         {/* Difficulty Badge (Placeholder) */}
         <View className={`w-2 h-full rounded-full bg-accent-${item.difficulty > 3 ? 'danger' : 'primary'}/20`} />
       </View>
@@ -53,12 +53,20 @@ export default function LibraryScreen() {
       <View className="flex-1 px-4 pt-4">
         <View className="flex-row items-center justify-between mb-6">
             <Text className="text-text-primary text-2xl font-bold font-sans">Library</Text>
-            <TouchableOpacity 
-              className="bg-bg-surface p-2 rounded-full border border-border"
-              onPress={() => router.push("/settings")}
-            >
+            <View className="flex-row space-x-3">
+              <TouchableOpacity
+                className="bg-bg-surface p-2 rounded-full border border-border"
+                onPress={() => router.push("/books")}
+              >
+                <GraduationCap size={20} color="#00FF94" />
+              </TouchableOpacity>
+              <TouchableOpacity
+                className="bg-bg-surface p-2 rounded-full border border-border"
+                onPress={() => router.push("/settings")}
+              >
                 <Settings size={20} color="#E0E0E0" />
-            </TouchableOpacity>
+              </TouchableOpacity>
+            </View>
         </View>
 
         <FlatList
