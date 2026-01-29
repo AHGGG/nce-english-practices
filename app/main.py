@@ -183,7 +183,15 @@ if os.path.exists(frontend_dist):
     async def serve_spa(full_path: str):
         """SPA fallback: serve index.html for all non-API routes."""
         # Try to serve static file first
-        file_path = os.path.join(frontend_dist, full_path)
+        # Security: Prevent path traversal
+        file_path = os.path.abspath(os.path.join(frontend_dist, full_path))
+        base_path = os.path.abspath(frontend_dist)
+
+        # Check if file_path is within frontend_dist
+        if os.path.commonpath([base_path, file_path]) != base_path:
+            # Potential attack, serve index.html (fail securely)
+            return FileResponse(index_html)
+
         if os.path.isfile(file_path):
             return FileResponse(file_path)
         # Fallback to index.html for SPA routing

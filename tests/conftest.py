@@ -20,6 +20,17 @@ os.environ["DATABASE_URL"] = TEST_DATABASE_URL
 
 from app.core.db import Base, get_db  # noqa: E402
 import app.models.orm  # noqa: E402
+
+# Ensure frontend dist exists for SPA route registration during tests
+frontend_dist = os.path.join(os.path.dirname(__file__), "..", "apps", "web", "dist")
+os.makedirs(frontend_dist, exist_ok=True)
+assets_dir = os.path.join(frontend_dist, "assets")
+os.makedirs(assets_dir, exist_ok=True)
+index_path = os.path.join(frontend_dist, "index.html")
+if not os.path.exists(index_path):
+    with open(index_path, "w") as f:
+        f.write("<html>SPA Mock</html>")
+
 from app.main import app  # noqa: E402
 
 
