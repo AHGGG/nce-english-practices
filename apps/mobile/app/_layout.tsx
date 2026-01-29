@@ -22,6 +22,8 @@ import {
 import PlayerBar from "../src/components/PlayerBar";
 import { audioService } from "../src/services/AudioService";
 import { downloadService } from "../src/services/DownloadService";
+import { notificationService } from "../src/services/NotificationService";
+import { useSettingsStore } from "@nce/store";
 
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
@@ -58,6 +60,13 @@ function RootContent() {
     initializeAuth();
     audioService.init();
     downloadService.init();
+
+    // Init Notifications if enabled
+    const { notificationsEnabled, reminderTime } = useSettingsStore.getState();
+    if (notificationsEnabled) {
+      const [h, m] = reminderTime.split(":").map(Number);
+      notificationService.scheduleDailyReminder(h, m, true);
+    }
   }, []);
 
   // Auth Guard

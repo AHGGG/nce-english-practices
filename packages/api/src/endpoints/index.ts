@@ -8,3 +8,4 @@ export * from "./reading";
 export * from "./dictionary";
 export * from "./sentence-study";
 export * from "./podcast";
+export * from "./proficiency";

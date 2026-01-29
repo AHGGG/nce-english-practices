@@ -584,8 +584,8 @@ setPlatformAdapter({
 
 | Task ID  | Feature         | Description                 | Effort | Dependencies       |
 | -------- | --------------- | --------------------------- | ------ | ------------------ |
-| **M-08** | Voice Lab       | 多厂商语音测试界面          | 3d     | expo-av, WebSocket |
-| **M-09** | Proficiency Lab | 能力校准界面(阅读测试→分级) | 2d     | None               |
+| **M-08** | Voice Lab       | Neural Link (WS + PTT)      | DONE   | expo-av, WebSocket |
+| **M-09** | Proficiency Lab | 能力校准界面(阅读测试→分级) | DONE   | None               |
 
 #### P3 - Optional (可选)
 

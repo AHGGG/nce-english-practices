@@ -9,9 +9,14 @@ export const useSettingsStore = create<SettingsState>()(
       theme: "dark",
       ttsRate: 1.0,
       voiceId: "en-US-AndrewMultilingualNeural",
+      notificationsEnabled: false,
+      reminderTime: "20:00", // Default 8 PM
       setTheme: (theme) => set({ theme }),
       setTtsRate: (ttsRate) => set({ ttsRate }),
       setVoiceId: (voiceId) => set({ voiceId }),
+      setNotificationsEnabled: (notificationsEnabled) =>
+        set({ notificationsEnabled }),
+      setReminderTime: (reminderTime) => set({ reminderTime }),
     }),
     {
       name: "nce-settings",

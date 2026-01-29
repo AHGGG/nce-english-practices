@@ -1,6 +1,14 @@
-import { View, Text, TouchableOpacity, ScrollView } from "react-native";
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  ScrollView,
+  Switch,
+  Alert,
+} from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useAuthStore, useSettingsStore } from "@nce/store";
+import { notificationService } from "../src/services/NotificationService";
 import {
   LogOut,
   ChevronRight,
@@ -15,7 +23,16 @@ import { useRouter } from "expo-router";
 export default function SettingsScreen() {
   const logout = useAuthStore((state) => state.logout);
   const user = useAuthStore((state) => state.user);
-  const { theme, ttsRate, setTheme, setTtsRate } = useSettingsStore();
+  const {
+    theme,
+    ttsRate,
+    notificationsEnabled,
+    reminderTime,
+    setTheme,
+    setTtsRate,
+    setNotificationsEnabled,
+    setReminderTime,
+  } = useSettingsStore();
   const router = useRouter();
 
   const handleLogout = () => {
@@ -25,6 +42,28 @@ export default function SettingsScreen() {
 
   const toggleTheme = () => {
     setTheme(theme === "dark" ? "light" : "dark");
+  };
+
+  const toggleNotifications = async (value: boolean) => {
+    if (value) {
+      const granted =
+        await notificationService.registerForPushNotificationsAsync();
+      if (granted) {
+        setNotificationsEnabled(true);
+        const [h, m] = reminderTime.split(":").map(Number);
+        await notificationService.scheduleDailyReminder(h, m, true);
+      } else {
+        Alert.alert(
+          "Permission Denied",
+          "Enable notifications in settings to receive reminders.",
+        );
+        setNotificationsEnabled(false);
+      }
+    } else {
+      setNotificationsEnabled(false);
+      const [h, m] = reminderTime.split(":").map(Number);
+      await notificationService.scheduleDailyReminder(h, m, false);
+    }
   };
 
   const cycleSpeed = () => {
@@ -44,9 +83,19 @@ export default function SettingsScreen() {
     </View>
   );
 
-  const Item = ({ icon: Icon, label, value, onPress, isLast }: any) => (
+  const Item = ({
+    icon: Icon,
+    label,
+    value,
+    onPress,
+    isLast,
+    isSwitch,
+    switchValue,
+    onSwitch,
+  }: any) => (
     <TouchableOpacity
       onPress={onPress}
+      disabled={isSwitch}
       className={`flex-row items-center justify-between p-4 ${!isLast ? "border-b border-border-subtle" : ""}`}
     >
       <View className="flex-row items-center">
@@ -54,10 +103,21 @@ export default function SettingsScreen() {
         <Text className="text-text-primary ml-3 font-medium">{label}</Text>
       </View>
       <View className="flex-row items-center">
-        {value && (
-          <Text className="text-text-secondary text-sm mr-2">{value}</Text>
+        {isSwitch ? (
+          <Switch
+            trackColor={{ false: "#333", true: "#00FF94" }}
+            thumbColor={switchValue ? "#ffffff" : "#f4f3f4"}
+            onValueChange={onSwitch}
+            value={switchValue}
+          />
+        ) : (
+          <>
+            {value && (
+              <Text className="text-text-secondary text-sm mr-2">{value}</Text>
+            )}
+            <ChevronRight size={16} color="#666" />
+          </>
         )}
-        <ChevronRight size={16} color="#666" />
       </View>
     </TouchableOpacity>
   );
@@ -93,7 +153,13 @@ export default function SettingsScreen() {
             value={`${ttsRate}x`}
             onPress={cycleSpeed}
           />
-          <Item icon={Bell} label="Notifications" value="On" />
+          <Item
+            icon={Bell}
+            label="Daily Reminder"
+            isSwitch
+            switchValue={notificationsEnabled}
+            onSwitch={toggleNotifications}
+          />
           <Item
             icon={Moon}
             label="Appearance"

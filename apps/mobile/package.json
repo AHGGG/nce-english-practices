@@ -18,6 +18,7 @@
     "@nce/store": "workspace:*",
     "@nce/ui-tokens": "workspace:^",
     "@react-native-async-storage/async-storage": "^2.2.0",
+    "buffer": "^6.0.3",
     "expo": "~54.0.32",
     "expo-av": "^16.0.8",
     "expo-constants": "^18.0.13",

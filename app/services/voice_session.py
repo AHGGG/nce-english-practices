@@ -93,8 +93,10 @@ class VoiceSession:
                 msg = await self.websocket.receive_json()
                 if msg.get("type") == "audio":
                     audio_data = base64.b64decode(msg["data"])
+                    # Default to PCM if not specified, but allow client to send other formats (e.g. audio/wav, audio/mp3)
+                    mime_type = msg.get("mimeType", "audio/pcm")
                     await session.send_realtime_input(
-                        audio={"data": audio_data, "mime_type": "audio/pcm"}
+                        audio={"data": audio_data, "mime_type": mime_type}
                     )
         except WebSocketDisconnect:
             print("WS: Browser Disconnected")
