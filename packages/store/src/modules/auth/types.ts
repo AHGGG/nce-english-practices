@@ -26,7 +26,9 @@ export interface AuthState {
     password: string,
     username?: string,
   ) => Promise<void>;
+  changePassword: (current: string, next: string) => Promise<void>;
   refreshUser: () => Promise<void>;
+
   clearError: () => void;
 
   // Internal

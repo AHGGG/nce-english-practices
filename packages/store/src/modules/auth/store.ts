@@ -87,6 +87,23 @@ export const useAuthStore = create<AuthState>()(
       },
 
       /**
+       * Change password
+       */
+      changePassword: async (current: string, next: string) => {
+        set({ isLoading: true, error: null });
+        try {
+          await authService.changePassword(current, next);
+          set({ isLoading: false, error: null });
+        } catch (e: any) {
+          set({
+            isLoading: false,
+            error: e.message || "Password change failed",
+          });
+          throw e;
+        }
+      },
+
+      /**
        * Refresh user data from server
        */
       refreshUser: async () => {

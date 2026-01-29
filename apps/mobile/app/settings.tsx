@@ -5,6 +5,8 @@ import {
   ScrollView,
   Switch,
   Alert,
+  Modal,
+  TextInput,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useAuthStore, useSettingsStore } from "@nce/store";
@@ -17,12 +19,14 @@ import {
   Volume2,
   Moon,
   Clock,
+  Key,
+  X,
 } from "lucide-react-native";
 import { useRouter } from "expo-router";
+import { useState } from "react";
 
 export default function SettingsScreen() {
-  const logout = useAuthStore((state) => state.logout);
-  const user = useAuthStore((state) => state.user);
+  const { logout, user, changePassword, isLoading } = useAuthStore();
   const {
     theme,
     ttsRate,
@@ -35,9 +39,35 @@ export default function SettingsScreen() {
   } = useSettingsStore();
   const router = useRouter();
 
+  const [passwordModalVisible, setPasswordModalVisible] = useState(false);
+  const [oldPassword, setOldPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+
   const handleLogout = () => {
     logout();
     router.replace("/auth/login");
+  };
+
+  const handleChangePassword = async () => {
+    if (!oldPassword || !newPassword) {
+      Alert.alert("Error", "Please fill in all fields");
+      return;
+    }
+
+    if (newPassword.length < 8) {
+      Alert.alert("Error", "New password must be at least 8 characters");
+      return;
+    }
+
+    try {
+      await changePassword(oldPassword, newPassword);
+      Alert.alert("Success", "Password updated successfully");
+      setPasswordModalVisible(false);
+      setOldPassword("");
+      setNewPassword("");
+    } catch (e: any) {
+      Alert.alert("Error", e.message || "Failed to update password");
+    }
   };
 
   const toggleTheme = () => {
@@ -143,7 +173,12 @@ export default function SettingsScreen() {
               <Text className="text-text-muted text-sm">{user?.email}</Text>
             </View>
           </View>
-          <Item icon={User} label="Profile" isLast />
+          <Item
+            icon={Key}
+            label="Change Password"
+            onPress={() => setPasswordModalVisible(true)}
+            isLast
+          />
         </Section>
 
         <Section title="Preferences">
@@ -181,6 +216,64 @@ export default function SettingsScreen() {
           NCE Practice v1.0.0 (Mobile)
         </Text>
       </ScrollView>
+
+      {/* Password Modal */}
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={passwordModalVisible}
+        onRequestClose={() => setPasswordModalVisible(false)}
+      >
+        <View className="flex-1 justify-center items-center bg-black/80 p-4">
+          <View className="bg-bg-surface w-full max-w-sm rounded-2xl p-6 border border-border-default">
+            <View className="flex-row justify-between items-center mb-6">
+              <Text className="text-xl font-bold text-text-primary">
+                Change Password
+              </Text>
+              <TouchableOpacity onPress={() => setPasswordModalVisible(false)}>
+                <X size={24} color="#666" />
+              </TouchableOpacity>
+            </View>
+
+            <View className="space-y-4 mb-6">
+              <View>
+                <Text className="text-text-muted text-xs uppercase mb-2 font-bold">
+                  Current Password
+                </Text>
+                <TextInput
+                  secureTextEntry
+                  value={oldPassword}
+                  onChangeText={setOldPassword}
+                  className="bg-bg-base border border-border-default rounded-xl p-4 text-text-primary"
+                  placeholderTextColor="#666"
+                />
+              </View>
+              <View>
+                <Text className="text-text-muted text-xs uppercase mb-2 font-bold">
+                  New Password
+                </Text>
+                <TextInput
+                  secureTextEntry
+                  value={newPassword}
+                  onChangeText={setNewPassword}
+                  className="bg-bg-base border border-border-default rounded-xl p-4 text-text-primary"
+                  placeholderTextColor="#666"
+                />
+              </View>
+            </View>
+
+            <TouchableOpacity
+              onPress={handleChangePassword}
+              disabled={isLoading}
+              className="bg-accent-primary py-4 rounded-xl items-center"
+            >
+              <Text className="text-bg-base font-bold">
+                {isLoading ? "Updating..." : "Update Password"}
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }

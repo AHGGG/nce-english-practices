@@ -42,4 +42,16 @@ export const proficiencyApi = {
     });
     return res.json();
   },
+
+  async sweep(sweptWords: string[], inspectedWords: string[]) {
+    const res = await authFetch("/api/proficiency/sweep", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        swept_words: sweptWords,
+        inspected_words: inspectedWords,
+      }),
+    });
+    return res.json();
+  },
 };

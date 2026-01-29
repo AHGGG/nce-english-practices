@@ -194,8 +194,9 @@ window.updateHighlights = (showHighlights) => {
 
 function renderSentence(
   text: string,
-  highlightSet?: Record<string, any>,
-  studyHighlightSet?: Record<string, any>,
+  highlightSet?: Record<string, number>, // rank
+  studyHighlightSet?: Record<string, boolean>,
+  highlightFilter: { min: number; max: number } = { min: 0, max: 99999 },
 ) {
   // Split by regex capturing delimiters
   const parts = text.split(/(\s+|[.,!?;:"'()])/);
@@ -217,7 +218,11 @@ function renderSentence(
         highlightSet &&
         Object.prototype.hasOwnProperty.call(highlightSet, cleanWord)
       ) {
-        classes += " highlight-new";
+        // Apply filter based on rank
+        const rank = highlightSet[cleanWord];
+        if (rank >= highlightFilter.min && rank < highlightFilter.max) {
+          classes += " highlight-new";
+        }
       }
 
       return `<span class="${classes}">${part}</span>`;
@@ -229,6 +234,7 @@ export function generateArticleHTML(
   article: ArticleDetail,
   showHighlights: boolean,
   baseUrl: string = "",
+  highlightFilter: { min: number; max: number } = { min: 0, max: 99999 },
 ) {
   let globalSentenceIndex = 0;
 
@@ -245,7 +251,7 @@ export function generateArticleHTML(
               const idx = globalSentenceIndex++;
               const isUnclear = article.unclearSentenceMap?.[idx];
               // Use data-unclear attribute for detection
-              return `<span class="sentence" data-index="${idx}" data-unclear="${!!isUnclear}">${renderSentence(s, article.highlightSet, article.studyHighlightSet)}</span>`;
+              return `<span class="sentence" data-index="${idx}" data-unclear="${!!isUnclear}">${renderSentence(s, article.highlightSet, article.studyHighlightSet, highlightFilter)}</span>`;
             })
             .join(" ");
           return `<p>${sentencesHtml}</p>`;

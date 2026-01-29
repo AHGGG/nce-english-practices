@@ -4,10 +4,13 @@ import {
   ActivityIndicator,
   TouchableOpacity,
   Share,
+  Modal,
+  Alert,
 } from "react-native";
 import { useLocalSearchParams, Stack, useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useArticleReader, useWordExplainer } from "@nce/shared";
+import { proficiencyApi } from "@nce/api";
 import { UniversalWebView } from "../../src/components/UniversalWebView";
 import { generateArticleHTML } from "../../src/utils/htmlGenerator";
 import { DictionaryModal } from "../../src/components/DictionaryModal";
@@ -15,20 +18,35 @@ import { SentenceInspectorModal } from "../../src/components/SentenceInspectorMo
 import ImageLightbox from "../../src/components/ImageLightbox";
 import { getApiBaseUrl } from "../../src/lib/platform-init";
 import { useRef, useState, useEffect } from "react";
-import { ChevronLeft, MoreHorizontal } from "lucide-react-native";
+import {
+  ChevronLeft,
+  MoreHorizontal,
+  Settings,
+  CheckCheck,
+  X,
+} from "lucide-react-native";
 import { WebViewMessageEvent } from "react-native-webview";
+
+const HIGHLIGHT_OPTIONS = [
+  { label: "All Unknown", min: 0, max: 99999 },
+  { label: "High Freq (1-3k)", min: 0, max: 3000 },
+  { label: "Mid Freq (3-8k)", min: 3000, max: 8000 },
+  { label: "Low Freq (8k+)", min: 8000, max: 99999 },
+];
 
 export default function ReadingScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
 
   // Hooks
-  const { article, isLoading, tracker } = useArticleReader(id);
+  const { article, isLoading, tracker, refetch } = useArticleReader(id);
   const explainer = useWordExplainer();
 
   // State
   const [showHighlights, setShowHighlights] = useState(true);
+  const [highlightOptionIndex, setHighlightOptionIndex] = useState(0);
   const [modalVisible, setModalVisible] = useState(false);
+  const [settingsVisible, setSettingsVisible] = useState(false);
 
   // Sentence Inspector State
   const [inspectorVisible, setInspectorVisible] = useState(false);
@@ -42,7 +60,14 @@ export default function ReadingScreen() {
 
   // Generate HTML
   const htmlSource = article
-    ? { html: generateArticleHTML(article, showHighlights, getApiBaseUrl()) }
+    ? {
+        html: generateArticleHTML(
+          article,
+          showHighlights,
+          getApiBaseUrl(),
+          HIGHLIGHT_OPTIONS[highlightOptionIndex],
+        ),
+      }
     : undefined;
 
   // Handle WebView Messages
@@ -91,6 +116,45 @@ export default function ReadingScreen() {
     explainer.closeInspector();
   };
 
+  const handleSweep = async () => {
+    if (!article?.highlightSet) return;
+
+    // Calculate words to sweep based on current filter
+    const filter = HIGHLIGHT_OPTIONS[highlightOptionIndex];
+    const wordsToSweep = Object.keys(article.highlightSet).filter((word) => {
+      const rank = article.highlightSet![word];
+      return rank >= filter.min && rank < filter.max;
+    });
+
+    if (wordsToSweep.length === 0) {
+      Alert.alert("No Words", "No words match current filter to sweep.");
+      return;
+    }
+
+    Alert.alert(
+      "Sweep Words",
+      `Mark ${wordsToSweep.length} visible highlights as Known?`,
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Sweep",
+          style: "destructive",
+          onPress: async () => {
+            setSettingsVisible(false);
+            try {
+              await proficiencyApi.sweep(wordsToSweep, []);
+              // Refresh article to clear highlights
+              refetch();
+            } catch (e) {
+              console.error(e);
+              Alert.alert("Error", "Failed to sweep words.");
+            }
+          },
+        },
+      ],
+    );
+  };
+
   if (isLoading || !article) {
     return (
       <View className="flex-1 justify-center items-center bg-bg-base">
@@ -110,7 +174,7 @@ export default function ReadingScreen() {
         </TouchableOpacity>
 
         <Text
-          className="text-text-primary font-bold font-sans text-sm"
+          className="text-text-primary font-bold font-sans text-sm flex-1 mx-2"
           numberOfLines={1}
         >
           {article.title}
@@ -128,17 +192,9 @@ export default function ReadingScreen() {
 
           <TouchableOpacity
             className="p-2 -mr-2"
-            onPress={() => {
-              // Toggle highlights or show menu
-              setShowHighlights(!showHighlights);
-              // Inject JS to update highlights without reload
-              webViewRef.current?.injectJavaScript(`
-                    window.updateHighlights(${!showHighlights});
-                    true;
-                  `);
-            }}
+            onPress={() => setSettingsVisible(true)}
           >
-            <MoreHorizontal color="#E0E0E0" size={24} />
+            <Settings color="#E0E0E0" size={24} />
           </TouchableOpacity>
         </View>
       </View>
@@ -156,6 +212,85 @@ export default function ReadingScreen() {
           containerStyle={{ backgroundColor: "#050505" }}
         />
       </View>
+
+      {/* Settings Modal */}
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={settingsVisible}
+        onRequestClose={() => setSettingsVisible(false)}
+      >
+        <View className="flex-1 justify-end bg-black/50">
+          <View className="bg-bg-surface rounded-t-3xl p-6 border-t border-border-default">
+            <View className="flex-row justify-between items-center mb-6">
+              <Text className="text-xl font-bold font-serif text-text-primary">
+                Reading Settings
+              </Text>
+              <TouchableOpacity onPress={() => setSettingsVisible(false)}>
+                <X size={24} color="#666" />
+              </TouchableOpacity>
+            </View>
+
+            {/* Toggle Highlights */}
+            <View className="flex-row justify-between items-center mb-6">
+              <Text className="text-text-secondary text-base">
+                Show Highlights
+              </Text>
+              <TouchableOpacity
+                onPress={() => setShowHighlights(!showHighlights)}
+                className={`w-12 h-7 rounded-full p-1 ${showHighlights ? "bg-accent-primary" : "bg-bg-elevated border border-border-default"}`}
+              >
+                <View
+                  className={`w-5 h-5 rounded-full bg-white shadow-sm ${showHighlights ? "self-end" : "self-start"}`}
+                />
+              </TouchableOpacity>
+            </View>
+
+            {/* Filter Options */}
+            <Text className="text-text-muted text-xs font-bold uppercase mb-3">
+              Highlight Filter
+            </Text>
+            <View className="flex-row flex-wrap gap-2 mb-8">
+              {HIGHLIGHT_OPTIONS.map((opt, i) => (
+                <TouchableOpacity
+                  key={i}
+                  onPress={() => setHighlightOptionIndex(i)}
+                  className={`px-3 py-2 rounded-lg border ${
+                    highlightOptionIndex === i
+                      ? "bg-accent-primary/10 border-accent-primary"
+                      : "bg-bg-elevated border-border-default"
+                  }`}
+                >
+                  <Text
+                    className={`text-xs font-bold ${
+                      highlightOptionIndex === i
+                        ? "text-accent-primary"
+                        : "text-text-secondary"
+                    }`}
+                  >
+                    {opt.label}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+
+            {/* Sweep Action */}
+            <TouchableOpacity
+              onPress={handleSweep}
+              className="bg-bg-elevated border border-border-default p-4 rounded-xl flex-row items-center justify-center mb-4"
+            >
+              <CheckCheck size={20} color="#00FF94" />
+              <Text className="text-text-primary font-bold ml-2">
+                Sweep Visible Highlights
+              </Text>
+            </TouchableOpacity>
+
+            <Text className="text-text-muted text-xs text-center">
+              Marks all currently highlighted words as known.
+            </Text>
+          </View>
+        </View>
+      </Modal>
 
       {/* Dictionary Modal */}
       <DictionaryModal
