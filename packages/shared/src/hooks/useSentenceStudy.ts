@@ -104,7 +104,7 @@ export function useSentenceStudy(sourceId: string) {
         setOverview(await res.json());
       }
     } catch (e) {
-      console.error(e);
+      console.error("[useSentenceStudy] Failed to load article:", e);
       setView("ERROR");
     }
   }, [sourceId]);

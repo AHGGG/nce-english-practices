@@ -58,7 +58,10 @@ export const readingApi = {
     const res = await authFetch(
       `/api/reading/article?source_id=${encodeURIComponent(id)}`,
     );
-    if (!res.ok) throw new Error("Failed to fetch article");
+    if (!res.ok) {
+      const errorText = await res.text().catch(() => "Unknown error");
+      throw new Error(`Failed to fetch article (${res.status}): ${errorText}`);
+    }
     return res.json();
   },
 
