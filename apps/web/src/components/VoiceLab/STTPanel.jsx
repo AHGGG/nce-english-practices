@@ -1,12 +1,11 @@
 ﻿
-import React, { useState, useRef, useId } from 'react';
-import { Card, Button, useToast } from '../ui';
+import React, { useState, useRef } from 'react';
+import { Card, Button, Select, useToast } from '../ui';
 import { Mic, StopCircle, Upload, FileAudio, RefreshCw } from 'lucide-react';
 import { authFetch } from '../../api/auth';
 
 const STTPanel = ({ config, fixedProvider = null }) => {
     const { addToast } = useToast();
-    const providerId = useId();
     const [provider, setProvider] = useState(fixedProvider || 'deepgram');
     const [isRecording, setIsRecording] = useState(false);
     const [audioBlob, setAudioBlob] = useState(null);
@@ -79,19 +78,12 @@ const STTPanel = ({ config, fixedProvider = null }) => {
                 <div className="space-y-6">
                     {/* Provider Select */}
                     {!fixedProvider && (
-                        <div className="space-y-1">
-                            <label htmlFor={providerId} className="text-xs font-mono font-bold text-text-muted uppercase">Provider</label>
-                            <select
-                                id={providerId}
-                                value={provider}
-                                onChange={(e) => setProvider(e.target.value)}
-                                className="w-full bg-bg-elevated border border-border text-text-primary px-4 py-2.5 text-sm font-mono focus:border-accent-info focus:outline-none"
-                            >
-                                {config && Object.keys(config).map(p => (
-                                    <option key={p} value={p}>{p.toUpperCase()}</option>
-                                ))}
-                            </select>
-                        </div>
+                        <Select
+                            label="Provider"
+                            value={provider}
+                            onChange={(e) => setProvider(e.target.value)}
+                            options={config ? Object.keys(config).map(p => ({ value: p, label: p.toUpperCase() })) : []}
+                        />
                     )}
 
                     {/* Recorder */}
