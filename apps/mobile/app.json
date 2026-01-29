@@ -28,7 +28,8 @@
       },
       "edgeToEdgeEnabled": true,
       "package": "com.nce.practice",
-      "usesCleartextTraffic": true
+      "usesCleartextTraffic": true,
+      "permissions": ["FOREGROUND_SERVICE", "FOREGROUND_SERVICE_MEDIA_PLAYBACK"]
     },
     "web": {
       "favicon": "./assets/favicon.png",

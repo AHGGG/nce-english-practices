@@ -601,7 +601,26 @@ setPlatformAdapter({
 
 > **Expo Official**: [Using Libraries](https://docs.expo.dev/workflow/using-libraries/)
 
-### 4.0 Expo Library Selection Guidelines
+### 4.0 Critical: Development Builds & Background Audio
+
+**Background Audio** (and other native capabilities like Notifications) **DO NOT work** reliably in the standard Expo Go app on the App Store/Play Store.
+
+To test these features, you must create a **Development Build**:
+
+```bash
+# iOS
+npx expo run:ios
+
+# Android
+npx expo run:android
+```
+
+#### Audio Strategy 2025
+
+- **Current**: We use `expo-av` for simplicity. It handles playback well but lacks native Lock Screen / Notification Center controls (Play/Pause/Next buttons outside the app).
+- **Recommendation**: For a production-grade Podcast experience, migrate to **`react-native-track-player`**. This library provides full OS integration for media controls but requires custom native code (config plugins), which reinforces the need for Development Builds.
+
+### 4.1 Expo Library Selection Guidelines
 
 选择第三方库时遵循以下优先级:
 
