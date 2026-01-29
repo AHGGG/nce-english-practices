@@ -1,4 +1,4 @@
-import { authFetch } from "../client";
+import { authFetch } from "../auth";
 
 export const proficiencyApi = {
   async getSession(level: number, count: number = 5) {

@@ -17,6 +17,7 @@ export interface TextSSEOptions {
 
 /**
  * Parse a JSON-based SSE stream
+ * Supports both browser fetch and React Native (which uses arrayBuffer)
  */
 export async function parseJSONSSEStream(
   response: Response,
@@ -25,16 +26,42 @@ export async function parseJSONSSEStream(
   const { onChunk, onDone, onError, onEvent } = handlers;
 
   if (!response.body) return;
-  const reader = response.body.getReader();
-  const decoder = new TextDecoder();
+
+  let reader: ReadableStreamDefaultReader | null = null;
+  let decoder: TextDecoder | null = null;
   let buffer = "";
+
+  // Check if getReader is available (browser)
+  if (typeof response.body.getReader === "function") {
+    reader = response.body.getReader();
+    decoder = new TextDecoder();
+  } else {
+    // React Native fallback: read entire body and parse
+    try {
+      const arrayBuffer = await response.arrayBuffer();
+      const uint8Array = new Uint8Array(arrayBuffer);
+      decoder = new TextDecoder();
+      const fullText = decoder.decode(uint8Array);
+
+      // Process the entire text as SSE format
+      const lines = fullText.split("\n");
+      for (const line of lines) {
+        processLine(line);
+      }
+      onDone?.({});
+      return;
+    } catch (error) {
+      onError?.(error instanceof Error ? error : new Error(String(error)));
+      return;
+    }
+  }
 
   try {
     while (true) {
       const { done, value } = await reader.read();
 
       if (value) {
-        buffer += decoder.decode(value, { stream: true });
+        buffer += decoder!.decode(value, { stream: true });
       }
 
       if (done) {
@@ -86,6 +113,7 @@ export async function parseJSONSSEStream(
 
 /**
  * Parse a raw text SSE stream
+ * Supports both browser fetch and React Native
  */
 export async function parseTextSSEStream(
   response: Response,
@@ -96,21 +124,46 @@ export async function parseTextSSEStream(
   const { abortCheck } = options;
 
   if (!response.body) return;
-  const reader = response.body.getReader();
-  const decoder = new TextDecoder();
+
+  let reader: ReadableStreamDefaultReader | null = null;
+  let decoder: TextDecoder | null = null;
   let buffer = "";
+
+  // Check if getReader is available (browser)
+  if (typeof response.body.getReader === "function") {
+    reader = response.body.getReader();
+    decoder = new TextDecoder();
+  } else {
+    // React Native fallback: read entire body and parse
+    try {
+      const arrayBuffer = await response.arrayBuffer();
+      const uint8Array = new Uint8Array(arrayBuffer);
+      decoder = new TextDecoder();
+      const fullText = decoder.decode(uint8Array);
+
+      const lines = fullText.split("\n");
+      for (const line of lines) {
+        if (processTextLine(line)) break;
+      }
+      onDone?.();
+      return;
+    } catch (error) {
+      onError?.(error instanceof Error ? error : new Error(String(error)));
+      return;
+    }
+  }
 
   try {
     while (true) {
       if (abortCheck?.()) {
-        await reader.cancel();
+        await reader!.cancel();
         return;
       }
 
-      const { done, value } = await reader.read();
+      const { done, value } = await reader!.read();
 
       if (value) {
-        buffer += decoder.decode(value, { stream: true });
+        buffer += decoder!.decode(value, { stream: true });
       }
 
       if (done) {
@@ -129,7 +182,7 @@ export async function parseTextSSEStream(
 
       for (const line of lines) {
         if (abortCheck?.()) {
-          await reader.cancel();
+          await reader!.cancel();
           return;
         }
         if (processTextLine(line)) return;

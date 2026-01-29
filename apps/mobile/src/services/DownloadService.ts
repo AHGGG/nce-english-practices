@@ -1,16 +1,24 @@
-import * as FileSystem from "expo-file-system";
+import {
+  getInfoAsync,
+  makeDirectoryAsync,
+  deleteAsync,
+  createDownloadResumable,
+  documentDirectory,
+  type DownloadResumable,
+  type DownloadProgressData,
+} from "expo-file-system/legacy";
 import { useDownloadStore } from "@nce/store";
 import type { PodcastEpisode } from "@nce/api";
 
-const PODCAST_DIR = FileSystem.documentDirectory + "podcasts/";
+const PODCAST_DIR = documentDirectory + "podcasts/";
 
 class DownloadService {
-  private downloadResumables: Record<number, FileSystem.DownloadResumable> = {};
+  private downloadResumables: Record<number, DownloadResumable> = {};
 
   async init() {
-    const dirInfo = await FileSystem.getInfoAsync(PODCAST_DIR);
+    const dirInfo = await getInfoAsync(PODCAST_DIR);
     if (!dirInfo.exists) {
-      await FileSystem.makeDirectoryAsync(PODCAST_DIR, { intermediates: true });
+      await makeDirectoryAsync(PODCAST_DIR, { intermediates: true });
     }
   }
 
@@ -18,20 +26,19 @@ class DownloadService {
     const store = useDownloadStore.getState();
     const localPath = PODCAST_DIR + `${episode.id}.mp3`;
 
-    // Initialize progress
     store.updateActiveDownload(episode.id, {
       status: "downloading",
       progress: 0,
     });
 
-    const callback = (downloadProgress: FileSystem.DownloadProgressData) => {
+    const callback = (downloadProgress: DownloadProgressData) => {
       const progress =
         downloadProgress.totalBytesWritten /
         downloadProgress.totalBytesExpectedToWrite;
       store.updateActiveDownload(episode.id, { progress });
     };
 
-    const downloadResumable = FileSystem.createDownloadResumable(
+    const downloadResumable = createDownloadResumable(
       episode.audio_url,
       localPath,
       {},
@@ -90,7 +97,7 @@ class DownloadService {
 
     if (download) {
       try {
-        await FileSystem.deleteAsync(download.localPath, { idempotent: true });
+        await deleteAsync(download.localPath, { idempotent: true });
       } catch (e) {
         console.warn("File delete failed (might be already gone)", e);
       }

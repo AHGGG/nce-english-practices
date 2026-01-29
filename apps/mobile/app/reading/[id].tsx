@@ -9,15 +9,17 @@ import {
 } from "react-native";
 import { useLocalSearchParams, Stack, useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useArticleReader, useWordExplainer } from "@nce/shared";
+import { useArticleReader } from "@nce/shared";
+import useWordExplainer from "../../src/hooks/useWordExplainer";
 import { proficiencyApi } from "@nce/api";
+import { useSettingsStore } from "@nce/store";
 import { UniversalWebView } from "../../src/components/UniversalWebView";
 import { generateArticleHTML } from "../../src/utils/htmlGenerator";
 import { DictionaryModal } from "../../src/components/DictionaryModal";
 import { SentenceInspectorModal } from "../../src/components/SentenceInspectorModal";
 import ImageLightbox from "../../src/components/ImageLightbox";
 import { getApiBaseUrl } from "../../src/lib/platform-init";
-import { useRef, useState, useEffect } from "react";
+import { useRef, useState, useEffect, useCallback } from "react";
 import {
   ChevronLeft,
   MoreHorizontal,
@@ -26,6 +28,7 @@ import {
   X,
 } from "lucide-react-native";
 import { WebViewMessageEvent } from "react-native-webview";
+import { Audio } from "expo-av";
 
 const HIGHLIGHT_OPTIONS = [
   { label: "All Unknown", min: 0, max: 99999 },
@@ -41,6 +44,7 @@ export default function ReadingScreen() {
   // Hooks
   const { article, isLoading, tracker, refetch } = useArticleReader(id);
   const explainer = useWordExplainer();
+  const settings = useSettingsStore();
 
   // State
   const [showHighlights, setShowHighlights] = useState(true);
@@ -56,7 +60,19 @@ export default function ReadingScreen() {
   const [lightboxVisible, setLightboxVisible] = useState(false);
   const [lightboxImage, setLightboxImage] = useState<string | null>(null);
 
+  // Audio Ref
+  const audioRef = useRef<Audio.Sound | null>(null);
+
   const webViewRef = useRef<any>(null);
+
+  // Cleanup audio on unmount
+  useEffect(() => {
+    return () => {
+      if (audioRef.current) {
+        audioRef.current.unloadAsync();
+      }
+    };
+  }, []);
 
   // Generate HTML
   const htmlSource = article
@@ -102,7 +118,11 @@ export default function ReadingScreen() {
   const handleWordClick = async (word: string, sentence: string) => {
     tracker.onWordClick();
     setModalVisible(true);
-    // Use EPUB ID logic (e.g., epub:filename:chapter)
+
+    if (settings.autoPronounce) {
+      playTtsAudio(word);
+    }
+
     await explainer.handleWordClick(word, sentence);
   };
 
@@ -110,6 +130,34 @@ export default function ReadingScreen() {
     setSelectedSentence(text);
     setInspectorVisible(true);
   };
+
+  const playTtsAudio = useCallback(async (text: string) => {
+    if (!text) return;
+    if (audioRef.current) {
+      await audioRef.current.unloadAsync();
+    }
+    try {
+      const url = `${getApiBaseUrl()}/api/tts?text=${encodeURIComponent(text)}`;
+      const { sound } = await Audio.Sound.createAsync(
+        { uri: url },
+        { shouldPlay: true },
+      );
+      audioRef.current = sound;
+    } catch (e) {
+      console.error("TTS playback failed", e);
+    }
+  }, []);
+
+  const handleMarkAsKnown = useCallback(async (word: string) => {
+    const lowerWord = word.toLowerCase();
+    try {
+      await proficiencyApi.updateWordStatus(lowerWord, "mastered");
+      handleCloseModal();
+    } catch (e) {
+      console.error("Failed to mark as known", e);
+      Alert.alert("Error", "Failed to mark word as known");
+    }
+  }, []);
 
   const handleCloseModal = () => {
     setModalVisible(false);
@@ -300,6 +348,17 @@ export default function ReadingScreen() {
         contextExplanation={explainer.contextExplanation}
         isInspecting={explainer.isInspecting}
         isExplaining={explainer.isExplaining}
+        selectedWord={explainer.selectedWord}
+        isPhrase={explainer.isPhrase}
+        explainStyle={explainer.explainStyle}
+        generatedImage={explainer.generatedImage}
+        isGeneratingImage={explainer.isGeneratingImage}
+        imagePrompt={explainer.imagePrompt}
+        onExplainStyle={explainer.changeExplainStyle}
+        onGenerateImage={explainer.generateImage}
+        onMarkAsKnown={handleMarkAsKnown}
+        onPlayAudio={playTtsAudio}
+        currentSentenceContext={explainer.currentSentenceContext}
       />
 
       {/* Sentence Inspector Modal */}
