@@ -542,6 +542,22 @@ For heavy data transfer (like passing a 2MB book content to the Reader):
 - **Adapter**: You MUST use `createJSONStorage(() => AsyncStorage)` adapter in `apps/mobile`. Standard `localStorage` will fail.
 - **Initialization**: Mobile app initializes platform adapters in `src/lib/platform-init.ts` called from `_layout.tsx`.
 
+### 5. React Native SSE Streaming (2026-01-30)
+
+**核心教训**: 后端必须使用 `stream=True` 才能真正流式发送数据。仅包装一个 `StreamingResponse` 但内部调用同步方法不会产生任何效果。
+
+**解决方案**:
+
+- **前端**: 使用 `react-native-sse` 库（基于 XMLHttpRequest，可正确处理 SSE）
+- **后端**: 必须直接对 LLM 使用 `stream=True`，不能先调用同步方法再 yield
+
+**关键文件**:
+
+- `apps/mobile/src/hooks/useWordExplainer.ts`
+- `app/services/sentence_study_service.py` (函数 `stream_word_explanation`)
+
+**依赖变更**: 用 `react-native-sse@^1.2.1` 替换 `react-native-fetch-api`
+
 ### Voice on Mobile
 
 > See [Mobile Voice Debugging Skill](docs/skills/mobile-voice-debugging.md) for HTTPS setup and troubleshooting.
