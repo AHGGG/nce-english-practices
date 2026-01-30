@@ -231,9 +231,13 @@ export default function ReadingScreen() {
         <View className="flex-row items-center">
           <TouchableOpacity
             className="p-2 mr-1"
-            onPress={() =>
-              router.push(`/study/${encodeURIComponent(article.source_id)}`)
-            }
+            onPress={() => {
+              console.log(
+                "[ReadingScreen] STUDY button clicked, article.source_id:",
+                article.source_id,
+              );
+              router.push(`/study/${encodeURIComponent(article.source_id)}`);
+            }}
           >
             <Text className="text-accent-primary font-bold text-xs">STUDY</Text>
           </TouchableOpacity>

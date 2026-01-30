@@ -55,6 +55,7 @@ export const readingApi = {
    * Get single article detail
    */
   async getArticleDetail(id: string) {
+    console.log("[readingApi.getArticleDetail] Requesting source_id:", id);
     const res = await authFetch(
       `/api/reading/article?source_id=${encodeURIComponent(id)}`,
     );
