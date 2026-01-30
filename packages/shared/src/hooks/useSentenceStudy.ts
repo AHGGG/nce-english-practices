@@ -113,7 +113,6 @@ export function useSentenceStudy(sourceId: string) {
       setView("OVERVIEW");
 
       // Start Overview Stream
-      console.log("[useSentenceStudy] Fetching overview for:", art.title);
       const res = await sentenceStudyApi.getOverview(
         art.title,
         art.full_text,
@@ -125,31 +124,22 @@ export function useSentenceStudy(sourceId: string) {
       const isStream =
         contentType.includes("text/event-stream") || res.body !== null;
 
-      console.log("[useSentenceStudy] Overview content-type:", contentType);
-      console.log("[useSentenceStudy] Overview isStream:", isStream);
-
       if (isStream) {
         // Handle SSE stream
-        console.log("[useSentenceStudy] Parsing SSE stream...");
         try {
           await parseJSONSSEStream(res, {
             onChunk: (c) => setOverviewStream((p) => p + c),
             onDone: (d) => setOverview(d.overview),
           });
-          console.log("[useSentenceStudy] Overview stream done");
         } catch (e) {
           console.error("[useSentenceStudy] SSE parse error:", e);
-          // Fallback: use stream content directly as overview
-          console.log(
-            "[useSentenceStudy] Fallback: using overviewStream directly",
-          );
+          // Fallback: use stream content directly
           setOverview({
-            overview: overviewStream || "Overview generation in progress...",
+            overview: overviewStream || "Overview generation failed.",
           });
         }
       } else {
         // Handle JSON response
-        console.log("[useSentenceStudy] Overview response is JSON");
         const json = await res.json();
         console.log("[useSentenceStudy] Overview JSON:", json);
         setOverview(json);
