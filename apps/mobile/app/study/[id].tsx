@@ -149,7 +149,7 @@ const StudyingView = ({
                   AI Guidance{" "}
                   {simplifyStage > 0 ? `(Stage ${simplifyStage}/4)` : ""}
                 </Text>
-                {isSimplifying && (
+                {isSimplifying && !!simplifiedText && (
                   <ActivityIndicator
                     size="small"
                     color="#F59E0B"
