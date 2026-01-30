@@ -6,7 +6,12 @@ import {
   ActivityIndicator,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useLocalSearchParams, useRouter, Stack } from "expo-router";
+import {
+  useLocalSearchParams,
+  useGlobalSearchParams,
+  useRouter,
+  Stack,
+} from "expo-router";
 import { useSentenceStudy, useWordExplainer } from "@nce/shared";
 import {
   ChevronLeft,
@@ -175,14 +180,33 @@ const CompletedView = ({ stats, onFinish }: any) => (
 );
 
 export default function StudyScreen() {
-  const { id } = useLocalSearchParams<{ id: string }>();
+  const params = useLocalSearchParams<{ id?: string }>();
   const router = useRouter();
 
-  // Debug: log the raw id
-  console.log("[StudyScreen] Raw id:", id);
+  // Debug: log all params
+  console.log("[StudyScreen] All params:", JSON.stringify(params));
 
-  const sourceId = decodeURIComponent(id as string);
-  console.log("[StudyScreen] Decoded sourceId:", sourceId);
+  // Try to get id from params or search
+  let sourceId = params.id;
+
+  // If id is not in params, try to get from the full route
+  if (!sourceId) {
+    // Try using useGlobalSearchParams as fallback
+    const globalParams = useGlobalSearchParams<{ id?: string }>();
+    sourceId = globalParams.id;
+    console.log("[StudyScreen] Global params id:", sourceId);
+  }
+
+  // If still not found, might be in the path directly
+  if (!sourceId) {
+    console.log(
+      "[StudyScreen] id not found in params, sourceId remains undefined",
+    );
+  } else {
+    sourceId = decodeURIComponent(sourceId);
+  }
+
+  console.log("[StudyScreen] Final sourceId:", sourceId);
 
   const {
     view,
