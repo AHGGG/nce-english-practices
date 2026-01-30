@@ -177,7 +177,12 @@ const CompletedView = ({ stats, onFinish }: any) => (
 export default function StudyScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
+
+  // Debug: log the raw id
+  console.log("[StudyScreen] Raw id:", id);
+
   const sourceId = decodeURIComponent(id as string);
+  console.log("[StudyScreen] Decoded sourceId:", sourceId);
 
   const {
     view,

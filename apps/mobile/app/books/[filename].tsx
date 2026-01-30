@@ -47,8 +47,18 @@ export default function ArticlesScreen() {
   }, [filename]);
 
   const renderArticle = ({ item }: { item: Article }) => {
-    const sourceId = `epub:${filename}:${item.index}`;
-    const displayTitle = item.title || `Article ${item.index + 1}`;
+    const decodedFilename = decodeURIComponent(filename);
+    const articleIndex =
+      typeof item.index === "number"
+        ? item.index
+        : parseInt(item.index, 10) || 0;
+    const sourceId = `epub:${decodedFilename}:${articleIndex}`;
+    const displayTitle = item.title || `Article ${articleIndex + 1}`;
+
+    console.log(
+      "[ArticlesScreen] Navigating to study with sourceId:",
+      sourceId,
+    );
 
     return (
       <TouchableOpacity
@@ -58,7 +68,7 @@ export default function ArticlesScreen() {
         <View className="flex-row justify-between items-start">
           <View className="flex-1 mr-4">
             <Text className="text-text-secondary text-xs font-mono mb-1">
-              {item.chapter || `Chapter ${item.index + 1}`}
+              {item.chapter || `Chapter ${articleIndex + 1}`}
             </Text>
             <Text
               className="text-text-primary text-lg font-serif mb-2"
