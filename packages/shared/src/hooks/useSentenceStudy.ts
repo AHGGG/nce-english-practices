@@ -119,20 +119,34 @@ export function useSentenceStudy(sourceId: string) {
         art.full_text,
         total,
       );
-      console.log(
-        "[useSentenceStudy] Overview response type:",
-        res.body ? "stream" : "json",
-      );
 
-      if (res.body) {
-        // Check if streaming supported
+      // Check if response is SSE stream (text/event-stream)
+      const contentType = res.headers?.get?.("content-type") || "";
+      const isStream =
+        contentType.includes("text/event-stream") || res.body !== null;
+
+      console.log("[useSentenceStudy] Overview content-type:", contentType);
+      console.log("[useSentenceStudy] Overview isStream:", isStream);
+
+      if (isStream) {
+        // Handle SSE stream
         console.log("[useSentenceStudy] Parsing SSE stream...");
-        await parseJSONSSEStream(res, {
-          onChunk: (c) => setOverviewStream((p) => p + c),
-          onDone: (d) => setOverview(d.overview),
-        });
-        console.log("[useSentenceStudy] Overview stream done");
+        try {
+          await parseJSONSSEStream(res, {
+            onChunk: (c) => setOverviewStream((p) => p + c),
+            onDone: (d) => setOverview(d.overview),
+          });
+          console.log("[useSentenceStudy] Overview stream done");
+        } catch (e) {
+          console.error("[useSentenceStudy] SSE parse error:", e);
+          // Fallback: use stream content directly
+          setOverview({
+            overview: overviewStream || "Overview generation failed.",
+          });
+        }
       } else {
+        // Handle JSON response
+        console.log("[useSentenceStudy] Overview response is JSON");
         const json = await res.json();
         console.log("[useSentenceStudy] Overview JSON:", json);
         setOverview(json);
