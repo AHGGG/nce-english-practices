@@ -57,88 +57,107 @@ const StudyingView = ({
   simplifiedText,
   simplifyStage,
   onUnclearResponse,
-}: any) => (
-  <View className="flex-1 p-6 justify-center">
-    <View className="absolute top-0 left-0 right-0 h-1 bg-bg-elevated">
-      <View
-        className="h-full bg-accent-primary"
-        style={{ width: `${(index / total) * 100}%` }}
-      />
-    </View>
+}: any) => {
+  const scrollViewRef = useRef<ScrollView>(null);
 
-    <Text className="text-text-muted text-xs font-mono mb-8 text-center mt-6">
-      Sentence {index + 1} / {total}
-    </Text>
+  useEffect(() => {
+    if (simplifiedText && simplifiedText.length > 0 && scrollViewRef.current) {
+      scrollViewRef.current.scrollToEnd({ animated: true });
+    }
+  }, [simplifiedText]);
 
-    <View className="bg-bg-surface p-8 rounded-2xl border border-border-default min-h-[200px] justify-center">
-      <Text className="text-xl font-serif leading-relaxed text-text-primary">
-        {sentence?.text?.split(" ").map((word: string, i: number) => (
-          <Text
-            key={i}
-            onPress={() => onWordClick(word)}
-            className="active:text-accent-primary active:bg-accent-primary/10"
-          >
-            {word}{" "}
+  return (
+    <View className="flex-1">
+      <ScrollView
+        ref={scrollViewRef}
+        className="flex-1 px-6 pt-6"
+        contentContainerStyle={{ paddingBottom: 100 }}
+        showsVerticalScrollIndicator={true}
+      >
+        <View className="pb-20">
+          <Text className="text-text-muted text-xs font-mono mb-4 text-center">
+            Sentence {index + 1} / {total}
           </Text>
-        ))}
-      </Text>
-    </View>
 
-    {(isSimplifying || simplifiedText) && (
-      <View className="mt-6 bg-bg-elevated p-4 rounded-xl border border-border-default animate-in fade-in">
-        <View className="flex-row items-center mb-2">
-          <HelpCircle size={16} color="#F59E0B" />
-          <Text className="text-accent-warning font-bold ml-2 uppercase text-xs">
-            AI Guidance (Stage {simplifyStage}/4)
-          </Text>
+          <View className="bg-bg-surface p-6 rounded-2xl border border-border-default">
+            <Text className="text-xl font-serif leading-relaxed text-text-primary">
+              {sentence?.text?.split(" ").map((word: string, i: number) => (
+                <Text
+                  key={i}
+                  onPress={() => onWordClick(word)}
+                  className="active:text-accent-primary active:bg-accent-primary/10"
+                >
+                  {word}{" "}
+                </Text>
+              ))}
+            </Text>
+          </View>
+
+          {(isSimplifying || simplifiedText) && (
+            <View className="mt-4 bg-bg-elevated p-4 rounded-xl border border-border-default">
+              <View className="flex-row items-center mb-2">
+                <HelpCircle size={16} color="#F59E0B" />
+                <Text className="text-accent-warning font-bold ml-2 uppercase text-xs">
+                  AI Guidance (Stage {simplifyStage}/4)
+                </Text>
+                {isSimplifying && (
+                  <ActivityIndicator
+                    size="small"
+                    color="#F59E0B"
+                    className="ml-auto"
+                  />
+                )}
+              </View>
+              {isSimplifying && !simplifiedText ? (
+                <ActivityIndicator color="#F59E0B" />
+              ) : (
+                <Text className="text-text-secondary leading-relaxed font-sans text-sm">
+                  {simplifiedText}
+                </Text>
+              )}
+            </View>
+          )}
         </View>
-        {isSimplifying && !simplifiedText ? (
-          <ActivityIndicator color="#F59E0B" />
+      </ScrollView>
+
+      <View className="absolute bottom-0 left-0 right-0 p-4 bg-bg-base border-t border-border-default">
+        {isSimplifying || simplifiedText ? (
+          <View className="flex-row gap-3">
+            <TouchableOpacity
+              className="flex-1 bg-bg-elevated py-4 rounded-xl items-center border border-border-default"
+              onPress={() => onUnclearResponse(false)}
+            >
+              <Text className="text-text-primary font-bold">Still Unclear</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              className="flex-1 bg-accent-primary/10 py-4 rounded-xl items-center border border-accent-primary/30"
+              onPress={() => onUnclearResponse(true)}
+            >
+              <Text className="text-accent-primary font-bold">Got It!</Text>
+            </TouchableOpacity>
+          </View>
         ) : (
-          <Text className="text-text-secondary leading-relaxed font-sans text-sm">
-            {simplifiedText}
-          </Text>
+          <View className="flex-row gap-3">
+            <TouchableOpacity
+              className="flex-1 bg-bg-elevated py-4 rounded-xl items-center border border-border-default flex-row justify-center"
+              onPress={onUnclear}
+            >
+              <HelpCircle size={20} color="#E0E0E0" className="mr-2" />
+              <Text className="text-text-primary font-bold">Unclear</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              className="flex-1 bg-accent-primary/10 py-4 rounded-xl items-center border border-accent-primary/30 flex-row justify-center"
+              onPress={onClear}
+            >
+              <CheckCircle size={20} color="#00FF94" className="mr-2" />
+              <Text className="text-accent-primary font-bold">Clear</Text>
+            </TouchableOpacity>
+          </View>
         )}
       </View>
-    )}
-
-    <View className="flex-row gap-4 mt-8">
-      {isSimplifying || simplifiedText ? (
-        <>
-          <TouchableOpacity
-            className="flex-1 bg-bg-elevated py-4 rounded-2xl items-center border border-border-default"
-            onPress={() => onUnclearResponse(false)}
-          >
-            <Text className="text-text-primary font-bold">Still Unclear</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            className="flex-1 bg-accent-primary/10 py-4 rounded-2xl items-center border border-accent-primary/30"
-            onPress={() => onUnclearResponse(true)}
-          >
-            <Text className="text-accent-primary font-bold">Got It!</Text>
-          </TouchableOpacity>
-        </>
-      ) : (
-        <>
-          <TouchableOpacity
-            className="flex-1 bg-bg-elevated py-4 rounded-2xl items-center border border-border-default flex-row justify-center"
-            onPress={onUnclear}
-          >
-            <HelpCircle size={20} color="#E0E0E0" className="mr-2" />
-            <Text className="text-text-primary font-bold">Unclear</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            className="flex-1 bg-accent-primary/10 py-4 rounded-2xl items-center border border-accent-primary/30 flex-row justify-center"
-            onPress={onClear}
-          >
-            <CheckCircle size={20} color="#00FF94" className="mr-2" />
-            <Text className="text-accent-primary font-bold">Clear</Text>
-          </TouchableOpacity>
-        </>
-      )}
     </View>
-  </View>
-);
+  );
+};
 
 const CompletedView = ({ stats, onFinish }: any) => (
   <View className="flex-1 p-6 items-center justify-center">
@@ -462,13 +481,19 @@ export default function StudyScreen() {
   const [modalVisible, setModalVisible] = useState(false);
 
   // Fetch overview when entering OVERVIEW view
+  const overviewRequested = useRef(false);
   useEffect(() => {
-    if (
-      view === "OVERVIEW" &&
-      streamingOverview === null &&
-      overviewStream === ""
-    ) {
-      if (article?.title && article?.full_text) {
+    console.log(
+      "[StudyScreen] useEffect Overview: view=",
+      view,
+      "article=",
+      article?.title?.substring(0, 30),
+    );
+
+    if (view === "OVERVIEW" && article?.title && article?.full_text) {
+      if (!overviewRequested.current) {
+        overviewRequested.current = true;
+        console.log("[StudyScreen] Triggering streamOverview...");
         streamOverview(
           article.title,
           article.full_text,
@@ -481,13 +506,14 @@ export default function StudyScreen() {
           },
         );
       }
+    } else if (view !== "OVERVIEW") {
+      overviewRequested.current = false;
     }
   }, [
     view,
-    streamingOverview,
-    overviewStream,
+    article?.title,
+    article?.full_text,
     totalSentences,
-    article,
     streamOverview,
   ]);
 
@@ -540,15 +566,26 @@ export default function StudyScreen() {
 
   const handleUnclearResponse = useCallback(
     async (gotIt: boolean) => {
+      console.log(
+        "[StudyScreen] handleUnclearResponse: gotIt=",
+        gotIt,
+        "simplifyStage=",
+        simplifyStage,
+      );
+
       if (gotIt) {
-        // Record learning and advance
-        await handleClear();
+        console.log("[StudyScreen] Recording clear and advancing...");
+        try {
+          await handleClear();
+        } catch (e) {
+          console.error("[StudyScreen] handleClear failed:", e);
+        }
       } else {
-        // Go to next stage
+        console.log("[StudyScreen] Going to next stage...");
         handleUnclear();
       }
     },
-    [handleClear, handleUnclear],
+    [handleClear, handleUnclear, simplifyStage],
   );
 
   return (
