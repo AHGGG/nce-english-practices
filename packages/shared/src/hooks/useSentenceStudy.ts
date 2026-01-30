@@ -139,9 +139,12 @@ export function useSentenceStudy(sourceId: string) {
           console.log("[useSentenceStudy] Overview stream done");
         } catch (e) {
           console.error("[useSentenceStudy] SSE parse error:", e);
-          // Fallback: use stream content directly
+          // Fallback: use stream content directly as overview
+          console.log(
+            "[useSentenceStudy] Fallback: using overviewStream directly",
+          );
           setOverview({
-            overview: overviewStream || "Overview generation failed.",
+            overview: overviewStream || "Overview generation in progress...",
           });
         }
       } else {
