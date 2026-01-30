@@ -20,7 +20,7 @@ import {
   HelpCircle,
 } from "lucide-react-native";
 import { DictionaryModal } from "../../src/components/DictionaryModal";
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import EventSource from "react-native-sse";
 import { getApiBaseUrl } from "../../src/lib/platform-init";
 
@@ -280,6 +280,114 @@ function useStreamingSimplify() {
   };
 }
 
+// --- Streaming Overview Hook using react-native-sse ---
+function useStreamingOverview() {
+  const [overviewStream, setOverviewStream] = useState("");
+  const [overview, setOverview] = useState<any>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const eventSourceRef = useRef<EventSource | null>(null);
+  const overviewRef = useRef("");
+
+  const fetchOverview = useCallback(
+    async (
+      title: string,
+      fullText: string,
+      totalSentences: number,
+      onUpdate: (stream: string, done: boolean) => void,
+    ) => {
+      if (eventSourceRef.current) {
+        eventSourceRef.current.removeAllEventListeners();
+        eventSourceRef.current.close();
+        eventSourceRef.current = null;
+      }
+
+      setIsLoading(true);
+      overviewRef.current = "";
+      setOverviewStream("");
+      setOverview(null);
+
+      const url = `${getApiBaseUrl()}/api/sentence-study/overview`;
+      console.log("[streaming-overview] Creating SSE for:", url);
+
+      const es = new EventSource(url, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "text/event-stream",
+        },
+        body: JSON.stringify({
+          title,
+          full_text: fullText,
+          total_sentences: totalSentences,
+        }),
+        pollingInterval: 0,
+      });
+
+      eventSourceRef.current = es;
+
+      es.addEventListener("open", () => {
+        console.log("[streaming-overview] Connection opened");
+      });
+
+      es.addEventListener("message", (event) => {
+        const data = event.data;
+        if (!data) return;
+
+        try {
+          const parsed = JSON.parse(data);
+          if (parsed.type === "chunk") {
+            const newText = (overviewRef.current || "") + parsed.content;
+            overviewRef.current = newText;
+            setOverviewStream(newText);
+            onUpdate(newText, false);
+          } else if (parsed.type === "done") {
+            console.log(
+              "[streaming-overview] Done, overview:",
+              parsed.overview?.substring(0, 50),
+            );
+            setOverview({ overview: parsed.overview });
+            setIsLoading(false);
+            onUpdate(overviewRef.current, true);
+          }
+        } catch (e) {
+          console.error("[streaming-overview] Parse error:", e);
+        }
+      });
+
+      es.addEventListener("error", (event: any) => {
+        console.error("[streaming-overview] Error:", event.message);
+        setIsLoading(false);
+      });
+
+      es.addEventListener("close" as any, () => {
+        console.log("[streaming-overview] Connection closed");
+        setIsLoading(false);
+      });
+    },
+    [],
+  );
+
+  const reset = useCallback(() => {
+    if (eventSourceRef.current) {
+      eventSourceRef.current.removeAllEventListeners();
+      eventSourceRef.current.close();
+      eventSourceRef.current = null;
+    }
+    overviewRef.current = "";
+    setOverviewStream("");
+    setOverview(null);
+    setIsLoading(false);
+  }, []);
+
+  return {
+    overviewStream,
+    overview,
+    isLoading,
+    fetchOverview,
+    reset,
+  };
+}
+
 export default function StudyScreen() {
   const params = useLocalSearchParams<{ id?: string }>();
   const router = useRouter();
@@ -325,14 +433,13 @@ export default function StudyScreen() {
 
   const {
     view,
-    overview,
+    article,
     currentSentence,
     currentIndex,
     totalSentences,
     startStudying,
     handleWordClick,
     handleClear,
-    handleUnclearResponse,
     explainer,
     studyHighlights,
   } = useSentenceStudy(sourceId);
@@ -345,10 +452,53 @@ export default function StudyScreen() {
     reset: resetSimplify,
   } = useStreamingSimplify();
 
+  const {
+    overviewStream,
+    overview: streamingOverview,
+    isLoading: isLoadingOverview,
+    fetchOverview: streamOverview,
+  } = useStreamingOverview();
+
   const [modalVisible, setModalVisible] = useState(false);
 
+  // Fetch overview when entering OVERVIEW view
+  useEffect(() => {
+    if (
+      view === "OVERVIEW" &&
+      streamingOverview === null &&
+      overviewStream === ""
+    ) {
+      if (article?.title && article?.full_text) {
+        streamOverview(
+          article.title,
+          article.full_text,
+          totalSentences || 0,
+          (stream, done) => {
+            console.log(
+              "[StudyScreen] Overview stream:",
+              done ? "done" : "streaming...",
+            );
+          },
+        );
+      }
+    }
+  }, [
+    view,
+    streamingOverview,
+    overviewStream,
+    totalSentences,
+    article,
+    streamOverview,
+  ]);
+
   const onWordClickWrapper = (word: string) => {
-    handleWordClick(word);
+    console.log(
+      "[StudyScreen] onWordClickWrapper:",
+      word,
+      "sentence:",
+      currentSentence?.text,
+    );
+    handleWordClick(word, currentSentence?.text || "");
     setModalVisible(true);
   };
 
@@ -360,30 +510,46 @@ export default function StudyScreen() {
   const handleUnclear = useCallback(() => {
     if (!currentSentence) return;
 
-    // Get flatSentences from useSentenceStudy internal logic
-    const flatSentences: any[] = [];
-    if (currentSentence) {
-      flatSentences.push(currentSentence);
-    }
+    const nextStage = simplifyStage < 4 ? simplifyStage + 1 : 4;
+    console.log(
+      "[StudyScreen] handleUnclear: currentStage=",
+      simplifyStage,
+      "nextStage=",
+      nextStage,
+    );
 
     const params = {
       sentence: currentSentence.text,
       simplify_type: "meaning",
-      stage: 1,
-      prev_sentence:
-        currentIndex > 0 ? flatSentences[currentIndex - 1]?.text : null,
-      next_sentence:
-        currentIndex < totalSentences - 1
-          ? flatSentences[currentIndex + 1]?.text
-          : null,
+      stage: nextStage,
+      prev_sentence: null,
+      next_sentence: null,
     };
 
     streamSimplify(params, (text, stage, done) => {
-      if (done) {
-        console.log("[StudyScreen] Simplify done, stage:", stage);
-      }
+      console.log(
+        "[StudyScreen] Simplify update: text.length=",
+        text.length,
+        "stage=",
+        stage,
+        "done=",
+        done,
+      );
     });
-  }, [currentSentence, currentIndex, totalSentences]);
+  }, [currentSentence, simplifyStage, streamSimplify]);
+
+  const handleUnclearResponse = useCallback(
+    async (gotIt: boolean) => {
+      if (gotIt) {
+        // Record learning and advance
+        await handleClear();
+      } else {
+        // Go to next stage
+        handleUnclear();
+      }
+    },
+    [handleClear, handleUnclear],
+  );
 
   return (
     <SafeAreaView className="flex-1 bg-bg-base" edges={["top"]}>
@@ -406,7 +572,10 @@ export default function StudyScreen() {
         )}
 
         {view === "OVERVIEW" && (
-          <OverviewView data={overview} onStart={startStudying} />
+          <OverviewView
+            data={streamingOverview || { overviewStream }}
+            onStart={startStudying}
+          />
         )}
 
         {view === "STUDYING" && (
