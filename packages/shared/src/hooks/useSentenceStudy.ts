@@ -113,22 +113,32 @@ export function useSentenceStudy(sourceId: string) {
       setView("OVERVIEW");
 
       // Start Overview Stream
+      console.log("[useSentenceStudy] Fetching overview for:", art.title);
       const res = await sentenceStudyApi.getOverview(
         art.title,
         art.full_text,
         total,
       );
+      console.log(
+        "[useSentenceStudy] Overview response type:",
+        res.body ? "stream" : "json",
+      );
+
       if (res.body) {
         // Check if streaming supported
+        console.log("[useSentenceStudy] Parsing SSE stream...");
         await parseJSONSSEStream(res, {
           onChunk: (c) => setOverviewStream((p) => p + c),
           onDone: (d) => setOverview(d.overview),
         });
+        console.log("[useSentenceStudy] Overview stream done");
       } else {
-        setOverview(await res.json());
+        const json = await res.json();
+        console.log("[useSentenceStudy] Overview JSON:", json);
+        setOverview(json);
       }
     } catch (e) {
-      console.error("[useSentenceStudy] Failed to load article:", e);
+      console.error("[useSentenceStudy] Full error:", e);
       setView("ERROR");
     }
   }, [sourceId]);

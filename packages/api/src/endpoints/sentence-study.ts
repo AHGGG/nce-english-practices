@@ -61,7 +61,8 @@ export const sentenceStudyApi = {
 
   // Get article overview (streaming handled by parser)
   async getOverview(title: string, fullText: string, totalSentences: number) {
-    return authFetch("/api/sentence-study/overview", {
+    console.log("[sentenceStudyApi.getOverview] Requesting overview...");
+    const res = await authFetch("/api/sentence-study/overview", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -70,6 +71,12 @@ export const sentenceStudyApi = {
         total_sentences: totalSentences,
       }),
     });
+    console.log("[sentenceStudyApi.getOverview] Status:", res.status);
+    console.log(
+      "[sentenceStudyApi.getOverview] Content-Type:",
+      res.headers.get("content-type"),
+    );
+    return res;
   },
 
   // Get completed session highlights
