@@ -255,12 +255,23 @@ export function useWordExplainer() {
 
   // Stream context explanation using react-native-sse
   useEffect(() => {
-    if (!selectedWord || !currentSentenceContext) return;
+    console.log("[useWordExplainer] SSE useEffect triggered:", {
+      selectedWord: !!selectedWord,
+      currentSentenceContext: !!currentSentenceContext,
+      explainStyle,
+    });
+
+    if (!selectedWord || !currentSentenceContext) {
+      console.log("[useWordExplainer] SSE: skipping - no word or context");
+      return;
+    }
 
     const currentRequestId = ++requestIdRef.current;
+    console.log("[useWordExplainer] SSE: starting request", currentRequestId);
 
     // Cleanup previous EventSource
     if (eventSourceRef.current) {
+      console.log("[useWordExplainer] SSE: cleaning up previous connection");
       eventSourceRef.current.removeAllEventListeners();
       eventSourceRef.current.close();
       eventSourceRef.current = null;
@@ -271,8 +282,7 @@ export function useWordExplainer() {
     setImagePrompt(null);
 
     const url = `${getApiBaseUrl()}/api/sentence-study/explain-word`;
-
-    console.log("[SSE] Creating EventSource for:", url);
+    console.log("[useWordExplainer] SSE Creating EventSource for:", url);
 
     const es = new EventSource(url, {
       method: "POST",
@@ -305,18 +315,29 @@ export function useWordExplainer() {
 
       try {
         const parsed = JSON.parse(data);
+        console.log(
+          "[useWordExplainer] SSE message:",
+          parsed.type,
+          "content length:",
+          parsed.content?.length || 0,
+        );
 
         if (parsed.type === "chunk") {
+          console.log(
+            "[useWordExplainer] SSE chunk:",
+            parsed.content?.substring(0, 30),
+          );
           setContextExplanation((prev) => prev + parsed.content);
         } else if (parsed.type === "image_check") {
           if (parsed.suitable && parsed.image_prompt) {
             setImagePrompt(parsed.image_prompt);
           }
         } else if (parsed.type === "done") {
+          console.log("[useWordExplainer] SSE done");
           setIsExplaining(false);
         }
-      } catch {
-        // Ignore parse errors
+      } catch (e) {
+        console.error("[useWordExplainer] SSE parse error:", e);
       }
     });
 
@@ -324,14 +345,17 @@ export function useWordExplainer() {
       if (requestIdRef.current !== currentRequestId) return;
 
       if (event.type === "error") {
-        console.error("[SSE] Connection error:", event.message);
+        console.error(
+          "[useWordExplainer] SSE Connection error:",
+          event.message,
+        );
       } else if (event.type === "exception") {
-        console.error("[SSE] Exception:", event.message);
+        console.error("[useWordExplainer] SSE Exception:", event.message);
       }
     });
 
     es.addEventListener("close" as any, () => {
-      console.log("[SSE] Connection closed");
+      console.log("[useWordExplainer] SSE Connection closed");
       if (requestIdRef.current === currentRequestId) {
         setIsExplaining(false);
       }
