@@ -242,6 +242,62 @@ const getColorHex = (className: string) => {
   return "#E0E0E0";
 };
 
+const RenderedSentence = ({ text, collocations, onWordClick }: any) => {
+  const words = text?.split(" ") || [];
+
+  // Build a map of word index to collocation object
+  const wordCollocationMap = new Array(words.length).fill(null);
+
+  if (collocations && collocations.length > 0) {
+    // Sort by length (descending) to prioritize longer phrases if needed,
+    // or just follow order. Web prioritizes first encountered.
+    // We'll follow web logic: strict no-overlap, first come first served.
+    const usedIndices = new Set();
+
+    collocations.forEach((col: any) => {
+      // Check for overlap
+      let overlap = false;
+      for (let i = col.start_word_idx; i <= col.end_word_idx; i++) {
+        if (usedIndices.has(i)) {
+          overlap = true;
+          break;
+        }
+      }
+
+      if (!overlap) {
+        for (let i = col.start_word_idx; i <= col.end_word_idx; i++) {
+          if (i >= 0 && i < words.length) {
+            wordCollocationMap[i] = col;
+            usedIndices.add(i);
+          }
+        }
+      }
+    });
+  }
+
+  return (
+    <Text className="text-xl font-serif leading-relaxed text-text-primary">
+      {words.map((word: string, i: number) => {
+        const col = wordCollocationMap[i];
+
+        return (
+          <Text
+            key={i}
+            onPress={() => onWordClick(col ? col.text : word)}
+            className={`${
+              col
+                ? "text-accent-warning underline decoration-dashed decoration-accent-warning"
+                : "active:text-accent-primary active:bg-accent-primary/10"
+            }`}
+          >
+            {word}{" "}
+          </Text>
+        );
+      })}
+    </Text>
+  );
+};
+
 const StudyingView = ({
   sentence,
   index,
@@ -253,6 +309,7 @@ const StudyingView = ({
   simplifiedText,
   simplifyStage,
   onUnclearResponse,
+  collocations, // Add prop
 }: any) => {
   const scrollViewRef = useRef<ScrollView>(null);
 
@@ -290,17 +347,11 @@ const StudyingView = ({
       >
         <View className="px-6 py-6">
           <View className="bg-bg-surface p-6 rounded-2xl border border-border-default">
-            <Text className="text-xl font-serif leading-relaxed text-text-primary">
-              {sentence?.text?.split(" ").map((word: string, i: number) => (
-                <Text
-                  key={i}
-                  onPress={() => onWordClick(word)}
-                  className="active:text-accent-primary active:bg-accent-primary/10"
-                >
-                  {word}{" "}
-                </Text>
-              ))}
-            </Text>
+            <RenderedSentence
+              text={sentence?.text}
+              collocations={collocations}
+              onWordClick={onWordClick}
+            />
           </View>
 
           <MobileExplanationCard
@@ -314,7 +365,7 @@ const StudyingView = ({
 
       {/* Bottom Actions - Hidden when explaining */}
       {!isSimplifying && !simplifiedText && (
-        <View className="absolute bottom-0 left-0 right-0 p-4 bg-bg-base border-t border-border-default">
+        <View className="absolute bottom-0 left-0 right-0 px-4 pt-4 pb-12 bg-bg-base border-t border-border-default">
           <View className="flex-row gap-3">
             <TouchableOpacity
               className="flex-1 bg-bg-elevated py-4 rounded-xl items-center border border-border-default flex-row justify-center"
@@ -656,6 +707,7 @@ export default function StudyScreen() {
     startStudying,
     handleClear,
     studyHighlights,
+    collocations,
   } = useSentenceStudy(sourceId);
 
   // Use mobile-specific word explainer
@@ -840,6 +892,7 @@ export default function StudyScreen() {
             simplifiedText={simplifiedText}
             simplifyStage={simplifyStage}
             onUnclearResponse={handleUnclearResponse}
+            collocations={collocations}
           />
         )}
 

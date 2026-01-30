@@ -42,6 +42,7 @@ export function useSentenceStudy(sourceId: string) {
   const [wordClicks, setWordClicks] = useState<string[]>([]);
   const [phraseClicks, setPhraseClicks] = useState<string[]>([]);
   const [studyHighlights, setStudyHighlights] = useState<any>(null);
+  const [collocations, setCollocations] = useState<any[]>([]);
 
   // External hooks
   const explainer = useWordExplainer();
@@ -310,6 +311,35 @@ export function useSentenceStudy(sourceId: string) {
     init();
   }, [init]);
 
+  // Fetch collocations when current sentence changes
+  useEffect(() => {
+    if (!currentSentence?.text) {
+      setCollocations([]);
+      return;
+    }
+
+    let cancelled = false;
+    const fetchCollocations = async () => {
+      try {
+        // @ts-ignore - assume detectCollocations exists on API
+        const data = await sentenceStudyApi.detectCollocations(
+          currentSentence.text,
+        );
+        if (!cancelled) {
+          setCollocations(data.collocations || []);
+        }
+      } catch (e) {
+        console.error("Failed to fetch collocations:", e);
+      }
+    };
+
+    fetchCollocations();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [currentSentence?.text]);
+
   return {
     view,
     article,
@@ -332,5 +362,6 @@ export function useSentenceStudy(sourceId: string) {
     explainer,
     // Completed Data
     studyHighlights,
+    collocations,
   };
 }
