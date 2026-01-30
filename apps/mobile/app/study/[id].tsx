@@ -12,7 +12,8 @@ import {
   usePathname,
   Stack,
 } from "expo-router";
-import { useSentenceStudy, useWordExplainer } from "@nce/shared";
+import { useSentenceStudy } from "@nce/shared";
+import { useWordExplainer } from "../../src/hooks/useWordExplainer"; // Use mobile-specific version
 import {
   ChevronLeft,
   Play,
@@ -24,27 +25,74 @@ import { useState, useRef, useCallback, useEffect } from "react";
 import EventSource from "react-native-sse";
 import { getApiBaseUrl } from "../../src/lib/platform-init";
 
-const OverviewView = ({ data, onStart }: any) => (
-  <View className="flex-1 p-6">
-    <Text className="text-2xl font-serif font-bold text-text-primary mb-4">
-      Overview
-    </Text>
-    <ScrollView className="flex-1 mb-6 bg-bg-surface p-4 rounded-xl border border-border-default">
-      <Text className="text-text-secondary leading-relaxed text-base font-serif">
-        {data.overview || data.overviewStream}
+const OverviewView = ({ data, isLoading, onStart }: any) => {
+  // data.overview can be:
+  // 1. An object with {summary_en, summary_zh, key_topics, difficulty_hint}
+  // 2. data.overviewStream is raw JSON being streamed (not displayable)
+  const overview = data?.overview;
+  const hasOverview = overview && (overview.summary_en || overview.summary_zh);
+
+  return (
+    <View className="flex-1 p-6">
+      <Text className="text-2xl font-serif font-bold text-text-primary mb-4">
+        Overview
       </Text>
-    </ScrollView>
-    <TouchableOpacity
-      className="bg-accent-primary py-4 rounded-full flex-row items-center justify-center"
-      onPress={onStart}
-    >
-      <Play size={20} color="#050505" fill="#050505" />
-      <Text className="text-bg-base font-bold ml-2 text-lg">
-        START STUDYING
-      </Text>
-    </TouchableOpacity>
-  </View>
-);
+      <ScrollView className="flex-1 mb-6 bg-bg-surface p-4 rounded-xl border border-border-default">
+        {isLoading && !hasOverview ? (
+          <View className="items-center py-8">
+            <ActivityIndicator color="#00FF94" size="large" />
+            <Text className="text-text-muted mt-4 text-sm">
+              Generating overview...
+            </Text>
+          </View>
+        ) : hasOverview ? (
+          <View>
+            <Text className="text-text-primary leading-relaxed text-base font-serif mb-4">
+              {overview.summary_en}
+            </Text>
+            {overview.summary_zh && (
+              <Text className="text-text-secondary leading-relaxed text-sm font-serif mb-4">
+                {overview.summary_zh}
+              </Text>
+            )}
+            {overview.key_topics && overview.key_topics.length > 0 && (
+              <View className="flex-row flex-wrap gap-2 mt-2">
+                {overview.key_topics.map((topic: string, i: number) => (
+                  <View
+                    key={i}
+                    className="bg-accent-primary/10 px-3 py-1 rounded-full"
+                  >
+                    <Text className="text-accent-primary text-xs">{topic}</Text>
+                  </View>
+                ))}
+              </View>
+            )}
+            {overview.difficulty_hint && (
+              <Text className="text-text-muted text-xs mt-4 italic">
+                {overview.difficulty_hint}
+              </Text>
+            )}
+          </View>
+        ) : (
+          <Text className="text-text-secondary leading-relaxed text-base font-serif">
+            Loading article overview...
+          </Text>
+        )}
+      </ScrollView>
+      <TouchableOpacity
+        className="bg-accent-primary py-4 rounded-full flex-row items-center justify-center"
+        onPress={onStart}
+        disabled={isLoading}
+        style={{ opacity: isLoading ? 0.5 : 1 }}
+      >
+        <Play size={20} color="#050505" fill="#050505" />
+        <Text className="text-bg-base font-bold ml-2 text-lg">
+          START STUDYING
+        </Text>
+      </TouchableOpacity>
+    </View>
+  );
+};
 
 const StudyingView = ({
   sentence,
@@ -98,7 +146,8 @@ const StudyingView = ({
               <View className="flex-row items-center mb-2">
                 <HelpCircle size={16} color="#F59E0B" />
                 <Text className="text-accent-warning font-bold ml-2 uppercase text-xs">
-                  AI Guidance (Stage {simplifyStage}/4)
+                  AI Guidance{" "}
+                  {simplifyStage > 0 ? `(Stage ${simplifyStage}/4)` : ""}
                 </Text>
                 {isSimplifying && (
                   <ActivityIndicator
@@ -192,7 +241,7 @@ const CompletedView = ({ stats, onFinish }: any) => (
 
 function useStreamingSimplify() {
   const [simplifiedText, setSimplifiedText] = useState("");
-  const [simplifyStage, setSimplifyStage] = useState(1);
+  const [simplifyStage, setSimplifyStage] = useState(0); // 0 = no simplification yet
   const [isSimplifying, setIsSimplifying] = useState(false);
   const eventSourceRef = useRef<EventSource | null>(null);
   const simplifiedTextRef = useRef("");
@@ -286,7 +335,7 @@ function useStreamingSimplify() {
     }
     simplifiedTextRef.current = "";
     setSimplifiedText("");
-    setSimplifyStage(1);
+    setSimplifyStage(0); // Reset to 0 = no simplification
     setIsSimplifying(false);
   }, []);
 
@@ -354,6 +403,8 @@ function useStreamingOverview() {
 
         try {
           const parsed = JSON.parse(data);
+          console.log("[streaming-overview] Message type:", parsed.type);
+
           if (parsed.type === "chunk") {
             const newText = (overviewRef.current || "") + parsed.content;
             overviewRef.current = newText;
@@ -361,15 +412,28 @@ function useStreamingOverview() {
             onUpdate(newText, false);
           } else if (parsed.type === "done") {
             console.log(
-              "[streaming-overview] Done, overview:",
-              parsed.overview?.substring(0, 50),
+              "[streaming-overview] Done, has overview:",
+              !!parsed.overview,
+              "cached:",
+              parsed.cached,
             );
-            setOverview({ overview: parsed.overview });
+            // parsed.overview is the full object {summary_en, summary_zh, ...}
+            if (parsed.overview) {
+              setOverview({ overview: parsed.overview });
+            }
             setIsLoading(false);
             onUpdate(overviewRef.current, true);
+            // Close connection after done
+            if (eventSourceRef.current) {
+              eventSourceRef.current.close();
+            }
+          } else if (parsed.type === "error") {
+            console.error("[streaming-overview] Server error:", parsed.message);
+            setIsLoading(false);
           }
         } catch (e) {
-          console.error("[streaming-overview] Parse error:", e);
+          console.error("[streaming-overview] Parse error:", e, "data:", data);
+          setIsLoading(false);
         }
       });
 
@@ -457,11 +521,12 @@ export default function StudyScreen() {
     currentIndex,
     totalSentences,
     startStudying,
-    handleWordClick,
     handleClear,
-    explainer,
     studyHighlights,
   } = useSentenceStudy(sourceId);
+
+  // Use mobile-specific word explainer
+  const explainer = useWordExplainer();
 
   const {
     simplifiedText,
@@ -524,7 +589,7 @@ export default function StudyScreen() {
       "sentence:",
       currentSentence?.text,
     );
-    handleWordClick(word, currentSentence?.text || "");
+    explainer.handleWordClick(word, currentSentence?.text || "");
     setModalVisible(true);
   };
 
@@ -536,7 +601,9 @@ export default function StudyScreen() {
   const handleUnclear = useCallback(() => {
     if (!currentSentence) return;
 
-    const nextStage = simplifyStage < 4 ? simplifyStage + 1 : 4;
+    // If no simplification yet (stage 0), start at stage 1
+    // Otherwise, go to next stage
+    const nextStage = simplifyStage === 0 ? 1 : Math.min(simplifyStage + 1, 4);
     console.log(
       "[StudyScreen] handleUnclear: currentStage=",
       simplifyStage,
@@ -564,6 +631,16 @@ export default function StudyScreen() {
     });
   }, [currentSentence, simplifyStage, streamSimplify]);
 
+  // Wrapped handleClear to reset simplification state
+  const handleClearWithReset = useCallback(async () => {
+    try {
+      await handleClear();
+      resetSimplify();
+    } catch (e) {
+      console.error("[StudyScreen] handleClearWithReset failed:", e);
+    }
+  }, [handleClear, resetSimplify]);
+
   const handleUnclearResponse = useCallback(
     async (gotIt: boolean) => {
       console.log(
@@ -577,6 +654,8 @@ export default function StudyScreen() {
         console.log("[StudyScreen] Recording clear and advancing...");
         try {
           await handleClear();
+          // Reset simplification state when moving to next sentence
+          resetSimplify();
         } catch (e) {
           console.error("[StudyScreen] handleClear failed:", e);
         }
@@ -585,7 +664,7 @@ export default function StudyScreen() {
         handleUnclear();
       }
     },
-    [handleClear, handleUnclear, simplifyStage],
+    [handleClear, handleUnclear, simplifyStage, resetSimplify],
   );
 
   return (
@@ -611,6 +690,7 @@ export default function StudyScreen() {
         {view === "OVERVIEW" && (
           <OverviewView
             data={streamingOverview || { overviewStream }}
+            isLoading={isLoadingOverview}
             onStart={startStudying}
           />
         )}
@@ -621,7 +701,7 @@ export default function StudyScreen() {
             index={currentIndex}
             total={totalSentences}
             onWordClick={onWordClickWrapper}
-            onClear={handleClear}
+            onClear={handleClearWithReset}
             onUnclear={handleUnclear}
             isSimplifying={isSimplifying}
             simplifiedText={simplifiedText}

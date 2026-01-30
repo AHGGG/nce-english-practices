@@ -558,6 +558,26 @@ For heavy data transfer (like passing a 2MB book content to the Reader):
 
 **依赖变更**: 用 `react-native-sse@^1.2.1` 替换 `react-native-fetch-api`
 
+**常见问题**:
+
+1. **跨平台 Hook 冲突**: 移动端导入 `@nce/shared` 中的 Web hooks 会失败
+   - **症状**: SSE 连接建立但无数据流入，或直接报错
+   - **修复**: 移动端必须使用本地 `apps/mobile/src/hooks/` 中的专用 hooks（使用 `react-native-sse`）
+
+2. **对象数据调用字符串方法**: 后端返回对象但前端误当作字符串处理
+   - **症状**: `TypeError: xxx.substring is not a function`
+   - **示例**: `parsed.overview` 是 `{summary_en, summary_zh, ...}`，不能调用 `.substring()`
+   - **修复**: 检查数据类型，使用正确的访问方式（如 `parsed.overview.summary_en`）
+
+3. **SSE 异常后 Loading 卡死**: Parse 错误后 `setIsLoading(false)` 未调用
+   - **修复**: 在 `catch` 块和 `error` 事件中确保调用 `setIsLoading(false)`
+   - **最佳实践**: SSE 完成后主动关闭连接 `eventSourceRef.current.close()`
+
+4. **状态未重置导致残留**: 切换到下一项时，上一项的状态（如简化文本）仍然显示
+   - **症状**: 点击 "Clear" 进入下一句，上一句的解释仍在界面
+   - **修复**: 在 `advance/handleClear` 时调用 `reset()` 清空本地 hook 状态
+   - **关键**: 移动端可能使用独立的 streaming hooks，需单独重置
+
 ### Voice on Mobile
 
 > See [Mobile Voice Debugging Skill](docs/skills/mobile-voice-debugging.md) for HTTPS setup and troubleshooting.
