@@ -43,6 +43,26 @@ function ReadingScreen() {
 
   // Hooks
   const { article, isLoading, tracker, refetch } = useArticleReader(id);
+
+  // Debug: log article structure
+  useEffect(() => {
+    if (article) {
+      console.log(
+        "[ReadingScreen] Article loaded:",
+        JSON.stringify(
+          {
+            id: article.id,
+            title: article.title,
+            source_id: article.source_id,
+            metadata: article.metadata,
+          },
+          null,
+          2,
+        ),
+      );
+    }
+  }, [article]);
+
   const explainer = useWordExplainer();
   const settings = useSettingsStore();
 
@@ -232,11 +252,34 @@ function ReadingScreen() {
           <TouchableOpacity
             className="p-2 mr-1"
             onPress={() => {
+              console.log("[ReadingScreen] STUDY button clicked");
+
+              // Construct source_id from article or URL params
+              let studySourceId: string;
+
+              if (article?.source_id) {
+                studySourceId = article.source_id;
+              } else if (id && id.startsWith("epub:")) {
+                // Construct from current URL id
+                studySourceId = id;
+              } else if (
+                article?.metadata?.filename &&
+                article?.id !== undefined
+              ) {
+                // Fallback: construct from metadata
+                studySourceId = `epub:${article.metadata.filename}:${article.id}`;
+              } else {
+                console.error(
+                  "[ReadingScreen] Cannot determine source_id for study",
+                );
+                return;
+              }
+
               console.log(
-                "[ReadingScreen] STUDY button clicked, article.source_id:",
-                article.source_id,
+                "[ReadingScreen] Navigating to study with sourceId:",
+                studySourceId,
               );
-              router.push(`/study/${encodeURIComponent(article.source_id)}`);
+              router.push(`/study/${encodeURIComponent(studySourceId)}`);
             }}
           >
             <Text className="text-accent-primary font-bold text-xs">STUDY</Text>
