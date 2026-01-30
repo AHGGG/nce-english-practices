@@ -59,11 +59,35 @@ export const readingApi = {
     const res = await authFetch(
       `/api/reading/article?source_id=${encodeURIComponent(id)}`,
     );
+
+    console.log("[readingApi.getArticleDetail] Response status:", res.status);
+    console.log(
+      "[readingApi.getArticleDetail] Content-Type:",
+      res.headers.get("content-type"),
+    );
+
     if (!res.ok) {
       const errorText = await res.text().catch(() => "Unknown error");
+      console.log(
+        "[readingApi.getArticleDetail] Error response:",
+        errorText.substring(0, 200),
+      );
       throw new Error(`Failed to fetch article (${res.status}): ${errorText}`);
     }
-    return res.json();
+
+    const text = await res.text();
+    console.log(
+      "[readingApi.getArticleDetail] Response preview:",
+      text.substring(0, 200),
+    );
+
+    // Try to parse as JSON
+    try {
+      return JSON.parse(text);
+    } catch (e) {
+      console.error("[readingApi.getArticleDetail] JSON parse error:", e);
+      throw new Error("Invalid JSON response from article endpoint");
+    }
   },
 
   /**
