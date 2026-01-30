@@ -19,8 +19,13 @@ import {
   Play,
   CheckCircle,
   HelpCircle,
+  Sparkles,
+  Zap,
+  BookOpen,
+  Brain,
 } from "lucide-react-native";
 import { DictionaryModal } from "../../src/components/DictionaryModal";
+import { SimpleMarkdown } from "../../src/components/SimpleMarkdown";
 import { useState, useRef, useCallback, useEffect } from "react";
 import EventSource from "react-native-sse";
 import { getApiBaseUrl } from "../../src/lib/platform-init";
@@ -94,6 +99,149 @@ const OverviewView = ({ data, isLoading, onStart }: any) => {
   );
 };
 
+const STAGE_CONFIG: any = {
+  1: {
+    color: "text-accent-success",
+    borderColor: "border-accent-success",
+    bgColor: "bg-accent-success",
+    icon: Sparkles,
+    label: "Vocabulary Check",
+    bgLight: "bg-accent-success/10",
+  },
+  2: {
+    color: "text-category-blue",
+    borderColor: "border-category-blue",
+    bgColor: "bg-category-blue",
+    icon: Zap,
+    label: "Structure Check",
+    bgLight: "bg-category-blue/10",
+  },
+  3: {
+    color: "text-category-indigo",
+    borderColor: "border-category-indigo",
+    bgColor: "bg-category-indigo",
+    icon: BookOpen,
+    label: "English Analysis",
+    bgLight: "bg-category-indigo/10",
+  },
+  4: {
+    color: "text-category-red",
+    borderColor: "border-category-red",
+    bgColor: "bg-category-red",
+    icon: Brain,
+    label: "Chinese Deep Dive",
+    bgLight: "bg-category-red/10",
+  },
+};
+
+const MobileExplanationCard = ({
+  simplifiedText,
+  simplifyStage,
+  isSimplifying,
+  onSimplifiedResponse,
+}: any) => {
+  const config = STAGE_CONFIG[simplifyStage] || STAGE_CONFIG[1];
+  const Icon = config.icon;
+
+  if (!simplifiedText && !isSimplifying) return null;
+
+  return (
+    <View className="mt-6 rounded-xl overflow-hidden border border-white/10 bg-bg-surface/80">
+      {/* Header */}
+      <View className="p-4 border-b border-white/5 flex-row justify-between items-center bg-bg-elevated/30">
+        <View className="flex-row items-center gap-3">
+          <View
+            className={`p-2 rounded-lg bg-bg-base/40 border border-white/5 ${config.bgColor}`}
+            style={{ backgroundColor: "rgba(255,255,255,0.05)" }}
+          >
+            <Icon size={16} color={getColorHex(config.color)} />
+          </View>
+          <View>
+            <Text className={`font-bold uppercase text-xs ${config.color}`}>
+              {config.label}
+            </Text>
+            <View className="flex-row items-center gap-1.5 mt-0.5">
+              <Text className="text-xs text-text-muted">
+                Stage {simplifyStage}/4
+              </Text>
+              <View className="w-1 h-1 rounded-full bg-text-muted" />
+              <Text className="text-xs text-text-muted">AI Analysis</Text>
+            </View>
+          </View>
+        </View>
+
+        {isSimplifying && (
+          <ActivityIndicator size="small" color={getColorHex(config.color)} />
+        )}
+      </View>
+
+      {/* Content */}
+      <View className="p-4 min-h-[100px]">
+        {simplifiedText ? (
+          <SimpleMarkdown style={{ color: "#E0E0E0", fontSize: 16 }}>
+            {simplifiedText}
+          </SimpleMarkdown>
+        ) : (
+          isSimplifying && (
+            <View className="items-center justify-center py-8 opacity-50">
+              <Text className="font-mono text-xs uppercase tracking-widest text-text-muted">
+                Processing Context...
+              </Text>
+            </View>
+          )
+        )}
+      </View>
+
+      {/* Actions (Integrated) */}
+      {!isSimplifying && simplifiedText && (
+        <View className="p-4 border-t border-white/5 flex-row gap-3 justify-center">
+          <TouchableOpacity
+            onPress={() => onSimplifiedResponse(false)}
+            disabled={simplifyStage >= 4}
+            className={`flex-1 py-3 px-4 rounded-lg border flex-row justify-center items-center ${
+              simplifyStage < 4
+                ? "border-white/10 bg-bg-base/20"
+                : "border-white/5 bg-transparent opacity-50"
+            }`}
+          >
+            <HelpCircle
+              size={16}
+              color={simplifyStage < 4 ? "#9CA3AF" : "#4B5563"}
+              style={{ marginRight: 8 }}
+            />
+            <Text
+              className={`font-bold uppercase text-xs ${
+                simplifyStage < 4 ? "text-text-secondary" : "text-text-muted"
+              }`}
+            >
+              {simplifyStage < 4 ? "Still Unclear" : "Max Level"}
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            onPress={() => onSimplifiedResponse(true)}
+            className={`flex-1 py-3 px-4 rounded-lg flex-row justify-center items-center ${config.bgColor}`}
+          >
+            <CheckCircle size={16} color="#121212" style={{ marginRight: 8 }} />
+            <Text className="font-bold uppercase text-xs text-bg-base">
+              {simplifyStage === 4 ? "Understood" : "Got it"}
+            </Text>
+          </TouchableOpacity>
+        </View>
+      )}
+    </View>
+  );
+};
+
+// Helper to extract hex color from tailwind class (approximate)
+const getColorHex = (className: string) => {
+  if (className.includes("accent-success")) return "#00FF94";
+  if (className.includes("category-blue")) return "#60A5FA";
+  if (className.includes("category-indigo")) return "#818CF8";
+  if (className.includes("category-red")) return "#F87171";
+  return "#E0E0E0";
+};
+
 const StudyingView = ({
   sentence,
   index,
@@ -116,17 +264,31 @@ const StudyingView = ({
 
   return (
     <View className="flex-1">
+      {/* Progress Info Header */}
+      <View className="px-6 py-3 flex-row justify-between items-center border-b border-white/5">
+        <Text className="text-xs font-bold text-text-muted uppercase tracking-wider">
+          Sentence {index + 1} / {total}
+        </Text>
+        <View className="h-1 flex-1 ml-4 bg-bg-elevated rounded-full overflow-hidden">
+          <View
+            className="h-full bg-accent-primary"
+            style={{ width: `${(index / Math.max(total, 1)) * 100}%` }}
+          />
+        </View>
+      </View>
+
       <ScrollView
         ref={scrollViewRef}
-        className="flex-1 px-6 pt-6"
-        contentContainerStyle={{ paddingBottom: 100 }}
+        className="flex-1"
+        contentContainerStyle={{
+          paddingBottom: 120,
+          flexGrow: 1,
+          justifyContent:
+            !isSimplifying && !simplifiedText ? "center" : "flex-start",
+        }}
         showsVerticalScrollIndicator={true}
       >
-        <View className="pb-20">
-          <Text className="text-text-muted text-xs font-mono mb-4 text-center">
-            Sentence {index + 1} / {total}
-          </Text>
-
+        <View className="px-6 py-6">
           <View className="bg-bg-surface p-6 rounded-2xl border border-border-default">
             <Text className="text-xl font-serif leading-relaxed text-text-primary">
               {sentence?.text?.split(" ").map((word: string, i: number) => (
@@ -141,69 +303,40 @@ const StudyingView = ({
             </Text>
           </View>
 
-          {(isSimplifying || simplifiedText) && (
-            <View className="mt-4 bg-bg-elevated p-4 rounded-xl border border-border-default">
-              <View className="flex-row items-center mb-2">
-                <HelpCircle size={16} color="#F59E0B" />
-                <Text className="text-accent-warning font-bold ml-2 uppercase text-xs">
-                  AI Guidance{" "}
-                  {simplifyStage > 0 ? `(Stage ${simplifyStage}/4)` : ""}
-                </Text>
-                {isSimplifying && !!simplifiedText && (
-                  <ActivityIndicator
-                    size="small"
-                    color="#F59E0B"
-                    className="ml-auto"
-                  />
-                )}
-              </View>
-              {isSimplifying && !simplifiedText ? (
-                <ActivityIndicator color="#F59E0B" />
-              ) : (
-                <Text className="text-text-secondary leading-relaxed font-sans text-sm">
-                  {simplifiedText}
-                </Text>
-              )}
-            </View>
-          )}
+          <MobileExplanationCard
+            simplifiedText={simplifiedText}
+            simplifyStage={simplifyStage}
+            isSimplifying={isSimplifying}
+            onSimplifiedResponse={onUnclearResponse}
+          />
         </View>
       </ScrollView>
 
-      <View className="absolute bottom-0 left-0 right-0 p-4 bg-bg-base border-t border-border-default">
-        {isSimplifying || simplifiedText ? (
-          <View className="flex-row gap-3">
-            <TouchableOpacity
-              className="flex-1 bg-bg-elevated py-4 rounded-xl items-center border border-border-default"
-              onPress={() => onUnclearResponse(false)}
-            >
-              <Text className="text-text-primary font-bold">Still Unclear</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              className="flex-1 bg-accent-primary/10 py-4 rounded-xl items-center border border-accent-primary/30"
-              onPress={() => onUnclearResponse(true)}
-            >
-              <Text className="text-accent-primary font-bold">Got It!</Text>
-            </TouchableOpacity>
-          </View>
-        ) : (
+      {/* Bottom Actions - Hidden when explaining */}
+      {!isSimplifying && !simplifiedText && (
+        <View className="absolute bottom-0 left-0 right-0 p-4 bg-bg-base border-t border-border-default">
           <View className="flex-row gap-3">
             <TouchableOpacity
               className="flex-1 bg-bg-elevated py-4 rounded-xl items-center border border-border-default flex-row justify-center"
               onPress={onUnclear}
             >
               <HelpCircle size={20} color="#E0E0E0" className="mr-2" />
-              <Text className="text-text-primary font-bold">Unclear</Text>
+              <Text className="text-text-primary font-bold uppercase text-sm">
+                Unclear
+              </Text>
             </TouchableOpacity>
             <TouchableOpacity
-              className="flex-1 bg-accent-primary/10 py-4 rounded-xl items-center border border-accent-primary/30 flex-row justify-center"
+              className="flex-1 bg-accent-primary py-4 rounded-xl items-center flex-row justify-center"
               onPress={onClear}
             >
-              <CheckCircle size={20} color="#00FF94" className="mr-2" />
-              <Text className="text-accent-primary font-bold">Clear</Text>
+              <CheckCircle size={20} color="#121212" className="mr-2" />
+              <Text className="text-bg-base font-bold uppercase text-sm">
+                Clear
+              </Text>
             </TouchableOpacity>
           </View>
-        )}
-      </View>
+        </View>
+      )}
     </View>
   );
 };
