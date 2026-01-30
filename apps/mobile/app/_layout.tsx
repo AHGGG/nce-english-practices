@@ -104,10 +104,10 @@ function RootContent() {
         <Stack.Screen name="(tabs)" />
         <Stack.Screen name="auth/login" />
         <Stack.Screen name="auth/register" />
+        <Stack.Screen name="reading/[id]" />
         <Stack.Screen name="study/[id]" />
         <Stack.Screen name="books" />
         <Stack.Screen name="books/[filename]" />
-        <Stack.Screen name="reading/[id]" />
       </Stack>
       <PlayerBar />
     </View>

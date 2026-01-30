@@ -37,7 +37,7 @@ const HIGHLIGHT_OPTIONS = [
   { label: "Low Freq (8k+)", min: 8000, max: 99999 },
 ];
 
-export default function ReadingScreen() {
+function ReadingScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
 
@@ -381,3 +381,5 @@ export default function ReadingScreen() {
     </SafeAreaView>
   );
 }
+
+export default ReadingScreen;

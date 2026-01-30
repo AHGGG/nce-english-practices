@@ -183,30 +183,42 @@ export default function StudyScreen() {
   const params = useLocalSearchParams<{ id?: string }>();
   const router = useRouter();
 
-  // Debug: log all params
   console.log("[StudyScreen] All params:", JSON.stringify(params));
 
-  // Try to get id from params or search
+  // Handle the case where id is undefined or "undefined" string
   let sourceId = params.id;
 
-  // If id is not in params, try to get from the full route
-  if (!sourceId) {
-    // Try using useGlobalSearchParams as fallback
-    const globalParams = useGlobalSearchParams<{ id?: string }>();
-    sourceId = globalParams.id;
-    console.log("[StudyScreen] Global params id:", sourceId);
-  }
-
-  // If still not found, might be in the path directly
-  if (!sourceId) {
-    console.log(
-      "[StudyScreen] id not found in params, sourceId remains undefined",
-    );
+  // Filter out invalid values
+  if (!sourceId || sourceId === "undefined" || sourceId === "null") {
+    console.log("[StudyScreen] Invalid sourceId, checking route state...");
+    sourceId = undefined;
   } else {
     sourceId = decodeURIComponent(sourceId);
   }
 
   console.log("[StudyScreen] Final sourceId:", sourceId);
+
+  // Guard: no sourceId, show error
+  if (!sourceId) {
+    return (
+      <SafeAreaView className="flex-1 bg-bg-base" edges={["top"]}>
+        <View className="flex-1 justify-center items-center p-6">
+          <Text className="text-accent-warning text-center mb-4">
+            Missing article ID
+          </Text>
+          <Text className="text-text-muted text-center mb-6">
+            Could not load the article. Please try again from the library.
+          </Text>
+          <TouchableOpacity
+            className="bg-accent-primary/10 px-6 py-3 rounded-full border border-accent-primary/30"
+            onPress={() => router.replace("/(tabs)/library")}
+          >
+            <Text className="text-accent-primary font-bold">Go to Library</Text>
+          </TouchableOpacity>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   const {
     view,
