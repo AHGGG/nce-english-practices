@@ -64,10 +64,34 @@ export function useSentenceStudy(sourceId: string) {
   const init = useCallback(async () => {
     setView("LOADING");
     try {
-      const [art, prog] = await Promise.all([
-        readingApi.getArticleDetail(sourceId),
-        sentenceStudyApi.getProgress(sourceId),
-      ]);
+      console.log(
+        "[useSentenceStudy] Fetching article and progress for:",
+        sourceId,
+      );
+
+      let art, prog;
+
+      try {
+        art = await readingApi.getArticleDetail(sourceId);
+        console.log("[useSentenceStudy] Article loaded:", art?.id);
+      } catch (e) {
+        console.error("[useSentenceStudy] getArticleDetail failed:", e);
+        throw e;
+      }
+
+      try {
+        prog = await sentenceStudyApi.getProgress(sourceId);
+        console.log("[useSentenceStudy] Progress loaded:", prog);
+      } catch (e) {
+        console.error("[useSentenceStudy] getProgress failed:", e);
+        // If progress fails, use default
+        prog = {
+          studied_count: 0,
+          current_index: 0,
+          clear_count: 0,
+          unclear_count: 0,
+        };
+      }
 
       setArticle(art);
       setProgress(prog);

@@ -18,11 +18,25 @@ export const sentenceStudyApi = {
 
   // Get study progress
   async getProgress(sourceId: string) {
+    console.log("[sentenceStudyApi.getProgress] Requesting:", sourceId);
     const res = await authFetch(
       `/api/sentence-study/${encodeURIComponent(sourceId)}/progress`,
     );
-    if (!res.ok) throw new Error("Failed to get progress");
-    return res.json();
+    console.log("[sentenceStudyApi.getProgress] Status:", res.status);
+    if (!res.ok) {
+      const text = await res.text();
+      console.log(
+        "[sentenceStudyApi.getProgress] Error response:",
+        text.substring(0, 200),
+      );
+      throw new Error(`Failed to get progress: ${res.status}`);
+    }
+    const text = await res.text();
+    console.log(
+      "[sentenceStudyApi.getProgress] Response preview:",
+      text.substring(0, 200),
+    );
+    return JSON.parse(text);
   },
 
   // Record learning result
