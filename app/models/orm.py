@@ -32,7 +32,8 @@ class User(Base):
     )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    email: Mapped[str] = mapped_column(String(255), unique=True, index=True, nullable=False)
+    # Bolt Optimization: Removed redundant index=True (covered by idx_users_email)
+    email: Mapped[str] = mapped_column(String(255), unique=True, nullable=False)
     hashed_password: Mapped[str] = mapped_column(String(255), nullable=False)
     username: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
 
@@ -120,13 +121,14 @@ class ContextResource(Base):
 
     __tablename__ = "context_resources"
     __table_args__ = (
-        Index("idx_context_word", "word"),
+        # Bolt Optimization: Removed redundant idx_context_word (covered by idx_context_word_type)
         Index("idx_context_type", "context_type"),
         Index("idx_context_word_type", "word", "context_type"),
     )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    word: Mapped[str] = mapped_column(Text, index=True)
+    # Bolt Optimization: Removed redundant index=True (covered by idx_context_word_type)
+    word: Mapped[str] = mapped_column(Text)
     sense_label: Mapped[Optional[str]] = mapped_column(
         Text, nullable=True
     )  # e.g., "v. to cook gently"
@@ -196,7 +198,8 @@ class AUIInputRecord(Base):
     )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    session_id: Mapped[str] = mapped_column(String, index=True)
+    # Bolt Optimization: Removed redundant index=True (covered by idx_aui_input_session)
+    session_id: Mapped[str] = mapped_column(String)
     action: Mapped[str] = mapped_column(String)
     payload: Mapped[Dict[str, Any]] = mapped_column(JSON, default=dict)
 
@@ -300,7 +303,8 @@ class VocabLearningLog(Base):
     )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    user_id: Mapped[str] = mapped_column(Text, default="default_user", index=True)
+    # Bolt Optimization: Removed redundant index=True (covered by idx_vocab_log_user_word)
+    user_id: Mapped[str] = mapped_column(Text, default="default_user")
     word: Mapped[str] = mapped_column(Text, index=True)
 
     # Source context
@@ -554,8 +558,9 @@ class ArticleOverviewCache(Base):
     __table_args__ = (Index("idx_overview_hash", "title_hash", unique=True),)
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    # Bolt Optimization: Removed redundant index=True (covered by idx_overview_hash)
     title_hash: Mapped[str] = mapped_column(
-        String(32), unique=True, index=True
+        String(32), unique=True
     )  # MD5 hash
     title: Mapped[str] = mapped_column(Text)  # Original title for debugging
 
@@ -575,8 +580,9 @@ class SentenceCollocationCache(Base):
     __table_args__ = (Index("idx_collocation_hash", "sentence_hash", unique=True),)
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    # Bolt Optimization: Removed redundant index=True (covered by idx_collocation_hash)
     sentence_hash: Mapped[str] = mapped_column(
-        String(32), unique=True, index=True
+        String(32), unique=True
     )  # MD5 hash
     sentence_preview: Mapped[str] = mapped_column(Text)  # First 100 chars for debugging
 
@@ -599,7 +605,8 @@ class ReviewItem(Base):
     )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    user_id: Mapped[str] = mapped_column(Text, default="default_user", index=True)
+    # Bolt Optimization: Removed redundant index=True (covered by idx_review_user_next)
+    user_id: Mapped[str] = mapped_column(Text, default="default_user")
 
     # Sentence reference
     source_id: Mapped[str] = mapped_column(Text)  # e.g., "epub:file.epub:3"
@@ -674,7 +681,8 @@ class GeneratedImage(Base):
     __tablename__ = "generated_images"
 
     id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
-    word: Mapped[str] = mapped_column(String(100), index=True, nullable=False)
+    # Bolt Optimization: Removed redundant index=True (covered by ix_generated_images_word_context)
+    word: Mapped[str] = mapped_column(String(100), nullable=False)
     context_hash: Mapped[str] = mapped_column(String(64), index=True, nullable=False)
     sentence: Mapped[str] = mapped_column(Text, nullable=False)
     image_prompt: Mapped[str] = mapped_column(Text, nullable=False)
