@@ -124,6 +124,7 @@ async def _proxy_image(url: str, filename: str = "image.jpg"):
     import hashlib
     from fastapi.responses import FileResponse
     from fastapi.concurrency import run_in_threadpool
+    from app.core.utils import validate_url_security
 
     if not url:
         raise HTTPException(status_code=404, detail="No image URL")
@@ -131,6 +132,12 @@ async def _proxy_image(url: str, filename: str = "image.jpg"):
     # Security: basic check to prevent local file access
     if not url.startswith("http"):
         raise HTTPException(status_code=400, detail="Invalid URL protocol")
+
+    # Security: Validate URL against SSRF
+    try:
+        await run_in_threadpool(validate_url_security, url)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
     # Cache Configuration
     CACHE_DIR = settings.podcast_cache_dir

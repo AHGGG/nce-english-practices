@@ -1,5 +1,7 @@
 import pytest
-from app.core.utils import parse_llm_json
+import socket
+from unittest.mock import patch
+from app.core.utils import parse_llm_json, validate_url_security
 
 
 def test_parse_simple_json():
@@ -36,3 +38,25 @@ def test_parse_invalid_json():
     content = '{"key": "value"'  # missing brace
     with pytest.raises(RuntimeError):
         parse_llm_json(content)
+
+
+def test_validate_url_security_private_ip():
+    with patch("socket.getaddrinfo") as mock_getaddrinfo:
+        # Simulate resolving to 127.0.0.1
+        mock_getaddrinfo.return_value = [
+            (socket.AF_INET, socket.SOCK_STREAM, 6, '', ('127.0.0.1', 80))
+        ]
+
+        with pytest.raises(ValueError, match="restricted IP"):
+            validate_url_security("http://localhost/secret")
+
+
+def test_validate_url_security_public_ip():
+    with patch("socket.getaddrinfo") as mock_getaddrinfo:
+        # Simulate resolving to 8.8.8.8 (Public)
+        mock_getaddrinfo.return_value = [
+            (socket.AF_INET, socket.SOCK_STREAM, 6, '', ('8.8.8.8', 80))
+        ]
+
+        # Should not raise
+        validate_url_security("http://google.com")

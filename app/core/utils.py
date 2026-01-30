@@ -1,5 +1,8 @@
 import json
 import re
+import socket
+import ipaddress
+from urllib.parse import urlparse
 from typing import Dict, List, Union, Any
 from fastapi import HTTPException
 
@@ -75,3 +78,48 @@ def parse_llm_json(content: str) -> Union[Dict[str, Any], List[Any]]:
         raise RuntimeError(
             f"Failed to parse LLM JSON: {e}. Content snippet: {cleaned[:100]}..."
         ) from e
+
+
+def validate_url_security(url: str) -> None:
+    """
+    Validates that a URL does not resolve to a private or restricted IP address.
+    Prevents SSRF attacks.
+    WARNING: This function performs DNS resolution (blocking).
+    Should be run in a threadpool if called from async code.
+    """
+    try:
+        parsed = urlparse(url)
+        hostname = parsed.hostname
+        if not hostname:
+             raise ValueError("Invalid URL: No hostname found")
+
+        # Resolve hostname
+        # Use getaddrinfo to handle both IPv4 and IPv6
+        # socket.getaddrinfo blocks!
+        addr_info = socket.getaddrinfo(hostname, None)
+
+        for family, type, proto, canonname, sockaddr in addr_info:
+            ip = sockaddr[0]
+            try:
+                ip_obj = ipaddress.ip_address(ip)
+            except ValueError:
+                continue
+
+            if (
+                ip_obj.is_private or
+                ip_obj.is_loopback or
+                ip_obj.is_link_local or
+                ip_obj.is_multicast or
+                ip_obj.is_reserved or
+                # Handle IPv6 mapped addresses if needed
+                (ip_obj.version == 6 and ip_obj.ipv4_mapped and ip_obj.ipv4_mapped.is_private)
+            ):
+                 raise ValueError(f"Security validation failed: URL resolves to restricted IP {ip}")
+
+    except socket.gaierror as e:
+        # DNS resolution failed
+        raise ValueError(f"Security validation failed: DNS resolution error {e}")
+    except ValueError as e:
+        raise e
+    except Exception as e:
+        raise ValueError(f"Security validation failed: {e}")
