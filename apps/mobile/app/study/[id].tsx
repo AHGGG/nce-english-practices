@@ -10,6 +10,8 @@ import {
   useLocalSearchParams,
   useGlobalSearchParams,
   useRouter,
+  useSegments,
+  usePathname,
   Stack,
 } from "expo-router";
 import { useSentenceStudy, useWordExplainer } from "@nce/shared";
@@ -182,18 +184,23 @@ const CompletedView = ({ stats, onFinish }: any) => (
 export default function StudyScreen() {
   const params = useLocalSearchParams<{ id?: string }>();
   const router = useRouter();
+  const pathname = usePathname();
 
-  console.log("[StudyScreen] All params:", JSON.stringify(params));
+  console.log("[StudyScreen] Local params:", JSON.stringify(params));
+  console.log("[StudyScreen] Pathname:", pathname);
 
-  // Handle the case where id is undefined or "undefined" string
-  let sourceId = params.id;
+  // Try to get sourceId from URL path directly
+  let sourceId: string | undefined;
 
-  // Filter out invalid values
-  if (!sourceId || sourceId === "undefined" || sourceId === "null") {
-    console.log("[StudyScreen] Invalid sourceId, checking route state...");
-    sourceId = undefined;
+  if (params.id && params.id !== "undefined") {
+    sourceId = decodeURIComponent(params.id);
   } else {
-    sourceId = decodeURIComponent(sourceId);
+    // Extract from pathname: /study/epub:filename:index
+    const match = pathname.match(/^\/study\/(.+)$/);
+    if (match && match[1]) {
+      sourceId = decodeURIComponent(match[1]);
+      console.log("[StudyScreen] Extracted sourceId from path:", sourceId);
+    }
   }
 
   console.log("[StudyScreen] Final sourceId:", sourceId);
