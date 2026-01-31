@@ -128,24 +128,23 @@ const HighlightedSentence = ({
         return isHighlight ? (
           <mark
             key={i}
-            className={`bg-category-amber/30 text-category-amber px-1 rounded ${
-              clickable
-                ? "cursor-pointer hover:bg-category-amber/50 transition-colors animate-[pulse-highlight_1.5s_ease-in-out_2]"
-                : ""
-            }`}
+            className={`bg-category-amber/30 text-category-amber px-1 rounded ${clickable
+              ? "cursor-pointer hover:bg-category-amber/50 transition-colors animate-[pulse-highlight_1.5s_ease-in-out_2]"
+              : ""
+              }`}
             style={
               clickable
                 ? {
-                    animation: "pulse-highlight 0.6s ease-in-out 3",
-                  }
+                  animation: "pulse-highlight 0.6s ease-in-out 3",
+                }
                 : undefined
             }
             onClick={
               clickable && onWordClick
                 ? (e) => {
-                    e.stopPropagation();
-                    onWordClick(part, sentence || text);
-                  }
+                  e.stopPropagation();
+                  onWordClick(part, sentence || text);
+                }
                 : undefined
             }
           >
@@ -208,7 +207,7 @@ const ReviewQueue = () => {
     isExplaining: isExplainingWord,
     isPhrase,
     explainStyle,
-    handleWordClick,
+    handleWordClick: baseHandleWordClick,
     closeInspector,
     changeExplainStyle,
     generatedImage,
@@ -252,6 +251,37 @@ const ReviewQueue = () => {
   // Current item
   const currentItem = queue[currentIndex];
 
+  // Play TTS
+  const playAudio = useCallback((text) => {
+    if (!text) return;
+    if (audioRef.current) {
+      audioRef.current.pause();
+    }
+    const url = `/api/tts?text=${encodeURIComponent(text)}`;
+    const audio = new Audio(url);
+    audioRef.current = audio;
+    audio.play().catch((e) => {
+      // Ignore autoplay blocks (NotAllowedError)
+      if (e.name === "NotAllowedError") {
+        console.debug("Autoplay blocked by browser policy");
+        return;
+      }
+      console.error(e);
+    });
+  }, []);
+
+  // Wrapper for word click to handle auto-pronounce
+  const handleWordClick = useCallback(
+    (word, sentence) => {
+      if (!word) return;
+      if (settings.autoPronounce) {
+        playAudio(word);
+      }
+      baseHandleWordClick(word, sentence);
+    },
+    [settings.autoPronounce, playAudio, baseHandleWordClick],
+  );
+
   // Reset timer when item changes
   useEffect(() => {
     if (currentItem) {
@@ -281,17 +311,7 @@ const ReviewQueue = () => {
     }
   };
 
-  // Play TTS
-  const playAudio = useCallback((text) => {
-    if (!text) return;
-    if (audioRef.current) {
-      audioRef.current.pause();
-    }
-    const url = `/api/tts?text=${encodeURIComponent(text)}`;
-    const audio = new Audio(url);
-    audioRef.current = audio;
-    audio.play().catch((e) => console.error(e));
-  }, []);
+
 
   // Handle rating selection
   const handleRating = useCallback(
@@ -643,11 +663,10 @@ const ReviewQueue = () => {
                 disabled={loadingContext}
                 className={`
                                     flex items-center gap-1 px-2 py-0.5 rounded transition-colors whitespace-nowrap flex-shrink-0
-                                    ${
-                                      showContext
-                                        ? "bg-accent-info/20 text-accent-info border border-accent-info/30"
-                                        : "bg-bg-elevated text-text-secondary hover:text-text-primary border border-transparent"
-                                    }
+                                    ${showContext
+                    ? "bg-accent-info/20 text-accent-info border border-accent-info/30"
+                    : "bg-bg-elevated text-text-secondary hover:text-text-primary border border-transparent"
+                  }
                                 `}
               >
                 {loadingContext ? (
@@ -887,11 +906,10 @@ const ReviewQueue = () => {
             <button
               onClick={handleUndoRedo}
               disabled={isSubmitting}
-              className={`p-2 transition-colors disabled:opacity-30 ${
-                undoState.mode === "redo"
-                  ? "text-accent-primary hover:text-accent-primary/80"
-                  : "text-text-muted hover:text-accent-primary"
-              }`}
+              className={`p-2 transition-colors disabled:opacity-30 ${undoState.mode === "redo"
+                ? "text-accent-primary hover:text-accent-primary/80"
+                : "text-text-muted hover:text-accent-primary"
+                }`}
               title={undoState.mode === "undo" ? "撤销 (Undo)" : "重做 (Redo)"}
             >
               <RotateCcw
@@ -931,7 +949,7 @@ const ReviewQueue = () => {
           isInspecting={isInspecting}
           onClose={closeInspector}
           onPlayAudio={playAudio}
-          onMarkAsKnown={() => {}}
+          onMarkAsKnown={() => { }}
           contextExplanation={wordExplanation}
           isExplaining={isExplainingWord}
           isPhrase={isPhrase}
