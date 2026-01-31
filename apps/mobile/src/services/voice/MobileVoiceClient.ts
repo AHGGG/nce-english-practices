@@ -1,6 +1,12 @@
 import { Audio } from "expo-av";
 import { getApiBaseUrl } from "../../lib/platform-init";
-import * as FileSystem from "expo-file-system";
+import {
+  readAsStringAsync,
+  writeAsStringAsync,
+  deleteAsync,
+  cacheDirectory,
+  EncodingType,
+} from "expo-file-system/legacy";
 import { useAuthStore } from "@nce/store";
 import { addWavHeaderToBase64, OUTPUT_SAMPLE_RATE } from "./audioUtils";
 import { Platform } from "react-native";
@@ -145,8 +151,8 @@ export class MobileVoiceClient {
 
       if (uri) {
         // Read file
-        const base64Data = await FileSystem.readAsStringAsync(uri, {
-          encoding: FileSystem.EncodingType.Base64,
+        const base64Data = await readAsStringAsync(uri, {
+          encoding: EncodingType.Base64,
         });
 
         // Determine mime type
@@ -203,9 +209,9 @@ export class MobileVoiceClient {
 
       // 2. Save to temp file
       const filename = `voice_chunk_${Date.now()}_${Math.random().toString(36).substring(7)}.wav`;
-      const path = FileSystem.cacheDirectory + filename;
-      await FileSystem.writeAsStringAsync(path, wavBase64, {
-        encoding: FileSystem.EncodingType.Base64,
+      const path = cacheDirectory + filename;
+      await writeAsStringAsync(path, wavBase64, {
+        encoding: EncodingType.Base64,
       });
 
       // 3. Queue
@@ -243,7 +249,7 @@ export class MobileVoiceClient {
         if (status.isLoaded && status.didJustFinish) {
           await sound.unloadAsync();
           // Cleanup file
-          FileSystem.deleteAsync(path, { idempotent: true });
+          deleteAsync(path, { idempotent: true });
           this.playNext();
         }
       });
