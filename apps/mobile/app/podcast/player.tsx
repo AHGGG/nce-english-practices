@@ -36,11 +36,32 @@ export default function PodcastPlayerScreen() {
   const router = useRouter();
   const id = parseInt(episodeId, 10);
 
+  // Guard against invalid ID
+  if (!episodeId || isNaN(id)) {
+    return (
+      <SafeAreaView className="flex-1 bg-bg-base items-center justify-center px-4">
+        <Text className="text-accent-danger text-center mb-4">
+          Invalid episode ID
+        </Text>
+        <TouchableOpacity
+          onPress={() => router.back()}
+          className="bg-bg-surface px-6 py-3 rounded-xl"
+        >
+          <Text className="text-text-primary">Go Back</Text>
+        </TouchableOpacity>
+      </SafeAreaView>
+    );
+  }
+
   // Fetch Episode Details (ensure we have full data)
-  const { data: episode, isLoading } = useQuery({
+  const {
+    data: episode,
+    isLoading,
+    error,
+  } = useQuery({
     queryKey: ["podcast", "episode", id],
     queryFn: () => podcastApi.getEpisode(id),
-    enabled: !!id,
+    enabled: true, // Always enabled since we validated ID above
   });
 
   // Global State

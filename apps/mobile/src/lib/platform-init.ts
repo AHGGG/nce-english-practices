@@ -8,7 +8,7 @@
 import { AppState, AppStateStatus } from "react-native";
 import { setPlatformAdapter } from "@nce/shared";
 import { authService } from "@nce/api";
-import { setStorageAdapter } from "@nce/store";
+import { setStorageAdapter, rehydratePersistedStores } from "@nce/store";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import Constants from "expo-constants";
 
@@ -26,6 +26,10 @@ export function initializePlatformAdapters() {
 
   authService.setStorage(asyncStorageAdapter);
   setStorageAdapter(asyncStorageAdapter);
+
+  // Trigger re-hydration now that the real storage adapter is set
+  // (Stores may have already tried to hydrate with the default broken localStorage)
+  rehydratePersistedStores();
 
   // 2. Set platform adapter for shared hooks
   setPlatformAdapter({

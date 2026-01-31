@@ -25,16 +25,34 @@ export function getStorageAdapter(): TokenStorage {
 
 /**
  * Zustand-compatible StateStorage implementation
- * Uses the configured TokenStorage adapter
+ * Uses the configured TokenStorage adapter.
+ *
+ * Wraps calls in try/catch to handle the case where the adapter
+ * hasn't been swapped yet (e.g., React Native before AsyncStorage init,
+ * where localStorageAdapter would fail because localStorage is undefined).
  */
 export const zustandStorage: StateStorage = {
   getItem: async (name: string): Promise<string | null> => {
-    return await storageAdapter.getItem(name);
+    try {
+      return await storageAdapter.getItem(name);
+    } catch {
+      // localStorage doesn't exist in React Native - return null
+      // until the real adapter is set via setStorageAdapter()
+      return null;
+    }
   },
   setItem: async (name: string, value: string): Promise<void> => {
-    await storageAdapter.setItem(name, value);
+    try {
+      await storageAdapter.setItem(name, value);
+    } catch {
+      // Silently fail if adapter not ready yet
+    }
   },
   removeItem: async (name: string): Promise<void> => {
-    await storageAdapter.removeItem(name);
+    try {
+      await storageAdapter.removeItem(name);
+    } catch {
+      // Silently fail if adapter not ready yet
+    }
   },
 };
