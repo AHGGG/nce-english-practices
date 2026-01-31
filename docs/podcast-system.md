@@ -1,0 +1,48 @@
+# Podcast System (Offline Playback)
+
+## Architecture (2026-01-22 Update)
+
+### Data Models
+
+- **PodcastFeed**: Global model for podcast feeds
+- **PodcastFeedSubscription**: Many-to-Many relationship for user subscriptions
+- **UserEpisodeState**: Tracks resume position and finished status per user/episode
+
+### Fields
+
+| Model                     | Key Fields                                              |
+| ------------------------- | ------------------------------------------------------- |
+| `PodcastFeed`             | Global feed data                                        |
+| `PodcastFeedSubscription` | user_id, feed_id                                        |
+| `UserEpisodeState`        | current_position_seconds, finished, user_id, episode_id |
+
+## Offline Strategy
+
+### PWA Support
+
+- `vite-plugin-pwa` + Workbox for service worker caching
+- `podcast-audio-cache` using Cache API for audio files
+
+### Progress Tracking
+
+Backend download endpoint (`/api/podcast/episode/{id}/download`):
+
+- Supports `HEAD` requests for Content-Length
+- Streams audio with proper caching headers
+
+### Frontend Components
+
+| Component               | Description                    |
+| ----------------------- | ------------------------------ |
+| `PodcastFeedDetailView` | Shows download progress/status |
+| `PodcastDownloadsView`  | Manages offline content        |
+
+## Key Features
+
+1. **Resume Playback**: Stores current_position_seconds per episode
+2. **Offline Access**: Downloaded audio stored in Cache API
+3. **Progress Sync**: Backend tracks playback position
+
+## Related Documentation
+
+- [Podcast Architecture Skill](docs/skills/podcast-architecture.md) - Apple API strategy and caching mechanism
