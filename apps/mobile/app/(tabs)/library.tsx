@@ -1,7 +1,7 @@
 import { View, Text, FlatList, TouchableOpacity, ActivityIndicator, Modal, Pressable } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useArticleList } from "@nce/shared";
-import { BookOpen, CheckCircle, Settings, GraduationCap, ChevronDown, X } from "lucide-react-native";
+import { BookOpen, CheckCircle, Settings, ChevronDown, X } from "lucide-react-native";
 import { useRouter } from "expo-router";
 import { useState, useMemo, useEffect } from "react";
 import { readingApi } from "@nce/api";
@@ -162,12 +162,6 @@ export default function LibraryScreen() {
             </TouchableOpacity>
           </View>
           <View className="flex-row space-x-3">
-            <TouchableOpacity
-              className="bg-bg-surface p-2 rounded-full border border-border"
-              onPress={() => router.push("/books")}
-            >
-              <GraduationCap size={20} color="#00FF94" />
-            </TouchableOpacity>
             <TouchableOpacity
               className="bg-bg-surface p-2 rounded-full border border-border"
               onPress={() => router.push("/settings")}
