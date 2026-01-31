@@ -128,23 +128,24 @@ const HighlightedSentence = ({
         return isHighlight ? (
           <mark
             key={i}
-            className={`bg-category-amber/30 text-category-amber px-1 rounded ${clickable
-              ? "cursor-pointer hover:bg-category-amber/50 transition-colors animate-[pulse-highlight_1.5s_ease-in-out_2]"
-              : ""
-              }`}
+            className={`bg-category-amber/30 text-category-amber px-1 rounded ${
+              clickable
+                ? "cursor-pointer hover:bg-category-amber/50 transition-colors animate-[pulse-highlight_1.5s_ease-in-out_2]"
+                : ""
+            }`}
             style={
               clickable
                 ? {
-                  animation: "pulse-highlight 0.6s ease-in-out 3",
-                }
+                    animation: "pulse-highlight 0.6s ease-in-out 3",
+                  }
                 : undefined
             }
             onClick={
               clickable && onWordClick
                 ? (e) => {
-                  e.stopPropagation();
-                  onWordClick(part, sentence || text);
-                }
+                    e.stopPropagation();
+                    onWordClick(part, sentence || text);
+                  }
                 : undefined
             }
           >
@@ -222,6 +223,9 @@ const ReviewQueue = () => {
   // Timer state
   const [startTime, setStartTime] = useState(Date.now());
 
+  // Track auto-play history to avoid duplicate playback on re-renders
+  const lastPlayedIdRef = useRef(null);
+
   // Undo/Redo state
   // null = no action to undo
   // { mode: 'undo', itemId, quality, durationMs } = can undo this action
@@ -284,14 +288,27 @@ const ReviewQueue = () => {
 
   // Reset timer when item changes
   useEffect(() => {
+    // Prevent auto-pronounce if we are in a "deep dive" state (Help Panel or Word Inspector)
+    if (showHelpPanel || isInspecting) return;
+
     if (currentItem) {
       setStartTime(Date.now());
-      // Auto-play sentence if enabled
-      if (settings.autoPronounce) {
+      // Auto-play sentence logic removed to align with Reading/Sentence Study mode
+      // Users found the immediate auto-play on "Next" intrusive
+      /* 
+      if (settings.autoPronounce && currentItem.id !== lastPlayedIdRef.current) {
         playAudio(currentItem.sentence_text);
+        lastPlayedIdRef.current = currentItem.id;
       }
+      */
     }
-  }, [currentItem, settings.autoPronounce, playAudio]);
+  }, [
+    currentItem,
+    settings.autoPronounce,
+    playAudio,
+    showHelpPanel,
+    isInspecting,
+  ]);
 
   // Start random review
   const startRandomReview = async () => {
@@ -310,8 +327,6 @@ const ReviewQueue = () => {
       setLoading(false);
     }
   };
-
-
 
   // Handle rating selection
   const handleRating = useCallback(
@@ -410,9 +425,9 @@ const ReviewQueue = () => {
                 stage === 1
                   ? "brief"
                   : stage === 2
-                    ? "default"
+                    ? "simple"
                     : stage === 3
-                      ? "simple"
+                      ? "english_structure"
                       : "chinese_deep",
             }),
           });
@@ -663,10 +678,11 @@ const ReviewQueue = () => {
                 disabled={loadingContext}
                 className={`
                                     flex items-center gap-1 px-2 py-0.5 rounded transition-colors whitespace-nowrap flex-shrink-0
-                                    ${showContext
-                    ? "bg-accent-info/20 text-accent-info border border-accent-info/30"
-                    : "bg-bg-elevated text-text-secondary hover:text-text-primary border border-transparent"
-                  }
+                                    ${
+                                      showContext
+                                        ? "bg-accent-info/20 text-accent-info border border-accent-info/30"
+                                        : "bg-bg-elevated text-text-secondary hover:text-text-primary border border-transparent"
+                                    }
                                 `}
               >
                 {loadingContext ? (
@@ -906,10 +922,11 @@ const ReviewQueue = () => {
             <button
               onClick={handleUndoRedo}
               disabled={isSubmitting}
-              className={`p-2 transition-colors disabled:opacity-30 ${undoState.mode === "redo"
-                ? "text-accent-primary hover:text-accent-primary/80"
-                : "text-text-muted hover:text-accent-primary"
-                }`}
+              className={`p-2 transition-colors disabled:opacity-30 ${
+                undoState.mode === "redo"
+                  ? "text-accent-primary hover:text-accent-primary/80"
+                  : "text-text-muted hover:text-accent-primary"
+              }`}
               title={undoState.mode === "undo" ? "撤销 (Undo)" : "重做 (Redo)"}
             >
               <RotateCcw
@@ -949,7 +966,7 @@ const ReviewQueue = () => {
           isInspecting={isInspecting}
           onClose={closeInspector}
           onPlayAudio={playAudio}
-          onMarkAsKnown={() => { }}
+          onMarkAsKnown={() => {}}
           contextExplanation={wordExplanation}
           isExplaining={isExplainingWord}
           isPhrase={isPhrase}

@@ -16,6 +16,8 @@ import {
   ChevronLeft,
   XCircle,
   Download,
+  RefreshCw,
+  Pause,
 } from "lucide-react-native";
 import { formatDuration } from "@nce/shared";
 
@@ -42,10 +44,12 @@ export default function DownloadsScreen() {
     await downloadService.deleteDownload(episodeId);
   };
 
-  const handleCancelDownload = (episodeId: number) => {
-    // For now, just remove from active downloads
-    // Full cancel would need pauseAsync + cleanup
-    useDownloadStore.getState().removeActiveDownload(episodeId);
+  const handleCancelDownload = async (episodeId: number) => {
+    await downloadService.cancelDownload(episodeId);
+  };
+
+  const handleRetryDownload = async (episodeId: number) => {
+    await downloadService.retryDownload(episodeId);
   };
 
   const formatSize = (bytes: number) => {
@@ -65,15 +69,27 @@ export default function DownloadsScreen() {
       {activeDownloads.length > 0 && (
         <View className="px-4 pt-4">
           <Text className="text-text-muted text-xs font-bold uppercase tracking-wider mb-3">
-            Downloading
+            In Progress
           </Text>
           {activeDownloads.map((item) => (
             <View
               key={item.episodeId}
-              className="flex-row items-center bg-bg-surface p-3 rounded-lg mb-3 border border-accent-primary/30"
+              className={`flex-row items-center bg-bg-surface p-3 rounded-lg mb-3 border ${
+                item.status === "error"
+                  ? "border-accent-danger/30"
+                  : item.status === "paused"
+                    ? "border-accent-warning/30"
+                    : "border-accent-primary/30"
+              }`}
             >
               <View className="w-12 h-12 rounded bg-bg-elevated mr-3 items-center justify-center">
-                <Download color="#00FF94" size={20} />
+                {item.status === "downloading" ? (
+                  <Download color="#00FF94" size={20} />
+                ) : item.status === "paused" ? (
+                  <Pause color="#F59E0B" size={20} />
+                ) : (
+                  <XCircle color="#FF4444" size={20} />
+                )}
               </View>
 
               <View className="flex-1 mr-2">
@@ -100,6 +116,10 @@ export default function DownloadsScreen() {
                     <Text className="text-accent-danger text-xs">
                       {item.error || "Download failed"}
                     </Text>
+                  ) : item.status === "paused" ? (
+                    <Text className="text-accent-warning text-xs">
+                      {item.error || "Paused"} - Tap retry to resume
+                    </Text>
                   ) : (
                     <Text className="text-text-muted text-xs capitalize">
                       {item.status}
@@ -108,6 +128,17 @@ export default function DownloadsScreen() {
                 </View>
               </View>
 
+              {/* Retry button for paused/error */}
+              {(item.status === "paused" || item.status === "error") && (
+                <TouchableOpacity
+                  onPress={() => handleRetryDownload(item.episodeId)}
+                  className="mr-2"
+                >
+                  <RefreshCw color="#00FF94" size={22} />
+                </TouchableOpacity>
+              )}
+
+              {/* Cancel/Remove button */}
               <TouchableOpacity
                 onPress={() => handleCancelDownload(item.episodeId)}
               >

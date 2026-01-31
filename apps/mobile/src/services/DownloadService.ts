@@ -16,10 +16,52 @@ class DownloadService {
   private downloadResumables: Record<number, DownloadResumable> = {};
 
   async init() {
+    // Ensure podcast directory exists
     const dirInfo = await getInfoAsync(PODCAST_DIR);
     if (!dirInfo.exists) {
       await makeDirectoryAsync(PODCAST_DIR, { intermediates: true });
     }
+
+    // Handle orphaned active downloads from previous session
+    // After app reload, any "downloading" items are now stale (network connection lost)
+    // Mark them as "paused" so user can retry
+    const store = useDownloadStore.getState();
+    const activeDownloads = Object.values(store.activeDownloads);
+
+    for (const item of activeDownloads) {
+      if (item.status === "downloading") {
+        console.log(
+          `[DownloadService] Marking orphaned download as paused: ${item.episode?.title || item.episodeId}`,
+        );
+        store.updateActiveDownload(item.episodeId, {
+          status: "paused",
+          error: "Interrupted by app restart",
+        });
+      }
+    }
+
+    if (activeDownloads.length > 0) {
+      console.log(
+        `[DownloadService] Found ${activeDownloads.length} active downloads from previous session`,
+      );
+    }
+  }
+
+  /**
+   * Retry a paused/failed download
+   */
+  async retryDownload(episodeId: number) {
+    const store = useDownloadStore.getState();
+    const activeDownload = store.activeDownloads[episodeId];
+
+    if (!activeDownload?.episode) {
+      console.error("Cannot retry: no episode data for", episodeId);
+      return;
+    }
+
+    // Remove old active download and start fresh
+    store.removeActiveDownload(episodeId);
+    await this.downloadEpisode(activeDownload.episode);
   }
 
   async downloadEpisode(episode: PodcastEpisode) {
@@ -52,11 +94,18 @@ class DownloadService {
     try {
       const result = await downloadResumable.downloadAsync();
       if (result) {
-        // Complete
-        // Try to parse Content-Length, fallback to 0
+        // Complete - get actual file size from filesystem
         let size = 0;
-        if (result.headers && result.headers["Content-Length"]) {
-          size = parseInt(result.headers["Content-Length"], 10);
+        try {
+          const fileInfo = await getInfoAsync(result.uri);
+          if (fileInfo.exists && "size" in fileInfo) {
+            size = fileInfo.size;
+          }
+        } catch {
+          // Fallback to Content-Length header if available
+          if (result.headers && result.headers["Content-Length"]) {
+            size = parseInt(result.headers["Content-Length"], 10);
+          }
         }
 
         store.addDownload(episode, result.uri, size);
@@ -76,7 +125,6 @@ class DownloadService {
     const resumable = this.downloadResumables[episodeId];
     if (resumable) {
       await resumable.pauseAsync();
-      // For full persistence we would save resumable.savable() to store
       useDownloadStore
         .getState()
         .updateActiveDownload(episodeId, { status: "paused" });
@@ -90,6 +138,30 @@ class DownloadService {
       useDownloadStore
         .getState()
         .updateActiveDownload(episodeId, { status: "downloading" });
+    }
+  }
+
+  async cancelDownload(episodeId: number) {
+    // Cancel the in-flight download if it exists
+    const resumable = this.downloadResumables[episodeId];
+    if (resumable) {
+      try {
+        await resumable.pauseAsync();
+      } catch {
+        // Ignore errors if already stopped
+      }
+      delete this.downloadResumables[episodeId];
+    }
+
+    // Remove from active downloads
+    useDownloadStore.getState().removeActiveDownload(episodeId);
+
+    // Try to delete partially downloaded file
+    const localPath = PODCAST_DIR + `${episodeId}.mp3`;
+    try {
+      await deleteAsync(localPath, { idempotent: true });
+    } catch {
+      // File might not exist
     }
   }
 

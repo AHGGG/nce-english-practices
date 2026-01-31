@@ -88,12 +88,20 @@ export const useDownloadStore = create<DownloadState>()(
     {
       name: "podcast-downloads",
       storage: createJSONStorage(() => zustandStorage),
-      partialize: (state) => ({ downloads: state.downloads }), // Only persist completed downloads
+      // Persist both completed downloads AND active downloads (for resume after reload)
+      partialize: (state) => ({
+        downloads: state.downloads,
+        activeDownloads: state.activeDownloads,
+      }),
       onRehydrateStorage: () => (state) => {
         console.log(
           "[DownloadStore] Hydrated with",
           state?.downloads ? Object.keys(state.downloads).length : 0,
-          "downloads",
+          "downloads,",
+          state?.activeDownloads
+            ? Object.keys(state.activeDownloads).length
+            : 0,
+          "active",
         );
       },
     },
