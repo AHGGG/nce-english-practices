@@ -17,6 +17,9 @@ from xml.etree import ElementTree as ET
 import httpx
 import feedparser
 
+from fastapi.concurrency import run_in_threadpool
+from app.core.utils import validate_url_security
+
 from sqlalchemy import select, func, and_
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -175,6 +178,9 @@ class PodcastService:
         Fetch and parse an RSS feed.
         Returns feed metadata and list of episodes.
         """
+        # Security: Prevent SSRF
+        await run_in_threadpool(validate_url_security, rss_url)
+
         headers = {
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36",
             "Accept": "application/rss+xml, application/xml, application/atom+xml, text/xml;q=0.9, */*;q=0.8",

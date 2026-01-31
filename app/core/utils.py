@@ -1,5 +1,8 @@
 import json
 import re
+import socket
+import ipaddress
+from urllib.parse import urlparse
 from typing import Dict, List, Union, Any
 from fastapi import HTTPException
 
@@ -31,6 +34,46 @@ def validate_input(
         raise HTTPException(status_code=400, detail=f"{field_name} contains invalid characters")
 
     return text
+
+
+def validate_url_security(url: str) -> None:
+    """
+    Validates that a URL does not resolve to a private or loopback IP address (SSRF protection).
+    Raises ValueError if the URL is unsafe.
+    """
+    try:
+        parsed = urlparse(url)
+        hostname = parsed.hostname
+        if not hostname:
+            raise ValueError("Invalid URL: No hostname found")
+
+        # Get all addresses (IPv4 and IPv6)
+        # Note: This is blocking, so caller should run in threadpool if async
+        addr_info = socket.getaddrinfo(hostname, None)
+
+        for family, type, proto, canonname, sockaddr in addr_info:
+            ip_str = sockaddr[0]
+            try:
+                ip = ipaddress.ip_address(ip_str)
+            except ValueError:
+                continue
+
+            if ip.is_private or ip.is_loopback or ip.is_link_local:
+                raise ValueError(f"Access to private/local IP {ip_str} is forbidden")
+            # Also block unspecified addresses (0.0.0.0)
+            if ip.is_unspecified:
+                raise ValueError(f"Access to unspecified IP {ip_str} is forbidden")
+
+    except socket.gaierror:
+        # DNS resolution failed. We pass here because the subsequent HTTP request
+        # will likely also fail to resolve, effectively blocking it.
+        # Blocking here would prevent valid transient DNS failures from being retried by the client.
+        pass
+    except ValueError:
+        raise
+    except Exception as e:
+        # Default fail-closed for other errors
+        raise ValueError(f"URL validation failed: {str(e)}")
 
 
 def parse_llm_json(content: str) -> Union[Dict[str, Any], List[Any]]:
