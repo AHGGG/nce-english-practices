@@ -163,7 +163,7 @@ app/
 
 ### Authentication System
 
-Multi-user authentication with JWT tokens. See: [Auth System Documentation](docs/auth-system.md)
+Multi-user authentication with JWT tokens, token refresh strategy, and data migration tools. See: [Auth System Documentation](docs/auth-system.md)
 
 ### Database Layer
 
@@ -220,15 +220,11 @@ Structured data from Longman LDOCE6++ dictionary.
 
 ### Podcast System
 
-Offline playback architecture with PWA support and audio caching.
-
-> Detailed: [Podcast System Documentation](docs/podcast-system.md)
+Offline playback with PWA support, audio caching via Cache API, and episode state tracking (resume position, finished status). See: [Podcast System Documentation](docs/podcast-system.md)
 
 ### Coach Service (Agentic)
 
-Central orchestrator for the "Neural Link" mode with tool-using agent pattern.
-
-> Detailed: [Coach Service Documentation](docs/coach-service.md)
+Central orchestrator for "Neural Link" mode with tool-using agent pattern. LLM decides UI components via DSML parser. Includes Voice/WebSocket integration. See: [Coach Service Documentation](docs/coach-service.md)
 
 ### Context-Aware Image Generation
 
@@ -322,15 +318,11 @@ Get-Content logs/unified.log -Tail 50   # Last 50 lines
 
 ## Common Pitfalls
 
-Common issues and solutions for development.
-
-> Detailed: [Common Pitfalls Documentation](docs/common-pitfalls.md)
+Windows testing conflicts, Tailwind CSS variable issues, NativeWind alpha syntax limitations, podcast RSS limits, and Docker dependency management. See: [Common Pitfalls Documentation](docs/common-pitfalls.md)
 
 ## Mobile Architecture & Guidelines
 
-Mobile app architecture with React Native, Expo, and NativeWind.
-
-> Detailed: [Mobile Architecture Documentation](docs/mobile-architecture.md)
+React Native + Expo + NativeWind architecture. Covers audio background tasks, WebView bridge, voice PTT, Zustand persistence, and SSE streaming. See: [Mobile Architecture Documentation](docs/mobile-architecture.md)
 
 ## Skills (Detailed Tool Guides)
 
