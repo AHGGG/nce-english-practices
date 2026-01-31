@@ -76,7 +76,7 @@ export default function BooksScreen() {
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-bg-base" edges={["top"]}>
+    <SafeAreaView className="flex-1 bg-bg-base">
       <View className="flex-1 px-4 pt-4">
         <View className="flex-row items-center mb-6">
           <TouchableOpacity

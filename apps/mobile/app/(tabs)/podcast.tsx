@@ -56,7 +56,7 @@ export default function PodcastScreen() {
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-bg-base" edges={['top']}>
+    <SafeAreaView className="flex-1 bg-bg-base">
       <View className="flex-1 px-4 pt-4">
         {/* Header */}
         <View className="flex-row items-center justify-between mb-6">

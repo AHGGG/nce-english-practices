@@ -14,18 +14,36 @@ export default function PodcastDetailScreen() {
   const { data, isLoading, error } = usePodcastFeed(feedId);
   const { subscribe, unsubscribe, isSubscribing } = usePodcastMutations();
 
+  // Debug logging
+  console.log("[PodcastDetail] Feed ID:", feedId);
+  console.log("[PodcastDetail] Loading:", isLoading);
+  console.log("[PodcastDetail] Error:", error);
+  console.log("[PodcastDetail] Data:", data ? "Loaded" : "No data");
+
   if (isLoading || !data) {
     return (
       <View className="flex-1 justify-center items-center bg-bg-base">
         <ActivityIndicator color="#00FF94" size="large" />
+        <Text className="text-text-muted mt-4">Loading feed {feedId}...</Text>
+        {error && (
+          <Text className="text-accent-danger mt-2 px-4 text-center">
+            {error}
+          </Text>
+        )}
       </View>
     );
   }
 
   if (error) {
     return (
-      <View className="flex-1 justify-center items-center bg-bg-base">
-        <Text className="text-accent-danger">{error}</Text>
+      <View className="flex-1 justify-center items-center bg-bg-base px-4">
+        <Text className="text-accent-danger text-center mb-4">{error}</Text>
+        <TouchableOpacity
+          onPress={() => router.back()}
+          className="bg-bg-surface px-6 py-3 rounded-lg"
+        >
+          <Text className="text-text-primary">Go Back</Text>
+        </TouchableOpacity>
       </View>
     );
   }
@@ -48,7 +66,7 @@ export default function PodcastDetailScreen() {
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-bg-base" edges={["top"]}>
+    <SafeAreaView className="flex-1 bg-bg-base">
       <Stack.Screen options={{ headerShown: false }} />
 
       {/* Header */}

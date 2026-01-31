@@ -232,7 +232,7 @@ function ReadingScreen() {
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-bg-base" edges={["top"]}>
+    <SafeAreaView className="flex-1 bg-bg-base">
       <Stack.Screen options={{ headerShown: false }} />
 
       {/* Custom Header */}

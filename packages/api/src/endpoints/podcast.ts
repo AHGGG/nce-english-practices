@@ -83,6 +83,16 @@ export const podcastApi = {
     return episodes[0] as PodcastEpisode;
   },
 
+  async preview(rssUrl: string) {
+    const res = await authFetch("/api/podcast/preview", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ rss_url: rssUrl }),
+    });
+    if (!res.ok) throw new Error("Preview failed");
+    return res.json() as Promise<FeedDetailResponse>;
+  },
+
   async subscribe(rssUrl: string) {
     const res = await authFetch("/api/podcast/subscribe", {
       method: "POST",

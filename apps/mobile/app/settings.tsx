@@ -10,7 +10,8 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useAuthStore, useSettingsStore } from "@nce/store";
-import { notificationService } from "../src/services/NotificationService";
+// NOTE: expo-notifications removed from Expo Go in SDK 53+
+// import { notificationService } from "../src/services/NotificationService";
 import {
   LogOut,
   ChevronRight,
@@ -75,25 +76,13 @@ export default function SettingsScreen() {
   };
 
   const toggleNotifications = async (value: boolean) => {
-    if (value) {
-      const granted =
-        await notificationService.registerForPushNotificationsAsync();
-      if (granted) {
-        setNotificationsEnabled(true);
-        const [h, m] = reminderTime.split(":").map(Number);
-        await notificationService.scheduleDailyReminder(h, m, true);
-      } else {
-        Alert.alert(
-          "Permission Denied",
-          "Enable notifications in settings to receive reminders.",
-        );
-        setNotificationsEnabled(false);
-      }
-    } else {
-      setNotificationsEnabled(false);
-      const [h, m] = reminderTime.split(":").map(Number);
-      await notificationService.scheduleDailyReminder(h, m, false);
-    }
+    // NOTE: expo-notifications not available in Expo Go SDK 53+
+    // Re-enable when using Development Build
+    Alert.alert(
+      "Not Available",
+      "Push notifications require a Development Build. This feature is disabled in Expo Go.",
+    );
+    setNotificationsEnabled(false);
   };
 
   const cycleSpeed = () => {
@@ -153,7 +142,7 @@ export default function SettingsScreen() {
   );
 
   return (
-    <SafeAreaView className="flex-1 bg-bg-base" edges={["top"]}>
+    <SafeAreaView className="flex-1 bg-bg-base">
       <ScrollView className="flex-1 px-4 pt-4">
         <Text className="text-text-primary text-3xl font-serif font-bold mb-8">
           Settings
