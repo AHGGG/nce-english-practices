@@ -457,6 +457,150 @@ To support multiple dictionaries (e.g., Collins + LDOCE) in one view:
   - **Fix**: Always check `tailwind.config.js` to verify the color token exists before using it. Use semantic tokens from the design system (e.g., `text-text-primary`, `bg-accent-success`, `bg-category-blue`).
   - **Available Category Colors**: `orange`, `blue`, `amber`, `red`, `gray`, `indigo`, `yellow` (NO `green` - use `accent-success` instead).
 
+### Mobile Development Pitfalls (2026-01)
+
+This section documents issues encountered while setting up NativeWind v4 and React Native development.
+
+#### 1. React Version Conflicts in Monorepo
+
+- **Symptom**: "Invalid hook call" runtime error when running mobile app
+- **Root Cause**: Multiple React versions (19.1.0 vs 19.2.4) in the monorepo workspace due to nested dependencies
+- **Fix**: Add `react` and `react-dom` as devDependencies in `packages/shared/package.json`:
+  ```json
+  "devDependencies": {
+    "react": "19.1.0",
+    "react-dom": "19.1.0"
+  }
+  ```
+- **Alternative**: Use pnpm overrides in root `package.json`:
+  ```json
+  "overrides": {
+    "react": "19.1.0",
+    "react-dom": "19.1.0"
+  }
+  ```
+
+#### 2. NativeWind CSS Not Applied (White Screen)
+
+- **Symptom**: App renders with no styles - white background, unstyled text
+- **Root Cause**: Mobile's `tailwind.config.js` had no custom color tokens defined, so classes like `bg-bg-base`, `text-text-primary` were ignored
+- **Fix**:
+  1. Add Cyber-Noir design tokens to `apps/mobile/global.css` (same as web `index.css`)
+  2. Configure color tokens in `tailwind.config.js`:
+     ```js
+     theme: {
+       extend: {
+         colors: {
+           bg: { base: 'var(--color-bg-base)' },
+           text: { primary: 'var(--color-text-primary)' },
+           // ... all other tokens
+         }
+       }
+     }
+     ```
+  3. Add NativeWind preset to `tailwind.config.js`:
+     ```js
+     presets: [require("nativewind/preset")];
+     ```
+  4. Configure Metro in `metro.config.cjs`:
+     ```js
+     const { withNativeWind } = require("nativewind/metro");
+     module.exports = withNativeWind(config, { input: "./global.css" });
+     ```
+
+#### 3. Android Emulator Crash - SafeAreaView edges Prop
+
+- **Symptom**: App loads, shows splash, then immediately crashes on Android emulator
+- **Log Error**: Native crash in `libreact_codegen_safeareacontext.so` at `RNCSafeAreaViewShadowNode::adjustLayoutWithState()`
+- **Root Cause**: The `edges` prop on `SafeAreaView` (e.g., `edges={["top"]}`) causes a native crash in React Native 0.81.5 / Expo SDK 54
+- **Fix**: Remove all `edges` props from SafeAreaView components:
+
+  ```jsx
+  // BEFORE (crashes)
+  <SafeAreaView className="flex-1" edges={["top"]}>
+
+  // AFTER (works)
+  <SafeAreaView className="flex-1">
+  ```
+
+- **Affected Files**: All screens using SafeAreaView with edges prop
+
+#### 4. expo-notifications Removed from Expo Go SDK 53+
+
+- **Symptom**: App crashes on startup with "expo-notifications: Android Push notifications functionality provided by expo-notifications was removed from Expo Go"
+- **Root Cause**: Expo Go SDK 53+ removed expo-notifications support
+- **Fix**:
+  1. Comment out the import and usage in `app/_layout.tsx`:
+     ```tsx
+     // NOTE: expo-notifications removed from Expo Go in SDK 53+
+     // import { notificationService } from "../src/services/NotificationService";
+     ```
+  2. In `app/settings.tsx`, replace notification toggle with an alert:
+     ```tsx
+     const toggleNotifications = async (value: boolean) => {
+       Alert.alert(
+         "Not Available",
+         "Push notifications require a Development Build. This feature is disabled in Expo Go.",
+       );
+       setNotificationsEnabled(false);
+     };
+     ```
+  3. Re-enable when using Development Build (APK via `expo run:android`)
+
+#### 5. Missing react-native-safe-area-context
+
+- **Symptom**: SafeAreaView renders but app crashes when navigating to screens using it
+- **Root Cause**: The package was only installed as a transitive dependency, not explicitly in `package.json`
+- **Fix**: Add explicit dependency to `apps/mobile/package.json`:
+  ```json
+  "react-native-safe-area-context": "~5.6.0"
+  ```
+- **Important**: After changing dependencies, run `npx expo prebuild --clean` to regenerate native code, then rebuild with `npx expo run:android`
+
+#### 6. pnpm Temp Directory Issues (Windows)
+
+- **Symptom**: `pnpm install` fails with `ENOENT: no such file or directory, scandir 'node_modules/react-native-css-interop_tmp_***/node_modules'`
+- **Root Cause**: NativeWind's postinstall script creates temp directories that conflict with Windows file locking
+- **Fix**:
+
+  ```powershell
+  # Clear problematic temp directories
+  rm -rf node_modules/react-native-css-interop_tmp_*
+
+  # Retry install (packages still install despite errors)
+  pnpm install
+  ```
+
+#### 7. Metro Bundler Cache Issues
+
+- **Symptom**: Changes to `tailwind.config.js` or `global.css` not reflected in app
+- **Fix**: Always clear Metro cache after config changes:
+  ```bash
+  npx expo start --clear
+  # or manually delete node_modules/.cache
+  ```
+
+#### 8. Android Emulator Instability
+
+- **Symptom**: App crashes, freezes, or shows black screen on Android emulator
+- **Context**: Android x86 emulators are known to be unstable, especially with native modules and GPU rendering
+- **Workaround**: Use a real physical device for development
+  - Connect via USB with USB debugging enabled
+  - Run `npx expo start` and press `a` to open on connected device
+  - Or use `adb connect <device-ip>` for wireless debugging
+
+#### 9. Development Build vs Expo Go
+
+| Feature                          | Expo Go            | Development Build     |
+| -------------------------------- | ------------------ | --------------------- |
+| Native modules (not in Expo SDK) | ❌ No              | ✅ Yes                |
+| Background audio                 | ❌ No              | ✅ Yes                |
+| Push notifications               | ❌ Removed SDK 53+ | ✅ Yes                |
+| Build speed                      | Instant (download) | 3-10 minutes          |
+| Debugging                        | Limited            | Full native debugging |
+
+**Recommendation**: For production features requiring native code, always use Development Build (`npx expo run:android`). Use Expo Go only for rapid prototyping of pure JS/React features.
+
 - **Authenticated Fetch in PWA/Offline Utils**: Native `fetch()` does not include JWT tokens.
   - **Fix**: Always pass `authFetch` (from `api/auth.js`) or manually add `Authorization` headers when making requests from utility functions like `downloadEpisodeForOffline`.
 - **Podcast Redirects & Content-Length**: CDNs (like Megaphone) redirect audio requests, and `httpx` follows redirects by default only for some methods or needs explicit config. Also, `Content-Length` is needed for progress bars.
