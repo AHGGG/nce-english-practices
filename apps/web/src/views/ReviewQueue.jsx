@@ -425,9 +425,9 @@ const ReviewQueue = () => {
                 stage === 1
                   ? "brief"
                   : stage === 2
-                    ? "default"
+                    ? "simple"
                     : stage === 3
-                      ? "simple"
+                      ? "english_structure"
                       : "chinese_deep",
             }),
           });

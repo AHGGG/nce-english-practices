@@ -64,7 +64,7 @@ Original: "{sentence}"
 Return ONLY the simplified structure (2-3 short sentences), no explanation.""",
     # Stage 3: English Breakdown (Context & Meaning)
     "stage3": """The learner has seen the simplified vocabulary and grammar but still finds it unclear.
-Provide a clear ENGLISH explanation of the meaning in this specific context.
+Provide a clear ENGLISH analysis of the sentence structure and meaning.
 
 Sentence: "{sentence}"
 
@@ -72,9 +72,9 @@ Context:
 {context}
 
 Respond in this format:
-1. **Meaning**: [Simple English explanation of what it means]
-2. **Key Point**: [The main message or nuance]
-3. **Breakdown**: [Briefly explain 1-2 difficult phrases if any]
+1. **Analysis**: [Identify the main Subject, Verb, and Object. Explain how clauses are connected.]
+2. **Meaning**: [Simple English explanation of the overall meaning]
+3. **Key Terms**: [Briefly explain 1-2 difficult words/phrases]
 
 Keep it encouraging and simple.""",
     # Stage 4: Chinese Deep Dive
@@ -168,6 +168,19 @@ Respond in simple English, one sentence only.""",
 目标词汇："{text}"
 
 直接给出讲解内容，不要有多余的开场白。""",
+    "english_structure": """Analyze the sentence structure and explain "{text}" in SIMPLE ENGLISH.
+
+Context:
+{context}
+
+Target: "{text}"
+
+Respond in this format:
+1. **Analysis**: Identify the subject, verb, and how "{text}" fits in the sentence.
+2. **Meaning**: Simple definition of "{text}" in this specific context.
+3. **Usage**: A short note on how to use this word/phrase.
+
+Keep English simple and clear.""",
 }
 
 
@@ -447,6 +460,11 @@ class SentenceStudyService:
                     text=text, context=context, item_type=item_type
                 )
                 max_gen_tokens = 2000
+            elif style == "english_structure":
+                prompt = EXPLAIN_PROMPTS["english_structure"].format(
+                    text=text, context=context
+                )
+                max_gen_tokens = 1000
             else:
                 template = "default_phrase" if is_phrase else "default_word"
                 prompt = EXPLAIN_PROMPTS[template].format(text=text, context=context)
@@ -555,6 +573,11 @@ class SentenceStudyService:
                 text=text, context=context, item_type=item_type
             )
             max_gen_tokens = 2000
+        elif style == "english_structure":
+            prompt = EXPLAIN_PROMPTS["english_structure"].format(
+                text=text, context=context
+            )
+            max_gen_tokens = 1000
         else:
             template = "default_phrase" if is_phrase else "default_word"
             prompt = EXPLAIN_PROMPTS[template].format(text=text, context=context)
