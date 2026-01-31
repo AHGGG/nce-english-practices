@@ -1,6 +1,6 @@
 
 import React, { useState, useRef, useEffect } from 'react';
-import { Card, Button, Tag } from '../ui';
+import { Card, Button, Tag, Select } from '../ui';
 import { Radio, Activity, XCircle, Terminal } from 'lucide-react';
 
 const LivePanel = ({ config, fixedProvider = null }) => {
@@ -155,19 +155,13 @@ const LivePanel = ({ config, fixedProvider = null }) => {
             <Card title="Socket Control">
                 <div className="space-y-6">
                     {!fixedProvider && (
-                        <div className="space-y-1">
-                            <label className="text-xs font-mono font-bold text-text-muted uppercase">Provider Target</label>
-                            <select
-                                value={provider}
-                                onChange={(e) => setProvider(e.target.value)}
-                                disabled={isConnected}
-                                className="w-full bg-bg-elevated border border-border text-text-primary px-4 py-2.5 text-sm font-mono focus:border-accent-info focus:outline-none disabled:opacity-50"
-                            >
-                                {config && Object.keys(config).map(p => (
-                                    <option key={p} value={p}>{p.toUpperCase()}</option>
-                                ))}
-                            </select>
-                        </div>
+                        <Select
+                            label="Provider Target"
+                            value={provider}
+                            onChange={(e) => setProvider(e.target.value)}
+                            disabled={isConnected}
+                            options={config ? Object.keys(config).map(p => ({ value: p, label: p.toUpperCase() })) : []}
+                        />
                     )}
 
                     <div className="p-4 bg-bg-elevated rounded border border-border">
@@ -210,7 +204,12 @@ const LivePanel = ({ config, fixedProvider = null }) => {
                     </div>
                     <span className="text-xs font-mono text-accent-danger animate-pulse">{status}</span>
                 </div>
-                <div className="p-4 h-32 overflow-y-auto space-y-1 text-accent-primary/80 border-b border-border">
+                <div
+                    className="p-4 h-32 overflow-y-auto space-y-1 text-accent-primary/80 border-b border-border focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-primary"
+                    tabIndex="0"
+                    role="log"
+                    aria-label="Live logs"
+                >
                     {logs.map((log, i) => (
                         <div key={i} className="break-all border-b border-border/10 pb-0.5 mb-0.5">
                             {log}
@@ -225,7 +224,12 @@ const LivePanel = ({ config, fixedProvider = null }) => {
                         <Radio size={12} className="text-accent-danger" />
                         <span className="font-bold text-text-muted">TRANSCRIPT STREAM</span>
                     </div>
-                    <div className="p-4 overflow-y-auto space-y-4 flex-1">
+                    <div
+                        className="p-4 overflow-y-auto space-y-4 flex-1 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-primary"
+                        tabIndex="0"
+                        role="log"
+                        aria-label="Transcript stream"
+                    >
                         {transcript.length === 0 && (
                             <div className="text-text-muted/30 italic text-center mt-10">Waiting for speech...</div>
                         )}
