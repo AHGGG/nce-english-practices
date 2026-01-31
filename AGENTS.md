@@ -37,15 +37,86 @@ The project follows a **Monorepo** structure using `pnpm workspaces` and `Turbor
 ```
 /
 ├── apps/
-│   ├── web/                # React Vite App
-│   ├── mobile/             # Expo React Native (Android/iOS/Web)
-│   └── backend/            # Logical proxy for Python backend
+│   ├── web/                # React Vite App (前端 SPA)
+│   │   ├── src/            # 前端源码
+│   │   ├── public/         # 静态资源
+│   │   └── scripts/        # 构建脚本
+│   ├── mobile/             # Expo React Native (跨端移动应用)
+│   │   ├── app/            # Expo 入口
+│   │   ├── src/            # 移动端源码
+│   │   └── assets/         # 移动端资源
+│   └── backend/            # 后端逻辑代理 (package.json only)
 ├── packages/
-│   ├── api/                # Shared API Logic (Auth, Types, Client)
-│   ├── shared/             # Shared Hooks, Utils, Stores (Zustand)
-│   └── ui-tokens/          # Shared Design Tokens (colors, typography)
-├── backend/                # (Physical) Python Backend Code (app/, scripts/)
-└── turbo.json              # Build orchestration
+│   ├── api/                # 共享 API 逻辑 (认证、类型、客户端)
+│   │   └── src/
+│   ├── shared/             # 共享 Hooks、工具、状态 (Zustand)
+│   │   ├── hooks/          # 纯逻辑 hooks (View Model 模式)
+│   │   ├── utils/          # 通用工具函数
+│   │   └── platform/       # 平台兼容性处理
+│   ├── store/              # 全局状态管理 (Zustand stores)
+│   │   └── src/
+│   └── ui-tokens/          # 共享设计令牌 (颜色、字体、间距)
+│       └── src/
+├── app/                    # Python 后端 (FastAPI)
+│   ├── api/routers/        # API 路由
+│   │   ├── auth.py         # 认证相关
+│   │   ├── content.py      # 内容管理
+│   │   ├── dictionary.py   # 词典查询
+│   │   ├── review.py       # 复习算法
+│   │   ├── sentence_study.py # 句子学习
+│   │   ├── podcast.py      # 播客系统
+│   │   ├── voice_lab.py    # 语音实验室
+│   │   ├── aui_websocket.py # Agent UI WebSocket
+│   │   └── ...
+│   ├── services/           # 业务逻辑层
+│   │   ├── llm.py          # LLM 客户端 (DeepSeek + Gemini)
+│   │   ├── dictionary.py   # MDX/MDD 词典管理
+│   │   ├── tts.py          # TTS 语音合成 (Edge-TTS)
+│   │   ├── voice/          # 语音服务
+│   │   │   ├── voice_session.py
+│   │   │   └── voice_tester.py
+│   │   ├── content/        # 内容服务
+│   │   │   └── content_feeder.py
+│   │   ├── learning/       # 学习服务
+│   │   │   ├── proficiency_service.py  # 熟练度评估
+│   │   │   └── sentence_study_service.py # 句子学习
+│   │   ├── parsing/        # 词典解析器
+│   │   │   ├── collins_parser.py   # Collins COBUILD
+│   │   │   └── ldoce_parser.py     # Longman LDOCE
+│   │   ├── media/          # 媒体处理
+│   │   ├── voice_lab.py    # 语音实验室核心
+│   │   ├── podcast_service.py # 播客服务
+│   │   ├── negotiation_service.py # 谈判对话服务
+│   │   ├── context_service.py   # 上下文服务
+│   │   ├── log_collector.py     # 统一日志收集
+│   │   ├── image_generation.py  # AI 图片生成 (智谱)
+│   │   ├── auth.py         # 认证服务
+│   │   ├── agent_functions.py   # Agent 工具函数
+│   │   └── aui/            # Agent UI 核心
+│   ├── models/             # 数据模型
+│   │   ├── orm.py          # SQLAlchemy ORM 定义
+│   │   ├── auth_schemas.py # 认证 Pydantic 模型
+│   │   ├── collins_schemas.py   # Collins 词典模型
+│   │   ├── ldoce_schemas.py     # LDOCE 词典模型
+│   │   └── *_schemas.py    # 其他业务模型
+│   ├── core/               # 核心工具
+│   │   ├── db.py           # SQLAlchemy 异步会话
+│   │   └── utils.py        # 通用工具
+│   ├── generators/         # LLM 内容生成器
+│   └── prompts.yaml        # LLM Prompt 模板
+├── scripts/                # 工具脚本
+│   ├── dev.ps1             # 开发服务器启动
+│   ├── test.ps1            # 测试脚本
+│   └── user_admin.py       # 用户管理
+├── resources/              # 词典资源
+│   └── dictionaries/       # MDX/MDD 词典文件
+├── alembic/                # 数据库迁移
+│   └── versions/
+├── tests/                  # 测试套件
+├── docs/                   # 文档
+│   ├── skills/             # 技能指南
+│   └── *.md                # 系统文档
+└── turbo.json              # Turborepo 构建编排
 ```
 
 ## Shared Logic & Patterns (CRITICAL MEMORY)
