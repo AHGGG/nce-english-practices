@@ -108,17 +108,17 @@ const VoiceLab = () => {
                                 <div className="space-y-12 animate-in fade-in slide-in-from-bottom-4 duration-500">
                                     <section>
                                         <SectionHeader title="Text-to-Speech (Multimodal)" icon={Volume2} />
-                                        <TTSPanel config={config} fixedProvider="google" />
+                                        <TTSPanel config={config}  />
                                     </section>
 
                                     <section>
                                         <SectionHeader title="Speech-to-Text (Multimodal)" icon={Mic} />
-                                        <STTPanel config={config} fixedProvider="google" />
+                                        <STTPanel config={config}  />
                                     </section>
 
                                     <section>
                                         <SectionHeader title="Live Streaming (Native Audio)" icon={Radio} />
-                                        <LivePanel config={config} fixedProvider="google" />
+                                        <LivePanel config={config}  />
                                     </section>
                                 </div>
                             )}
