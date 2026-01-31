@@ -26,7 +26,7 @@ export function useArticleList(options: UseArticleListOptions = {}) {
   const query = useQuery({
     queryKey: ["articles", options.bookId, options.searchQuery],
     queryFn: async () => {
-      const data = await readingApi.getArticlesWithStatus();
+      const data = await readingApi.getArticlesWithStatus(options.bookId);
       return data;
     },
     select: (data) => {
@@ -44,6 +44,7 @@ export function useArticleList(options: UseArticleListOptions = {}) {
 
         articles = articles.map((a) => ({
           ...a,
+          book_id: filename,
           book_title: a.book_title || formattedTitle,
           is_read: a.status === "read" || a.status === "completed",
           word_count: a.word_count || a.sentence_count * 15, // Estimate if missing

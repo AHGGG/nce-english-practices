@@ -45,8 +45,12 @@ export const readingApi = {
   /**
    * Get list of articles with reading status
    */
-  async getArticlesWithStatus() {
-    const res = await authFetch("/api/reading/epub/list-with-status");
+  async getArticlesWithStatus(filename?: string) {
+    let url = "/api/reading/epub/list-with-status";
+    if (filename) {
+      url += `?filename=${encodeURIComponent(filename)}`;
+    }
+    const res = await authFetch(url);
     if (!res.ok) throw new Error("Failed to fetch articles");
     return res.json();
   },
