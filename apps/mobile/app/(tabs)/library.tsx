@@ -109,6 +109,12 @@ export default function LibraryScreen() {
                   <View className="bg-bg-base px-2 py-0.5 rounded border border-border">
                     <Text className="text-text-muted text-[10px] font-mono">{item.word_count} words</Text>
                   </View>
+                  {item.status === "completed" && (
+                    <View className="flex-row items-center">
+                      <CheckCircle size={12} color="#00FF94" />
+                      <Text className="text-accent-primary text-[10px] ml-1 font-mono">COMPLETED</Text>
+                    </View>
+                  )}
                   {item.status === "in_progress" && (
                     <View className="flex-row items-center">
                       <View className="w-2 h-2 rounded-full bg-accent-warning" />
