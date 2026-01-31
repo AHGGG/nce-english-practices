@@ -392,6 +392,50 @@ async def explain_word_in_context(req: ExplainWordRequest):
     )
 
 
+@router.post("/explain-word-sync")
+async def explain_word_sync(req: ExplainWordRequest):
+    """
+    Non-streaming version for React Native mobile app.
+    Returns complete JSON response with explanation.
+    """
+    import logging
+
+    logger = logging.getLogger(__name__)
+
+    from app.services.sentence_study_service import sentence_study_service as svc
+
+    text_to_explain = req.text or req.word
+    if not text_to_explain:
+        raise HTTPException(
+            status_code=400, detail="Either 'text' or 'word' must be provided"
+        )
+
+    logger.info(
+        f"[explain-word-sync] text={text_to_explain}, sentence={req.sentence[:50] if req.sentence else 'N/A'}..."
+    )
+
+    try:
+        explanation = await svc.explain_word_sync(
+            text=text_to_explain,
+            sentence=req.sentence,
+            style=req.style,
+            prev_sentence=req.prev_sentence,
+            next_sentence=req.next_sentence,
+        )
+
+        logger.info(
+            f"[explain-word-sync] success, explanation length={len(explanation)}"
+        )
+
+        return {
+            "type": "complete",
+            "content": explanation,
+        }
+    except Exception as e:
+        logger.error(f"[explain-word-sync] error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 # ============================================================
 # Collocation Detection
 # ============================================================

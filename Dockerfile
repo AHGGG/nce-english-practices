@@ -12,9 +12,12 @@ COPY package.json pnpm-lock.yaml pnpm-workspace.yaml turbo.json ./
 # Copy package.json files for all workspaces to install dependencies effectively
 # We copy the source structure but only package.jsons first to leverage layer caching
 COPY apps/web/package.json ./apps/web/package.json
+COPY apps/mobile/package.json ./apps/mobile/package.json
 COPY apps/backend/package.json ./apps/backend/package.json
 COPY packages/api/package.json ./packages/api/package.json
 COPY packages/shared/package.json ./packages/shared/package.json
+COPY packages/store/package.json ./packages/store/package.json
+COPY packages/ui-tokens/package.json ./packages/ui-tokens/package.json
 
 # Install dependencies (frozen lockfile for reproducibility)
 RUN pnpm install --frozen-lockfile
