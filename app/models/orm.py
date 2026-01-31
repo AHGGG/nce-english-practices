@@ -32,7 +32,8 @@ class User(Base):
     )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    email: Mapped[str] = mapped_column(String(255), unique=True, index=True, nullable=False)
+    # Bolt: removed redundant index=True (covered by unique=True and explicit Index)
+    email: Mapped[str] = mapped_column(String(255), unique=True, nullable=False)
     hashed_password: Mapped[str] = mapped_column(String(255), nullable=False)
     username: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
 
@@ -126,7 +127,8 @@ class ContextResource(Base):
     )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    word: Mapped[str] = mapped_column(Text, index=True)
+    # Bolt: removed redundant index=True (covered by idx_context_word)
+    word: Mapped[str] = mapped_column(Text)
     sense_label: Mapped[Optional[str]] = mapped_column(
         Text, nullable=True
     )  # e.g., "v. to cook gently"
@@ -257,8 +259,9 @@ class WordBook(Base):
     __tablename__ = "word_books"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    # Bolt: removed redundant index=True (covered by unique=True)
     code: Mapped[str] = mapped_column(
-        String, unique=True, index=True
+        String, unique=True
     )  # e.g., 'cet4', 'coca'
     name: Mapped[str] = mapped_column(Text)  # e.g., 'CET-4 Core Vocabulary'
     description: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
@@ -300,7 +303,8 @@ class VocabLearningLog(Base):
     )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    user_id: Mapped[str] = mapped_column(Text, default="default_user", index=True)
+    # Bolt: removed redundant index=True (covered by idx_vocab_log_user_word prefix)
+    user_id: Mapped[str] = mapped_column(Text, default="default_user")
     word: Mapped[str] = mapped_column(Text, index=True)
 
     # Source context
@@ -434,8 +438,9 @@ class UserCalibration(Base):
     __tablename__ = "user_calibrations"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    # Bolt: removed redundant index=True (covered by unique=True)
     user_id: Mapped[str] = mapped_column(
-        Text, default="default_user", unique=True, index=True
+        Text, default="default_user", unique=True
     )
     level: Mapped[int] = mapped_column(Integer, default=0)  # 0-11 (12 levels)
 
@@ -554,8 +559,9 @@ class ArticleOverviewCache(Base):
     __table_args__ = (Index("idx_overview_hash", "title_hash", unique=True),)
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    # Bolt: removed redundant index=True (covered by unique=True)
     title_hash: Mapped[str] = mapped_column(
-        String(32), unique=True, index=True
+        String(32), unique=True
     )  # MD5 hash
     title: Mapped[str] = mapped_column(Text)  # Original title for debugging
 
@@ -575,8 +581,9 @@ class SentenceCollocationCache(Base):
     __table_args__ = (Index("idx_collocation_hash", "sentence_hash", unique=True),)
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    # Bolt: removed redundant index=True (covered by unique=True)
     sentence_hash: Mapped[str] = mapped_column(
-        String(32), unique=True, index=True
+        String(32), unique=True
     )  # MD5 hash
     sentence_preview: Mapped[str] = mapped_column(Text)  # First 100 chars for debugging
 
@@ -599,7 +606,8 @@ class ReviewItem(Base):
     )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    user_id: Mapped[str] = mapped_column(Text, default="default_user", index=True)
+    # Bolt: removed redundant index=True (covered by idx_review_user_next prefix)
+    user_id: Mapped[str] = mapped_column(Text, default="default_user")
 
     # Sentence reference
     source_id: Mapped[str] = mapped_column(Text)  # e.g., "epub:file.epub:3"
@@ -674,7 +682,8 @@ class GeneratedImage(Base):
     __tablename__ = "generated_images"
 
     id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
-    word: Mapped[str] = mapped_column(String(100), index=True, nullable=False)
+    # Bolt: removed redundant index=True (covered by ix_generated_images_word_context prefix)
+    word: Mapped[str] = mapped_column(String(100), nullable=False)
     context_hash: Mapped[str] = mapped_column(String(64), index=True, nullable=False)
     sentence: Mapped[str] = mapped_column(Text, nullable=False)
     image_prompt: Mapped[str] = mapped_column(Text, nullable=False)
