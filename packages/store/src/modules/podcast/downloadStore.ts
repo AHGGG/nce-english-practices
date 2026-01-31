@@ -12,6 +12,7 @@ export interface DownloadedEpisode {
 
 export interface ActiveDownload {
   episodeId: number;
+  episode: PodcastEpisode; // Store full episode data for display
   progress: number; // 0-1
   status: "pending" | "downloading" | "paused" | "error";
   error?: string;

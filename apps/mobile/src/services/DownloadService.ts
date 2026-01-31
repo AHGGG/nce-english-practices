@@ -26,7 +26,9 @@ class DownloadService {
     const store = useDownloadStore.getState();
     const localPath = PODCAST_DIR + `${episode.id}.mp3`;
 
+    // Initialize active download with episode data for display
     store.updateActiveDownload(episode.id, {
+      episode,
       status: "downloading",
       progress: 0,
     });

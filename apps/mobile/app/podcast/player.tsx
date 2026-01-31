@@ -53,19 +53,20 @@ export default function PodcastPlayerScreen() {
   const download = useDownloadStore((state) => state.downloads[id]);
   const activeDownload = useDownloadStore((state) => state.activeDownloads[id]);
 
-  // Display Episode (Prefer store if matching, else fetched)
-
-  const displayEpisode = currentEpisode?.id === id ? currentEpisode : episode;
+  // Display Episode: Prefer podcast store > downloaded episode > fetched from API
+  const displayEpisode =
+    currentEpisode?.id === id ? currentEpisode : download?.episode || episode;
 
   // Initialize Audio if needed
   useEffect(() => {
-    if (!episode) return;
+    // Use displayEpisode which includes download.episode fallback
+    if (!displayEpisode) return;
 
     // If no episode playing, or playing different episode, start this one
-    if (!currentEpisode || currentEpisode.id !== episode.id) {
-      audioService.playEpisode(episode);
+    if (!currentEpisode || currentEpisode.id !== displayEpisode.id) {
+      audioService.playEpisode(displayEpisode);
     }
-  }, [episode, currentEpisode]);
+  }, [displayEpisode, currentEpisode]);
 
   const togglePlay = async () => {
     if (isPlaying) {

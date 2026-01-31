@@ -57,6 +57,14 @@ class AudioService {
       }
     }
 
+    // Guard against null/undefined URI
+    if (!uri) {
+      console.error("No playback URI available for episode:", episode.id);
+      store.setBuffering(false);
+      store.setIsPlaying(false);
+      return;
+    }
+
     try {
       const { sound } = await Audio.Sound.createAsync(
         { uri },
