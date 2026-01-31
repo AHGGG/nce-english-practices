@@ -1,0 +1,22 @@
+diff --git a/dist/css-to-rn/parseDeclaration.js b/dist/css-to-rn/parseDeclaration.js
+index 59ea66e459dbf6922bcd80a6ac014408ca13c2af..a5a609dc576b40301958baa36f138e86f81cacd8 100644
+--- a/dist/css-to-rn/parseDeclaration.js
++++ b/dist/css-to-rn/parseDeclaration.js
+@@ -1761,12 +1761,15 @@ function parseAspectRatio(aspectRatio) {
+         return "auto";
+     }
+     else {
+-        if (aspectRatio.ratio[0] === aspectRatio.ratio[1]) {
++        if (aspectRatio.ratio && aspectRatio.ratio[0] === aspectRatio.ratio[1]) {
+             return 1;
+         }
+-        else {
++        else if (aspectRatio.ratio) {
+             return aspectRatio.ratio.join(" / ");
+         }
++        else {
++            return undefined;
++        }
+     }
+ }
+ function parseDimension({ unit, value }, options) {
