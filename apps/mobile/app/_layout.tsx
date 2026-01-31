@@ -13,7 +13,7 @@ import {
 import { Inter_400Regular, Inter_700Bold } from "@expo-google-fonts/inter";
 import * as SplashScreen from "expo-splash-screen";
 import { useEffect } from "react";
-import { View, ActivityIndicator } from "react-native";
+import { View, ActivityIndicator, AppState } from "react-native";
 import { useAuthStore, useCurrentUser } from "@nce/store";
 import {
   initializePlatformAdapters,
@@ -57,12 +57,22 @@ function RootContent() {
     "Inter-Bold": Inter_700Bold,
   });
 
-  // Init Auth & Services
+  // Init Auth & Services & AppState Listener
   useEffect(() => {
     initializeAuth();
     audioService.init();
     downloadService.init();
 
+    // Sync podcast progress when app goes to background
+    const subscription = AppState.addEventListener("change", (nextAppState) => {
+      if (nextAppState.match(/inactive|background/)) {
+        audioService.checkpoint();
+      }
+    });
+
+    return () => {
+      subscription.remove();
+    };
     // Init Notifications if enabled
     // NOTE: Disabled - expo-notifications not available in Expo Go SDK 53+
     // Uncomment when using Development Build

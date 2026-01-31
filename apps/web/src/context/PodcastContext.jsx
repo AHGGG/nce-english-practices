@@ -223,11 +223,19 @@ export function PodcastProvider({ children }) {
     // Save on beforeunload using sendBeacon for reliability
     const handleBeforeUnload = () => {
       const currentPos = audioRef.current?.currentTime || 0;
-      if (currentPos > 0) {
+
+      // If we are finishing, we should report completed status
+      const isFinishing = isFinishingRef.current;
+      const finalPos = isFinishing
+        ? audioRef.current?.duration || currentPos
+        : currentPos;
+
+      if (currentPos > 0 || isFinishing) {
         const data = JSON.stringify({
           session_id: sessionId,
           listened_seconds: listenedSeconds,
-          position_seconds: currentPos,
+          position_seconds: finalPos,
+          is_finished: isFinishing,
         });
         navigator.sendBeacon("/api/podcast/session/update-beacon", data);
       }

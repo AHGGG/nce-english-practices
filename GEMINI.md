@@ -307,6 +307,7 @@ Central orchestrator for "Neural Link" mode with tool-using agent pattern. LLM d
 - **Frontend**: `WordInspector` receives `image_check` events via SSE to trigger generation.
 
 ## Key Design Patterns
+Tracing project by this markdown file. So update this file when you update the code. Do not add progressive infomations to this file. This file is like a long term memory of the project. So you should make sure this file is always up to date.
 
 ### 1. Two-Stage LLM Generation
 

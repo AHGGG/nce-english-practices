@@ -802,15 +802,15 @@ async def update_session_beacon(
         if not session_id:
             return {"success": False, "error": "Missing session_id"}
 
+        is_finished = data.get("is_finished", False)
+
         async with AsyncSessionLocal() as db:
             session = await podcast_service.update_listening_session(
                 db,
                 session_id,
                 listened_seconds,
                 position_seconds,
-                # Beacon updates are rarely "finished" updates, but we could support it if needed.
-                # Default to False for beacon.
-                False,
+                is_finished=is_finished,
             )
             return {"success": session is not None}
     except Exception as e:
