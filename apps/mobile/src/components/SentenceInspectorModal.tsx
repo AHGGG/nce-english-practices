@@ -18,9 +18,10 @@ interface SentenceInspectorModalProps {
 }
 
 const STAGE_LABELS: Record<number, string> = {
-  1: "Simple Explanation",
-  2: "Detailed Breakdown",
-  3: "中文深度解释",
+  1: "词汇速查",
+  2: "结构分析",
+  3: "英文拆解",
+  4: "中文深度解释",
 };
 
 export const SentenceInspectorModal = ({
@@ -79,7 +80,7 @@ export const SentenceInspectorModal = ({
 
           {/* Tabs */}
           <View className="flex-row border-b border-border-default bg-bg-surface">
-            {[1, 2, 3].map((stage) => (
+            {[1, 2, 3, 4].map((stage) => (
               <TouchableOpacity
                 key={stage}
                 onPress={() => setCurrentStage(stage)}
@@ -142,9 +143,9 @@ export const SentenceInspectorModal = ({
 
           {/* Footer Actions */}
           <View className="p-4 border-t border-border-default bg-bg-elevated safe-bottom">
-            {currentStage < 3 ? (
+            {currentStage < 4 ? (
               <TouchableOpacity
-                onPress={() => setCurrentStage((prev) => Math.min(prev + 1, 3))}
+                onPress={() => setCurrentStage((prev) => Math.min(prev + 1, 4))}
                 className="flex-row items-center justify-center py-3 border border-border-default rounded-lg bg-bg-surface"
               >
                 <Text className="text-text-secondary font-bold text-xs uppercase mr-2">

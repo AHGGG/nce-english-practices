@@ -1,8 +1,9 @@
 import { View, Text, TouchableOpacity, ActivityIndicator, ScrollView, Modal, Image } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useReviewQueue, useWordExplainer } from "@nce/shared";
+import { useSettingsStore } from "@nce/store";
 import { RotateCcw, CheckCircle, Zap, Volume2, BookOpen, RefreshCw, ChevronRight, X, PlayCircle } from "lucide-react-native";
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { Audio } from 'expo-av';
 import { getApiBaseUrl } from "../../src/lib/platform-init";
 
@@ -127,10 +128,13 @@ export default function ReviewScreen() {
     closeInspector
   } = useWordExplainer();
 
+  // Settings
+  const { autoPronounce } = useSettingsStore();
+
   // Audio Logic
   const soundRef = useRef<Audio.Sound | null>(null);
 
-  const playAudio = async (text: string) => {
+  const playAudio = useCallback(async (text: string) => {
     try {
       if (soundRef.current) {
         await soundRef.current.unloadAsync();
@@ -146,7 +150,14 @@ export default function ReviewScreen() {
     } catch (e) {
       console.error("Failed to play audio", e);
     }
-  };
+  }, []);
+
+  // Auto-pronounce on card change
+  useEffect(() => {
+    if (autoPronounce && currentItem?.sentence_text) {
+      playAudio(currentItem.sentence_text);
+    }
+  }, [currentItem?.id, autoPronounce, playAudio]);
 
   useEffect(() => {
     return () => {
@@ -246,10 +257,10 @@ export default function ReviewScreen() {
             <NativeHighlightedSentence 
                text={currentItem.sentence_text} 
                highlights={currentItem.highlighted_items}
-               clickable={showHelpPanel}
+               clickable={true}
                onWordClick={handleWordClick}
             />
-            {showHelpPanel && currentItem.highlighted_items.length > 0 && (
+            {currentItem.highlighted_items.length > 0 && (
               <Text className="text-accent-primary text-[10px] uppercase font-bold mt-4">
                 Tap highlighted words to look up
               </Text>

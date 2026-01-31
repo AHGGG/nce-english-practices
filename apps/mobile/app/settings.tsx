@@ -33,10 +33,12 @@ export default function SettingsScreen() {
     ttsRate,
     notificationsEnabled,
     reminderTime,
+    autoPronounce,
     setTheme,
     setTtsRate,
     setNotificationsEnabled,
     setReminderTime,
+    setAutoPronounce,
   } = useSettingsStore();
   const router = useRouter();
 
@@ -171,6 +173,13 @@ export default function SettingsScreen() {
         </Section>
 
         <Section title="Preferences">
+          <Item
+            icon={Volume2}
+            label="Auto-Pronounce"
+            isSwitch
+            switchValue={autoPronounce}
+            onSwitch={setAutoPronounce}
+          />
           <Item
             icon={Clock}
             label="TTS Speed"

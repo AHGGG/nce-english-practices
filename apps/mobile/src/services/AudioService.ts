@@ -112,7 +112,13 @@ class AudioService {
       store.setBuffering(status.isBuffering);
       store.setIsPlaying(status.isPlaying);
 
-      if (status.didJustFinish) {
+      // Mark as finished if very close to end (3-second buffer for playback rate edge cases)
+      // This prevents 95% stuck issue when using 1.5x or 2x speed
+      const positionSec = status.positionMillis / 1000;
+      const durationSec = (status.durationMillis || 1) / 1000;
+      const isNearEnd = positionSec >= durationSec - 3;
+
+      if (status.didJustFinish || isNearEnd) {
         store.setIsPlaying(false);
         // Here we could auto-play next logic
       }
