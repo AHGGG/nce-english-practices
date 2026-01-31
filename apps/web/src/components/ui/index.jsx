@@ -1,164 +1,239 @@
 /* eslint-disable react-refresh/only-export-components */
-import React, { useId } from 'react';
-import { Loader2 } from 'lucide-react';
-export { ToastProvider, useToast } from './Toast';
-export { Dialog, DialogButton } from './Dialog';
+import React, { useId } from "react";
+import { Loader2 } from "lucide-react";
+export { ToastProvider, useToast } from "./Toast";
+export { Dialog, DialogButton } from "./Dialog";
 
 export const Button = ({
-    children,
-    variant = "primary",
-    size = "md",
-    fullWidth,
-    isLoading,
-    icon: Icon,
-    className = "",
-    ...props
+  children,
+  variant = "primary",
+  size = "md",
+  fullWidth,
+  isLoading,
+  icon: Icon,
+  className = "",
+  ...props
 }) => {
-    const base = "inline-flex items-center justify-center gap-2 font-mono font-bold uppercase tracking-wider transition-all duration-200 active:translate-y-[2px] disabled:opacity-50 disabled:cursor-not-allowed";
+  const base =
+    "inline-flex items-center justify-center gap-2 font-semibold tracking-wide transition-all duration-200 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed rounded-xl";
 
-    const variants = {
-        primary: "bg-text-primary text-text-inverse border border-text-primary hover:bg-light-surface hover:text-text-inverse hover:shadow-hard shadow-none",
-        secondary: "bg-transparent text-accent-danger border border-accent-danger hover:bg-accent-danger hover:text-text-inverse hover:shadow-accent-danger",
-        outline: "bg-transparent text-text-muted border border-border hover:border-text-primary hover:text-text-primary",
-        ghost: "bg-transparent text-text-muted hover:text-text-primary hover:bg-text-primary/10",
-        danger: "bg-transparent text-accent-danger border border-accent-danger hover:bg-accent-danger hover:text-text-inverse",
-        text: "bg-transparent text-accent-primary hover:text-text-inverse px-0 border-none"
-    };
+  const variants = {
+    primary:
+      "bg-accent-primary text-bg-base hover:bg-accent-primary/90 hover:shadow-accent shadow-soft",
+    secondary:
+      "bg-transparent text-accent-primary border border-accent-primary/30 hover:bg-accent-primary/10 hover:border-accent-primary/50",
+    outline:
+      "bg-transparent text-text-secondary border border-border hover:border-text-primary hover:text-text-primary",
+    ghost:
+      "bg-transparent text-text-secondary hover:text-text-primary hover:bg-white/5",
+    danger:
+      "bg-transparent text-accent-danger border border-accent-danger/30 hover:bg-accent-danger/10 hover:border-accent-danger/50",
+    text: "bg-transparent text-accent-primary hover:text-white px-0 border-none",
+  };
 
-    const sizes = {
-        sm: "text-xs px-3 py-1.5",
-        md: "text-sm px-6 py-2.5",
-        lg: "text-base px-8 py-3",
-        icon: "p-2 aspect-square"
-    };
+  const sizes = {
+    sm: "text-xs px-4 py-2",
+    md: "text-sm px-6 py-2.5",
+    lg: "text-base px-8 py-3",
+    icon: "p-2.5 aspect-square",
+  };
 
-    const sizeClass = variant === 'text' ? '' : sizes[size];
+  const sizeClass = variant === "text" ? "" : sizes[size];
 
-    return (
-        <button
-            className={`${base} ${variants[variant]} ${sizeClass} ${fullWidth ? 'w-full' : ''} ${className}`}
-            disabled={isLoading || props.disabled}
-            aria-busy={isLoading}
-            {...props}
-        >
-            {isLoading && (
-                <>
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                    <span className="sr-only">Loading...</span>
-                </>
-            )}
-            {!isLoading && Icon && <Icon className="w-4 h-4" />}
-            {children}
-        </button>
-    );
+  return (
+    <button
+      className={`${base} ${variants[variant]} ${sizeClass} ${fullWidth ? "w-full" : ""} ${className}`}
+      disabled={isLoading || props.disabled}
+      aria-busy={isLoading}
+      {...props}
+    >
+      {isLoading && (
+        <>
+          <Loader2 className="w-4 h-4 animate-spin" />
+          <span className="sr-only">Loading...</span>
+        </>
+      )}
+      {!isLoading && Icon && <Icon className="w-4 h-4" />}
+      {children}
+    </button>
+  );
 };
 
 export const Input = ({ icon: Icon, error, className = "", ...props }) => {
-    const errorId = useId();
+  const errorId = useId();
 
-    return (
-        <div className={`relative group flex-grow ${className}`}>
-            {Icon && (
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <Icon className="w-4 h-4 text-border group-focus-within:text-accent-primary transition-colors" />
-                </div>
-            )}
-            <input
-                type="text"
-                className={`w-full bg-bg-elevated border border-border text-text-primary px-4 py-3 text-sm font-mono rounded-xl focus:outline-none focus:border-accent-primary focus:ring-1 focus:ring-accent-primary transition-all placeholder:text-text-muted/50 ${Icon ? 'pl-9' : ''} ${error ? 'border-accent-danger focus:border-accent-danger focus:ring-accent-danger' : ''}`}
-                aria-invalid={!!error}
-                aria-describedby={error ? errorId : undefined}
-                {...props}
-            />
-            {error && <span id={errorId} role="alert" className="absolute -bottom-5 left-0 text-[10px] text-accent-danger font-mono">{error}</span>}
+  return (
+    <div className={`relative group flex-grow ${className}`}>
+      {Icon && (
+        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+          <Icon className="w-4 h-4 text-text-muted group-focus-within:text-accent-primary transition-colors" />
         </div>
-    );
-};
-
-export const Card = ({ children, title, subtitle, variant = "default", className = "", actions }) => {
-    const variants = {
-        default: "bg-bg-surface border border-border hover:border-text-muted",
-        elevated: "bg-bg-elevated border border-border shadow-hard",
-        outline: "bg-transparent border border-border border-dashed",
-        highlight: "bg-bg-surface border border-accent-primary/50 hover:border-accent-primary hover:shadow-accent-primary"
-    };
-
-    return (
-        <div className={`p-6 transition-all duration-300 ${variants[variant]} ${className}`}>
-            {(title || subtitle) && (
-                <div className="mb-4">
-                    {title && <h3 className="text-xl font-serif font-bold text-text-primary mb-1">{title}</h3>}
-                    {subtitle && <p className="text-sm text-text-muted font-mono">{subtitle}</p>}
-                </div>
-            )}
-            <div className="text-text-muted leading-relaxed">
-                {children}
-            </div>
-            {actions && (
-                <div className="mt-6 pt-4 border-t border-border flex gap-3">
-                    {actions}
-                </div>
-            )}
-        </div>
-    );
-};
-
-export const Tag = ({ children, variant = "solid", color = "green", className = "" }) => {
-    const colors = {
-        green: "bg-accent-primary text-text-inverse border-accent-primary",
-        pink: "bg-accent-danger text-text-inverse border-accent-danger",
-        cyan: "bg-accent-info text-text-inverse border-accent-info",
-        amber: "bg-accent-warning text-text-inverse border-accent-warning",
-        gray: "bg-text-muted text-text-inverse border-text-muted"
-    };
-
-    const outlines = {
-        green: "text-accent-primary border-accent-primary",
-        pink: "text-accent-danger border-accent-danger",
-        cyan: "text-accent-info border-accent-info",
-        amber: "text-accent-warning border-accent-warning",
-        gray: "text-text-muted border-text-muted"
-    };
-
-    const base = "inline-flex items-center px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider font-mono border";
-    const style = variant === 'outline' ? `bg-transparent ${outlines[color]}` : `${colors[color]}`;
-
-    return (
-        <span className={`${base} ${style} ${className}`}>
-            {children}
+      )}
+      <input
+        type="text"
+        className={`w-full bg-glass-bg backdrop-blur-xl border border-glass-border text-text-primary px-4 py-3 text-sm rounded-xl focus:outline-none focus:border-accent-primary/50 focus:ring-1 focus:ring-accent-primary/30 transition-all placeholder:text-text-muted/50 ${Icon ? "pl-10" : ""} ${error ? "border-accent-danger/50 focus:border-accent-danger focus:ring-accent-danger/30" : ""}`}
+        aria-invalid={!!error}
+        aria-describedby={error ? errorId : undefined}
+        {...props}
+      />
+      {error && (
+        <span
+          id={errorId}
+          role="alert"
+          className="absolute -bottom-5 left-0 text-[10px] text-accent-danger"
+        >
+          {error}
         </span>
-    );
+      )}
+    </div>
+  );
 };
 
-export const Select = ({ label, options = [], className = "", error, ...props }) => {
-    const selectId = useId();
-    const errorId = useId();
-    const inputId = props.id || selectId;
+export const Card = ({
+  children,
+  title,
+  subtitle,
+  variant = "default",
+  className = "",
+  actions,
+}) => {
+  const variants = {
+    default:
+      "bg-glass-bg backdrop-blur-xl border border-glass-border hover:border-accent-primary/30 rounded-2xl",
+    elevated:
+      "bg-glass-bg backdrop-blur-xl border border-glass-border shadow-card rounded-2xl",
+    outline:
+      "bg-transparent border border-glass-border border-dashed rounded-2xl",
+    highlight:
+      "bg-glass-bg backdrop-blur-xl border border-accent-primary/30 hover:border-accent-primary/50 shadow-accent rounded-2xl",
+  };
 
-    return (
-        <div className={`flex flex-col gap-1.5 ${className}`}>
-            {label && <label htmlFor={inputId} className="text-xs font-mono text-text-muted uppercase">{label}</label>}
-            <div className="relative">
-                <select
-                    id={inputId}
-                    className={`w-full bg-bg-elevated border border-border text-text-primary px-4 py-2.5 text-sm font-mono focus:outline-none focus:border-accent-primary focus:ring-1 focus:ring-accent-primary transition-all appearance-none cursor-pointer ${error ? 'border-accent-danger focus:border-accent-danger focus:ring-accent-danger' : ''}`}
-                    aria-invalid={!!error}
-                    aria-describedby={error ? errorId : undefined}
-                    {...props}
-                >
-                    {options.map((opt) => (
-                        <option key={opt.value} value={opt.value}>
-                            {opt.label}
-                        </option>
-                    ))}
-                </select>
-                <div className="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none text-text-muted">
-                    <svg className="w-4 h-4 fill-current" viewBox="0 0 20 20">
-                        <path d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" fillRule="evenodd" />
-                    </svg>
-                </div>
-            </div>
-            {error && <span id={errorId} role="alert" className="text-[10px] text-accent-danger font-mono">{error}</span>}
+  return (
+    <div
+      className={`p-6 transition-all duration-300 ${variants[variant]} ${className}`}
+    >
+      {(title || subtitle) && (
+        <div className="mb-4">
+          {title && (
+            <h3 className="text-xl font-semibold text-text-primary mb-1">
+              {title}
+            </h3>
+          )}
+          {subtitle && (
+            <p className="text-sm text-text-secondary">{subtitle}</p>
+          )}
         </div>
-    );
+      )}
+      <div className="text-text-secondary leading-relaxed">{children}</div>
+      {actions && (
+        <div className="mt-6 pt-4 border-t border-glass-border flex gap-3">
+          {actions}
+        </div>
+      )}
+    </div>
+  );
+};
+
+export const Tag = ({
+  children,
+  variant = "solid",
+  color = "green",
+  className = "",
+}) => {
+  const colors = {
+    green: "bg-accent-primary/20 text-accent-primary border-accent-primary/30",
+    pink: "bg-accent-danger/20 text-accent-danger border-accent-danger/30",
+    cyan: "bg-accent-info/20 text-accent-info border-accent-info/30",
+    amber: "bg-accent-warning/20 text-accent-warning border-accent-warning/30",
+    gray: "bg-white/5 text-text-muted border-white/10",
+  };
+
+  const base =
+    "inline-flex items-center px-2.5 py-1 text-[10px] font-semibold tracking-wide border rounded-full";
+  const style =
+    variant === "outline"
+      ? colors[color].replace(/\/20/g, "/10").replace(/\/30/g, "/20")
+      : colors[color];
+
+  return <span className={`${base} ${style} ${className}`}>{children}</span>;
+};
+
+export const Select = ({
+  label,
+  options = [],
+  className = "",
+  error,
+  ...props
+}) => {
+  const selectId = useId();
+  const errorId = useId();
+  const inputId = props.id || selectId;
+
+  return (
+    <div className={`flex flex-col gap-1.5 ${className}`}>
+      {label && (
+        <label
+          htmlFor={inputId}
+          className="text-xs text-text-secondary uppercase tracking-wider"
+        >
+          {label}
+        </label>
+      )}
+      <div className="relative">
+        <select
+          id={inputId}
+          className={`w-full bg-glass-bg backdrop-blur-xl border border-glass-border text-text-primary px-4 py-2.5 text-sm rounded-xl focus:outline-none focus:border-accent-primary/50 focus:ring-1 focus:ring-accent-primary/30 transition-all appearance-none cursor-pointer ${error ? "border-accent-danger/50 focus:border-accent-danger focus:ring-accent-danger/30" : ""}`}
+          aria-invalid={!!error}
+          aria-describedby={error ? errorId : undefined}
+          {...props}
+        >
+          {options.map((opt) => (
+            <option key={opt.value} value={opt.value}>
+              {opt.label}
+            </option>
+          ))}
+        </select>
+        <div className="absolute inset-y-0 right-0 flex items-center px-3 pointer-events-none text-text-muted">
+          <svg className="w-4 h-4 fill-current" viewBox="0 0 20 20">
+            <path
+              d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
+              clipRule="evenodd"
+              fillRule="evenodd"
+            />
+          </svg>
+        </div>
+      </div>
+      {error && (
+        <span
+          id={errorId}
+          role="alert"
+          className="text-[10px] text-accent-danger"
+        >
+          {error}
+        </span>
+      )}
+    </div>
+  );
+};
+
+export const Badge = ({ children, variant = "default", className = "" }) => {
+  const variants = {
+    default: "bg-glass-bg border border-glass-border text-text-secondary",
+    primary:
+      "bg-accent-primary/10 border border-accent-primary/20 text-accent-primary",
+    success:
+      "bg-accent-success/10 border border-accent-success/20 text-accent-success",
+    warning:
+      "bg-accent-warning/10 border border-accent-warning/20 text-accent-warning",
+    danger:
+      "bg-accent-danger/10 border border-accent-danger/20 text-accent-danger",
+  };
+
+  return (
+    <span
+      className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${variants[variant]} ${className}`}
+    >
+      {children}
+    </span>
+  );
 };

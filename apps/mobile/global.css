@@ -3,44 +3,48 @@
 @tailwind utilities;
 
 /* ============================================
- * Design System: Cyber-Noir Color Tokens
+ * Design System: "Pointer Inspired" - Modern Green Gradient
  * 
- * Single source of truth for all colors.
- * Matches web app (apps/web/src/index.css)
+ * Mobile version - matches web app (apps/web/src/index.css)
+ * Deep green gradient background + glass morphism + soft shadows
  * ============================================ */
 :root {
-  /* Background Hierarchy */
-  --color-bg-base: #050505; /* OLED Black - Main background */
-  --color-bg-surface: #0a0a0a; /* Cards, panels */
-  --color-bg-elevated: #111111; /* Modals, popovers */
+  /* Background Hierarchy - Deep Green Gradient */
+  --color-bg-base: #0a0f0d; /* Deep forest black - Main background */
+  --color-bg-surface: rgba(255, 255, 255, 0.03); /* Glass cards */
+  --color-bg-elevated: rgba(255, 255, 255, 0.05); /* Elevated cards */
+  --color-bg-gradient-start: #0a0f0d; /* Gradient start */
+  --color-bg-gradient-end: #152821; /* Gradient end - deep green */
 
   /* Text Hierarchy */
-  --color-text-primary: #e0e0e0; /* Primary text */
-  --color-text-secondary: #888888; /* Secondary text */
-  --color-text-muted: #666666; /* Disabled, hints */
+  --color-text-primary: #e8f5e9; /* Soft white - Primary text */
+  --color-text-secondary: #8b9d93; /* Sage green - Secondary text */
+  --color-text-muted: #5c6b60; /* Muted green - Disabled, hints */
 
-  /* Borders */
-  --color-border-default: #333333;
-  --color-border-subtle: #222222;
+  /* Borders - Soft translucent */
+  --color-border-default: rgba(255, 255, 255, 0.08);
+  --color-border-subtle: rgba(255, 255, 255, 0.05);
+  --color-border-hover: rgba(111, 227, 177, 0.3);
 
-  /* Accent Colors - RGB format for opacity support */
-  --color-accent-primary: 0 255 148; /* Matrix Green - Primary CTA */
-  --color-accent-danger: 255 0 85; /* Razor Pink - Errors, destructive */
-  --color-accent-info: 6 182 212; /* Cyan - Info, links */
-  --color-accent-warning: 245 158 11; /* Amber - Warnings */
-  --color-accent-success: 34 197 94; /* Green - Success states */
+  /* Accent Colors - Mint/Cyan Theme - RGB format for opacity support */
+  --color-accent-primary: 111 227 177; /* Mint Green #6FE3B1 - Primary CTA */
+  --color-accent-secondary: 78 205 196; /* Cyan #4ECDC4 - Secondary accent */
+  --color-accent-danger: 255 107 107; /* Coral Red #FF6B6B - Errors */
+  --color-accent-info: 78 205 196; /* Cyan - Info, links */
+  --color-accent-warning: 255 193 7; /* Amber - Warnings */
+  --color-accent-success: 111 227 177; /* Mint - Success states */
 
   /* Neon Colors (for charts and visual variety) */
-  --color-neon-green: 0 255 148;
-  --color-neon-cyan: 6 182 212;
-  --color-neon-purple: 168 85 247;
-  --color-neon-pink: 255 0 85;
-  --color-neon-lime: 132 204 22;
-  --color-neon-magenta: 217 70 239;
-  --color-neon-yellow: 250 204 21;
-  --color-neon-gold: 255 215 0; /* Gold - Reading Mode collocations */
+  --color-neon-green: 111 227 177; /* Mint */
+  --color-neon-cyan: 78 205 196; /* Cyan */
+  --color-neon-purple: 168 85 247; /* Purple */
+  --color-neon-pink: 255 107 107; /* Coral */
+  --color-neon-lime: 132 204 22; /* Lime */
+  --color-neon-magenta: 217 70 239; /* Magenta */
+  --color-neon-yellow: 250 204 21; /* Yellow */
+  --color-neon-gold: 255 215 0; /* Gold */
 
-  /* Category Colors (for gap types, status indicators) - RGB format for opacity support */
+  /* Category Colors - Warm tones compatible with green theme */
   --color-category-orange: 251 146 60; /* orange-400 */
   --color-category-blue: 96 165 250; /* blue-400 */
   --color-category-amber: 251 191 36; /* amber-400 */
@@ -56,7 +60,77 @@
   --color-light-text-muted: #94a3b8; /* slate-400 */
 
   /* Chart Colors */
-  --color-chart-primary: rgb(34, 211, 238); /* cyan-400 */
-  --color-chart-secondary: rgb(148, 163, 184); /* slate-400 */
-  --color-chart-bg: rgb(15, 23, 42); /* slate-900 */
+  --color-chart-primary: rgb(78, 205, 196); /* cyan */
+  --color-chart-secondary: rgb(139, 157, 147); /* sage */
+  --color-chart-bg: rgb(10, 15, 13); /* deep green black */
+
+  /* Glass Effect Variables */
+  --glass-bg: rgba(255, 255, 255, 0.03);
+  --glass-border: rgba(255, 255, 255, 0.08);
+  --glass-hover: rgba(255, 255, 255, 0.05);
+
+  /* Shadow Colors */
+  --shadow-accent: rgba(111, 227, 177, 0.15);
+  --shadow-soft: rgba(0, 0, 0, 0.3);
+}
+
+@layer utilities {
+  /* Grid Background Pattern - Pointer Style */
+  .bg-grid {
+    background-image:
+      linear-gradient(rgba(111, 227, 177, 0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(111, 227, 177, 0.03) 1px, transparent 1px);
+    background-size: 60px 60px;
+  }
+
+  /* Glass Morphism Utilities */
+  .glass {
+    background: var(--glass-bg);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid var(--glass-border);
+  }
+
+  .glass-hover:hover {
+    background: var(--glass-hover);
+    border-color: var(--color-border-hover);
+  }
+
+  /* Soft Shadows */
+  .shadow-soft {
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+  }
+
+  .shadow-accent {
+    box-shadow: 0 4px 20px rgba(111, 227, 177, 0.15);
+  }
+
+  /* Gradient Text */
+  .text-gradient {
+    background: linear-gradient(
+      135deg,
+      rgb(var(--color-accent-primary)) 0%,
+      rgb(var(--color-accent-secondary)) 100%
+    );
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  /* Floating Glow Effect */
+  .glow {
+    box-shadow: 0 0 40px rgba(111, 227, 177, 0.1);
+  }
+}
+
+/* Global Grid Overlay */
+.grid-overlay {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  background-image:
+    linear-gradient(rgba(111, 227, 177, 0.02) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(111, 227, 177, 0.02) 1px, transparent 1px);
+  background-size: 60px 60px;
 }

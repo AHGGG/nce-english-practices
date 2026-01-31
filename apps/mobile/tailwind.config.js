@@ -10,8 +10,8 @@ module.exports = {
     extend: {
       colors: {
         // ============================================
-        // Cyber-Noir Design System
-        // All colors reference CSS variables defined in global.css
+        // "Pointer Inspired" Design System
+        // Modern Green Gradient + Glass Morphism
         // ============================================
 
         // Background Hierarchy
@@ -19,6 +19,10 @@ module.exports = {
           base: "var(--color-bg-base)",
           surface: "var(--color-bg-surface)",
           elevated: "var(--color-bg-elevated)",
+          gradient: {
+            start: "var(--color-bg-gradient-start)",
+            end: "var(--color-bg-gradient-end)",
+          },
         },
 
         // Text Hierarchy
@@ -33,18 +37,20 @@ module.exports = {
         border: {
           DEFAULT: "var(--color-border-default)",
           subtle: "var(--color-border-subtle)",
+          hover: "var(--color-border-hover)",
         },
 
-        // Accent Colors
+        // Accent Colors - Mint/Cyan Theme
         accent: {
           primary: "rgb(var(--color-accent-primary) / <alpha-value>)",
+          secondary: "rgb(var(--color-accent-secondary) / <alpha-value>)",
           danger: "rgb(var(--color-accent-danger) / <alpha-value>)",
           info: "rgb(var(--color-accent-info) / <alpha-value>)",
           warning: "rgb(var(--color-accent-warning) / <alpha-value>)",
           success: "rgb(var(--color-accent-success) / <alpha-value>)",
         },
 
-        // Neon Colors (for charts and visual highlights)
+        // Neon Colors (for visual highlights)
         neon: {
           green: "rgb(var(--color-neon-green) / <alpha-value>)",
           cyan: "rgb(var(--color-neon-cyan) / <alpha-value>)",
@@ -56,7 +62,7 @@ module.exports = {
           gold: "rgb(var(--color-neon-gold) / <alpha-value>)",
         },
 
-        // Category Colors (for gap types, status indicators)
+        // Category Colors (for status indicators)
         category: {
           orange: "rgb(var(--color-category-orange) / <alpha-value>)",
           blue: "rgb(var(--color-category-blue) / <alpha-value>)",
@@ -82,23 +88,50 @@ module.exports = {
           bg: "var(--color-chart-bg)",
         },
 
-        // Legacy ink colors (used by older components)
-        ink: {
-          DEFAULT: "#E0E0E0",
-          muted: "#666666",
-          faint: "#333333",
+        // Glass Effect
+        glass: {
+          bg: "var(--glass-bg)",
+          border: "var(--glass-border)",
+          hover: "var(--glass-hover)",
         },
 
-        // Legacy surface colors
+        // Legacy compatibility
+        ink: {
+          DEFAULT: "var(--color-text-primary)",
+          muted: "var(--color-text-muted)",
+          faint: "var(--color-border-default)",
+        },
+
         surface: {
-          1: "#0A0A0A",
-          2: "#111111",
+          1: "var(--color-bg-surface)",
+          2: "var(--color-bg-elevated)",
         },
       },
       fontFamily: {
-        serif: ["Merriweather", "serif"], // Headings / Story
-        mono: ["JetBrains Mono", "monospace"], // UI / Data / Code
-        sans: ["Inter", "sans-serif"], // Fallback
+        sans: ["Inter", "SF Pro Display", "system-ui", "sans-serif"],
+        serif: ["Merriweather", "Georgia", "serif"],
+        mono: ["JetBrains Mono", "SF Mono", "monospace"],
+      },
+      boxShadow: {
+        soft: "0 4px 20px rgba(0, 0, 0, 0.3)",
+        accent: "0 4px 20px rgba(111, 227, 177, 0.15)",
+        glow: "0 0 40px rgba(111, 227, 177, 0.1)",
+        card: "0 8px 32px rgba(0, 0, 0, 0.4)",
+        float: "0 20px 60px rgba(0, 0, 0, 0.5)",
+      },
+      backgroundImage: {
+        "gradient-radial": "radial-gradient(var(--tw-gradient-stops))",
+        "gradient-conic":
+          "conic-gradient(from 180deg at 50% 50%, var(--tw-gradient-stops))",
+        grid: "linear-gradient(rgba(111, 227, 177, 0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(111, 227, 177, 0.03) 1px, transparent 1px)",
+      },
+      backgroundSize: {
+        grid: "60px 60px",
+      },
+      borderRadius: {
+        "2xl": "1rem",
+        "3xl": "1.5rem",
+        "4xl": "2rem",
       },
     },
   },
