@@ -6,7 +6,7 @@
  *
  * Usage:
  * ```tsx
- * import { useAuthStore, setStorageAdapter } from '@nce/store';
+ * import { useAuthStore, setStorageAdapter, rehydratePersistedStores } from '@nce/store';
  *
  * // For React Native, set AsyncStorage early in app init
  * import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -15,6 +15,8 @@
  *   setItem: (key, value) => AsyncStorage.setItem(key, value),
  *   removeItem: (key) => AsyncStorage.removeItem(key),
  * });
+ * // Then trigger re-hydration so stores load from the correct adapter
+ * rehydratePersistedStores();
  *
  * // Then use stores normally
  * const { user, login } = useAuthStore();
@@ -36,3 +38,10 @@ export * from "./modules/podcast";
 
 // Settings module
 export * from "./modules/settings";
+
+// Re-hydrate all persisted stores after storage adapter is swapped.
+// In React Native, stores are imported (and initial hydration runs with
+// the default localStorage adapter which fails silently) before
+// setStorageAdapter() can configure AsyncStorage. Calling this function
+// after setStorageAdapter() forces all stores to read from the real adapter.
+export { rehydratePersistedStores } from "./lib/rehydrate";

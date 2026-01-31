@@ -1,7 +1,7 @@
 import { Audio, InterruptionModeIOS, InterruptionModeAndroid } from "expo-av";
 import { usePodcastStore, useDownloadStore } from "@nce/store";
 import type { PodcastEpisode } from "@nce/api";
-import * as FileSystem from "expo-file-system";
+import { getInfoAsync } from "expo-file-system/legacy";
 
 class AudioService {
   private sound: Audio.Sound | null = null;
@@ -50,11 +50,19 @@ class AudioService {
     const download = downloadState.downloads[episode.id];
 
     if (download) {
-      const fileInfo = await FileSystem.getInfoAsync(download.localPath);
+      const fileInfo = await getInfoAsync(download.localPath);
       if (fileInfo.exists) {
         console.log("Playing from local cache:", download.localPath);
         uri = download.localPath;
       }
+    }
+
+    // Guard against null/undefined URI
+    if (!uri) {
+      console.error("No playback URI available for episode:", episode.id);
+      store.setBuffering(false);
+      store.setIsPlaying(false);
+      return;
     }
 
     try {
@@ -112,7 +120,13 @@ class AudioService {
       store.setBuffering(status.isBuffering);
       store.setIsPlaying(status.isPlaying);
 
-      if (status.didJustFinish) {
+      // Mark as finished if very close to end (3-second buffer for playback rate edge cases)
+      // This prevents 95% stuck issue when using 1.5x or 2x speed
+      const positionSec = status.positionMillis / 1000;
+      const durationSec = (status.durationMillis || 1) / 1000;
+      const isNearEnd = positionSec >= durationSec - 3;
+
+      if (status.didJustFinish || isNearEnd) {
         store.setIsPlaying(false);
         // Here we could auto-play next logic
       }

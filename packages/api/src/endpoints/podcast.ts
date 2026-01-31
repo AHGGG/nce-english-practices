@@ -79,8 +79,22 @@ export const podcastApi = {
       body: JSON.stringify({ episode_ids: [episodeId] }),
     });
     if (!res.ok) throw new Error("Failed to fetch episode");
-    const episodes = await res.json();
-    return episodes[0] as PodcastEpisode;
+    const data = await res.json();
+    if (!data || data.length === 0) {
+      throw new Error(`Episode ${episodeId} not found`);
+    }
+    // Backend returns nested {episode: {...}, feed: {...}}
+    return data[0].episode as PodcastEpisode;
+  },
+
+  async preview(rssUrl: string) {
+    const res = await authFetch("/api/podcast/preview", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ rss_url: rssUrl }),
+    });
+    if (!res.ok) throw new Error("Preview failed");
+    return res.json() as Promise<FeedDetailResponse>;
   },
 
   async subscribe(rssUrl: string) {

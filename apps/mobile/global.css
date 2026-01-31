@@ -4,30 +4,33 @@
 
 /* ============================================
  * Design System: Cyber-Noir Color Tokens
+ * 
+ * Single source of truth for all colors.
+ * Matches web app (apps/web/src/index.css)
  * ============================================ */
 :root {
   /* Background Hierarchy */
-  --color-bg-base: #050505; /* OLED Black */
-  --color-bg-surface: #0a0a0a; /* Cards */
-  --color-bg-elevated: #111111; /* Modals */
+  --color-bg-base: #050505; /* OLED Black - Main background */
+  --color-bg-surface: #0a0a0a; /* Cards, panels */
+  --color-bg-elevated: #111111; /* Modals, popovers */
 
   /* Text Hierarchy */
-  --color-text-primary: #e0e0e0;
-  --color-text-secondary: #888888;
-  --color-text-muted: #666666;
+  --color-text-primary: #e0e0e0; /* Primary text */
+  --color-text-secondary: #888888; /* Secondary text */
+  --color-text-muted: #666666; /* Disabled, hints */
 
   /* Borders */
   --color-border-default: #333333;
   --color-border-subtle: #222222;
 
   /* Accent Colors - RGB format for opacity support */
-  --color-accent-primary: 0 255 148; /* Matrix Green */
-  --color-accent-danger: 255 0 85;
-  --color-accent-info: 6 182 212;
-  --color-accent-warning: 245 158 11;
-  --color-accent-success: 34 197 94;
+  --color-accent-primary: 0 255 148; /* Matrix Green - Primary CTA */
+  --color-accent-danger: 255 0 85; /* Razor Pink - Errors, destructive */
+  --color-accent-info: 6 182 212; /* Cyan - Info, links */
+  --color-accent-warning: 245 158 11; /* Amber - Warnings */
+  --color-accent-success: 34 197 94; /* Green - Success states */
 
-  /* Neon Colors */
+  /* Neon Colors (for charts and visual variety) */
   --color-neon-green: 0 255 148;
   --color-neon-cyan: 6 182 212;
   --color-neon-purple: 168 85 247;
@@ -35,20 +38,25 @@
   --color-neon-lime: 132 204 22;
   --color-neon-magenta: 217 70 239;
   --color-neon-yellow: 250 204 21;
-  --color-neon-gold: 255 215 0;
+  --color-neon-gold: 255 215 0; /* Gold - Reading Mode collocations */
 
-  /* Category Colors */
-  --color-category-orange: 251 146 60;
-  --color-category-blue: 96 165 250;
-  --color-category-amber: 251 191 36;
-  --color-category-red: 248 113 113;
-  --color-category-gray: 156 163 175;
-  --color-category-indigo: 129 140 248;
-  --color-category-yellow: 250 204 21;
+  /* Category Colors (for gap types, status indicators) - RGB format for opacity support */
+  --color-category-orange: 251 146 60; /* orange-400 */
+  --color-category-blue: 96 165 250; /* blue-400 */
+  --color-category-amber: 251 191 36; /* amber-400 */
+  --color-category-red: 248 113 113; /* red-400 */
+  --color-category-gray: 156 163 175; /* gray-400 */
+  --color-category-indigo: 129 140 248; /* indigo-400 */
+  --color-category-yellow: 250 204 21; /* yellow-400 */
 
-  /* Light Theme Surface */
-  --color-light-surface: #f8fafc;
-  --color-light-border: #e2e8f0;
-  --color-light-text: #1e293b;
-  --color-light-text-muted: #94a3b8;
+  /* Light Theme Surface (for light-bg components) */
+  --color-light-surface: #f8fafc; /* slate-50 */
+  --color-light-border: #e2e8f0; /* slate-200 */
+  --color-light-text: #1e293b; /* slate-800 */
+  --color-light-text-muted: #94a3b8; /* slate-400 */
+
+  /* Chart Colors */
+  --color-chart-primary: rgb(34, 211, 238); /* cyan-400 */
+  --color-chart-secondary: rgb(148, 163, 184); /* slate-400 */
+  --color-chart-bg: rgb(15, 23, 42); /* slate-900 */
 }

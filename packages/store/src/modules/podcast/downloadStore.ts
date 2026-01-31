@@ -12,6 +12,7 @@ export interface DownloadedEpisode {
 
 export interface ActiveDownload {
   episodeId: number;
+  episode: PodcastEpisode; // Store full episode data for display
   progress: number; // 0-1
   status: "pending" | "downloading" | "paused" | "error";
   error?: string;
@@ -88,6 +89,13 @@ export const useDownloadStore = create<DownloadState>()(
       name: "podcast-downloads",
       storage: createJSONStorage(() => zustandStorage),
       partialize: (state) => ({ downloads: state.downloads }), // Only persist completed downloads
+      onRehydrateStorage: () => (state) => {
+        console.log(
+          "[DownloadStore] Hydrated with",
+          state?.downloads ? Object.keys(state.downloads).length : 0,
+          "downloads",
+        );
+      },
     },
   ),
 );

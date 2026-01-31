@@ -23,7 +23,7 @@ export default function DictionaryScreen() {
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-bg-base" edges={['top']}>
+    <SafeAreaView className="flex-1 bg-bg-base">
       {/* Search Header */}
       <View className="p-4 border-b border-border-default">
         <Text className="text-2xl font-bold font-serif text-text-primary mb-4">Dictionary</Text>

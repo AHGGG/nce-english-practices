@@ -111,7 +111,7 @@ export default function VoiceLabScreen() {
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-bg-base" edges={["top"]}>
+    <SafeAreaView className="flex-1 bg-bg-base">
       {/* Header */}
       <View className="h-14 flex-row items-center justify-between px-4 border-b border-border-default bg-bg-surface">
         <View className="flex-row items-center">

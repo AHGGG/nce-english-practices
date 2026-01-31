@@ -679,7 +679,7 @@ export default function StudyScreen() {
 
   if (!sourceId) {
     return (
-      <SafeAreaView className="flex-1 bg-bg-base" edges={["top"]}>
+      <SafeAreaView className="flex-1 bg-bg-base">
         <View className="flex-1 justify-center items-center p-6">
           <Text className="text-accent-warning text-center mb-4">
             Missing article ID
@@ -853,7 +853,7 @@ export default function StudyScreen() {
   );
 
   return (
-    <SafeAreaView className="flex-1 bg-bg-base" edges={["top"]}>
+    <SafeAreaView className="flex-1 bg-bg-base">
       <Stack.Screen options={{ headerShown: false }} />
 
       <View className="h-14 flex-row items-center px-4 border-b border-border-default bg-bg-surface">

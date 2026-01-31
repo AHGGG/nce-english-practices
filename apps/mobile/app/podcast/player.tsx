@@ -36,11 +36,32 @@ export default function PodcastPlayerScreen() {
   const router = useRouter();
   const id = parseInt(episodeId, 10);
 
+  // Guard against invalid ID
+  if (!episodeId || isNaN(id)) {
+    return (
+      <SafeAreaView className="flex-1 bg-bg-base items-center justify-center px-4">
+        <Text className="text-accent-danger text-center mb-4">
+          Invalid episode ID
+        </Text>
+        <TouchableOpacity
+          onPress={() => router.back()}
+          className="bg-bg-surface px-6 py-3 rounded-xl"
+        >
+          <Text className="text-text-primary">Go Back</Text>
+        </TouchableOpacity>
+      </SafeAreaView>
+    );
+  }
+
   // Fetch Episode Details (ensure we have full data)
-  const { data: episode, isLoading } = useQuery({
+  const {
+    data: episode,
+    isLoading,
+    error,
+  } = useQuery({
     queryKey: ["podcast", "episode", id],
     queryFn: () => podcastApi.getEpisode(id),
-    enabled: !!id,
+    enabled: true, // Always enabled since we validated ID above
   });
 
   // Global State
@@ -53,19 +74,20 @@ export default function PodcastPlayerScreen() {
   const download = useDownloadStore((state) => state.downloads[id]);
   const activeDownload = useDownloadStore((state) => state.activeDownloads[id]);
 
-  // Display Episode (Prefer store if matching, else fetched)
-
-  const displayEpisode = currentEpisode?.id === id ? currentEpisode : episode;
+  // Display Episode: Prefer podcast store > downloaded episode > fetched from API
+  const displayEpisode =
+    currentEpisode?.id === id ? currentEpisode : download?.episode || episode;
 
   // Initialize Audio if needed
   useEffect(() => {
-    if (!episode) return;
+    // Use displayEpisode which includes download.episode fallback
+    if (!displayEpisode) return;
 
     // If no episode playing, or playing different episode, start this one
-    if (!currentEpisode || currentEpisode.id !== episode.id) {
-      audioService.playEpisode(episode);
+    if (!currentEpisode || currentEpisode.id !== displayEpisode.id) {
+      audioService.playEpisode(displayEpisode);
     }
-  }, [episode, currentEpisode]);
+  }, [displayEpisode, currentEpisode]);
 
   const togglePlay = async () => {
     if (isPlaying) {

@@ -22,8 +22,10 @@ import {
 import PlayerBar from "../src/components/PlayerBar";
 import { audioService } from "../src/services/AudioService";
 import { downloadService } from "../src/services/DownloadService";
-import { notificationService } from "../src/services/NotificationService";
-import { useSettingsStore } from "@nce/store";
+// NOTE: expo-notifications removed from Expo Go in SDK 53+
+// Uncomment when using Development Build
+// import { notificationService } from "../src/services/NotificationService";
+// import { useSettingsStore } from "@nce/store";
 
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
@@ -62,11 +64,13 @@ function RootContent() {
     downloadService.init();
 
     // Init Notifications if enabled
-    const { notificationsEnabled, reminderTime } = useSettingsStore.getState();
-    if (notificationsEnabled) {
-      const [h, m] = reminderTime.split(":").map(Number);
-      notificationService.scheduleDailyReminder(h, m, true);
-    }
+    // NOTE: Disabled - expo-notifications not available in Expo Go SDK 53+
+    // Uncomment when using Development Build
+    // const { notificationsEnabled, reminderTime } = useSettingsStore.getState();
+    // if (notificationsEnabled) {
+    //   const [h, m] = reminderTime.split(":").map(Number);
+    //   notificationService.scheduleDailyReminder(h, m, true);
+    // }
   }, []);
 
   // Auth Guard
