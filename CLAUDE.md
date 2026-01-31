@@ -457,6 +457,13 @@ To support multiple dictionaries (e.g., Collins + LDOCE) in one view:
   - **Fix**: Always check `tailwind.config.js` to verify the color token exists before using it. Use semantic tokens from the design system (e.g., `text-text-primary`, `bg-accent-success`, `bg-category-blue`).
 - **Available Category Colors**: `orange`, `blue`, `amber`, `red`, `gray`, `indigo`, `yellow` (NO `green` - use `accent-success` instead).
 
+- **NativeWind Alpha Syntax (Mobile)**: `bg-black/50`, `bg-accent-primary/20` do NOT work on NativeWind.
+  - **Fix**: Use inline styles: `style={{ backgroundColor: "rgba(0,0,0,0.5)" }}`
+  - **Ref**: [Mobile Dev Pitfalls Skill](docs/skills/mobile-dev-pitfalls.md)
+
+- **NativeWind Conditional ClassName (Mobile)**: `className={isActive ? "text-green" : "text-gray"}` triggers warnings.
+  - **Fix**: Use explicit styles or separate render logic.
+
 - **Authenticated Fetch in PWA/Offline Utils**: Native `fetch()` does not include JWT tokens.
   - **Fix**: Always pass `authFetch` (from `api/auth.js`) or manually add `Authorization` headers when making requests from utility functions like `downloadEpisodeForOffline`.
 - **Podcast Redirects & Content-Length**: CDNs (like Megaphone) redirect audio requests, and `httpx` follows redirects by default only for some methods or needs explicit config. Also, `Content-Length` is needed for progress bars.
@@ -582,26 +589,46 @@ For heavy data transfer (like passing a 2MB book content to the Reader):
 
 > See [Mobile Voice Debugging Skill](docs/skills/mobile-voice-debugging.md) for HTTPS setup and troubleshooting.
 
+### 6. NativeWind Styling Pitfalls (2026-01-31)
+
+NativeWind v4 有多个与 Tailwind Web 不同的行为，修复 Library 页面书籍选择器 Modal 时发现：
+
+**关键问题**：
+
+1. **Alpha slash 语法不支持**：`bg-black/50`、`bg-accent-primary/20` 不生效
+   - **修复**：使用内联样式 `style={{ backgroundColor: "rgba(0,0,0,0.5)" }}`
+
+2. **条件 className 警告**：`className={isActive ? "text-green" : "text-gray"}` 会触发警告
+   - **修复**：使用显式样式或分状态渲染组件
+
+3. **模板字符串类名**：`className={`bg-accent-${type}`}` 无法解析
+   - **修复**：使用 `style={{ backgroundColor: "rgb(var(--color-accent-...))" }}`
+
+4. **Web-only 样式**：`bg-inherit`、`bg-current` 在 Native 上无效
+   - **修复**：使用具体颜色值
+
+> 详细解决方案见：[Mobile Dev Pitfalls Skill](docs/skills/mobile-dev-pitfalls.md)
+
 ## Skills (Detailed Tool Guides)
 
 以下技能模块包含详细操作指南，需要时按需加载：
 
-| Skill                    | 路径                                                                               | 何时使用                                               |
-| ------------------------ | ---------------------------------------------------------------------------------- | ------------------------------------------------------ |
-| **Mobile Architecture**  | [docs/MOBILE_ARCHITECTURE_PLAN.md](docs/MOBILE_ARCHITECTURE_PLAN.md)               | **移动端开发** - 跨端复用架构与迁移计划                |
-| **Mobile Dev Pitfalls**  | [docs/skills/mobile-dev-pitfalls.md](docs/skills/mobile-dev-pitfalls.md)           | **移动端开发** - 解决 NativeWind/React Native 配置问题 |
-| Mobile Quick Reference   | [docs/MOBILE_QUICK_REFERENCE.md](docs/MOBILE_QUICK_REFERENCE.md)                   | **移动端开发** - 快速参考与代码模板                    |
-| User Administration      | [docs/skills/user-administration.md](docs/skills/user-administration.md)           | **管理用户** - 创建、迁移数据、重置密码                |
-| Database Management      | [docs/skills/database-management.md](docs/skills/database-management.md)           | **数据库维护** - Alembic 迁移命令                      |
-| Dictionary Maintenance   | [docs/skills/dictionary-maintenance.md](docs/skills/dictionary-maintenance.md)     | **词典维护** - Parser Golden Standard 测试             |
-| Mobile Voice Debugging   | [docs/skills/mobile-voice-debugging.md](docs/skills/mobile-voice-debugging.md)     | **移动端调试** - HTTPS 证书与远程调试                  |
-| Post-Change Verification | [docs/skills/post-change-verification.md](docs/skills/post-change-verification.md) | **代码变更后、通知用户前** - 自动验证变更是否有问题    |
-| Local Deployment         | [docs/skills/local-deployment.md](docs/skills/local-deployment.md)                 | Docker 本地/内网部署                                   |
-| Voice Integrations       | [docs/skills/voice-integrations.md](docs/skills/voice-integrations.md)             | 调用 ElevenLabs/Deepgram/Gemini/Dashscope 语音 API     |
-| AUI Streaming Protocol   | [docs/skills/aui-streaming-protocol.md](docs/skills/aui-streaming-protocol.md)     | 实现或调试 Agent 实时流式 UI 更新                      |
-| Podcast Architecture     | [docs/skills/podcast-architecture.md](docs/skills/podcast-architecture.md)         | **Podcast 开发** - Apple API 策略与缓存机制            |
-| SDK Debugging            | [docs/skills/sdk-debugging.md](docs/skills/sdk-debugging.md)                       | 第三方 SDK 调用失败的诊断方法                          |
-| API Docs Query           | [docs/skills/api-docs-query.md](docs/skills/api-docs-query.md)                     | 查询 ElevenLabs/Deepgram 离线 API 文档                 |
+| Skill                    | 路径                                                                               | 何时使用                                                         |
+| ------------------------ | ---------------------------------------------------------------------------------- | ---------------------------------------------------------------- |
+| **Mobile Architecture**  | [docs/MOBILE_ARCHITECTURE_PLAN.md](docs/MOBILE_ARCHITECTURE_PLAN.md)               | **移动端开发** - 跨端复用架构与迁移计划                          |
+| **Mobile Dev Pitfalls**  | [docs/skills/mobile-dev-pitfalls.md](docs/skills/mobile-dev-pitfalls.md)           | **移动端开发** - NativeWind 样式问题、Alpha 语法、条件 className |
+| Mobile Quick Reference   | [docs/MOBILE_QUICK_REFERENCE.md](docs/MOBILE_QUICK_REFERENCE.md)                   | **移动端开发** - 快速参考与代码模板                              |
+| User Administration      | [docs/skills/user-administration.md](docs/skills/user-administration.md)           | **管理用户** - 创建、迁移数据、重置密码                          |
+| Database Management      | [docs/skills/database-management.md](docs/skills/database-management.md)           | **数据库维护** - Alembic 迁移命令                                |
+| Dictionary Maintenance   | [docs/skills/dictionary-maintenance.md](docs/skills/dictionary-maintenance.md)     | **词典维护** - Parser Golden Standard 测试                       |
+| Mobile Voice Debugging   | [docs/skills/mobile-voice-debugging.md](docs/skills/mobile-voice-debugging.md)     | **移动端调试** - HTTPS 证书与远程调试                            |
+| Post-Change Verification | [docs/skills/post-change-verification.md](docs/skills/post-change-verification.md) | **代码变更后、通知用户前** - 自动验证变更是否有问题              |
+| Local Deployment         | [docs/skills/local-deployment.md](docs/skills/local-deployment.md)                 | Docker 本地/内网部署                                             |
+| Voice Integrations       | [docs/skills/voice-integrations.md](docs/skills/voice-integrations.md)             | 调用 ElevenLabs/Deepgram/Gemini/Dashscope 语音 API               |
+| AUI Streaming Protocol   | [docs/skills/aui-streaming-protocol.md](docs/skills/aui-streaming-protocol.md)     | 实现或调试 Agent 实时流式 UI 更新                                |
+| Podcast Architecture     | [docs/skills/podcast-architecture.md](docs/skills/podcast-architecture.md)         | **Podcast 开发** - Apple API 策略与缓存机制                      |
+| SDK Debugging            | [docs/skills/sdk-debugging.md](docs/skills/sdk-debugging.md)                       | 第三方 SDK 调用失败的诊断方法                                    |
+| API Docs Query           | [docs/skills/api-docs-query.md](docs/skills/api-docs-query.md)                     | 查询 ElevenLabs/Deepgram 离线 API 文档                           |
 
 ### Voice Integrations (概要)
 

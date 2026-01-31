@@ -8,6 +8,50 @@
  * Mobile version - matches web app (apps/web/src/index.css)
  * Deep green gradient background + glass morphism + soft shadows
  * ============================================ */
+
+/*
+ * IMPORTANT: NativeWind (Tailwind for React Native) Caveats
+ * Reference: https://www.nativewind.dev/docs/
+ * 
+ * 1. Alpha slash syntax NOT supported for background colors:
+ *    ❌ bg-black/50, bg-accent-primary/20
+ *    ✅ backgroundColor: "rgba(0,0,0,0.5)" (use inline style)
+ *    ✅ bg-opacity-50 (if enabled in corePlugins, see below)
+ * 
+ * 2. Web-only classes (not supported on native):
+ *    ❌ bg-inherit, bg-current
+ *    ✅ Use explicit color values
+ * 
+ * 3. backgroundOpacity plugin is DISABLED by default (performance):
+ *    If you need dynamic opacity, enable in tailwind.config.js:
+ *    ```
+ *    corePlugins: {
+ *      backgroundOpacity: true,
+ *    },
+ *    ```
+ * 
+ * 4. Explicit styles recommended:
+ *    Instead of conditionally applying styles, declare all styles.
+ *    ❌ className={isActive ? "text-green-500" : "text-gray-500"}
+ *    ✅ className="text-green-500 dark:text-gray-500"
+ * 
+ * 5. Flexbox differences:
+ *    - flexDirection defaults to 'column' (not 'row')
+ *    - Use explicit `flex-1` for consistent sizing
+ * 
+ * 6. Platform-specific colors:
+ *    Use platformSelect() in tailwind.config.js for native platform colors:
+ *    ```
+ *    const { platformSelect, platformColor } = require("nativewind/theme");
+ *    colors: {
+ *      error: platformSelect({
+ *        ios: platformColor("systemRed"),
+ *        android: platformColor("?android:colorError"),
+ *        default: "red",
+ *      }),
+ *    }
+ *    ```
+ */
 :root {
   /* Background Hierarchy - Deep Green Gradient */
   --color-bg-base: #0a0f0d; /* Deep forest black - Main background */

@@ -332,3 +332,299 @@ rm -rf node_modules/react-native-css-interop_tmp_*
 - `apps/mobile/metro.config.cjs` - Metro bundler config
 - `apps/mobile/app/_layout.tsx` - App entry point
 - `apps/mobile/src/lib/platform-init.ts` - Platform adapters
+
+---
+
+## 10. NativeWind Alpha Slash Syntax 不生效
+
+### Symptom
+
+Modal 背景透明，显示为白屏而非半透明遮罩：
+
+```jsx
+// 不生效 - 背景透明
+<View className="bg-black/50">
+  <Text>Content</Text>
+</View>
+```
+
+### Root Cause
+
+NativeWind v4 **不支持** Tailwind 的 alpha slash 语法（如 `bg-black/50`、`bg-accent-primary/20`）。
+
+### Fix
+
+使用内联样式替代：
+
+```jsx
+// 生效
+<View style={{ backgroundColor: "rgba(0, 0, 0, 0.5)" }}>
+  <Text>Content</Text>
+</View>
+```
+
+### Affected Code
+
+```jsx
+// BEFORE (broken)
+<View className="bg-black/50" />
+
+// AFTER (works)
+<View style={{ backgroundColor: "rgba(0, 0, 0, 0.5)" }} />
+```
+
+---
+
+## 11. 条件样式 (Conditional ClassName) 警告
+
+### Symptom
+
+NativeWind logs warnings about conditional styles:
+
+```
+NativeWind: Conditional classes are not currently supported
+```
+
+### Root Cause
+
+使用三元表达式动态切换 className 会导致样式不稳定或警告：
+
+```jsx
+// 问题代码
+<Text className={`text-sm ${isCompleted ? "text-accent-primary" : "text-text-muted"}`}>
+```
+
+### Fix
+
+**Option A**: 使用显式样式声明（推荐）
+
+```jsx
+<Text className="text-sm text-text-muted" style={{ color: isCompleted ? "#6fe3b1" : undefined }}>
+```
+
+**Option B**: 根据状态选择不同的组件
+
+```jsx
+{
+  isCompleted ? (
+    <Text className="text-sm text-accent-primary">Completed</Text>
+  ) : (
+    <Text className="text-sm text-text-muted">To Read</Text>
+  );
+}
+```
+
+**Option C**: 使用 `display` 属性控制元素显示
+
+```jsx
+<CheckCircle
+  size={14}
+  color="#00FF94"
+  style={{ display: isCompleted ? "flex" : "none" }}
+/>
+```
+
+### Affected Code
+
+```jsx
+// BEFORE (warning)
+<Text className={`text-sm font-bold ${isCompleted ? "text-accent-primary" : "text-text-muted"}`}>
+  {title}
+</Text>
+
+// AFTER (clean)
+<Text className="text-sm font-bold text-text-muted">
+  {title}
+</Text>
+```
+
+---
+
+## 12. 模板字符串动态类名
+
+### Symptom
+
+颜色不显示或显示为透明：
+
+```jsx
+// 问题
+<View className={`bg-accent-${isDanger ? "danger" : "primary"}/20`} />
+```
+
+### Root Cause
+
+NativeWind 无法解析动态拼接的类名，特别是结合 alpha 语法时。
+
+### Fix
+
+使用内联样式：
+
+```jsx
+// 修复前
+<View className={`w-2 h-full rounded-full bg-accent-${item.difficulty > 3 ? 'danger' : 'primary'}/20`} />
+
+// 修复后
+<View
+  className="w-2 h-full rounded-full"
+  style={{
+    backgroundColor: item.difficulty > 3
+      ? "rgb(var(--color-accent-danger))"
+      : "rgb(var(--color-accent-primary))",
+    opacity: 0.2
+  }}
+/>
+```
+
+### 颜色变量格式
+
+在 `tailwind.config.js` 中配置 RGB 格式颜色：
+
+```js
+colors: {
+  accent: {
+    primary: "111 227 177",  // RGB 格式，无逗号
+    danger: "255 107 107",
+  }
+}
+```
+
+使用时用 `rgb(var(--color-accent-primary))`。
+
+---
+
+## 13. Modal 背景透明问题
+
+### Symptom
+
+点击书籍选择器后，Modal 背景透明，看不到遮罩层。
+
+### Root Cause
+
+NativeWind 的 `bg-black/50` 语法不生效，导致背景完全透明。
+
+### Fix
+
+使用完整的内联样式 Modal 结构：
+
+```tsx
+<Modal
+  visible={isBookModalVisible}
+  transparent
+  animationType="slide"
+  onRequestClose={() => setIsBookModalVisible(false)}
+>
+  {/* 内联样式替代 Tailwind 类 */}
+  <View
+    style={{
+      flex: 1,
+      justifyContent: "flex-end",
+      backgroundColor: "rgba(0, 0, 0, 0.5)",
+    }}
+  >
+    <View
+      style={{
+        backgroundColor: "#0a0f0d",
+        borderTopLeftRadius: 24,
+        borderTopRightRadius: 24,
+        padding: 24,
+        width: "100%",
+        borderTopWidth: 1,
+        borderColor: "rgba(255, 255, 255, 0.08)",
+      }}
+    >
+      {/* 内容 */}
+    </View>
+  </View>
+</Modal>
+```
+
+### 完整示例
+
+见 `apps/mobile/app/(tabs)/library.tsx` 中的书籍选择器 Modal。
+
+---
+
+## 14. Web-Only 样式不生效
+
+### Symptom
+
+某些样式在 Native 上不生效：
+
+```jsx
+// Web only - 这些在 Native 上无效
+<View className="bg-inherit" />
+<View className="bg-current" />
+```
+
+### Root Cause
+
+`bg-inherit` 和 `bg-current` 是 Web 专有属性，NativeWind 不支持。
+
+### Fix
+
+使用明确的颜色值：
+
+```jsx
+// BEFORE (web only)
+<View className="bg-current" />
+
+// AFTER (works on both)
+<View style={{ backgroundColor: "currentColor" }} />
+```
+
+---
+
+## 15. backgroundOpacity 插件默认禁用
+
+### Symptom
+
+无法使用 `bg-opacity-XX` 类动态设置透明度。
+
+### Root Cause
+
+NativeWind 为性能默认禁用了 `backgroundOpacity` 插件。
+
+### Fix
+
+**Option A**: 启用插件（在 `tailwind.config.js` 中）：
+
+```js
+module.exports = {
+  corePlugins: {
+    backgroundOpacity: true,
+  },
+};
+```
+
+**Option B**: 直接使用内联样式（推荐，简单场景）：
+
+```jsx
+<View style={{ opacity: 0.5 }}>
+  <Text>Content</Text>
+</View>
+```
+
+---
+
+## Quick Reference: NativeWind vs Tailwind Web
+
+| 功能            | Tailwind Web | NativeWind v4                                          |
+| --------------- | ------------ | ------------------------------------------------------ |
+| `bg-black/50`   | ✅           | ❌ 用 `style={{ backgroundColor: "rgba(0,0,0,0.5)" }}` |
+| `bg-opacity-50` | ✅           | ❌ 用 `style={{ opacity: 0.5 }}`                       |
+| `bg-inherit`    | ✅           | ❌ 用具体颜色                                          |
+| `bg-current`    | ✅           | ❌ 用具体颜色                                          |
+| 条件 className  | ✅           | ⚠️ 警告，用显式样式                                    |
+| 模板动态类名    | ✅           | ❌ 用内联样式                                          |
+| flex-direction  | row (默认)   | column (默认)                                          |
+
+---
+
+## Best Practices for NativeWind
+
+1. **优先使用 Tailwind 类**：简单、静态的样式（如 `p-4`、`rounded-xl`）
+2. **透明度用内联**：`style={{ opacity: 0.2 }}` 或 `backgroundColor: "rgba(...)"`
+3. **避免条件 className**：使用 `style` 或分状态渲染组件
+4. **RGB 颜色变量**：`"111 227 177"` 格式，配合 `rgb(var(--...))`
+5. **显式 flex 方向**：始终添加 `flex-row` 或 `flex-col`
+6. **测试时用真机**：模拟器可能有样式渲染差异
