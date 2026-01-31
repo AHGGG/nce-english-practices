@@ -96,30 +96,28 @@ Keep it encouraging and simple.""",
 
 
 EXPLAIN_PROMPTS = {
-    "default_word": """Define "{text}" clearly (dictionary style).
- 
- {context}
- 
- Respond in this EXACT format (each section on its own line):
- 
- 📖 MEANING:
- [Clear, concise dictionary definition. If the word has multiple meanings, choose the one matching the context. Do NOT start with "In this context".]
- 
- 💡 EXAMPLES:
- - [Example sentence 1 (Do NOT use the context sentences provided above)]
- - [Example sentence 2 (Do NOT use the context sentences provided above)]""",
-    "default_phrase": """Use the Collins COBUILD style to define the phrase "{text}".
- 
- {context}
- 
- Respond in this EXACT format (each section on its own line):
- 
- 📖 MEANING:
- [COBUILD style full-sentence definition using simple vocabulary. e.g., "If you give up, you stop trying..."]
- 
- 💡 EXAMPLES:
- - [Example sentence 1 (Do NOT use the context sentences provided above)]
- - [Example sentence 2 (Do NOT use the context sentences provided above)]""",
+    "default_word": """用简单易懂的大白话解释 "{text}" 在下面句子中的意思。
+
+{context}
+
+要求：
+1. 用通俗的中文解释这个词在当前语境下的意思（不要说"在这个语境中"）
+2. 如果有多个意思，选择最符合上下文的
+3. 给1-2个例句帮助理解（不要用上面提供的原句）
+4. 像朋友聊天一样解释，不要太正式
+
+直接给出解释，不要有开场白。""",
+    "default_phrase": """用简单易懂的大白话解释短语 "{text}" 在下面句子中的意思。
+
+{context}
+
+要求：
+1. 用通俗的中文解释这个短语的意思
+2. 说明在什么情况下用这个短语
+3. 给1-2个日常例句（不要用上面提供的原句）
+4. 像朋友聊天一样解释，不要太正式
+
+直接给出解释，不要有开场白。""",
     "simple": """Explain the {item_type} "{text}" in the context of the sentence below.
 Explanation must be in SIMPLE ENGLISH, suitable for a beginner learner.
 Use simple vocabulary and short sentences.
