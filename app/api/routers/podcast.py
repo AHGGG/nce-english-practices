@@ -7,6 +7,8 @@ from fastapi import APIRouter, HTTPException, Depends, UploadFile, File, Request
 from fastapi.responses import Response
 from pydantic import BaseModel
 from typing import List, Optional
+from datetime import datetime
+import time
 
 from app.api.routers.auth import get_current_user_id
 from app.config import settings
@@ -24,6 +26,32 @@ BROWSER_USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.
 router = APIRouter(prefix="/api/podcast", tags=["podcast"])
 
 # --- Pydantic Schemas ---
+
+
+class PositionSyncRequest(BaseModel):
+    position: float
+    timestamp: float  # Unix timestamp in milliseconds
+    device_id: str
+    device_type: Optional[str] = "web"
+    playback_rate: float = 1.0
+
+
+class PositionSyncResponse(BaseModel):
+    success: bool
+    position: float
+    server_timestamp: float
+    conflict_resolved: bool
+    message: Optional[str] = None
+
+
+class DeviceInfo(BaseModel):
+    device_id: str
+    device_type: Optional[str]
+    last_active: Optional[datetime]
+
+
+class DeviceListResponse(BaseModel):
+    devices: List[DeviceInfo]
 
 
 class ItunesSearchResult(BaseModel):
@@ -846,6 +874,109 @@ async def get_episode_position(
     async with AsyncSessionLocal() as db:
         position = await podcast_service.get_last_position(db, user_id, episode_id)
         return {"position_seconds": position}
+
+
+@router.post("/episode/{episode_id}/position/sync")
+async def sync_position(
+    episode_id: int,
+    request: PositionSyncRequest,
+    user_id: str = Depends(get_current_user_id),
+):
+    """Sync position from a device with conflict detection."""
+    async with AsyncSessionLocal() as db:
+        timestamp = datetime.fromtimestamp(request.timestamp / 1000)
+
+        # Try to update
+        result = await podcast_service.update_episode_state(
+            db,
+            user_id,
+            episode_id,
+            request.position,
+            device_id=request.device_id,
+            device_type=request.device_type,
+            timestamp=timestamp,
+            playback_rate=request.playback_rate,
+        )
+
+        if result is None:
+            # Conflict! Fetch current state to return
+            current_state = await podcast_service.get_episode_state(db, user_id, episode_id)
+            server_ts = (
+                current_state.last_synced_at.timestamp() * 1000
+                if current_state and current_state.last_synced_at
+                else time.time() * 1000
+            )
+            position = current_state.current_position_seconds if current_state else 0.0
+
+            return PositionSyncResponse(
+                success=True,
+                position=position,
+                server_timestamp=server_ts,
+                conflict_resolved=True,
+                message="Position not updated (server has newer data)",
+            )
+
+        return PositionSyncResponse(
+            success=True,
+            position=request.position,
+            server_timestamp=time.time() * 1000,
+            conflict_resolved=False,
+        )
+
+
+@router.get("/devices")
+async def list_devices(user_id: str = Depends(get_current_user_id)):
+    """List all devices for the current user."""
+    async with AsyncSessionLocal() as db:
+        devices = await podcast_service.list_devices(db, user_id)
+        return DeviceListResponse(devices=[DeviceInfo(**d) for d in devices])
+
+
+@router.post("/episode/{episode_id}/position/resolve")
+async def resolve_position(
+    episode_id: int,
+    request: PositionSyncRequest,
+    user_id: str = Depends(get_current_user_id),
+):
+    """Get latest position with conflict resolution (Client vs Server)."""
+    async with AsyncSessionLocal() as db:
+        current_state = await podcast_service.get_episode_state(db, user_id, episode_id)
+
+        if not current_state:
+            # No server state, trust client
+            return PositionSyncResponse(
+                success=True,
+                position=request.position,
+                server_timestamp=time.time() * 1000,
+                conflict_resolved=False,
+                message="No server state found",
+            )
+
+        server_ts = (
+            current_state.last_synced_at.timestamp() * 1000
+            if current_state.last_synced_at
+            else 0
+        )
+
+        if request.timestamp > server_ts:
+            # Client is newer
+            return PositionSyncResponse(
+                success=True,
+                position=request.position,
+                server_timestamp=server_ts,
+                conflict_resolved=False,
+                message="Client is newer",
+            )
+        else:
+            # Server is newer
+            return PositionSyncResponse(
+                success=True,
+                position=current_state.current_position_seconds,
+                server_timestamp=server_ts,
+                conflict_resolved=True,
+                message="Server is newer",
+            )
+
 
 
 # --- Recently Played ---

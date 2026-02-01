@@ -23,6 +23,13 @@ import {
   getStorageEstimate,
   clearPodcastCache,
 } from "../utils/offline";
+import {
+  savePositionLocal,
+  getLocalPosition,
+  getLatestPosition,
+  getDeviceId,
+  getDeviceType,
+} from "../utils/localProgress";
 
 const PodcastContext = createContext(null);
 
@@ -193,31 +200,51 @@ export function PodcastProvider({ children }) {
     };
   }, []);
 
-  // Save progress periodically and on pause/unload
+  // Sync Logic (Local + Cloud)
   useEffect(() => {
-    if (!sessionId) return;
+    if (!currentEpisode?.id) return;
 
-    // Function to save current position
-    const savePosition = () => {
-      // Skip saving if we are in the process of finishing (handled by 'ended' event)
-      if (isFinishingRef.current) {
-        console.log("[Podcast] Skipping savePosition (episode finishing)");
-        return;
+    // 1. High-frequency Local Save (1s)
+    const localSaveInterval = setInterval(() => {
+      if (isPlaying && audioRef.current) {
+        const position = audioRef.current.currentTime;
+        savePositionLocal(currentEpisode.id, position, playbackRate).catch(
+          (e) => console.warn("[Podcast] Local save failed:", e),
+        );
       }
+    }, 1000);
 
-      const currentPos = audioRef.current?.currentTime || 0;
-      if (currentPos > 0) {
-        console.log("[Podcast] Saving position:", currentPos);
-        podcastApi
-          .updateListeningSession(sessionId, listenedSeconds, currentPos)
-          .catch(console.error);
+    // 2. Lower-frequency Cloud Sync (5s)
+    const cloudSyncInterval = setInterval(async () => {
+      if (isPlaying && sessionId) {
+        const localPos = await getLocalPosition(currentEpisode.id);
+        if (localPos) {
+          podcastApi
+            .syncPosition(currentEpisode.id, {
+              position: localPos.position,
+              timestamp: localPos.timestamp,
+              deviceId: localPos.deviceId,
+              deviceType: localPos.deviceType,
+              playbackRate: localPos.playbackRate,
+            })
+            .catch((e) => console.warn("[Podcast] Cloud sync failed:", e));
+        }
       }
-    };
+    }, 5000);
 
-    // Save on pause
-    const handlePause = () => {
+    // Save on pause (Immediate Local + Sync)
+    const handlePause = async () => {
       console.log("[Podcast] Paused, saving position");
-      savePosition();
+      if (audioRef.current) {
+        const pos = audioRef.current.currentTime;
+        await savePositionLocal(currentEpisode.id, pos, playbackRate);
+        const localPos = await getLocalPosition(currentEpisode.id);
+        if (localPos) {
+          podcastApi
+            .syncPosition(currentEpisode.id, localPos)
+            .catch(console.error);
+        }
+      }
     };
 
     // Save on beforeunload using sendBeacon for reliability
@@ -231,6 +258,7 @@ export function PodcastProvider({ children }) {
         : currentPos;
 
       if (currentPos > 0 || isFinishing) {
+        // Legacy session update
         const data = JSON.stringify({
           session_id: sessionId,
           listened_seconds: listenedSeconds,
@@ -238,28 +266,23 @@ export function PodcastProvider({ children }) {
           is_finished: isFinishing,
         });
         navigator.sendBeacon("/api/podcast/session/update-beacon", data);
+
+        // Also try to save locally (synchronously might not work well, but worth a try)
+        // IndexedDB is async, so we can't guarantee it works in beforeunload.
+        // We rely on the 1s interval having saved recently.
       }
     };
 
-    // Add listeners
     audioRef.current?.addEventListener("pause", handlePause);
     window.addEventListener("beforeunload", handleBeforeUnload);
 
-    // Also save periodically (every 10 seconds when playing)
-    const interval = setInterval(() => {
-      if (isPlaying) {
-        savePosition();
-      }
-    }, 10000); // Every 10 seconds
-
     return () => {
+      clearInterval(localSaveInterval);
+      clearInterval(cloudSyncInterval);
       audioRef.current?.removeEventListener("pause", handlePause);
       window.removeEventListener("beforeunload", handleBeforeUnload);
-      clearInterval(interval);
-      // Save position on cleanup
-      savePosition();
     };
-  }, [sessionId, isPlaying, listenedSeconds]);
+  }, [currentEpisode, isPlaying, sessionId, playbackRate, listenedSeconds]);
 
   // Load offline episodes and storage info on mount
   useEffect(() => {
@@ -428,10 +451,9 @@ export function PodcastProvider({ children }) {
       let resumePosition = startPosition;
       if (resumePosition === null) {
         try {
-          const { position_seconds } = await podcastApi.getEpisodePosition(
-            episode.id,
-          );
-          resumePosition = position_seconds || 0;
+          // Use getLatestPosition which checks local and server (with conflict resolution)
+          const { position } = await getLatestPosition(episode.id);
+          resumePosition = position || 0;
         } catch (e) {
           console.error("Failed to get position:", e);
           resumePosition = 0;

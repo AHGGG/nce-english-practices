@@ -148,6 +148,7 @@ class UserEpisodeState(Base):
     __table_args__ = (
         UniqueConstraint("user_id", "episode_id", name="uq_user_episode_state"),
         Index("idx_ues_user_listened", "user_id", "listened_at"),
+        Index("ix_user_episode_device", "user_id", "episode_id", "device_id"),
     )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
@@ -157,6 +158,19 @@ class UserEpisodeState(Base):
     # Playback state
     current_position_seconds: Mapped[float] = mapped_column(Float, default=0.0)
     is_finished: Mapped[bool] = mapped_column(Boolean, default=False)
+
+    # Device awareness
+    device_id: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+    device_type: Mapped[Optional[str]] = mapped_column(
+        String, nullable=True
+    )  # 'web', 'ios', 'android'
+
+    # Sync metadata
+    last_synced_at: Mapped[Optional[datetime]] = mapped_column(TIMESTAMP, nullable=True)
+    local_version: Mapped[int] = mapped_column(Integer, default=0)
+
+    # Playback context
+    playback_rate: Mapped[float] = mapped_column(Float, default=1.0)
 
     # Timestamps
     listened_at: Mapped[datetime] = mapped_column(

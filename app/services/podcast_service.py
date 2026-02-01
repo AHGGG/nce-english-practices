@@ -1025,17 +1025,45 @@ class PodcastService:
         episode_id: int,
         position: float,
         is_finished: bool = False,
-    ) -> UserEpisodeState:
+        device_id: Optional[str] = None,
+        device_type: Optional[str] = None,
+        timestamp: Optional[datetime] = None,
+        playback_rate: float = 1.0,
+    ) -> Optional[UserEpisodeState]:
         """
         Update or create user's episode state (UPSERT).
         Used for resume playback functionality.
+        Returns the updated state, or None if update was rejected (conflict).
         """
+        # Default timestamp if not provided (for legacy calls)
+        if timestamp is None:
+            timestamp = datetime.utcnow()
+
+        # Check for conflict if device_id is provided
+        if device_id:
+            stmt = select(UserEpisodeState).where(
+                UserEpisodeState.user_id == user_id,
+                UserEpisodeState.episode_id == episode_id,
+            )
+            result = await db.execute(stmt)
+            current = result.scalar_one_or_none()
+
+            if current and current.last_synced_at:
+                # If incoming timestamp is older than last sync, reject
+                # Note: We compare timestamps to ensure latest wins
+                if timestamp <= current.last_synced_at:
+                    return None
+
         stmt = pg_insert(UserEpisodeState).values(
             user_id=user_id,
             episode_id=episode_id,
             current_position_seconds=position,
             is_finished=is_finished,
-            listened_at=datetime.utcnow(),
+            listened_at=timestamp,
+            device_id=device_id,
+            device_type=device_type,
+            last_synced_at=timestamp,
+            playback_rate=playback_rate,
         )
         stmt = stmt.on_conflict_do_update(
             constraint="uq_user_episode_state",
@@ -1046,8 +1074,16 @@ class PodcastService:
                 "is_finished": func.greatest(
                     UserEpisodeState.is_finished, stmt.excluded.is_finished
                 ),
-                "listened_at": datetime.utcnow(),
+                "listened_at": timestamp,
                 "updated_at": datetime.utcnow(),
+                "device_id": device_id if device_id else UserEpisodeState.device_id,
+                "device_type": device_type
+                if device_type
+                else UserEpisodeState.device_type,
+                "last_synced_at": timestamp
+                if device_id
+                else UserEpisodeState.last_synced_at,
+                "playback_rate": playback_rate,
             },
         )
         await db.execute(stmt)
@@ -1078,6 +1114,34 @@ class PodcastService:
         """Get the last playback position for resume."""
         state = await self.get_episode_state(db, user_id, episode_id)
         return state.current_position_seconds if state else 0.0
+
+    async def list_devices(
+        self, db: AsyncSession, user_id: str
+    ) -> List[Dict[str, Any]]:
+        """List all devices for the current user."""
+        stmt = (
+            select(
+                UserEpisodeState.device_id,
+                UserEpisodeState.device_type,
+                func.max(UserEpisodeState.last_synced_at).label("last_active"),
+            )
+            .where(
+                UserEpisodeState.user_id == user_id,
+                UserEpisodeState.device_id.isnot(None),
+            )
+            .group_by(UserEpisodeState.device_id, UserEpisodeState.device_type)
+        )
+
+        result = await db.execute(stmt)
+        devices = [
+            {
+                "device_id": row.device_id,
+                "device_type": row.device_type,
+                "last_active": row.last_active,
+            }
+            for row in result
+        ]
+        return devices
 
     # --- Listening Session (Analytics) ---
 
