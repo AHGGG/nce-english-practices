@@ -1,6 +1,6 @@
 
 import React, { useState, useRef, useId } from 'react';
-import { Card, Button, Input, useToast } from '../ui';
+import { Card, Button, Input, Textarea, useToast } from '../ui';
 import { Play, Download, Loader2, StopCircle, Volume2 } from 'lucide-react';
 import { authFetch } from '../../api/auth';
 
@@ -15,7 +15,6 @@ const TTSPanel = ({ config, fixedProvider = null }) => {
 
     const providerId = useId();
     const voiceId = useId();
-    const textId = useId();
 
     // Get voices for selected provider
     const availableVoices = config?.[provider]?.voices || [];
@@ -99,16 +98,13 @@ const TTSPanel = ({ config, fixedProvider = null }) => {
                     </div>
 
                     {/* Text Input */}
-                    <div className="space-y-1">
-                        <label htmlFor={textId} className="text-xs font-mono font-bold text-text-muted uppercase">Input Text</label>
-                        <textarea
-                            id={textId}
-                            value={text}
-                            onChange={(e) => setText(e.target.value)}
-                            rows={5}
-                            className="w-full bg-bg-elevated border border-border text-text-primary px-4 py-3 text-sm focus:border-accent-info focus:outline-none resize-none font-serif leading-relaxed"
-                        />
-                    </div>
+                    <Textarea
+                        label="Input Text"
+                        value={text}
+                        onChange={(e) => setText(e.target.value)}
+                        rows={5}
+                        inputClassName="bg-bg-elevated border-border focus:border-accent-info font-serif leading-relaxed resize-none"
+                    />
 
                     <Button
                         fullWidth

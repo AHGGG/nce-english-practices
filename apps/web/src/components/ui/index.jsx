@@ -89,6 +89,51 @@ export const Input = ({ icon: Icon, error, className = "", ...props }) => {
   );
 };
 
+export const Textarea = ({
+  label,
+  error,
+  className = "",
+  inputClassName = "",
+  rows = 3,
+  ...props
+}) => {
+  const inputId = useId();
+  const errorId = useId();
+  const id = props.id || inputId;
+
+  return (
+    <div className={`flex flex-col gap-1.5 flex-grow ${className}`}>
+      {label && (
+        <label
+          htmlFor={id}
+          className="text-xs text-text-secondary uppercase tracking-wider"
+        >
+          {label}
+        </label>
+      )}
+      <div className="relative w-full">
+        <textarea
+          id={id}
+          rows={rows}
+          className={`w-full bg-glass-bg backdrop-blur-xl border border-glass-border text-text-primary px-4 py-3 text-sm rounded-xl focus:outline-none focus:border-accent-primary/50 focus:ring-1 focus:ring-accent-primary/30 transition-all placeholder:text-text-muted/50 ${error ? "border-accent-danger/50 focus:border-accent-danger focus:ring-accent-danger/30" : ""} ${inputClassName}`}
+          aria-invalid={!!error}
+          aria-describedby={error ? errorId : undefined}
+          {...props}
+        />
+      </div>
+      {error && (
+        <span
+          id={errorId}
+          role="alert"
+          className="text-[10px] text-accent-danger"
+        >
+          {error}
+        </span>
+      )}
+    </div>
+  );
+};
+
 export const Card = ({
   children,
   title,
