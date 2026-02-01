@@ -271,6 +271,9 @@ class ProficiencyService:
         buckets = {}
         bucket_size = 1000
 
+        # Optimization: Use set for O(1) lookup
+        inspected_set = set(inspected_words)
+
         for w in all_words:
             rank = word_ranks.get(w.lower())
             if rank is None:
@@ -281,7 +284,7 @@ class ProficiencyService:
                 buckets[bucket_idx] = {"total": 0, "inspected": 0}
 
             buckets[bucket_idx]["total"] += 1
-            if w in inspected_words:
+            if w in inspected_set:
                 buckets[bucket_idx]["inspected"] += 1
 
         # Analyze
