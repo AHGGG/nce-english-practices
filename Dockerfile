@@ -19,6 +19,9 @@ COPY packages/shared/package.json ./packages/shared/package.json
 COPY packages/store/package.json ./packages/store/package.json
 COPY packages/ui-tokens/package.json ./packages/ui-tokens/package.json
 
+# Copy patches directory for pnpm patch functionality
+COPY patches ./patches
+
 # Install dependencies (frozen lockfile for reproducibility)
 RUN pnpm install --frozen-lockfile
 
