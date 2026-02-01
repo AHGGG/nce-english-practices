@@ -96,29 +96,30 @@ Keep it encouraging and simple.""",
 
 
 EXPLAIN_PROMPTS = {
-    "default_word": """用简单易懂的大白话解释 "{text}" 在下面句子中的意思。
+    "default_word": """Explain the meaning of "{text}" in the following sentence using simple, colloquial English.
 
 {context}
 
-要求：
-1. 用通俗的中文解释这个词在当前语境下的意思（不要说"在这个语境中"）
-2. 如果有多个意思，选择最符合上下文的
-3. 给1-2个例句帮助理解（不要用上面提供的原句）
-4. 像朋友聊天一样解释，不要太正式
+Requirements:
+1. Explain the meaning in simple, conversational English (as if talking to a friend).
+2. If there are multiple meanings, choose the one that fits the context.
+3. Provide 1-2 simple example sentences (do not use the original sentence).
+4. Keep it casual and easy to understand.
 
-直接给出解释，不要有开场白。""",
-    "default_phrase": """用简单易懂的大白话解释短语 "{text}" 在下面句子中的意思。
+Directly provide the explanation, no preamble.""",
+    "default_phrase": """Explain the meaning of the phrase "{text}" in the following sentence using simple, colloquial English.
 
 {context}
 
-要求：
-1. 用通俗的中文解释这个短语的意思
-2. 说明在什么情况下用这个短语
-3. 给1-2个日常例句（不要用上面提供的原句）
-4. 像朋友聊天一样解释，不要太正式
+Requirements:
+1. Explain the meaning in simple, conversational English.
+2. Explain when this phrase is typically used.
+3. Provide 1-2 daily life example sentences (do not use the original sentence).
+4. Keep it casual and easy to understand.
 
-直接给出解释，不要有开场白。""",
+Directly provide the explanation, no preamble.""",
     "simple": """Explain the {item_type} "{text}" in the context of the sentence below.
+
 Explanation must be in SIMPLE ENGLISH, suitable for a beginner learner.
 Use simple vocabulary and short sentences.
 
