@@ -1,0 +1,134 @@
+/**
+ * Do not edit directly, this file was auto-generated.
+ */
+
+:root {
+  --color-core-black: #000000; /** Pure black */
+  --color-core-white: #ffffff; /** Pure white */
+  --color-neutral-0: #ffffff;
+  --color-neutral-100: #f5f5f5;
+  --color-neutral-200: #e5e5e5;
+  --color-neutral-300: #d4d4d4;
+  --color-neutral-400: #a3a3a3;
+  --color-neutral-500: #737373;
+  --color-neutral-600: #525252;
+  --color-neutral-700: #404040;
+  --color-neutral-800: #262626;
+  --color-neutral-900: #171717;
+  --color-accent-primary: #00ff94; /** Matrix Green - Main accent color */
+  --color-accent-secondary: #00d4ff; /** Cyan - Secondary accent */
+  --color-accent-danger: #ff4444; /** Error/Danger state */
+  --color-accent-info: #3b82f6; /** Information/Link color */
+  --color-accent-warning: #ffb800; /** Warning state */
+  --color-accent-success: #00ff94; /** Success state */
+  --color-neon-green: #00ff94;
+  --color-neon-cyan: #00d4ff;
+  --color-neon-purple: #9b59b6;
+  --color-neon-pink: #ff0080;
+  --color-neon-lime: #b4ff00;
+  --color-neon-magenta: #ff00ff;
+  --color-neon-yellow: #ffe600;
+  --color-neon-gold: #ffd700;
+  --color-category-orange: #f97316;
+  --color-category-blue: #3b82f6;
+  --color-category-amber: #f59e0b;
+  --color-category-red: #ef4444;
+  --color-category-gray: #6b7280;
+  --color-category-indigo: #6366f1;
+  --color-category-yellow: #eab308;
+  --color-light-surface: #ffffff; /** Light theme surface */
+  --color-light-border: #e5e5e5; /** Light theme border */
+  --color-light-text: #1a1a1a; /** Light theme text */
+  --color-light-text-muted: #666666; /** Light theme muted text */
+  --color-bg-base: #050505; /** Page background - OLED optimized */
+  --color-bg-surface: #0a0a0a; /** Card/Component background */
+  --color-bg-elevated: #121212; /** Modal/Dialog background */
+  --color-bg-gradient-start: #0a0f0d;
+  --color-bg-gradient-end: #152821;
+  --color-text-primary: #e0e0e0; /** Main content text */
+  --color-text-secondary: #888888; /** Supporting text */
+  --color-text-muted: #555555; /** Disabled/Hint text */
+  --color-text-inverse: #050505; /** Text on dark backgrounds */
+  --color-border-default: #1a1a1a; /** Default border color */
+  --color-border-subtle: #0f0f0f; /** Subtle border for dividers */
+  --color-border-hover: #00ff94; /** Border color on hover */
+  --shadow-soft: 0 4px 20px rgba(0, 0, 0, 0.3); /** Subtle shadow for cards */
+  --shadow-accent: 0 4px 20px rgba(0, 255, 148, 0.15); /** Glow effect for accent elements */
+  --shadow-glow: 0 0 40px rgba(0, 255, 148, 0.1); /** Wide glow effect */
+  --shadow-card: 0 8px 32px rgba(0, 0, 0, 0.4); /** Elevated cards */
+  --shadow-float: 0 20px 60px rgba(0, 0, 0, 0.5); /** Floating elements, modals */
+  --shadow-inner: inset 0 2px 4px rgba(0, 0, 0, 0.3); /** Inner shadow for pressed state */
+  --shadow-focus: 0 0 0 2px rgba(0, 255, 148, 0.4); /** Focus ring */
+  --opacity-0: 0;
+  --opacity-25: 0.25;
+  --opacity-50: 0.5;
+  --opacity-75: 0.75;
+  --opacity-100: 1;
+  --z-index-0: 0;
+  --z-index-10: 10;
+  --z-index-20: 20;
+  --z-index-30: 30;
+  --z-index-40: 40;
+  --z-index-50: 50;
+  --z-index-auto: auto;
+  --z-index-dropdown: 1000;
+  --z-index-sticky: 1100;
+  --z-index-modal: 1200;
+  --z-index-popover: 1300;
+  --z-index-tooltip: 1400;
+  --z-index-toast: 1500;
+  --spacing-0: 0px;
+  --spacing-1: 4px;
+  --spacing-2: 8px;
+  --spacing-3: 12px;
+  --spacing-4: 16px;
+  --spacing-5: 20px;
+  --spacing-6: 24px;
+  --spacing-7: 28px;
+  --spacing-8: 32px;
+  --spacing-9: 36px;
+  --spacing-10: 40px;
+  --spacing-11: 44px;
+  --spacing-12: 48px;
+  --spacing-14: 56px;
+  --spacing-16: 64px;
+  --spacing-20: 80px;
+  --spacing-24: 96px;
+  --spacing-28: 112px;
+  --spacing-32: 128px;
+  --spacing-0-5: 2px;
+  --spacing-1-5: 6px;
+  --spacing-2-5: 10px;
+  --spacing-3-5: 14px;
+  --border-radius-none: 0px;
+  --border-radius-sm: 4px;
+  --border-radius-default: 6px;
+  --border-radius-md: 8px;
+  --border-radius-lg: 12px;
+  --border-radius-xl: 16px;
+  --border-radius-2xl: 1rem;
+  --border-radius-3xl: 1.5rem;
+  --border-radius-full: 9999px;
+  --font-family-sans: Inter; /** Primary font for UI - headings */
+  --font-family-serif: Merriweather; /** Serif for reading content */
+  --font-family-mono: 'JetBrains Mono'; /** Monospace for code/data */
+  --font-weight-normal: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+  --font-size-xs: 12rem; /** 12px - Captions */
+  --font-size-sm: 14rem; /** 14px - Body small */
+  --font-size-base: 16rem; /** 16px - Body */
+  --font-size-lg: 18rem; /** 18px - Body large */
+  --font-size-xl: 20rem; /** 20px - Headings */
+  --font-size-2xl: 24rem; /** 24px - Headings */
+  --font-size-3xl: 30rem; /** 30px - Page titles */
+  --font-size-4xl: 36rem; /** 36px - Display */
+  --line-height-tight: 1.2; /** For headings */
+  --line-height-normal: 1.5; /** Default line height */
+  --line-height-relaxed: 1.75; /** For long content */
+  --line-height-loose: 2; /** For accessibility */
+  --letter-spacing-tight: -0.02;
+  --letter-spacing-normal: 0;
+  --letter-spacing-wide: 0.02;
+}

@@ -4,26 +4,36 @@
  * This package provides the Cyber-Noir design tokens
  * that work across Web and React Native.
  *
- * Usage in Tailwind config:
+ * Usage:
  * ```js
- * const { tailwindPreset } = require('@nce/ui-tokens');
- *
+ * // Tailwind config
+ * const tokens = require('@nce/ui-tokens/generated/tailwind/colors');
  * module.exports = {
- *   presets: [tailwindPreset],
- *   content: ['./src/**\/*.{js,jsx,ts,tsx}'],
+ *   theme: {
+ *     extend: {
+ *       colors: tokens,
+ *     }
+ *   }
  * };
  * ```
  *
- * Usage for CSS variables:
  * ```ts
- * import { cssVariables } from '@nce/ui-tokens';
- * // Inject into <style> or global CSS
+ * // TypeScript
+ * import { colors, typography } from '@nce/ui-tokens';
+ * const primaryColor = colors.accent.primary;
  * ```
  */
 
-export { colors, type ColorTokens } from "./colors";
-export { typography, type TypographyTokens } from "./typography";
-export { cssVariables, generateCSSVariables } from "./css-variables";
+export {
+  createSemanticTokens,
+  type SemanticTokens,
+  type SemanticColorPath,
+} from "./semantic";
+export type {
+  AllTokens,
+  DesignToken,
+  ColorToken,
+  DimensionToken,
+} from "./primitives";
 
-// Re-export the Tailwind preset from the root config
-// (Tailwind configs need CommonJS, so we keep it as .js)
+export const tokensVersion = "0.2.0";

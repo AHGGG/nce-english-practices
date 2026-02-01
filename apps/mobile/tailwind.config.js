@@ -1,4 +1,6 @@
 /** @type {import('tailwindcss').Config} */
+import { platformSelect } from "nativewind/theme";
+
 module.exports = {
   content: [
     "./app/**/*.{js,jsx,ts,tsx}",
@@ -12,121 +14,83 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        // ============================================
-        // "Pointer Inspired" Design System
-        // Modern Green Gradient + Glass Morphism
-        // ============================================
-
-        // Background Hierarchy
         bg: {
-          base: "var(--color-bg-base)",
-          surface: "var(--color-bg-surface)",
-          elevated: "var(--color-bg-elevated)",
+          base: "#050505",
+          surface: "#0A0A0A",
+          elevated: "#121212",
           gradient: {
-            start: "var(--color-bg-gradient-start)",
-            end: "var(--color-bg-gradient-end)",
+            start: "#0a0f0d",
+            end: "#152821",
           },
         },
-
-        // Text Hierarchy
         text: {
-          primary: "var(--color-text-primary)",
-          secondary: "var(--color-text-secondary)",
-          muted: "var(--color-text-muted)",
-          inverse: "var(--color-bg-base)",
+          primary: "#E0E0E0",
+          secondary: "#888888",
+          muted: "#555555",
+          inverse: "#050505",
         },
-
-        // Borders
         border: {
-          DEFAULT: "var(--color-border-default)",
-          subtle: "var(--color-border-subtle)",
-          hover: "var(--color-border-hover)",
+          DEFAULT: "#1A1A1A",
+          subtle: "#0F0F0F",
+          hover: "#00FF94",
         },
-
-        // Accent Colors - Mint/Cyan Theme
         accent: {
-          primary: "rgb(var(--color-accent-primary) / <alpha-value>)",
-          secondary: "rgb(var(--color-accent-secondary) / <alpha-value>)",
-          danger: "rgb(var(--color-accent-danger) / <alpha-value>)",
-          info: "rgb(var(--color-accent-info) / <alpha-value>)",
-          warning: "rgb(var(--color-accent-warning) / <alpha-value>)",
-          success: "rgb(var(--color-accent-success) / <alpha-value>)",
+          primary: "rgb(0 255 148)",
+          secondary: "rgb(0 212 255)",
+          danger: "rgb(255 68 68)",
+          info: "rgb(59 130 246)",
+          warning: "rgb(255 184 0)",
+          success: "rgb(0 255 148)",
         },
-
-        // Neon Colors (for visual highlights)
         neon: {
-          green: "rgb(var(--color-neon-green) / <alpha-value>)",
-          cyan: "rgb(var(--color-neon-cyan) / <alpha-value>)",
-          purple: "rgb(var(--color-neon-purple) / <alpha-value>)",
-          pink: "rgb(var(--color-neon-pink) / <alpha-value>)",
-          lime: "rgb(var(--color-neon-lime) / <alpha-value>)",
-          magenta: "rgb(var(--color-neon-magenta) / <alpha-value>)",
-          yellow: "rgb(var(--color-neon-yellow) / <alpha-value>)",
-          gold: "rgb(var(--color-neon-gold) / <alpha-value>)",
+          green: "rgb(0 255 148)",
+          cyan: "rgb(0 212 255)",
+          purple: "rgb(155 89 182)",
+          pink: "rgb(255 0 128)",
+          lime: "rgb(180 255 0)",
+          magenta: "rgb(255 0 255)",
+          yellow: "rgb(255 230 0)",
+          gold: "rgb(255 215 0)",
         },
-
-        // Category Colors (for status indicators)
         category: {
-          orange: "rgb(var(--color-category-orange) / <alpha-value>)",
-          blue: "rgb(var(--color-category-blue) / <alpha-value>)",
-          amber: "rgb(var(--color-category-amber) / <alpha-value>)",
-          red: "rgb(var(--color-category-red) / <alpha-value>)",
-          gray: "rgb(var(--color-category-gray) / <alpha-value>)",
-          indigo: "rgb(var(--color-category-indigo) / <alpha-value>)",
-          yellow: "rgb(var(--color-category-yellow) / <alpha-value>)",
+          orange: "rgb(249 115 22)",
+          blue: "rgb(59 130 246)",
+          amber: "rgb(245 158 11)",
+          red: "rgb(239 68 68)",
+          gray: "rgb(107 114 128)",
+          indigo: "rgb(99 102 241)",
+          yellow: "rgb(234 179 8)",
         },
-
-        // Light Theme Surface (for light-bg components)
         light: {
-          surface: "var(--color-light-surface)",
-          border: "var(--color-light-border)",
-          text: "var(--color-light-text)",
-          muted: "var(--color-light-text-muted)",
+          surface: "#FFFFFF",
+          border: "#E5E5E5",
+          text: "#1A1A1A",
+          muted: "#666666",
         },
-
-        // Chart Colors
-        chart: {
-          primary: "var(--color-chart-primary)",
-          secondary: "var(--color-chart-secondary)",
-          bg: "var(--color-chart-bg)",
-        },
-
-        // Glass Effect
         glass: {
-          bg: "var(--glass-bg)",
-          border: "var(--glass-border)",
-          hover: "var(--glass-hover)",
+          bg: "rgba(255, 255, 255, 0.03)",
+          border: "rgba(255, 255, 255, 0.08)",
+          hover: "rgba(255, 255, 255, 0.05)",
         },
-
-        // Legacy compatibility
-        ink: {
-          DEFAULT: "var(--color-text-primary)",
-          muted: "var(--color-text-muted)",
-          faint: "var(--color-border-default)",
-        },
-
         surface: {
-          1: "var(--color-bg-surface)",
-          2: "var(--color-bg-elevated)",
+          1: "rgba(255, 255, 255, 0.03)",
+          2: "rgba(255, 255, 255, 0.05)",
         },
       },
       fontFamily: {
-        sans: ["Inter", "SF Pro Display", "system-ui", "sans-serif"],
+        sans: ["Inter", "system-ui", "sans-serif"],
         serif: ["Merriweather", "Georgia", "serif"],
-        mono: ["JetBrains Mono", "SF Mono", "monospace"],
+        mono: ["JetBrains Mono", "monospace"],
       },
       boxShadow: {
         soft: "0 4px 20px rgba(0, 0, 0, 0.3)",
-        accent: "0 4px 20px rgba(111, 227, 177, 0.15)",
-        glow: "0 0 40px rgba(111, 227, 177, 0.1)",
+        accent: "0 4px 20px rgba(0, 255, 148, 0.15)",
+        glow: "0 0 40px rgba(0, 255, 148, 0.1)",
         card: "0 8px 32px rgba(0, 0, 0, 0.4)",
         float: "0 20px 60px rgba(0, 0, 0, 0.5)",
       },
       backgroundImage: {
-        "gradient-radial": "radial-gradient(var(--tw-gradient-stops))",
-        "gradient-conic":
-          "conic-gradient(from 180deg at 50% 50%, var(--tw-gradient-stops))",
-        grid: "linear-gradient(rgba(111, 227, 177, 0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(111, 227, 177, 0.03) 1px, transparent 1px)",
+        grid: "linear-gradient(rgba(0, 255, 148, 0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(0, 255, 148, 0.03) 1px, transparent 1px)",
       },
       backgroundSize: {
         grid: "60px 60px",

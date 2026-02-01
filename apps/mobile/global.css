@@ -3,152 +3,57 @@
 @tailwind utilities;
 
 /* ============================================
- * Design System: "Pointer Inspired" - Modern Green Gradient
+ * Design System: "Cyber-Noir" - Modern Green Gradient
  * 
- * Mobile version - matches web app (apps/web/src/index.css)
- * Deep green gradient background + glass morphism + soft shadows
+ * Mobile version - uses tokens from @nce/ui-tokens
  * ============================================ */
+@import "@nce/ui-tokens/generated/css/variables.css";
 
-/*
- * IMPORTANT: NativeWind (Tailwind for React Native) Caveats
- * Reference: https://www.nativewind.dev/docs/
- * 
- * 1. Alpha slash syntax NOT supported for background colors:
- *    ❌ bg-black/50, bg-accent-primary/20
- *    ✅ backgroundColor: "rgba(0,0,0,0.5)" (use inline style)
- *    ✅ bg-opacity-50 (if enabled in corePlugins, see below)
- * 
- * 2. Web-only classes (not supported on native):
- *    ❌ bg-inherit, bg-current
- *    ✅ Use explicit color values
- * 
- * 3. backgroundOpacity plugin is DISABLED by default (performance):
- *    If you need dynamic opacity, enable in tailwind.config.js:
- *    ```
- *    corePlugins: {
- *      backgroundOpacity: true,
- *    },
- *    ```
- * 
- * 4. Explicit styles recommended:
- *    Instead of conditionally applying styles, declare all styles.
- *    ❌ className={isActive ? "text-green-500" : "text-gray-500"}
- *    ✅ className="text-green-500 dark:text-gray-500"
- * 
- * 5. Flexbox differences:
- *    - flexDirection defaults to 'column' (not 'row')
- *    - Use explicit `flex-1` for consistent sizing
- * 
- * 6. Platform-specific colors:
- *    Use platformSelect() in tailwind.config.js for native platform colors:
- *    ```
- *    const { platformSelect, platformColor } = require("nativewind/theme");
- *    colors: {
- *      error: platformSelect({
- *        ios: platformColor("systemRed"),
- *        android: platformColor("?android:colorError"),
- *        default: "red",
- *      }),
- *    }
- *    ```
- */
 :root {
-  /* Background Hierarchy - Deep Green Gradient */
-  --color-bg-base: #0a0f0d; /* Deep forest black - Main background */
-  --color-bg-surface: rgba(255, 255, 255, 0.03); /* Glass cards */
-  --color-bg-elevated: rgba(255, 255, 255, 0.05); /* Elevated cards */
-  --color-bg-gradient-start: #0a0f0d; /* Gradient start */
-  --color-bg-gradient-end: #152821; /* Gradient end - deep green */
+  /* Override accent colors for RGB format (required for opacity support) */
+  --color-accent-primary: 0 255 148;
+  --color-accent-secondary: 0 212 255;
+  --color-accent-danger: 255 68 68;
+  --color-accent-info: 59 130 246;
+  --color-accent-warning: 255 184 0;
+  --color-accent-success: 0 255 148;
 
-  /* Text Hierarchy */
-  --color-text-primary: #e8f5e9; /* Soft white - Primary text */
-  --color-text-secondary: #8b9d93; /* Sage green - Secondary text */
-  --color-text-muted: #5c6b60; /* Muted green - Disabled, hints */
+  /* Neon Colors RGB */
+  --color-neon-green: 0 255 148;
+  --color-neon-cyan: 0 212 255;
+  --color-neon-purple: 155 89 182;
+  --color-neon-pink: 255 0 128;
+  --color-neon-lime: 180 255 0;
+  --color-neon-magenta: 255 0 255;
+  --color-neon-yellow: 255 230 0;
+  --color-neon-gold: 255 215 0;
 
-  /* Borders - Soft translucent */
-  --color-border-default: rgba(255, 255, 255, 0.08);
-  --color-border-subtle: rgba(255, 255, 255, 0.05);
-  --color-border-hover: rgba(111, 227, 177, 0.3);
+  /* Category Colors RGB */
+  --color-category-orange: 249 115 22;
+  --color-category-blue: 59 130 246;
+  --color-category-amber: 245 158 11;
+  --color-category-red: 239 68 68;
+  --color-category-gray: 107 114 128;
+  --color-category-indigo: 99 102 241;
+  --color-category-yellow: 234 179 8;
 
-  /* Accent Colors - Mint/Cyan Theme - RGB format for opacity support */
-  --color-accent-primary: 111 227 177; /* Mint Green #6FE3B1 - Primary CTA */
-  --color-accent-secondary: 78 205 196; /* Cyan #4ECDC4 - Secondary accent */
-  --color-accent-danger: 255 107 107; /* Coral Red #FF6B6B - Errors */
-  --color-accent-info: 78 205 196; /* Cyan - Info, links */
-  --color-accent-warning: 255 193 7; /* Amber - Warnings */
-  --color-accent-success: 111 227 177; /* Mint - Success states */
-
-  /* Neon Colors (for charts and visual variety) */
-  --color-neon-green: 111 227 177; /* Mint */
-  --color-neon-cyan: 78 205 196; /* Cyan */
-  --color-neon-purple: 168 85 247; /* Purple */
-  --color-neon-pink: 255 107 107; /* Coral */
-  --color-neon-lime: 132 204 22; /* Lime */
-  --color-neon-magenta: 217 70 239; /* Magenta */
-  --color-neon-yellow: 250 204 21; /* Yellow */
-  --color-neon-gold: 255 215 0; /* Gold */
-
-  /* Category Colors - Warm tones compatible with green theme */
-  --color-category-orange: 251 146 60; /* orange-400 */
-  --color-category-blue: 96 165 250; /* blue-400 */
-  --color-category-amber: 251 191 36; /* amber-400 */
-  --color-category-red: 248 113 113; /* red-400 */
-  --color-category-gray: 156 163 175; /* gray-400 */
-  --color-category-indigo: 129 140 248; /* indigo-400 */
-  --color-category-yellow: 250 204 21; /* yellow-400 */
-
-  /* Light Theme Surface (for light-bg components) */
-  --color-light-surface: #f8fafc; /* slate-50 */
-  --color-light-border: #e2e8f0; /* slate-200 */
-  --color-light-text: #1e293b; /* slate-800 */
-  --color-light-text-muted: #94a3b8; /* slate-400 */
-
-  /* Chart Colors */
-  --color-chart-primary: rgb(78, 205, 196); /* cyan */
-  --color-chart-secondary: rgb(139, 157, 147); /* sage */
-  --color-chart-bg: rgb(10, 15, 13); /* deep green black */
+  /* Border RGB for opacity */
+  --color-border-default: 26 26 26;
+  --color-border-subtle: 15 15 15;
+  --color-border-hover: 0 255 148;
 
   /* Glass Effect Variables */
   --glass-bg: rgba(255, 255, 255, 0.03);
   --glass-border: rgba(255, 255, 255, 0.08);
   --glass-hover: rgba(255, 255, 255, 0.05);
 
-  /* Shadow Colors */
-  --shadow-accent: rgba(111, 227, 177, 0.15);
-  --shadow-soft: rgba(0, 0, 0, 0.3);
+  /* Chart Colors */
+  --color-chart-primary: rgb(0 212 255);
+  --color-chart-secondary: rgb(139 157 147);
+  --color-chart-bg: rgb(10 15 13);
 }
 
 @layer utilities {
-  /* Grid Background Pattern - Pointer Style */
-  .bg-grid {
-    background-image:
-      linear-gradient(rgba(111, 227, 177, 0.03) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(111, 227, 177, 0.03) 1px, transparent 1px);
-    background-size: 60px 60px;
-  }
-
-  /* Glass Morphism Utilities */
-  .glass {
-    background: var(--glass-bg);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
-    border: 1px solid var(--glass-border);
-  }
-
-  .glass-hover:hover {
-    background: var(--glass-hover);
-    border-color: var(--color-border-hover);
-  }
-
-  /* Soft Shadows */
-  .shadow-soft {
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
-  }
-
-  .shadow-accent {
-    box-shadow: 0 4px 20px rgba(111, 227, 177, 0.15);
-  }
-
   /* Gradient Text */
   .text-gradient {
     background: linear-gradient(
@@ -160,21 +65,4 @@
     -webkit-text-fill-color: transparent;
     background-clip: text;
   }
-
-  /* Floating Glow Effect */
-  .glow {
-    box-shadow: 0 0 40px rgba(111, 227, 177, 0.1);
-  }
-}
-
-/* Global Grid Overlay */
-.grid-overlay {
-  position: fixed;
-  inset: 0;
-  pointer-events: none;
-  z-index: 0;
-  background-image:
-    linear-gradient(rgba(111, 227, 177, 0.02) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(111, 227, 177, 0.02) 1px, transparent 1px);
-  background-size: 60px 60px;
 }

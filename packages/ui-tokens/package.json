@@ -1,17 +1,28 @@
 {
   "name": "@nce/ui-tokens",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
+  "type": "module",
   "main": "./tailwind.config.js",
   "types": "./src/index.ts",
   "exports": {
-    ".": "./tailwind.config.js",
+    ".": {
+      "import": "./src/index.ts",
+      "require": "./tailwind.config.js"
+    },
     "./tailwind.config": "./tailwind.config.js",
-    "./colors": "./src/colors.ts",
-    "./typography": "./src/typography.ts",
-    "./css": "./src/css-variables.ts"
+    "./generated": "./generated",
+    "./generated/js": "./generated/js/tokens.js",
+    "./generated/css": "./generated/css/variables.css"
+  },
+  "scripts": {
+    "build": "node ../../node_modules/style-dictionary/bin/style-dictionary.js build --config config.json",
+    "watch": "node ../../node_modules/style-dictionary/bin/style-dictionary.js build --config config.json --watch",
+    "clean": "rm -rf generated",
+    "lint": "tsc --noEmit"
   },
   "devDependencies": {
+    "style-dictionary": "^5.2.0",
     "tailwindcss": "^3.4.0",
     "typescript": "^5.9.3"
   }

@@ -1,0 +1,117 @@
+{
+  "font": {
+    "family": {
+      "sans": {
+        "$value": "Inter",
+        "$type": "fontFamily",
+        "$description": "Primary font for UI - headings"
+      },
+      "serif": {
+        "$value": "Merriweather",
+        "$type": "fontFamily",
+        "$description": "Serif for reading content"
+      },
+      "mono": {
+        "$value": "JetBrains Mono",
+        "$type": "fontFamily",
+        "$description": "Monospace for code/data"
+      }
+    },
+    "weight": {
+      "normal": {
+        "$value": 400,
+        "$type": "fontWeight"
+      },
+      "medium": {
+        "$value": 500,
+        "$type": "fontWeight"
+      },
+      "semibold": {
+        "$value": 600,
+        "$type": "fontWeight"
+      },
+      "bold": {
+        "$value": 700,
+        "$type": "fontWeight"
+      }
+    },
+    "size": {
+      "xs": {
+        "$value": 12,
+        "$type": "dimension",
+        "$description": "12px - Captions"
+      },
+      "sm": {
+        "$value": 14,
+        "$type": "dimension",
+        "$description": "14px - Body small"
+      },
+      "base": {
+        "$value": 16,
+        "$type": "dimension",
+        "$description": "16px - Body"
+      },
+      "lg": {
+        "$value": 18,
+        "$type": "dimension",
+        "$description": "18px - Body large"
+      },
+      "xl": {
+        "$value": 20,
+        "$type": "dimension",
+        "$description": "20px - Headings"
+      },
+      "2xl": {
+        "$value": 24,
+        "$type": "dimension",
+        "$description": "24px - Headings"
+      },
+      "3xl": {
+        "$value": 30,
+        "$type": "dimension",
+        "$description": "30px - Page titles"
+      },
+      "4xl": {
+        "$value": 36,
+        "$type": "dimension",
+        "$description": "36px - Display"
+      }
+    }
+  },
+  "lineHeight": {
+    "tight": {
+      "$value": 1.2,
+      "$type": "number",
+      "$description": "For headings"
+    },
+    "normal": {
+      "$value": 1.5,
+      "$type": "number",
+      "$description": "Default line height"
+    },
+    "relaxed": {
+      "$value": 1.75,
+      "$type": "number",
+      "$description": "For long content"
+    },
+    "loose": {
+      "$value": 2,
+      "$type": "number",
+      "$description": "For accessibility"
+    }
+  },
+  "letterSpacing": {
+    "tight": {
+      "$value": "-0.02",
+      "$type": "number"
+    },
+    "normal": {
+      "$value": "0",
+      "$type": "number"
+    },
+    "wide": {
+      "$value": "0.02",
+      "$type": "number"
+    }
+  }
+}

@@ -307,6 +307,7 @@ Central orchestrator for "Neural Link" mode with tool-using agent pattern. LLM d
 - **Frontend**: `WordInspector` receives `image_check` events via SSE to trigger generation.
 
 ## Key Design Patterns
+
 Tracing project by this markdown file. So update this file when you update the code. Do not add progressive infomations to this file. This file is like a long term memory of the project. So you should make sure this file is always up to date.
 
 ### 1. Two-Stage LLM Generation
@@ -400,19 +401,20 @@ React Native + Expo + NativeWind architecture. Covers audio background tasks, We
 
 以下技能模块包含详细操作指南，需要时按需加载：
 
-| Skill                    | 路径                                                                               | 何时使用                                                         |
-| ------------------------ | ---------------------------------------------------------------------------------- | ---------------------------------------------------------------- |
-| **Mobile Architecture**  | [docs/MOBILE_ARCHITECTURE_PLAN.md](docs/MOBILE_ARCHITECTURE_PLAN.md)               | **移动端开发** - 跨端复用架构与迁移计划                          |
-| **Mobile Dev Pitfalls**  | [docs/skills/mobile-dev-pitfalls.md](docs/skills/mobile-dev-pitfalls.md)           | **移动端开发** - NativeWind 样式问题、Alpha 语法、条件 className |
-| Mobile Quick Reference   | [docs/MOBILE_QUICK_REFERENCE.md](docs/MOBILE_QUICK_REFERENCE.md)                   | **移动端开发** - 快速参考与代码模板                              |
-| User Administration      | [docs/skills/user-administration.md](docs/skills/user-administration.md)           | **管理用户** - 创建、迁移数据、重置密码                          |
-| Database Management      | [docs/skills/database-management.md](docs/skills/database-management.md)           | **数据库维护** - Alembic 迁移命令                                |
-| Dictionary Maintenance   | [docs/skills/dictionary-maintenance.md](docs/skills/dictionary-maintenance.md)     | **词典维护** - Parser Golden Standard 测试                       |
-| Mobile Voice Debugging   | [docs/skills/mobile-voice-debugging.md](docs/skills/mobile-voice-debugging.md)     | **移动端调试** - HTTPS 证书与远程调试                            |
-| Post-Change Verification | [docs/skills/post-change-verification.md](docs/skills/post-change-verification.md) | **代码变更后、通知用户前** - 自动验证变更是否有问题              |
-| Local Deployment         | [docs/skills/local-deployment.md](docs/skills/local-deployment.md)                 | Docker 本地/内网部署                                             |
-| Voice Integrations       | [docs/skills/voice-integrations.md](docs/skills/voice-integrations.md)             | 调用 ElevenLabs/Deepgram/Gemini/Dashscope 语音 API               |
-| AUI Streaming Protocol   | [docs/skills/aui-streaming-protocol.md](docs/skills/aui-streaming-protocol.md)     | 实现或调试 Agent 实时流式 UI 更新                                |
-| Podcast Architecture     | [docs/skills/podcast-architecture.md](docs/skills/podcast-architecture.md)         | **Podcast 开发** - Apple API 策略与缓存机制                      |
-| SDK Debugging            | [docs/skills/sdk-debugging.md](docs/skills/sdk-debugging.md)                       | 第三方 SDK 调用失败的诊断方法                                    |
-| API Docs Query           | [docs/skills/api-docs-query.md](docs/skills/api-docs-query.md)                     | 查询 ElevenLabs/Deepgram 离线 API 文档                           |
+| Skill                        | 路径                                                                                       | 何时使用                                                         |
+| ---------------------------- | ------------------------------------------------------------------------------------------ | ---------------------------------------------------------------- |
+| **Mobile Architecture**      | [docs/MOBILE_ARCHITECTURE_PLAN.md](docs/MOBILE_ARCHITECTURE_PLAN.md)                       | **移动端开发** - 跨端复用架构与迁移计划                          |
+| **Mobile Dev Pitfalls**      | [docs/skills/mobile-dev-pitfalls.md](docs/skills/mobile-dev-pitfalls.md)                   | **移动端开发** - NativeWind 样式问题、Alpha 语法、条件 className |
+| Mobile Quick Reference       | [docs/MOBILE_QUICK_REFERENCE.md](docs/MOBILE_QUICK_REFERENCE.md)                           | **移动端开发** - 快速参考与代码模板                              |
+| User Administration          | [docs/skills/user-administration.md](docs/skills/user-administration.md)                   | **管理用户** - 创建、迁移数据、重置密码                          |
+| Database Management          | [docs/skills/database-management.md](docs/skills/database-management.md)                   | **数据库维护** - Alembic 迁移命令                                |
+| Dictionary Maintenance       | [docs/skills/dictionary-maintenance.md](docs/skills/dictionary-maintenance.md)             | **词典维护** - Parser Golden Standard 测试                       |
+| Mobile Voice Debugging       | [docs/skills/mobile-voice-debugging.md](docs/skills/mobile-voice-debugging.md)             | **移动端调试** - HTTPS 证书与远程调试                            |
+| Post-Change Verification     | [docs/skills/post-change-verification.md](docs/skills/post-change-verification.md)         | **代码变更后、通知用户前** - 自动验证变更是否有问题              |
+| Local Deployment             | [docs/skills/local-deployment.md](docs/skills/local-deployment.md)                         | Docker 本地/内网部署                                             |
+| Voice Integrations           | [docs/skills/voice-integrations.md](docs/skills/voice-integrations.md)                     | 调用 ElevenLabs/Deepgram/Gemini/Dashscope 语音 API               |
+| AUI Streaming Protocol       | [docs/skills/aui-streaming-protocol.md](docs/skills/aui-streaming-protocol.md)             | 实现或调试 Agent 实时流式 UI 更新                                |
+| Podcast Architecture         | [docs/skills/podcast-architecture.md](docs/skills/podcast-architecture.md)                 | **Podcast 开发** - Apple API 策略与缓存机制                      |
+| SDK Debugging                | [docs/skills/sdk-debugging.md](docs/skills/sdk-debugging.md)                               | 第三方 SDK 调用失败的诊断方法                                    |
+| API Docs Query               | [docs/skills/api-docs-query.md](docs/skills/api-docs-query.md)                             | 查询 ElevenLabs/Deepgram 离线 API 文档                           |
+| Design Tokens Best Practices | [docs/skills/design-tokens-best-practices.md](docs/skills/design-tokens-best-practices.md) | **设计系统开发** - DTCG 标准、Style Dictionary、多平台输出       |

@@ -1,0 +1,115 @@
+{
+  "shadow": {
+    "soft": {
+      "$value": "0 4px 20px rgba(0, 0, 0, 0.3)",
+      "$type": "shadow",
+      "$description": "Subtle shadow for cards"
+    },
+    "accent": {
+      "$value": "0 4px 20px rgba(0, 255, 148, 0.15)",
+      "$type": "shadow",
+      "$description": "Glow effect for accent elements"
+    },
+    "glow": {
+      "$value": "0 0 40px rgba(0, 255, 148, 0.1)",
+      "$type": "shadow",
+      "$description": "Wide glow effect"
+    },
+    "card": {
+      "$value": "0 8px 32px rgba(0, 0, 0, 0.4)",
+      "$type": "shadow",
+      "$description": "Elevated cards"
+    },
+    "float": {
+      "$value": "0 20px 60px rgba(0, 0, 0, 0.5)",
+      "$type": "shadow",
+      "$description": "Floating elements, modals"
+    },
+    "inner": {
+      "$value": "inset 0 2px 4px rgba(0, 0, 0, 0.3)",
+      "$type": "shadow",
+      "$description": "Inner shadow for pressed state"
+    },
+    "focus": {
+      "$value": "0 0 0 2px rgba(0, 255, 148, 0.4)",
+      "$type": "shadow",
+      "$description": "Focus ring"
+    }
+  },
+  "opacity": {
+    "0": {
+      "$value": "0",
+      "$type": "number"
+    },
+    "25": {
+      "$value": "0.25",
+      "$type": "number"
+    },
+    "50": {
+      "$value": "0.5",
+      "$type": "number"
+    },
+    "75": {
+      "$value": "0.75",
+      "$type": "number"
+    },
+    "100": {
+      "$value": "1",
+      "$type": "number"
+    }
+  },
+  "zIndex": {
+    "auto": {
+      "$value": "auto",
+      "$type": "number"
+    },
+    "0": {
+      "$value": "0",
+      "$type": "number"
+    },
+    "10": {
+      "$value": "10",
+      "$type": "number"
+    },
+    "20": {
+      "$value": "20",
+      "$type": "number"
+    },
+    "30": {
+      "$value": "30",
+      "$type": "number"
+    },
+    "40": {
+      "$value": "40",
+      "$type": "number"
+    },
+    "50": {
+      "$value": "50",
+      "$type": "number"
+    },
+    "dropdown": {
+      "$value": "1000",
+      "$type": "number"
+    },
+    "sticky": {
+      "$value": "1100",
+      "$type": "number"
+    },
+    "modal": {
+      "$value": "1200",
+      "$type": "number"
+    },
+    "popover": {
+      "$value": "1300",
+      "$type": "number"
+    },
+    "tooltip": {
+      "$value": "1400",
+      "$type": "number"
+    },
+    "toast": {
+      "$value": "1500",
+      "$type": "number"
+    }
+  }
+}
