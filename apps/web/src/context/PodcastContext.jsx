@@ -298,7 +298,6 @@ export function PodcastProvider({ children }) {
   const startDownload = useCallback(
     async (episode) => {
       const episodeId = episode.id;
-      const proxyUrl = `/api/podcast/episode/${episodeId}/download`;
 
       // Check if already downloaded (should be handled by UI, but safety check)
       if (offlineEpisodes.has(episodeId)) {
@@ -319,7 +318,6 @@ export function PodcastProvider({ children }) {
       try {
         const success = await downloadEpisodeForOffline(
           episodeId,
-          proxyUrl,
           episode.audio_url,
           (received, total) => {
             const progress = Math.round((received / total) * 100);
@@ -328,7 +326,6 @@ export function PodcastProvider({ children }) {
               [episodeId]: { status: "downloading", progress },
             }));
           },
-          authFetch,
           controller.signal,
         );
 
@@ -371,9 +368,8 @@ export function PodcastProvider({ children }) {
     [offlineEpisodes, addToast],
   );
 
-  const removeDownload = useCallback(async (episodeId) => {
-    const proxyUrl = `/api/podcast/episode/${episodeId}/download`;
-    const success = await removeOfflineEpisode(episodeId, proxyUrl);
+  const removeDownload = useCallback(async (episodeId, audioUrl) => {
+    const success = await removeOfflineEpisode(episodeId, audioUrl);
 
     if (success) {
       setOfflineEpisodes((prev) => {
@@ -486,8 +482,7 @@ export function PodcastProvider({ children }) {
       audio.addEventListener("loadedmetadata", handleLoaded, { once: true });
 
       // Try to get cached audio as Object URL (bypasses network entirely)
-      const proxyUrl = `/api/podcast/episode/${episode.id}/download`;
-      const cachedUrl = await getCachedAudioUrl(proxyUrl);
+      const cachedUrl = await getCachedAudioUrl(episode.audio_url);
       const audioSrc = cachedUrl || episode.audio_url;
 
       // Now set the source - this triggers loading
