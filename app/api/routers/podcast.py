@@ -13,6 +13,7 @@ import time
 from app.api.routers.auth import get_current_user_id
 from app.config import settings
 from app.core.db import AsyncSessionLocal
+from app.core.utils import validate_url_security
 
 from app.services.podcast_service import podcast_service
 
@@ -159,6 +160,12 @@ async def _proxy_image(url: str, filename: str = "image.jpg"):
     # Security: basic check to prevent local file access
     if not url.startswith("http"):
         raise HTTPException(status_code=400, detail="Invalid URL protocol")
+
+    # Validate URL against SSRF (private IPs)
+    try:
+        await run_in_threadpool(validate_url_security, url)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
     # Cache Configuration
     CACHE_DIR = settings.podcast_cache_dir
@@ -1073,6 +1080,13 @@ async def download_episode(
             raise HTTPException(status_code=404, detail="Episode not found")
 
         audio_url = episode.audio_url
+
+    # Validate URL against SSRF
+    from fastapi.concurrency import run_in_threadpool
+    try:
+        await run_in_threadpool(validate_url_security, audio_url)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
     # Check for Range header
     range_header = request.headers.get("range")

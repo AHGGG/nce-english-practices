@@ -1,5 +1,8 @@
 import json
 import re
+import socket
+import ipaddress
+from urllib.parse import urlparse
 from typing import Dict, List, Union, Any
 from fastapi import HTTPException
 
@@ -31,6 +34,73 @@ def validate_input(
         raise HTTPException(status_code=400, detail=f"{field_name} contains invalid characters")
 
     return text
+
+
+def is_ip_allowed(ip_str: str) -> bool:
+    """
+    Check if an IP address is allowed (public).
+    Raises ValueError if ip_str is not a valid IP address.
+    """
+    ip = ipaddress.ip_address(ip_str)
+    # Block private, loopback, link-local, multicast, and reserved ranges
+    if (
+        ip.is_private
+        or ip.is_loopback
+        or ip.is_link_local
+        or ip.is_multicast
+        or ip.is_reserved
+    ):
+        return False
+    return True
+
+
+def validate_url_security(url: str) -> str:
+    """
+    Validates that a URL does not point to a private/local network address (SSRF protection).
+    Returns the URL if safe, raises ValueError otherwise.
+
+    WARNING: DNS resolution is blocking. Callers in async context should run this in a thread executor.
+    """
+    try:
+        parsed = urlparse(url)
+        if parsed.scheme not in ("http", "https"):
+            raise ValueError("Invalid URL scheme")
+
+        hostname = parsed.hostname
+        if not hostname:
+             raise ValueError("Invalid URL hostname")
+
+        # Check if hostname is an IP address
+        is_ip = False
+        try:
+            ipaddress.ip_address(hostname)
+            is_ip = True
+        except ValueError:
+            is_ip = False
+
+        if is_ip:
+            if not is_ip_allowed(hostname):
+                raise ValueError("Access to private/local network restricted")
+
+        # Resolve hostname to IP(s)
+        try:
+            # getaddrinfo is blocking
+            addr_info = socket.getaddrinfo(hostname, None)
+            for res in addr_info:
+                ip = res[4][0]
+                # ip from getaddrinfo is a valid string IP
+                if not is_ip_allowed(ip):
+                     raise ValueError("Access to private/local network restricted")
+        except socket.gaierror:
+            # Resolution failed.
+            pass
+
+    except ValueError:
+        raise
+    except Exception as e:
+        raise ValueError(f"URL validation failed: {str(e)}")
+
+    return url
 
 
 def parse_llm_json(content: str) -> Union[Dict[str, Any], List[Any]]:

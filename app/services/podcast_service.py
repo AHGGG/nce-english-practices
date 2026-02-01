@@ -21,6 +21,7 @@ from sqlalchemy import select, func, and_
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.utils import validate_url_security
 from app.config import settings
 from app.models.podcast_orm import (
     PodcastFeed,
@@ -180,6 +181,10 @@ class PodcastService:
             "Accept": "application/rss+xml, application/xml, application/atom+xml, text/xml;q=0.9, */*;q=0.8",
         }
         try:
+            # Validate URL against SSRF
+            import asyncio
+            await asyncio.to_thread(validate_url_security, rss_url)
+
             proxies = settings.PROXY_URL if settings.PROXY_URL else None
             content = None
 
