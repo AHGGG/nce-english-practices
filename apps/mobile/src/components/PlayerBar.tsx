@@ -56,7 +56,7 @@ export default function PlayerBar() {
     <View className={`absolute ${bottomClass} left-0 right-0 px-3 z-50`}>
       <Pressable
         onPress={handlePress}
-        className="bg-bg-elevated border border-border-default rounded-xl p-2 flex-row items-center shadow-lg shadow-black/50"
+        className="bg-zinc-900 border border-border-default rounded-xl p-2 flex-row items-center shadow-lg shadow-black/50"
       >
         <Image
           source={{

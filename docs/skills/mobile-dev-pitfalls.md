@@ -558,7 +558,7 @@ NativeWind 的 `bg-black/50` 语法不生效，导致背景完全透明。
 
 ### Root Cause
 
-`bg-inherit` 和 `bg-current` 是 Web 专有属性，NativeWind 不支持。
+`bg-inherit` and `bg-current` are Web 专有属性，NativeWind 不支持。
 
 ### Fix
 
@@ -606,6 +606,40 @@ module.exports = {
 
 ---
 
+## 16. 低透明度背景在移动端显示为全透明 (Glassmorphism 失效)
+
+### Symptom
+
+在 Web 端显示为 Glassmorphism (毛玻璃) 效果的组件（如 `bg-bg-elevated`，对应 `rgba(255,255,255,0.05)`），在移动端显示为完全透明，导致文字看不清。
+
+### Root Cause
+
+React Native 没有原生的 CSS `backdrop-filter: blur(...)` 支持。低透明度背景（< 10%）如果没有模糊效果衬托，在移动端复杂背景上几乎不可见。
+
+### Fix
+
+**Option A**: 使用实色背景（推荐，性能最好）
+
+```tsx
+// BEFORE (透明看不清)
+<View className="bg-bg-elevated ...">
+
+// AFTER (实色深灰/黑)
+<View className="bg-zinc-900 ...">
+```
+
+**Option B**: 使用 `expo-blur` 包裹
+
+```tsx
+import { BlurView } from "expo-blur";
+
+<BlurView intensity={20} tint="dark" className="overflow-hidden rounded-xl">
+  <View className="bg-white/10 p-4">{/* Content */}</View>
+</BlurView>;
+```
+
+---
+
 ## Quick Reference: NativeWind vs Tailwind Web
 
 | 功能            | Tailwind Web | NativeWind v4                                          |
@@ -617,6 +651,7 @@ module.exports = {
 | 条件 className  | ✅           | ⚠️ 警告，用显式样式                                    |
 | 模板动态类名    | ✅           | ❌ 用内联样式                                          |
 | flex-direction  | row (默认)   | column (默认)                                          |
+| 低透明度背景    | ✅ (有 blur) | ❌ (无 blur，需用实色或 Expo Blur)                     |
 
 ---
 
@@ -627,4 +662,5 @@ module.exports = {
 3. **避免条件 className**：使用 `style` 或分状态渲染组件
 4. **RGB 颜色变量**：`"111 227 177"` 格式，配合 `rgb(var(--...))`
 5. **显式 flex 方向**：始终添加 `flex-row` 或 `flex-col`
-6. **测试时用真机**：模拟器可能有样式渲染差异
+6. **移动端背景色**：避免使用极低透明度背景，除非配合 `BlurView`
+7. **测试时用真机**：模拟器可能有样式渲染差异
