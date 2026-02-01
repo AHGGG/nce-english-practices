@@ -2,6 +2,8 @@ import { Audio, InterruptionModeIOS, InterruptionModeAndroid } from "expo-av";
 import { usePodcastStore, useDownloadStore } from "@nce/store";
 import { PodcastEpisode, podcastApi } from "@nce/api";
 import { getInfoAsync } from "expo-file-system/legacy";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { Platform } from "react-native";
 
 class AudioService {
   private sound: Audio.Sound | null = null;
@@ -13,6 +15,8 @@ class AudioService {
   private listenedSeconds = 0;
   private lastUpdateTimestamp = 0; // For calculating listened time
   private lastApiSyncTimestamp = 0; // For throttling API calls
+  private lastLocalSaveTimestamp = 0; // For throttling local storage writes
+  private deviceId: string | null = null;
 
   async init() {
     try {
@@ -169,6 +173,19 @@ class AudioService {
     }
   }
 
+  private async getDeviceId(): Promise<string> {
+    if (this.deviceId) return this.deviceId;
+    let id = await AsyncStorage.getItem("device_unique_id");
+    if (!id) {
+      id =
+        Math.random().toString(36).substring(2, 15) +
+        Math.random().toString(36).substring(2, 15);
+      await AsyncStorage.setItem("device_unique_id", id);
+    }
+    this.deviceId = id;
+    return id;
+  }
+
   private onPlaybackStatusUpdate = async (status: any) => {
     const store = usePodcastStore.getState();
 
@@ -198,6 +215,19 @@ class AudioService {
           this.syncSession(status.positionMillis / 1000);
           this.lastApiSyncTimestamp = now;
         }
+
+        // Local Save (every 1s)
+        if (now - this.lastLocalSaveTimestamp > 1000) {
+          const currentEpisode = store.currentEpisode;
+          if (currentEpisode) {
+            // Fire and forget
+            AsyncStorage.setItem(
+              `podcast_position_${currentEpisode.id}`,
+              (status.positionMillis / 1000).toString(),
+            ).catch(() => {});
+            this.lastLocalSaveTimestamp = now;
+          }
+        }
       } else {
         this.lastUpdateTimestamp = 0;
       }
@@ -224,12 +254,26 @@ class AudioService {
   private async syncSession(position: number) {
     if (!this.sessionId) return;
     try {
-      await podcastApi.session.update(
-        this.sessionId,
-        Math.floor(this.listenedSeconds),
-        position,
-        false, // Not finished yet
-      );
+      const store = usePodcastStore.getState();
+      const episodeId = store.currentEpisode?.id;
+
+      if (episodeId) {
+        const deviceId = await this.getDeviceId();
+        await podcastApi.syncPosition(
+          episodeId,
+          position,
+          deviceId,
+          Platform.OS === "ios" ? "ios" : "android",
+        );
+      } else {
+        // Fallback for safety
+        await podcastApi.session.update(
+          this.sessionId,
+          Math.floor(this.listenedSeconds),
+          position,
+          false, // Not finished yet
+        );
+      }
     } catch (e) {
       console.warn("[AudioService] Sync failed:", e);
     }

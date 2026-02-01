@@ -129,6 +129,28 @@ export const podcastApi = {
     return res.json() as Promise<PodcastEpisode[]>;
   },
 
+  async syncPosition(
+    episodeId: number,
+    position: number,
+    deviceId: string,
+    deviceType: string = "mobile",
+  ) {
+    const res = await authFetch(
+      `/api/podcast/episode/${episodeId}/position/sync`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          position_seconds: position,
+          device_id: deviceId,
+          device_type: deviceType,
+        }),
+      },
+    );
+    if (!res.ok) throw new Error("Sync failed");
+    return res.json();
+  },
+
   // Session Management
   session: {
     async start(episodeId: number) {
