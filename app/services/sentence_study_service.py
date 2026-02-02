@@ -1141,26 +1141,38 @@ class SentenceStudyService:
                     current_weak_topics.append(word)
             profile.weak_vocabulary_topics = current_weak_topics[-50:]
 
-            # Word Proficiency
-            for word in word_clicks:
-                wp_result = await db.execute(
-                    select(WordProficiency).where(
-                        WordProficiency.user_id == user_id, WordProficiency.word == word
-                    )
+            # Word Proficiency (Optimized: Batch fetch to avoid N+1 queries)
+            if word_clicks:
+                # 1. Fetch all existing records in one query
+                stmt = select(WordProficiency).where(
+                    WordProficiency.user_id == user_id,
+                    WordProficiency.word.in_(word_clicks),
                 )
-                wp = wp_result.scalar_one_or_none()
-                if wp:
-                    wp.exposure_count += 1
-                    wp.huh_count += 1
-                    wp.last_seen_at = func.now()
-                    wp.difficulty_score = float(wp.huh_count) / max(
-                        1, wp.exposure_count
-                    )
-                    if wp.difficulty_score > 0.3:
-                        wp.status = "learning"
-                else:
-                    db.add(
-                        WordProficiency(
+                result = await db.execute(stmt)
+                existing_map = {wp.word: wp for wp in result.scalars().all()}
+
+                # Track new records to handle duplicates within the batch
+                new_records_map = {}
+
+                for word in word_clicks:
+                    wp = None
+                    if word in existing_map:
+                        wp = existing_map[word]
+                    elif word in new_records_map:
+                        wp = new_records_map[word]
+
+                    if wp:
+                        wp.exposure_count += 1
+                        wp.huh_count += 1
+                        wp.last_seen_at = func.now()
+                        wp.difficulty_score = float(wp.huh_count) / max(
+                            1, wp.exposure_count
+                        )
+                        if wp.difficulty_score > 0.3:
+                            wp.status = "learning"
+                    else:
+                        # Create new record
+                        wp = WordProficiency(
                             user_id=user_id,
                             word=word,
                             exposure_count=1,
@@ -1168,7 +1180,10 @@ class SentenceStudyService:
                             difficulty_score=1.0,
                             status="new",
                         )
-                    )
+                        new_records_map[word] = wp
+
+                if new_records_map:
+                    db.add_all(new_records_map.values())
 
         # 3. Update Common Gaps
         if patterns:
