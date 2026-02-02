@@ -170,6 +170,54 @@ class PodcastService:
         except (ValueError, TypeError):
             return None
 
+    def _parse_chapters(self, entry: Any) -> Optional[List[Dict[str, Any]]]:
+        """
+        Parse chapters from feed entry.
+        Supports 'psc_chapters' (Podlove Simple Chapters) and 'googleplay_chapters'.
+        """
+        chapters = []
+
+        # 1. Check for Podlove Simple Chapters (psc)
+        # feedparser usually puts namespaced elements in entry keys like 'prefix_tag'
+        # Check for 'psc_chapters'
+        if hasattr(entry, "psc_chapters"):
+            psc_chapters = entry.psc_chapters
+            if isinstance(psc_chapters, dict) and "chapters" in psc_chapters:
+                # Sometimes it's nested differently depending on parser version
+                # But typically feedparser maps <psc:chapters> to entry.psc_chapters
+                # We need to iterate over 'psc_chapter' children
+                pass
+
+        # Method 2: Inspect 'tags' if feedparser stored them generically
+        # This is often more reliable for custom namespaces if not automatically handled
+
+        # Let's try the most common feedparser patterns for psc:chapter
+        # Usually found in entry.get('psc_chapters', {}).get('chapters', []) or similar
+        # But often feedparser flattens it.
+
+        # Strategy: Look for 'psc_chapter' list directly in entry (common for flattened)
+        if "psc_chapter" in entry:
+            for chap in entry.psc_chapter:
+                if isinstance(chap, dict):
+                    start = chap.get("start")
+                    title = chap.get("title")
+                    image = chap.get("image") or chap.get(
+                        "href"
+                    )  # href often used for images in some specs? No, href is link.
+                    link = chap.get("href")
+
+                    if start and title:
+                        chapters.append(
+                            {
+                                "start": start,
+                                "title": title,
+                                "image_url": image,
+                                "link": link,
+                            }
+                        )
+
+        return chapters if chapters else None
+
     async def parse_feed(self, rss_url: str) -> Dict[str, Any]:
         """
         Fetch and parse an RSS feed.
@@ -337,6 +385,7 @@ class PodcastService:
                         if isinstance(entry.get("itunes_image"), dict)
                         else None,
                         "published_at": published_at,
+                        "chapters": self._parse_chapters(entry),
                     }
                 )
 
@@ -523,7 +572,7 @@ class PodcastService:
         episodes = []
         for episode, feed, state in rows:
             ep_dict = {
-            "episode": {
+                "episode": {
                     "id": episode.id,
                     "guid": episode.guid,
                     "title": episode.title,
@@ -531,6 +580,7 @@ class PodcastService:
                     "audio_url": episode.audio_url,
                     "file_size": episode.file_size,
                     "duration_seconds": episode.duration_seconds,
+                    "chapters": episode.chapters,
                     "image_url": episode.image_url,
                     "published_at": episode.published_at.isoformat()
                     if episode.published_at
@@ -617,6 +667,7 @@ class PodcastService:
                 "audio_url": episode.audio_url,
                 "file_size": episode.file_size,
                 "duration_seconds": episode.duration_seconds,
+                "chapters": episode.chapters,
                 "image_url": episode.image_url,
                 "published_at": episode.published_at.isoformat()
                 if episode.published_at
@@ -947,6 +998,7 @@ class PodcastService:
                     audio_url=ep_data["audio_url"],
                     file_size=ep_data.get("file_size"),
                     duration_seconds=ep_data["duration_seconds"],
+                    chapters=ep_data.get("chapters"),
                     image_url=ep_data["image_url"],
                     published_at=ep_data["published_at"],
                 )

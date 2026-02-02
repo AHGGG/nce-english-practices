@@ -49,6 +49,17 @@ function formatDate(dateStr) {
   });
 }
 
+function formatFileSize(bytes) {
+  if (!bytes) return "";
+  const units = ["B", "KB", "MB", "GB", "TB"];
+  let i = 0;
+  while (bytes >= 1024 && i < units.length - 1) {
+    bytes /= 1024;
+    i++;
+  }
+  return `${bytes.toFixed(1)} ${units[i]}`;
+}
+
 export default function PodcastFeedDetailView() {
   const { feedId } = useParams();
   const navigate = useNavigate();
@@ -641,6 +652,24 @@ export default function PodcastFeedDetailView() {
                         <span className="flex items-center gap-1.5 font-mono">
                           <Clock className="w-3 h-3" />
                           {formatDuration(episode.duration_seconds)}
+                        </span>
+                      )}
+                      {episode.file_size > 0 && (
+                        <span className="flex items-center gap-1.5 font-mono text-text-muted/60">
+                          <span className="text-[10px] bg-bg-base/50 px-1.5 rounded border border-white/5">
+                            {formatFileSize(episode.file_size)}
+                          </span>
+                        </span>
+                      )}
+                      {/* Chapter Indicator */}
+                      {episode.chapters && episode.chapters.length > 0 && (
+                        <span
+                          className="flex items-center gap-1.5 font-mono text-text-muted/60"
+                          title={`${episode.chapters.length} Chapters`}
+                        >
+                          <span className="text-[10px] bg-accent-primary/10 text-accent-primary px-1.5 rounded border border-accent-primary/10">
+                            {episode.chapters.length} CH
+                          </span>
                         </span>
                       )}
                       {(() => {

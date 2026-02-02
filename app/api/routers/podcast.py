@@ -100,6 +100,7 @@ class EpisodeResponse(BaseModel):
     audio_url: str
     file_size: Optional[int]
     duration_seconds: Optional[int]
+    chapters: Optional[List[dict]] = None
     image_url: Optional[str]
     published_at: Optional[str]
     transcript_status: str
@@ -447,6 +448,7 @@ async def preview_podcast(
                         audio_url=ep["audio_url"],
                         file_size=ep.get("file_size"),
                         duration_seconds=ep["duration_seconds"],
+                        chapters=ep.get("chapters"),
                         image_url=ep.get("image_url"),
                         published_at=ep["published_at"],
                         transcript_status=ep["transcript_status"],
@@ -600,6 +602,7 @@ async def get_feed_detail(
                     audio_url=ep["audio_url"],
                     file_size=ep.get("file_size"),
                     duration_seconds=ep["duration_seconds"],
+                    chapters=ep.get("chapters"),
                     image_url=ep.get("image_url"),
                     published_at=ep["published_at"],
                     transcript_status=ep["transcript_status"],
