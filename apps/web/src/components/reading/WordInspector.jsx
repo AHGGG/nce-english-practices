@@ -1,5 +1,13 @@
 import React, { useState, useMemo } from "react";
-import { Volume2, X, Bookmark, Loader2, Sparkles } from "lucide-react";
+import {
+  Volume2,
+  X,
+  Bookmark,
+  Loader2,
+  Sparkles,
+  AlertTriangle,
+  Check,
+} from "lucide-react";
 import DictionaryResults from "../aui/DictionaryResults";
 import ReactMarkdown from "react-markdown";
 
@@ -47,51 +55,57 @@ const WordInspector = ({
 
   return (
     <div className="fixed inset-0 z-[60] pointer-events-none flex flex-col justify-end md:justify-center md:items-end md:pr-8">
-      {/* Backdrop for mobile only */}
+      {/* Backdrop for mobile only - blurred */}
       <div
-        className="absolute inset-0 bg-bg-base/80 md:bg-bg-base/50 pointer-events-auto"
+        className="absolute inset-0 bg-black/40 backdrop-blur-sm md:bg-transparent pointer-events-auto"
         onClick={onClose}
       ></div>
 
-      {/* Card - Sharp Industrial Style */}
-      <div className="pointer-events-auto relative w-full md:w-[420px] bg-bg-base border-t md:border border-border md:shadow-[4px_4px_0px_0px_rgba(0,255,148,0.2)] overflow-hidden flex flex-col max-h-[80vh] md:max-h-[85vh]">
-        {/* Header */}
+      {/* Card - Glassmorphism & Cyber-Noir Style */}
+      <div className="pointer-events-auto relative w-full md:w-[420px] bg-bg-base/90 backdrop-blur-xl border-t md:border border-white/10 md:rounded-2xl shadow-2xl shadow-black/50 overflow-hidden flex flex-col max-h-[85vh] animate-in slide-in-from-bottom-10 md:slide-in-from-right-10 duration-300">
+        {/* Glow Effects */}
+        <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-accent-primary to-transparent opacity-50" />
+        <div className="absolute -top-[20%] -right-[20%] w-[60%] h-[40%] bg-accent-primary/10 blur-[80px] rounded-full pointer-events-none" />
 
-        <div className="p-4 border-b border-border flex items-center justify-between bg-bg-elevated shrink-0">
-          <div className="flex items-center gap-3">
-            <span className="text-xl font-serif font-bold text-text-primary">
+        {/* Header */}
+        <div className="relative p-5 border-b border-white/10 flex items-center justify-between bg-white/[0.02] shrink-0 z-10">
+          <div className="flex items-center gap-4">
+            <span className="text-2xl font-serif font-bold text-white tracking-tight drop-shadow-sm">
               {selectedWord}
             </span>
             <button
               onClick={() => onPlayAudio(selectedWord)}
-              className="w-8 h-8 flex items-center justify-center border border-border text-accent-primary hover:bg-accent-primary hover:text-text-inverse transition-colors"
+              className="w-8 h-8 rounded-full flex items-center justify-center bg-white/5 hover:bg-accent-primary hover:text-black text-accent-primary transition-all active:scale-95 border border-white/10 hover:border-transparent"
+              title="Play pronunciation"
             >
-              <Volume2 className="w-4 h-4" />
+              <Volume2 className="w-4 h-4 fill-current" />
             </button>
           </div>
           <button
             onClick={onClose}
-            className="w-8 h-8 flex items-center justify-center border border-border text-text-muted hover:border-accent-danger hover:text-accent-danger transition-colors"
+            className="w-8 h-8 rounded-full flex items-center justify-center text-white/40 hover:text-white hover:bg-white/10 transition-colors"
           >
-            <X className="w-4 h-4" />
+            <X className="w-5 h-5" />
           </button>
         </div>
 
         {/* Content - Using DictionaryResults */}
-        <div className="flex-1 overflow-y-auto custom-scrollbar">
+        <div className="flex-1 overflow-y-auto custom-scrollbar relative z-10 p-1">
           {/* Streaming Context Explanation Section */}
           {(contextExplanation || isExplaining) && (
-            <div className="m-4 mb-4 p-3 border border-accent-primary/30 bg-accent-primary/5 rounded">
-              <div className="flex items-center gap-2 mb-2">
-                <Sparkles className="w-4 h-4 text-accent-primary" />
-                <span className="text-xs text-accent-primary uppercase tracking-wider font-mono">
-                  {isPhrase ? "Phrase Explanation" : "In This Context"}
+            <div className="m-4 mb-2 p-4 border border-accent-primary/20 bg-accent-primary/5 rounded-xl backdrop-blur-md shadow-inner shadow-accent-primary/5">
+              <div className="flex items-center gap-2 mb-3">
+                <div className="p-1 rounded bg-accent-primary/10">
+                  <Sparkles className="w-3.5 h-3.5 text-accent-primary" />
+                </div>
+                <span className="text-[10px] font-bold text-accent-primary uppercase tracking-widest font-mono">
+                  {isPhrase ? "Phrase Insight" : "Context AI"}
                 </span>
                 {isExplaining && (
-                  <Loader2 className="w-3 h-3 animate-spin text-accent-primary ml-auto" />
+                  <Loader2 className="w-3 h-3 animate-spin text-accent-primary ml-auto opacity-50" />
                 )}
               </div>
-              <div className="text-sm text-text-primary leading-relaxed font-serif">
+              <div className="text-sm text-white/90 leading-relaxed font-sans">
                 {contextExplanation ? (
                   <ReactMarkdown
                     components={{
@@ -186,21 +200,21 @@ const WordInspector = ({
 
               {/* Progressive Actions */}
               {!isExplaining && contextExplanation && (
-                <div className="mt-3 flex gap-2 border-t border-accent-primary/20 pt-2">
+                <div className="mt-4 flex gap-2 border-t border-white/10 pt-3">
                   {currentStyle !== "simple" && (
                     <button
                       onClick={() => onExplainStyle("simple")}
-                      className="flex-1 py-1.5 text-xs font-mono text-accent-primary border border-accent-primary/30 hover:bg-accent-primary/10 transition-colors uppercase flex items-center justify-center gap-1"
+                      className="flex-1 py-2 text-[10px] font-bold font-mono text-white/70 border border-white/10 rounded-lg hover:bg-white/5 hover:text-white transition-colors uppercase flex items-center justify-center gap-1"
                     >
-                      <span>Simpler please</span>
+                      <span>Simpler</span>
                     </button>
                   )}
                   {currentStyle !== "chinese_deep" && (
                     <button
                       onClick={() => onExplainStyle("chinese_deep")}
-                      className="flex-1 py-1.5 text-xs font-mono text-accent-warning border border-accent-warning/30 hover:bg-accent-warning/10 transition-colors uppercase flex items-center justify-center gap-1"
+                      className="flex-1 py-2 text-[10px] font-bold font-mono text-accent-warning border border-accent-warning/20 rounded-lg hover:bg-accent-warning/10 transition-colors uppercase flex items-center justify-center gap-1"
                     >
-                      <span>🇨🇳 Chinese Deep Dive</span>
+                      <span>Deep Dive (CN)</span>
                     </button>
                   )}
                 </div>
@@ -211,35 +225,38 @@ const WordInspector = ({
           {/* Dictionary section - show for both single words and phrases */}
           <>
             {isInspecting ? (
-              <div className="flex flex-col items-center justify-center p-8 text-text-muted space-y-3">
-                <Loader2 className="w-6 h-6 animate-spin text-accent-primary" />
-                <span className="text-xs uppercase tracking-widest font-mono">
-                  Consulting Dictionary...
+              <div className="flex flex-col items-center justify-center p-12 text-white/30 space-y-4">
+                <div className="relative">
+                  <div className="absolute inset-0 bg-accent-primary/20 blur-xl rounded-full animate-pulse" />
+                  <Loader2 className="relative w-8 h-8 animate-spin text-accent-primary" />
+                </div>
+                <span className="text-[10px] uppercase tracking-[0.2em] font-mono">
+                  Retrieving Data...
                 </span>
               </div>
             ) : inspectorData?.found ? (
               <div className="flex flex-col h-full">
                 {/* Dictionary Tabs */}
-                <div className="flex border-b border-border bg-bg-surface shrink-0 z-10 sticky top-0">
+                <div className="flex px-4 pt-2 gap-2 shrink-0 z-10 sticky top-0">
                   {inspectorData.ldoce?.found && (
                     <button
                       onClick={() => setActiveTab("LDOCE")}
-                      className={`flex-1 py-2 text-xs font-bold uppercase tracking-wider transition-colors ${
+                      className={`flex-1 py-2 text-[10px] font-bold uppercase tracking-widest transition-all rounded-t-lg border-b-2 ${
                         effectiveTab === "LDOCE"
-                          ? "text-accent-primary border-b-2 border-accent-primary bg-accent-primary/5"
-                          : "text-text-muted hover:text-text-primary hover:bg-bg-elevated"
+                          ? "text-accent-primary border-accent-primary bg-accent-primary/5"
+                          : "text-white/40 border-transparent hover:text-white hover:bg-white/5"
                       }`}
                     >
-                      LDOCE
+                      Longman
                     </button>
                   )}
                   {inspectorData.collins?.found && (
                     <button
                       onClick={() => setActiveTab("Collins")}
-                      className={`flex-1 py-2 text-xs font-bold uppercase tracking-wider transition-colors ${
+                      className={`flex-1 py-2 text-[10px] font-bold uppercase tracking-widest transition-all rounded-t-lg border-b-2 ${
                         effectiveTab === "Collins"
-                          ? "text-accent-warning border-b-2 border-accent-warning bg-accent-warning/5"
-                          : "text-text-muted hover:text-text-primary hover:bg-bg-elevated"
+                          ? "text-accent-secondary border-accent-secondary bg-accent-secondary/5"
+                          : "text-white/40 border-transparent hover:text-white hover:bg-white/5"
                       }`}
                     >
                       Collins
@@ -271,30 +288,39 @@ const WordInspector = ({
                 </div>
               </div>
             ) : inspectorData?.found === false ? (
-              <div className="text-text-secondary text-center p-8">
-                <p className="text-lg mb-2 font-serif">Word not found</p>
-                <p className="text-sm font-mono">
-                  "{selectedWord}" is not in dictionaries.
+              <div className="flex flex-col items-center justify-center p-12 text-white/40">
+                <div className="p-4 rounded-full bg-white/5 mb-4">
+                  <X className="w-8 h-8 opacity-50" />
+                </div>
+                <p className="text-lg font-serif text-white/60 mb-2">
+                  Word not found
+                </p>
+                <p className="text-xs font-mono text-center max-w-[200px]">
+                  "{selectedWord}" is not in our dictionaries.
                 </p>
               </div>
             ) : (
-              <div className="text-accent-danger text-center text-sm p-8 font-mono">
-                Failed to load definition
+              <div className="flex flex-col items-center justify-center p-12 text-accent-danger/70">
+                <AlertTriangle className="w-8 h-8 mb-4 opacity-50" />
+                <span className="text-xs font-mono uppercase tracking-widest">
+                  Connection Error
+                </span>
               </div>
             )}
           </>
         </div>
 
         {/* Footer Actions */}
-        <div className="p-4 border-t border-border bg-bg-elevated shrink-0 flex gap-2">
+        <div className="p-4 border-t border-white/10 bg-white/[0.02] shrink-0 flex gap-3 backdrop-blur-xl">
           <button
             onClick={() => onMarkAsKnown(selectedWord)}
-            className="flex-1 bg-bg-elevated border border-border text-text-secondary py-3 font-mono text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-2 hover:bg-border hover:text-text-primary transition-all active:translate-y-[1px]"
+            className="flex-1 py-3.5 rounded-xl border border-white/10 text-white/60 font-mono text-[10px] font-bold uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-white/5 hover:text-white hover:border-white/20 transition-all active:scale-95 group"
           >
+            <Check className="w-4 h-4 text-accent-primary opacity-50 group-hover:opacity-100" />
             Mark Known
           </button>
-          <button className="flex-[2] bg-text-primary text-text-inverse py-3 font-mono text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-2 hover:bg-light-surface hover:shadow-[4px_4px_0px_0px_rgba(255,255,255,0.2)] transition-all active:translate-y-[1px]">
-            <Bookmark className="w-4 h-4" />
+          <button className="flex-[1.5] py-3.5 rounded-xl bg-accent-primary text-black font-mono text-[10px] font-bold uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-accent-primary/90 shadow-[0_0_20px_rgba(var(--color-accent-primary-rgb),0.3)] hover:shadow-[0_0_30px_rgba(var(--color-accent-primary-rgb),0.5)] transition-all active:scale-95">
+            <Bookmark className="w-4 h-4 fill-current" />
             Add to Review
           </button>
         </div>

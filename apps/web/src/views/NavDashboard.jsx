@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import {
   BookOpen,
   Mic,
@@ -24,15 +24,13 @@ import {
 import { useAuth } from "../context/AuthContext";
 
 const NavCard = ({ title, path, icon: Icon, description, index }) => {
-  const navigate = useNavigate();
-
   return (
-    <div
-      onClick={() => navigate(path)}
-      className="group relative flex items-start gap-4 p-5 bg-white/[0.03] backdrop-blur-sm border border-white/[0.08] rounded-2xl hover:bg-white/[0.05] hover:border-accent-primary/30 transition-all duration-500 cursor-pointer overflow-hidden"
+    <Link
+      to={path}
+      className="group relative flex items-start gap-4 p-5 bg-white/[0.03] backdrop-blur-sm border border-white/[0.08] rounded-2xl hover:bg-white/[0.05] hover:border-accent-primary/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-primary focus-visible:ring-offset-2 focus-visible:ring-offset-[#0a0f0d] transition-all duration-500 cursor-pointer overflow-hidden"
     >
       {/* Number indicator */}
-      <div className="absolute top-4 right-4 text-[10px] font-mono text-white/20 group-hover:text-accent-primary/40 transition-colors">
+      <div className="absolute top-4 right-4 text-[10px] font-mono text-white/30 group-hover:text-accent-primary/40 transition-colors">
         {String(index + 1).padStart(2, "0")}
       </div>
 
@@ -52,13 +50,13 @@ const NavCard = ({ title, path, icon: Icon, description, index }) => {
       </div>
 
       {/* Arrow indicator */}
-      <div className="flex-shrink-0 opacity-0 group-hover:opacity-100 transition-all duration-300 transform group-hover:translate-x-1">
+      <div className="flex-shrink-0 opacity-0 group-hover:opacity-100 group-focus-visible:opacity-100 transition-all duration-300 transform group-hover:translate-x-1 group-focus-visible:translate-x-1">
         <ChevronRight className="w-5 h-5 text-accent-primary/60" />
       </div>
 
       {/* Hover glow */}
       <div className="absolute -bottom-20 -right-20 w-40 h-40 bg-accent-primary/10 rounded-full blur-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
-    </div>
+    </Link>
   );
 };
 
@@ -265,7 +263,7 @@ const NavDashboard = () => {
           </h1>
 
           {/* Subtitle */}
-          <p className="text-lg md:text-xl text-white/50 max-w-2xl mx-auto mb-10 leading-relaxed">
+          <p className="text-lg md:text-xl text-white/70 max-w-2xl mx-auto mb-10 leading-relaxed">
             Master English with intelligent AI tutors that guide your journey
             <span className="text-accent-primary/80">
               {" "}
@@ -328,7 +326,7 @@ const NavDashboard = () => {
       {/* Footer */}
       <footer className="relative z-10 border-t border-white/[0.05] px-6 md:px-12 py-8">
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
-          <p className="text-sm text-white/30">
+          <p className="text-sm text-white/40">
             © 2026 English101.ai. Built with precision.
           </p>
           {/* <div className="flex items-center gap-6">
