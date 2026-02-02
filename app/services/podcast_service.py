@@ -10,6 +10,8 @@ Uses the Shared Feed Model:
 
 import logging
 import hashlib
+import asyncio
+from urllib.parse import urljoin
 from datetime import datetime
 from typing import List, Optional, Dict, Any, Tuple
 from xml.etree import ElementTree as ET
@@ -22,6 +24,7 @@ from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import settings
+from app.core.utils import validate_url_security
 from app.models.podcast_orm import (
     PodcastFeed,
     PodcastFeedSubscription,
@@ -69,6 +72,36 @@ class PodcastService:
         "1488",
         "1489",
     ]
+
+    # --- Helpers ---
+
+    async def _safe_get(
+        self, client: httpx.AsyncClient, url: str, headers: Optional[Dict] = None
+    ) -> httpx.Response:
+        """
+        Perform a GET request with SSRF protection, following redirects manually to validate each hop.
+        """
+        current_url = url
+        max_redirects = 10
+
+        for _ in range(max_redirects):
+            # Validate URL (blocking DNS check in threadpool)
+            await asyncio.to_thread(validate_url_security, current_url)
+
+            # Request without following redirects
+            resp = await client.get(current_url, headers=headers, follow_redirects=False)
+
+            if resp.is_redirect:
+                location = resp.headers.get("Location")
+                if not location:
+                    return resp
+                # Handle relative redirects
+                current_url = urljoin(current_url, location)
+                continue
+            else:
+                return resp
+
+        raise ValueError("Too many redirects or invalid redirect chain")
 
     # --- iTunes Search ---
 
@@ -242,9 +275,9 @@ class PodcastService:
             try:
                 # Use 45s timeout (safe margin below Nginx default 60s)
                 async with httpx.AsyncClient(
-                    timeout=45.0, follow_redirects=True, proxy=proxies
+                    timeout=45.0, follow_redirects=False, proxy=proxies
                 ) as client:
-                    response = await client.get(rss_url, headers=headers)
+                    response = await self._safe_get(client, rss_url, headers=headers)
                     response.raise_for_status()
                     content = response.text
             except Exception as e:
@@ -274,11 +307,11 @@ class PodcastService:
                         # Attempt 2: Relaxed Security
                         async with httpx.AsyncClient(
                             timeout=45.0,
-                            follow_redirects=True,
+                            follow_redirects=False,
                             verify=False,
                             proxy=proxies,
                         ) as client:
-                            response = await client.get(rss_url, headers=headers)
+                            response = await self._safe_get(client, rss_url, headers=headers)
                             response.raise_for_status()
                             content = response.text
                     except Exception as e2:
@@ -1064,6 +1097,8 @@ class PodcastService:
             async def check_size(ep):
                 async with semaphore:
                     try:
+                        # Validate URL before request
+                        await asyncio.to_thread(validate_url_security, ep.audio_url)
                         resp = await client.head(ep.audio_url)
                         if resp.status_code == 200:
                             cl = resp.headers.get("content-length")
