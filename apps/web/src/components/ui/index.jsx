@@ -15,7 +15,7 @@ export const Button = ({
   ...props
 }) => {
   const base =
-    "inline-flex items-center justify-center gap-2 font-semibold tracking-wide transition-all duration-200 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed rounded-xl";
+    "inline-flex items-center justify-center gap-2 font-semibold tracking-wide transition-all duration-200 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed rounded-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-bg-base focus-visible:ring-accent-primary";
 
   const variants = {
     primary:
