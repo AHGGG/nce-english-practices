@@ -13,6 +13,8 @@ import time
 from app.api.routers.auth import get_current_user_id
 from app.config import settings
 from app.core.db import AsyncSessionLocal
+from app.core.utils import validate_url_security
+from fastapi.concurrency import run_in_threadpool
 
 from app.services.podcast_service import podcast_service
 
@@ -165,6 +167,12 @@ async def _proxy_image(url: str, filename: str = "image.jpg"):
     # Security: basic check to prevent local file access
     if not url.startswith("http"):
         raise HTTPException(status_code=400, detail="Invalid URL protocol")
+
+    try:
+        await run_in_threadpool(validate_url_security, url)
+    except ValueError:
+        # Don't leak detail about IP
+        raise HTTPException(status_code=400, detail="Invalid URL: Security check failed")
 
     # Cache Configuration
     CACHE_DIR = settings.podcast_cache_dir
@@ -1049,6 +1057,9 @@ async def download_episode_head(
         proxies = settings.PROXY_URL if settings.PROXY_URL else None
         headers = {"User-Agent": BROWSER_USER_AGENT}
 
+        # Validate URL
+        await run_in_threadpool(validate_url_security, audio_url)
+
         async with httpx.AsyncClient(
             timeout=10.0, follow_redirects=True, proxy=proxies, headers=headers
         ) as client:
@@ -1103,6 +1114,11 @@ async def download_episode(
     headers_to_upstream = {"User-Agent": BROWSER_USER_AGENT}
     if range_header:
         headers_to_upstream["Range"] = range_header
+
+    try:
+        await run_in_threadpool(validate_url_security, audio_url)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid URL: Security check failed")
 
     # Stream the audio file
     # RE-IMPLEMENTATION with efficient header forwarding

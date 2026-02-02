@@ -1,5 +1,8 @@
 import json
 import re
+import socket
+import ipaddress
+import urllib.parse
 from typing import Dict, List, Union, Any
 from fastapi import HTTPException
 
@@ -31,6 +34,45 @@ def validate_input(
         raise HTTPException(status_code=400, detail=f"{field_name} contains invalid characters")
 
     return text
+
+
+def validate_url_security(url: str) -> str:
+    """
+    Validates a URL to ensure it doesn't point to a private/local IP address (SSRF protection).
+    Resolves the hostname and checks if the IP is global.
+    Raises ValueError if the URL is unsafe.
+    """
+    try:
+        parsed = urllib.parse.urlparse(url)
+        hostname = parsed.hostname
+        if not hostname:
+            raise ValueError("Invalid URL: No hostname found")
+
+        # Resolve hostname
+        # getaddrinfo returns list of (family, type, proto, canonname, sockaddr)
+        # sockaddr is (ip, port) for IPv4/IPv6
+        addr_info = socket.getaddrinfo(hostname, None)
+
+        for family, _, _, _, sockaddr in addr_info:
+            ip_str = sockaddr[0]
+            ip = ipaddress.ip_address(ip_str)
+
+            # Check for private, loopback, link-local, multicast, reserved
+            if (
+                ip.is_private
+                or ip.is_loopback
+                or ip.is_link_local
+                or ip.is_multicast
+                or ip.is_reserved
+                or str(ip) == "0.0.0.0"
+            ):
+                raise ValueError(f"Private IP address rejected: {ip_str}")
+
+        return url
+    except ValueError:
+        raise
+    except Exception as e:
+        raise ValueError(f"URL validation failed: {str(e)}")
 
 
 def parse_llm_json(content: str) -> Union[Dict[str, Any], List[Any]]:
