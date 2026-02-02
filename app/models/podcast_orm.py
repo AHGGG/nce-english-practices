@@ -113,6 +113,7 @@ class PodcastEpisode(Base):
     title: Mapped[str] = mapped_column(Text)
     description: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     audio_url: Mapped[str] = mapped_column(Text)
+    file_size: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)  # Bytes
     duration_seconds: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
     image_url: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     published_at: Mapped[Optional[datetime]] = mapped_column(TIMESTAMP, nullable=True)

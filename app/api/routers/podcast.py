@@ -98,6 +98,7 @@ class EpisodeResponse(BaseModel):
     title: str
     description: Optional[str]
     audio_url: str
+    file_size: Optional[int]
     duration_seconds: Optional[int]
     image_url: Optional[str]
     published_at: Optional[str]
@@ -444,6 +445,7 @@ async def preview_podcast(
                         title=ep["title"],
                         description=ep["description"],
                         audio_url=ep["audio_url"],
+                        file_size=ep.get("file_size"),
                         duration_seconds=ep["duration_seconds"],
                         image_url=ep.get("image_url"),
                         published_at=ep["published_at"],
@@ -596,6 +598,7 @@ async def get_feed_detail(
                     title=ep["title"],
                     description=ep["description"],
                     audio_url=ep["audio_url"],
+                    file_size=ep.get("file_size"),
                     duration_seconds=ep["duration_seconds"],
                     image_url=ep.get("image_url"),
                     published_at=ep["published_at"],
@@ -900,7 +903,9 @@ async def sync_position(
 
         if result is None:
             # Conflict! Fetch current state to return
-            current_state = await podcast_service.get_episode_state(db, user_id, episode_id)
+            current_state = await podcast_service.get_episode_state(
+                db, user_id, episode_id
+            )
             server_ts = (
                 current_state.last_synced_at.timestamp() * 1000
                 if current_state and current_state.last_synced_at
@@ -976,7 +981,6 @@ async def resolve_position(
                 conflict_resolved=True,
                 message="Server is newer",
             )
-
 
 
 # --- Recently Played ---

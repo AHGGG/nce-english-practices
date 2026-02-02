@@ -34,6 +34,16 @@ export async function getCachedAudioUrl(url) {
     const response = await cache.match(url);
     if (!response) return null;
 
+    // If response is opaque (no-cors), we cannot create a Blob URL.
+    // Return null so the app uses the original URL.
+    // The Service Worker will intercept the request and serve the opaque response from cache.
+    if (response.type === "opaque") {
+      console.log(
+        "[Offline] Opaque response found, delegating to Service Worker",
+      );
+      return null;
+    }
+
     const blob = await response.blob();
     const objectUrl = URL.createObjectURL(blob);
     console.log("[Offline] Created Object URL from cache:", url);
@@ -52,6 +62,7 @@ export async function getCachedAudioUrl(url) {
  * @param {string} audioUrl - The direct audio URL (required)
  * @param {function} onProgress - Optional progress callback (received, total)
  * @param {AbortSignal} signal - Optional abort signal for cancellation
+ * @param {number} knownFileSize - Optional known file size in bytes
  * @returns {Promise<boolean>} - True if download succeeded
  */
 export async function downloadEpisodeForOffline(
@@ -59,53 +70,97 @@ export async function downloadEpisodeForOffline(
   audioUrl,
   onProgress,
   signal = null,
+  knownFileSize = null,
 ) {
   if (!audioUrl) {
     throw new Error("Audio URL is required for direct download");
   }
 
   try {
-    console.log(`[Offline] Direct download from: ${audioUrl}`);
+    console.log(`[Offline] Attempting direct CORS download from: ${audioUrl}`);
 
-    const headResponse = await fetch(audioUrl, {
-      method: "HEAD",
-      mode: "cors",
-      signal,
-    });
+    // Strategy 1: Try CORS download (Best: supports progress and chunks)
+    try {
+      let totalSize = knownFileSize;
 
-    if (!headResponse.ok) {
-      throw new Error(`HEAD request failed: ${headResponse.status}`);
+      // Only perform HEAD if size is unknown
+      if (!totalSize) {
+        const headResponse = await fetch(audioUrl, {
+          method: "HEAD",
+          mode: "cors",
+          signal,
+        });
+
+        if (headResponse.ok) {
+          const contentLength = headResponse.headers.get("content-length");
+          totalSize = contentLength ? parseInt(contentLength, 10) : 0;
+        }
+      }
+
+      if (totalSize > 0) {
+        const contentType = "audio/mpeg"; // Default, as HEAD might have been skipped
+        await performChunkedDownload(
+          audioUrl,
+          audioUrl,
+          totalSize,
+          contentType,
+          onProgress,
+          signal,
+        );
+        updateOfflineIndex(episodeId);
+        console.log(`[Offline] Direct download successful for ${episodeId}`);
+        return true;
+      }
+    } catch (corsError) {
+      if (signal?.aborted) throw corsError;
+      console.warn(
+        `[Offline] CORS/HEAD download failed for ${episodeId}, falling back to opaque download.`,
+        corsError,
+      );
     }
 
-    const contentLength = headResponse.headers.get("content-length");
-    const totalSize = contentLength ? parseInt(contentLength, 10) : 0;
-    const contentType =
-      headResponse.headers.get("content-type") || "audio/mpeg";
-
-    if (!totalSize) {
-      throw new Error("Could not determine file size");
-    }
-
-    await performChunkedDownload(
-      audioUrl,
-      audioUrl,
-      totalSize,
-      contentType,
-      onProgress,
-      signal,
+    // Strategy 2: Fallback to No-CORS (Opaque) download
+    // Limitation: No progress bar, no seeking support in some browsers, no error validation
+    console.log(
+      `[Offline] Attempting opaque (no-cors) download for: ${audioUrl}`,
     );
+    await performOpaqueDownload(audioUrl, audioUrl, onProgress, signal);
 
     updateOfflineIndex(episodeId);
-    console.log(`[Offline] Direct download successful for ${episodeId}`);
+    console.log(`[Offline] Opaque download successful for ${episodeId}`);
     return true;
   } catch (error) {
     if (signal?.aborted) {
       console.log("[Offline] Download cancelled by user");
     } else {
-      console.error("[Offline] Direct download failed:", error);
+      console.error("[Offline] Download failed:", error);
     }
     throw error;
   }
+}
+
+/**
+ * Helper to perform opaque download (no-cors).
+ * Used when CORS is not enabled on the source server.
+ */
+async function performOpaqueDownload(sourceUrl, cacheKey, onProgress, signal) {
+  const cache = await caches.open(PODCAST_AUDIO_CACHE);
+
+  // Fake progress start
+  if (onProgress) onProgress(1, 100);
+
+  const response = await fetch(sourceUrl, {
+    mode: "no-cors",
+    signal,
+  });
+
+  // For opaque responses, we cannot check response.ok or status (it's always 0)
+  // We also cannot access the body to stream it.
+  // We just store the opaque response directly.
+  await cache.put(cacheKey, response);
+
+  // Fake progress end
+  if (onProgress) onProgress(100, 100);
 }
 
 /**

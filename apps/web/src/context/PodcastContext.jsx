@@ -350,6 +350,7 @@ export function PodcastProvider({ children }) {
             }));
           },
           controller.signal,
+          episode.file_size, // Pass known file size
         );
 
         if (success) {

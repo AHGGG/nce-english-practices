@@ -270,12 +270,23 @@ class PodcastService:
             for entry in feed.entries:
                 # Find audio enclosure
                 audio_url = None
+                file_size = None
+
                 for link in entry.get("links", []):
                     if (
                         link.get("type", "").startswith("audio/")
                         or link.get("rel") == "enclosure"
                     ):
                         audio_url = link.get("href")
+                        # Try to get length
+                        try:
+                            file_size = (
+                                int(link.get("length", 0))
+                                if link.get("length")
+                                else None
+                            )
+                        except (ValueError, TypeError):
+                            pass
                         break
 
                 # Also check enclosures list
@@ -283,6 +294,15 @@ class PodcastService:
                     for enc in entry.get("enclosures", []):
                         if enc.get("type", "").startswith("audio/"):
                             audio_url = enc.get("href")
+                            # Try to get length
+                            try:
+                                file_size = (
+                                    int(enc.get("length", 0))
+                                    if enc.get("length")
+                                    else None
+                                )
+                            except (ValueError, TypeError):
+                                pass
                             break
 
                 if not audio_url:
@@ -309,6 +329,7 @@ class PodcastService:
                         "title": entry.get("title", "Untitled Episode"),
                         "description": entry.get("summary") or entry.get("description"),
                         "audio_url": audio_url,
+                        "file_size": file_size,
                         "duration_seconds": self._parse_duration(
                             entry.get("itunes_duration")
                         ),
@@ -364,6 +385,7 @@ class PodcastService:
                     title=ep_data["title"],
                     description=ep_data["description"],
                     audio_url=ep_data["audio_url"],
+                    file_size=ep_data.get("file_size"),
                     duration_seconds=ep_data["duration_seconds"],
                     image_url=ep_data["image_url"],
                     published_at=ep_data["published_at"],
@@ -501,12 +523,13 @@ class PodcastService:
         episodes = []
         for episode, feed, state in rows:
             ep_dict = {
-                "episode": {
+            "episode": {
                     "id": episode.id,
                     "guid": episode.guid,
                     "title": episode.title,
                     "description": episode.description,
                     "audio_url": episode.audio_url,
+                    "file_size": episode.file_size,
                     "duration_seconds": episode.duration_seconds,
                     "image_url": episode.image_url,
                     "published_at": episode.published_at.isoformat()
@@ -592,6 +615,7 @@ class PodcastService:
                 "title": episode.title,
                 "description": episode.description,
                 "audio_url": episode.audio_url,
+                "file_size": episode.file_size,
                 "duration_seconds": episode.duration_seconds,
                 "image_url": episode.image_url,
                 "published_at": episode.published_at.isoformat()
@@ -921,6 +945,7 @@ class PodcastService:
                     title=ep_data["title"],
                     description=ep_data["description"],
                     audio_url=ep_data["audio_url"],
+                    file_size=ep_data.get("file_size"),
                     duration_seconds=ep_data["duration_seconds"],
                     image_url=ep_data["image_url"],
                     published_at=ep_data["published_at"],
