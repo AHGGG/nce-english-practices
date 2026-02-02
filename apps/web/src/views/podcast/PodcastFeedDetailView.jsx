@@ -101,6 +101,7 @@ export default function PodcastFeedDetailView() {
   // Refs to capture latest values for effect cleanup
   const lastTimeRef = useRef(0);
   const lastDurationRef = useRef(0);
+  const checkedSizeIdsRef = useRef(new Set()); // Track episodes checked for file size
 
   // Update refs on every render
   lastTimeRef.current = currentTime;
@@ -137,7 +138,44 @@ export default function PodcastFeedDetailView() {
 
   useEffect(() => {
     loadFeed(true);
+    checkedSizeIdsRef.current.clear();
   }, [feedId]);
+
+  // Lazy load file sizes for episodes that miss them (common in some feeds)
+  useEffect(() => {
+    if (!episodes.length) return;
+
+    const missingSizeIds = episodes
+      .filter(
+        (ep) =>
+          (!ep.file_size || ep.file_size === 0) &&
+          !checkedSizeIdsRef.current.has(ep.id),
+      )
+      .map((ep) => ep.id);
+
+    if (missingSizeIds.length > 0) {
+      // Mark as checked to prevent infinite loops/duplicate calls
+      missingSizeIds.forEach((id) => checkedSizeIdsRef.current.add(id));
+
+      const timer = setTimeout(async () => {
+        try {
+          const { updated } =
+            await podcastApi.checkEpisodeSizes(missingSizeIds);
+          if (Object.keys(updated).length > 0) {
+            setEpisodes((prev) =>
+              prev.map((ep) =>
+                updated[ep.id] ? { ...ep, file_size: updated[ep.id] } : ep,
+              ),
+            );
+          }
+        } catch (e) {
+          console.error("Failed to check file sizes", e);
+        }
+      }, 1000); // 1s delay to prioritize initial render
+
+      return () => clearTimeout(timer);
+    }
+  }, [episodes]);
 
   async function loadFeed(reset = false) {
     try {

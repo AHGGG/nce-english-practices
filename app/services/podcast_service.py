@@ -178,23 +178,30 @@ class PodcastService:
         chapters = []
 
         # 1. Check for Podlove Simple Chapters (psc)
-        # feedparser usually puts namespaced elements in entry keys like 'prefix_tag'
-        # Check for 'psc_chapters'
+        # feedparser typically maps <psc:chapters> to entry.psc_chapters
         if hasattr(entry, "psc_chapters"):
             psc_chapters = entry.psc_chapters
+            # Case A: psc_chapters is a dict with 'chapters' list (common in modern feedparser)
             if isinstance(psc_chapters, dict) and "chapters" in psc_chapters:
-                # Sometimes it's nested differently depending on parser version
-                # But typically feedparser maps <psc:chapters> to entry.psc_chapters
-                # We need to iterate over 'psc_chapter' children
-                pass
+                for chap in psc_chapters["chapters"]:
+                    if isinstance(chap, dict):
+                        start = chap.get("start")
+                        title = chap.get("title")
+                        image = chap.get("image")
+                        link = chap.get("href")
 
-        # Method 2: Inspect 'tags' if feedparser stored them generically
-        # This is often more reliable for custom namespaces if not automatically handled
+                        if start and title:
+                            chapters.append(
+                                {
+                                    "start": start,
+                                    "title": title,
+                                    "image_url": image,
+                                    "link": link,
+                                }
+                            )
+                return chapters
 
-        # Let's try the most common feedparser patterns for psc:chapter
-        # Usually found in entry.get('psc_chapters', {}).get('chapters', []) or similar
-        # But often feedparser flattens it.
-
+        # Method 2: Inspect 'tags' or flattened 'psc_chapter' if feedparser stored them differently
         # Strategy: Look for 'psc_chapter' list directly in entry (common for flattened)
         if "psc_chapter" in entry:
             for chap in entry.psc_chapter:
@@ -981,18 +988,33 @@ class PodcastService:
         parsed = await self.parse_feed(feed.rss_url)
         episodes_data = parsed["episodes"]
 
-        # Get existing GUIDs
-        guid_stmt = select(PodcastEpisode.guid).where(PodcastEpisode.feed_id == feed_id)
-        guid_result = await db.execute(guid_stmt)
-        existing_guids = set(guid_result.scalars().all())
+        # Get existing episodes to update
+        ep_stmt = select(PodcastEpisode).where(PodcastEpisode.feed_id == feed_id)
+        ep_result = await db.execute(ep_stmt)
+        existing_episodes = {ep.guid: ep for ep in ep_result.scalars().all()}
 
-        # Add new episodes
+        # Process episodes
         new_count = 0
         for ep_data in episodes_data:
-            if ep_data["guid"] not in existing_guids:
+            guid = ep_data["guid"]
+            if guid in existing_episodes:
+                # Update existing episode
+                episode = existing_episodes[guid]
+                # Update fields that might have changed or were missing
+                episode.file_size = ep_data.get("file_size")
+                episode.chapters = ep_data.get("chapters")
+                episode.duration_seconds = ep_data["duration_seconds"]
+                if ep_data.get("image_url"):
+                    episode.image_url = ep_data["image_url"]
+                # We typically don't update title/description to avoid overwriting user edits
+                # (if we had them), but for now sticking to source is fine.
+                # episode.title = ep_data["title"]
+                # episode.description = ep_data["description"]
+            else:
+                # Create new episode
                 episode = PodcastEpisode(
                     feed_id=feed.id,
-                    guid=ep_data["guid"],
+                    guid=guid,
                     title=ep_data["title"],
                     description=ep_data["description"],
                     audio_url=ep_data["audio_url"],
@@ -1008,6 +1030,56 @@ class PodcastService:
         feed.last_fetched_at = datetime.utcnow()
         await db.commit()
         return new_count
+
+    async def update_episode_sizes(
+        self, db: AsyncSession, episode_ids: List[int]
+    ) -> Dict[int, int]:
+        """
+        Check and update file sizes for specified episodes using HEAD requests.
+        Returns a map of {episode_id: file_size} for successful updates.
+        """
+        import asyncio
+
+        if not episode_ids:
+            return {}
+
+        stmt = select(PodcastEpisode).where(PodcastEpisode.id.in_(episode_ids))
+        result = await db.execute(stmt)
+        episodes = result.scalars().all()
+
+        updated_sizes = {}
+        # Only check episodes that have no size or 0 size
+        to_check = [ep for ep in episodes if not ep.file_size]
+
+        if not to_check:
+            return {}
+
+        semaphore = asyncio.Semaphore(10)  # 10 concurrent requests
+        proxies = settings.PROXY_URL if settings.PROXY_URL else None
+
+        async with httpx.AsyncClient(
+            timeout=10.0, follow_redirects=True, proxy=proxies
+        ) as client:
+
+            async def check_size(ep):
+                async with semaphore:
+                    try:
+                        resp = await client.head(ep.audio_url)
+                        if resp.status_code == 200:
+                            cl = resp.headers.get("content-length")
+                            if cl and cl.isdigit():
+                                size = int(cl)
+                                ep.file_size = size
+                                updated_sizes[ep.id] = size
+                    except Exception as e:
+                        logger.warning(f"Failed to check size for ep {ep.id}: {e}")
+
+            await asyncio.gather(*(check_size(ep) for ep in to_check))
+
+        if updated_sizes:
+            await db.commit()
+
+        return updated_sizes
 
     # --- OPML Import/Export ---
 

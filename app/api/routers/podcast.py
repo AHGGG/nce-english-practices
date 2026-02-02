@@ -134,6 +134,10 @@ class ListeningSessionUpdateRequest(BaseModel):
     is_finished: bool = False
 
 
+class CheckSizeRequest(BaseModel):
+    episode_ids: List[int]
+
+
 class OPMLImportResult(BaseModel):
     total: int
     imported: int
@@ -625,6 +629,19 @@ async def refresh_feed(
     async with AsyncSessionLocal() as db:
         new_count = await podcast_service.refresh_feed(db, user_id, feed_id)
         return {"new_episodes": new_count}
+
+
+@router.post("/episodes/check-size")
+async def check_episode_sizes(
+    data: CheckSizeRequest,
+    user_id: str = Depends(get_current_user_id),
+):
+    """
+    Check and update file sizes for specified episodes.
+    """
+    async with AsyncSessionLocal() as db:
+        updated = await podcast_service.update_episode_sizes(db, data.episode_ids)
+        return {"updated": updated}
 
 
 # --- OPML ---

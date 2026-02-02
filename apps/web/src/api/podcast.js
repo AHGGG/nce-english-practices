@@ -386,6 +386,21 @@ export async function getRecentlyPlayed(limit = 10) {
 }
 
 /**
+ * Check and update file sizes for specified episodes.
+ * @param {Array<number>} episodeIds
+ * @returns {Promise<{updated: Object.<number, number>}>}
+ */
+export async function checkEpisodeSizes(episodeIds) {
+  const response = await authFetch(`${BASE_URL}/episodes/check-size`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ episode_ids: episodeIds }),
+  });
+  if (!response.ok) throw new Error("Failed to check sizes");
+  return response.json();
+}
+
+/**
  * Download episode audio for offline playback.
  */
 export async function downloadEpisode(episodeId) {
