@@ -90,6 +90,9 @@ const ReadingMode = () => {
     // Calibration banner state
     const [calibrationBanner, setCalibrationBanner] = useState(null);
 
+    // Track last modified word to optimize re-renders
+    const [lastModifiedWord, setLastModifiedWord] = useState(null);
+
     // Sentence Inspector state (for unclear sentences)
     const [selectedSentence, setSelectedSentence] = useState(null);
     const [selectedSentenceInfo, setSelectedSentenceInfo] = useState(null);
@@ -276,6 +279,10 @@ const ReadingMode = () => {
         const lowerWord = word.toLowerCase();
         if (selectedArticle && selectedArticle.highlightSet) {
             selectedArticle.highlightSet.delete(lowerWord);
+
+            // Set modified word to optimize rendering (skip sentences that don't contain it)
+            setLastModifiedWord(lowerWord);
+
             // Force re-render of highlights by cloning (not deep cloning set, just reference ref or forceUpdate?)
             // Actually ReaderView usually re-renders if article prop changes. 
             // We might need to clone selectedArticle to trigger update.
@@ -323,6 +330,8 @@ const ReadingMode = () => {
 
     const executeSweep = async (sweptWords, inspected) => {
         // Optimistic clear
+        // Reset lastModifiedWord so all sentences re-render
+        setLastModifiedWord(null);
         setSelectedArticle(prev => ({
             ...prev,
             highlightSet: new Set()
@@ -412,6 +421,7 @@ const ReadingMode = () => {
                 onSweep={handleSweep}
                 trackerRef={trackerRef}
                 calibrationBanner={calibrationBanner}
+                lastModifiedWord={lastModifiedWord}
             />
 
             <WordInspector

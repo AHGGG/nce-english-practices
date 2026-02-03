@@ -29,6 +29,7 @@ const ReaderView = ({
   onSweep,
   trackerRef,
   calibrationBanner,
+  lastModifiedWord,
 }) => {
   const mainRef = useRef(null);
   const sentinelRef = useRef(null);
@@ -188,6 +189,7 @@ const ReaderView = ({
                         studyHighlightSet={article.studyHighlightSet}
                         showHighlights={showHighlights}
                         unclearInfo={article.unclearSentenceMap?.[globalIdx]}
+                        lastModifiedWord={lastModifiedWord}
                       />{" "}
                     </span>
                   );
