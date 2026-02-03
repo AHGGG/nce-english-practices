@@ -3,220 +3,277 @@
  * Shows stats and full article with highlighted lookups and unclear sentences
  * Clicking unclear sentences opens SentenceInspector for explanations
  */
-import React, { useState } from 'react';
-import { ChevronLeft, CheckCircle, BookMarked, AlertCircle } from 'lucide-react';
-import SentenceInspector from '../../reading/SentenceInspector';
-import { getGapTypeInfo, DIFFICULTY_CHOICES } from '../constants';
-import { usePodcast } from '../../../context/PodcastContext';
+import React, { useState } from "react";
+import {
+  ChevronLeft,
+  CheckCircle,
+  BookMarked,
+  AlertCircle,
+  Trophy,
+  BarChart,
+} from "lucide-react";
+import SentenceInspector from "../../reading/SentenceInspector";
+import { getGapTypeInfo, DIFFICULTY_CHOICES } from "../constants";
+import { usePodcast } from "../../../context/PodcastContext";
 
 // Get border/bg class based on unclear type
 const getUnclearSentenceStyle = (unclearChoice) => {
-    const gapInfo = getGapTypeInfo(unclearChoice);
-    return `border-l-4 ${gapInfo.cssClasses.border} ${gapInfo.cssClasses.bg} pl-3`;
+  const gapInfo = getGapTypeInfo(unclearChoice);
+  // Use slightly more vibrant/visible styles for the dark theme
+  return `border-l-2 ${gapInfo.cssClasses.border} bg-white/[0.03] pl-4`;
 };
 
 // HighlightedText subcomponent
 const HighlightedText = ({ text, highlights = [], onWordClick }) => {
-    if (!highlights || highlights.length === 0) {
-        return <span>{text}</span>;
-    }
+  if (!highlights || highlights.length === 0) {
+    return <span>{text}</span>;
+  }
 
-    const pattern = highlights
-        .map(w => w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
-        .join('|');
-    const regex = new RegExp(`\\b(${pattern})\\b`, 'gi');
-    const parts = text.split(regex);
+  const pattern = highlights
+    .map((w) => w.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"))
+    .join("|");
+  const regex = new RegExp(`\\b(${pattern})\\b`, "gi");
+  const parts = text.split(regex);
 
-    return (
-        <>
-            {parts.map((part, i) => {
-                const isHighlight = highlights.some(
-                    h => h.toLowerCase() === part.toLowerCase()
-                );
-                return isHighlight ? (
-                    <mark
-                        key={i}
-                        className="bg-category-amber/30 text-category-amber px-0.5 rounded cursor-pointer hover:bg-category-amber/50"
-                        onClick={(e) => {
-                            e.stopPropagation();
-                            onWordClick?.(part, text);
-                        }}
-                    >
-                        {part}
-                    </mark>
-                ) : (
-                    <span key={i}>{part}</span>
-                );
-            })}
-        </>
-    );
+  return (
+    <>
+      {parts.map((part, i) => {
+        const isHighlight = highlights.some(
+          (h) => h.toLowerCase() === part.toLowerCase(),
+        );
+        return isHighlight ? (
+          <mark
+            key={i}
+            className="bg-accent-primary/20 text-accent-primary px-1 rounded cursor-pointer hover:bg-accent-primary/40 transition-colors"
+            onClick={(e) => {
+              e.stopPropagation();
+              onWordClick?.(part, text);
+            }}
+          >
+            {part}
+          </mark>
+        ) : (
+          <span key={i}>{part}</span>
+        );
+      })}
+    </>
+  );
 };
 
 const CompletedView = ({
-    article,
-    sentences = [],
-    studyHighlights = { word_clicks: [], phrase_clicks: [], unclear_sentences: [] },
-    progress = { studied_count: 0, clear_count: 0 },
-    onBack,
-    onWordClick
+  article,
+  sentences = [],
+  studyHighlights = {
+    word_clicks: [],
+    phrase_clicks: [],
+    unclear_sentences: [],
+  },
+  progress = { studied_count: 0, clear_count: 0 },
+  onBack,
+  onWordClick,
 }) => {
-    const { currentEpisode } = usePodcast();
-    // Sentence Inspector state
-    const [selectedSentence, setSelectedSentence] = useState(null);
-    const [selectedSentenceInfo, setSelectedSentenceInfo] = useState(null);
+  const { currentEpisode } = usePodcast();
+  // Sentence Inspector state
+  const [selectedSentence, setSelectedSentence] = useState(null);
+  const [selectedSentenceInfo, setSelectedSentenceInfo] = useState(null);
 
-    const allHighlights = [
-        ...(studyHighlights.word_clicks || []),
-        ...(studyHighlights.phrase_clicks || [])
-    ];
+  const allHighlights = [
+    ...(studyHighlights.word_clicks || []),
+    ...(studyHighlights.phrase_clicks || []),
+  ];
 
-    // Build a map of sentence index -> unclear info for quick lookup
-    const unclearMap = {};
-    (studyHighlights.unclear_sentences || []).forEach(info => {
-        unclearMap[info.sentence_index] = info;
-    });
+  // Build a map of sentence index -> unclear info for quick lookup
+  const unclearMap = {};
+  (studyHighlights.unclear_sentences || []).forEach((info) => {
+    unclearMap[info.sentence_index] = info;
+  });
 
-    const unclearCount = studyHighlights.unclear_sentences?.length || 0;
+  const unclearCount = studyHighlights.unclear_sentences?.length || 0;
 
-    const clearRate = progress.studied_count > 0
-        ? Math.round((progress.clear_count / progress.studied_count) * 100)
-        : 0;
+  const clearRate =
+    progress.studied_count > 0
+      ? Math.round((progress.clear_count / progress.studied_count) * 100)
+      : 0;
 
-    // Handle sentence click for unclear sentences
-    const handleSentenceClick = (sentence, unclearInfo) => {
-        setSelectedSentence(sentence);
-        setSelectedSentenceInfo(unclearInfo);
-    };
+  // Handle sentence click for unclear sentences
+  const handleSentenceClick = (sentence, unclearInfo) => {
+    setSelectedSentence(sentence);
+    setSelectedSentenceInfo(unclearInfo);
+  };
 
-    const closeSentenceInspector = () => {
-        setSelectedSentence(null);
-        setSelectedSentenceInfo(null);
-    };
+  const closeSentenceInspector = () => {
+    setSelectedSentence(null);
+    setSelectedSentenceInfo(null);
+  };
 
-    return (
-        <div className="h-screen flex flex-col bg-bg-base text-text-primary font-mono">
-            {/* Header */}
-            <header className="h-14 border-b border-border flex items-center justify-between px-4 md:px-8 bg-bg-surface">
-                <button
-                    onClick={onBack}
-                    className="flex items-center gap-2 text-text-secondary hover:text-accent-primary transition-colors"
-                >
-                    <ChevronLeft className="w-4 h-4" />
-                    <span className="text-xs font-bold uppercase tracking-wider">Back</span>
-                </button>
-                <div className="flex items-center gap-3">
-                    <CheckCircle className="w-5 h-5 text-accent-primary" />
-                    <span className="text-xs text-accent-primary uppercase tracking-wider font-bold">Completed</span>
-                </div>
-            </header>
+  return (
+    <div className="min-h-screen flex flex-col bg-[#0a0f0d] text-white font-sans relative overflow-hidden">
+      {/* Background Ambience */}
+      <div className="fixed inset-0 bg-gradient-to-b from-[#0a1418] via-[#0c1815] to-[#0a0f0d] pointer-events-none" />
+      <div className="fixed inset-0 opacity-30 pointer-events-none">
+        <div className="absolute top-0 left-1/4 w-[600px] h-[600px] bg-gradient-radial from-emerald-900/20 via-transparent to-transparent blur-3xl" />
+        <div className="absolute bottom-0 right-1/4 w-[800px] h-[800px] bg-gradient-radial from-teal-900/10 via-transparent to-transparent blur-3xl" />
+      </div>
+      <div
+        className="fixed inset-0 opacity-[0.02] pointer-events-none"
+        style={{
+          backgroundImage: `linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px)`,
+          backgroundSize: "80px 80px",
+        }}
+      />
 
-            {/* Main Content */}
-            <main className={`flex-1 overflow-y-auto custom-scrollbar p-4 md:p-8 ${currentEpisode ? 'pb-32' : ''}`}>
-                <div className="max-w-3xl mx-auto">
-                    {/* Article Title */}
-                    <h1 className="font-serif text-2xl md:text-3xl text-text-primary text-center mb-6">
-                        {article?.title}
-                    </h1>
-
-                    {/* Stats */}
-                    <div className="flex justify-center gap-6 mb-6">
-                        <div className="text-center">
-                            <div className="text-2xl font-bold text-accent-primary">{progress.studied_count}</div>
-                            <div className="text-xs text-text-muted">Sentences</div>
-                        </div>
-                        <div className="text-center">
-                            <div className="text-2xl font-bold text-accent-primary">{clearRate}%</div>
-                            <div className="text-xs text-text-muted">Clear Rate</div>
-                        </div>
-                        <div className="text-center">
-                            <div className="text-2xl font-bold text-category-amber">{allHighlights.length}</div>
-                            <div className="text-xs text-text-muted">Looked Up</div>
-                        </div>
-                        {unclearCount > 0 && (
-                            <div className="text-center">
-                                <div className="text-2xl font-bold text-accent-danger">{unclearCount}</div>
-                                <div className="text-xs text-text-muted">Unclear</div>
-                            </div>
-                        )}
-                    </div>
-
-                    {/* Legend for unclear sentence colors */}
-                    {unclearCount > 0 && (
-                        <div className="flex flex-wrap justify-center gap-4 mb-6 text-xs text-text-secondary">
-                            {DIFFICULTY_CHOICES.map(choice => (
-                                <div key={choice.id} className="flex items-center gap-1">
-                                    <span className={`inline-block w-3 h-3 border-l-4 ${choice.cssClasses.border} ${choice.cssClasses.bg.replace('/10', '/20')}`}></span>
-                                    <span>{choice.shortLabel}</span>
-                                </div>
-                            ))}
-                        </div>
-                    )}
-
-                    {/* Hint */}
-                    {(allHighlights.length > 0 || unclearCount > 0) && (
-                        <p className="text-center text-sm text-text-secondary mb-6">
-                            🔍 Click highlighted words to review | Click colored sentences to see explanations
-                        </p>
-                    )}
-
-                    {/* Full Article with Highlights */}
-                    <div className="p-6 border border-border bg-bg-surface">
-                        <div className="font-serif text-base md:text-lg leading-relaxed space-y-4">
-                            {sentences.map((sentence, idx) => {
-                                const unclearInfo = unclearMap[idx];
-                                const isUnclear = !!unclearInfo;
-                                const sentenceClass = isUnclear
-                                    ? `text-text-primary py-1 cursor-pointer hover:bg-opacity-30 ${getUnclearSentenceStyle(unclearInfo.unclear_choice)}`
-                                    : 'text-text-primary';
-
-                                return (
-                                    <p
-                                        key={idx}
-                                        className={sentenceClass}
-                                        onClick={isUnclear ? () => handleSentenceClick(sentence.text, unclearInfo) : undefined}
-                                        title={isUnclear ? 'Click to see explanation' : undefined}
-                                    >
-                                        <HighlightedText
-                                            text={sentence.text}
-                                            highlights={allHighlights}
-                                            onWordClick={onWordClick}
-                                        />
-                                    </p>
-                                );
-                            })}
-                        </div>
-                    </div>
-
-                    {/* Action Buttons */}
-                    <div className="flex flex-wrap justify-center gap-4 mt-8">
-                        <button
-                            onClick={() => {
-                                window.location.href = `/reading?source_id=${encodeURIComponent(article?.id)}`;
-                            }}
-                            className="flex items-center gap-2 px-6 py-3 bg-accent-primary text-text-inverse font-bold hover:bg-accent-primary/80 transition-colors"
-                        >
-                            <BookMarked className="w-4 h-4" />
-                            Read Full Article
-                        </button>
-                        <button
-                            onClick={onBack}
-                            className="px-6 py-3 border border-text-muted text-text-secondary hover:text-text-primary hover:border-text-primary transition-colors"
-                        >
-                            Back to Chapter List
-                        </button>
-                    </div>
-                </div>
-            </main>
-
-            {/* Sentence Inspector */}
-            <SentenceInspector
-                sentence={selectedSentence}
-                unclearInfo={selectedSentenceInfo}
-                isOpen={!!selectedSentence}
-                onClose={closeSentenceInspector}
-            />
+      {/* Header */}
+      <header className="relative z-10 h-16 border-b border-white/[0.05] flex items-center justify-between px-6 md:px-8 bg-[#0a0f0d]/80 backdrop-blur-xl">
+        <button
+          onClick={onBack}
+          className="flex items-center gap-2 text-white/60 hover:text-white transition-colors group px-3 py-1.5 rounded-lg hover:bg-white/5"
+        >
+          <ChevronLeft className="w-4 h-4 transition-transform group-hover:-translate-x-1" />
+          <span className="text-xs font-bold uppercase tracking-wider">
+            Back
+          </span>
+        </button>
+        <div className="flex items-center gap-2 px-3 py-1 bg-accent-primary/10 border border-accent-primary/20 rounded-full">
+          <CheckCircle className="w-4 h-4 text-accent-primary" />
+          <span className="text-[10px] text-accent-primary uppercase tracking-widest font-bold">
+            Session Complete
+          </span>
         </div>
-    );
+      </header>
+
+      {/* Main Content */}
+      <main
+        className={`flex-1 overflow-y-auto custom-scrollbar p-6 md:p-12 relative z-10 ${currentEpisode ? "pb-32" : ""}`}
+      >
+        <div className="max-w-4xl mx-auto space-y-12">
+          {/* Hero Stats Section */}
+          <div className="text-center space-y-6">
+            <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-accent-primary/10 border border-accent-primary/20 shadow-[0_0_30px_rgba(var(--color-accent-primary-rgb),0.2)] mb-2">
+              <Trophy className="w-8 h-8 text-accent-primary" />
+            </div>
+            <h1 className="font-serif text-3xl md:text-5xl font-bold text-white tracking-tight leading-tight">
+              {article?.title}
+            </h1>
+
+            {/* Glass Stats Card */}
+            <div className="grid grid-cols-3 gap-4 md:gap-8 p-6 md:p-8 bg-white/[0.02] backdrop-blur-xl border border-white/10 rounded-2xl shadow-xl max-w-2xl mx-auto">
+              <div className="text-center space-y-1">
+                <div className="text-3xl md:text-4xl font-bold text-white font-serif">
+                  {progress.studied_count}
+                </div>
+                <div className="text-[10px] uppercase tracking-widest text-white/40">
+                  Sentences
+                </div>
+              </div>
+              <div className="text-center space-y-1 relative">
+                <div className="absolute inset-y-0 -left-4 md:-left-8 w-px bg-gradient-to-b from-transparent via-white/10 to-transparent" />
+                <div className="text-3xl md:text-4xl font-bold text-accent-primary font-serif">
+                  {clearRate}%
+                </div>
+                <div className="text-[10px] uppercase tracking-widest text-white/40">
+                  Clear Rate
+                </div>
+                <div className="absolute inset-y-0 -right-4 md:-right-8 w-px bg-gradient-to-b from-transparent via-white/10 to-transparent" />
+              </div>
+              <div className="text-center space-y-1">
+                <div className="text-3xl md:text-4xl font-bold text-accent-warning font-serif">
+                  {allHighlights.length}
+                </div>
+                <div className="text-[10px] uppercase tracking-widest text-white/40">
+                  Lookups
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Unclear Legend */}
+          {unclearCount > 0 && (
+            <div className="flex flex-wrap justify-center gap-4 text-[10px] font-mono uppercase tracking-widest text-white/50">
+              {DIFFICULTY_CHOICES.map((choice) => (
+                <div
+                  key={choice.id}
+                  className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-white/5 bg-white/[0.02]"
+                >
+                  <span
+                    className={`w-2 h-2 rounded-full ${choice.cssClasses.bg.replace("/10", "")} shadow-[0_0_8px_currentColor]`}
+                  ></span>
+                  <span>{choice.shortLabel}</span>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Full Article Review */}
+          <div className="relative group">
+            <div className="absolute -inset-1 bg-gradient-to-r from-accent-primary/20 to-accent-secondary/20 rounded-2xl blur opacity-20 group-hover:opacity-30 transition duration-1000" />
+            <div className="relative p-8 md:p-10 bg-[#0a0f0d]/80 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl">
+              <div className="flex items-center gap-2 mb-6 text-xs text-accent-primary font-mono uppercase tracking-widest border-b border-white/5 pb-4">
+                <BookMarked className="w-4 h-4" />
+                Review Content
+              </div>
+
+              <div className="font-serif text-lg leading-loose space-y-6 text-white/80">
+                {sentences.map((sentence, idx) => {
+                  const unclearInfo = unclearMap[idx];
+                  const isUnclear = !!unclearInfo;
+                  const sentenceClass = isUnclear
+                    ? `text-white py-2 px-2 -mx-2 rounded transition-all cursor-pointer hover:bg-white/5 ${getUnclearSentenceStyle(unclearInfo.unclear_choice)}`
+                    : "text-white/80";
+
+                  return (
+                    <p
+                      key={idx}
+                      className={sentenceClass}
+                      onClick={
+                        isUnclear
+                          ? () =>
+                              handleSentenceClick(sentence.text, unclearInfo)
+                          : undefined
+                      }
+                      title={isUnclear ? "Click to see explanation" : undefined}
+                    >
+                      <HighlightedText
+                        text={sentence.text}
+                        highlights={allHighlights}
+                        onWordClick={onWordClick}
+                      />
+                    </p>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+
+          {/* Action Buttons */}
+          <div className="flex flex-col sm:flex-row justify-center gap-4 pt-4">
+            <button
+              onClick={() => {
+                window.location.href = `/reading?source_id=${encodeURIComponent(article?.id)}`;
+              }}
+              className="flex items-center justify-center gap-3 px-8 py-4 bg-accent-primary text-black font-bold uppercase tracking-widest text-sm rounded-xl hover:bg-white transition-all shadow-[0_0_20px_rgba(var(--color-accent-primary-rgb),0.3)] hover:shadow-[0_0_30px_rgba(var(--color-accent-primary-rgb),0.5)] active:scale-95"
+            >
+              <BookMarked className="w-4 h-4" />
+              Read Full Article
+            </button>
+            <button
+              onClick={onBack}
+              className="flex items-center justify-center gap-3 px-8 py-4 bg-white/5 border border-white/10 text-white font-bold uppercase tracking-widest text-sm rounded-xl hover:bg-white/10 hover:border-white/20 transition-all active:scale-95"
+            >
+              Back to Library
+            </button>
+          </div>
+        </div>
+      </main>
+
+      {/* Sentence Inspector */}
+      <SentenceInspector
+        sentence={selectedSentence}
+        unclearInfo={selectedSentenceInfo}
+        isOpen={!!selectedSentence}
+        onClose={closeSentenceInspector}
+      />
+    </div>
+  );
 };
 
 export default CompletedView;

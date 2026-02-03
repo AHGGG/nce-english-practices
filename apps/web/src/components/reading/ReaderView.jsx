@@ -230,7 +230,7 @@ const ReaderView = ({
       )}
 
       {/* Toolbar - Industrial Style */}
-      <header className="relative z-10 h-16 border-b border-white/[0.05] flex items-center justify-between px-6 md:px-8 bg-bg-base/80 backdrop-blur-xl shrink-0">
+      <header className="relative z-[60] h-16 border-b border-white/[0.05] flex items-center justify-between px-6 md:px-8 bg-bg-base/80 backdrop-blur-xl shrink-0">
         <button
           onClick={onBackToLibrary}
           className="flex items-center gap-2 text-text-secondary hover:text-white transition-colors group px-3 py-1.5 rounded-lg hover:bg-white/5"
@@ -247,19 +247,15 @@ const ReaderView = ({
             <select
               value={selectedOptionIndex}
               onChange={(e) => setSelectedOptionIndex(Number(e.target.value))}
-              className="bg-transparent text-text-primary text-xs font-mono font-bold uppercase py-1.5 pl-3 pr-8 focus:outline-none cursor-pointer transition-colors hover:text-white appearance-none"
+              className="bg-transparent text-text-primary text-xs font-mono font-bold uppercase py-1.5 pl-3 pr-8 focus:outline-none cursor-pointer transition-colors hover:text-white appearance-none relative z-10"
             >
               {HIGHLIGHT_OPTIONS.map((opt, i) => (
-                <option
-                  key={i}
-                  value={i}
-                  className="bg-bg-elevated text-text-primary"
-                >
+                <option key={i} value={i} className="bg-[#0c1418] text-white">
                   {opt.label}
                 </option>
               ))}
             </select>
-            <div className="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none text-text-muted group-hover:text-white">
+            <div className="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none text-text-muted group-hover:text-white z-0">
               <ChevronLeft className="w-3 h-3 rotate-[-90deg]" />
             </div>
           </div>

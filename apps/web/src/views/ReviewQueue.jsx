@@ -1,13 +1,3 @@
-/**
- * ReviewQueue View - SM-2 Spaced Repetition Review System
- *
- * A card-based review interface that implements the SM-2 algorithm.
- * Features:
- * - Flip-card UI showing sentence with highlighted words
- * - 3 rating buttons: Forgot (1), Remembered (3), Easy (5)
- * - Progress tracking and empty state
- * - Clickable words in help panel for dictionary lookup
- */
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import {
@@ -21,6 +11,8 @@ import {
   Clock,
   SkipForward,
   Volume2,
+  Sparkles,
+  Brain,
 } from "lucide-react";
 
 import ExplanationCard from "../components/sentence-study/views/ExplanationCard";
@@ -31,7 +23,6 @@ import { authFetch } from "../api/auth";
 import { useToast } from "../components/ui";
 import { useGlobalState } from "../context/GlobalContext";
 
-// API helpers for SM-2 review system
 // API helpers for SM-2 review system
 const api = {
   async getQueue(limit = 20) {
@@ -73,7 +64,7 @@ const api = {
 const RATING_OPTIONS = [
   {
     quality: 1,
-    label: "忘了",
+    label: "Forgot",
     icon: RotateCcw,
     color: "text-accent-danger",
     bgColor: "bg-accent-danger/10",
@@ -82,7 +73,7 @@ const RATING_OPTIONS = [
   },
   {
     quality: 3,
-    label: "想起来了",
+    label: "Remembered",
     icon: CheckCircle,
     color: "text-accent-primary",
     bgColor: "bg-accent-primary/10",
@@ -91,7 +82,7 @@ const RATING_OPTIONS = [
   },
   {
     quality: 5,
-    label: "太简单",
+    label: "Easy",
     icon: Zap,
     color: "text-accent-warning",
     bgColor: "bg-accent-warning/10",
@@ -128,9 +119,9 @@ const HighlightedSentence = ({
         return isHighlight ? (
           <mark
             key={i}
-            className={`bg-category-amber/30 text-category-amber px-1 rounded ${
+            className={`bg-accent-primary/20 text-accent-primary px-1 rounded ${
               clickable
-                ? "cursor-pointer hover:bg-category-amber/50 transition-colors animate-[pulse-highlight_1.5s_ease-in-out_2]"
+                ? "cursor-pointer hover:bg-accent-primary/40 transition-colors animate-[pulse-highlight_1.5s_ease-in-out_2]"
                 : ""
             }`}
             style={
@@ -159,8 +150,8 @@ const HighlightedSentence = ({
       {clickable && (
         <style>{`
                     @keyframes pulse-highlight {
-                        0%, 100% { background-color: rgba(245, 158, 11, 0.3); }
-                        50% { background-color: rgba(245, 158, 11, 0.7); box-shadow: 0 0 8px rgba(245, 158, 11, 0.6); }
+                        0%, 100% { background-color: rgba(0, 255, 148, 0.2); }
+                        50% { background-color: rgba(0, 255, 148, 0.4); box-shadow: 0 0 8px rgba(0, 255, 148, 0.3); }
                     }
                 `}</style>
       )}
@@ -227,9 +218,6 @@ const ReviewQueue = () => {
   const lastPlayedIdRef = useRef(null);
 
   // Undo/Redo state
-  // null = no action to undo
-  // { mode: 'undo', itemId, quality, durationMs } = can undo this action
-  // { mode: 'redo', itemId, quality, durationMs } = can redo this action
   const [undoState, setUndoState] = useState(null);
 
   // Load queue and stats
@@ -288,19 +276,9 @@ const ReviewQueue = () => {
 
   // Reset timer when item changes
   useEffect(() => {
-    // Prevent auto-pronounce if we are in a "deep dive" state (Help Panel or Word Inspector)
     if (showHelpPanel || isInspecting) return;
-
     if (currentItem) {
       setStartTime(Date.now());
-      // Auto-play sentence logic removed to align with Reading/Sentence Study mode
-      // Users found the immediate auto-play on "Next" intrusive
-      /* 
-      if (settings.autoPronounce && currentItem.id !== lastPlayedIdRef.current) {
-        playAudio(currentItem.sentence_text);
-        lastPlayedIdRef.current = currentItem.id;
-      }
-      */
     }
   }, [
     currentItem,
@@ -335,18 +313,12 @@ const ReviewQueue = () => {
 
       setIsSubmitting(true);
       try {
-        // In random mode, we don't submit to backend
         if (isRandomMode) {
-          // Just delay slightly for UI feedback
           await new Promise((r) => setTimeout(r, 300));
-
-          // Move next
           if (currentIndex < queue.length - 1) {
             setCurrentIndex((prev) => prev + 1);
             setLastResult(null);
           } else {
-            // Refetch random or show empty?
-            // Let's go back to empty state to allow choice
             setQueue([]);
             setLastResult(null);
           }
@@ -357,7 +329,6 @@ const ReviewQueue = () => {
         const result = await api.complete(currentItem.id, quality, duration);
         setLastResult(result);
 
-        // Save action for potential undo (only one level)
         setUndoState({
           mode: "undo",
           itemId: currentItem.id,
@@ -365,22 +336,19 @@ const ReviewQueue = () => {
           durationMs: duration,
         });
 
-        // Reset help panel and context state
         setShowHelpPanel(false);
         setHelpStage(1);
         setHelpContent("");
         setContextData(null);
         setShowContext(false);
 
-        // Move to next item or finish
         if (currentIndex < queue.length - 1) {
           setCurrentIndex((prev) => prev + 1);
         } else {
-          // All done - reload queue
           const queueData = await api.getQueue();
           setQueue(queueData.items || []);
           setCurrentIndex(0);
-          setUndoState(null); // Clear undo when queue reloads
+          setUndoState(null);
         }
       } catch (e) {
         console.error("Failed to submit review:", e);
@@ -413,7 +381,6 @@ const ReviewQueue = () => {
       try {
         let res;
         if (hasHighlights) {
-          // Explain highlighted items in sentence context
           const text = currentItem.highlighted_items.join(", ");
           res = await authFetch("/api/sentence-study/explain-word", {
             method: "POST",
@@ -432,7 +399,6 @@ const ReviewQueue = () => {
             }),
           });
         } else {
-          // Explain whole sentence
           res = await authFetch("/api/sentence-study/simplify", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -465,7 +431,6 @@ const ReviewQueue = () => {
             if (line.startsWith("data: ")) {
               const data = line.slice(6);
               if (data === "[DONE]" || data.startsWith("[ERROR]")) break;
-              // Handle both JSON and plain text formats
               try {
                 const parsed = JSON.parse(data);
                 if (parsed.type === "chunk") {
@@ -473,8 +438,6 @@ const ReviewQueue = () => {
                   setHelpContent(streamedText);
                 }
               } catch {
-                // Plain text format from explain-word
-                // Decode [NL] markers back to newlines
                 const decoded = data.replace(/\[NL\]/g, "\n");
                 streamedText += decoded;
                 setHelpContent(streamedText);
@@ -504,35 +467,28 @@ const ReviewQueue = () => {
     }
   }, [helpContent]);
 
-  // Handle "Forgot" button - open help panel
   const handleForgot = useCallback(() => {
     setShowHelpPanel(true);
     streamExplanation(1);
   }, [streamExplanation]);
 
-  // Handle help response (remembered or still unclear)
   const handleHelpResponse = useCallback(
     async (remembered) => {
       if (remembered) {
-        // User remembered after help - quality 2
         await handleRating(2);
       } else if (helpStage < 4) {
-        // Show next stage
         streamExplanation(helpStage + 1);
       } else {
-        // Stage 4 exhausted - quality 1
         await handleRating(1);
       }
     },
     [helpStage, handleRating, streamExplanation],
   );
 
-  // Handle skip (don't want help)
   const handleSkipHelp = useCallback(async () => {
     await handleRating(1);
   }, [handleRating]);
 
-  // Toggle context visibility
   const toggleContext = useCallback(async () => {
     if (showContext) {
       setShowContext(false);
@@ -556,10 +512,9 @@ const ReviewQueue = () => {
     }
   }, [currentItem, contextData, showContext]);
 
-  // Refresh queue
   const refreshQueue = useCallback(async () => {
     setLoading(true);
-    setIsRandomMode(false); // Reset random mode
+    setIsRandomMode(false);
     try {
       const [queueData, statsData] = await Promise.all([
         api.getQueue(),
@@ -578,264 +533,12 @@ const ReviewQueue = () => {
     }
   }, []);
 
-  // Render empty state
-  const renderEmptyState = () => (
-    <div className="flex flex-col items-center justify-center flex-1 px-4">
-      <div className="w-20 h-20 rounded-full bg-accent-primary/10 flex items-center justify-center mb-6">
-        <CheckCircle className="w-10 h-10 text-accent-primary" />
-      </div>
-      <h2 className="text-xl font-serif text-text-primary mb-2">
-        暂无待复习内容
-      </h2>
-      <p className="text-text-secondary text-sm text-center max-w-xs">
-        太棒了！你已经完成了所有复习任务。继续学习新内容吧！
-      </p>
-      <div className="mt-8 space-y-3 text-center flex flex-col items-center">
-        <button
-          onClick={startRandomReview}
-          className="flex items-center gap-2 px-6 py-2 bg-accent-primary/10 text-accent-primary rounded-full hover:bg-accent-primary/20 transition-all border border-accent-primary/30"
-        >
-          <Zap className="w-4 h-4" />
-          开始随机复习
-        </button>
-        <button
-          onClick={refreshQueue}
-          className="flex items-center gap-2 px-4 py-2 text-sm text-text-secondary hover:text-accent-primary transition-colors mt-2"
-        >
-          <RefreshCw className="w-4 h-4" />
-          刷新队列
-        </button>
-      </div>
-    </div>
-  );
-
-  // Render stats header
-  const renderStats = () => (
-    <div className="flex items-center gap-4 text-xs text-text-muted">
-      <div className="flex items-center gap-1">
-        <BookOpen className="w-3 h-3" />
-        <span>{stats.total_items} 总项</span>
-      </div>
-      <div className="flex items-center gap-1">
-        <Clock className="w-3 h-3" />
-        <span>{queue.length} 待复习</span>
-      </div>
-      {isRandomMode && (
-        <div className="px-2 py-0.5 bg-accent-info/20 text-accent-info text-[10px] rounded uppercase tracking-wider font-bold">
-          Random Mode
-        </div>
-      )}
-    </div>
-  );
-
-  // Render review card
-  const renderReviewCard = () => {
-    if (!currentItem) return null;
-
-    // Extract source info for display
-    const sourceInfo = currentItem.source_id.split(":");
-    const bookName = sourceInfo[1] || "Unknown";
-
-    return (
-      <div className="flex-1 flex flex-col px-4 py-6 max-w-2xl mx-auto w-full">
-        {/* Progress */}
-        <div className="flex items-center justify-between mb-4">
-          <span className="text-xs text-text-muted">
-            {currentIndex + 1} / {queue.length}
-          </span>
-          {renderStats()}
-        </div>
-
-        {/* Card */}
-        <div className="flex-1 flex flex-col border border-border bg-bg-surface">
-          {/* Source tag */}
-          <div className="px-3 py-2 border-b border-border-subtle flex items-center justify-between gap-3 text-xs">
-            <div className="flex items-center gap-2 min-w-0 flex-1">
-              <span
-                className="px-1.5 py-0.5 bg-accent-primary/10 text-accent-primary rounded text-[11px] truncate max-w-[120px] sm:max-w-none"
-                title={bookName}
-              >
-                📖 {bookName}
-              </span>
-              <span className="px-1.5 py-0.5 bg-accent-info/10 text-accent-info rounded text-[11px] whitespace-nowrap flex-shrink-0">
-                🏷️ {getGapTypeInfo(currentItem.difficulty_type).shortLabel}
-              </span>
-            </div>
-
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => playAudio(currentItem.sentence_text)}
-                className="flex items-center gap-1 px-2 py-0.5 rounded transition-colors whitespace-nowrap flex-shrink-0 bg-bg-elevated text-text-secondary hover:text-text-primary border border-transparent"
-                title="播放发音"
-              >
-                <Volume2 className="w-3 h-3" />
-                <span>发音</span>
-              </button>
-
-              {/* Context Toggle Button */}
-              <button
-                onClick={toggleContext}
-                disabled={loadingContext}
-                className={`
-                                    flex items-center gap-1 px-2 py-0.5 rounded transition-colors whitespace-nowrap flex-shrink-0
-                                    ${
-                                      showContext
-                                        ? "bg-accent-info/20 text-accent-info border border-accent-info/30"
-                                        : "bg-bg-elevated text-text-secondary hover:text-text-primary border border-transparent"
-                                    }
-                                `}
-              >
-                {loadingContext ? (
-                  <Loader2 className="w-3 h-3 animate-spin" />
-                ) : (
-                  <BookOpen className="w-3 h-3" />
-                )}
-                <span>上下文</span>
-              </button>
-            </div>
-          </div>
-
-          {/* Context View (Expanded) */}
-          {showContext && contextData && (
-            <div className="px-6 py-4 bg-bg-elevated border-b border-border-subtle text-sm leading-relaxed text-text-secondary">
-              {contextData.previous_sentence && (
-                <p className="mb-2 opacity-60">
-                  {contextData.previous_sentence}
-                </p>
-              )}
-              <div className="pl-2 border-l-2 border-accent-info/50 my-2 text-text-primary">
-                <HighlightedSentence
-                  text={contextData.target_sentence}
-                  highlights={currentItem.highlighted_items || []}
-                />
-              </div>
-              {contextData.next_sentence && (
-                <p className="mt-2 opacity-60">{contextData.next_sentence}</p>
-              )}
-            </div>
-          )}
-
-          {/* Sentence (Main View) - Clickable words */}
-          <div className="flex-1 flex items-center justify-center p-6 md:p-10">
-            <div className="w-full">
-              {/* Hint when sentence is clickable */}
-              {currentItem?.highlighted_items?.length > 0 && (
-                <p className="text-xs text-accent-primary mb-2 font-mono uppercase tracking-wider">
-                  👆 点击高亮词查看释义
-                </p>
-              )}
-              <p
-                className={`font-serif text-xl md:text-2xl text-text-primary leading-relaxed text-left ${showContext ? "opacity-50" : ""}`}
-              >
-                <HighlightedSentence
-                  text={currentItem.sentence_text}
-                  highlights={currentItem.highlighted_items || []}
-                  clickable={true}
-                  onWordClick={handleWordClick}
-                  sentence={currentItem.sentence_text}
-                />
-              </p>
-            </div>
-          </div>
-
-          {/* Interval info */}
-          <div className="px-4 py-2 border-t border-border-subtle text-xs text-text-muted text-center">
-            {currentItem.repetition > 0 ? (
-              <span>
-                已复习 {currentItem.repetition} 次 · 上次间隔{" "}
-                {Math.round(currentItem.interval_days)} 天
-              </span>
-            ) : (
-              <span>首次复习</span>
-            )}
-            {isRandomMode && (
-              <span className="block mt-1 text-accent-info/70">
-                (随机复习模式 - 不记录进度)
-              </span>
-            )}
-          </div>
-        </div>
-
-        {/* Help Panel (shown when user clicks 'Forgot') */}
-        {showHelpPanel ? (
-          <div className="mt-6">
-            <ExplanationCard
-              simplifiedText={helpContent}
-              simplifyStage={helpStage}
-              isSimplifying={isLoadingHelp}
-              onSimplifiedResponse={handleHelpResponse}
-            />
-
-            {/* Skip button below card */}
-            <div className="mt-4 flex justify-center">
-              <button
-                onClick={handleSkipHelp}
-                disabled={isSubmitting}
-                className="flex items-center gap-2 px-4 py-2 text-text-muted hover:text-text-secondary transition-colors text-xs opacity-60 hover:opacity-100"
-              >
-                <SkipForward className="w-3 h-3" />
-                <span>跳过，下一个</span>
-              </button>
-            </div>
-          </div>
-        ) : (
-          /* Rating buttons (normal state) */
-          <div className="mt-6 grid grid-cols-3 gap-3">
-            {RATING_OPTIONS.map((option) => {
-              const Icon = option.icon;
-              // Override "Forgot" button to trigger help panel
-              const handleClick =
-                option.quality === 1
-                  ? handleForgot
-                  : () => handleRating(option.quality);
-              return (
-                <button
-                  key={option.quality}
-                  onClick={handleClick}
-                  disabled={isSubmitting}
-                  className={`
-                                        flex flex-col items-center gap-2 p-4 min-h-[80px]
-                                        border ${option.borderColor} ${option.bgColor} ${option.hoverBg}
-                                        transition-all disabled:opacity-50
-                                        active:scale-95
-                                    `}
-                >
-                  {isSubmitting ? (
-                    <Loader2 className="w-6 h-6 animate-spin text-text-muted" />
-                  ) : (
-                    <>
-                      <Icon className={`w-6 h-6 ${option.color}`} />
-                      <span className={`text-sm ${option.color}`}>
-                        {option.label}
-                      </span>
-                    </>
-                  )}
-                </button>
-              );
-            })}
-          </div>
-        )}
-
-        {/* Last result feedback */}
-        {lastResult && !isRandomMode && (
-          <div className="mt-4 text-center text-xs text-text-muted">
-            下次复习：
-            {new Date(lastResult.next_review_at).toLocaleDateString("zh-CN")} (
-            {Math.round(lastResult.new_interval)} 天后)
-          </div>
-        )}
-      </div>
-    );
-  };
-
-  // Undo/Redo toggle handler
   const handleUndoRedo = useCallback(async () => {
     if (loading || isSubmitting || !undoState) return;
 
     setIsSubmitting(true);
     try {
       if (undoState.mode === "undo") {
-        // === UNDO: Revert the last review ===
         const res = await authFetch("/api/review/undo", {
           method: "POST",
         });
@@ -851,42 +554,28 @@ const ReviewQueue = () => {
         }
 
         const restoredItem = await res.json();
-
-        // Add item back to queue at start
         setQueue((prev) => [restoredItem, ...prev]);
         setCurrentIndex(0);
         setLastResult(null);
-
-        // Update stats
         setStats((prev) => ({
           ...prev,
           due_items: prev.due_items + 1,
           total_reviews: Math.max(0, prev.total_reviews - 1),
         }));
-
-        // Switch to Redo mode (save same action info for potential redo)
         setUndoState((prev) => ({ ...prev, mode: "redo" }));
       } else if (undoState.mode === "redo") {
-        // === REDO: Re-apply the undone review ===
         const result = await api.complete(
           undoState.itemId,
           undoState.quality,
           undoState.durationMs,
         );
         setLastResult(result);
-
-        // Remove item from front of queue (it was just reviewed)
         setQueue((prev) => prev.slice(1));
-        // Index stays at 0 (now showing next item)
-
-        // Update stats
         setStats((prev) => ({
           ...prev,
           due_items: Math.max(0, prev.due_items - 1),
           total_reviews: prev.total_reviews + 1,
         }));
-
-        // Switch back to Undo mode
         setUndoState((prev) => ({ ...prev, mode: "undo" }));
       }
     } catch (e) {
@@ -897,48 +586,389 @@ const ReviewQueue = () => {
     }
   }, [loading, isSubmitting, undoState]);
 
-  return (
-    <div className="h-screen flex flex-col bg-bg-base text-text-primary font-mono">
-      {/* Header */}
-      <header className="h-14 border-b border-border flex items-center px-4 md:px-8 bg-bg-surface">
+  // Render empty state
+  const renderEmptyState = () => (
+    <div className="flex flex-col items-center justify-center flex-1 px-4 relative z-10">
+      <div className="w-24 h-24 rounded-full bg-accent-primary/5 flex items-center justify-center mb-8 border border-accent-primary/20 shadow-[0_0_30px_rgba(var(--color-accent-primary-rgb),0.1)] animate-pulse-slow">
+        <CheckCircle className="w-12 h-12 text-accent-primary" />
+      </div>
+      <h2 className="text-3xl font-serif text-white font-bold mb-3 tracking-tight">
+        All Caught Up
+      </h2>
+      <p className="text-white/50 text-base text-center max-w-sm mb-10 leading-relaxed">
+        You've completed your review queue for now. Outstanding effort!
+      </p>
+
+      <div className="flex flex-col sm:flex-row gap-4">
         <button
-          onClick={() => navigate("/nav")}
-          className="flex items-center gap-2 text-text-secondary hover:text-accent-primary transition-colors mr-3"
+          onClick={startRandomReview}
+          className="group relative flex items-center gap-3 px-8 py-4 bg-accent-primary text-[#0a0f0d] rounded-xl font-bold uppercase tracking-wider text-sm hover:bg-white transition-all duration-300 shadow-lg shadow-accent-primary/20 overflow-hidden"
         >
-          <ChevronLeft className="w-4 h-4" />
+          <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300" />
+          <Zap className="w-4 h-4 relative z-10" />
+          <span className="relative z-10">Random Review</span>
         </button>
-        <div className="flex flex-col">
-          <h1 className="text-sm font-bold uppercase tracking-wider text-text-primary">
-            复习队列
-          </h1>
-          <span className="text-[10px] text-text-muted uppercase tracking-wider">
-            Spaced Repetition Review
-          </span>
+
+        <button
+          onClick={refreshQueue}
+          className="flex items-center gap-2 px-8 py-4 bg-white/[0.05] text-white rounded-xl border border-white/10 font-bold uppercase tracking-wider text-sm hover:bg-white/[0.1] hover:border-white/30 transition-all duration-300"
+        >
+          <RefreshCw className="w-4 h-4 text-white/60" />
+          <span>Refresh Queue</span>
+        </button>
+      </div>
+    </div>
+  );
+
+  // Render stats header
+  const renderStats = () => (
+    <div className="flex items-center gap-6 px-4 py-2 bg-white/[0.03] rounded-full border border-white/[0.08] backdrop-blur-md">
+      <div className="flex items-center gap-2">
+        <BookOpen className="w-3 h-3 text-accent-primary" />
+        <span className="text-xs font-mono text-white/70 tracking-wider">
+          <strong className="text-white">{stats.total_items}</strong> TOTAL
+        </span>
+      </div>
+      <div className="w-px h-3 bg-white/10" />
+      <div className="flex items-center gap-2">
+        <Clock className="w-3 h-3 text-accent-secondary" />
+        <span className="text-xs font-mono text-white/70 tracking-wider">
+          <strong className="text-white">{queue.length}</strong> DUE
+        </span>
+      </div>
+      {isRandomMode && (
+        <>
+          <div className="w-px h-3 bg-white/10" />
+          <div className="flex items-center gap-1.5 text-accent-info">
+            <Zap className="w-3 h-3" />
+            <span className="text-[10px] uppercase font-bold tracking-widest">
+              Random
+            </span>
+          </div>
+        </>
+      )}
+    </div>
+  );
+
+  // Render review card
+  const renderReviewCard = () => {
+    if (!currentItem) return null;
+
+    const sourceInfo = currentItem.source_id.split(":");
+    const bookName = sourceInfo[1] || "Unknown";
+
+    return (
+      <div className="flex-1 flex flex-col w-full max-w-4xl mx-auto px-4 sm:px-6 relative z-10 pb-10">
+        {/* Progress Header */}
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mb-8 w-full">
+          <div className="flex items-center gap-2 text-xs font-mono text-white/40 uppercase tracking-widest">
+            <span>Card {currentIndex + 1}</span>
+            <span className="text-white/10">/</span>
+            <span>{queue.length}</span>
+          </div>
+          {renderStats()}
         </div>
 
-        <div className="ml-auto flex items-center gap-2">
-          {/* Undo/Redo Button - only show when there's an action to undo/redo */}
+        {/* Glass Card */}
+        <div className="relative bg-[#0a0f0d]/80 backdrop-blur-2xl border border-white/10 rounded-3xl overflow-hidden shadow-2xl flex flex-col min-h-[400px]">
+          {/* Top Glow */}
+          <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-accent-primary/0 via-accent-primary/50 to-accent-primary/0 opacity-30" />
+
+          {/* Card Header */}
+          <div className="flex items-center justify-between px-6 py-4 border-b border-white/5 bg-white/[0.02]">
+            <div className="flex flex-wrap items-center gap-3">
+              <span className="px-2.5 py-1 rounded-md bg-accent-primary/10 border border-accent-primary/20 text-accent-primary text-[10px] font-bold uppercase tracking-wider font-mono flex items-center gap-1.5">
+                <BookOpen className="w-3 h-3" />
+                {bookName}
+              </span>
+              <span className="px-2.5 py-1 rounded-md bg-white/5 border border-white/10 text-white/60 text-[10px] font-bold uppercase tracking-wider font-mono">
+                {getGapTypeInfo(currentItem.difficulty_type).shortLabel}
+              </span>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => playAudio(currentItem.sentence_text)}
+                className="w-8 h-8 rounded-lg flex items-center justify-center bg-white/5 hover:bg-white/10 text-white/60 hover:text-white transition-colors border border-transparent hover:border-white/10"
+                title="Play Audio"
+              >
+                <Volume2 className="w-4 h-4" />
+              </button>
+              <button
+                onClick={toggleContext}
+                disabled={loadingContext}
+                className={`
+                      h-8 px-3 rounded-lg flex items-center gap-2 text-[10px] font-bold uppercase tracking-wider transition-all border
+                      ${
+                        showContext
+                          ? "bg-accent-info/10 border-accent-info/30 text-accent-info shadow-[0_0_15px_rgba(var(--color-accent-info-rgb),0.1)]"
+                          : "bg-white/5 border-transparent text-white/60 hover:bg-white/10 hover:border-white/10 hover:text-white"
+                      }
+                   `}
+              >
+                {loadingContext ? (
+                  <Loader2 className="w-3 h-3 animate-spin" />
+                ) : (
+                  <BookOpen className="w-3 h-3" />
+                )}
+                <span>Context</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Context View */}
+          <div
+            className={`overflow-hidden transition-all duration-500 ease-in-out ${showContext ? "max-h-[300px] border-b border-white/5" : "max-h-0"}`}
+          >
+            {contextData && (
+              <div className="p-6 bg-[#000000]/30 text-base leading-relaxed text-white/70 font-serif">
+                {contextData.previous_sentence && (
+                  <p className="mb-4 opacity-50 pl-4 border-l-2 border-transparent">
+                    {contextData.previous_sentence}
+                  </p>
+                )}
+                <div className="pl-4 border-l-2 border-accent-info text-white my-4 py-1 relative">
+                  <div className="absolute inset-0 bg-accent-info/5 -z-10 blur-sm rounded-r-lg" />
+                  <HighlightedSentence
+                    text={contextData.target_sentence}
+                    highlights={currentItem.highlighted_items || []}
+                  />
+                </div>
+                {contextData.next_sentence && (
+                  <p className="mt-4 opacity-50 pl-4 border-l-2 border-transparent">
+                    {contextData.next_sentence}
+                  </p>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* Main Sentence View */}
+          <div className="flex-1 flex flex-col items-center justify-center p-8 md:p-12 relative group">
+            {/* Background Decoration */}
+            <div className="absolute inset-0 bg-gradient-radial from-white/[0.03] to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-1000" />
+
+            <div className="w-full max-w-3xl relative z-10">
+              {currentItem?.highlighted_items?.length > 0 && (
+                <div className="flex justify-center mb-6 opacity-0 animate-fade-in">
+                  <span className="px-3 py-1 rounded-full bg-accent-primary/10 border border-accent-primary/20 text-accent-primary text-[10px] font-mono uppercase tracking-widest flex items-center gap-1.5">
+                    <Sparkles className="w-3 h-3" />
+                    Tap highlights for definition
+                  </span>
+                </div>
+              )}
+
+              <p
+                className={`font-serif text-3xl md:text-4xl text-white leading-tight text-center transition-opacity duration-300 ${showContext ? "opacity-70" : "opacity-100"}`}
+              >
+                <HighlightedSentence
+                  text={currentItem.sentence_text}
+                  highlights={currentItem.highlighted_items || []}
+                  clickable={true}
+                  onWordClick={handleWordClick}
+                  sentence={currentItem.sentence_text}
+                />
+              </p>
+            </div>
+          </div>
+
+          {/* Interval Info Footer */}
+          <div className="px-6 py-3 border-t border-white/5 bg-white/[0.01] flex items-center justify-center gap-2">
+            <div className="flex items-center gap-2 text-[10px] font-mono uppercase tracking-widest text-white/30">
+              {currentItem.repetition > 0 ? (
+                <>
+                  <span>Repetition: {currentItem.repetition}</span>
+                  <span className="w-1 h-1 rounded-full bg-white/20" />
+                  <span>
+                    Interval: {Math.round(currentItem.interval_days)}d
+                  </span>
+                </>
+              ) : (
+                <span>First Review</span>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Action Area */}
+        {showHelpPanel ? (
+          <div className="mt-8 animate-in slide-in-from-bottom-5 duration-500">
+            <ExplanationCard
+              simplifiedText={helpContent}
+              simplifyStage={helpStage}
+              isSimplifying={isLoadingHelp}
+              onSimplifiedResponse={handleHelpResponse}
+            />
+
+            <div className="mt-6 flex justify-center">
+              <button
+                onClick={handleSkipHelp}
+                disabled={isSubmitting}
+                className="flex items-center gap-2 px-4 py-2 text-white/30 hover:text-white/60 transition-colors text-xs font-mono uppercase tracking-widest group"
+              >
+                <SkipForward className="w-3 h-3 group-hover:translate-x-1 transition-transform" />
+                <span>Skip for now</span>
+              </button>
+            </div>
+          </div>
+        ) : (
+          /* Rating Buttons */
+          <div className="mt-8 grid grid-cols-3 gap-4 md:gap-6">
+            {RATING_OPTIONS.map((option) => {
+              const Icon = option.icon;
+              const handleClick =
+                option.quality === 1
+                  ? handleForgot
+                  : () => handleRating(option.quality);
+
+              // Map legacy colors to new design system colors if needed,
+              // but RATING_OPTIONS uses tailwind classes like 'text-accent-danger'.
+              // We'll customize the styles below for the 'Cyber-Noir' look.
+
+              let baseStyles = "";
+              let activeColor = "";
+
+              if (option.quality === 1) {
+                // Forgot
+                baseStyles =
+                  "border-accent-danger/20 hover:bg-accent-danger/10 hover:border-accent-danger/50 text-accent-danger";
+                activeColor = "bg-accent-danger";
+              } else if (option.quality === 3) {
+                // Remembered
+                baseStyles =
+                  "border-accent-primary/20 hover:bg-accent-primary/10 hover:border-accent-primary/50 text-accent-primary";
+                activeColor = "bg-accent-primary";
+              } else {
+                // Easy (5)
+                baseStyles =
+                  "border-accent-warning/20 hover:bg-accent-warning/10 hover:border-accent-warning/50 text-accent-warning";
+                activeColor = "bg-accent-warning";
+              }
+
+              return (
+                <button
+                  key={option.quality}
+                  onClick={handleClick}
+                  disabled={isSubmitting}
+                  className={`
+                    group relative flex flex-col items-center gap-3 p-6 md:p-8 rounded-2xl
+                    bg-[#0a0f0d]/60 backdrop-blur-xl border transition-all duration-300
+                    active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed
+                    ${baseStyles}
+                  `}
+                >
+                  {isSubmitting ? (
+                    <Loader2 className="w-6 h-6 animate-spin opacity-50" />
+                  ) : (
+                    <>
+                      <div
+                        className={`
+                        w-12 h-12 rounded-xl flex items-center justify-center 
+                        bg-white/[0.03] border border-white/5 group-hover:scale-110 transition-transform duration-300
+                        shadow-lg shadow-black/20
+                      `}
+                      >
+                        <Icon className="w-6 h-6" />
+                      </div>
+                      <span className="text-sm font-bold uppercase tracking-wider">
+                        {option.label}
+                      </span>
+
+                      {/* Hover Glow */}
+                      <div
+                        className={`absolute inset-0 opacity-0 group-hover:opacity-20 transition-opacity duration-500 rounded-2xl blur-xl ${activeColor}`}
+                      />
+                    </>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+        )}
+
+        {/* Feedback Text */}
+        {lastResult && !isRandomMode && (
+          <div className="mt-6 text-center animate-fade-in">
+            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/[0.03] border border-white/[0.05] text-[10px] font-mono text-white/40 uppercase tracking-widest">
+              <span>
+                Next Review:{" "}
+                {new Date(lastResult.next_review_at).toLocaleDateString(
+                  "zh-CN",
+                )}
+              </span>
+              <span className="w-1 h-1 rounded-full bg-white/20" />
+              <span>(+{Math.round(lastResult.new_interval)} days)</span>
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  return (
+    <div className="min-h-screen bg-[#0a0f0d] relative overflow-hidden font-sans flex flex-col">
+      {/* Background Ambience */}
+      <div className="fixed inset-0 bg-gradient-to-b from-[#0a1418] via-[#0c1815] to-[#0a0f0d] pointer-events-none" />
+      <div className="fixed inset-0 opacity-30 pointer-events-none">
+        <div className="absolute top-0 left-1/4 w-[600px] h-[600px] bg-gradient-radial from-emerald-900/20 via-transparent to-transparent blur-3xl" />
+        <div className="absolute bottom-0 right-1/4 w-[800px] h-[800px] bg-gradient-radial from-teal-900/10 via-transparent to-transparent blur-3xl" />
+      </div>
+      <div
+        className="fixed inset-0 opacity-[0.02] pointer-events-none"
+        style={{
+          backgroundImage: `linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px)`,
+          backgroundSize: "80px 80px",
+        }}
+      />
+
+      {/* Header */}
+      <header className="relative z-20 px-6 py-4 flex items-center justify-between border-b border-white/[0.05] backdrop-blur-md bg-[#0a0f0d]/50">
+        <div className="flex items-center gap-4">
+          <button
+            onClick={() => navigate("/nav")}
+            className="w-10 h-10 rounded-full flex items-center justify-center bg-white/[0.03] border border-white/[0.08] text-white/60 hover:text-white hover:bg-white/[0.08] transition-all group"
+          >
+            <ChevronLeft className="w-5 h-5 group-hover:-translate-x-0.5 transition-transform" />
+          </button>
+          <div className="flex flex-col">
+            <h1 className="text-sm font-bold uppercase tracking-widest text-white flex items-center gap-2">
+              <Brain className="w-4 h-4 text-accent-primary" />
+              Review Queue
+            </h1>
+            <span className="text-[10px] text-white/40 font-mono hidden sm:inline-block">
+              Spaced Repetition System
+            </span>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-3">
           {!isRandomMode && undoState && (
             <button
               onClick={handleUndoRedo}
               disabled={isSubmitting}
-              className={`p-2 transition-colors disabled:opacity-30 ${
-                undoState.mode === "redo"
-                  ? "text-accent-primary hover:text-accent-primary/80"
-                  : "text-text-muted hover:text-accent-primary"
-              }`}
-              title={undoState.mode === "undo" ? "撤销 (Undo)" : "重做 (Redo)"}
+              className={`
+                h-9 px-3 rounded-lg flex items-center gap-2 text-[10px] font-bold uppercase tracking-wider transition-all border
+                ${
+                  undoState.mode === "redo"
+                    ? "bg-accent-primary/10 border-accent-primary/30 text-accent-primary hover:bg-accent-primary/20"
+                    : "bg-white/[0.03] border-white/[0.08] text-white/60 hover:text-white hover:bg-white/[0.08]"
+                }
+              `}
+              title={undoState.mode === "undo" ? "Undo" : "Redo"}
             >
               <RotateCcw
-                className={`w-4 h-4 ${undoState.mode === "redo" ? "scale-x-[-1]" : ""}`}
+                className={`w-3.5 h-3.5 ${undoState.mode === "redo" ? "scale-x-[-1]" : ""}`}
               />
+              <span className="hidden sm:inline">
+                {undoState.mode === "undo" ? "Undo" : "Redo"}
+              </span>
             </button>
           )}
 
           <button
             onClick={refreshQueue}
-            className="p-2 text-text-muted hover:text-accent-primary transition-colors"
-            title="刷新"
+            className="w-9 h-9 rounded-lg flex items-center justify-center bg-white/[0.03] border border-white/[0.08] text-white/60 hover:text-white hover:bg-white/[0.08] hover:rotate-180 transition-all duration-500"
+            title="Reload Queue"
           >
             <RefreshCw className="w-4 h-4" />
           </button>
@@ -946,10 +976,16 @@ const ReviewQueue = () => {
       </header>
 
       {/* Main content */}
-      <main className="flex-1 flex flex-col overflow-y-auto">
+      <main className="flex-1 flex flex-col relative z-10 overflow-y-auto custom-scrollbar pt-8">
         {loading ? (
-          <div className="flex-1 flex items-center justify-center">
-            <Loader2 className="w-8 h-8 animate-spin text-accent-primary" />
+          <div className="flex-1 flex flex-col items-center justify-center">
+            <div className="relative">
+              <div className="absolute inset-0 bg-accent-primary/20 blur-xl rounded-full animate-pulse" />
+              <Loader2 className="w-10 h-10 animate-spin text-accent-primary relative z-10" />
+            </div>
+            <span className="mt-4 text-xs font-mono uppercase tracking-widest text-white/40">
+              Loading Queue...
+            </span>
           </div>
         ) : queue.length === 0 ? (
           renderEmptyState()
@@ -958,7 +994,7 @@ const ReviewQueue = () => {
         )}
       </main>
 
-      {/* WordInspector for dictionary lookup */}
+      {/* WordInspector */}
       {inspectedWord && (
         <WordInspector
           selectedWord={inspectedWord}

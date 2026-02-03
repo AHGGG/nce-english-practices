@@ -340,7 +340,7 @@ export default function PodcastFeedDetailView() {
                 strokeWidth="3"
                 stroke="currentColor"
                 fill="none"
-                className="text-bg-elevated"
+                className="text-white/10"
               />
               <circle
                 cx="20"
@@ -366,7 +366,7 @@ export default function PodcastFeedDetailView() {
                 e.stopPropagation();
                 cancelDownload(episode.id);
               }}
-              className="absolute inset-0 flex items-center justify-center bg-bg-surface/80 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+              className="absolute inset-0 flex items-center justify-center bg-black/80 rounded-full opacity-0 group-hover:opacity-100 transition-opacity backdrop-blur-sm"
               title="Cancel download"
             >
               <span className="text-red-400 font-bold text-xs">✕</span>
@@ -384,7 +384,7 @@ export default function PodcastFeedDetailView() {
             // Retry download
             handleDownloadClick(episode);
           }}
-          className="flex-shrink-0 p-3 text-red-400 hover:bg-red-500/10 rounded-lg transition-colors"
+          className="flex-shrink-0 p-3 text-red-400 hover:bg-red-500/10 rounded-lg transition-colors border border-transparent hover:border-red-500/30"
           title={state.error || "Download failed. Click to retry."}
         >
           <AlertCircle className="w-5 h-5" />
@@ -399,7 +399,7 @@ export default function PodcastFeedDetailView() {
             e.stopPropagation();
             handleDownloadClick(episode); // Will offer to remove
           }}
-          className="flex-shrink-0 p-3 text-accent-success hover:bg-accent-success/10 rounded-lg transition-colors"
+          className="flex-shrink-0 p-3 text-accent-success hover:bg-accent-success/10 rounded-lg transition-colors border border-transparent hover:border-accent-success/30"
           title="Downloaded. Click to remove."
         >
           <CheckCircle2 className="w-5 h-5" />
@@ -414,7 +414,7 @@ export default function PodcastFeedDetailView() {
           e.stopPropagation();
           handleDownloadClick(episode);
         }}
-        className="flex-shrink-0 p-3 text-text-muted hover:text-accent-primary hover:bg-accent-primary/10 rounded-lg transition-colors"
+        className="flex-shrink-0 p-3 text-white/40 hover:text-accent-primary hover:bg-accent-primary/10 rounded-lg transition-colors border border-transparent hover:border-accent-primary/20"
         title="Download for offline"
       >
         <Download className="w-5 h-5" />
@@ -424,7 +424,7 @@ export default function PodcastFeedDetailView() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-bg-base flex items-center justify-center">
+      <div className="min-h-screen bg-[#0a0f0d] flex items-center justify-center">
         <Loader2 className="w-8 h-8 animate-spin text-accent-primary" />
       </div>
     );
@@ -432,12 +432,12 @@ export default function PodcastFeedDetailView() {
 
   if (error || !feed) {
     return (
-      <div className="min-h-screen bg-bg-base flex items-center justify-center">
+      <div className="min-h-screen bg-[#0a0f0d] flex items-center justify-center">
         <div className="text-center space-y-4">
-          <p className="text-red-400">{error || "Feed not found"}</p>
+          <p className="text-red-400 font-mono">{error || "Feed not found"}</p>
           <button
             onClick={() => navigate("/podcast")}
-            className="text-accent-primary hover:underline"
+            className="text-accent-primary hover:underline font-mono text-sm uppercase tracking-wider"
           >
             Back to Library
           </button>
@@ -447,10 +447,24 @@ export default function PodcastFeedDetailView() {
   }
 
   return (
-    <div className="min-h-screen bg-bg-base pb-32">
+    <div className="min-h-screen bg-[#0a0f0d] pb-32 text-white font-sans relative overflow-hidden">
+      {/* Background Ambience */}
+      <div className="fixed inset-0 bg-gradient-to-b from-[#0a1418] via-[#0c1815] to-[#0a0f0d] pointer-events-none" />
+      <div className="fixed inset-0 opacity-30 pointer-events-none">
+        <div className="absolute top-0 left-1/4 w-[600px] h-[600px] bg-gradient-radial from-emerald-900/20 via-transparent to-transparent blur-3xl" />
+        <div className="absolute bottom-0 right-1/4 w-[800px] h-[800px] bg-gradient-radial from-teal-900/10 via-transparent to-transparent blur-3xl" />
+      </div>
+      <div
+        className="fixed inset-0 opacity-[0.02] pointer-events-none"
+        style={{
+          backgroundImage: `linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px)`,
+          backgroundSize: "80px 80px",
+        }}
+      />
+
       {/* Header */}
-      <header className="sticky top-0 z-40 bg-bg-base/95 backdrop-blur border-b border-border">
-        <div className="max-w-5xl mx-auto px-4 py-4">
+      <header className="sticky top-0 z-40 bg-[#0a0f0d]/80 backdrop-blur-xl border-b border-white/5">
+        <div className="max-w-5xl mx-auto px-6 py-4">
           <div className="flex items-center gap-4">
             <button
               onClick={() => {
@@ -460,22 +474,24 @@ export default function PodcastFeedDetailView() {
                   navigate("/podcast");
                 }
               }}
-              className="p-2 -ml-2 text-text-muted hover:text-text-primary transition-colors"
+              className="w-10 h-10 rounded-full flex items-center justify-center bg-white/[0.03] border border-white/[0.08] text-white/60 hover:text-white hover:bg-white/[0.08] transition-all group"
             >
-              <ArrowLeft className="w-5 h-5" />
+              <ArrowLeft className="w-5 h-5 group-hover:-translate-x-0.5 transition-transform" />
             </button>
 
             <div className="flex items-center gap-3 flex-1 min-w-0">
-              <Rss className="w-5 h-5 text-accent-primary flex-shrink-0" />
-              <span className="text-sm font-mono text-text-muted truncate">
+              <div className="p-1.5 rounded bg-accent-primary/10 border border-accent-primary/20">
+                <Rss className="w-4 h-4 text-accent-primary flex-shrink-0" />
+              </div>
+              <span className="text-sm font-mono text-white/60 truncate uppercase tracking-wider">
                 {feed.title}
               </span>
             </div>
 
             {/* Storage indicator */}
             {storageInfo && (
-              <div className="hidden sm:flex items-center gap-2 text-xs text-text-muted">
-                <HardDrive className="w-4 h-4" />
+              <div className="hidden sm:flex items-center gap-2 text-[10px] text-white/40 font-mono border border-white/10 px-2 py-1 rounded bg-black/20">
+                <HardDrive className="w-3 h-3" />
                 <span>
                   {storageInfo.usedMB} MB / {storageInfo.quotaMB} MB
                 </span>
@@ -485,52 +501,59 @@ export default function PodcastFeedDetailView() {
         </div>
       </header>
 
-      <main className="max-w-5xl mx-auto px-4 py-6 space-y-8">
+      <main className="max-w-5xl mx-auto px-6 py-8 space-y-8 relative z-10">
         {/* Feed info card */}
-        <div className="flex flex-col sm:flex-row gap-6 p-6 bg-bg-surface border border-border rounded-2xl">
+        <div className="flex flex-col sm:flex-row gap-8 p-8 bg-[#0a0f0d]/60 backdrop-blur-md border border-white/10 rounded-3xl relative overflow-hidden group">
+          <div className="absolute inset-0 bg-gradient-to-r from-accent-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-1000 pointer-events-none" />
+
           {feed.image_url ? (
-            <img
-              src={feed.image_url}
-              alt={feed.title}
-              referrerPolicy="no-referrer"
-              className="w-32 h-32 sm:w-40 sm:h-40 rounded-xl object-cover flex-shrink-0 mx-auto sm:mx-0 border border-border"
-            />
+            <div className="relative group/image flex-shrink-0 mx-auto sm:mx-0">
+              <div className="absolute inset-0 bg-accent-primary/20 blur-xl opacity-0 group-hover/image:opacity-50 transition-opacity duration-500 rounded-full" />
+              <img
+                src={feed.image_url}
+                alt={feed.title}
+                referrerPolicy="no-referrer"
+                className="w-40 h-40 sm:w-48 sm:h-48 rounded-2xl object-cover border border-white/10 shadow-2xl relative z-10"
+              />
+            </div>
           ) : (
-            <div className="w-32 h-32 sm:w-40 sm:h-40 rounded-xl bg-gradient-to-br from-bg-elevated to-bg-base flex items-center justify-center flex-shrink-0 mx-auto sm:mx-0 border border-border">
-              <Headphones className="w-12 h-12 text-text-muted" />
+            <div className="w-40 h-40 sm:w-48 sm:h-48 rounded-2xl bg-gradient-to-br from-white/5 to-white/0 flex items-center justify-center flex-shrink-0 mx-auto sm:mx-0 border border-white/10 relative z-10">
+              <Headphones className="w-16 h-16 text-white/10" />
             </div>
           )}
 
-          <div className="flex-1 min-w-0 space-y-4">
+          <div className="flex-1 min-w-0 space-y-6 relative z-10">
             <div>
-              <h1 className="text-2xl font-bold font-serif text-text-primary">
+              <h1 className="text-3xl sm:text-4xl font-bold font-serif text-white tracking-tight leading-tight">
                 {feed.title}
               </h1>
               {feed.author && (
-                <p className="text-text-muted mt-1">{feed.author}</p>
+                <p className="text-white/50 mt-2 font-mono text-sm uppercase tracking-wider">
+                  {feed.author}
+                </p>
               )}
             </div>
 
-            <div className="flex items-center gap-4 text-sm">
-              <span className="text-accent-primary/70 font-mono">
-                {totalEpisodes} episodes
+            <div className="flex items-center gap-6 text-xs">
+              <span className="text-accent-primary font-mono bg-accent-primary/10 px-2 py-1 rounded border border-accent-primary/20">
+                {totalEpisodes} EPISODES
               </span>
               {offlineEpisodes.size > 0 && (
-                <span className="flex items-center gap-1 text-accent-success font-mono">
-                  <CloudOff className="w-4 h-4" />
-                  {offlineEpisodes.size} offline
+                <span className="flex items-center gap-1.5 text-accent-success font-mono bg-accent-success/10 px-2 py-1 rounded border border-accent-success/20">
+                  <CloudOff className="w-3 h-3" />
+                  {offlineEpisodes.size} OFFLINE
                 </span>
               )}
             </div>
 
-            <div className="flex flex-wrap items-center gap-2">
+            <div className="flex flex-wrap items-center gap-3">
               <button
                 onClick={handleRefresh}
                 disabled={refreshing}
-                className="flex items-center gap-2 px-4 py-2 text-sm bg-bg-elevated text-text-primary rounded-lg hover:bg-bg-base transition-colors border border-border"
+                className="flex items-center gap-2 px-4 py-2.5 text-xs font-bold uppercase tracking-wider bg-white/5 text-white rounded-xl hover:bg-white/10 transition-colors border border-white/10"
               >
                 <RefreshCw
-                  className={`w-4 h-4 ${refreshing ? "animate-spin" : ""}`}
+                  className={`w-3 h-3 ${refreshing ? "animate-spin" : ""}`}
                 />
                 Refresh
               </button>
@@ -540,9 +563,9 @@ export default function PodcastFeedDetailView() {
                   href={feed.website_url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex items-center gap-2 px-4 py-2 text-sm bg-bg-elevated text-text-primary rounded-lg hover:bg-bg-base transition-colors border border-border"
+                  className="flex items-center gap-2 px-4 py-2.5 text-xs font-bold uppercase tracking-wider bg-white/5 text-white rounded-xl hover:bg-white/10 transition-colors border border-white/10"
                 >
-                  <ExternalLink className="w-4 h-4" />
+                  <ExternalLink className="w-3 h-3" />
                   Website
                 </a>
               )}
@@ -550,21 +573,21 @@ export default function PodcastFeedDetailView() {
               {isSubscribed ? (
                 <button
                   onClick={requestUnsubscribe}
-                  className="flex items-center gap-2 px-4 py-2 text-sm text-red-400 hover:bg-red-500/10 rounded-lg transition-colors border border-transparent hover:border-red-500/30"
+                  className="flex items-center gap-2 px-4 py-2.5 text-xs font-bold uppercase tracking-wider text-red-400 bg-red-500/5 hover:bg-red-500/10 rounded-xl transition-colors border border-red-500/10 hover:border-red-500/30"
                 >
-                  <Trash2 className="w-4 h-4" />
+                  <Trash2 className="w-3 h-3" />
                   Unsubscribe
                 </button>
               ) : (
                 <button
                   onClick={handleSubscribe}
                   disabled={subscribing}
-                  className="flex items-center gap-2 px-4 py-2 text-sm bg-accent-primary text-black font-medium rounded-lg hover:shadow-lg hover:shadow-accent-primary/20 transition-colors"
+                  className="flex items-center gap-2 px-6 py-2.5 text-xs font-bold uppercase tracking-wider bg-accent-primary text-black rounded-xl hover:bg-white transition-colors shadow-lg shadow-accent-primary/20"
                 >
                   {subscribing ? (
-                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <Loader2 className="w-3 h-3 animate-spin" />
                   ) : (
-                    <Plus className="w-4 h-4" />
+                    <Plus className="w-3 h-3" />
                   )}
                   Subscribe
                 </button>
@@ -575,29 +598,30 @@ export default function PodcastFeedDetailView() {
 
         {/* Description */}
         {feed.description && (
-          <p className="text-text-muted text-sm leading-relaxed line-clamp-3">
-            {feed.description}
-          </p>
+          <div className="bg-white/[0.02] border border-white/5 p-6 rounded-2xl">
+            <p className="text-white/70 text-sm leading-relaxed font-serif">
+              {feed.description}
+            </p>
+          </div>
         )}
 
         {/* Episodes list */}
-        <div className="space-y-4">
-          <div className="flex items-center justify-between gap-4">
-            <h2 className="text-lg font-bold font-serif text-text-primary">
+        <div className="space-y-6">
+          <div className="flex items-center justify-between gap-4 border-b border-white/5 pb-4">
+            <h2 className="text-xl font-bold font-serif text-white flex items-center gap-3">
+              <span className="w-1.5 h-6 bg-accent-primary rounded-full" />
               Episodes
             </h2>
             <div
-              className="flex items-center gap-1.5 text-xs text-text-muted/60 cursor-help"
+              className="flex items-center gap-1.5 text-[10px] text-white/30 font-mono uppercase tracking-widest cursor-help"
               title="RSS feeds typically only include recent episodes. The full archive may be available on the podcast's website or streaming platforms."
             >
-              <Info className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">
-                RSS feeds show recent episodes only
-              </span>
+              <Info className="w-3 h-3" />
+              <span className="hidden sm:inline">RSS Limit Applied</span>
             </div>
           </div>
 
-          <div className="space-y-2">
+          <div className="space-y-3">
             {episodes.map((episode) => {
               const isCurrentEpisode = currentEpisode?.id === episode.id;
               const isOffline = offlineEpisodes.has(episode.id);
@@ -636,28 +660,28 @@ export default function PodcastFeedDetailView() {
               return (
                 <div
                   key={episode.id}
-                  className={`group relative flex items-center gap-3 p-3 sm:p-4 rounded-xl transition-all duration-300 ${
+                  className={`group relative flex items-center gap-4 p-4 rounded-xl transition-all duration-300 border ${
                     isCurrentEpisode
-                      ? "bg-accent-primary/10 border border-accent-primary/30 shadow-lg shadow-accent-primary/10"
+                      ? "bg-accent-primary/10 border-accent-primary/30 shadow-[0_0_30px_rgba(var(--color-accent-primary-rgb),0.1)]"
                       : isFinished
-                        ? "opacity-50 bg-bg-surface/50"
-                        : "bg-bg-surface border border-transparent hover:border-accent-primary/20 hover:shadow-lg hover:shadow-accent-primary/5"
+                        ? "bg-white/[0.01] border-white/5 opacity-60 hover:opacity-100"
+                        : "bg-[#0a0f0d]/40 backdrop-blur-sm border-white/5 hover:border-white/10 hover:bg-white/[0.03]"
                   }`}
                 >
                   <button
                     onClick={() => handlePlayEpisode(episode)}
-                    className={`flex-shrink-0 w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-300 ${
+                    className={`flex-shrink-0 w-12 h-12 rounded-xl flex items-center justify-center transition-all duration-300 ${
                       isCurrentEpisode
                         ? "bg-accent-primary text-black shadow-lg shadow-accent-primary/30 scale-105"
                         : isFinished
-                          ? "bg-transparent border-2 border-accent-success/40 text-accent-success hover:border-accent-success hover:bg-accent-success/10"
-                          : "bg-bg-elevated/30 border border-white/10 text-text-primary hover:bg-bg-elevated hover:border-white/20 hover:scale-105 hover:shadow-lg"
+                          ? "bg-transparent border border-accent-success/30 text-accent-success hover:bg-accent-success/10"
+                          : "bg-white/5 border border-white/10 text-white hover:bg-white/10 hover:border-white/20 hover:scale-105"
                     }`}
                   >
                     {isCurrentEpisode && isPlaying ? (
                       <Pause className="w-5 h-5 fill-current" />
                     ) : isFinished && !isCurrentEpisode ? (
-                      <Check className="w-5 h-5 stroke-[2.5]" />
+                      <Check className="w-5 h-5 stroke-[3]" />
                     ) : (
                       <Play className="w-5 h-5 ml-0.5 fill-current" />
                     )}
@@ -665,12 +689,12 @@ export default function PodcastFeedDetailView() {
 
                   <div className="flex-1 min-w-0 py-1">
                     <h3
-                      className={`text-base line-clamp-2 leading-relaxed mb-1.5 transition-colors ${
+                      className={`text-base font-medium line-clamp-1 mb-2 transition-colors ${
                         isCurrentEpisode
-                          ? "text-accent-primary font-bold"
+                          ? "text-accent-primary"
                           : isFinished
-                            ? "text-gray-400 line-through decoration-accent-success/60 decoration-2"
-                            : "text-text-primary font-bold group-hover:text-white"
+                            ? "text-white/40 line-through decoration-accent-success/40"
+                            : "text-white group-hover:text-accent-primary/80"
                       }`}
                       title={episode.title}
                     >
@@ -679,35 +703,29 @@ export default function PodcastFeedDetailView() {
                         <CloudOff className="inline-block w-3.5 h-3.5 ml-2 text-accent-success" />
                       )}
                     </h3>
-                    <div className="flex items-center gap-4 text-xs font-medium text-text-muted/60">
+                    <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-[10px] font-mono text-white/40 uppercase tracking-wider">
                       {episode.published_at && (
                         <span className="flex items-center gap-1.5">
-                          <span className="w-1 h-1 rounded-full bg-border-subtle group-hover:bg-accent-primary/50 transition-colors" />
+                          <Clock className="w-3 h-3 text-white/20" />
                           {formatDate(episode.published_at)}
                         </span>
                       )}
                       {episode.duration_seconds && (
-                        <span className="flex items-center gap-1.5 font-mono">
-                          <Clock className="w-3 h-3" />
+                        <span className="flex items-center gap-1.5">
+                          <span className="w-1 h-1 rounded-full bg-white/20" />
                           {formatDuration(episode.duration_seconds)}
                         </span>
                       )}
                       {episode.file_size > 0 && (
-                        <span className="flex items-center gap-1.5 font-mono text-text-muted/60">
-                          <span className="text-[10px] bg-bg-base/50 px-1.5 rounded border border-white/5">
-                            {formatFileSize(episode.file_size)}
-                          </span>
+                        <span className="flex items-center gap-1.5">
+                          <span className="w-1 h-1 rounded-full bg-white/20" />
+                          {formatFileSize(episode.file_size)}
                         </span>
                       )}
                       {/* Chapter Indicator */}
                       {episode.chapters && episode.chapters.length > 0 && (
-                        <span
-                          className="flex items-center gap-1.5 font-mono text-text-muted/60"
-                          title={`${episode.chapters.length} Chapters`}
-                        >
-                          <span className="text-[10px] bg-accent-primary/10 text-accent-primary px-1.5 rounded border border-accent-primary/10">
-                            {episode.chapters.length} CH
-                          </span>
+                        <span className="text-accent-primary">
+                          {episode.chapters.length} CH
                         </span>
                       )}
                       {(() => {
@@ -717,8 +735,8 @@ export default function PodcastFeedDetailView() {
                         }
                         if (position > 0) {
                           return (
-                            <span className="text-accent-primary font-mono bg-accent-primary/10 px-2 py-0.5 rounded-md text-[10px] tracking-wide">
-                              {progressPercent}% PLAYED
+                            <span className="text-accent-primary ml-auto">
+                              {progressPercent}% COMPLETE
                             </span>
                           );
                         }
@@ -728,7 +746,7 @@ export default function PodcastFeedDetailView() {
                   </div>
 
                   {/* Download button - always visible, but styled cleanly */}
-                  <div className="opacity-70 hover:opacity-100 transition-opacity">
+                  <div className="opacity-40 group-hover:opacity-100 transition-opacity">
                     {renderDownloadButton(episode)}
                   </div>
                 </div>
@@ -738,21 +756,21 @@ export default function PodcastFeedDetailView() {
 
           {/* Load More Button */}
           {offset < totalEpisodes && (
-            <div className="flex justify-center pt-4">
+            <div className="flex justify-center pt-8">
               <button
                 onClick={loadMoreEpisodes}
                 disabled={loadingMore}
-                className="px-6 py-3 bg-bg-surface hover:bg-bg-elevated border border-border rounded-xl text-text-primary font-medium transition-colors flex items-center gap-2"
+                className="px-8 py-3 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-white font-mono text-xs uppercase tracking-widest transition-colors flex items-center gap-3"
               >
                 {loadingMore ? (
                   <>
                     <Loader2 className="w-4 h-4 animate-spin" />
-                    Loading more...
+                    Loading...
                   </>
                 ) : (
                   <>
                     <span>Load More Episodes</span>
-                    <span className="text-text-muted text-xs">
+                    <span className="text-white/30">
                       ({Math.min(offset, totalEpisodes)} / {totalEpisodes})
                     </span>
                   </>

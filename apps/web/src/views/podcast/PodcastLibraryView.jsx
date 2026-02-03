@@ -342,7 +342,7 @@ export default function PodcastLibraryView() {
                 <Link
                   key={feed.id}
                   to={`/podcast/feed/${feed.id}`}
-                  className="group block bg-bg-surface border border-white/5 hover:border-accent-primary/30 transition-all duration-300 rounded-2xl overflow-hidden hover:shadow-2xl hover:shadow-accent-primary/10 hover:-translate-y-1"
+                  className="group block bg-[#0a0f0d]/40 backdrop-blur-md border border-white/10 hover:border-accent-primary/50 transition-all duration-300 rounded-2xl overflow-hidden hover:shadow-[0_0_30px_rgba(var(--color-accent-primary-rgb),0.15)] hover:-translate-y-1"
                 >
                   <div className="aspect-square relative overflow-hidden">
                     {feed.image_url ? (
@@ -354,16 +354,16 @@ export default function PodcastLibraryView() {
                         className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
                       />
                     ) : (
-                      <div className="w-full h-full bg-gradient-to-br from-bg-elevated to-bg-base flex items-center justify-center">
-                        <Headphones className="w-12 h-12 text-text-muted" />
+                      <div className="w-full h-full bg-gradient-to-br from-white/5 to-white/0 flex items-center justify-center">
+                        <Headphones className="w-12 h-12 text-white/20" />
                       </div>
                     )}
                     {/* Dynamic Gradient Overlay */}
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-[#0a0f0d] via-transparent to-transparent opacity-60 group-hover:opacity-80 transition-opacity duration-300" />
 
                     {/* Play Indicator */}
                     <div className="absolute bottom-4 left-4 right-4 translate-y-4 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-300">
-                      <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-accent-primary/20 border border-accent-primary/50 backdrop-blur-md">
+                      <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-accent-primary/20 border border-accent-primary/50 backdrop-blur-md shadow-lg">
                         <div className="w-2 h-2 rounded-full bg-accent-primary animate-pulse" />
                         <span className="text-[10px] font-bold tracking-wider text-accent-primary font-mono">
                           VIEW FEED
@@ -372,18 +372,18 @@ export default function PodcastLibraryView() {
                     </div>
                   </div>
 
-                  <div className="p-4">
+                  <div className="p-5">
                     <h3
-                      className="font-semibold text-text-primary line-clamp-1 text-sm mb-1 group-hover:text-accent-primary transition-colors"
+                      className="font-serif font-bold text-white line-clamp-1 text-base mb-1.5 group-hover:text-accent-primary transition-colors"
                       title={feed.title}
                     >
                       {feed.title}
                     </h3>
-                    <p className="text-xs text-text-muted truncate mb-2">
+                    <p className="text-xs text-white/50 truncate mb-3 font-mono">
                       {feed.author || "Unknown Author"}
                     </p>
                     <div className="flex items-center gap-2">
-                      <span className="px-2 py-0.5 rounded-md bg-white/5 border border-white/10 text-[10px] font-mono text-text-secondary">
+                      <span className="px-2 py-1 rounded bg-white/5 border border-white/10 text-[10px] font-mono text-white/40 group-hover:text-white/70 transition-colors">
                         {feed.episode_count || 0} EPS
                       </span>
                     </div>

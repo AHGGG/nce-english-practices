@@ -36,7 +36,7 @@ const StudyTimeChart = ({ dailyData }) => {
           >
             {/* Tooltip */}
             <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-3 opacity-0 group-hover/bar:opacity-100 transition-opacity pointer-events-none z-50">
-              <div className="bg-bg-base/95 backdrop-blur-xl border border-white/20 text-white text-[10px] p-3 rounded-xl shadow-[0_0_30px_rgba(0,0,0,0.5)] min-w-[140px]">
+              <div className="bg-[#0c1418] backdrop-blur-xl border border-white/20 text-white text-[10px] p-3 rounded-xl shadow-[0_0_30px_rgba(0,0,0,0.5)] min-w-[140px]">
                 <div className="font-bold text-accent-primary mb-2 border-b border-white/10 pb-1 text-center font-mono tracking-wider">
                   {d.date}
                 </div>
@@ -68,7 +68,7 @@ const StudyTimeChart = ({ dailyData }) => {
                   </div>
                 </div>
                 {/* Triangle arrow */}
-                <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-1 w-2 h-2 bg-bg-base/95 border-r border-b border-white/20 transform rotate-45"></div>
+                <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-1 w-2 h-2 bg-[#0c1418] border-r border-b border-white/20 transform rotate-45"></div>
               </div>
             </div>
 
@@ -109,23 +109,25 @@ const StudyTimeChart = ({ dailyData }) => {
       <div className="flex flex-wrap gap-4 text-xs font-mono">
         <div className="flex items-center gap-2">
           <div className="w-3 h-3 bg-accent-info"></div>
-          <span className="text-text-muted">阅读模式</span>
+          <span className="text-white/60 uppercase tracking-wide">Reading</span>
         </div>
         <div className="flex items-center gap-2">
           <div className="w-3 h-3 bg-accent-primary"></div>
-          <span className="text-text-muted">句子学习</span>
+          <span className="text-white/60 uppercase tracking-wide">
+            Sentence
+          </span>
         </div>
         <div className="flex items-center gap-2">
           <div className="w-3 h-3 bg-accent-danger"></div>
-          <span className="text-text-muted">语音实验室</span>
+          <span className="text-white/60 uppercase tracking-wide">Voice</span>
         </div>
         <div className="flex items-center gap-2">
           <div className="w-3 h-3 bg-accent-warning"></div>
-          <span className="text-text-muted">复习</span>
+          <span className="text-white/60 uppercase tracking-wide">Review</span>
         </div>
         <div className="flex items-center gap-2">
           <div className="w-3 h-3 bg-purple-500"></div>
-          <span className="text-text-muted">播客</span>
+          <span className="text-white/60 uppercase tracking-wide">Podcast</span>
         </div>
       </div>
     </div>

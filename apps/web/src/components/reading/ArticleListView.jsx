@@ -166,7 +166,7 @@ const ArticleListView = ({
       </div>
 
       {/* HEADER SECTION */}
-      <header className="relative z-10 border-b border-white/[0.05] bg-bg-base/50 backdrop-blur-xl px-6 md:px-12 py-8 flex justify-between items-end sticky top-0">
+      <header className="relative z-[60] border-b border-white/[0.05] bg-bg-base/50 backdrop-blur-xl px-6 md:px-12 py-8 flex justify-between items-end sticky top-0">
         <div>
           <div className="flex items-center gap-3 mb-4">
             <button
@@ -201,10 +201,10 @@ const ArticleListView = ({
             {isBookMenuOpen && books.length > 0 && (
               <>
                 <div
-                  className="fixed inset-0 z-40 bg-black/40 backdrop-blur-sm"
+                  className="fixed inset-0 z-[60] bg-black/40 backdrop-blur-sm"
                   onClick={() => setIsBookMenuOpen(false)}
                 ></div>
-                <div className="absolute left-0 top-full mt-4 w-[320px] md:w-[400px] max-w-[90vw] bg-bg-elevated/90 border border-white/10 shadow-2xl z-50 animate-in fade-in zoom-in-95 duration-200 backdrop-blur-xl rounded-2xl overflow-hidden">
+                <div className="absolute left-0 top-full mt-4 w-[320px] md:w-[400px] max-w-[90vw] bg-[#0c1418] border border-white/10 shadow-2xl z-[70] animate-in fade-in zoom-in-95 duration-200 backdrop-blur-xl rounded-2xl overflow-hidden">
                   <div className="max-h-[60vh] overflow-y-auto custom-scrollbar p-2">
                     {books.map((book) => (
                       <button

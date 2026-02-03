@@ -102,7 +102,7 @@ const ExplanationCard = ({
         animate={{ opacity: 1, y: 0, scale: 1 }}
         exit={{ opacity: 0, scale: 0.95, transition: { duration: 0.2 } }}
         transition={{ type: "spring", stiffness: 300, damping: 30 }}
-        className={`w-full mt-8 relative overflow-hidden rounded-xl border border-white/10 shadow-2xl backdrop-blur-md bg-bg-surface/80`}
+        className={`w-full mt-8 relative overflow-hidden rounded-xl border border-white/10 shadow-2xl backdrop-blur-md bg-[#0a0f0d]/80`}
       >
         {/* Dynamic Gradient Background */}
         <div
@@ -119,7 +119,7 @@ const ExplanationCard = ({
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center gap-3">
               <div
-                className={`p-2 rounded-lg bg-bg-base/40 border border-white/5 ${config.color}`}
+                className={`p-2 rounded-lg bg-black/40 border border-white/5 ${config.color}`}
               >
                 <Icon className="w-5 h-5" />
               </div>

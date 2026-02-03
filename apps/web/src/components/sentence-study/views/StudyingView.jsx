@@ -53,7 +53,7 @@ const StudyingView = ({
       </div>
 
       {/* Header */}
-      <header className="relative z-10 flex-shrink-0 h-16 border-b border-white/[0.05] flex items-center justify-between px-6 md:px-8 bg-bg-base/80 backdrop-blur-xl">
+      <header className="relative z-[60] flex-shrink-0 h-16 border-b border-white/[0.05] flex items-center justify-between px-6 md:px-8 bg-bg-base/80 backdrop-blur-xl">
         <button
           onClick={onBack}
           className="flex items-center gap-2 text-text-secondary hover:text-white transition-colors group px-3 py-1.5 rounded-lg hover:bg-white/5"
