@@ -1,375 +1,456 @@
-import React, { useState, useEffect } from 'react';
-import { Activity, RotateCw, BarChart2, List, Info, ChevronDown, ChevronRight, CheckCircle, XCircle, BookOpen, HelpCircle } from 'lucide-react';
-import { Card, Tag } from '../components/ui';
-import { authFetch } from '../api/auth';
+import React, { useState, useEffect } from "react";
+import {
+  Activity,
+  RotateCw,
+  BarChart2,
+  List,
+  Info,
+  ChevronDown,
+  ChevronRight,
+  CheckCircle,
+  XCircle,
+  BookOpen,
+  HelpCircle,
+} from "lucide-react";
+import { authFetch } from "../api/auth";
 
 const MemoryCurveDebug = () => {
-    const [data, setData] = useState(null);
-    const [loading, setLoading] = useState(true);
-    const [expandedLogs, setExpandedLogs] = useState(false);
-    const [showHelp, setShowHelp] = useState(true);
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [expandedLogs, setExpandedLogs] = useState(false);
+  const [showHelp, setShowHelp] = useState(true);
 
-    useEffect(() => {
-        fetchData();
-    }, []);
+  useEffect(() => {
+    fetchData();
+  }, []);
 
-    const fetchData = async () => {
-        setLoading(true);
-        try {
-            const res = await authFetch('/api/review/debug/memory-curve');
-            if (res.ok) {
-                const json = await res.json();
-                setData(json);
-            }
-        } catch (err) {
-            console.error(err);
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    if (loading) {
-        return (
-            <div className="min-h-screen bg-bg-base flex items-center justify-center">
-                <div className="text-text-muted font-mono animate-pulse">LOADING DEBUG DATA...</div>
-            </div>
-        );
+  const fetchData = async () => {
+    setLoading(true);
+    try {
+      const res = await authFetch("/api/review/debug/memory-curve");
+      if (res.ok) {
+        const json = await res.json();
+        setData(json);
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
     }
+  };
 
-    if (!data) {
-        return (
-            <div className="min-h-screen bg-bg-base flex items-center justify-center">
-                <div className="text-text-muted font-mono">Failed to load debug data.</div>
-            </div>
-        );
-    }
-
+  if (loading) {
     return (
-        <div className="min-h-screen bg-bg-base p-6 pb-20">
-            <div className="max-w-6xl mx-auto space-y-8">
-
-                {/* Header */}
-                <div className="flex items-center justify-between">
-                    <div>
-                        <h1 className="text-3xl font-serif font-bold text-text-primary mb-2">Memory Curve Debug</h1>
-                        <p className="text-text-muted font-mono text-sm">
-                            记忆曲线诊断工具 - 分析复习数据分布情况
-                        </p>
-                    </div>
-                    <div className="flex gap-2">
-                        <button
-                            onClick={() => setShowHelp(!showHelp)}
-                            className={`p-2 border transition-colors ${showHelp ? 'border-accent-primary text-accent-primary' : 'border-border text-text-muted hover:text-accent-primary hover:border-accent-primary'}`}
-                            title="显示/隐藏帮助"
-                        >
-                            <HelpCircle className="w-5 h-5" />
-                        </button>
-                        <button
-                            onClick={fetchData}
-                            className="p-2 border border-border text-text-primary hover:text-accent-primary hover:border-accent-primary transition-colors"
-                            title="刷新数据"
-                        >
-                            <RotateCw className="w-5 h-5" />
-                        </button>
-                    </div>
-                </div>
-
-                {/* Help Section - 背景知识 */}
-                {showHelp && (
-                    <div className="space-y-4 animate-in fade-in duration-300">
-                        {/* 什么是记忆曲线 */}
-                        <div className="p-4 border border-neon-purple/30 bg-neon-purple/5">
-                            <div className="flex items-start gap-3">
-                                <BookOpen className="w-5 h-5 text-neon-purple mt-0.5 flex-shrink-0" />
-                                <div className="space-y-2">
-                                    <h3 className="font-bold text-text-primary">什么是记忆曲线？</h3>
-                                    <p className="text-sm text-text-secondary leading-relaxed">
-                                        <strong>记忆曲线（Memory Curve）</strong>展示了你在不同复习间隔下的记忆保持率。
-                                        理论上，随着复习间隔增加（从1天到30天），记忆保持率会逐渐下降（艾宾浩斯遗忘曲线）。
-                                        但如果你持续复习成功，实际保持率可能高于理论值。
-                                    </p>
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* SM-2 算法说明 */}
-                        <div className="p-4 border border-accent-info/30 bg-accent-info/5">
-                            <div className="flex items-start gap-3">
-                                <Info className="w-5 h-5 text-accent-info mt-0.5 flex-shrink-0" />
-                                <div className="space-y-2">
-                                    <h3 className="font-bold text-text-primary">SM-2 间隔重复算法</h3>
-                                    <p className="text-sm text-text-secondary leading-relaxed">
-                                        本系统使用 <strong>SM-2 算法</strong> 安排复习。每次复习后，系统根据你的反馈调整下次复习的间隔：
-                                    </p>
-                                    <ul className="text-sm text-text-secondary space-y-1 ml-4 list-disc">
-                                        <li><strong>第1次复习</strong>：间隔 = 1 天 → 落入 <strong className="text-accent-info">Day 1</strong> (0-3天)</li>
-                                        <li><strong>第2次复习</strong>：间隔 = 6 天 → 落入 <strong className="text-accent-info">Day 6</strong> (3-10天)</li>
-                                        <li><strong>第3次复习</strong>：间隔 ≈ 15 天 → 落入 <strong className="text-accent-info">Day 15</strong> (10-25天)</li>
-                                        <li><strong>第4次及以后</strong>：间隔 ≈ 37+ 天 → 落入 <strong className="text-accent-info">Day 40</strong> (25-60天)</li>
-                                    </ul>
-                                    <div className="mt-3 p-2 bg-accent-success/10 border border-accent-success/30 text-sm">
-                                        <strong className="text-accent-success">✓ 桶边界已优化</strong>
-                                        <p className="text-text-secondary mt-1">
-                                            系统已针对 SM-2 优化桶边界。每个桶都会捕获对应阶段的复习数据，不会再出现"永远为空"的桶。
-                                        </p>
-                                    </div>
-                                    <div className="mt-3 p-2 bg-neon-cyan/10 border border-neon-cyan/30 text-sm">
-                                        <strong className="text-neon-cyan">💡 日历日期 vs 复习间隔</strong>
-                                        <p className="text-text-secondary mt-1">
-                                            <strong>Recent Logs 里的日期</strong>（如1/13, 1/17）是日历上「何时复习」。
-                                            <strong>Day Label</strong>（如Day 1, Day 6）是复习时该 item 的「间隔是多少天」。
-                                            两者是不同概念！
-                                        </p>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                )}
-
-                {/* Summary Alert */}
-                <div className="p-4 border border-accent-warning/30 bg-accent-warning/5">
-                    <div className="flex items-start gap-3">
-                        <Info className="w-5 h-5 text-accent-warning mt-0.5" />
-                        <div className="font-mono text-sm text-text-primary/80">
-                            {data.summary.explanation}
-                        </div>
-                    </div>
-                </div>
-
-                {/* Stats Cards */}
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    <StatCard
-                        label="Total Logs"
-                        value={data.total_logs}
-                        icon={List}
-                        color="cyan"
-                        tooltip="总复习次数：你完成的所有复习记录数量"
-                    />
-                    <StatCard
-                        label="Avg Quality"
-                        value={data.summary.avg_quality || 'N/A'}
-                        icon={Activity}
-                        color="pink"
-                        tooltip="平均质量分：1=忘了, 3=想起来了, 5=太简单。≥3 表示成功记住"
-                    />
-                    <StatCard
-                        label="Buckets with Data"
-                        value={`${data.summary.buckets_with_data}/${data.summary.total_buckets}`}
-                        icon={BarChart2}
-                        color="amber"
-                        tooltip="有数据的桶数/总桶数（5个桶：Day1, Day3, Day7, Day14, Day30）"
-                    />
-                    <StatCard
-                        label="Status"
-                        value={data.summary.buckets_with_data === 1 ? "仅 Day 1" : data.summary.buckets_with_data < 3 ? "初期阶段" : "数据充足"}
-                        icon={data.summary.buckets_with_data === 1 ? XCircle : CheckCircle}
-                        color={data.summary.buckets_with_data === 1 ? "red" : data.summary.buckets_with_data < 3 ? "amber" : "green"}
-                        tooltip={data.summary.buckets_with_data === 1
-                            ? "所有复习都在短间隔阶段，需要更多时间积累长间隔数据"
-                            : "已有多个间隔阶段的复习数据"}
-                    />
-                </div>
-
-                {/* Interval Distribution */}
-                <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-                    <div className="flex items-center gap-3 mb-2 border-b border-border pb-2">
-                        <BarChart2 className="w-5 h-5 text-accent-info" />
-                        <h2 className="text-lg font-bold font-mono text-text-primary tracking-wider">
-                            Interval Distribution
-                        </h2>
-                    </div>
-                    <p className="text-sm text-text-muted mb-4">
-                        📊 <strong>间隔分布</strong>：显示每个间隔范围内有多少条复习记录。
-                        理想情况下，数据应该平均分布在各个范围。如果集中在 "0-2 days"，说明你刚开始使用复习系统。
-                    </p>
-                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
-                        {Object.entries(data.interval_distribution).map(([range, count]) => (
-                            <div key={range} className="bg-bg-surface border border-border p-3 text-center relative group">
-                                <div className="text-2xl font-bold text-accent-info font-mono">{count}</div>
-                                <div className="text-xs text-text-muted font-mono mt-1">{range}</div>
-                                <div className="absolute -top-2 left-1/2 -translate-x-1/2 bg-bg-elevated border border-border px-2 py-1 text-xs text-text-secondary opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10">
-                                    间隔 {range} 有 {count} 条记录
-                                </div>
-                            </div>
-                        ))}
-                        {Object.keys(data.interval_distribution).length === 0 && (
-                            <div className="col-span-full text-center text-text-muted font-mono py-4">
-                                No interval data available
-                            </div>
-                        )}
-                    </div>
-                </div>
-
-                {/* Bucket Statistics Table */}
-                <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 delay-100">
-                    <div className="flex items-center gap-3 mb-2 border-b border-border pb-2">
-                        <Activity className="w-5 h-5 text-accent-warning" />
-                        <h2 className="text-lg font-bold font-mono text-text-primary tracking-wider">
-                            Bucket Statistics
-                        </h2>
-                    </div>
-                    <p className="text-sm text-text-muted mb-4">
-                        📈 <strong>记忆曲线数据源</strong>：这些数据直接用于生成记忆曲线图表。
-                        每个"桶"代表一个间隔阶段，<strong>保持率 = 成功数 ÷ 样本数</strong>。
-                    </p>
-                    <div className="overflow-x-auto">
-                        <table className="w-full border-collapse">
-                            <thead>
-                                <tr className="bg-bg-elevated text-left">
-                                    <th className="px-4 py-2 text-xs font-mono text-text-muted uppercase">
-                                        Day Label
-                                        <span className="block text-text-muted/50 font-normal normal-case">曲线X轴标签</span>
-                                    </th>
-                                    <th className="px-4 py-2 text-xs font-mono text-text-muted uppercase">
-                                        Interval Range
-                                        <span className="block text-text-muted/50 font-normal normal-case">对应的间隔范围</span>
-                                    </th>
-                                    <th className="px-4 py-2 text-xs font-mono text-text-muted uppercase">
-                                        Sample Size
-                                        <span className="block text-text-muted/50 font-normal normal-case">该范围内的复习次数</span>
-                                    </th>
-                                    <th className="px-4 py-2 text-xs font-mono text-text-muted uppercase">
-                                        Success
-                                        <span className="block text-text-muted/50 font-normal normal-case">记住的次数 (Q≥3)</span>
-                                    </th>
-                                    <th className="px-4 py-2 text-xs font-mono text-text-muted uppercase">
-                                        Retention Rate
-                                        <span className="block text-text-muted/50 font-normal normal-case">保持率（成功/总数）</span>
-                                    </th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {data.buckets.map((bucket) => (
-                                    <tr key={bucket.day} className="border-b border-border hover:bg-bg-surface/50 transition-colors">
-                                        <td className="px-4 py-3 font-mono text-text-primary">
-                                            Day {bucket.day}
-                                            {bucket.day === 1 && <span className="ml-2 text-xs text-accent-info">首次复习</span>}
-                                        </td>
-                                        <td className="px-4 py-3 font-mono text-text-muted">
-                                            {bucket.interval_range} days
-                                        </td>
-                                        <td className="px-4 py-3 font-mono">
-                                            <span className={bucket.sample_size > 0 ? 'text-accent-info' : 'text-text-muted'}>
-                                                {bucket.sample_size}
-                                            </span>
-                                            {bucket.sample_size === 0 && (
-                                                <span className="ml-2 text-xs text-text-muted">暂无数据</span>
-                                            )}
-                                        </td>
-                                        <td className="px-4 py-3 font-mono text-accent-success">
-                                            {bucket.success_count}
-                                        </td>
-                                        <td className="px-4 py-3 font-mono">
-                                            {bucket.retention_rate !== null ? (
-                                                <span className={bucket.retention_rate >= 0.7 ? 'text-accent-success' : bucket.retention_rate >= 0.5 ? 'text-accent-warning' : 'text-accent-danger'}>
-                                                    {(bucket.retention_rate * 100).toFixed(0)}%
-                                                    {bucket.retention_rate >= 0.8 && <span className="ml-1">✓</span>}
-                                                </span>
-                                            ) : (
-                                                <span className="text-text-muted">—</span>
-                                            )}
-                                        </td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    </div>
-
-                    {/* 表格说明 */}
-                    <div className="mt-4 p-3 bg-bg-surface border border-border text-sm text-text-muted">
-                        <strong>💡 如何解读：</strong>
-                        <ul className="mt-2 space-y-1 ml-4 list-disc">
-                            <li><strong>Day Label vs Range</strong>：为了画出平滑曲线，我们将相近的复习间隔归类。例如 "Day 1" 对应 "0-3天"，意味着只要复习间隔在0到3天之间（比如1.5天），都会被算作 "Day 1" 的数据点。</li>
-                            <li>如果只有 Day 1 有数据，说明你的复习记录还处于"初始间隔"阶段（SM-2 算法初始间隔为 1 天，正好落在 0-3 范围内）</li>
-                            <li>Day 6 数据需要在你成功完成第一次复习后约 6 天才会出现（对应第二次复习）</li>
-                            <li>保持率 ≥70% 表示记忆效果良好，低于 50% 可能需要更频繁复习</li>
-                        </ul>
-                    </div>
-                </div>
-
-                {/* Recent Logs */}
-                <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 delay-200">
-                    <button
-                        onClick={() => setExpandedLogs(!expandedLogs)}
-                        className="flex items-center gap-3 mb-2 border-b border-border pb-2 w-full text-left hover:text-accent-primary transition-colors"
-                    >
-                        {expandedLogs ? <ChevronDown className="w-5 h-5" /> : <ChevronRight className="w-5 h-5" />}
-                        <List className="w-5 h-5 text-accent-primary" />
-                        <h2 className="text-lg font-bold font-mono text-text-primary tracking-wider">
-                            Recent Review Logs ({data.recent_logs.length})
-                        </h2>
-                    </button>
-                    <p className="text-sm text-text-muted mb-4">
-                        📝 <strong>原始复习记录</strong>：最近的复习详情，包括质量分(Q)和复习时的间隔(I)。
-                    </p>
-
-                    {expandedLogs && (
-                        <div className="space-y-2">
-                            {/* 图例说明 */}
-                            <div className="flex flex-wrap gap-4 p-3 bg-bg-surface border border-border text-xs text-text-muted mb-3">
-                                <span><strong>Q</strong> = Quality（质量分）：1=忘了, 2=想起来了（有帮助）, 3=想起来了, 5=太简单</span>
-                                <span><strong>I</strong> = Interval（间隔）：复习时的间隔天数</span>
-                                <span className="text-accent-success">绿色 Q≥3 = 成功记住</span>
-                                <span className="text-accent-danger">红色 Q&lt;3 = 需要重新学习</span>
-                            </div>
-
-                            <div className="max-h-96 overflow-y-auto space-y-2">
-                                {data.recent_logs.map((log) => (
-                                    <div key={log.id} className="bg-bg-surface border border-border p-3 flex items-center gap-4 text-sm font-mono">
-                                        <div className="flex-shrink-0 w-20">
-                                            <span className={`px-2 py-0.5 text-xs ${log.quality >= 3 ? 'bg-accent-success/10 text-accent-success' : 'bg-accent-danger/10 text-accent-danger'}`}>
-                                                Q={log.quality}
-                                            </span>
-                                        </div>
-                                        <div className="flex-shrink-0 w-24 text-accent-info" title={`复习时间隔 ${log.interval_at_review} 天`}>
-                                            I={log.interval_at_review}d
-                                        </div>
-                                        <div className="flex-grow text-text-muted truncate" title={log.sentence_preview}>
-                                            {log.sentence_preview || '—'}
-                                        </div>
-                                        <div className="flex-shrink-0 text-text-muted text-xs">
-                                            {new Date(log.reviewed_at).toLocaleString()}
-                                        </div>
-                                    </div>
-                                ))}
-                                {data.recent_logs.length === 0 && (
-                                    <div className="text-center text-text-muted font-mono py-8">
-                                        No review logs found
-                                    </div>
-                                )}
-                            </div>
-                        </div>
-                    )}
-                </div>
-            </div>
+      <div className="min-h-screen bg-[#0a0f0d] flex items-center justify-center font-mono">
+        <div className="text-accent-primary animate-pulse flex items-center gap-2">
+          <Activity className="w-5 h-5 animate-spin" />
+          LOADING DEBUG DATA...
         </div>
+      </div>
     );
+  }
+
+  if (!data) {
+    return (
+      <div className="min-h-screen bg-[#0a0f0d] flex items-center justify-center font-mono">
+        <div className="text-red-400">Failed to load debug data.</div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-[#0a0f0d] p-6 pb-20 text-white font-sans relative overflow-hidden">
+      {/* Background Ambience */}
+      <div className="fixed inset-0 bg-gradient-to-b from-[#0a1418] via-[#0c1815] to-[#0a0f0d] pointer-events-none" />
+      <div className="fixed inset-0 opacity-30 pointer-events-none">
+        <div className="absolute top-0 left-1/4 w-[600px] h-[600px] bg-gradient-radial from-emerald-900/20 via-transparent to-transparent blur-3xl" />
+        <div className="absolute bottom-0 right-1/4 w-[800px] h-[800px] bg-gradient-radial from-teal-900/10 via-transparent to-transparent blur-3xl" />
+      </div>
+      <div
+        className="fixed inset-0 opacity-[0.02] pointer-events-none"
+        style={{
+          backgroundImage: `linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px)`,
+          backgroundSize: "80px 80px",
+        }}
+      />
+
+      <div className="max-w-6xl mx-auto space-y-8 relative z-10">
+        {/* Header */}
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-serif font-bold text-white mb-2 tracking-tight">
+              Memory Curve Debug
+            </h1>
+            <p className="text-white/40 font-mono text-sm uppercase tracking-widest">
+              SM-2 Distribution Analysis
+            </p>
+          </div>
+          <div className="flex gap-3">
+            <button
+              onClick={() => setShowHelp(!showHelp)}
+              className={`p-2.5 rounded-lg border transition-all ${showHelp ? "bg-accent-primary/10 border-accent-primary text-accent-primary" : "bg-white/5 border-white/10 text-white/60 hover:text-white hover:bg-white/10"}`}
+              title="Toggle Help"
+            >
+              <HelpCircle className="w-5 h-5" />
+            </button>
+            <button
+              onClick={fetchData}
+              className="p-2.5 rounded-lg bg-white/5 border border-white/10 text-white/60 hover:text-white hover:bg-white/10 transition-all hover:rotate-180 duration-500"
+              title="Refresh Data"
+            >
+              <RotateCw className="w-5 h-5" />
+            </button>
+          </div>
+        </div>
+
+        {/* Help Section */}
+        {showHelp && (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 animate-in fade-in slide-in-from-top-4 duration-500">
+            {/* What is Memory Curve */}
+            <div className="p-6 border border-purple-500/20 bg-purple-500/5 rounded-2xl relative overflow-hidden group">
+              <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+                <BookOpen className="w-16 h-16 text-purple-400" />
+              </div>
+              <div className="flex items-start gap-4 relative z-10">
+                <div className="p-2 bg-purple-500/10 rounded-lg">
+                  <BookOpen className="w-5 h-5 text-purple-400" />
+                </div>
+                <div className="space-y-2">
+                  <h3 className="font-bold text-purple-200">
+                    Memory Curve Theory
+                  </h3>
+                  <p className="text-sm text-purple-200/60 leading-relaxed">
+                    The <strong>Memory Curve</strong> visualizes retention rates
+                    across different review intervals. Ideally, retention should
+                    match the theoretical forgetting curve (Ebbinghaus), but
+                    active recall (SM-2) can improve actual performance.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* SM-2 Algorithm */}
+            <div className="p-6 border border-accent-info/20 bg-accent-info/5 rounded-2xl relative overflow-hidden group">
+              <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+                <Info className="w-16 h-16 text-accent-info" />
+              </div>
+              <div className="flex items-start gap-4 relative z-10">
+                <div className="p-2 bg-accent-info/10 rounded-lg">
+                  <Info className="w-5 h-5 text-accent-info" />
+                </div>
+                <div className="space-y-3">
+                  <h3 className="font-bold text-accent-info">
+                    SM-2 Algorithm Intervals
+                  </h3>
+                  <div className="grid grid-cols-2 gap-2 text-xs text-accent-info/70 font-mono">
+                    <div className="bg-accent-info/5 px-2 py-1 rounded border border-accent-info/10">
+                      1st: 1 day → Day 1
+                    </div>
+                    <div className="bg-accent-info/5 px-2 py-1 rounded border border-accent-info/10">
+                      2nd: 6 days → Day 6
+                    </div>
+                    <div className="bg-accent-info/5 px-2 py-1 rounded border border-accent-info/10">
+                      3rd: ~15 days → Day 15
+                    </div>
+                    <div className="bg-accent-info/5 px-2 py-1 rounded border border-accent-info/10">
+                      4th: ~37+ days → Day 40
+                    </div>
+                  </div>
+                  <p className="text-xs text-accent-info/50 mt-2 italic">
+                    * Buckets are optimized to capture data at these specific
+                    intervals.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Summary Alert */}
+        <div className="p-4 border border-accent-warning/20 bg-accent-warning/5 rounded-xl flex items-start gap-3 text-sm text-accent-warning/80">
+          <Info className="w-5 h-5 flex-shrink-0 mt-0.5" />
+          <div className="font-mono leading-relaxed">
+            {data.summary.explanation}
+          </div>
+        </div>
+
+        {/* Stats Cards */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <StatCard
+            label="Total Logs"
+            value={data.total_logs}
+            icon={List}
+            color="cyan"
+            tooltip="Total review records analyzed"
+          />
+          <StatCard
+            label="Avg Quality"
+            value={data.summary.avg_quality || "N/A"}
+            icon={Activity}
+            color="pink"
+            tooltip="Mean SM-2 Quality Score (0-5)"
+          />
+          <StatCard
+            label="Data Coverage"
+            value={`${data.summary.buckets_with_data}/${data.summary.total_buckets}`}
+            icon={BarChart2}
+            color="amber"
+            tooltip="Buckets with meaningful data / Total defined buckets"
+          />
+          <StatCard
+            label="System Status"
+            value={
+              data.summary.buckets_with_data === 1
+                ? "Day 1 Only"
+                : data.summary.buckets_with_data < 3
+                  ? "Early Stage"
+                  : "Mature"
+            }
+            icon={data.summary.buckets_with_data === 1 ? XCircle : CheckCircle}
+            color={
+              data.summary.buckets_with_data === 1
+                ? "red"
+                : data.summary.buckets_with_data < 3
+                  ? "amber"
+                  : "green"
+            }
+            tooltip={
+              data.summary.buckets_with_data === 1
+                ? "Data concentrated in early intervals."
+                : "Good distribution across multiple intervals."
+            }
+          />
+        </div>
+
+        {/* Interval Distribution */}
+        <div className="bg-white/[0.02] border border-white/5 rounded-2xl p-6 md:p-8 backdrop-blur-md">
+          <div className="flex items-center gap-3 mb-6 border-b border-white/5 pb-4">
+            <BarChart2 className="w-5 h-5 text-accent-info" />
+            <h2 className="text-lg font-bold font-serif text-white tracking-wide">
+              Interval Distribution
+            </h2>
+          </div>
+
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+            {Object.entries(data.interval_distribution).map(
+              ([range, count]) => (
+                <div
+                  key={range}
+                  className="bg-black/20 border border-white/10 p-4 rounded-xl text-center relative group hover:border-accent-info/30 transition-colors"
+                >
+                  <div className="text-3xl font-bold text-white mb-1 group-hover:text-accent-info transition-colors font-mono">
+                    {count}
+                  </div>
+                  <div className="text-[10px] text-white/40 font-mono uppercase tracking-widest">
+                    {range}
+                  </div>
+                </div>
+              ),
+            )}
+            {Object.keys(data.interval_distribution).length === 0 && (
+              <div className="col-span-full text-center text-white/20 font-mono py-8 border border-dashed border-white/10 rounded-xl">
+                NO_DISTRIBUTION_DATA
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Bucket Statistics Table */}
+        <div className="bg-white/[0.02] border border-white/5 rounded-2xl overflow-hidden backdrop-blur-md">
+          <div className="p-6 md:p-8 border-b border-white/5">
+            <div className="flex items-center gap-3 mb-2">
+              <Activity className="w-5 h-5 text-accent-warning" />
+              <h2 className="text-lg font-bold font-serif text-white tracking-wide">
+                Bucket Statistics
+              </h2>
+            </div>
+            <p className="text-sm text-white/40 font-light">
+              Source data for the Memory Curve visualization. Retention Rate =
+              Success / Sample Size.
+            </p>
+          </div>
+
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="bg-white/[0.02] border-b border-white/5 text-left text-[10px] font-mono uppercase tracking-widest text-white/40">
+                  <th className="px-6 py-4 font-bold">Day Label</th>
+                  <th className="px-6 py-4 font-normal">Interval Range</th>
+                  <th className="px-6 py-4 font-normal">Sample Size</th>
+                  <th className="px-6 py-4 font-normal">Success Count</th>
+                  <th className="px-6 py-4 font-normal">Retention Rate</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-white/5">
+                {data.buckets.map((bucket) => (
+                  <tr
+                    key={bucket.day}
+                    className="hover:bg-white/[0.02] transition-colors group"
+                  >
+                    <td className="px-6 py-4 font-mono text-sm text-white font-bold group-hover:text-accent-primary transition-colors">
+                      Day {bucket.day}
+                      {bucket.day === 1 && (
+                        <span className="ml-2 text-[9px] text-accent-info bg-accent-info/10 px-1.5 py-0.5 rounded border border-accent-info/20">
+                          FIRST
+                        </span>
+                      )}
+                    </td>
+                    <td className="px-6 py-4 font-mono text-sm text-white/60">
+                      {bucket.interval_range} days
+                    </td>
+                    <td className="px-6 py-4 font-mono text-sm">
+                      <span
+                        className={
+                          bucket.sample_size > 0
+                            ? "text-white"
+                            : "text-white/20"
+                        }
+                      >
+                        {bucket.sample_size}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 font-mono text-sm text-accent-success/80">
+                      {bucket.success_count}
+                    </td>
+                    <td className="px-6 py-4 font-mono text-sm">
+                      {bucket.retention_rate !== null ? (
+                        <div className="flex items-center gap-2">
+                          <span
+                            className={`font-bold ${bucket.retention_rate >= 0.7 ? "text-accent-success" : bucket.retention_rate >= 0.5 ? "text-accent-warning" : "text-accent-danger"}`}
+                          >
+                            {(bucket.retention_rate * 100).toFixed(0)}%
+                          </span>
+                          {bucket.retention_rate >= 0.8 && (
+                            <CheckCircle className="w-3 h-3 text-accent-success" />
+                          )}
+                        </div>
+                      ) : (
+                        <span className="text-white/10">—</span>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        {/* Recent Logs */}
+        <div className="bg-white/[0.02] border border-white/5 rounded-2xl overflow-hidden backdrop-blur-md">
+          <button
+            onClick={() => setExpandedLogs(!expandedLogs)}
+            className="w-full flex items-center justify-between p-6 md:p-8 hover:bg-white/[0.02] transition-colors text-left"
+          >
+            <div className="flex items-center gap-3">
+              <List className="w-5 h-5 text-accent-primary" />
+              <div>
+                <h2 className="text-lg font-bold font-serif text-white tracking-wide">
+                  Recent Logs
+                </h2>
+                <p className="text-xs text-white/40 font-mono mt-1 uppercase tracking-widest">
+                  Latest {data.recent_logs.length} entries
+                </p>
+              </div>
+            </div>
+            {expandedLogs ? (
+              <ChevronDown className="w-5 h-5 text-white/40" />
+            ) : (
+              <ChevronRight className="w-5 h-5 text-white/40" />
+            )}
+          </button>
+
+          {expandedLogs && (
+            <div className="border-t border-white/5">
+              {/* Legend */}
+              <div className="flex flex-wrap gap-4 p-4 bg-black/20 border-b border-white/5 text-[10px] font-mono uppercase tracking-wider text-white/40">
+                <span>
+                  <strong className="text-white/60">Q</strong> = Quality (1-5)
+                </span>
+                <span>
+                  <strong className="text-white/60">I</strong> = Interval (Days)
+                </span>
+                <span className="text-accent-success">Q≥3 (Success)</span>
+                <span className="text-accent-danger">Q&lt;3 (Fail)</span>
+              </div>
+
+              <div className="max-h-96 overflow-y-auto custom-scrollbar">
+                {data.recent_logs.map((log) => (
+                  <div
+                    key={log.id}
+                    className="p-4 border-b border-white/5 flex items-center gap-4 text-sm font-mono hover:bg-white/[0.02] transition-colors last:border-0"
+                  >
+                    <div className="flex-shrink-0 w-16">
+                      <span
+                        className={`px-2 py-1 rounded text-xs font-bold ${log.quality >= 3 ? "bg-accent-success/10 text-accent-success border border-accent-success/20" : "bg-accent-danger/10 text-accent-danger border border-accent-danger/20"}`}
+                      >
+                        Q:{log.quality}
+                      </span>
+                    </div>
+                    <div
+                      className="flex-shrink-0 w-20 text-accent-info/80 text-xs"
+                      title={`Interval: ${log.interval_at_review} days`}
+                    >
+                      I:{log.interval_at_review}d
+                    </div>
+                    <div
+                      className="flex-grow text-white/70 truncate font-sans text-sm"
+                      title={log.sentence_preview}
+                    >
+                      {log.sentence_preview || (
+                        <span className="text-white/20 italic">No Preview</span>
+                      )}
+                    </div>
+                    <div className="flex-shrink-0 text-white/30 text-[10px]">
+                      {new Date(log.reviewed_at).toLocaleDateString()}
+                    </div>
+                  </div>
+                ))}
+                {data.recent_logs.length === 0 && (
+                  <div className="text-center text-white/20 font-mono py-8 italic">
+                    No recent logs found
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
 };
 
-const StatCard = ({ label, value, icon: Icon, color, tooltip }) => { // eslint-disable-line no-unused-vars
-    const colors = {
-        cyan: "text-accent-info border-accent-info/30",
-        pink: "text-accent-danger border-accent-danger/30",
-        amber: "text-accent-warning border-accent-warning/30",
-        green: "text-accent-success border-accent-success/30",
-        red: "text-accent-danger border-accent-danger/30"
-    };
+const StatCard = ({ label, value, icon: Icon, color, tooltip }) => {
+  const colors = {
+    cyan: "text-accent-info bg-accent-info/5 border-accent-info/20",
+    pink: "text-accent-danger bg-accent-danger/5 border-accent-danger/20",
+    amber: "text-accent-warning bg-accent-warning/5 border-accent-warning/20",
+    green: "text-accent-success bg-accent-success/5 border-accent-success/20",
+    red: "text-accent-danger bg-accent-danger/5 border-accent-danger/20",
+  };
 
-    return (
-        <div className={`bg-bg-surface border p-4 ${colors[color]} relative group`}>
-            <div className="flex items-center gap-2 mb-2">
-                <Icon className="w-4 h-4 opacity-60" />
-                <span className="text-xs font-mono text-text-muted uppercase">{label}</span>
-            </div>
-            <div className="text-2xl font-bold font-mono">{value}</div>
-            {tooltip && (
-                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 bg-bg-elevated border border-border px-3 py-2 text-xs text-text-secondary opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10 max-w-xs text-center">
-                    {tooltip}
-                </div>
-            )}
+  return (
+    <div
+      className={`p-5 rounded-2xl border ${colors[color]} relative group transition-all hover:scale-[1.02] hover:shadow-lg`}
+    >
+      <div className="flex items-center gap-2 mb-3 opacity-80">
+        <Icon className="w-4 h-4" />
+        <span className="text-[10px] font-mono uppercase tracking-widest">
+          {label}
+        </span>
+      </div>
+      <div className="text-2xl md:text-3xl font-bold font-mono tracking-tight">
+        {value}
+      </div>
+
+      {/* Tooltip */}
+      {tooltip && (
+        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-3 w-48 p-3 bg-[#0c1418] border border-white/10 rounded-xl text-[10px] text-white/70 shadow-xl opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-20 text-center font-sans leading-relaxed backdrop-blur-xl">
+          {tooltip}
+          <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-1 w-2 h-2 bg-[#0c1418] border-r border-b border-white/10 transform rotate-45"></div>
         </div>
-    );
+      )}
+    </div>
+  );
 };
 
 export default MemoryCurveDebug;
