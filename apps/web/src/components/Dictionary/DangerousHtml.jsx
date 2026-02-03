@@ -1,40 +1,54 @@
-import React, { useRef, useEffect, useState } from 'react';
+import React, { useRef, useEffect, useState } from "react";
 
 const DangerousHtml = ({ html, className, ...props }) => {
-    const iframeRef = useRef(null);
-    const [height, setHeight] = useState(100);
+  const iframeRef = useRef(null);
+  const [height, setHeight] = useState(100);
 
-    useEffect(() => {
-        const handleMessage = (event) => {
-            // Security: We don't check origin because srcDoc origin is "null" or unique.
-            // But we can check if source matches our iframe
-            if (iframeRef.current && event.source === iframeRef.current.contentWindow) {
-                if (event.data && event.data.type === 'resize') {
-                    const newHeight = event.data.height;
-                    // Apply a safety max-limit logic or just set it
-                    if (newHeight > 0) {
-                        setHeight(newHeight);
-                    }
-                }
-            }
-        };
+  useEffect(() => {
+    const handleMessage = (event) => {
+      // Security: We don't check origin because srcDoc origin is "null" or unique.
+      // But we can check if source matches our iframe
+      if (
+        iframeRef.current &&
+        event.source === iframeRef.current.contentWindow
+      ) {
+        if (event.data && event.data.type === "resize") {
+          const newHeight = event.data.height;
+          // Apply a safety max-limit logic or just set it
+          if (newHeight > 0) {
+            setHeight(newHeight);
+          }
+        }
+      }
+    };
 
-        window.addEventListener('message', handleMessage);
-        return () => window.removeEventListener('message', handleMessage);
-    }, []);
+    window.addEventListener("message", handleMessage);
+    return () => window.removeEventListener("message", handleMessage);
+  }, []);
 
-    // Construct the srcDoc with embedded resize reporter
-    const srcDoc = `
+  // Construct the srcDoc with embedded resize reporter
+  const srcDoc = `
         <!DOCTYPE html>
         <html>
         <head>
             <style>
-                body { margin: 0; padding: 0; overflow: hidden; }
+                body { 
+                    margin: 0; 
+                    padding: 0; 
+                    overflow: hidden; 
+                    color: #94a3b8; /* slate-400 */
+                    font-family: ui-sans-serif, system-ui, sans-serif;
+                }
+                /* Basic reset for dictionary content to fit dark mode */
+                b, strong { color: #e2e8f0; } /* slate-200 */
+                a { color: #22d3ee; } /* cyan-400 */
+                .dict-entry { margin-bottom: 1em; }
             </style>
         </head>
         <body>
             <div id="content-wrapper">${html}</div>
             <script>
+
                 (function() {
                     const wrapper = document.getElementById('content-wrapper');
                     let lastHeight = 0;
@@ -72,22 +86,22 @@ const DangerousHtml = ({ html, className, ...props }) => {
         </html>
     `;
 
-    return (
-        <iframe
-            ref={iframeRef}
-            srcDoc={srcDoc}
-            sandbox="allow-scripts allow-popups allow-forms"
-            scrolling="no"
-            className={`${className} w-full border-none block`}
-            style={{
-                height: `${height}px`,
-                minHeight: '100px',
-                transition: 'height 0.2s ease'
-            }}
-            title="Dictionary Content"
-            {...props}
-        />
-    );
+  return (
+    <iframe
+      ref={iframeRef}
+      srcDoc={srcDoc}
+      sandbox="allow-scripts allow-popups allow-forms"
+      scrolling="no"
+      className={`${className} w-full border-none block`}
+      style={{
+        height: `${height}px`,
+        minHeight: "100px",
+        transition: "height 0.2s ease",
+      }}
+      title="Dictionary Content"
+      {...props}
+    />
+  );
 };
 
 export default DangerousHtml;

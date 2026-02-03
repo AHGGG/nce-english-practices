@@ -238,7 +238,7 @@ const LogicTooltip = ({ item }) => {
       </button>
 
       {/* Tooltip Content */}
-      <div className="absolute right-0 top-full mt-2 w-80 p-5 bg-[#0c1418] border border-white/10 rounded-xl shadow-2xl z-[100] opacity-0 invisible group-hover/tooltip:opacity-100 group-hover/tooltip:visible transition-all duration-300 translate-y-2 group-hover/tooltip:translate-y-0 text-left pointer-events-none backdrop-blur-xl">
+      <div className="absolute right-0 top-full mt-2 w-80 max-w-[calc(100vw-3rem)] p-5 bg-[#0c1418] border border-white/10 rounded-xl shadow-2xl z-[100] opacity-0 invisible group-hover/tooltip:opacity-100 group-hover/tooltip:visible transition-all duration-300 translate-y-2 group-hover/tooltip:translate-y-0 text-left pointer-events-none backdrop-blur-xl">
         <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-accent-primary via-accent-secondary to-accent-primary opacity-50 rounded-t-xl" />
 
         <div className="font-mono text-[10px] font-bold text-accent-primary mb-4 uppercase tracking-widest border-b border-white/10 pb-2 flex items-center gap-2">
