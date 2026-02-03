@@ -30,7 +30,32 @@ import {
   ChevronLeft,
 } from "lucide-react";
 
-// Tabs defined below
+const TabButton = (
+  { id, icon: Icon, label, activeTab, setActiveTab }, // eslint-disable-line no-unused-vars
+) => (
+  <button
+    onClick={() => setActiveTab(id)}
+    className={`flex items-center gap-2 px-6 py-3 font-mono font-bold uppercase transition-all whitespace-nowrap ${
+      activeTab === id
+        ? "text-accent-primary border-b-2 border-accent-primary bg-accent-primary/5"
+        : "text-white/40 hover:text-white"
+    }`}
+  >
+    <Icon size={18} />
+    {label}
+  </button>
+);
+
+const SectionHeader = (
+  { title, icon: Icon }, // eslint-disable-line no-unused-vars
+) => (
+  <div className="flex items-center gap-2 mb-4 mt-8 border-b border-white/10 pb-2">
+    <Icon size={20} className="text-accent-primary" />
+    <h2 className="text-xl font-serif font-bold text-white">{title}</h2>
+  </div>
+);
+
+// Main Component
 const VoiceLab = () => {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("loop");
@@ -340,30 +365,5 @@ const VoiceLab = () => {
     </div>
   );
 };
-
-const TabButton = (
-  { id, icon: Icon, label, activeTab, setActiveTab }, // eslint-disable-line no-unused-vars
-) => (
-  <button
-    onClick={() => setActiveTab(id)}
-    className={`flex items-center gap-2 px-6 py-3 font-mono font-bold uppercase transition-all whitespace-nowrap ${
-      activeTab === id
-        ? "text-accent-primary border-b-2 border-accent-primary bg-accent-primary/5"
-        : "text-white/40 hover:text-white"
-    }`}
-  >
-    <Icon size={18} />
-    {label}
-  </button>
-);
-
-const SectionHeader = (
-  { title, icon: Icon }, // eslint-disable-line no-unused-vars
-) => (
-  <div className="flex items-center gap-2 mb-4 mt-8 border-b border-white/10 pb-2">
-    <Icon size={20} className="text-accent-primary" />
-    <h2 className="text-xl font-serif font-bold text-white">{title}</h2>
-  </div>
-);
 
 export default VoiceLab;
