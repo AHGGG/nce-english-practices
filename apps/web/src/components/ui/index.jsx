@@ -59,7 +59,13 @@ export const Button = ({
   );
 };
 
-export const Input = ({ icon: Icon, error, className = "", ...props }) => {
+export const Input = ({
+  icon: Icon,
+  error,
+  className = "",
+  inputClassName = "",
+  ...props
+}) => {
   const errorId = useId();
 
   return (
@@ -71,7 +77,7 @@ export const Input = ({ icon: Icon, error, className = "", ...props }) => {
       )}
       <input
         type="text"
-        className={`w-full bg-glass-bg backdrop-blur-xl border border-glass-border text-text-primary px-4 py-3 text-sm rounded-xl focus:outline-none focus:border-accent-primary/50 focus:ring-1 focus:ring-accent-primary/30 transition-all placeholder:text-text-muted/50 ${Icon ? "pl-10" : ""} ${error ? "border-accent-danger/50 focus:border-accent-danger focus:ring-accent-danger/30" : ""}`}
+        className={`w-full bg-glass-bg backdrop-blur-xl border border-glass-border text-text-primary px-4 py-3 text-sm rounded-xl focus:outline-none focus:border-accent-primary/50 focus:ring-1 focus:ring-accent-primary/30 transition-all placeholder:text-text-muted/50 ${Icon ? "pl-10" : ""} ${error ? "border-accent-danger/50 focus:border-accent-danger focus:ring-accent-danger/30" : ""} ${inputClassName}`}
         aria-invalid={!!error}
         aria-describedby={error ? errorId : undefined}
         {...props}
@@ -81,6 +87,47 @@ export const Input = ({ icon: Icon, error, className = "", ...props }) => {
           id={errorId}
           role="alert"
           className="absolute -bottom-5 left-0 text-[10px] text-accent-danger"
+        >
+          {error}
+        </span>
+      )}
+    </div>
+  );
+};
+
+export const Textarea = ({
+  label,
+  className = "",
+  inputClassName = "",
+  error,
+  ...props
+}) => {
+  const textareaId = useId();
+  const errorId = useId();
+  const inputId = props.id || textareaId;
+
+  return (
+    <div className={`flex flex-col gap-1.5 ${className}`}>
+      {label && (
+        <label
+          htmlFor={inputId}
+          className="text-xs text-text-secondary uppercase tracking-wider"
+        >
+          {label}
+        </label>
+      )}
+      <textarea
+        id={inputId}
+        className={`w-full bg-glass-bg backdrop-blur-xl border border-glass-border text-text-primary px-4 py-3 text-sm rounded-xl focus:outline-none focus:border-accent-primary/50 focus:ring-1 focus:ring-accent-primary/30 transition-all placeholder:text-text-muted/50 ${error ? "border-accent-danger/50 focus:border-accent-danger focus:ring-accent-danger/30" : ""} ${inputClassName}`}
+        aria-invalid={!!error}
+        aria-describedby={error ? errorId : undefined}
+        {...props}
+      />
+      {error && (
+        <span
+          id={errorId}
+          role="alert"
+          className="text-[10px] text-accent-danger"
         >
           {error}
         </span>
@@ -162,6 +209,7 @@ export const Select = ({
   label,
   options = [],
   className = "",
+  selectClassName = "",
   error,
   ...props
 }) => {
@@ -182,7 +230,7 @@ export const Select = ({
       <div className="relative">
         <select
           id={inputId}
-          className={`w-full bg-glass-bg backdrop-blur-xl border border-glass-border text-text-primary px-4 py-2.5 text-sm rounded-xl focus:outline-none focus:border-accent-primary/50 focus:ring-1 focus:ring-accent-primary/30 transition-all appearance-none cursor-pointer ${error ? "border-accent-danger/50 focus:border-accent-danger focus:ring-accent-danger/30" : ""}`}
+          className={`w-full bg-glass-bg backdrop-blur-xl border border-glass-border text-text-primary px-4 py-2.5 text-sm rounded-xl focus:outline-none focus:border-accent-primary/50 focus:ring-1 focus:ring-accent-primary/30 transition-all appearance-none cursor-pointer ${error ? "border-accent-danger/50 focus:border-accent-danger focus:ring-accent-danger/30" : ""} ${selectClassName}`}
           aria-invalid={!!error}
           aria-describedby={error ? errorId : undefined}
           {...props}
