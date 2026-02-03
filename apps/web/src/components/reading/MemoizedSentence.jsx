@@ -209,6 +209,33 @@ const MemoizedSentence = memo(function MemoizedSentence({
             {rendered}
         </p>
     );
+}, (prev, next) => {
+    // Custom comparator to optimize performance
+    // Returns true if props are equal (skip render)
+
+    if (prev.text !== next.text) return false;
+    if (prev.showHighlights !== next.showHighlights) return false;
+    if (prev.studyHighlightSet !== next.studyHighlightSet) return false; // This changes rarely
+    if (prev.unclearInfo !== next.unclearInfo) return false;
+    if (prev.collocations !== next.collocations) return false;
+
+    // Check highlightSet change
+    if (prev.highlightSet !== next.highlightSet) {
+        // If highlightSet changed, we check if we can skip this update.
+        // If the change was caused by marking a specific word, and this sentence
+        // doesn't contain that word, we can skip re-rendering.
+        if (next.lastModifiedWord) {
+            const lowerText = next.text.toLowerCase();
+            // Use includes for fast check. Safe false positive (includes substring)
+            // is better than false negative.
+            if (!lowerText.includes(next.lastModifiedWord)) {
+                return true; // Skip render
+            }
+        }
+        return false; // Re-render
+    }
+
+    return true;
 });
 
 export default MemoizedSentence;
