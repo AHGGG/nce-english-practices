@@ -82,7 +82,7 @@ const OverviewView = ({
       />
 
       {/* Header */}
-      <header className="relative z-10 h-16 border-b border-white/[0.05] flex items-center justify-between px-6 md:px-8 bg-[#0a0f0d]/80 backdrop-blur-xl">
+      <header className="relative z-10 h-14 md:h-16 border-b border-white/[0.05] flex items-center justify-between px-4 md:px-8 bg-[#0a0f0d]/80 backdrop-blur-xl">
         <button
           onClick={onBack}
           className="flex items-center gap-2 text-white/60 hover:text-white transition-colors group px-3 py-1.5 rounded-lg hover:bg-white/5"
@@ -99,12 +99,12 @@ const OverviewView = ({
 
       {/* Main Content */}
       <main
-        className={`relative z-10 flex-1 overflow-y-auto custom-scrollbar p-6 md:p-12 ${currentEpisode ? "pb-32" : ""}`}
+        className={`relative z-10 flex-1 overflow-y-auto custom-scrollbar p-4 md:p-12 ${currentEpisode ? "pb-32" : ""}`}
       >
         <div className="max-w-3xl w-full mx-auto">
           {/* Article Title */}
-          <div className="mb-10 text-center">
-            <h1 className="font-serif text-3xl md:text-5xl font-bold text-white tracking-tight leading-tight mb-4 drop-shadow-2xl">
+          <div className="mb-8 md:mb-10 text-center">
+            <h1 className="font-serif text-2xl md:text-5xl font-bold text-white tracking-tight leading-tight mb-4 drop-shadow-2xl px-2">
               {article?.title}
             </h1>
             <div className="h-1 w-24 bg-accent-primary/30 mx-auto rounded-full" />
@@ -150,13 +150,13 @@ const OverviewView = ({
 
               {/* Chinese Translation */}
               {(displayOverview.summary_zh || isStreaming) && (
-                <div className="p-8 border border-white/5 bg-black/20 rounded-2xl">
+                <div className="p-6 md:p-8 border border-white/5 bg-black/20 rounded-2xl">
                   <div className="flex items-center gap-3 mb-4">
                     <span className="text-[10px] font-mono text-white/30 uppercase tracking-widest">
                       Chinese Translation
                     </span>
                   </div>
-                  <p className="text-base md:text-lg leading-loose text-white/60 font-light">
+                  <p className="text-sm md:text-lg leading-loose text-white/60 font-light text-justify">
                     {displayOverview.summary_zh}
                     {isStreaming && displayOverview.summary_zh && (
                       <span className="inline-block w-2 h-5 ml-1 bg-white/40 animate-pulse align-middle" />
@@ -181,18 +181,20 @@ const OverviewView = ({
 
               {/* Difficulty Hint */}
               {displayOverview.difficulty_hint && (
-                <div className="flex items-center justify-center gap-2 text-xs font-mono text-accent-warning/80 bg-accent-warning/5 py-3 px-6 rounded-full border border-accent-warning/10 mx-auto w-fit">
-                  <span className="text-lg">💡</span>
-                  {displayOverview.difficulty_hint}
+                <div className="flex flex-col md:flex-row items-center justify-center gap-3 text-xs font-mono text-accent-warning/80 bg-accent-warning/5 py-3 px-6 rounded-2xl border border-accent-warning/10 mx-auto w-full md:w-fit max-w-2xl text-center md:text-left">
+                  <span className="text-xl shrink-0">💡</span>
+                  <span className="leading-relaxed">
+                    {displayOverview.difficulty_hint}
+                  </span>
                 </div>
               )}
 
               {/* Start Button */}
               {!isStreaming && (
-                <div className="flex justify-center pt-8 pb-12">
+                <div className="flex justify-center pt-4 md:pt-8 pb-12 sticky bottom-0 md:relative w-full bg-gradient-to-t from-[#0a0f0d] via-[#0a0f0d]/90 to-transparent md:bg-none p-4 md:p-0 z-20">
                   <button
                     onClick={onStartStudying}
-                    className="group relative flex items-center gap-4 px-12 py-5 bg-accent-primary text-black font-bold uppercase text-sm tracking-widest rounded-xl hover:bg-white transition-all shadow-[0_0_30px_rgba(var(--color-accent-primary-rgb),0.3)] hover:shadow-[0_0_50px_rgba(var(--color-accent-primary-rgb),0.5)] hover:-translate-y-1 active:scale-95 overflow-hidden"
+                    className="group relative flex items-center justify-center gap-3 w-full md:w-auto px-8 py-4 md:px-12 md:py-5 bg-accent-primary text-black font-bold uppercase text-sm tracking-widest rounded-xl hover:bg-white transition-all shadow-[0_0_20px_rgba(var(--color-accent-primary-rgb),0.3)] hover:shadow-[0_0_40px_rgba(var(--color-accent-primary-rgb),0.5)] hover:-translate-y-1 active:scale-95 overflow-hidden"
                   >
                     <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-500" />
                     <GraduationCap className="w-5 h-5 relative z-10" />

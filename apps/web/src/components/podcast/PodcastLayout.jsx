@@ -54,8 +54,8 @@ export default function PodcastLayout({
 
       {/* Header */}
       <header className="sticky top-0 z-40 bg-[#0a0f0d]/80 backdrop-blur-xl border-b border-white/5">
-        <div className="max-w-6xl mx-auto px-6 py-4">
-          <div className="flex items-center justify-between">
+        <div className="max-w-6xl mx-auto px-4 md:px-6 pt-4 pb-0">
+          <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-4">
               {showBackButton && (
                 <button
@@ -67,14 +67,14 @@ export default function PodcastLayout({
               )}
 
               <div className="flex items-center gap-3">
-                <div className="p-2 bg-accent-primary/10 rounded-lg border border-accent-primary/20">
+                <div className="p-2 bg-accent-primary/10 rounded-xl border border-accent-primary/20 shadow-[0_0_15px_rgba(var(--color-accent-primary-rgb),0.15)]">
                   <Headphones className="w-5 h-5 text-accent-primary" />
                 </div>
                 <div>
-                  <h1 className="text-xl font-bold font-serif text-white tracking-wide">
+                  <h1 className="text-xl font-bold font-serif text-white tracking-wide leading-tight">
                     {title || "Podcast"}
                   </h1>
-                  <p className="text-[10px] text-white/40 font-mono uppercase tracking-widest">
+                  <p className="text-[10px] text-white/40 font-mono uppercase tracking-widest mt-0.5">
                     Audio Learning
                   </p>
                 </div>
@@ -93,13 +93,13 @@ export default function PodcastLayout({
           </div>
 
           {/* Nav tabs */}
-          <nav className="flex items-center gap-2 mt-6 -mb-4 border-b border-transparent overflow-x-auto w-full no-scrollbar">
+          <nav className="flex items-center gap-1 overflow-x-auto w-full no-scrollbar pb-0">
             <button
               onClick={() => navigate("/podcast")}
-              className={`flex-shrink-0 flex items-center gap-2 px-4 py-3 rounded-t-xl text-xs font-bold uppercase tracking-wider transition-all border-b-2 whitespace-nowrap ${
+              className={`flex-shrink-0 flex items-center gap-2 px-4 py-3 border-b-2 text-xs font-bold uppercase tracking-wider transition-all whitespace-nowrap ${
                 isLibrary
-                  ? "border-accent-primary text-accent-primary bg-accent-primary/5"
-                  : "border-transparent text-white/40 hover:text-white hover:bg-white/[0.02]"
+                  ? "border-accent-primary text-accent-primary"
+                  : "border-transparent text-white/40 hover:text-white hover:bg-white/[0.02] rounded-t-lg"
               }`}
             >
               <Library className="w-4 h-4" />
@@ -108,10 +108,10 @@ export default function PodcastLayout({
 
             <button
               onClick={() => navigate("/podcast/search")}
-              className={`flex-shrink-0 flex items-center gap-2 px-4 py-3 rounded-t-xl text-xs font-bold uppercase tracking-wider transition-all border-b-2 whitespace-nowrap ${
+              className={`flex-shrink-0 flex items-center gap-2 px-4 py-3 border-b-2 text-xs font-bold uppercase tracking-wider transition-all whitespace-nowrap ${
                 isSearch
-                  ? "border-accent-primary text-accent-primary bg-accent-primary/5"
-                  : "border-transparent text-white/40 hover:text-white hover:bg-white/[0.02]"
+                  ? "border-accent-primary text-accent-primary"
+                  : "border-transparent text-white/40 hover:text-white hover:bg-white/[0.02] rounded-t-lg"
               }`}
             >
               <Search className="w-4 h-4" />
@@ -120,17 +120,17 @@ export default function PodcastLayout({
 
             <button
               onClick={() => navigate("/podcast/downloads")}
-              className={`flex-shrink-0 flex items-center gap-2 px-4 py-3 rounded-t-xl text-xs font-bold uppercase tracking-wider transition-all border-b-2 whitespace-nowrap ${
+              className={`flex-shrink-0 flex items-center gap-2 px-4 py-3 border-b-2 text-xs font-bold uppercase tracking-wider transition-all whitespace-nowrap ${
                 isDownloads
-                  ? "border-accent-primary text-accent-primary bg-accent-primary/5"
-                  : "border-transparent text-white/40 hover:text-white hover:bg-white/[0.02]"
+                  ? "border-accent-primary text-accent-primary"
+                  : "border-transparent text-white/40 hover:text-white hover:bg-white/[0.02] rounded-t-lg"
               }`}
             >
               <CloudOff className="w-4 h-4" />
               <span>Downloads</span>
               {offlineCount > 0 && (
                 <span
-                  className={`px-1.5 py-0.5 text-[9px] rounded-full ${isDownloads ? "bg-accent-primary text-black" : "bg-white/10 text-white"}`}
+                  className={`ml-1 px-1.5 py-0.5 text-[9px] rounded-full font-mono ${isDownloads ? "bg-accent-primary/20 text-accent-primary border border-accent-primary/20" : "bg-white/10 text-white/60 border border-white/10"}`}
                 >
                   {offlineCount}
                 </span>

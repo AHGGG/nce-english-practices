@@ -53,7 +53,7 @@ const StudyingView = ({
       </div>
 
       {/* Header */}
-      <header className="relative z-[60] flex-shrink-0 h-16 border-b border-white/[0.05] flex items-center justify-between px-6 md:px-8 bg-bg-base/80 backdrop-blur-xl">
+      <header className="relative z-[60] flex-shrink-0 h-14 md:h-16 border-b border-white/[0.05] flex items-center justify-between px-4 md:px-8 bg-bg-base/80 backdrop-blur-xl">
         <button
           onClick={onBack}
           className="flex items-center gap-2 text-text-secondary hover:text-white transition-colors group px-3 py-1.5 rounded-lg hover:bg-white/5"
@@ -70,7 +70,7 @@ const StudyingView = ({
       </header>
 
       {/* Progress Bar */}
-      <div className="relative z-10 flex-shrink-0 h-[2px] bg-white/[0.05]">
+      <div className="relative z-10 flex-shrink-0 h-[3px] bg-white/[0.05]">
         <div
           className="h-full bg-gradient-to-r from-accent-primary to-accent-secondary transition-all duration-500 ease-out shadow-[0_0_10px_rgba(var(--color-accent-primary-rgb),0.5)]"
           style={{ width: `${progressPercent}%` }}
@@ -80,13 +80,13 @@ const StudyingView = ({
       {/* Main Content Area - Centered when idle, top-aligned when showing content */}
       <main className="relative z-10 flex-1 overflow-y-auto custom-scrollbar min-h-0">
         <div
-          className={`min-h-full flex flex-col items-center p-4 md:p-8 pb-32 ${simplifiedText || isSimplifying ? "justify-start pt-12" : "justify-center"}`}
+          className={`min-h-full flex flex-col items-center p-4 md:p-8 pb-32 ${simplifiedText || isSimplifying ? "justify-start pt-8 md:pt-12" : "justify-center"}`}
         >
           {/* Main Sentence Card */}
 
           <div className="max-w-3xl w-full bg-white/[0.02] backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl shadow-black/20 overflow-hidden ring-1 ring-white/5">
             {/* Card Header (Review Mode Style) */}
-            <div className="px-6 py-4 border-b border-white/5 flex items-center justify-between bg-white/[0.01]">
+            <div className="px-4 md:px-6 py-3 md:py-4 border-b border-white/5 flex items-center justify-between bg-white/[0.01]">
               {/* Left: Progress/Label */}
               <div className="flex items-center gap-3">
                 <span className="text-[10px] font-bold text-accent-primary uppercase tracking-widest font-mono">
@@ -133,11 +133,11 @@ const StudyingView = ({
 
             {/* Expandable Context Panel */}
             {showContext && prevSentence && (
-              <div className="px-8 py-6 bg-black/20 border-b border-white/5 animate-in slide-in-from-top-2 duration-300">
+              <div className="px-6 md:px-8 py-4 md:py-6 bg-black/20 border-b border-white/5 animate-in slide-in-from-top-2 duration-300">
                 <div className="text-[9px] font-bold text-white/30 uppercase tracking-[0.2em] mb-3">
                   Previous Sentence
                 </div>
-                <p className="font-serif text-lg text-white/60 leading-relaxed italic">
+                <p className="font-serif text-base md:text-lg text-white/60 leading-relaxed italic">
                   {prevSentence.text}
                 </p>
               </div>
@@ -146,7 +146,7 @@ const StudyingView = ({
             {/* Current Sentence Content */}
             <div
               ref={sentenceContainerRef}
-              className="p-8 md:p-12 font-serif text-2xl md:text-3xl leading-relaxed text-left select-text relative"
+              className="p-6 md:p-12 font-serif text-xl md:text-3xl leading-relaxed text-left select-text relative"
               onClick={(e) => {
                 const word = e.target.dataset?.word;
                 const keyWord = e.target.dataset?.keyWord;

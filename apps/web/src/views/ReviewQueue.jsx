@@ -622,17 +622,26 @@ const ReviewQueue = () => {
 
   // Render stats header
   const renderStats = () => (
-    <div className="flex items-center gap-6 px-4 py-2 bg-white/[0.03] rounded-full border border-white/[0.08] backdrop-blur-md">
+    <div className="flex items-center gap-3 md:gap-6 px-3 py-1.5 bg-white/[0.03] rounded-full border border-white/[0.08] backdrop-blur-md">
       <div className="flex items-center gap-2">
-        <BookOpen className="w-3 h-3 text-accent-primary" />
-        <span className="text-xs font-mono text-white/70 tracking-wider">
-          <strong className="text-white">{stats.total_items}</strong> TOTAL
+        <span className="text-[10px] font-mono text-white/70 tracking-wider">
+          <span className="text-white/40 mr-1">CARD</span>
+          <strong className="text-white">{currentIndex + 1}</strong>
+          <span className="text-white/40 mx-1">/</span>
+          <span className="text-white/40">{queue.length}</span>
         </span>
       </div>
       <div className="w-px h-3 bg-white/10" />
       <div className="flex items-center gap-2">
+        <BookOpen className="w-3 h-3 text-accent-primary" />
+        <span className="text-[10px] font-mono text-white/70 tracking-wider">
+          <strong className="text-white">{stats.total_items}</strong> TOTAL
+        </span>
+      </div>
+      <div className="w-px h-3 bg-white/10 hidden sm:block" />
+      <div className="hidden sm:flex items-center gap-2">
         <Clock className="w-3 h-3 text-accent-secondary" />
-        <span className="text-xs font-mono text-white/70 tracking-wider">
+        <span className="text-[10px] font-mono text-white/70 tracking-wider">
           <strong className="text-white">{queue.length}</strong> DUE
         </span>
       </div>
@@ -658,47 +667,40 @@ const ReviewQueue = () => {
     const bookName = sourceInfo[1] || "Unknown";
 
     return (
-      <div className="flex-1 flex flex-col w-full max-w-4xl mx-auto px-4 sm:px-6 relative z-10 pb-10">
+      <div className="flex-1 flex flex-col w-full max-w-4xl mx-auto px-4 relative z-10 pb-4">
         {/* Progress Header */}
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mb-8 w-full">
-          <div className="flex items-center gap-2 text-xs font-mono text-white/40 uppercase tracking-widest">
-            <span>Card {currentIndex + 1}</span>
-            <span className="text-white/10">/</span>
-            <span>{queue.length}</span>
-          </div>
-          {renderStats()}
-        </div>
+        <div className="flex justify-center mb-4 w-full">{renderStats()}</div>
 
         {/* Glass Card */}
-        <div className="relative bg-[#0a0f0d]/80 backdrop-blur-2xl border border-white/10 rounded-3xl overflow-hidden shadow-2xl flex flex-col min-h-[400px]">
+        <div className="relative bg-[#0a0f0d]/80 backdrop-blur-2xl border border-white/10 rounded-2xl md:rounded-3xl overflow-hidden shadow-2xl flex flex-col min-h-0 flex-1">
           {/* Top Glow */}
           <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-accent-primary/0 via-accent-primary/50 to-accent-primary/0 opacity-30" />
 
           {/* Card Header */}
-          <div className="flex items-center justify-between px-6 py-4 border-b border-white/5 bg-white/[0.02]">
-            <div className="flex flex-wrap items-center gap-3">
-              <span className="px-2.5 py-1 rounded-md bg-accent-primary/10 border border-accent-primary/20 text-accent-primary text-[10px] font-bold uppercase tracking-wider font-mono flex items-center gap-1.5">
-                <BookOpen className="w-3 h-3" />
-                {bookName}
+          <div className="flex items-center justify-between px-4 py-3 md:px-6 md:py-4 border-b border-white/5 bg-white/[0.02] gap-3">
+            <div className="flex flex-1 items-center gap-2 min-w-0 overflow-hidden">
+              <span className="px-2 py-1 rounded-md bg-accent-primary/10 border border-accent-primary/20 text-accent-primary text-[9px] md:text-[10px] font-bold uppercase tracking-wider font-mono flex items-center gap-1.5 truncate max-w-[120px] md:max-w-none">
+                <BookOpen className="w-3 h-3 shrink-0" />
+                <span className="truncate">{bookName}</span>
               </span>
-              <span className="px-2.5 py-1 rounded-md bg-white/5 border border-white/10 text-white/60 text-[10px] font-bold uppercase tracking-wider font-mono">
+              <span className="px-2 py-1 rounded-md bg-white/5 border border-white/10 text-white/60 text-[9px] md:text-[10px] font-bold uppercase tracking-wider font-mono whitespace-nowrap">
                 {getGapTypeInfo(currentItem.difficulty_type).shortLabel}
               </span>
             </div>
 
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 shrink-0">
               <button
                 onClick={() => playAudio(currentItem.sentence_text)}
-                className="w-8 h-8 rounded-lg flex items-center justify-center bg-white/5 hover:bg-white/10 text-white/60 hover:text-white transition-colors border border-transparent hover:border-white/10"
+                className="w-7 h-7 md:w-8 md:h-8 rounded-lg flex items-center justify-center bg-white/5 hover:bg-white/10 text-white/60 hover:text-white transition-colors border border-transparent hover:border-white/10"
                 title="Play Audio"
               >
-                <Volume2 className="w-4 h-4" />
+                <Volume2 className="w-3.5 h-3.5 md:w-4 md:h-4" />
               </button>
               <button
                 onClick={toggleContext}
                 disabled={loadingContext}
                 className={`
-                      h-8 px-3 rounded-lg flex items-center gap-2 text-[10px] font-bold uppercase tracking-wider transition-all border
+                      h-7 md:h-8 px-2.5 md:px-3 rounded-lg flex items-center gap-2 text-[9px] md:text-[10px] font-bold uppercase tracking-wider transition-all border
                       ${
                         showContext
                           ? "bg-accent-info/10 border-accent-info/30 text-accent-info shadow-[0_0_15px_rgba(var(--color-accent-info-rgb),0.1)]"
@@ -711,7 +713,7 @@ const ReviewQueue = () => {
                 ) : (
                   <BookOpen className="w-3 h-3" />
                 )}
-                <span>Context</span>
+                <span className="hidden sm:inline">Context</span>
               </button>
             </div>
           </div>
@@ -744,7 +746,7 @@ const ReviewQueue = () => {
           </div>
 
           {/* Main Sentence View */}
-          <div className="flex-1 flex flex-col items-center justify-center p-8 md:p-12 relative group">
+          <div className="flex-1 flex flex-col items-center justify-center p-6 md:p-12 relative group min-h-[30vh] md:min-h-[400px]">
             {/* Background Decoration */}
             <div className="absolute inset-0 bg-gradient-radial from-white/[0.03] to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-1000" />
 
@@ -759,7 +761,7 @@ const ReviewQueue = () => {
               )}
 
               <p
-                className={`font-serif text-3xl md:text-4xl text-white leading-tight text-center transition-opacity duration-300 ${showContext ? "opacity-70" : "opacity-100"}`}
+                className={`font-serif text-xl sm:text-2xl md:text-4xl text-white leading-relaxed md:leading-tight text-center transition-opacity duration-300 ${showContext ? "opacity-70" : "opacity-100"}`}
               >
                 <HighlightedSentence
                   text={currentItem.sentence_text}
@@ -773,14 +775,16 @@ const ReviewQueue = () => {
           </div>
 
           {/* Interval Info Footer */}
-          <div className="px-6 py-3 border-t border-white/5 bg-white/[0.01] flex items-center justify-center gap-2">
-            <div className="flex items-center gap-2 text-[10px] font-mono uppercase tracking-widest text-white/30">
+          <div className="px-6 py-3 border-t border-white/5 bg-white/[0.01] flex flex-wrap items-center justify-center gap-x-4 gap-y-2">
+            <div className="flex flex-wrap items-center justify-center gap-2 text-[10px] font-mono uppercase tracking-widest text-white/30">
               {currentItem.repetition > 0 ? (
                 <>
-                  <span>Repetition: {currentItem.repetition}</span>
-                  <span className="w-1 h-1 rounded-full bg-white/20" />
-                  <span>
-                    Interval: {Math.round(currentItem.interval_days)}d
+                  <span className="whitespace-nowrap">
+                    Rep: {currentItem.repetition}
+                  </span>
+                  <span className="w-1 h-1 rounded-full bg-white/20 hidden sm:block" />
+                  <span className="whitespace-nowrap">
+                    Int: {Math.round(currentItem.interval_days)}d
                   </span>
                 </>
               ) : (
@@ -792,7 +796,7 @@ const ReviewQueue = () => {
 
         {/* Action Area */}
         {showHelpPanel ? (
-          <div className="mt-8 animate-in slide-in-from-bottom-5 duration-500">
+          <div className="mt-4 md:mt-8 animate-in slide-in-from-bottom-5 duration-500 pb-8">
             <ExplanationCard
               simplifiedText={helpContent}
               simplifyStage={helpStage}
@@ -813,17 +817,13 @@ const ReviewQueue = () => {
           </div>
         ) : (
           /* Rating Buttons */
-          <div className="mt-8 grid grid-cols-3 gap-4 md:gap-6">
+          <div className="mt-4 md:mt-8 grid grid-cols-3 gap-3 md:gap-6 pb-8">
             {RATING_OPTIONS.map((option) => {
               const Icon = option.icon;
               const handleClick =
                 option.quality === 1
                   ? handleForgot
                   : () => handleRating(option.quality);
-
-              // Map legacy colors to new design system colors if needed,
-              // but RATING_OPTIONS uses tailwind classes like 'text-accent-danger'.
-              // We'll customize the styles below for the 'Cyber-Noir' look.
 
               let baseStyles = "";
               let activeColor = "";
@@ -851,32 +851,32 @@ const ReviewQueue = () => {
                   onClick={handleClick}
                   disabled={isSubmitting}
                   className={`
-                    group relative flex flex-col items-center gap-3 p-6 md:p-8 rounded-2xl
+                    group relative flex flex-col items-center gap-2 md:gap-3 p-3 md:p-8 rounded-xl md:rounded-2xl
                     bg-[#0a0f0d]/60 backdrop-blur-xl border transition-all duration-300
                     active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed
                     ${baseStyles}
                   `}
                 >
                   {isSubmitting ? (
-                    <Loader2 className="w-6 h-6 animate-spin opacity-50" />
+                    <Loader2 className="w-5 h-5 md:w-6 md:h-6 animate-spin opacity-50" />
                   ) : (
                     <>
                       <div
                         className={`
-                        w-12 h-12 rounded-xl flex items-center justify-center 
+                        w-8 h-8 md:w-12 md:h-12 rounded-lg md:rounded-xl flex items-center justify-center 
                         bg-white/[0.03] border border-white/5 group-hover:scale-110 transition-transform duration-300
                         shadow-lg shadow-black/20
                       `}
                       >
-                        <Icon className="w-6 h-6" />
+                        <Icon className="w-4 h-4 md:w-6 md:h-6" />
                       </div>
-                      <span className="text-sm font-bold uppercase tracking-wider">
+                      <span className="text-[10px] md:text-sm font-bold uppercase tracking-wider">
                         {option.label}
                       </span>
 
                       {/* Hover Glow */}
                       <div
-                        className={`absolute inset-0 opacity-0 group-hover:opacity-20 transition-opacity duration-500 rounded-2xl blur-xl ${activeColor}`}
+                        className={`absolute inset-0 opacity-0 group-hover:opacity-20 transition-opacity duration-500 rounded-xl md:rounded-2xl blur-xl ${activeColor}`}
                       />
                     </>
                   )}
@@ -922,32 +922,29 @@ const ReviewQueue = () => {
       />
 
       {/* Header */}
-      <header className="relative z-20 px-6 py-4 flex items-center justify-between border-b border-white/[0.05] backdrop-blur-md bg-[#0a0f0d]/50">
-        <div className="flex items-center gap-4">
+      <header className="relative z-20 px-4 py-3 flex items-center justify-between border-b border-white/[0.05] backdrop-blur-md bg-[#0a0f0d]/50 h-14 shrink-0">
+        <div className="flex items-center gap-3">
           <button
             onClick={() => navigate("/nav")}
-            className="w-10 h-10 rounded-full flex items-center justify-center bg-white/[0.03] border border-white/[0.08] text-white/60 hover:text-white hover:bg-white/[0.08] transition-all group"
+            className="w-8 h-8 rounded-full flex items-center justify-center bg-white/[0.03] border border-white/[0.08] text-white/60 hover:text-white hover:bg-white/[0.08] transition-all group"
           >
-            <ChevronLeft className="w-5 h-5 group-hover:-translate-x-0.5 transition-transform" />
+            <ChevronLeft className="w-4 h-4 group-hover:-translate-x-0.5 transition-transform" />
           </button>
           <div className="flex flex-col">
-            <h1 className="text-sm font-bold uppercase tracking-widest text-white flex items-center gap-2">
-              <Brain className="w-4 h-4 text-accent-primary" />
-              Review Queue
+            <h1 className="text-xs font-bold uppercase tracking-widest text-white flex items-center gap-2">
+              <Brain className="w-3 h-3 text-accent-primary" />
+              Queue
             </h1>
-            <span className="text-[10px] text-white/40 font-mono hidden sm:inline-block">
-              Spaced Repetition System
-            </span>
           </div>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2">
           {!isRandomMode && undoState && (
             <button
               onClick={handleUndoRedo}
               disabled={isSubmitting}
               className={`
-                h-9 px-3 rounded-lg flex items-center gap-2 text-[10px] font-bold uppercase tracking-wider transition-all border
+                h-8 px-2.5 rounded-lg flex items-center gap-2 text-[10px] font-bold uppercase tracking-wider transition-all border
                 ${
                   undoState.mode === "redo"
                     ? "bg-accent-primary/10 border-accent-primary/30 text-accent-primary hover:bg-accent-primary/20"
@@ -957,26 +954,23 @@ const ReviewQueue = () => {
               title={undoState.mode === "undo" ? "Undo" : "Redo"}
             >
               <RotateCcw
-                className={`w-3.5 h-3.5 ${undoState.mode === "redo" ? "scale-x-[-1]" : ""}`}
+                className={`w-3 h-3 ${undoState.mode === "redo" ? "scale-x-[-1]" : ""}`}
               />
-              <span className="hidden sm:inline">
-                {undoState.mode === "undo" ? "Undo" : "Redo"}
-              </span>
             </button>
           )}
 
           <button
             onClick={refreshQueue}
-            className="w-9 h-9 rounded-lg flex items-center justify-center bg-white/[0.03] border border-white/[0.08] text-white/60 hover:text-white hover:bg-white/[0.08] hover:rotate-180 transition-all duration-500"
+            className="w-8 h-8 rounded-lg flex items-center justify-center bg-white/[0.03] border border-white/[0.08] text-white/60 hover:text-white hover:bg-white/[0.08] hover:rotate-180 transition-all duration-500"
             title="Reload Queue"
           >
-            <RefreshCw className="w-4 h-4" />
+            <RefreshCw className="w-3.5 h-3.5" />
           </button>
         </div>
       </header>
 
       {/* Main content */}
-      <main className="flex-1 flex flex-col relative z-10 overflow-y-auto custom-scrollbar pt-8">
+      <main className="flex-1 flex flex-col relative z-10 overflow-y-auto custom-scrollbar pt-4 pb-4">
         {loading ? (
           <div className="flex-1 flex flex-col items-center justify-center">
             <div className="relative">

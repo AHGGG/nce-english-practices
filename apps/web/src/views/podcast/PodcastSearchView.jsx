@@ -131,36 +131,40 @@ export default function PodcastSearchView() {
     <PodcastLayout title="Search">
       <div className="space-y-8 animate-in slide-in-from-bottom-5 duration-700">
         {/* Search form */}
-        <form onSubmit={handleSearch} className="flex gap-4 relative z-10">
+        <form onSubmit={handleSearch} className="flex gap-3 relative z-10">
           <div className="relative flex-1 group">
-            <div className="absolute inset-0 bg-accent-primary/20 blur-xl opacity-0 group-hover:opacity-50 transition-opacity duration-500 rounded-2xl pointer-events-none" />
-            <Search className="absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 text-white/40 group-focus-within:text-accent-primary transition-colors" />
+            <div className="absolute inset-0 bg-accent-primary/20 blur-xl opacity-0 group-hover:opacity-30 transition-opacity duration-500 rounded-2xl pointer-events-none" />
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-white/40 group-focus-within:text-accent-primary transition-colors" />
             <input
               type="text"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search podcasts on iTunes..."
-              className="w-full pl-14 pr-6 py-4 bg-[#0a0f0d]/60 backdrop-blur-md border border-white/10 rounded-2xl focus:border-accent-primary/50 focus:outline-none focus:ring-2 focus:ring-accent-primary/20 text-white placeholder:text-white/30 transition-all font-serif text-lg"
+              placeholder="Search podcasts..."
+              className="w-full pl-12 pr-4 py-3.5 bg-white/[0.03] hover:bg-white/[0.06] backdrop-blur-md border border-white/10 rounded-2xl focus:border-accent-primary/50 focus:outline-none focus:ring-1 focus:ring-accent-primary/50 text-white placeholder:text-white/30 transition-all font-serif text-lg shadow-inner shadow-black/20"
             />
           </div>
           <button
             type="submit"
             disabled={loading}
-            className="px-8 py-4 bg-accent-primary text-black font-bold uppercase tracking-wider text-sm rounded-2xl hover:bg-white hover:shadow-lg hover:shadow-accent-primary/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-14 h-auto flex items-center justify-center bg-accent-primary text-[#0a0f0d] rounded-2xl hover:bg-white hover:shadow-[0_0_20px_rgba(var(--color-accent-primary-rgb),0.4)] transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-accent-primary/10"
           >
-            {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : "Search"}
+            {loading ? (
+              <Loader2 className="w-6 h-6 animate-spin" />
+            ) : (
+              <Search className="w-6 h-6" />
+            )}
           </button>
         </form>
 
         {/* Categories */}
         {categories.length > 0 && (
-          <div className="flex gap-3 overflow-x-auto pb-4 custom-scrollbar">
+          <div className="flex gap-2 overflow-x-auto pb-4 custom-scrollbar mask-gradient-r">
             <button
               onClick={() => setSelectedCategory(null)}
-              className={`px-5 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider whitespace-nowrap transition-all ${
+              className={`px-4 py-2 rounded-full text-[10px] font-bold uppercase tracking-wider whitespace-nowrap transition-all border ${
                 !selectedCategory
-                  ? "bg-accent-primary text-black shadow-lg shadow-accent-primary/20 scale-105"
-                  : "bg-white/5 border border-white/10 text-white/60 hover:text-white hover:bg-white/10 hover:border-white/20"
+                  ? "bg-accent-primary text-[#0a0f0d] border-accent-primary shadow-[0_0_15px_rgba(var(--color-accent-primary-rgb),0.3)]"
+                  : "bg-white/[0.03] border-white/10 text-white/60 hover:text-white hover:bg-white/[0.08] hover:border-white/20"
               }`}
             >
               All
@@ -169,10 +173,10 @@ export default function PodcastSearchView() {
               <button
                 key={cat.id}
                 onClick={() => setSelectedCategory(cat)}
-                className={`px-5 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider whitespace-nowrap transition-all ${
+                className={`px-4 py-2 rounded-full text-[10px] font-bold uppercase tracking-wider whitespace-nowrap transition-all border ${
                   selectedCategory?.id === cat.id
-                    ? "bg-accent-primary text-black shadow-lg shadow-accent-primary/20 scale-105"
-                    : "bg-white/5 border border-white/10 text-white/60 hover:text-white hover:bg-white/10 hover:border-white/20"
+                    ? "bg-accent-primary text-[#0a0f0d] border-accent-primary shadow-[0_0_15px_rgba(var(--color-accent-primary-rgb),0.3)]"
+                    : "bg-white/[0.03] border-white/10 text-white/60 hover:text-white hover:bg-white/[0.08] hover:border-white/20"
                 }`}
               >
                 {cat.name}

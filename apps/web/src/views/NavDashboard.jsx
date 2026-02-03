@@ -213,14 +213,14 @@ const NavDashboard = () => {
       />
 
       {/* Navigation Bar */}
-      <nav className="relative z-20 px-6 md:px-12 py-6">
+      <nav className="relative z-20 px-4 md:px-12 py-4 md:py-6">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           {/* Logo */}
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-accent-primary to-accent-secondary flex items-center justify-center shadow-lg shadow-accent-primary/20">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-accent-primary to-accent-secondary flex items-center justify-center shadow-[0_0_15px_rgba(var(--color-accent-primary-rgb),0.3)]">
               <Zap className="w-5 h-5 text-[#0a0f0d]" />
             </div>
-            <span className="text-xl font-semibold text-white tracking-tight">
+            <span className="text-lg md:text-xl font-bold font-serif text-white tracking-tight">
               English101.ai
             </span>
           </div>
@@ -246,26 +246,26 @@ const NavDashboard = () => {
       <section className="relative z-10 px-6 md:px-12 pt-16 pb-20">
         <div className="max-w-4xl mx-auto text-center">
           {/* Badge */}
-          <div className="inline-flex items-center gap-2 px-4 py-2 bg-white/[0.05] border border-white/[0.1] rounded-full mb-8">
-            <Sparkles className="w-4 h-4 text-accent-primary" />
-            <span className="text-sm text-white/70">
+          <div className="inline-flex items-center gap-2 px-4 py-2 bg-accent-primary/10 border border-accent-primary/20 rounded-full mb-8 backdrop-blur-md shadow-[0_0_15px_rgba(var(--color-accent-primary-rgb),0.1)] animate-fade-in">
+            <Sparkles className="w-4 h-4 text-accent-primary animate-pulse-slow" />
+            <span className="text-sm font-medium text-accent-primary/90 tracking-wide">
               AI-Powered Learning Platform
             </span>
           </div>
 
           {/* Main headline */}
-          <h1 className="text-5xl md:text-7xl font-semibold text-white leading-[1.1] tracking-tight mb-6">
+          <h1 className="text-4xl sm:text-5xl md:text-7xl font-serif font-bold text-white leading-[1.1] tracking-tight mb-8 drop-shadow-2xl">
             Grammar Training
             <br />
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-accent-primary to-accent-secondary">
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-accent-primary via-accent-secondary to-accent-primary bg-[length:200%_auto] animate-gradient">
               Through the Dark
             </span>
           </h1>
 
           {/* Subtitle */}
-          <p className="text-lg md:text-xl text-white/70 max-w-2xl mx-auto mb-10 leading-relaxed">
+          <p className="text-base sm:text-lg md:text-xl text-white/60 max-w-2xl mx-auto mb-10 leading-relaxed px-4">
             Master English with intelligent AI tutors that guide your journey
-            <span className="text-accent-primary/80">
+            <span className="text-accent-primary/80 font-medium">
               {" "}
               through the complexities
             </span>{" "}
@@ -273,19 +273,19 @@ const NavDashboard = () => {
           </p>
 
           {/* CTA Buttons */}
-          <div className="flex items-center justify-center gap-4">
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 px-4">
             {featuredModules.map((module, idx) => (
               <button
                 key={module.path}
                 onClick={() => navigate(module.path)}
-                className={`group flex items-center gap-2 px-8 py-4 rounded-full font-medium transition-all duration-300 ${
+                className={`group w-full sm:w-auto flex items-center justify-center gap-3 px-8 py-4 rounded-xl font-bold uppercase tracking-wider text-sm transition-all duration-300 ${
                   module.primary
-                    ? "bg-white text-[#0a0f0d] hover:bg-white/90 shadow-lg shadow-white/10"
-                    : "bg-white/[0.05] text-white border border-white/[0.15] hover:bg-white/[0.08] hover:border-white/[0.25]"
+                    ? "bg-accent-primary text-[#0a0f0d] hover:bg-white hover:scale-105 shadow-[0_0_20px_rgba(var(--color-accent-primary-rgb),0.3)] hover:shadow-[0_0_30px_rgba(var(--color-accent-primary-rgb),0.5)]"
+                    : "bg-white/[0.05] text-white border border-white/[0.1] hover:bg-white/[0.1] hover:border-white/[0.3] hover:text-accent-primary"
                 }`}
               >
                 <module.icon
-                  className={`w-5 h-5 ${module.primary ? "text-[#0a0f0d]" : "text-accent-primary"}`}
+                  className={`w-5 h-5 ${module.primary ? "text-[#0a0f0d]" : "text-current"}`}
                 />
                 <span>{module.title}</span>
                 <ChevronRight
@@ -298,24 +298,26 @@ const NavDashboard = () => {
       </section>
 
       {/* Modules Grid */}
-      <section className="relative z-10 px-6 md:px-12 pb-20">
+      <section className="relative z-10 px-4 md:px-12 pb-20">
         <div className="max-w-7xl mx-auto">
           {/* Section header */}
-          <div className="flex items-center gap-4 mb-10">
+          <div className="flex items-center gap-4 mb-8 md:mb-10">
             <div className="flex items-center gap-3">
-              <Compass className="w-5 h-5 text-accent-primary/60" />
-              <h2 className="text-lg font-medium text-white/80">
+              <div className="p-2 rounded-lg bg-accent-primary/10">
+                <Compass className="w-5 h-5 text-accent-primary" />
+              </div>
+              <h2 className="text-lg font-bold text-white uppercase tracking-widest">
                 Training Modules
               </h2>
             </div>
             <div className="flex-1 h-px bg-gradient-to-r from-white/[0.1] to-transparent" />
-            <span className="text-sm text-white/40 font-mono">
-              {routes.length} modules
+            <span className="text-xs text-white/40 font-mono border border-white/10 px-2 py-1 rounded-md">
+              {routes.length} MODULES
             </span>
           </div>
 
           {/* Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
             {routes.map((route, index) => (
               <NavCard key={route.path} {...route} index={index} />
             ))}
