@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Card, Button, Tag, Select } from '../ui';
+import { Card, Button, Tag, Select, Textarea } from '../ui';
 import { Play } from 'lucide-react';
 
 const DeepgramStreamingTTS = () => {
@@ -228,8 +228,9 @@ const DeepgramStreamingTTS = () => {
 
             <Card title="Streaming Input">
                 <div className="flex flex-col h-full space-y-4">
-                    <textarea
-                        className="w-full flex-grow p-3 bg-bg-base border border-border rounded font-serif text-lg focus:border-accent-info outline-none resize-none min-h-[150px]"
+                    <Textarea
+                        className="flex-grow"
+                        inputClassName="font-serif text-lg min-h-[150px] resize-none flex-1"
                         value={textInput}
                         onChange={(e) => setTextInput(e.target.value)}
                         placeholder="Type text to stream..."
