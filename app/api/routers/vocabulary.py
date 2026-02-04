@@ -78,7 +78,7 @@ async def log_vocabulary_lookup(
 @router.get("/contexts", response_model=List[VocabularyContext])
 async def get_word_contexts(
     word: str,
-    limit: int = 10,
+    limit: int = 50,  # Default to 50 to show more history
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
