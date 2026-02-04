@@ -22,6 +22,7 @@ from sqlalchemy import (
     Index,
     Float,
     UniqueConstraint,
+    JSON,
 )
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -110,13 +111,15 @@ class PodcastEpisode(Base):
     feed_id: Mapped[int] = mapped_column(ForeignKey("podcast_feeds.id"))
 
     # Episode metadata
-    guid: Mapped[str] = mapped_column(Text, index=True)  # Unique ID from RSS
+    guid: Mapped[str] = mapped_column(Text)  # Unique ID from RSS
     title: Mapped[str] = mapped_column(Text)
     description: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     audio_url: Mapped[str] = mapped_column(Text)
     file_size: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)  # Bytes
     duration_seconds: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
-    chapters: Mapped[Optional[List[dict]]] = mapped_column(JSONB, nullable=True)
+    chapters: Mapped[Optional[List[dict]]] = mapped_column(
+        JSON().with_variant(JSONB, "postgresql"), nullable=True
+    )
     image_url: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     published_at: Mapped[Optional[datetime]] = mapped_column(TIMESTAMP, nullable=True)
 
@@ -155,7 +158,7 @@ class UserEpisodeState(Base):
     )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    user_id: Mapped[str] = mapped_column(Text, index=True)
+    user_id: Mapped[str] = mapped_column(Text)
     episode_id: Mapped[int] = mapped_column(ForeignKey("podcast_episodes.id"))
 
     # Playback state
@@ -200,7 +203,7 @@ class PodcastListeningSession(Base):
     __table_args__ = (Index("idx_pls_user_started", "user_id", "started_at"),)
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    user_id: Mapped[str] = mapped_column(Text, index=True)
+    user_id: Mapped[str] = mapped_column(Text)
     episode_id: Mapped[int] = mapped_column(ForeignKey("podcast_episodes.id"))
 
     # Session timing

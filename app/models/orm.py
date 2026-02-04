@@ -27,12 +27,11 @@ class User(Base):
 
     __tablename__ = "users"
     __table_args__ = (
-        Index("idx_users_email", "email", unique=True),
         Index("idx_users_username", "username"),
     )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    email: Mapped[str] = mapped_column(String(255), unique=True, index=True, nullable=False)
+    email: Mapped[str] = mapped_column(String(255), unique=True, nullable=False)
     hashed_password: Mapped[str] = mapped_column(String(255), nullable=False)
     username: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
 
@@ -126,7 +125,7 @@ class ContextResource(Base):
     )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    word: Mapped[str] = mapped_column(Text, index=True)
+    word: Mapped[str] = mapped_column(Text)
     sense_label: Mapped[Optional[str]] = mapped_column(
         Text, nullable=True
     )  # e.g., "v. to cook gently"
@@ -196,7 +195,7 @@ class AUIInputRecord(Base):
     )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    session_id: Mapped[str] = mapped_column(String, index=True)
+    session_id: Mapped[str] = mapped_column(String)
     action: Mapped[str] = mapped_column(String)
     payload: Mapped[Dict[str, Any]] = mapped_column(JSON, default=dict)
 
@@ -258,7 +257,7 @@ class WordBook(Base):
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     code: Mapped[str] = mapped_column(
-        String, unique=True, index=True
+        String, unique=True
     )  # e.g., 'cet4', 'coca'
     name: Mapped[str] = mapped_column(Text)  # e.g., 'CET-4 Core Vocabulary'
     description: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
@@ -300,7 +299,7 @@ class VocabLearningLog(Base):
     )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    user_id: Mapped[str] = mapped_column(Text, default="default_user", index=True)
+    user_id: Mapped[str] = mapped_column(Text, default="default_user")
     word: Mapped[str] = mapped_column(Text, index=True)
 
     # Source context
@@ -435,7 +434,7 @@ class UserCalibration(Base):
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     user_id: Mapped[str] = mapped_column(
-        Text, default="default_user", unique=True, index=True
+        Text, default="default_user", unique=True
     )
     level: Mapped[int] = mapped_column(Integer, default=0)  # 0-11 (12 levels)
 
@@ -551,11 +550,10 @@ class ArticleOverviewCache(Base):
     """Cached article overviews (persisted across restarts)."""
 
     __tablename__ = "article_overview_cache"
-    __table_args__ = (Index("idx_overview_hash", "title_hash", unique=True),)
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     title_hash: Mapped[str] = mapped_column(
-        String(32), unique=True, index=True
+        String(32), unique=True
     )  # MD5 hash
     title: Mapped[str] = mapped_column(Text)  # Original title for debugging
 
@@ -572,11 +570,10 @@ class SentenceCollocationCache(Base):
     """Cached collocation detection results per sentence."""
 
     __tablename__ = "sentence_collocation_cache"
-    __table_args__ = (Index("idx_collocation_hash", "sentence_hash", unique=True),)
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     sentence_hash: Mapped[str] = mapped_column(
-        String(32), unique=True, index=True
+        String(32), unique=True
     )  # MD5 hash
     sentence_preview: Mapped[str] = mapped_column(Text)  # First 100 chars for debugging
 
@@ -674,7 +671,7 @@ class GeneratedImage(Base):
     __tablename__ = "generated_images"
 
     id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
-    word: Mapped[str] = mapped_column(String(100), index=True, nullable=False)
+    word: Mapped[str] = mapped_column(String(100), nullable=False)
     context_hash: Mapped[str] = mapped_column(String(64), index=True, nullable=False)
     sentence: Mapped[str] = mapped_column(Text, nullable=False)
     image_prompt: Mapped[str] = mapped_column(Text, nullable=False)
