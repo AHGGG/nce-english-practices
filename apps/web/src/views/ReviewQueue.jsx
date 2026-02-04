@@ -720,10 +720,10 @@ const ReviewQueue = () => {
 
           {/* Context View */}
           <div
-            className={`overflow-hidden transition-all duration-500 ease-in-out ${showContext ? "max-h-[300px] border-b border-white/5" : "max-h-0"}`}
+            className={`overflow-y-auto custom-scrollbar transition-all duration-500 ease-in-out ${showContext ? "max-h-[50vh] border-b border-white/5" : "max-h-0"}`}
           >
             {contextData && (
-              <div className="p-6 bg-[#000000]/30 text-base leading-relaxed text-white/70 font-serif">
+              <div className="p-6 bg-[#000000]/30 text-sm md:text-base leading-relaxed text-white/70 font-serif">
                 {contextData.previous_sentence && (
                   <p className="mb-4 opacity-50 pl-4 border-l-2 border-transparent">
                     {contextData.previous_sentence}
@@ -761,7 +761,7 @@ const ReviewQueue = () => {
               )}
 
               <p
-                className={`font-serif text-xl sm:text-2xl md:text-4xl text-white leading-relaxed md:leading-tight text-center transition-opacity duration-300 ${showContext ? "opacity-70" : "opacity-100"}`}
+                className={`font-serif text-xl sm:text-2xl md:text-4xl text-white leading-relaxed md:leading-tight text-left transition-opacity duration-300 ${showContext ? "opacity-70" : "opacity-100"}`}
               >
                 <HighlightedSentence
                   text={currentItem.sentence_text}
