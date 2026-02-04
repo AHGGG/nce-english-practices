@@ -1,0 +1,33 @@
+
+> @nce/web@0.1.0 dev /app/apps/web
+> vite
+
+
+  VITE v7.3.1  ready in 271 ms
+
+  ➜  Local:   http://localhost:5173/
+  ➜  Network: http://192.168.0.2:5173/
+3:09:26 PM [vite] http proxy error: /api/logs
+Error: connect ECONNREFUSED 127.0.0.1:8000
+    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1637:16)
+3:09:26 PM [vite] http proxy error: /api/logs
+Error: connect ECONNREFUSED 127.0.0.1:8000
+    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1637:16)
+3:10:57 PM [vite] http proxy error: /api/logs
+Error: connect ECONNREFUSED 127.0.0.1:8000
+    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1637:16)
+3:10:57 PM [vite] http proxy error: /api/logs
+Error: connect ECONNREFUSED 127.0.0.1:8000
+    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1637:16)
+3:13:56 PM [vite] http proxy error: /api/logs
+Error: connect ECONNREFUSED 127.0.0.1:8000
+    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1637:16)
+3:13:56 PM [vite] http proxy error: /api/logs
+Error: connect ECONNREFUSED 127.0.0.1:8000
+    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1637:16)
+3:14:53 PM [vite] http proxy error: /api/logs
+Error: connect ECONNREFUSED 127.0.0.1:8000
+    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1637:16)
+3:14:53 PM [vite] http proxy error: /api/logs
+Error: connect ECONNREFUSED 127.0.0.1:8000
+    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1637:16)
