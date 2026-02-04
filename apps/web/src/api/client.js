@@ -1,10 +1,15 @@
-import axios from 'axios';
-import { getAccessToken, refreshAccessToken, clearTokens, isTokenExpired } from './auth';
+import axios from "axios";
+import {
+  getAccessToken,
+  refreshAccessToken,
+  clearTokens,
+  isTokenExpired,
+} from "./auth";
 
 const client = axios.create({
-  baseURL: '', // Vite proxy handles /api prefix
+  baseURL: "", // Vite proxy handles /api prefix
   headers: {
-    'Content-Type': 'application/json',
+    "Content-Type": "application/json",
   },
   withCredentials: true, // Include cookies for refresh token
 });
@@ -29,14 +34,14 @@ const onRefreshFailed = async () => {
   refreshSubscribers = [];
   await clearTokens();
   // Dispatch custom event to notify app of auth failure
-  window.dispatchEvent(new CustomEvent('auth:session-expired'));
+  window.dispatchEvent(new CustomEvent("auth:session-expired"));
 };
 
 // Add request interceptor to inject token and check expiry
 client.interceptors.request.use(
   async (config) => {
     let token = await getAccessToken();
-    
+
     // Proactively refresh if token is about to expire (within 60s buffer)
     if (token && (await isTokenExpired()) && !isRefreshing) {
       isRefreshing = true;
@@ -49,13 +54,13 @@ client.interceptors.request.use(
         isRefreshing = false;
       }
     }
-    
+
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
     return config;
   },
-  (error) => Promise.reject(error)
+  (error) => Promise.reject(error),
 );
 
 // Add response interceptor to handle 401 and auto-refresh
@@ -63,27 +68,29 @@ client.interceptors.response.use(
   (response) => response.data,
   async (error) => {
     const originalRequest = error.config;
-    
+
     // If 401 and we haven't retried yet
     if (error.response?.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true;
-      
+
       if (!isRefreshing) {
         isRefreshing = true;
-        
+
         try {
           await refreshAccessToken();
           const newToken = await getAccessToken();
           isRefreshing = false;
           onTokenRefreshed(newToken);
-          
+
           // Retry original request with new token
           originalRequest.headers.Authorization = `Bearer ${newToken}`;
           return client(originalRequest);
         } catch {
           isRefreshing = false;
           await onRefreshFailed();
-          return Promise.reject(new Error('Session expired. Please log in again.'));
+          return Promise.reject(
+            new Error("Session expired. Please log in again."),
+          );
         }
       } else {
         // Another refresh is in progress, wait for it
@@ -93,21 +100,32 @@ client.interceptors.response.use(
               originalRequest.headers.Authorization = `Bearer ${token}`;
               resolve(client(originalRequest));
             } else {
-              reject(new Error('Session expired. Please log in again.'));
+              reject(new Error("Session expired. Please log in again."));
             }
           });
         });
       }
     }
-    
-    const msg = error.response?.data?.detail || error.message || 'Request failed';
-    return Promise.reject(new Error(typeof msg === 'object' ? JSON.stringify(msg) : msg));
-  }
+
+    const msg =
+      error.response?.data?.detail || error.message || "Request failed";
+    return Promise.reject(
+      new Error(typeof msg === "object" ? JSON.stringify(msg) : msg),
+    );
+  },
 );
 
 // Dictionary
-export const lookupDictionary = async (word) => client.post('/api/dictionary/lookup', { word });
+export const lookupDictionary = async (word) =>
+  client.post("/api/dictionary/lookup", { word });
 
-export const explainInContext = async (word, sentence) => client.post('/api/dictionary/context', { word, sentence });
+export const explainInContext = async (word, sentence) =>
+  client.post("/api/dictionary/context", { word, sentence });
+
+// Vocabulary
+export const getWordContexts = async (word) =>
+  client.get(`/api/vocabulary/contexts`, { params: { word } });
+export const getDifficultWords = async () =>
+  client.get("/api/vocabulary/difficult-words");
 
 export default client;

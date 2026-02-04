@@ -398,65 +398,90 @@ async def get_article_content(
                 # Continue without highlights
 
         # Fetch study-based highlights (words/phrases looked up during Sentence Study)
+        # NOTE: study_highlights are GLOBAL (across all articles), not per-article
         try:
             from app.core.db import AsyncSessionLocal
             from sqlalchemy import select
+            from app.models.orm import WordProficiency
 
             async with AsyncSessionLocal() as db:
-                # Fetch all learning records for this article
-                stmt = (
+                # 1. Fetch GLOBAL word/phrase clicks (across ALL articles for this user)
+                global_words_stmt = (
                     select(
-                        SentenceLearningRecord.sentence_index,
                         SentenceLearningRecord.word_clicks,
                         SentenceLearningRecord.phrase_clicks,
+                    ).where(SentenceLearningRecord.user_id == user_id)
+                    # No source_id filter - we want ALL words the user has looked up
+                )
+                global_records = await db.execute(global_words_stmt)
+
+                all_words = set()
+                all_phrases = set()
+                for row in global_records.fetchall():
+                    word_clicks, phrase_clicks = row
+                    if word_clicks:
+                        all_words.update(word_clicks)
+                    if phrase_clicks:
+                        all_phrases.update(phrase_clicks)
+
+                # 2. Fetch article-specific unclear sentences
+                unclear_stmt = (
+                    select(
+                        SentenceLearningRecord.sentence_index,
                         SentenceLearningRecord.initial_response,
                         SentenceLearningRecord.unclear_choice,
                         SentenceLearningRecord.interaction_log,
                     )
                     .where(SentenceLearningRecord.user_id == user_id)
                     .where(SentenceLearningRecord.source_id == source_id)
+                    .where(SentenceLearningRecord.initial_response == "unclear")
                 )
-                records = await db.execute(stmt)
+                unclear_records = await db.execute(unclear_stmt)
 
-                # Extract all words, phrases, and unclear sentences
-                all_words = set()
-                all_phrases = set()
                 unclear_sentences = []
-
-                for row in records.fetchall():
+                for row in unclear_records.fetchall():
                     (
                         sentence_index,
-                        word_clicks,
-                        phrase_clicks,
                         initial_response,
                         unclear_choice,
                         interaction_log,
                     ) = row
-                    if word_clicks:
-                        all_words.update(word_clicks)
-                    if phrase_clicks:
-                        all_phrases.update(phrase_clicks)
+                    # Determine max_simplify_stage from interaction_log if available
+                    max_stage = 0
+                    if interaction_log:
+                        for event in interaction_log:
+                            if event.get("action") == "simplify_stage":
+                                stage = event.get("stage", 0)
+                                if stage > max_stage:
+                                    max_stage = stage
+                    unclear_sentences.append(
+                        {
+                            "sentence_index": sentence_index,
+                            "unclear_choice": unclear_choice,
+                            "max_simplify_stage": max_stage,
+                        }
+                    )
 
-                    # Collect unclear sentences
-                    if initial_response == "unclear":
-                        # Determine max_simplify_stage from interaction_log if available
-                        max_stage = 0
-                        if interaction_log:
-                            for event in interaction_log:
-                                if event.get("action") == "simplify_stage":
-                                    stage = event.get("stage", 0)
-                                    if stage > max_stage:
-                                        max_stage = stage
-                        unclear_sentences.append(
-                            {
-                                "sentence_index": sentence_index,
-                                "unclear_choice": unclear_choice,
-                                "max_simplify_stage": max_stage,
-                            }
-                        )
+                # 3. Fetch mastered words to exclude from study_highlights
+                all_study_words = all_words | all_phrases
+                if all_study_words:
+                    mastered_stmt = (
+                        select(WordProficiency.word)
+                        .where(WordProficiency.user_id == user_id)
+                        .where(WordProficiency.status == "mastered")
+                    )
+                    mastered_result = await db.execute(mastered_stmt)
+                    mastered_words = {
+                        row[0].lower() for row in mastered_result.fetchall()
+                    }
+
+                    # Exclude mastered words from study highlights
+                    all_study_words = {
+                        w for w in all_study_words if w.lower() not in mastered_words
+                    }
 
                 # Combine and return
-                result["study_highlights"] = list(all_words | all_phrases)
+                result["study_highlights"] = list(all_study_words)
                 result["unclear_sentences"] = unclear_sentences
         except Exception as e:
             import traceback

@@ -21,6 +21,8 @@ const StudyingView = ({
   currentIndex,
   totalSentences,
   highlightSet,
+  globalDifficultWords = new Set(), // New prop
+  knownWords = new Set(), // Words marked known in this session
   collocations = [],
   wordClicks = [],
   // State
@@ -162,6 +164,8 @@ const StudyingView = ({
                 <MemoizedSentence
                   text={currentSentence.text}
                   highlightSet={highlightSet}
+                  studyHighlightSet={globalDifficultWords} // Use global difficult words as study highlights (Amber color)
+                  knownWords={knownWords}
                   showHighlights={true}
                   collocations={collocations}
                 />

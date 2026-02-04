@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import {
   Volume2,
   X,
@@ -7,9 +7,16 @@ import {
   Sparkles,
   AlertTriangle,
   Check,
+  Brain,
+  BookOpen,
+  Mic,
+  Calendar,
+  Clock,
 } from "lucide-react";
 import DictionaryResults from "../aui/DictionaryResults";
 import ReactMarkdown from "react-markdown";
+import DangerousHtml from "../Dictionary/DangerousHtml";
+import { getWordContexts } from "../../api/client";
 
 /**
  * Word Inspector Panel - Shows dictionary definition for selected word
@@ -42,14 +49,27 @@ const WordInspector = ({
   }, [inspectorData]);
 
   const [activeTab, setActiveTab] = useState(defaultTab);
+  const [history, setHistory] = useState([]);
+
+  useEffect(() => {
+    if (selectedWord) {
+      setHistory([]);
+      getWordContexts(selectedWord)
+        .then((res) => {
+          if (res) setHistory(res);
+        })
+        .catch(console.error);
+    }
+  }, [selectedWord]);
 
   // Update tab when data changes (but only if current tab is invalid)
   const effectiveTab = useMemo(() => {
+    if (activeTab === "HISTORY" && history.length > 0) return "HISTORY";
     if (activeTab === "LDOCE" && inspectorData?.ldoce?.found) return "LDOCE";
     if (activeTab === "Collins" && inspectorData?.collins?.found)
       return "Collins";
     return defaultTab;
-  }, [activeTab, inspectorData, defaultTab]);
+  }, [activeTab, inspectorData, defaultTab, history]);
 
   if (!selectedWord) return null;
 
@@ -237,7 +257,7 @@ const WordInspector = ({
             ) : inspectorData?.found ? (
               <div className="flex flex-col h-full">
                 {/* Dictionary Tabs */}
-                <div className="flex px-4 pt-2 gap-2 shrink-0 z-10 sticky top-0">
+                <div className="flex px-4 pt-2 gap-2 shrink-0 z-10 sticky top-0 bg-bg-base/95 backdrop-blur-xl">
                   {inspectorData.ldoce?.found && (
                     <button
                       onClick={() => setActiveTab("LDOCE")}
@@ -262,10 +282,107 @@ const WordInspector = ({
                       Collins
                     </button>
                   )}
+                  {history.length > 0 && (
+                    <button
+                      onClick={() => setActiveTab("HISTORY")}
+                      className={`flex-1 py-2 text-[10px] font-bold uppercase tracking-widest transition-all rounded-t-lg border-b-2 ${
+                        effectiveTab === "HISTORY"
+                          ? "text-accent-info border-accent-info bg-accent-info/5"
+                          : "text-white/40 border-transparent hover:text-white hover:bg-white/5"
+                      }`}
+                    >
+                      History ({history.length})
+                    </button>
+                  )}
                 </div>
 
                 {/* Results */}
                 <div className="flex-1 p-4 mt-2">
+                  {effectiveTab === "HISTORY" && (
+                    <div className="space-y-4 animate-in slide-in-from-right-4 duration-300 px-2">
+                      <div className="flex items-center justify-between mb-4">
+                        <div className="text-[10px] font-mono text-accent-info uppercase tracking-widest flex items-center gap-2">
+                          <Brain className="w-3 h-3" />
+                          <span>Context Memory</span>
+                        </div>
+                        <span className="text-[9px] text-white/20 font-mono">
+                          {history.length} ENCOUNTERS
+                        </span>
+                      </div>
+
+                      <div className="space-y-3">
+                        {history.map((item, idx) => {
+                          const date = new Date(item.created_at);
+                          const isRecent =
+                            Date.now() - date.getTime() < 86400000; // 24h
+
+                          return (
+                            <div
+                              key={idx}
+                              className="group relative bg-bg-elevated/50 backdrop-blur-sm rounded-xl border border-white/5 hover:border-accent-info/30 hover:bg-bg-elevated transition-all duration-300 overflow-hidden"
+                            >
+                              {/* Left Accent Bar */}
+                              <div className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-accent-info/50 to-transparent opacity-50 group-hover:opacity-100 transition-opacity" />
+
+                              <div className="p-4 pl-5">
+                                {/* Header */}
+                                <div className="flex items-center justify-between mb-3">
+                                  <div className="flex items-center gap-2">
+                                    <div className="p-1 rounded bg-white/5 text-accent-info group-hover:bg-accent-info/10 transition-colors">
+                                      {item.source_type.includes("epub") ? (
+                                        <BookOpen className="w-3 h-3" />
+                                      ) : item.source_type.includes(
+                                          "podcast",
+                                        ) ? (
+                                        <Mic className="w-3 h-3" />
+                                      ) : (
+                                        <Sparkles className="w-3 h-3" />
+                                      )}
+                                    </div>
+                                    <span className="text-[10px] font-bold text-white/40 uppercase tracking-wider font-mono">
+                                      {item.source_type.replace(/_/g, " ")}
+                                    </span>
+                                  </div>
+
+                                  <div className="flex items-center gap-1.5 text-[10px] text-white/30 font-mono">
+                                    <Calendar className="w-2.5 h-2.5 opacity-50" />
+                                    <span>
+                                      {date.toLocaleDateString(undefined, {
+                                        month: "short",
+                                        day: "numeric",
+                                      })}
+                                    </span>
+                                    {isRecent && (
+                                      <span className="px-1.5 py-0.5 rounded bg-accent-info/10 text-accent-info ml-1 text-[9px]">
+                                        NEW
+                                      </span>
+                                    )}
+                                  </div>
+                                </div>
+
+                                {/* Content */}
+                                <div className="relative">
+                                  <div className="text-sm text-text-secondary leading-relaxed font-serif pl-2 border-l border-white/10 group-hover:border-accent-info/20 transition-colors">
+                                    <DangerousHtml
+                                      html={item.context_sentence.replace(
+                                        new RegExp(
+                                          `\\b${selectedWord}\\b`,
+                                          "gi",
+                                        ),
+                                        (match) =>
+                                          `<strong class="text-accent-info font-bold drop-shadow-[0_0_8px_rgba(var(--color-accent-info-rgb),0.3)]">${match}</strong>`,
+                                      )}
+                                    />
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+
                   {effectiveTab === "LDOCE" && inspectorData.ldoce?.found && (
                     <DictionaryResults
                       word={selectedWord}

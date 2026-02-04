@@ -1,6 +1,10 @@
 import React, { useEffect, useState, useRef } from "react";
 import { Volume2, Brain, X, Loader2 } from "lucide-react";
-import { lookupDictionary, explainInContext } from "../../api/client";
+import {
+  lookupDictionary,
+  explainInContext,
+  getWordContexts,
+} from "../../api/client";
 import DangerousHtml from "./DangerousHtml";
 
 const DictionaryModal = ({ isOpen, onClose, word, contextSentence }) => {
@@ -9,6 +13,8 @@ const DictionaryModal = ({ isOpen, onClose, word, contextSentence }) => {
   const [error, setError] = useState(null);
   const [aiExplanation, setAiExplanation] = useState(null);
   const [aiLoading, setAiLoading] = useState(false);
+  const [history, setHistory] = useState([]);
+  const [historyLoading, setHistoryLoading] = useState(false);
 
   useEffect(() => {
     if (isOpen && word) {
@@ -16,7 +22,9 @@ const DictionaryModal = ({ isOpen, onClose, word, contextSentence }) => {
       setError(null);
       setData(null);
       setAiExplanation(null);
+      setHistory([]);
 
+      // Load Dictionary
       lookupDictionary(word)
         .then((res) => {
           setData(res);
@@ -26,6 +34,15 @@ const DictionaryModal = ({ isOpen, onClose, word, contextSentence }) => {
           setError(err.message || "Failed to load definition");
           setLoading(false);
         });
+
+      // Load History
+      setHistoryLoading(true);
+      getWordContexts(word)
+        .then((res) => {
+          setHistory(res || []);
+        })
+        .catch(console.error)
+        .finally(() => setHistoryLoading(false));
     }
   }, [isOpen, word]);
 
@@ -121,6 +138,37 @@ const DictionaryModal = ({ isOpen, onClose, word, contextSentence }) => {
               In this context:
             </strong>
             {aiExplanation}
+          </div>
+        )}
+
+        {/* Word History Section */}
+        {history && history.length > 0 && (
+          <div className="flex-none p-4 bg-white/5 border-b border-white/10 max-h-40 overflow-y-auto custom-scrollbar">
+            <strong className="block text-text-muted text-xs uppercase tracking-wider mb-2 flex items-center gap-2">
+              <Brain size={12} />
+              Your History ({history.length})
+            </strong>
+            <div className="space-y-3">
+              {history.map((item, idx) => (
+                <div key={idx} className="text-xs text-text-secondary">
+                  <div className="mb-1 text-[10px] text-text-muted flex justify-between">
+                    <span>{item.source_type}</span>
+                    <span>
+                      {new Date(item.created_at).toLocaleDateString()}
+                    </span>
+                  </div>
+                  <div className="pl-2 border-l-2 border-accent-primary/30 italic">
+                    <DangerousHtml
+                      html={item.context_sentence.replace(
+                        new RegExp(`\\b${word}\\b`, "gi"),
+                        (match) =>
+                          `<strong class="text-accent-primary">${match}</strong>`,
+                      )}
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         )}
 
