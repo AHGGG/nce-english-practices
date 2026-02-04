@@ -259,6 +259,10 @@ export function useWordExplainer() {
     return () => {
       cancelled = true;
     };
+    // Note: currentSentenceContext is intentionally excluded from deps
+    // because we only want to log/fetch when lookupWord changes.
+    // The context is captured at the time of lookup.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [lookupWord]);
 
   // Stream context explanation when selectedWord changes
