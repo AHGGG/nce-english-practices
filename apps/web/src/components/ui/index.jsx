@@ -237,3 +237,38 @@ export const Badge = ({ children, variant = "default", className = "" }) => {
     </span>
   );
 };
+
+export const Textarea = ({ label, error, className = "", ...props }) => {
+  const textareaId = useId();
+  const errorId = useId();
+  const inputId = props.id || textareaId;
+
+  return (
+    <div className={`flex flex-col gap-1.5 ${className}`}>
+      {label && (
+        <label
+          htmlFor={inputId}
+          className="text-xs text-text-secondary uppercase tracking-wider"
+        >
+          {label}
+        </label>
+      )}
+      <textarea
+        id={inputId}
+        className={`w-full bg-glass-bg backdrop-blur-xl border border-glass-border text-text-primary px-4 py-3 text-sm rounded-xl focus:outline-none focus:border-accent-primary/50 focus:ring-1 focus:ring-accent-primary/30 transition-all placeholder:text-text-muted/50 resize-none font-serif leading-relaxed ${error ? "border-accent-danger/50 focus:border-accent-danger focus:ring-accent-danger/30" : ""}`}
+        aria-invalid={!!error}
+        aria-describedby={error ? errorId : undefined}
+        {...props}
+      />
+      {error && (
+        <span
+          id={errorId}
+          role="alert"
+          className="text-[10px] text-accent-danger"
+        >
+          {error}
+        </span>
+      )}
+    </div>
+  );
+};
