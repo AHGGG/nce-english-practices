@@ -8,8 +8,10 @@ import {
   BookOpenCheck,
   Zap,
   ChevronDown,
+  Search,
+  X,
 } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 /**
  * Get status styling based on article status
@@ -67,20 +69,37 @@ const ArticleListView = ({
 }) => {
   const navigate = useNavigate();
   const [isBookMenuOpen, setIsBookMenuOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+
+  // Scroll to top on mount
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
 
   // Find current book title
   const currentBook = books.find((b) => b.filename === selectedBookFilename);
   const currentBookTitle = currentBook ? currentBook.title : "Library";
+
+  // Filter articles based on search query
+  const filteredArticles = articles.filter((article) => {
+    if (!searchQuery) return true;
+    return article.title.toLowerCase().includes(searchQuery.toLowerCase());
+  });
+
   // Separate completed and non-completed articles
-  const completedArticles = articles.filter((a) => a.status === "completed");
-  const nonCompletedArticles = articles.filter((a) => a.status !== "completed");
+  const completedArticles = filteredArticles.filter(
+    (a) => a.status === "completed",
+  );
+  const nonCompletedArticles = filteredArticles.filter(
+    (a) => a.status !== "completed",
+  );
   const [now] = useState(() => Date.now());
 
   const renderArticleCard = (article, idx, showOriginalIndex = false) => {
     const statusConfig = getStatusConfig(article.status);
-    const displayIdx = showOriginalIndex
-      ? articles.indexOf(article) + 1
-      : idx + 1;
+    // Calculate display index based on original full list to keep numbering consistent
+    const originalIndex = articles.indexOf(article);
+    const displayIdx = originalIndex + 1;
 
     // Check if recently accessed (within 24 hours)
     const lastActivity = Math.max(
@@ -93,13 +112,13 @@ const ArticleListView = ({
       <button
         key={article.source_id}
         onClick={() => onArticleClick(article.source_id)}
-        className={`group relative flex flex-col items-start text-left p-6 md:p-8 bg-white/[0.02] backdrop-blur-sm border ${statusConfig.borderClass} hover:border-accent-primary/50 transition-all duration-500 h-full hover:shadow-[0_10px_40px_-10px_rgba(var(--color-accent-primary-rgb),0.1)] hover:-translate-y-1 rounded-2xl overflow-hidden`}
+        className={`group relative flex flex-col items-start text-left p-4 md:p-8 bg-white/[0.02] backdrop-blur-sm border ${statusConfig.borderClass} hover:border-accent-primary/50 transition-all duration-500 h-full hover:shadow-[0_10px_40px_-10px_rgba(var(--color-accent-primary-rgb),0.1)] hover:-translate-y-1 rounded-2xl overflow-hidden`}
       >
         {/* Background Gradient */}
         <div className="absolute inset-0 bg-gradient-to-br from-white/[0.02] to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
 
         {/* Corner Index + Status Icon */}
-        <div className="absolute top-0 right-0 p-4 flex items-center gap-2">
+        <div className="absolute top-0 right-0 p-3 md:p-4 flex items-center gap-2">
           {statusConfig.Icon && (
             <statusConfig.Icon size={14} className={statusConfig.iconClass} />
           )}
@@ -108,7 +127,7 @@ const ArticleListView = ({
           </span>
         </div>
 
-        <div className="relative z-10 flex items-center gap-2 mb-6 w-full">
+        <div className="relative z-10 flex items-center gap-2 mb-3 md:mb-6 w-full">
           <span className="px-2 py-1 bg-white/5 text-accent-primary text-[10px] font-bold uppercase tracking-wider border border-white/10 group-hover:border-accent-primary/50 rounded transition-colors">
             Chapter {displayIdx}
           </span>
@@ -128,16 +147,16 @@ const ArticleListView = ({
           )}
         </div>
 
-        <h3 className="relative z-10 text-xl md:text-2xl font-serif font-bold text-white group-hover:text-accent-primary transition-colors mb-4 line-clamp-3 leading-tight min-h-[3rem]">
+        <h3 className="relative z-10 text-lg md:text-2xl font-serif font-bold text-white group-hover:text-accent-primary transition-colors mb-2 md:mb-4 line-clamp-2 md:line-clamp-3 leading-tight md:min-h-[3rem]">
           {article.title}
         </h3>
 
-        <p className="relative z-10 text-sm text-white/60 line-clamp-3 leading-relaxed font-sans mb-8 flex-grow">
+        <p className="relative z-10 text-xs md:text-sm text-white/60 line-clamp-2 md:line-clamp-3 leading-relaxed font-sans mb-4 md:mb-8 flex-grow">
           {article.preview}
         </p>
 
         {/* Footer with progress or action hint */}
-        <div className="relative z-10 mt-auto pt-4 border-t border-white/5 w-full flex justify-between items-center group-hover:border-accent-primary/20 transition-colors">
+        <div className="relative z-10 mt-auto pt-3 md:pt-4 border-t border-white/5 w-full flex justify-between items-center group-hover:border-accent-primary/20 transition-colors">
           <span className="text-[10px] text-white/40 uppercase tracking-wider font-mono">
             {article.study_progress
               ? `${article.study_progress.studied_count}/${article.study_progress.total} studied`
@@ -166,8 +185,8 @@ const ArticleListView = ({
       </div>
 
       {/* HEADER SECTION */}
-      <header className="relative z-[60] border-b border-white/[0.05] bg-bg-base/50 backdrop-blur-xl px-6 md:px-12 py-8 flex justify-between items-end sticky top-0">
-        <div>
+      <header className="relative z-[60] border-b border-white/[0.05] bg-bg-base/50 backdrop-blur-xl px-4 md:px-12 py-4 md:py-8 flex flex-col md:flex-row md:justify-between md:items-end gap-6 sticky top-0">
+        <div className="w-full md:w-auto">
           <div className="flex items-center gap-3 mb-4">
             <button
               onClick={() => navigate("/nav")}
@@ -184,7 +203,7 @@ const ArticleListView = ({
           </div>
 
           {/* Book Selector (Dropdown) */}
-          <div className="relative">
+          <div className="relative mb-6">
             <button
               onClick={() => setIsBookMenuOpen(!isBookMenuOpen)}
               className="group flex items-center gap-3 text-3xl md:text-5xl font-serif font-bold text-white tracking-tight hover:text-accent-primary transition-colors text-left"
@@ -238,7 +257,28 @@ const ArticleListView = ({
               </>
             )}
           </div>
+
+          {/* Search Bar */}
+          <div className="relative w-full md:w-96">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-white/40 pointer-events-none" />
+            <input
+              type="text"
+              placeholder="Filter articles..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full h-12 bg-white/5 border border-white/10 rounded-xl pl-12 pr-12 text-base text-white placeholder:text-white/30 focus:outline-none focus:border-accent-primary/50 focus:bg-white/10 transition-all"
+            />
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery("")}
+                className="absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded-full hover:bg-white/10 text-white/40 hover:text-white transition-colors"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            )}
+          </div>
         </div>
+
         <div className="hidden md:flex items-center gap-4">
           {/* Stats: Completed / Total */}
           {completedArticles.length > 0 && (
@@ -272,7 +312,7 @@ const ArticleListView = ({
         </div>
       </header>
 
-      <main className="relative z-10 px-6 md:px-12 py-12">
+      <main className="relative z-10 px-4 md:px-12 py-6 md:py-12">
         {isLoading && articles.length === 0 ? (
           <div className="flex justify-center py-20">
             <Loader2 className="animate-spin text-text-secondary" />
@@ -282,7 +322,7 @@ const ArticleListView = ({
             {/* Non-Completed Articles Section */}
             {nonCompletedArticles.length > 0 && (
               <>
-                <h2 className="text-sm font-bold text-white/40 uppercase tracking-[0.2em] mb-8 flex items-center gap-4">
+                <h2 className="text-sm font-bold text-white/40 uppercase tracking-[0.2em] mb-4 md:mb-8 flex items-center gap-4">
                   01. To Read
                   <div className="h-[1px] bg-white/10 flex-grow"></div>
                   <span className="text-white/60">
@@ -290,7 +330,7 @@ const ArticleListView = ({
                   </span>
                 </h2>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 max-w-[1920px] mb-16">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 md:gap-6 max-w-[1920px] mb-8 md:mb-16">
                   {nonCompletedArticles.map((article, idx) =>
                     renderArticleCard(article, idx, true),
                   )}
@@ -301,7 +341,7 @@ const ArticleListView = ({
             {/* Completed Articles Section */}
             {completedArticles.length > 0 && (
               <>
-                <h2 className="text-sm font-bold text-accent-primary/70 uppercase tracking-[0.2em] mb-8 flex items-center gap-4">
+                <h2 className="text-sm font-bold text-accent-primary/70 uppercase tracking-[0.2em] mb-4 md:mb-8 flex items-center gap-4">
                   <Check size={14} className="text-accent-primary" />
                   Completed
                   <div className="h-[1px] bg-accent-primary/20 flex-grow"></div>
@@ -310,7 +350,7 @@ const ArticleListView = ({
                   </span>
                 </h2>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 max-w-[1920px]">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 md:gap-6 max-w-[1920px]">
                   {completedArticles.map((article, idx) =>
                     renderArticleCard(article, idx, true),
                   )}
