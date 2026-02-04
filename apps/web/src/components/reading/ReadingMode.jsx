@@ -67,6 +67,7 @@ const ReadingMode = () => {
     contextExplanation,
     isExplaining,
     explainStyle,
+    currentSentenceContext,
     handleWordClick: hookHandleWordClick,
     closeInspector,
     changeExplainStyle,

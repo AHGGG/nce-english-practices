@@ -29,6 +29,8 @@ const WordInspector = ({
   onClose,
   onPlayAudio,
   onMarkAsKnown,
+  // Context for history updates
+  currentSentenceContext,
   // New props for streaming context explanation
   contextExplanation = "",
   isExplaining = false,

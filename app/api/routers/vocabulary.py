@@ -39,17 +39,20 @@ async def log_vocabulary_lookup(
 ):
     """
     Log a vocabulary lookup event.
-    Prevents duplicate logs for the same word/context within a short window (1 minute).
+    Prevents duplicate logs for the same word AND same sentence within a short window (1 minute).
+    Different sentences with the same word are always logged.
     """
     normalized_word = payload.word.lower().strip()
+    normalized_sentence = (payload.context_sentence or "").strip()
 
-    # Check for recent duplicate (last 60 seconds)
+    # Check for recent duplicate (same word + same sentence within 60 seconds)
     cutoff_time = datetime.utcnow() - __import__("datetime").timedelta(seconds=60)
 
     existing_stmt = select(VocabLearningLog).where(
         VocabLearningLog.user_id == current_user.user_id_str,
         func.lower(VocabLearningLog.word) == normalized_word,
-        VocabLearningLog.source_id == payload.source_id,
+        VocabLearningLog.context_sentence
+        == normalized_sentence,  # Check exact sentence, not source_id
         VocabLearningLog.created_at >= cutoff_time,
     )
 
@@ -64,7 +67,7 @@ async def log_vocabulary_lookup(
         word=normalized_word,
         source_type=payload.source_type,
         source_id=payload.source_id,
-        context_sentence=payload.context_sentence,
+        context_sentence=normalized_sentence,
         created_at=datetime.utcnow(),
     )
     db.add(log_entry)
