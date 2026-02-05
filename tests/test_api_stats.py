@@ -47,3 +47,25 @@ async def test_api_get_performance(client: AsyncClient):
         assert "memory_curve" in data
         mock_perf.assert_called_once_with(days=30, user_id="default_user")
         mock_curve.assert_called_once_with(user_id="default_user")
+
+
+@pytest.mark.asyncio
+async def test_api_get_study_time_detail(client: AsyncClient):
+    """Test the /api/performance/study-time endpoint."""
+    mock_data = {
+        "daily": [
+            {"date": "2023-01-01", "sentence_study": 10, "reading": 20, "voice": 30, "review": 40, "podcast": 50, "total": 150}
+        ],
+        "total_seconds": 150
+    }
+
+    with patch("app.api.routers.stats.get_daily_study_time", new_callable=AsyncMock) as mock_daily:
+        mock_daily.return_value = mock_data
+
+        response = await client.get("/api/performance/study-time?days=7&tz=Asia/Shanghai")
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data["total_seconds"] == 150
+        assert len(data["daily"]) == 1
+        mock_daily.assert_called_once_with(days=7, user_id="default_user", timezone="Asia/Shanghai")
