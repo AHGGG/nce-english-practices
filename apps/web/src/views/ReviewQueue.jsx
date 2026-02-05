@@ -381,7 +381,8 @@ const ReviewQueue = () => {
 
       try {
         let res;
-        if (hasHighlights) {
+        // Stage 1 for highlighted items still focuses on the word/collocation
+        if (hasHighlights && stage === 1) {
           const text = currentItem.highlighted_items.join(", ");
           res = await authFetch("/api/sentence-study/explain-word", {
             method: "POST",
@@ -389,17 +390,11 @@ const ReviewQueue = () => {
             body: JSON.stringify({
               text,
               sentence: currentItem.sentence_text,
-              style:
-                stage === 1
-                  ? "brief"
-                  : stage === 2
-                    ? "simple"
-                    : stage === 3
-                      ? "english_structure"
-                      : "chinese_deep",
+              style: "brief",
             }),
           });
         } else {
+          // All other stages (or items without highlights) use the full sentence simplification/analysis
           res = await authFetch("/api/sentence-study/simplify", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -407,6 +402,8 @@ const ReviewQueue = () => {
               sentence: currentItem.sentence_text,
               simplify_type: "meaning",
               stage,
+              prev_sentence: contextData?.previous_sentence,
+              next_sentence: contextData?.next_sentence,
             }),
           });
         }
