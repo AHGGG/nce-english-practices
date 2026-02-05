@@ -454,7 +454,7 @@ const ReviewQueue = () => {
         }
       }
     },
-    [currentItem],
+    [currentItem, contextData, helpStage],
   );
 
   // Auto-scroll help content
@@ -482,6 +482,10 @@ const ReviewQueue = () => {
     },
     [helpStage, handleRating, streamExplanation],
   );
+
+  const handleRetryHelp = useCallback(() => {
+    streamExplanation(helpStage);
+  }, [helpStage, streamExplanation]);
 
   const handleSkipHelp = useCallback(async () => {
     await handleRating(1);
@@ -799,6 +803,7 @@ const ReviewQueue = () => {
               simplifyStage={helpStage}
               isSimplifying={isLoadingHelp}
               onSimplifiedResponse={handleHelpResponse}
+              onRetry={handleRetryHelp}
             />
 
             <div className="mt-6 flex justify-center">

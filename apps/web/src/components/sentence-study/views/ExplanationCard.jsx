@@ -9,6 +9,7 @@ import {
   BookOpen,
   Brain,
   Zap,
+  RefreshCw,
 } from "lucide-react";
 
 // Markdown components for styled rendering
@@ -88,6 +89,7 @@ const ExplanationCard = ({
   simplifyStage,
   isSimplifying,
   onSimplifiedResponse,
+  onRetry,
 }) => {
   const config = STAGE_CONFIG[simplifyStage] || STAGE_CONFIG[1];
   const Icon = config.icon;
@@ -188,10 +190,21 @@ const ExplanationCard = ({
                 </div>
               )
             )}
+            {!isSimplifying && simplifiedText === "加载失败，请重试" && (
+              <div className="flex flex-col items-center justify-center py-6 gap-4">
+                <button
+                  onClick={onRetry}
+                  className="flex items-center gap-2 px-6 py-2.5 bg-accent-danger/20 hover:bg-accent-danger/30 text-accent-danger border border-accent-danger/30 rounded-lg transition-all active:scale-95 font-bold uppercase text-xs tracking-widest"
+                >
+                  <RefreshCw className="w-4 h-4" />
+                  <span>重试加载</span>
+                </button>
+              </div>
+            )}
           </div>
 
           {/* Actions */}
-          {!isSimplifying && simplifiedText && (
+          {!isSimplifying && simplifiedText && simplifiedText !== "加载失败，请重试" && (
             <motion.div
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
