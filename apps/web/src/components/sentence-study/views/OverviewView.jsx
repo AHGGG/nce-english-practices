@@ -3,6 +3,7 @@
  * Shows summary, Chinese translation, key topics, and difficulty hint
  */
 import React from "react";
+import { motion } from "framer-motion";
 import { ChevronLeft, BookOpen, Loader2, GraduationCap } from "lucide-react";
 import { usePodcast } from "../../../context/PodcastContext";
 
@@ -120,7 +121,12 @@ const OverviewView = ({
               </p>
             </div>
           ) : (
-            <div className="space-y-8 animate-in slide-in-from-bottom-5 duration-700">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.7, ease: "easeOut" }}
+              className="space-y-8"
+            >
               {/* English Summary */}
               <div
                 className={`p-8 border border-white/10 bg-white/[0.02] backdrop-blur-md rounded-2xl shadow-xl transition-all duration-500 hover:border-white/20 ${isStreaming ? "border-t-accent-primary/50 shadow-[0_-5px_20px_-5px_rgba(var(--color-accent-primary-rgb),0.1)]" : ""}`}
@@ -202,7 +208,7 @@ const OverviewView = ({
                   </button>
                 </div>
               )}
-            </div>
+            </motion.div>
           )}
         </div>
       </main>
