@@ -102,7 +102,7 @@ const ExplanationCard = ({
         animate={{ opacity: 1, y: 0, scale: 1 }}
         exit={{ opacity: 0, scale: 0.95, transition: { duration: 0.2 } }}
         transition={{ type: "spring", stiffness: 300, damping: 30 }}
-        className={`w-full mt-8 relative overflow-hidden rounded-xl border border-white/10 shadow-2xl backdrop-blur-md bg-[#0a0f0d]/80`}
+        className={`w-full mt-4 md:mt-8 relative overflow-hidden rounded-xl border border-white/10 shadow-2xl backdrop-blur-md bg-[#0a0f0d]/80`}
       >
         {/* Dynamic Gradient Background */}
         <div
@@ -114,9 +114,9 @@ const ExplanationCard = ({
           className={`absolute top-0 left-0 right-0 h-1 ${config.bgColor} shadow-[0_0_10px_currentColor] opacity-80`}
         />
 
-        <div className="relative p-6 md:p-8">
+        <div className="relative p-4 md:p-8">
           {/* Header */}
-          <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center justify-between mb-4 md:mb-6">
             <div className="flex items-center gap-3">
               <div
                 className={`p-2 rounded-lg bg-black/40 border border-white/5 ${config.color}`}
@@ -153,7 +153,7 @@ const ExplanationCard = ({
 
           {/* Content */}
           <div
-            className={`font-serif text-base md:text-lg leading-relaxed ${config.color} selection:bg-light-surface/20 selection:text-text-primary min-h-[100px]`}
+            className={`font-serif text-base md:text-lg leading-relaxed ${config.color} selection:bg-light-surface/20 selection:text-text-primary min-h-[60px] md:min-h-[100px]`}
           >
             {simplifiedText ? (
               <motion.div
@@ -196,7 +196,7 @@ const ExplanationCard = ({
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.2 }}
-              className="mt-8 flex flex-wrap justify-center gap-4 border-t border-white/5 pt-6"
+              className="mt-4 md:mt-8 flex flex-wrap justify-center gap-4 border-t border-white/5 pt-4 md:pt-6"
             >
               <button
                 onClick={() => onSimplifiedResponse(true)}
@@ -210,11 +210,10 @@ const ExplanationCard = ({
               <button
                 onClick={() => onSimplifiedResponse(false)}
                 className={`flex items-center justify-center gap-2 px-8 py-3.5 border-2 transition-all rounded-lg font-bold uppercase text-sm tracking-wide active:scale-95
-                                    ${
-                                      simplifyStage < 4
-                                        ? `border-white/10 hover:border-${config.color.split("-")[1]}-${config.color.split("-")[2]} text-text-secondary hover:text-text-primary bg-bg-base/20 hover:bg-bg-base/40`
-                                        : "border-white/10 text-text-muted cursor-not-allowed opacity-50"
-                                    }`}
+                                    ${simplifyStage < 4
+                    ? `border-white/10 hover:border-${config.color.split("-")[1]}-${config.color.split("-")[2]} text-text-secondary hover:text-text-primary bg-bg-base/20 hover:bg-bg-base/40`
+                    : "border-white/10 text-text-muted cursor-not-allowed opacity-50"
+                  }`}
                 disabled={simplifyStage >= 4}
               >
                 <HelpCircle className="w-4 h-4" />

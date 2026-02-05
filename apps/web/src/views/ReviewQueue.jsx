@@ -22,6 +22,7 @@ import WordInspector from "../components/reading/WordInspector";
 import { authFetch } from "../api/auth";
 import { useToast } from "../components/ui";
 import { useGlobalState } from "../context/GlobalContext";
+import { usePodcast } from "../context/PodcastContext";
 
 // API helpers for SM-2 review system
 const api = {
@@ -119,24 +120,23 @@ const HighlightedSentence = ({
         return isHighlight ? (
           <mark
             key={i}
-            className={`bg-accent-primary/20 text-accent-primary px-1 rounded ${
-              clickable
-                ? "cursor-pointer hover:bg-accent-primary/40 transition-colors animate-[pulse-highlight_1.5s_ease-in-out_2]"
-                : ""
-            }`}
+            className={`bg-accent-primary/20 text-accent-primary px-1 rounded ${clickable
+              ? "cursor-pointer hover:bg-accent-primary/40 transition-colors animate-[pulse-highlight_1.5s_ease-in-out_2]"
+              : ""
+              }`}
             style={
               clickable
                 ? {
-                    animation: "pulse-highlight 0.6s ease-in-out 3",
-                  }
+                  animation: "pulse-highlight 0.6s ease-in-out 3",
+                }
                 : undefined
             }
             onClick={
               clickable && onWordClick
                 ? (e) => {
-                    e.stopPropagation();
-                    onWordClick(part, sentence || text);
-                  }
+                  e.stopPropagation();
+                  onWordClick(part, sentence || text);
+                }
                 : undefined
             }
           >
@@ -164,6 +164,7 @@ const ReviewQueue = () => {
   const {
     state: { settings },
   } = useGlobalState();
+  const { currentEpisode } = usePodcast();
   const [queue, setQueue] = useState([]);
   const [stats, setStats] = useState({
     total_items: 0,
@@ -667,9 +668,9 @@ const ReviewQueue = () => {
     const bookName = sourceInfo[1] || "Unknown";
 
     return (
-      <div className="flex-1 flex flex-col w-full max-w-4xl mx-auto px-4 relative z-10 pb-4">
+      <div className="flex-1 flex flex-col w-full max-w-4xl mx-auto px-4 relative z-10 pb-2 md:pb-4">
         {/* Progress Header */}
-        <div className="flex justify-center mb-4 w-full">{renderStats()}</div>
+        <div className="flex justify-center mb-2 md:mb-4 w-full">{renderStats()}</div>
 
         {/* Glass Card */}
         <div className="relative bg-[#0a0f0d]/80 backdrop-blur-2xl border border-white/10 rounded-2xl md:rounded-3xl overflow-hidden shadow-2xl flex flex-col min-h-0 flex-1">
@@ -701,11 +702,10 @@ const ReviewQueue = () => {
                 disabled={loadingContext}
                 className={`
                       h-7 md:h-8 px-2.5 md:px-3 rounded-lg flex items-center gap-2 text-[9px] md:text-[10px] font-bold uppercase tracking-wider transition-all border
-                      ${
-                        showContext
-                          ? "bg-accent-info/10 border-accent-info/30 text-accent-info shadow-[0_0_15px_rgba(var(--color-accent-info-rgb),0.1)]"
-                          : "bg-white/5 border-transparent text-white/60 hover:bg-white/10 hover:border-white/10 hover:text-white"
-                      }
+                      ${showContext
+                    ? "bg-accent-info/10 border-accent-info/30 text-accent-info shadow-[0_0_15px_rgba(var(--color-accent-info-rgb),0.1)]"
+                    : "bg-white/5 border-transparent text-white/60 hover:bg-white/10 hover:border-white/10 hover:text-white"
+                  }
                    `}
               >
                 {loadingContext ? (
@@ -746,7 +746,7 @@ const ReviewQueue = () => {
           </div>
 
           {/* Main Sentence View */}
-          <div className="flex-1 flex flex-col items-center justify-center p-6 md:p-12 relative group min-h-[30vh] md:min-h-[400px]">
+          <div className="flex-1 flex flex-col items-center justify-center p-4 md:p-12 relative group min-h-[25vh] md:min-h-[400px]">
             {/* Background Decoration */}
             <div className="absolute inset-0 bg-gradient-radial from-white/[0.03] to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-1000" />
 
@@ -796,7 +796,7 @@ const ReviewQueue = () => {
 
         {/* Action Area */}
         {showHelpPanel ? (
-          <div className="mt-4 md:mt-8 animate-in slide-in-from-bottom-5 duration-500 pb-8">
+          <div className="mt-2 md:mt-8 animate-in slide-in-from-bottom-5 duration-500 pb-4 md:pb-8">
             <ExplanationCard
               simplifiedText={helpContent}
               simplifyStage={helpStage}
@@ -817,7 +817,7 @@ const ReviewQueue = () => {
           </div>
         ) : (
           /* Rating Buttons */
-          <div className="mt-4 md:mt-8 grid grid-cols-3 gap-3 md:gap-6 pb-8">
+          <div className="mt-3 md:mt-8 grid grid-cols-3 gap-3 md:gap-6 pb-4 md:pb-8">
             {RATING_OPTIONS.map((option) => {
               const Icon = option.icon;
               const handleClick =
@@ -906,7 +906,7 @@ const ReviewQueue = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#0a0f0d] relative overflow-hidden font-sans flex flex-col">
+    <div className="h-screen h-[100dvh] bg-[#0a0f0d] relative overflow-hidden font-sans flex flex-col">
       {/* Background Ambience */}
       <div className="fixed inset-0 bg-gradient-to-b from-[#0a1418] via-[#0c1815] to-[#0a0f0d] pointer-events-none" />
       <div className="fixed inset-0 opacity-30 pointer-events-none">
@@ -945,10 +945,9 @@ const ReviewQueue = () => {
               disabled={isSubmitting}
               className={`
                 h-8 px-2.5 rounded-lg flex items-center gap-2 text-[10px] font-bold uppercase tracking-wider transition-all border
-                ${
-                  undoState.mode === "redo"
-                    ? "bg-accent-primary/10 border-accent-primary/30 text-accent-primary hover:bg-accent-primary/20"
-                    : "bg-white/[0.03] border-white/[0.08] text-white/60 hover:text-white hover:bg-white/[0.08]"
+                ${undoState.mode === "redo"
+                  ? "bg-accent-primary/10 border-accent-primary/30 text-accent-primary hover:bg-accent-primary/20"
+                  : "bg-white/[0.03] border-white/[0.08] text-white/60 hover:text-white hover:bg-white/[0.08]"
                 }
               `}
               title={undoState.mode === "undo" ? "Undo" : "Redo"}
@@ -970,7 +969,7 @@ const ReviewQueue = () => {
       </header>
 
       {/* Main content */}
-      <main className="flex-1 flex flex-col relative z-10 overflow-y-auto custom-scrollbar pt-4 pb-4">
+      <main className={`flex-1 flex flex-col relative z-10 overflow-y-auto overscroll-none custom-scrollbar pt-2 md:pt-4 ${currentEpisode ? 'pb-24' : 'pb-2 md:pb-4'}`}>
         {loading ? (
           <div className="flex-1 flex flex-col items-center justify-center">
             <div className="relative">
@@ -996,7 +995,7 @@ const ReviewQueue = () => {
           isInspecting={isInspecting}
           onClose={closeInspector}
           onPlayAudio={playAudio}
-          onMarkAsKnown={() => {}}
+          onMarkAsKnown={() => { }}
           contextExplanation={wordExplanation}
           isExplaining={isExplainingWord}
           isPhrase={isPhrase}
