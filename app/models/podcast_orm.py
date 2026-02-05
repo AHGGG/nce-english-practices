@@ -22,6 +22,7 @@ from sqlalchemy import (
     Index,
     Float,
     UniqueConstraint,
+    JSON,
 )
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -116,7 +117,9 @@ class PodcastEpisode(Base):
     audio_url: Mapped[str] = mapped_column(Text)
     file_size: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)  # Bytes
     duration_seconds: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
-    chapters: Mapped[Optional[List[dict]]] = mapped_column(JSONB, nullable=True)
+    chapters: Mapped[Optional[List[dict]]] = mapped_column(
+        JSON().with_variant(JSONB, "postgresql"), nullable=True
+    )
     image_url: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     published_at: Mapped[Optional[datetime]] = mapped_column(TIMESTAMP, nullable=True)
 
