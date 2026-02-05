@@ -489,11 +489,17 @@ export function PodcastProvider({ children }) {
           console.error("Failed to start session:", e);
         }
 
+        // Apply playback rate
+        if (playbackRate !== 1) {
+          console.log("[Podcast] Applying playbackRate:", playbackRate);
+          audio.playbackRate = playbackRate;
+        }
+
         // Play
         try {
           await audio.play();
           setIsPlaying(true);
-          console.log("[Podcast] Playing from:", audio.currentTime);
+          console.log("[Podcast] Playing from:", audio.currentTime, "at rate:", audio.playbackRate);
         } catch (e) {
           console.error("Playback failed:", e);
         }
