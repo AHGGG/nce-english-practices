@@ -13,6 +13,7 @@ import time
 from app.api.routers.auth import get_current_user_id
 from app.config import settings
 from app.core.db import AsyncSessionLocal
+from app.core.utils import validate_url_security
 
 from app.services.podcast_service import podcast_service
 
@@ -166,6 +167,13 @@ async def _proxy_image(url: str, filename: str = "image.jpg"):
     if not url.startswith("http"):
         raise HTTPException(status_code=400, detail="Invalid URL protocol")
 
+    # Security: Validate URL against SSRF
+    try:
+        await run_in_threadpool(validate_url_security, url)
+    except ValueError as e:
+        logger.warning(f"SSRF attempt blocked for {url}: {e}")
+        raise HTTPException(status_code=400, detail=str(e))
+
     # Cache Configuration
     CACHE_DIR = settings.podcast_cache_dir
 
@@ -197,7 +205,7 @@ async def _proxy_image(url: str, filename: str = "image.jpg"):
     try:
         async with httpx.AsyncClient(
             timeout=10.0,
-            follow_redirects=True,
+            follow_redirects=False,
             proxy=proxies,
             verify=False,
             headers=headers,

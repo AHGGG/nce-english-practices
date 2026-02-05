@@ -1,5 +1,8 @@
 import json
 import re
+import socket
+import ipaddress
+from urllib.parse import urlparse
 from typing import Dict, List, Union, Any
 from fastapi import HTTPException
 
@@ -31,6 +34,50 @@ def validate_input(
         raise HTTPException(status_code=400, detail=f"{field_name} contains invalid characters")
 
     return text
+
+
+def validate_url_security(url: str) -> str:
+    """
+    Validates that a URL does not point to a private, loopback, or reserved IP address.
+    Raises ValueError if the URL is unsafe.
+    Returns the URL if safe.
+
+    Note: This uses socket.getaddrinfo which is blocking, so it should be run
+    in a threadpool when called from async code.
+    """
+    try:
+        parsed = urlparse(url)
+        hostname = parsed.hostname
+        if not hostname:
+            raise ValueError("Invalid URL: missing hostname")
+
+        # Resolve hostname to IP
+        # use getaddrinfo to support IPv4 and IPv6
+        try:
+            addr_info = socket.getaddrinfo(hostname, None)
+        except socket.gaierror:
+            raise ValueError(f"Could not resolve hostname: {hostname}")
+
+        for family, type, proto, canonname, sockaddr in addr_info:
+            ip_str = sockaddr[0]
+            try:
+                ip = ipaddress.ip_address(ip_str)
+            except ValueError:
+                continue # Skip invalid IPs if any
+
+            if ip.is_private or ip.is_loopback or ip.is_link_local or ip.is_reserved or ip.is_multicast:
+                raise ValueError(f"URL resolves to unsafe IP address: {ip_str}")
+
+            # specific check for 0.0.0.0 (sometimes not caught by is_private in older python versions or specific contexts, though usually is_private=True for 0.0.0.0 in modern python)
+            if str(ip) == "0.0.0.0":
+                 raise ValueError("URL resolves to unsafe IP address: 0.0.0.0")
+
+    except ValueError as e:
+        raise e
+    except Exception as e:
+        raise ValueError(f"URL validation failed: {str(e)}")
+
+    return url
 
 
 def parse_llm_json(content: str) -> Union[Dict[str, Any], List[Any]]:
