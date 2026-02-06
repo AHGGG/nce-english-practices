@@ -108,7 +108,7 @@ export function PodcastProvider({ children }) {
         setIsLoading(false);
       });
 
-      audioRef.current.addEventListener("timeupdate", () => {
+      audioRef.current.addEventListener("timeupdate", async () => {
         const time = audioRef.current.currentTime;
         const dur = audioRef.current.duration;
         setCurrentTime(time);
@@ -139,7 +139,7 @@ export function PodcastProvider({ children }) {
           audioRef.current.pause();
 
           // Save locally first for offline resilience
-          savePositionLocal(currentEpisodeRef.current.id, dur, playbackRate, true).catch(console.error);
+          await savePositionLocal(currentEpisodeRef.current.id, dur, playbackRate, true).catch(console.error);
 
           podcastApi
             .endListeningSession(
