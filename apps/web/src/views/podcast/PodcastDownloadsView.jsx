@@ -129,10 +129,8 @@ export default function PodcastDownloadsView() {
     if (currentEpisode?.id === item.episode.id) {
       togglePlayPause();
     } else {
-      // Pass resume position from episode data
-      const resumePosition =
-        item.last_position_seconds || item.episode?.current_position || 0;
-      playEpisode(item.episode, item.feed, resumePosition);
+      // Pass null to let playEpisode use internal robust resume logic (local + server + isFinished)
+      playEpisode(item.episode, item.feed, null);
     }
   };
 
@@ -320,18 +318,17 @@ export default function PodcastDownloadsView() {
                 Math.round((position / episodeDuration) * 100),
               );
               const isFinished =
-                item.is_finished || (position > 0 && progressPercent >= 99);
+                item.is_finished || ep.is_finished || (position > 0 && progressPercent >= 99);
 
               return (
                 <div
                   key={ep.id}
-                  className={`group relative flex items-start sm:items-center gap-4 p-4 md:p-5 rounded-2xl transition-all duration-300 border ${
-                    isCurrentEpisode
-                      ? "bg-accent-primary/10 border-accent-primary/30 shadow-[0_0_30px_rgba(var(--color-accent-primary-rgb),0.1)]"
-                      : isFinished
-                        ? "bg-white/[0.01] border-white/5 opacity-60 hover:opacity-100"
-                        : "bg-[#0a0f0d]/40 backdrop-blur-sm border-white/5 hover:border-white/10 hover:bg-white/[0.03]"
-                  }`}
+                  className={`group relative flex items-start sm:items-center gap-4 p-4 md:p-5 rounded-2xl transition-all duration-300 border ${isCurrentEpisode
+                    ? "bg-accent-primary/10 border-accent-primary/30 shadow-[0_0_30px_rgba(var(--color-accent-primary-rgb),0.1)]"
+                    : isFinished
+                      ? "bg-white/[0.01] border-white/5 opacity-60 hover:opacity-100"
+                      : "bg-[#0a0f0d]/40 backdrop-blur-sm border-white/5 hover:border-white/10 hover:bg-white/[0.03]"
+                    }`}
                 >
                   {/* Play button or Download Spinner */}
                   <div className="flex-shrink-0 pt-1 sm:pt-0">
@@ -368,13 +365,12 @@ export default function PodcastDownloadsView() {
                     ) : (
                       <button
                         onClick={() => handlePlay(item)}
-                        className={`w-12 h-12 md:w-14 md:h-14 rounded-xl flex items-center justify-center transition-all duration-300 ${
-                          isCurrentEpisode
-                            ? "bg-accent-primary text-black shadow-lg shadow-accent-primary/30 scale-105"
-                            : isFinished
-                              ? "bg-transparent border-2 border-accent-success/30 text-accent-success hover:bg-accent-success/10"
-                              : "bg-white/5 border border-white/10 text-white hover:bg-white/10 hover:border-white/20 hover:scale-105 shadow-lg shadow-black/20"
-                        }`}
+                        className={`w-12 h-12 md:w-14 md:h-14 rounded-xl flex items-center justify-center transition-all duration-300 ${isCurrentEpisode
+                          ? "bg-accent-primary text-black shadow-lg shadow-accent-primary/30 scale-105"
+                          : isFinished
+                            ? "bg-transparent border-2 border-accent-success/30 text-accent-success hover:bg-accent-success/10"
+                            : "bg-white/5 border border-white/10 text-white hover:bg-white/10 hover:border-white/20 hover:scale-105 shadow-lg shadow-black/20"
+                          }`}
                       >
                         {isCurrentEpisode && isPlaying ? (
                           <Pause className="w-5 h-5 md:w-6 md:h-6 fill-current" />
@@ -390,13 +386,12 @@ export default function PodcastDownloadsView() {
                   {/* Episode info */}
                   <div className="flex-1 min-w-0 flex flex-col gap-1.5">
                     <h3
-                      className={`text-base md:text-lg font-bold font-serif leading-tight line-clamp-2 transition-colors ${
-                        isCurrentEpisode
-                          ? "text-accent-primary"
-                          : isFinished
-                            ? "text-white/40 line-through decoration-accent-success/40"
-                            : "text-white group-hover:text-accent-primary/80"
-                      }`}
+                      className={`text-base md:text-lg font-bold font-serif leading-tight line-clamp-2 transition-colors ${isCurrentEpisode
+                        ? "text-accent-primary"
+                        : isFinished
+                          ? "text-white/40 line-through decoration-accent-success/40"
+                          : "text-white group-hover:text-accent-primary/80"
+                        }`}
                     >
                       {ep.title}
                     </h3>

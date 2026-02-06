@@ -83,6 +83,7 @@ export async function savePositionLocal(
   episodeId,
   position,
   playbackRate = 1.0,
+  isFinished = false,
 ) {
   try {
     const db = await openDB();
@@ -93,6 +94,7 @@ export async function savePositionLocal(
       const data = {
         episodeId,
         position,
+        isFinished,
         timestamp: Date.now(),
         deviceId: getDeviceId(),
         deviceType: getDeviceType(),
@@ -156,9 +158,9 @@ export async function getLatestPosition(episodeId) {
       console.warn("Failed to fetch server position:", e);
     }
 
-    if (!local && !server) return { position: 0 };
-    if (!local) return { position: server.position_seconds };
-    if (!server) return { position: local.position };
+    if (!local && !server) return { position: 0, isFinished: false };
+    if (!local) return { position: server.position_seconds, isFinished: server.is_finished };
+    if (!server) return { position: local.position, isFinished: local.isFinished };
 
     // If we have both, we need timestamps.
     // Since getEpisodePosition might not return timestamp, let's call the resolve endpoint
@@ -175,14 +177,15 @@ export async function getLatestPosition(episodeId) {
 
       return {
         position: resolveRes.position,
-        timestamp: resolveRes.server_timestamp, // actually won't use this return value much
+        isFinished: resolveRes.is_finished || local.isFinished, // Take server preference but keep local if True
+        timestamp: resolveRes.server_timestamp,
       };
     } catch (e) {
       console.error("Resolve failed, falling back to local:", e);
-      return { position: local.position };
+      return { position: local.position, isFinished: local.isFinished };
     }
   } catch (error) {
     console.error("getLatestPosition error:", error);
-    return { position: 0 };
+    return { position: 0, isFinished: false };
   }
 }

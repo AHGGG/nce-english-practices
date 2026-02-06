@@ -30,6 +30,8 @@ router = APIRouter(prefix="/api/podcast", tags=["podcast"])
 
 class PositionSyncRequest(BaseModel):
     position: float
+    is_finished: bool = False
+    duration: Optional[int] = None
     timestamp: float  # Unix timestamp in milliseconds
     device_id: str
     device_type: Optional[str] = "web"
@@ -39,6 +41,7 @@ class PositionSyncRequest(BaseModel):
 class PositionSyncResponse(BaseModel):
     success: bool
     position: float
+    is_finished: bool = False
     server_timestamp: float
     conflict_resolved: bool
     message: Optional[str] = None
@@ -915,6 +918,8 @@ async def sync_position(
             user_id,
             episode_id,
             request.position,
+            is_finished=request.is_finished,
+            duration=request.duration,
             device_id=request.device_id,
             device_type=request.device_type,
             timestamp=timestamp,
@@ -932,10 +937,12 @@ async def sync_position(
                 else time.time() * 1000
             )
             position = current_state.current_position_seconds if current_state else 0.0
+            is_finished = current_state.is_finished if current_state else False
 
             return PositionSyncResponse(
                 success=True,
                 position=position,
+                is_finished=is_finished,
                 server_timestamp=server_ts,
                 conflict_resolved=True,
                 message="Position not updated (server has newer data)",
@@ -988,6 +995,9 @@ async def resolve_position(
             return PositionSyncResponse(
                 success=True,
                 position=request.position,
+                is_finished=False,  # Resolve usually triggered on play, so start with false or known?
+                # Client data doesn't have is_finished in request yet.
+                # But we can assume if they are resolving, it's not finished.
                 server_timestamp=server_ts,
                 conflict_resolved=False,
                 message="Client is newer",
@@ -997,6 +1007,7 @@ async def resolve_position(
             return PositionSyncResponse(
                 success=True,
                 position=current_state.current_position_seconds,
+                is_finished=current_state.is_finished,
                 server_timestamp=server_ts,
                 conflict_resolved=True,
                 message="Server is newer",

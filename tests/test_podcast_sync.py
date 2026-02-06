@@ -126,7 +126,7 @@ async def test_sync_endpoint_conflict(client):
         # Mock get_episode_state to return the "server" state
         server_ts = datetime.utcnow()
         mock_state = UserEpisodeState(
-            current_position_seconds=500.0, last_synced_at=server_ts
+            current_position_seconds=500.0, last_synced_at=server_ts, is_finished=False
         )
 
         with patch(
@@ -157,7 +157,7 @@ async def test_sync_endpoint_success(client):
     """Test the sync endpoint handles success correctly."""
 
     # Mock the service to return a State (Success)
-    mock_state = UserEpisodeState(current_position_seconds=100.0)
+    mock_state = UserEpisodeState(current_position_seconds=100.0, is_finished=False)
 
     with patch(
         "app.services.podcast_service.podcast_service.update_episode_state",
@@ -188,7 +188,7 @@ async def test_resolve_position_endpoint(client):
     # Case 1: Server is newer
     server_ts = datetime.utcnow()
     mock_state = UserEpisodeState(
-        current_position_seconds=500.0, last_synced_at=server_ts
+        current_position_seconds=500.0, last_synced_at=server_ts, is_finished=False
     )
 
     with patch(

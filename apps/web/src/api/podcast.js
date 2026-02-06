@@ -316,6 +316,8 @@ export async function syncPosition(episodeId, data) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         position: data.position,
+        is_finished: data.isFinished || false,
+        duration: data.duration,
         timestamp: data.timestamp,
         device_id: data.deviceId,
         device_type: data.deviceType,
@@ -340,6 +342,8 @@ export async function resolvePosition(episodeId, clientData) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         position: clientData.position,
+        is_finished: clientData.isFinished || false,
+        duration: clientData.duration,
         timestamp: clientData.timestamp,
         device_id: clientData.deviceId,
         device_type: clientData.deviceType,

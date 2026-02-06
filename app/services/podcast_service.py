@@ -17,7 +17,7 @@ from xml.etree import ElementTree as ET
 import httpx
 import feedparser
 
-from sqlalchemy import select, func, and_
+from sqlalchemy import select, func, and_, update
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -1174,6 +1174,7 @@ class PodcastService:
         episode_id: int,
         position: float,
         is_finished: bool = False,
+        duration: Optional[int] = None,
         device_id: Optional[str] = None,
         device_type: Optional[str] = None,
         timestamp: Optional[datetime] = None,
@@ -1236,6 +1237,17 @@ class PodcastService:
             },
         )
         await db.execute(stmt)
+
+        # Update episode duration if provided and different
+        if duration:
+            # We update the global episode duration to fix RSS mismatches
+            ep_update_stmt = (
+                update(PodcastEpisode)
+                .where(PodcastEpisode.id == episode_id)
+                .values(duration_seconds=duration)
+            )
+            await db.execute(ep_update_stmt)
+
         await db.commit()
 
         # Return the state

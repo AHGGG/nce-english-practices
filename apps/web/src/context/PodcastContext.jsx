@@ -138,6 +138,9 @@ export function PodcastProvider({ children }) {
           setIsPlaying(false);
           audioRef.current.pause();
 
+          // Save locally first for offline resilience
+          savePositionLocal(currentEpisodeRef.current.id, dur, playbackRate, true).catch(console.error);
+
           podcastApi
             .endListeningSession(
               sessionIdRef.current,
@@ -153,6 +156,16 @@ export function PodcastProvider({ children }) {
             .catch((e) => {
               console.error("Failed to mark episode finished:", e);
             });
+
+          // Also sync the actual duration to the server if we have a position sync mechanism active
+          // This helps fix RSS duration mismatches for all future users
+          const localPos = await getLocalPosition(currentEpisodeRef.current.id);
+          if (localPos) {
+            podcastApi.syncPosition(currentEpisodeRef.current.id, {
+              ...localPos,
+              duration: Math.round(dur)
+            }).catch(e => console.warn("Failed to sync actual duration:", e));
+          }
         }
       });
 
@@ -162,17 +175,32 @@ export function PodcastProvider({ children }) {
         setIsPlaying(false);
 
         // Mark episode as finished when playback completes
-        if (sessionIdRef.current && currentEpisodeRef.current) {
+        if (currentEpisodeRef.current) {
           try {
             // Ensure we send the full duration as position to avoid "99%" issues
             const finalPosition = audioRef.current?.duration || 0;
-            await podcastApi.endListeningSession(
-              sessionIdRef.current,
-              listenedSecondsRef.current,
-              finalPosition,
-              true,
-            );
-            console.log("[Podcast] Episode finished, marked completed");
+
+            // Save locally first
+            savePositionLocal(currentEpisodeRef.current.id, finalPosition, playbackRate, true).catch(console.error);
+
+            if (sessionIdRef.current) {
+              await podcastApi.endListeningSession(
+                sessionIdRef.current,
+                listenedSecondsRef.current,
+                finalPosition,
+                true,
+              );
+              console.log("[Podcast] Episode finished, marked completed");
+            }
+
+            // Sync final state and actual duration for consistency
+            const localPos = await getLocalPosition(currentEpisodeRef.current.id);
+            if (localPos) {
+              podcastApi.syncPosition(currentEpisodeRef.current.id, {
+                ...localPos,
+                duration: Math.round(audioRef.current.duration)
+              }).catch(e => console.warn("Failed to sync final position/duration:", e));
+            }
           } catch (e) {
             console.error("Failed to mark episode finished:", e);
           }
@@ -226,6 +254,8 @@ export function PodcastProvider({ children }) {
               deviceId: localPos.deviceId,
               deviceType: localPos.deviceType,
               playbackRate: localPos.playbackRate,
+              isFinished: localPos.isFinished || false,
+              duration: Math.round(audioRef.current.duration)
             })
             .catch((e) => console.warn("[Podcast] Cloud sync failed:", e));
         }
@@ -237,11 +267,17 @@ export function PodcastProvider({ children }) {
       console.log("[Podcast] Paused, saving position");
       if (audioRef.current) {
         const pos = audioRef.current.currentTime;
-        await savePositionLocal(currentEpisode.id, pos, playbackRate);
+        const isFinishing = isFinishingRef.current;
+        const dur = audioRef.current.duration;
+
+        await savePositionLocal(currentEpisode.id, pos, playbackRate, isFinishing);
         const localPos = await getLocalPosition(currentEpisode.id);
         if (localPos) {
           podcastApi
-            .syncPosition(currentEpisode.id, localPos)
+            .syncPosition(currentEpisode.id, {
+              ...localPos,
+              duration: Math.round(dur)
+            })
             .catch(console.error);
         }
       }
@@ -453,8 +489,9 @@ export function PodcastProvider({ children }) {
       if (resumePosition === null) {
         try {
           // Use getLatestPosition which checks local and server (with conflict resolution)
-          const { position } = await getLatestPosition(episode.id);
-          resumePosition = position || 0;
+          const { position, isFinished } = await getLatestPosition(episode.id);
+          // If finished, start from beginning if they click play again
+          resumePosition = isFinished ? 0 : (position || 0);
         } catch (e) {
           console.error("Failed to get position:", e);
           resumePosition = 0;
