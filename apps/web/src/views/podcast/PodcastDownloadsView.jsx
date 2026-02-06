@@ -58,6 +58,7 @@ export default function PodcastDownloadsView() {
     clearAllDownloads,
     downloadState,
     cancelDownload,
+    finishedEpisodes,
   } = usePodcast();
   const { addToast } = useToast();
 
@@ -323,6 +324,7 @@ export default function PodcastDownloadsView() {
                 Math.round((position / episodeDuration) * 100),
               );
               const isFinished =
+                finishedEpisodes.has(ep.id) ||
                 item.is_finished ||
                 ep.is_finished ||
                 (position > 0 && progressPercent >= 99);

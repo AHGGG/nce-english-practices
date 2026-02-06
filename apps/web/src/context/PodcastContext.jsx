@@ -81,6 +81,9 @@ export function PodcastProvider({ children }) {
   const [storageInfo, setStorageInfo] = useState(null);
   const abortControllersRef = useRef({});
 
+  // Track finished episodes (for real-time UI updates without page refresh)
+  const [finishedEpisodes, setFinishedEpisodes] = useState(new Set());
+
   // Keep refs in sync with state
   useEffect(() => {
     sessionIdRef.current = sessionId;
@@ -139,7 +142,17 @@ export function PodcastProvider({ children }) {
           audioRef.current.pause();
 
           // Save locally first for offline resilience
-          await savePositionLocal(currentEpisodeRef.current.id, dur, playbackRate, true).catch(console.error);
+          await savePositionLocal(
+            currentEpisodeRef.current.id,
+            dur,
+            playbackRate,
+            true,
+          ).catch(console.error);
+
+          // Update finishedEpisodes state for real-time UI updates
+          setFinishedEpisodes(
+            (prev) => new Set([...prev, currentEpisodeRef.current.id]),
+          );
 
           podcastApi
             .endListeningSession(
@@ -161,10 +174,12 @@ export function PodcastProvider({ children }) {
           // This helps fix RSS duration mismatches for all future users
           const localPos = await getLocalPosition(currentEpisodeRef.current.id);
           if (localPos) {
-            podcastApi.syncPosition(currentEpisodeRef.current.id, {
-              ...localPos,
-              duration: Math.round(dur)
-            }).catch(e => console.warn("Failed to sync actual duration:", e));
+            podcastApi
+              .syncPosition(currentEpisodeRef.current.id, {
+                ...localPos,
+                duration: Math.round(dur),
+              })
+              .catch((e) => console.warn("Failed to sync actual duration:", e));
           }
         }
       });
@@ -180,8 +195,18 @@ export function PodcastProvider({ children }) {
             // Ensure we send the full duration as position to avoid "99%" issues
             const finalPosition = audioRef.current?.duration || 0;
 
+            // Update finishedEpisodes state for real-time UI updates
+            setFinishedEpisodes(
+              (prev) => new Set([...prev, currentEpisodeRef.current.id]),
+            );
+
             // Save locally first
-            savePositionLocal(currentEpisodeRef.current.id, finalPosition, playbackRate, true).catch(console.error);
+            savePositionLocal(
+              currentEpisodeRef.current.id,
+              finalPosition,
+              playbackRate,
+              true,
+            ).catch(console.error);
 
             if (sessionIdRef.current) {
               await podcastApi.endListeningSession(
@@ -194,12 +219,18 @@ export function PodcastProvider({ children }) {
             }
 
             // Sync final state and actual duration for consistency
-            const localPos = await getLocalPosition(currentEpisodeRef.current.id);
+            const localPos = await getLocalPosition(
+              currentEpisodeRef.current.id,
+            );
             if (localPos) {
-              podcastApi.syncPosition(currentEpisodeRef.current.id, {
-                ...localPos,
-                duration: Math.round(audioRef.current.duration)
-              }).catch(e => console.warn("Failed to sync final position/duration:", e));
+              podcastApi
+                .syncPosition(currentEpisodeRef.current.id, {
+                  ...localPos,
+                  duration: Math.round(audioRef.current.duration),
+                })
+                .catch((e) =>
+                  console.warn("Failed to sync final position/duration:", e),
+                );
             }
           } catch (e) {
             console.error("Failed to mark episode finished:", e);
@@ -255,7 +286,7 @@ export function PodcastProvider({ children }) {
               deviceType: localPos.deviceType,
               playbackRate: localPos.playbackRate,
               isFinished: localPos.isFinished || false,
-              duration: Math.round(audioRef.current.duration)
+              duration: Math.round(audioRef.current.duration),
             })
             .catch((e) => console.warn("[Podcast] Cloud sync failed:", e));
         }
@@ -270,13 +301,18 @@ export function PodcastProvider({ children }) {
         const isFinishing = isFinishingRef.current;
         const dur = audioRef.current.duration;
 
-        await savePositionLocal(currentEpisode.id, pos, playbackRate, isFinishing);
+        await savePositionLocal(
+          currentEpisode.id,
+          pos,
+          playbackRate,
+          isFinishing,
+        );
         const localPos = await getLocalPosition(currentEpisode.id);
         if (localPos) {
           podcastApi
             .syncPosition(currentEpisode.id, {
               ...localPos,
-              duration: Math.round(dur)
+              duration: Math.round(dur),
             })
             .catch(console.error);
         }
@@ -386,7 +422,7 @@ export function PodcastProvider({ children }) {
 
         if (success) {
           // Keep it in done state for a moment or remove if preferred
-          // Here we keep it so UI shows "done" temporarily if needed, 
+          // Here we keep it so UI shows "done" temporarily if needed,
           // but usually offlineEpisodes Set is enough.
           setDownloadState((prev) => {
             const next = { ...prev };
@@ -492,7 +528,7 @@ export function PodcastProvider({ children }) {
           // Use getLatestPosition which checks local and server (with conflict resolution)
           const { position, isFinished } = await getLatestPosition(episode.id);
           // If finished, start from beginning if they click play again
-          resumePosition = isFinished ? 0 : (position || 0);
+          resumePosition = isFinished ? 0 : position || 0;
         } catch (e) {
           console.error("Failed to get position:", e);
           resumePosition = 0;
@@ -537,7 +573,12 @@ export function PodcastProvider({ children }) {
         try {
           await audio.play();
           setIsPlaying(true);
-          console.log("[Podcast] Playing from:", audio.currentTime, "at rate:", audio.playbackRate);
+          console.log(
+            "[Podcast] Playing from:",
+            audio.currentTime,
+            "at rate:",
+            audio.playbackRate,
+          );
         } catch (e) {
           console.error("Playback failed:", e);
         }
@@ -653,6 +694,7 @@ export function PodcastProvider({ children }) {
     downloadState,
     offlineEpisodes,
     storageInfo,
+    finishedEpisodes,
 
     // Playback Actions
     playEpisode,

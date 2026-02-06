@@ -77,6 +77,7 @@ export default function PodcastFeedDetailView() {
     startDownload,
     cancelDownload,
     removeDownload,
+    finishedEpisodes,
   } = usePodcast();
   const { addToast } = useToast();
 
@@ -648,15 +649,14 @@ export default function PodcastFeedDetailView() {
                   : episode.duration_seconds || 1;
 
               let position = episode.current_position;
-              let isFinished = episode.is_finished;
+              let isFinished =
+                finishedEpisodes.has(episode.id) || episode.is_finished;
 
               if (isCurrentEpisode) {
                 position = currentTime;
                 // Visual check for current episode
                 isFinished =
-                  isFinished ||
-                  ep.is_finished ||
-                  (duration > 0 && currentTime >= duration - 2);
+                  isFinished || (duration > 0 && currentTime >= duration - 2);
               } else if (localState) {
                 position = localState.current_position;
                 isFinished = localState.is_finished || isFinished;
