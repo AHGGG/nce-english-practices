@@ -94,6 +94,9 @@ export default function PodcastFeedDetailView() {
   const [totalEpisodes, setTotalEpisodes] = useState(0);
   const [loadingMore, setLoadingMore] = useState(false);
 
+  // Auto-refresh state
+  const hasAutoRefreshedRef = useRef(false);
+
   // Local progress state to track updates for episodes that are no longer current
   // { [episodeId]: { current_position: number, is_finished: boolean } }
   const [localProgress, setLocalProgress] = useState({});
@@ -139,7 +142,16 @@ export default function PodcastFeedDetailView() {
   useEffect(() => {
     loadFeed(true);
     checkedSizeIdsRef.current.clear();
+    hasAutoRefreshedRef.current = false; // Reset for new feed
   }, [feedId]);
+
+  // Auto-refresh logic: trigger refresh once when subscribed feed is loaded
+  useEffect(() => {
+    if (!loading && isSubscribed && !hasAutoRefreshedRef.current) {
+      hasAutoRefreshedRef.current = true;
+      handleRefresh();
+    }
+  }, [loading, isSubscribed, feedId]);
 
   // Lazy load file sizes for episodes that miss them (common in some feeds)
   useEffect(() => {
@@ -642,7 +654,9 @@ export default function PodcastFeedDetailView() {
                 position = currentTime;
                 // Visual check for current episode
                 isFinished =
-                  isFinished || ep.is_finished || (duration > 0 && currentTime >= duration - 2);
+                  isFinished ||
+                  ep.is_finished ||
+                  (duration > 0 && currentTime >= duration - 2);
               } else if (localState) {
                 position = localState.current_position;
                 isFinished = localState.is_finished || isFinished;
@@ -659,21 +673,23 @@ export default function PodcastFeedDetailView() {
               return (
                 <div
                   key={episode.id}
-                  className={`group relative flex items-center gap-4 p-4 rounded-xl transition-all duration-300 border ${isCurrentEpisode
+                  className={`group relative flex items-center gap-4 p-4 rounded-xl transition-all duration-300 border ${
+                    isCurrentEpisode
                       ? "bg-accent-primary/10 border-accent-primary/30 shadow-[0_0_30px_rgba(var(--color-accent-primary-rgb),0.1)]"
                       : isFinished
                         ? "bg-white/[0.01] border-white/5 opacity-60 hover:opacity-100"
                         : "bg-[#0a0f0d]/40 backdrop-blur-sm border-white/5 hover:border-white/10 hover:bg-white/[0.03]"
-                    }`}
+                  }`}
                 >
                   <button
                     onClick={() => handlePlayEpisode(episode)}
-                    className={`flex-shrink-0 w-12 h-12 rounded-xl flex items-center justify-center transition-all duration-300 ${isCurrentEpisode
+                    className={`flex-shrink-0 w-12 h-12 rounded-xl flex items-center justify-center transition-all duration-300 ${
+                      isCurrentEpisode
                         ? "bg-accent-primary text-black shadow-lg shadow-accent-primary/30 scale-105"
                         : isFinished
                           ? "bg-transparent border border-accent-success/30 text-accent-success hover:bg-accent-success/10"
                           : "bg-white/5 border border-white/10 text-white hover:bg-white/10 hover:border-white/20 hover:scale-105"
-                      }`}
+                    }`}
                   >
                     {isCurrentEpisode && isPlaying ? (
                       <Pause className="w-5 h-5 fill-current" />
@@ -686,12 +702,13 @@ export default function PodcastFeedDetailView() {
 
                   <div className="flex-1 min-w-0 py-1">
                     <h3
-                      className={`text-base font-medium line-clamp-1 mb-2 transition-colors ${isCurrentEpisode
+                      className={`text-base font-medium line-clamp-1 mb-2 transition-colors ${
+                        isCurrentEpisode
                           ? "text-accent-primary"
                           : isFinished
                             ? "text-white/40 line-through decoration-accent-success/40"
                             : "text-white group-hover:text-accent-primary/80"
-                        }`}
+                      }`}
                       title={episode.title}
                     >
                       {episode.title}

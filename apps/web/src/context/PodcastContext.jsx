@@ -343,14 +343,9 @@ export function PodcastProvider({ children }) {
       delete abortControllersRef.current[episodeId];
       setDownloadState((prev) => {
         const next = { ...prev };
-        delete next[episodeId]; // Or set to idle/cancelled
+        delete next[episodeId];
         return next;
       });
-      // Just reset to idle so it disappears from active list
-      setDownloadState((prev) => ({
-        ...prev,
-        [episodeId]: { status: "idle", progress: 0 },
-      }));
     }
   }, []);
 
@@ -390,10 +385,14 @@ export function PodcastProvider({ children }) {
         );
 
         if (success) {
-          setDownloadState((prev) => ({
-            ...prev,
-            [episodeId]: { status: "done", progress: 100 },
-          }));
+          // Keep it in done state for a moment or remove if preferred
+          // Here we keep it so UI shows "done" temporarily if needed, 
+          // but usually offlineEpisodes Set is enough.
+          setDownloadState((prev) => {
+            const next = { ...prev };
+            delete next[episodeId];
+            return next;
+          });
           setOfflineEpisodes((prev) => new Set([...prev, episodeId]));
           // Update storage info
           getStorageEstimate().then(setStorageInfo);
@@ -402,10 +401,11 @@ export function PodcastProvider({ children }) {
       } catch (e) {
         if (controller.signal.aborted) {
           // Aborted by user - handled by cancelDownload usually, but ensure state is clean
-          setDownloadState((prev) => ({
-            ...prev,
-            [episodeId]: { status: "idle", progress: 0 },
-          }));
+          setDownloadState((prev) => {
+            const next = { ...prev };
+            delete next[episodeId];
+            return next;
+          });
           return;
         }
 
@@ -437,10 +437,11 @@ export function PodcastProvider({ children }) {
         next.delete(episodeId);
         return next;
       });
-      setDownloadState((prev) => ({
-        ...prev,
-        [episodeId]: { status: "idle", progress: 0 },
-      }));
+      setDownloadState((prev) => {
+        const next = { ...prev };
+        delete next[episodeId];
+        return next;
+      });
       getStorageEstimate().then(setStorageInfo);
     }
     return success;
