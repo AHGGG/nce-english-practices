@@ -435,6 +435,12 @@ export default function PodcastDownloadsView() {
                           Offline
                         </span>
                       )}
+
+                      {!isFinished && progressPercent > 0 && (
+                        <span className="text-accent-primary ml-auto font-bold animate-in fade-in duration-500">
+                          {progressPercent}% COMPLETE
+                        </span>
+                      )}
                     </div>
                   </div>
 
@@ -445,7 +451,7 @@ export default function PodcastDownloadsView() {
                       handleDelete(item);
                     }}
                     disabled={deleting[ep.id]}
-                    className="flex-shrink-0 p-3 text-white/20 hover:text-red-400 hover:bg-red-500/10 rounded-xl transition-colors sm:self-center self-start"
+                    className="flex-shrink-0 p-3 text-white/20 hover:text-red-400 hover:bg-red-500/10 rounded-xl transition-colors sm:self-center self-start relative z-10"
                     title={
                       isDownloading ? "Cancel download" : "Remove download"
                     }
@@ -456,6 +462,16 @@ export default function PodcastDownloadsView() {
                       <Trash2 className="w-5 h-5" />
                     )}
                   </button>
+
+                  {/* Progress bar (thin line at the bottom of the card) */}
+                  {!isFinished && progressPercent > 0 && (
+                    <div className="absolute bottom-0 left-0 right-0 h-1 bg-white/5 rounded-b-2xl overflow-hidden">
+                      <div
+                        className="h-full bg-accent-primary shadow-[0_0_8px_rgba(var(--color-accent-primary-rgb),0.5)] transition-all duration-300"
+                        style={{ width: `${progressPercent}%` }}
+                      />
+                    </div>
+                  )}
                 </div>
               );
             })}
