@@ -6,12 +6,114 @@ Provides audio chunking, segment merging, and time offset adjustment.
 
 import logging
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Tuple
 from difflib import SequenceMatcher
+
+import numpy as np
 
 from .schemas import TranscriptionSegment
 
 logger = logging.getLogger(__name__)
+
+# Supported formats by soundfile (libsndfile)
+SOUNDFILE_FORMATS = {".wav", ".flac", ".ogg", ".aiff", ".aif"}
+# Formats that require ffmpeg
+FFMPEG_FORMATS = {".mp3", ".m4a", ".m4v", ".aac", ".mp4", ".webm", ".opus"}
+
+
+def _load_audio_flexible(
+    audio_path: Path, target_sr: int = 16000
+) -> Tuple[np.ndarray, int]:
+    """
+    Load audio file using multiple backends for format compatibility.
+
+    Tries in order:
+    1. soundfile (for WAV, FLAC, OGG)
+    2. torchaudio (may support more formats depending on backend)
+    3. FunASR's loader (uses ffmpeg as fallback)
+
+    Args:
+        audio_path: Path to the audio file
+        target_sr: Target sample rate (default 16000 for SenseVoice)
+
+    Returns:
+        Tuple of (audio_data as numpy array, sample_rate)
+
+    Raises:
+        RuntimeError: If no backend can load the file
+    """
+    audio_path = Path(audio_path)
+    suffix = audio_path.suffix.lower()
+
+    # Try soundfile first for supported formats
+    if suffix in SOUNDFILE_FORMATS:
+        try:
+            import soundfile as sf
+
+            y, sr = sf.read(str(audio_path))
+            logger.debug(f"Loaded audio with soundfile: {audio_path}")
+            return _normalize_audio(y, sr, target_sr)
+        except Exception as e:
+            logger.debug(f"soundfile failed: {e}")
+
+    # Try torchaudio
+    try:
+        import torchaudio
+
+        waveform, sr = torchaudio.load(str(audio_path))
+        # Convert to numpy, mono
+        y = waveform.mean(dim=0).numpy()
+        logger.debug(f"Loaded audio with torchaudio: {audio_path}")
+        return _normalize_audio(y, sr, target_sr)
+    except Exception as e:
+        logger.debug(f"torchaudio failed: {e}")
+
+    # Try FunASR's loader (uses ffmpeg as fallback)
+    try:
+        from funasr.utils.load_utils import load_audio_text_image_video
+        import torch
+
+        data = load_audio_text_image_video(str(audio_path), fs=target_sr)
+        if isinstance(data, torch.Tensor):
+            y = data.numpy()
+        else:
+            y = np.array(data)
+        logger.debug(f"Loaded audio with FunASR loader: {audio_path}")
+        return y, target_sr
+    except Exception as e:
+        logger.debug(f"FunASR loader failed: {e}")
+
+    # All backends failed - provide helpful error message
+    if suffix in FFMPEG_FORMATS:
+        raise RuntimeError(
+            f"Cannot load audio file '{audio_path.name}' (format: {suffix}). "
+            f"This format requires ffmpeg. Please install ffmpeg:\n"
+            f"  Windows: winget install ffmpeg\n"
+            f"  Ubuntu: sudo apt install ffmpeg\n"
+            f"  macOS: brew install ffmpeg"
+        )
+    else:
+        raise RuntimeError(
+            f"Cannot load audio file '{audio_path.name}'. "
+            f"Unsupported format or corrupted file."
+        )
+
+
+def _normalize_audio(y: np.ndarray, sr: int, target_sr: int) -> Tuple[np.ndarray, int]:
+    """Normalize audio to mono and resample if needed."""
+    # Convert to mono if stereo
+    if len(y.shape) > 1:
+        y = np.mean(y, axis=1)
+
+    # Resample if needed
+    if sr != target_sr:
+        ratio = target_sr / sr
+        new_length = int(len(y) * ratio)
+        indices = np.linspace(0, len(y) - 1, new_length)
+        y = np.interp(indices, np.arange(len(y)), y)
+        sr = target_sr
+
+    return y, sr
 
 
 def get_audio_duration(audio_path: Path) -> float:
@@ -65,27 +167,13 @@ def chunk_audio(
     """
     import tempfile
     import soundfile as sf
-    import numpy as np
 
     if output_dir is None:
         output_dir = Path(tempfile.mkdtemp(prefix="transcription_chunks_"))
 
-    # Load audio with soundfile (no scipy dependency)
-    y, sr = sf.read(str(audio_path))
-
-    # Convert to mono if stereo
-    if len(y.shape) > 1:
-        y = np.mean(y, axis=1)
-
-    # Resample to 16kHz if needed (SenseVoice requires 16kHz)
-    if sr != 16000:
-        # Simple resampling using numpy
-        target_sr = 16000
-        ratio = target_sr / sr
-        new_length = int(len(y) * ratio)
-        indices = np.linspace(0, len(y) - 1, new_length)
-        y = np.interp(indices, np.arange(len(y)), y)
-        sr = target_sr
+    # Load audio - try multiple backends for format compatibility
+    y, sr = _load_audio_flexible(audio_path)
+    # _load_audio_flexible already handles mono conversion and resampling to 16kHz
 
     total_duration = len(y) / sr
 
@@ -203,7 +291,9 @@ def merge_overlapping_segments(
     return merged_segments
 
 
-def _is_duplicate_text(prev_text: str, current_text: str, threshold: float = 0.8) -> bool:
+def _is_duplicate_text(
+    prev_text: str, current_text: str, threshold: float = 0.8
+) -> bool:
     """
     Check if current_text is a duplicate of content at the end of prev_text.
 
@@ -240,7 +330,9 @@ def _is_duplicate_text(prev_text: str, current_text: str, threshold: float = 0.8
             return True
 
         # Check if current starts with prev suffix
-        if curr_lower.startswith(prev_suffix) or prev_suffix.endswith(curr_lower[:len(curr_lower)//2]):
+        if curr_lower.startswith(prev_suffix) or prev_suffix.endswith(
+            curr_lower[: len(curr_lower) // 2]
+        ):
             return True
 
     return False

@@ -302,11 +302,29 @@ Podcast episodes can be transcribed using AI to enable time-aligned subtitle dis
   - `base.py` - `BaseTranscriptionEngine` abstract interface
   - `schemas.py` - `TranscriptionSegment`, `AudioInput`, `TranscriptionResult`
   - `sensevoice.py` - SenseVoice local GPU implementation
-  - `utils.py` - Audio chunking, overlap merging utilities
+  - `utils.py` - Audio loading (multi-backend), chunking, overlap merging utilities
 - **API**: `POST /api/podcast/episode/{id}/transcribe` - Trigger transcription
 - **Data Model**: `PodcastEpisode.transcript_segments` (JSONB) stores time-aligned segments
 - **Frontend**: "Intensive Listening" button in `PodcastFeedDetailView.jsx`
 - **Unified Player**: `/player/podcast/{id}` route using `AudioContentRenderer`
+
+**Audio Format Support**:
+
+- Native support (soundfile): WAV, FLAC, OGG, AIFF
+- Requires ffmpeg: MP3, M4A, M4V, AAC, MP4, WebM, Opus
+
+To enable M4A/MP4 transcription, install ffmpeg:
+
+```bash
+# Windows
+winget install ffmpeg
+
+# Ubuntu/Debian
+sudo apt install ffmpeg
+
+# macOS
+brew install ffmpeg
+```
 
 ### Audiobook System
 
@@ -357,15 +375,15 @@ A centralized logging system that collects both frontend and backend logs.
   > Don't commit `logs/unified.log` to git.
 
 **Categories** (Generic, not vendor-specific):
-| Category | Description | Color |
-|----------|-------------|-------|
-| `user_input` | User speech/text, STT results | Blue |
-| `agent_output` | AI responses, TTS | Green |
-| `function_call` | Tool/function executions | Violet |
-| `audio` | Audio processing, chunks | Cyan |
-| `network` | API calls, WebSocket, latency | Yellow |
-| `lifecycle` | Connect/disconnect/init | White |
-| `general` | Default | White |
+| Category        | Description                   | Color  |
+| --------------- | ----------------------------- | ------ |
+| `user_input`    | User speech/text, STT results | Blue   |
+| `agent_output`  | AI responses, TTS             | Green  |
+| `function_call` | Tool/function executions      | Violet |
+| `audio`         | Audio processing, chunks      | Cyan   |
+| `network`       | API calls, WebSocket, latency | Yellow |
+| `lifecycle`     | Connect/disconnect/init       | White  |
+| `general`       | Default                       | White  |
 
 **For AI Debugging**: Read `logs/unified.log` directly:
 

@@ -358,7 +358,7 @@ app/
 │       ├── base.py               # BaseTranscriptionEngine 抽象
 │       ├── schemas.py            # TranscriptionSegment, AudioInput 等
 │       ├── sensevoice.py         # SenseVoice 本地 GPU 实现
-│       └── utils.py              # 分片、合并、时间戳偏移工具
+│       └── utils.py              # 音频加载、分片、合并、时间戳偏移工具
 ├── api/routers/
 │   └── podcast.py                # 新增 POST /episode/{id}/transcribe
 │   └── player.py                 # 新增统一播放页 API (可选，或复用 content.py)
@@ -366,7 +366,38 @@ app/
 
 ---
 
-## 9. 数据库迁移
+## 9. 音频格式支持
+
+`utils.py` 中的 `_load_audio_flexible()` 函数按以下顺序尝试加载音频：
+
+1. **soundfile** (libsndfile) - 原生支持: WAV, FLAC, OGG, AIFF
+2. **torchaudio** - 取决于后端配置
+3. **FunASR loader** - 自动回退到 ffmpeg
+
+### 需要 ffmpeg 的格式
+
+以下格式需要系统安装 ffmpeg：
+
+- MP3, M4A, M4V, AAC, MP4, WebM, Opus
+
+### 安装 ffmpeg
+
+```bash
+# Windows
+winget install ffmpeg
+
+# Ubuntu/Debian
+sudo apt install ffmpeg
+
+# macOS
+brew install ffmpeg
+```
+
+如果未安装 ffmpeg 且尝试转录这些格式，系统会返回明确的错误信息提示用户安装。
+
+---
+
+## 10. 数据库迁移
 
 ```python
 # alembic/versions/xxx_add_transcript_segments.py
@@ -383,7 +414,7 @@ def downgrade():
 
 ---
 
-## 10. MVP 范围与后续迭代
+## 11. MVP 范围与后续迭代
 
 ### MVP (P0)
 
@@ -405,7 +436,7 @@ def downgrade():
 
 ---
 
-## 11. 上下文依赖 (Context Dependencies)
+## 12. 上下文依赖 (Context Dependencies)
 
 - **AudiobookProvider**: 参考其 `ContentBundle` 构建逻辑
 - **AudioContentRenderer**: 统一播放页的渲染组件

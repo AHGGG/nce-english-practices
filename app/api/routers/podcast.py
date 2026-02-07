@@ -1263,7 +1263,13 @@ async def _run_transcription(episode_id: int, audio_url: str):
 
         # Download audio to temp file
         temp_dir = Path(tempfile.mkdtemp(prefix="podcast_transcribe_"))
-        audio_path = temp_dir / "audio.mp3"
+
+        # Preserve original extension from URL
+        from urllib.parse import urlparse
+
+        parsed_url = urlparse(audio_url)
+        original_ext = Path(parsed_url.path).suffix or ".mp3"
+        audio_path = temp_dir / f"audio{original_ext}"
 
         logger.info(f"Downloading audio from {audio_url}")
 
@@ -1283,6 +1289,7 @@ async def _run_transcription(episode_id: int, audio_url: str):
         logger.info(f"Audio downloaded to {audio_path}")
 
         # Run transcription in thread pool (CPU-bound)
+        # Note: utils._load_audio_flexible handles format conversion internally
         def do_transcription():
             from app.services.transcription import AudioInput, get_default_engine
 
@@ -1321,7 +1328,10 @@ async def _run_transcription(episode_id: int, audio_url: str):
 
     except Exception as e:
         import traceback
-        logger.error(f"Transcription failed for episode {episode_id}: {e}\n{traceback.format_exc()}")
+
+        logger.error(
+            f"Transcription failed for episode {episode_id}: {e}\n{traceback.format_exc()}"
+        )
 
         # Update status to failed
         try:
