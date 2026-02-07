@@ -90,7 +90,10 @@ export default function AudiobookPlayerView() {
   const handleTrackChange = useCallback(
     (trackIndex) => {
       setSearchParams({ track: trackIndex.toString() });
-      setShowTrackList(false);
+      // Only close track list on mobile (< lg breakpoint)
+      if (window.innerWidth < 1024) {
+        setShowTrackList(false);
+      }
     },
     [setSearchParams],
   );
@@ -173,10 +176,10 @@ export default function AudiobookPlayerView() {
 
         {/* Track List Sidebar */}
         {trackCount > 1 && showTrackList && (
-          <div className="w-80 border-l border-white/10 flex flex-col bg-bg-surface z-10 shrink-0 absolute inset-y-0 right-0 lg:static lg:inset-auto shadow-2xl lg:shadow-none">
-            <div className="p-4 border-b border-white/5 flex items-center justify-between shrink-0">
-              <h2 className="text-sm font-semibold flex items-center gap-2">
-                <List className="w-4 h-4 text-accent-primary" />
+          <div className="w-72 lg:w-80 border-l border-white/10 flex flex-col bg-bg-surface z-10 shrink-0 absolute inset-y-0 right-0 lg:static lg:inset-auto shadow-2xl lg:shadow-none">
+            <div className="p-3 lg:p-4 border-b border-white/5 flex items-center justify-between shrink-0">
+              <h2 className="text-xs lg:text-sm font-semibold flex items-center gap-2">
+                <List className="w-3.5 h-3.5 lg:w-4 lg:h-4 text-accent-primary" />
                 Chapters
               </h2>
               <button
@@ -186,19 +189,19 @@ export default function AudiobookPlayerView() {
                 <X className="w-4 h-4" />
               </button>
             </div>
-            <div className="flex-1 overflow-y-auto p-2">
+            <div className="flex-1 overflow-y-auto p-1.5 lg:p-2">
               {tracks.map((track) => (
                 <button
                   key={track.index}
                   onClick={() => handleTrackChange(track.index)}
-                  className={`w-full px-3 py-3 text-left rounded-lg mb-1 transition-all flex items-start gap-3 group ${
+                  className={`w-full px-2.5 py-2 lg:px-3 lg:py-3 text-left rounded-lg mb-1 transition-all flex items-start gap-2 lg:gap-3 group ${
                     track.index === currentTrack
                       ? "bg-accent-primary/10 text-accent-primary ring-1 ring-accent-primary/20"
                       : "text-text-secondary hover:bg-white/5 hover:text-text-primary"
                   }`}
                 >
                   <span
-                    className={`text-xs font-mono mt-0.5 ${
+                    className={`text-[10px] lg:text-xs font-mono mt-0.5 shrink-0 ${
                       track.index === currentTrack
                         ? "text-accent-primary/60"
                         : "text-white/20 group-hover:text-white/40"
@@ -207,17 +210,17 @@ export default function AudiobookPlayerView() {
                     {String(track.index + 1).padStart(2, "0")}
                   </span>
                   <div className="flex-1 min-w-0">
-                    <div className="text-sm font-medium leading-snug truncate">
+                    <div className="text-xs lg:text-sm font-medium leading-snug truncate">
                       {track.title}
                     </div>
                     {track.start_time !== undefined && (
-                      <div className="text-xs opacity-50 mt-1">
+                      <div className="text-[10px] lg:text-xs opacity-50 mt-0.5 lg:mt-1">
                         {formatTime(track.start_time)}
                       </div>
                     )}
                   </div>
                   {track.index === currentTrack && (
-                    <div className="w-2 h-2 rounded-full bg-accent-primary mt-1.5 shrink-0 animate-pulse" />
+                    <div className="w-1.5 h-1.5 lg:w-2 lg:h-2 rounded-full bg-accent-primary mt-1 lg:mt-1.5 shrink-0 animate-pulse" />
                   )}
                 </button>
               ))}
