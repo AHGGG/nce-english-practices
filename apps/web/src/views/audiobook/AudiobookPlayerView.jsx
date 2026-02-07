@@ -5,7 +5,14 @@
  */
 import React, { useState, useEffect, useCallback } from "react";
 import { useParams, useNavigate, useSearchParams } from "react-router-dom";
-import { ChevronLeft, Loader2, List, ChevronDown } from "lucide-react";
+import {
+  ChevronLeft,
+  Loader2,
+  List,
+  ChevronDown,
+  PanelRight,
+  X,
+} from "lucide-react";
 import { authFetch } from "../../api/auth";
 import {
   rendererRegistry,
@@ -27,7 +34,7 @@ export default function AudiobookPlayerView() {
   const [bundle, setBundle] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [showTrackList, setShowTrackList] = useState(false);
+  const [showTrackList, setShowTrackList] = useState(true); // Default to open on desktop
 
   // Word explanation
   const {
@@ -117,64 +124,29 @@ export default function AudiobookPlayerView() {
           </h1>
         )}
 
-        {/* Track Selector */}
+        {/* Track List Toggle (Sidebar) */}
         {trackCount > 1 && (
-          <div className="relative">
-            <button
-              onClick={() => setShowTrackList(!showTrackList)}
-              className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 hover:bg-white/10 transition-colors"
-            >
-              <List className="w-4 h-4 text-accent-primary" />
-              <span className="text-xs font-medium">
-                Track {currentTrack + 1} / {trackCount}
-              </span>
-              <ChevronDown
-                className={`w-3 h-3 transition-transform ${showTrackList ? "rotate-180" : ""}`}
-              />
-            </button>
-
-            {/* Track List Dropdown */}
-            {showTrackList && (
-              <>
-                <div
-                  className="fixed inset-0 z-40"
-                  onClick={() => setShowTrackList(false)}
-                />
-                <div className="absolute right-0 top-full mt-2 w-72 max-h-80 overflow-y-auto bg-bg-surface border border-white/10 rounded-xl shadow-2xl z-50">
-                  {tracks.map((track) => (
-                    <button
-                      key={track.index}
-                      onClick={() => handleTrackChange(track.index)}
-                      className={`w-full px-4 py-3 text-left hover:bg-white/5 transition-colors flex items-center gap-3 ${
-                        track.index === currentTrack
-                          ? "bg-accent-primary/10 text-accent-primary"
-                          : "text-text-primary"
-                      }`}
-                    >
-                      <span className="text-xs font-mono text-text-muted w-6">
-                        {String(track.index + 1).padStart(2, "0")}
-                      </span>
-                      <span className="flex-1 text-sm truncate">
-                        {track.title}
-                      </span>
-                      {track.index === currentTrack && (
-                        <span className="text-xs bg-accent-primary/20 px-2 py-0.5 rounded-full">
-                          Playing
-                        </span>
-                      )}
-                    </button>
-                  ))}
-                </div>
-              </>
-            )}
-          </div>
+          <button
+            onClick={() => setShowTrackList(!showTrackList)}
+            className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border transition-colors ml-4 ${
+              showTrackList
+                ? "bg-accent-primary/10 border-accent-primary/20 text-accent-primary"
+                : "bg-white/5 border-white/10 hover:bg-white/10 text-text-secondary"
+            }`}
+            title="Toggle Chapter List"
+          >
+            <PanelRight className="w-4 h-4" />
+            <span className="text-xs font-medium hidden sm:inline">
+              Chapters
+            </span>
+          </button>
         )}
       </header>
 
       {/* Content */}
-      <div className="flex-1 flex overflow-hidden">
+      <div className="flex-1 flex overflow-hidden relative">
         {/* Main content area */}
-        <div className="flex-1 flex flex-col overflow-hidden">
+        <div className="flex-1 flex flex-col overflow-hidden min-w-0">
           {isLoading ? (
             <div className="flex-1 flex items-center justify-center">
               <Loader2 className="w-8 h-8 animate-spin text-accent-primary" />
@@ -199,9 +171,63 @@ export default function AudiobookPlayerView() {
           )}
         </div>
 
+        {/* Track List Sidebar */}
+        {trackCount > 1 && showTrackList && (
+          <div className="w-80 border-l border-white/10 flex flex-col bg-bg-surface z-10 shrink-0 absolute inset-y-0 right-0 lg:static lg:inset-auto shadow-2xl lg:shadow-none">
+            <div className="p-4 border-b border-white/5 flex items-center justify-between shrink-0">
+              <h2 className="text-sm font-semibold flex items-center gap-2">
+                <List className="w-4 h-4 text-accent-primary" />
+                Chapters
+              </h2>
+              <button
+                onClick={() => setShowTrackList(false)}
+                className="lg:hidden p-1 hover:bg-white/10 rounded-md"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <div className="flex-1 overflow-y-auto p-2">
+              {tracks.map((track) => (
+                <button
+                  key={track.index}
+                  onClick={() => handleTrackChange(track.index)}
+                  className={`w-full px-3 py-3 text-left rounded-lg mb-1 transition-all flex items-start gap-3 group ${
+                    track.index === currentTrack
+                      ? "bg-accent-primary/10 text-accent-primary ring-1 ring-accent-primary/20"
+                      : "text-text-secondary hover:bg-white/5 hover:text-text-primary"
+                  }`}
+                >
+                  <span
+                    className={`text-xs font-mono mt-0.5 ${
+                      track.index === currentTrack
+                        ? "text-accent-primary/60"
+                        : "text-white/20 group-hover:text-white/40"
+                    }`}
+                  >
+                    {String(track.index + 1).padStart(2, "0")}
+                  </span>
+                  <div className="flex-1 min-w-0">
+                    <div className="text-sm font-medium leading-snug truncate">
+                      {track.title}
+                    </div>
+                    {track.start_time !== undefined && (
+                      <div className="text-xs opacity-50 mt-1">
+                        {formatTime(track.start_time)}
+                      </div>
+                    )}
+                  </div>
+                  {track.index === currentTrack && (
+                    <div className="w-2 h-2 rounded-full bg-accent-primary mt-1.5 shrink-0 animate-pulse" />
+                  )}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* Word Inspector Sidebar */}
         {selectedWord && (
-          <div className="w-96 border-l border-white/10 overflow-y-auto bg-bg-surface">
+          <div className="w-96 border-l border-white/10 overflow-y-auto bg-bg-surface shrink-0 absolute inset-y-0 right-0 z-20 shadow-2xl">
             <WordInspector
               selectedWord={selectedWord}
               isPhrase={isPhrase}
@@ -222,4 +248,14 @@ export default function AudiobookPlayerView() {
       </div>
     </div>
   );
+}
+
+// Helper for time formatting
+function formatTime(seconds) {
+  const h = Math.floor(seconds / 3600);
+  const m = Math.floor((seconds % 3600) / 60);
+  const s = Math.floor(seconds % 60);
+  if (h > 0)
+    return `${h}:${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`;
+  return `${m}:${s.toString().padStart(2, "0")}`;
 }

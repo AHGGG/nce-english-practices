@@ -340,7 +340,7 @@ function AudioContentRendererComponent({
   return (
     <div className="flex flex-col h-full">
       {/* Subtitle Area */}
-      <div className="flex-1 overflow-y-auto px-4 py-6">
+      <div className="flex-1 overflow-y-auto px-4 py-6 scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent hover:scrollbar-thumb-white/20">
         <div className="max-w-2xl mx-auto space-y-2">
           {segments.length > 0 ? (
             segments.map((segment) => (

@@ -22,6 +22,7 @@ logs/
 deploy/logs/
 
 node_modules/
+package-lock.json
 
 docs/voice/deepgram/examples
 

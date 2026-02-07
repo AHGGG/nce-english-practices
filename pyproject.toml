@@ -33,6 +33,7 @@ dependencies = [
     "rich>=14.2.0",
     "click>=8.3.1",
     "httpx[socks]>=0.28.1",
+    "mutagen>=1.47.0",
 ]
 
 [project.optional-dependencies]
