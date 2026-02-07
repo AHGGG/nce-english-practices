@@ -16,3 +16,4 @@ export * from "./hooks/useSentenceStudy";
 export * from "./hooks/useArticleReader";
 export * from "./hooks/useSentenceExplainer";
 export * from "./hooks/useProficiencyTest";
+export * from "./hooks/useAudioPlayer";

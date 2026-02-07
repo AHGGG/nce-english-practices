@@ -1,35 +1,38 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { GlobalProvider } from './context/GlobalContext';
-import { DictionaryProvider } from './context/DictionaryContext';
-import { AuthProvider, useAuth } from './context/AuthContext';
-import ProtectedRoute from './components/ProtectedRoute';
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { GlobalProvider } from "./context/GlobalContext";
+import { DictionaryProvider } from "./context/DictionaryContext";
+import { AuthProvider, useAuth } from "./context/AuthContext";
+import ProtectedRoute from "./components/ProtectedRoute";
 
 // Auth Pages
-import { LoginPage, RegisterPage } from './views/auth';
+import { LoginPage, RegisterPage } from "./views/auth";
 
 // Main Pages
-import PerformanceReport from './views/PerformanceReport';
-import StudyTimeDetail from './views/StudyTimeDetail';
-import VoiceLab from './views/VoiceLab';
-import AUIStreamingDemo from './views/AUIStreamingDemo';
-import VoiceMode from './views/VoiceMode';
-import ReadingMode from './views/ReadingMode';
-import NavDashboard from './views/NavDashboard';
-import LabCalibration from './components/lab/LabCalibration';
-import SentenceStudy from './components/sentence-study';
-import ReviewQueue from './views/ReviewQueue';
-import ReviewDebug from './views/ReviewDebug';
-import MemoryCurveDebug from './views/MemoryCurveDebug';
-import SettingsPage from './views/SettingsPage';
+import PerformanceReport from "./views/PerformanceReport";
+import StudyTimeDetail from "./views/StudyTimeDetail";
+import VoiceLab from "./views/VoiceLab";
+import AUIStreamingDemo from "./views/AUIStreamingDemo";
+import VoiceMode from "./views/VoiceMode";
+import ReadingMode from "./views/ReadingMode";
+import NavDashboard from "./views/NavDashboard";
+import LabCalibration from "./components/lab/LabCalibration";
+import SentenceStudy from "./components/sentence-study";
+import ReviewQueue from "./views/ReviewQueue";
+import ReviewDebug from "./views/ReviewDebug";
+import MemoryCurveDebug from "./views/MemoryCurveDebug";
+import SettingsPage from "./views/SettingsPage";
 
 // Podcast
-import { PodcastProvider } from './context/PodcastContext';
+import { PodcastProvider } from "./context/PodcastContext";
 
-import PlayerBar from './components/podcast/PlayerBar';
-import PodcastLibraryView from './views/podcast/PodcastLibraryView';
-import PodcastSearchView from './views/podcast/PodcastSearchView';
-import PodcastFeedDetailView from './views/podcast/PodcastFeedDetailView';
-import PodcastDownloadsView from './views/podcast/PodcastDownloadsView';
+import PlayerBar from "./components/podcast/PlayerBar";
+import PodcastLibraryView from "./views/podcast/PodcastLibraryView";
+import PodcastSearchView from "./views/podcast/PodcastSearchView";
+import PodcastFeedDetailView from "./views/podcast/PodcastFeedDetailView";
+import PodcastDownloadsView from "./views/podcast/PodcastDownloadsView";
+
+// Audiobook
+import { AudiobookLibraryView, AudiobookPlayerView } from "./views/audiobook";
 
 /**
  * Public Route - Redirects to nav if already authenticated
@@ -181,7 +184,6 @@ function AppRoutes() {
 
       <Route
         path="/podcast"
-
         element={
           <ProtectedRoute>
             <PodcastLibraryView />
@@ -213,9 +215,30 @@ function AppRoutes() {
         }
       />
 
+      {/* Audiobook routes */}
+      <Route
+        path="/audiobook"
+        element={
+          <ProtectedRoute>
+            <AudiobookLibraryView />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/audiobook/:bookId"
+        element={
+          <ProtectedRoute>
+            <AudiobookPlayerView />
+          </ProtectedRoute>
+        }
+      />
+
       {/* Redirects */}
       <Route path="/" element={<Navigate to="/nav" replace />} />
-      <Route path="/profile-stats" element={<Navigate to="/performance" replace />} />
+      <Route
+        path="/profile-stats"
+        element={<Navigate to="/performance" replace />}
+      />
       <Route path="*" element={<Navigate to="/nav" replace />} />
     </Routes>
   );

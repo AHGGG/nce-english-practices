@@ -2,6 +2,34 @@
 
 > Phase 2 实现计划 - 有声书支持
 
+## 0. Current State Analysis (2026-02-07)
+
+### 已有 Podcast 实现
+
+Web 端已经有完整的 Podcast 功能：
+
+| 组件                      | 位置                                                   | 功能                                      |
+| ------------------------- | ------------------------------------------------------ | ----------------------------------------- |
+| **PodcastContext**        | `apps/web/src/context/PodcastContext.jsx`              | 全局音频状态管理（HTML5 Audio API）       |
+| **PlayerBar**             | `apps/web/src/components/podcast/PlayerBar.jsx`        | 底部播放器 UI（进度条、速度控制）         |
+| **PodcastLayout**         | `apps/web/src/components/podcast/PodcastLayout.jsx`    | 共享布局（Library/Search/Downloads 导航） |
+| **PodcastFeedDetailView** | `apps/web/src/views/podcast/PodcastFeedDetailView.jsx` | 集列表 + 播放/下载/进度追踪               |
+| **PodcastProvider**       | `app/services/content_providers/podcast_provider.py`   | 后端 RSS 解析                             |
+
+### 设计调整
+
+1. **复用 PodcastContext 的音频播放逻辑**，而不是创建新的 `useAudioSync` hook
+2. **AudioContentRenderer** 应该在 Reading 模式下使用，提供字幕同步高亮
+3. **Audiobook** 是本地文件（`resources/audiobooks/`），而 Podcast 是远程 RSS
+
+### Phase 2 范围修订
+
+| 原计划                        | 调整                                       |
+| ----------------------------- | ------------------------------------------ |
+| 新建 useAudioSync hook        | 复用 PodcastContext 模式，按需抽取共享逻辑 |
+| AudioContentRenderer 从头实现 | 基于现有 PlayerBar 模式，增加字幕同步高亮  |
+| 完整前端 UI                   | 集成到 Reading 模式，不创建独立页面        |
+
 ## 1. Overview
 
 | 项目         | 内容                                  |
@@ -9,23 +37,23 @@
 | **目标**     | 支持有声书内容类型（音频 + 字幕同步） |
 | **预计周期** | 2-3 周                                |
 | **依赖**     | Phase 1 完成                          |
-| **风险**     | 中（涉及后端 + 前端）                 |
+| **风险**     | 低（大量复用现有 Podcast 基础设施）   |
 
 ## 2. Features
 
-### 2.1 Core Features
+### 2.1 Core Features (本 Phase 实现)
 
-- [ ] 音频播放（播放/暂停/进度条）
-- [ ] 字幕同步高亮
-- [ ] 点击字幕跳转
-- [ ] 播放速度调节
-- [ ] 词汇点击查词
+- [ ] 音频播放（播放/暂停/进度条）← **复用 PodcastContext**
+- [ ] 字幕同步高亮 ← **新增**
+- [ ] 点击字幕跳转 ← **新增**
+- [ ] 播放速度调节 ← **复用 PlayerBar**
+- [ ] 词汇点击查词 ← **复用 SentenceBlock**
 
-### 2.2 Nice-to-Have
+### 2.2 Nice-to-Have (Future)
 
 - [ ] 循环播放单句
 - [ ] A-B 循环
-- [ ] 离线缓存
+- [ ] 离线缓存 ← Podcast 已有，可复用
 
 ## 3. Backend Implementation
 
@@ -33,25 +61,37 @@
 
 **文件**: `app/models/content_schemas.py`
 
+现有 Schema 已经支持音频内容：
+
+- `ContentSentence` 已有 `start_time`, `end_time`, `audio_url` 字段
+- `ContentBundle` 已有 `audio_url` 字段
+
+新增内容：
+
 ```python
 # 扩展 SourceType
 class SourceType(str, Enum):
-    # ... existing
-    AUDIOBOOK = "audiobook"
+    EPUB = "epub"
+    PODCAST = "podcast"
+    RSS = "rss"
+    PLAIN_TEXT = "plain_text"
+    AUDIOBOOK = "audiobook"  # 新增
 
 # 扩展 BlockType
 class BlockType(str, Enum):
-    # ... existing
-    AUDIO_SEGMENT = "audio_segment"
+    PARAGRAPH = "paragraph"
+    IMAGE = "image"
+    HEADING = "heading"
+    SUBTITLE = "subtitle"
+    AUDIO_SEGMENT = "audio_segment"  # 新增
 
 # 扩展 ContentBlock
 class ContentBlock(BaseModel):
     # ... existing fields
 
     # New: For AUDIO_SEGMENT
-    audio_url: Optional[str] = None
-    start_time: Optional[float] = None
-    end_time: Optional[float] = None
+    start_time: Optional[float] = None  # 新增
+    end_time: Optional[float] = None    # 新增
 ```
 
 ### 3.2 AudiobookProvider
@@ -361,27 +401,246 @@ self.register_provider(AudiobookProvider())
 
 ## 4. Frontend Implementation
 
-### 4.1 AudioContentRenderer
+### 4.1 设计决策：复用 vs 新建
+
+**现有 PodcastContext 优势**：
+
+- 完整的 HTML5 Audio API 封装
+- 进度追踪（本地 + 云端同步）
+- 离线下载支持
+- 播放速度持久化
+
+**AudioContentRenderer 需要的额外功能**：
+
+- 字幕同步高亮（根据 currentTime 高亮对应 segment）
+- 点击字幕跳转（seekTo segment.startTime）
+
+**决策**：创建独立的 `useAudioPlayer` hook，从 PodcastContext 抽取核心播放逻辑，供 AudioContentRenderer 使用。PodcastContext 继续服务于 Podcast 专用功能（订阅、下载、进度同步）。
+
+### 4.2 useAudioPlayer Hook (新建)
+
+**文件**: `packages/shared/src/hooks/useAudioPlayer.ts`
+
+```typescript
+import { useState, useRef, useCallback, useEffect } from "react";
+
+export interface AudioSegment {
+  index: number;
+  text: string;
+  sentences: string[];
+  startTime: number; // seconds
+  endTime: number; // seconds
+}
+
+export interface UseAudioPlayerOptions {
+  audioUrl: string;
+  segments?: AudioSegment[];
+  onSegmentChange?: (index: number) => void;
+  initialPlaybackRate?: number;
+}
+
+export interface AudioPlayerState {
+  isPlaying: boolean;
+  isLoading: boolean;
+  currentTime: number;
+  duration: number;
+  playbackRate: number;
+  activeSegmentIndex: number;
+}
+
+export interface AudioPlayerActions {
+  play: () => Promise<void>;
+  pause: () => void;
+  togglePlay: () => void;
+  seekTo: (seconds: number) => void;
+  seekToSegment: (index: number) => void;
+  setPlaybackRate: (rate: number) => void;
+}
+
+export function useAudioPlayer(options: UseAudioPlayerOptions): {
+  state: AudioPlayerState;
+  actions: AudioPlayerActions;
+  audioRef: React.RefObject<HTMLAudioElement>;
+} {
+  const {
+    audioUrl,
+    segments = [],
+    onSegmentChange,
+    initialPlaybackRate = 1,
+  } = options;
+
+  const audioRef = useRef<HTMLAudioElement>(null);
+
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [duration, setDuration] = useState(0);
+  const [playbackRate, setPlaybackRateState] = useState(initialPlaybackRate);
+  const [activeSegmentIndex, setActiveSegmentIndex] = useState(-1);
+
+  // 计算当前活跃的 segment
+  useEffect(() => {
+    if (!segments.length) return;
+
+    const idx = segments.findIndex(
+      (seg) => currentTime >= seg.startTime && currentTime < seg.endTime,
+    );
+
+    if (idx !== activeSegmentIndex && idx !== -1) {
+      setActiveSegmentIndex(idx);
+      onSegmentChange?.(idx);
+    }
+  }, [currentTime, segments, activeSegmentIndex, onSegmentChange]);
+
+  // Audio element event handlers
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (!audio) return;
+
+    const handleLoadedMetadata = () => {
+      setDuration(audio.duration);
+      setIsLoading(false);
+    };
+
+    const handleTimeUpdate = () => {
+      setCurrentTime(audio.currentTime);
+    };
+
+    const handleEnded = () => {
+      setIsPlaying(false);
+    };
+
+    const handleWaiting = () => setIsLoading(true);
+    const handleCanPlay = () => setIsLoading(false);
+
+    audio.addEventListener("loadedmetadata", handleLoadedMetadata);
+    audio.addEventListener("timeupdate", handleTimeUpdate);
+    audio.addEventListener("ended", handleEnded);
+    audio.addEventListener("waiting", handleWaiting);
+    audio.addEventListener("canplay", handleCanPlay);
+
+    return () => {
+      audio.removeEventListener("loadedmetadata", handleLoadedMetadata);
+      audio.removeEventListener("timeupdate", handleTimeUpdate);
+      audio.removeEventListener("ended", handleEnded);
+      audio.removeEventListener("waiting", handleWaiting);
+      audio.removeEventListener("canplay", handleCanPlay);
+    };
+  }, []);
+
+  // Update audio src when URL changes
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (!audio || !audioUrl) return;
+
+    audio.src = audioUrl;
+    audio.playbackRate = playbackRate;
+  }, [audioUrl]);
+
+  const play = useCallback(async () => {
+    const audio = audioRef.current;
+    if (!audio) return;
+
+    try {
+      await audio.play();
+      setIsPlaying(true);
+    } catch (e) {
+      console.error("Play failed:", e);
+    }
+  }, []);
+
+  const pause = useCallback(() => {
+    audioRef.current?.pause();
+    setIsPlaying(false);
+  }, []);
+
+  const togglePlay = useCallback(() => {
+    isPlaying ? pause() : play();
+  }, [isPlaying, play, pause]);
+
+  const seekTo = useCallback(
+    (seconds: number) => {
+      const audio = audioRef.current;
+      if (!audio) return;
+
+      audio.currentTime = Math.max(0, Math.min(seconds, duration));
+      setCurrentTime(audio.currentTime);
+    },
+    [duration],
+  );
+
+  const seekToSegment = useCallback(
+    (index: number) => {
+      if (index >= 0 && index < segments.length) {
+        seekTo(segments[index].startTime);
+      }
+    },
+    [segments, seekTo],
+  );
+
+  const setPlaybackRate = useCallback((rate: number) => {
+    const audio = audioRef.current;
+    if (audio) {
+      audio.playbackRate = rate;
+    }
+    setPlaybackRateState(rate);
+  }, []);
+
+  return {
+    state: {
+      isPlaying,
+      isLoading,
+      currentTime,
+      duration,
+      playbackRate,
+      activeSegmentIndex,
+    },
+    actions: {
+      play,
+      pause,
+      togglePlay,
+      seekTo,
+      seekToSegment,
+      setPlaybackRate,
+    },
+    audioRef,
+  };
+}
+```
+
+### 4.3 AudioContentRenderer
 
 **文件**: `apps/web/src/components/content/renderers/AudioContentRenderer.tsx`
 
 ```tsx
-import React, { useRef } from "react";
-import { Play, Pause, SkipBack, SkipForward, Volume2 } from "lucide-react";
+import React from "react";
+import {
+  Play,
+  Pause,
+  SkipBack,
+  SkipForward,
+  Gauge,
+  Loader2,
+} from "lucide-react";
 import type {
   ContentRenderer,
   ContentRendererProps,
   ContentBundle,
-  AudioSegment,
 } from "../types";
 import { SentenceBlock } from "../shared";
-import { useAudioSync } from "@nce/shared/hooks";
+import { useAudioPlayer, AudioSegment } from "@nce/shared/hooks";
 
 export class AudioContentRenderer implements ContentRenderer {
   readonly name = "AudioContentRenderer";
 
   canRender(bundle: ContentBundle): boolean {
-    return ["podcast", "audiobook"].includes(bundle.source_type);
+    // Audiobook 使用 blocks with AUDIO_SEGMENT
+    // 也可以处理有 audio_url 的 ContentBundle
+    return (
+      bundle.source_type === "audiobook" ||
+      (bundle.audio_url &&
+        bundle.blocks.some((b) => b.type === "audio_segment"))
+    );
   }
 
   render(props: ContentRendererProps): React.ReactNode {
@@ -398,18 +657,22 @@ function AudioContentRendererComponent({
   tracker,
 }: ContentRendererProps) {
   // 转换 blocks 为 segments
-  const segments: AudioSegment[] = bundle.blocks
-    .filter((b) => b.type === "audio_segment")
-    .map((b, i) => ({
-      index: i,
-      text: b.text || "",
-      sentences: b.sentences || [],
-      startTime: b.start_time || 0,
-      endTime: b.end_time || 0,
-    }));
+  const segments: AudioSegment[] = React.useMemo(
+    () =>
+      bundle.blocks
+        .filter((b) => b.type === "audio_segment")
+        .map((b, i) => ({
+          index: i,
+          text: b.text || "",
+          sentences: b.sentences || [],
+          startTime: b.start_time || 0,
+          endTime: b.end_time || 0,
+        })),
+    [bundle.blocks],
+  );
 
-  // 音频同步 hook
-  const { state, actions, audioRef } = useAudioSync({
+  // 使用抽取的 hook
+  const { state, actions, audioRef } = useAudioPlayer({
     audioUrl: bundle.audio_url || "",
     segments,
     onSegmentChange: (index) => {
@@ -422,12 +685,6 @@ function AudioContentRendererComponent({
     const m = Math.floor(seconds / 60);
     const s = Math.floor(seconds % 60);
     return `${m}:${s.toString().padStart(2, "0")}`;
-  };
-
-  // 处理词汇点击
-  const handleWordClick = (word: string, sentence: string) => {
-    onWordClick?.(word, sentence);
-    tracker?.onWordClick();
   };
 
   return (
@@ -450,7 +707,7 @@ function AudioContentRendererComponent({
                 {formatTime(segment.startTime)}
               </div>
 
-              {/* 句子内容 */}
+              {/* 句子内容 - 点击词汇不触发 segment seek */}
               <div onClick={(e) => e.stopPropagation()}>
                 <SentenceBlock
                   text={segment.text}
@@ -464,8 +721,8 @@ function AudioContentRendererComponent({
         </div>
       </div>
 
-      {/* 播放控制栏 */}
-      <div className="shrink-0 border-t border-white/10 bg-bg-elevated px-4 py-4">
+      {/* 播放控制栏 - 复用 PlayerBar 样式 */}
+      <div className="shrink-0 border-t border-white/10 bg-white/[0.02] backdrop-blur-xl px-4 py-4">
         <div className="max-w-2xl mx-auto">
           {/* 进度条 */}
           <div className="flex items-center gap-3 mb-4">
@@ -492,59 +749,63 @@ function AudioContentRendererComponent({
 
           {/* 控制按钮 */}
           <div className="flex items-center justify-center gap-4">
-            {/* 后退 10 秒 */}
             <button
               onClick={() =>
-                actions.seekTo(Math.max(0, state.currentTime - 10))
+                actions.seekTo(Math.max(0, state.currentTime - 15))
               }
-              className="p-2 text-text-secondary hover:text-white transition-colors"
+              className="p-2 text-white/50 hover:text-white transition-colors hover:bg-white/5 rounded-full"
+              title="Back 15s"
             >
               <SkipBack className="w-5 h-5" />
             </button>
 
-            {/* 播放/暂停 */}
             <button
               onClick={actions.togglePlay}
-              className="p-4 bg-accent-primary text-black rounded-full hover:bg-accent-primary/90 transition-colors"
+              className="p-4 bg-accent-primary text-black rounded-full hover:bg-accent-primary/90 transition-colors shadow-lg"
             >
-              {state.isPlaying ? (
-                <Pause className="w-6 h-6" />
+              {state.isLoading ? (
+                <Loader2 className="w-6 h-6 animate-spin" />
+              ) : state.isPlaying ? (
+                <Pause className="w-6 h-6 fill-current" />
               ) : (
-                <Play className="w-6 h-6 ml-0.5" />
+                <Play className="w-6 h-6 fill-current ml-0.5" />
               )}
             </button>
 
-            {/* 前进 10 秒 */}
             <button
               onClick={() =>
-                actions.seekTo(Math.min(state.duration, state.currentTime + 10))
+                actions.seekTo(Math.min(state.duration, state.currentTime + 30))
               }
-              className="p-2 text-text-secondary hover:text-white transition-colors"
+              className="p-2 text-white/50 hover:text-white transition-colors hover:bg-white/5 rounded-full"
+              title="Forward 30s"
             >
               <SkipForward className="w-5 h-5" />
             </button>
 
             {/* 播放速度 */}
-            <select
-              value={state.playbackRate}
-              onChange={(e) =>
-                actions.setPlaybackRate(parseFloat(e.target.value))
-              }
-              className="ml-4 bg-transparent text-text-secondary text-sm font-mono cursor-pointer"
-            >
-              <option value={0.5}>0.5x</option>
-              <option value={0.75}>0.75x</option>
-              <option value={1}>1x</option>
-              <option value={1.25}>1.25x</option>
-              <option value={1.5}>1.5x</option>
-              <option value={2}>2x</option>
-            </select>
+            <div className="ml-4 flex items-center gap-1 px-3 py-1.5 text-sm bg-white/5 rounded-lg text-white border border-white/10">
+              <Gauge className="w-4 h-4 text-accent-primary" />
+              <select
+                value={state.playbackRate}
+                onChange={(e) =>
+                  actions.setPlaybackRate(parseFloat(e.target.value))
+                }
+                className="bg-transparent font-mono cursor-pointer outline-none"
+              >
+                <option value={0.5}>0.5x</option>
+                <option value={0.75}>0.75x</option>
+                <option value={1}>1x</option>
+                <option value={1.25}>1.25x</option>
+                <option value={1.5}>1.5x</option>
+                <option value={2}>2x</option>
+              </select>
+            </div>
           </div>
         </div>
       </div>
 
       {/* 隐藏的 audio 元素 */}
-      <audio ref={audioRef} src={bundle.audio_url} preload="metadata" />
+      <audio ref={audioRef} preload="metadata" />
     </div>
   );
 }
@@ -552,7 +813,7 @@ function AudioContentRendererComponent({
 export default AudioContentRenderer;
 ```
 
-### 4.2 Register AudioContentRenderer
+### 4.4 Register AudioContentRenderer
 
 **文件**: `apps/web/src/components/content/index.ts`
 
@@ -560,47 +821,64 @@ export default AudioContentRenderer;
 import { AudioContentRenderer } from "./renderers/AudioContentRenderer";
 
 export function initializeRenderers(): void {
-  // ... existing
+  // ... existing registrations
 
-  // Audio content
+  // Audio content (Audiobook only - Podcast has its own UI)
   const audioRenderer = new AudioContentRenderer();
-  rendererRegistry.register("podcast", audioRenderer);
   rendererRegistry.register("audiobook", audioRenderer);
 }
 ```
 
+**注意**: Podcast 不使用 AudioContentRenderer，因为它有专门的 `PodcastFeedDetailView` + `PlayerBar` 组合。
+
 ## 5. Testing Checklist
 
-### 功能测试
+### 后端测试
 
-- [ ] 音频播放/暂停
-- [ ] 进度条拖动
-- [ ] 字幕同步高亮
-- [ ] 点击字幕跳转
-- [ ] 播放速度调节
-- [ ] 词汇点击查词
-- [ ] 阅读追踪正常
+- [x] AudiobookProvider 正确解析 SRT 字幕
+- [x] AudiobookProvider 正确解析 VTT 字幕
+- [x] AudiobookProvider 正确解析 LRC 歌词
+- [x] `/api/content/audiobook/{book_id}` 返回正确的 ContentBundle
+- [x] `/api/content/audiobook/{book_id}/audio` 正确流式传输音频文件
+- [x] 无字幕时返回空 blocks 列表（不报错）
+
+### 前端测试
+
+- [x] useAudioPlayer hook 正确管理播放状态
+- [ ] 字幕同步高亮准确（±0.5s 误差内）
+- [x] 点击字幕跳转到对应时间点
+- [x] 进度条拖动正常
+- [x] 播放速度切换正常（0.5x - 2x）
+- [x] 词汇点击弹出词典（复用 SentenceBlock）
 
 ### 格式测试
 
-- [ ] SRT 字幕解析
-- [ ] VTT 字幕解析
-- [ ] LRC 歌词解析
-- [ ] MP3 音频播放
-- [ ] M4A 音频播放
+- [ ] MP3 音频播放正常
+- [ ] M4A 音频播放正常
+- [ ] WAV 音频播放正常（如支持）
 
 ### 边界测试
 
-- [ ] 无字幕文件
-- [ ] 空字幕文件
-- [ ] 长音频（1小时+）
+- [ ] 无字幕文件时显示纯播放器
+- [ ] 空字幕文件不报错
+- [ ] 长音频（1小时+）渲染性能正常
 
 ## 6. Success Criteria
 
 - [ ] 有声书可正常播放
-- [ ] 字幕同步准确
-- [ ] 词汇学习功能正常
-- [ ] 性能无明显问题
+- [ ] 字幕同步准确（视觉体验流畅）
+- [ ] 词汇学习功能正常（点击查词）
+- [ ] 无性能问题（长列表使用虚拟化或分页）
+- [ ] 与现有 Podcast 功能无冲突
+
+## 7. Implementation Order
+
+1. **后端**: Schema 扩展 (SourceType.AUDIOBOOK, BlockType.AUDIO_SEGMENT) ✅
+2. **后端**: AudiobookProvider + 注册 ✅
+3. **后端**: API routes (`/api/content/audiobook/...`) ✅
+4. **前端**: useAudioPlayer hook (packages/shared) ✅
+5. **前端**: AudioContentRenderer + 注册 ✅
+6. **集成测试**: 端到端测试 ⏳
 
 ---
 

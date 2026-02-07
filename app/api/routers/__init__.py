@@ -20,4 +20,5 @@ from . import (
     voice_session as voice_session,
     images as images,
     vocabulary as vocabulary,
+    audiobook as audiobook,
 )

@@ -31,6 +31,7 @@ from app.api.routers import (
     images,
     podcast,
     vocabulary,
+    audiobook,
 )
 
 from app.services.log_collector import setup_logging
@@ -146,6 +147,7 @@ app.include_router(verify.router)
 app.include_router(images.router)
 app.include_router(podcast.router)
 app.include_router(vocabulary.router)
+app.include_router(audiobook.router)
 
 from app.models.schemas import RemoteLog  # noqa: E402
 from app.services.log_collector import (  # noqa: E402

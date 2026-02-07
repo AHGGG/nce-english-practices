@@ -169,6 +169,12 @@ const NavDashboard = () => {
       description: "Listen and study with transcription mode.",
     },
     {
+      title: "Audiobook",
+      path: "/audiobook",
+      icon: BookOpen,
+      description: "Listen to audiobooks with synchronized subtitles.",
+    },
+    {
       title: "System Settings",
       path: "/settings",
       icon: Settings,

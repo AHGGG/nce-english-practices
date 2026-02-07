@@ -293,6 +293,21 @@ Structured data from Longman LDOCE6++ dictionary.
 
 Offline playback with PWA support, audio caching via Cache API, and episode state tracking (resume position, finished status). See: [Podcast System Documentation](docs/podcast-system.md)
 
+### Audiobook System
+
+Local audiobook playback with synchronized subtitle highlighting.
+
+- **Backend Provider**: `app/services/content_providers/audiobook_provider.py`
+- **API Routes**: `app/api/routers/audiobook.py`
+  - `GET /api/content/audiobook/` - List all audiobooks
+  - `GET /api/content/audiobook/{book_id}` - Get audiobook content with subtitle segments
+  - `GET /api/content/audiobook/{book_id}/audio` - Stream audio file
+- **Frontend Hook**: `packages/shared/src/hooks/useAudioPlayer.ts` - Audio playback state management
+- **Frontend Renderer**: `apps/web/src/components/content/renderers/AudioContentRenderer.tsx`
+- **Views**: `apps/web/src/views/audiobook/` - Library and Player views
+- **Subtitle Formats**: SRT, VTT, LRC
+- **Directory Structure**: `resources/audiobooks/{book_id}/` containing `audio.mp3` + `subtitles.srt` + optional `metadata.json`
+
 ### Coach Service (Agentic)
 
 Central orchestrator for "Neural Link" mode with tool-using agent pattern. LLM decides UI components via DSML parser. Includes Voice/WebSocket integration. See: [Coach Service Documentation](docs/coach-service.md)

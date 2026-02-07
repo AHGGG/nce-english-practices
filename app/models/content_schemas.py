@@ -9,6 +9,7 @@ class SourceType(str, Enum):
     PODCAST = "podcast"
     RSS = "rss"
     PLAIN_TEXT = "plain_text"
+    AUDIOBOOK = "audiobook"
 
 
 class BlockType(str, Enum):
@@ -18,6 +19,7 @@ class BlockType(str, Enum):
     IMAGE = "image"
     HEADING = "heading"
     SUBTITLE = "subtitle"
+    AUDIO_SEGMENT = "audio_segment"
 
 
 class ContentBlock(BaseModel):
@@ -39,6 +41,10 @@ class ContentBlock(BaseModel):
 
     # For HEADING (1=h1, 2=h2, etc.)
     level: Optional[int] = None
+
+    # For AUDIO_SEGMENT (Audiobook subtitle sync)
+    start_time: Optional[float] = None  # seconds
+    end_time: Optional[float] = None  # seconds
 
 
 class ContentImage(BaseModel):

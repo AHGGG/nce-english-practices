@@ -18,4 +18,12 @@ export {
 export { useLearningIntegration } from "./useLearningIntegration";
 
 // New (Phase 2)
-// export { useAudioSync } from "./useAudioSync";
+export {
+  useAudioPlayer,
+  PLAYBACK_RATES,
+  type AudioSegment,
+  type UseAudioPlayerOptions,
+  type AudioPlayerState,
+  type AudioPlayerActions,
+  type UseAudioPlayerReturn,
+} from "./useAudioPlayer";
