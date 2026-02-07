@@ -28,6 +28,7 @@ import {
   TestTube2,
   RefreshCw,
   ChevronLeft,
+  Info,
 } from "lucide-react";
 
 const TabButton = (

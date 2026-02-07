@@ -50,7 +50,7 @@ const PerformanceReport = () => {
 
   if (loading) {
     return (
-      <div className="h-full w-full flex flex-col items-center justify-center bg-bg-base font-mono gap-4 relative overflow-hidden">
+      <div className="min-h-screen w-full flex flex-col items-center justify-center bg-bg-base font-mono gap-4 relative overflow-hidden">
         {/* Background Ambient */}
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-accent-primary/5 blur-[100px] rounded-full pointer-events-none" />
 
@@ -69,7 +69,7 @@ const PerformanceReport = () => {
 
   if (!data) {
     return (
-      <div className="p-8 text-center text-accent-danger font-mono bg-bg-base h-full flex flex-col items-center justify-center">
+      <div className="p-8 text-center text-accent-danger font-mono bg-bg-base min-h-screen flex flex-col items-center justify-center">
         <div className="p-6 border border-accent-danger/30 bg-accent-danger/5 rounded-2xl backdrop-blur-sm">
           <AlertTriangle className="w-12 h-12 mx-auto mb-4 opacity-50" />
           <div className="text-lg font-bold mb-2">DATA_FETCH_ERROR</div>
@@ -84,7 +84,7 @@ const PerformanceReport = () => {
   const { study_time, reading_stats, memory_curve } = data;
 
   return (
-    <section className="h-full w-full bg-bg-base overflow-y-auto p-6 md:p-12 pb-24 md:pb-12 relative">
+    <section className="min-h-screen w-full bg-bg-base overflow-y-auto p-6 md:p-12 pb-24 md:pb-12 relative">
       {/* GLOBAL NOISE TEXTURE OVERLAY */}
       <div className="fixed inset-0 opacity-[0.03] pointer-events-none z-0 bg-[url('/noise.svg')]"></div>
 
