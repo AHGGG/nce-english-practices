@@ -5,11 +5,15 @@ import App from "./App.jsx";
 import { initLogBridge } from "./utils/logBridge";
 import { ToastProvider } from "./components/ui";
 import LogErrorBoundary from "./components/LogErrorBoundary";
+import { initializeRenderers } from "./components/content";
 
 // Initialize logging bridge for development
 if (import.meta.env.DEV) {
   initLogBridge();
 }
+
+// Initialize content renderers
+initializeRenderers();
 
 createRoot(document.getElementById("root")).render(
   <StrictMode>

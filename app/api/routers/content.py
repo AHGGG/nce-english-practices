@@ -360,6 +360,9 @@ async def get_article_content(
 
         result = {
             "id": bundle.id,
+            "source_type": bundle.source_type.value
+            if hasattr(bundle.source_type, "value")
+            else str(bundle.source_type),
             "title": bundle.title,
             "full_text": bundle.full_text,
             "metadata": bundle.metadata,
@@ -386,7 +389,7 @@ async def get_article_content(
                 from app.services.word_list_service import word_list_service
 
                 highlights = await word_list_service.identify_words_in_text(
-                    text=bundle.full_text,
+                    text=bundle.full_text or "",
                     book_code=book_code,
                     user_id=user_id,
                     min_sequence=min_sequence,

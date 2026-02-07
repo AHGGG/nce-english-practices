@@ -1,9 +1,5 @@
-/**
- * API Endpoints - Index
- *
- * Re-export all endpoint modules for convenient access.
- */
-
+export * from "./review";
+export * from "./vocabulary";
 export * from "./reading";
 export * from "./dictionary";
 export * from "./sentence-study";

@@ -9,6 +9,7 @@ import {
 import MemoizedSentence from "./MemoizedSentence";
 import MemoizedImage from "./MemoizedImage";
 import { HIGHLIGHT_OPTIONS, BATCH_SIZE } from "./constants";
+import { rendererRegistry } from "../content";
 
 /**
  * Reader View - Immersive article reading with word inspection
@@ -33,6 +34,9 @@ const ReaderView = ({
   const mainRef = useRef(null);
   const sentinelRef = useRef(null);
 
+  // Check if we have a new renderer for this content
+  const renderer = rendererRegistry.getRendererForBundle(article);
+
   // Compute total content count (from blocks or legacy sentences)
   const totalContentCount =
     article?.blocks?.length > 0
@@ -45,6 +49,7 @@ const ReaderView = ({
 
   // Progressive loading: Intersection Observer to load more sentences
   useEffect(() => {
+    if (renderer) return; // Renderer handles its own progressive loading
     if (!article?.sentences && !article?.blocks) return;
 
     const observer = new IntersectionObserver(
@@ -63,10 +68,11 @@ const ReaderView = ({
     }
 
     return () => observer.disconnect();
-  }, [totalContentCount, setVisibleCount]);
+  }, [totalContentCount, setVisibleCount, article, renderer]);
 
   // Track sentence visibility for reading stats
   useEffect(() => {
+    if (renderer) return; // Renderer handles its own tracking
     if ((!article?.sentences && !article?.blocks) || !trackerRef?.current)
       return;
 
@@ -88,7 +94,7 @@ const ReaderView = ({
     sentenceEls.forEach((el) => observer.observe(el));
 
     return () => observer.disconnect();
-  }, [totalContentCount, visibleCount, trackerRef]);
+  }, [totalContentCount, visibleCount, trackerRef, article, renderer]);
 
   // Event delegation: handle clicks on article container
   const handleArticleClick = useCallback(
@@ -332,28 +338,46 @@ const ReaderView = ({
               </div>
             </header>
 
-            {/* Event delegation + CSS containment for performance */}
-            <div
-              className="prose prose-invert prose-lg max-w-none font-serif md:text-xl leading-loose text-text-primary px-4"
-              style={{ contain: "content" }}
-              data-selected-word={selectedWord || ""}
-              onClick={handleArticleClick}
-            >
-              {renderContent()}
+            {/* Content Rendering */}
+            {renderer ? (
+              <div className="px-4">
+                {renderer.render({
+                  bundle: article,
+                  highlightSet: article.highlightSet,
+                  studyHighlightSet: article.studyHighlightSet,
+                  knownWords: article.knownWords, // Ensure this is passed if available
+                  showHighlights,
+                  onWordClick,
+                  onSentenceClick,
+                  onImageClick,
+                  tracker: trackerRef?.current,
+                  visibleCount,
+                  metadata: article.metadata,
+                })}
+              </div>
+            ) : (
+              <div
+                className="prose prose-invert prose-lg max-w-none font-serif md:text-xl leading-loose text-text-primary px-4"
+                style={{ contain: "content" }}
+                data-selected-word={selectedWord || ""}
+                onClick={handleArticleClick}
+              >
+                {renderContent()}
 
-              {/* Sentinel element for Intersection Observer */}
-              {visibleCount < totalContentCount && (
-                <div
-                  ref={sentinelRef}
-                  className="flex justify-center py-4 text-text-muted"
-                >
-                  <Loader2 className="w-5 h-5 animate-spin" />
-                  <span className="ml-2 text-xs font-mono">
-                    Loading more...
-                  </span>
-                </div>
-              )}
-            </div>
+                {/* Sentinel element for Intersection Observer */}
+                {visibleCount < totalContentCount && (
+                  <div
+                    ref={sentinelRef}
+                    className="flex justify-center py-4 text-text-muted"
+                  >
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                    <span className="ml-2 text-xs font-mono">
+                      Loading more...
+                    </span>
+                  </div>
+                )}
+              </div>
+            )}
           </article>
         </main>
       </div>
