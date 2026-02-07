@@ -18,8 +18,8 @@ class Settings(BaseSettings):
     GEMINI_VOICE_MODEL_NAME: str = "gemini-2.0-flash-exp"
 
     # SenseVoice Settings
-    # default: iic/SenseVoice, can also be set to FunAudioLLM/Fun-ASR-Nano-2512
-    SENSEVOICE_MODEL: str = "iic/SenseVoiceSmall"
+    # default: iic/SenseVoice, can also be set to iic/SenseVoiceSmall(faster but without timestamps)
+    SENSEVOICE_MODEL: str = "FunAudioLLM/Fun-ASR-Nano-2512"
     # Preload ASR model on startup (increases startup time but faster first request)
     SENSEVOICE_PRELOAD: bool = False
 
