@@ -88,30 +88,33 @@ function AudioSegmentBlock({
       ref={containerRef}
       onClick={handleClick}
       className={`
-        px-4 py-3 rounded-lg cursor-pointer transition-all duration-300
+        px-6 py-2 rounded-lg cursor-pointer transition-all duration-300 group
         ${
           isActive
-            ? "bg-accent-primary/10 border-l-4 border-accent-primary shadow-lg shadow-accent-primary/20"
-            : "hover:bg-white/5 border-l-4 border-transparent"
+            ? "bg-white/10 border-l-4 border-accent-primary shadow-2xl shadow-black/50 opacity-100 scale-[1.01]"
+            : "hover:bg-white/5 border-l-4 border-transparent opacity-60 hover:opacity-100"
         }
       `}
     >
       {/* Time indicator */}
-      <div className="flex items-center gap-2 mb-2">
+      <div className="flex items-center gap-2 mb-0.5">
         <span
-          className={`text-xs font-mono ${isActive ? "text-accent-primary" : "text-text-muted"}`}
+          className={`text-xs font-mono tracking-wide ${isActive ? "text-accent-primary font-bold" : "text-white/30 group-hover:text-white/50"}`}
         >
           {formatTime(segment.startTime)}
         </span>
         {isActive && (
-          <span className="text-xs px-2 py-0.5 bg-accent-primary/20 text-accent-primary rounded-full">
-            Now Playing
+          <span className="flex h-1.5 w-1.5 relative">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-accent-primary opacity-75"></span>
+            <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-accent-primary"></span>
           </span>
         )}
       </div>
 
       {/* Sentences */}
-      <div className="space-y-1">
+      <div
+        className={`space-y-0.5 text-lg leading-snug font-sans ${isActive ? "text-white" : "text-white/80"}`}
+      >
         {segment.sentences.map((sentence: string, idx: number) => (
           <SentenceBlock
             key={idx}
@@ -208,6 +211,7 @@ function PlayerControls({
 }: PlayerControlsProps) {
   const [speedMenuOpen, setSpeedMenuOpen] = React.useState(false);
   const progressBarRef = useRef<HTMLDivElement>(null);
+  const [isHovering, setIsHovering] = React.useState(false);
 
   // Handle progress bar click
   const handleProgressClick = useCallback(
@@ -222,67 +226,77 @@ function PlayerControls({
   );
 
   return (
-    <div className="shrink-0 border-t border-white/10 bg-white/[0.02] backdrop-blur-xl">
-      {/* Progress Bar */}
+    <div className="shrink-0 border-t border-white/10 bg-[#0a0f0d]/90 backdrop-blur-2xl z-30 pb-safe">
+      {/* Progress Bar Container */}
       <div
-        ref={progressBarRef}
+        className="group relative h-4 -mt-2 cursor-pointer flex items-center"
+        onMouseEnter={() => setIsHovering(true)}
+        onMouseLeave={() => setIsHovering(false)}
         onClick={handleProgressClick}
-        className="h-1 bg-white/[0.1] cursor-pointer group relative transition-all duration-300 hover:h-2"
+        ref={progressBarRef}
       >
+        {/* Track Background */}
+        <div className="absolute left-0 right-0 h-1 bg-white/10 group-hover:h-1.5 transition-all duration-200" />
+
+        {/* Buffered/Progress Track */}
         <div
-          className="h-full bg-accent-primary shadow-[0_0_10px_rgba(var(--color-accent-primary-rgb),0.5)] relative"
+          className="absolute left-0 h-1 bg-accent-primary group-hover:h-1.5 transition-all duration-200 shadow-[0_0_10px_rgba(var(--color-accent-primary-rgb),0.5)]"
           style={{ width: `${progress}%` }}
-        >
-          {/* Glow effect at tip */}
-          <div className="absolute right-0 top-0 bottom-0 w-4 bg-gradient-to-r from-transparent to-white/50" />
-        </div>
+        />
+
+        {/* Thumb (Only visible on hover) */}
+        <div
+          className={`absolute h-3 w-3 bg-white rounded-full shadow-lg transform -translate-x-1/2 transition-opacity duration-200 ${isHovering ? "opacity-100" : "opacity-0"}`}
+          style={{ left: `${progress}%` }}
+        />
       </div>
 
       {/* Controls */}
-      <div className="px-4 py-3 flex items-center justify-between">
+      <div className="px-6 py-4 flex items-center justify-between max-w-4xl mx-auto w-full">
         {/* Time Display */}
-        <div className="flex-1 text-xs text-text-muted font-mono">
-          {formatTime(currentTime)} / {formatTime(duration)}
+        <div className="w-24 text-xs font-mono font-medium text-white/40 tracking-wider">
+          {formatTime(currentTime)} <span className="text-white/20">/</span>{" "}
+          {formatTime(duration)}
         </div>
 
-        {/* Playback Controls */}
-        <div className="flex items-center gap-2">
+        {/* Main Controls */}
+        <div className="flex items-center gap-6">
           {/* Skip Back */}
           <button
             onClick={() => onSkip(-10)}
-            className="p-2 text-white/50 hover:text-white transition-colors hover:bg-white/5 rounded-full"
+            className="p-2.5 text-white/40 hover:text-white transition-all hover:bg-white/5 rounded-full hover:scale-105 active:scale-95"
             title="Skip back 10s"
           >
             <SkipBack className="w-5 h-5" />
           </button>
 
-          {/* Play/Pause */}
+          {/* Play/Pause - Hero Button */}
           <button
             onClick={onTogglePlay}
             disabled={isLoading}
-            className="p-3 bg-accent-primary text-black rounded-full hover:bg-accent-primary/90 hover:scale-105 active:scale-95 transition-all shadow-[0_0_20px_rgba(var(--color-accent-primary-rgb),0.4)] disabled:opacity-50"
+            className="p-4 bg-accent-primary text-black rounded-full hover:bg-white hover:scale-110 active:scale-95 transition-all duration-300 shadow-[0_0_30px_rgba(var(--color-accent-primary-rgb),0.3)] disabled:opacity-50 disabled:scale-100"
           >
             {isLoading ? (
-              <Loader2 className="w-5 h-5 animate-spin" />
+              <Loader2 className="w-6 h-6 animate-spin" />
             ) : isPlaying ? (
-              <Pause className="w-5 h-5" />
+              <Pause className="w-6 h-6 fill-current" />
             ) : (
-              <Play className="w-5 h-5 ml-0.5" />
+              <Play className="w-6 h-6 ml-0.5 fill-current" />
             )}
           </button>
 
           {/* Skip Forward */}
           <button
             onClick={() => onSkip(10)}
-            className="p-2 text-white/50 hover:text-white transition-colors hover:bg-white/5 rounded-full"
+            className="p-2.5 text-white/40 hover:text-white transition-all hover:bg-white/5 rounded-full hover:scale-105 active:scale-95"
             title="Skip forward 10s"
           >
             <SkipForward className="w-5 h-5" />
           </button>
         </div>
 
-        {/* Speed Control */}
-        <div className="flex-1 flex justify-end">
+        {/* Speed Control & Extra Actions */}
+        <div className="w-24 flex justify-end">
           <SpeedMenu
             currentRate={playbackRate}
             onRateChange={onRateChange}
@@ -340,8 +354,8 @@ function AudioContentRendererComponent({
   return (
     <div className="flex flex-col h-full">
       {/* Subtitle Area */}
-      <div className="flex-1 overflow-y-auto px-4 py-6 scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent hover:scrollbar-thumb-white/20">
-        <div className="max-w-2xl mx-auto space-y-2">
+      <div className="flex-1 overflow-y-auto px-6 pt-12 pb-40 scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent hover:scrollbar-thumb-white/20">
+        <div className="max-w-3xl mx-auto space-y-1">
           {segments.length > 0 ? (
             segments.map((segment) => (
               <AudioSegmentBlock

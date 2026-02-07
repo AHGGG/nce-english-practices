@@ -42,6 +42,16 @@ Backend download endpoint (`/api/podcast/episode/{id}/download`):
 1. **Resume Playback**: Stores current_position_seconds per episode
 2. **Offline Access**: Downloaded audio stored in Cache API
 3. **Progress Sync**: Backend tracks playback position
+4. **Remote Transcription**: Offload GPU-heavy transcription to a dedicated server
+
+## Remote Transcription
+
+The system supports a Client-Server model for transcription to reduce local resource usage.
+
+- **Client Mode**: Configure a remote server URL and API Key in Settings. The backend sends audio to the remote server.
+- **Server Mode**: Configure `TRANSCRIPTION_SERVICE_API_KEYS` in `.env`. The instance accepts `/api/transcribe` requests.
+
+See [Transcription Service Documentation](docs/transcription-service.md) for detailed setup.
 
 ## Related Documentation
 

@@ -1,5 +1,6 @@
 import os
 from pathlib import Path
+from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -23,8 +24,21 @@ class Settings(BaseSettings):
     # Preload ASR model on startup (increases startup time but faster first request)
     SENSEVOICE_PRELOAD: bool = False
 
+    # Transcription Service Settings (For acting as a Remote Server)
+    # If set, this instance can accept /api/transcribe requests protected by any of these keys
+    TRANSCRIPTION_SERVICE_API_KEYS: list[str] = ["change-me-to-a-secure-random-key"]
+
+    @field_validator("TRANSCRIPTION_SERVICE_API_KEYS", mode="before")
+    @classmethod
+    def parse_api_keys(cls, v):
+        if isinstance(v, str):
+            return [k.strip() for k in v.split(",") if k.strip()]
+        return v
+
     # Database Settings
+
     # Default to local postgres if not set. Users should set this in .env
+
     DATABASE_URL: str = (
         "postgresql+asyncpg://postgres:postgres@localhost:5432/nce_practice"
     )

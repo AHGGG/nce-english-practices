@@ -1168,33 +1168,47 @@ class TranscribeResponse(BaseModel):
     message: str
 
 
+class TranscribeRequest(BaseModel):
+    force: bool = False
+    remote_url: Optional[str] = None
+    api_key: Optional[str] = None
+
+
 @router.post("/episode/{episode_id}/transcribe", response_model=TranscribeResponse)
 async def transcribe_episode(
     episode_id: int,
-    force: bool = False,
+    req: Optional[TranscribeRequest] = None,
+    force: bool = False,  # Keep query param for backward compatibility
     user_id: str = Depends(get_current_user_id),
 ):
     """
     Trigger AI transcription for a podcast episode.
 
-    This endpoint starts a background transcription job using SenseVoice.
-    The transcription runs asynchronously - poll the episode status to check progress.
+    This endpoint starts a background transcription job.
+    Supports local SenseVoice (default) or Remote Transcription (via config).
 
     Args:
-        force: If True, reset stuck transcription and restart
-
-    Returns:
-        - 202: Transcription started
-        - 409: Transcription already in progress (use force=true to override)
-        - 404: Episode not found
+        req: JSON body with options (recommended)
+        force: Query param (legacy)
     """
     from sqlalchemy import select, update
     from app.models.podcast_orm import PodcastEpisode
     from fastapi import BackgroundTasks
     from fastapi.concurrency import run_in_threadpool
 
+    # Merge options
+    should_force = force
+    remote_url = None
+    api_key = None
+
+    if req:
+        should_force = req.force or force
+        remote_url = req.remote_url
+        api_key = req.api_key
+
     async with AsyncSessionLocal() as db:
         # Get episode
+
         stmt = select(PodcastEpisode).where(PodcastEpisode.id == episode_id)
         result = await db.execute(stmt)
         episode = result.scalar_one_or_none()
@@ -1204,7 +1218,7 @@ async def transcribe_episode(
 
         # Check current status
         if episode.transcript_status in ("processing", "pending"):
-            if not force:
+            if not should_force:
                 raise HTTPException(
                     status_code=409,
                     detail=f"Transcription already {episode.transcript_status}. Use force=true to restart.",
@@ -1228,7 +1242,9 @@ async def transcribe_episode(
     # Start background transcription task
     import asyncio
 
-    asyncio.create_task(_run_transcription(episode_id, audio_url))
+    asyncio.create_task(
+        _run_transcription(episode_id, audio_url, remote_url, api_key)
+    )
 
     return TranscribeResponse(
         status="pending",
@@ -1236,14 +1252,21 @@ async def transcribe_episode(
     )
 
 
-async def _run_transcription(episode_id: int, audio_url: str):
+async def _run_transcription(
+    episode_id: int,
+    audio_url: str,
+    remote_url: Optional[str] = None,
+    api_key: Optional[str] = None,
+):
     """
     Background task to run transcription.
 
-    Downloads audio, runs SenseVoice, and saves results to database.
+    Downloads audio, runs Engine (Local or Remote), and saves results to database.
     """
+
     import tempfile
     import httpx
+
     from pathlib import Path
     from sqlalchemy import update
     from app.models.podcast_orm import PodcastEpisode
@@ -1293,12 +1316,13 @@ async def _run_transcription(episode_id: int, audio_url: str):
         def do_transcription():
             from app.services.transcription import AudioInput, get_default_engine
 
-            engine = get_default_engine()
+            engine = get_default_engine(remote_url=remote_url, api_key=api_key)
             audio_input = AudioInput.from_file(audio_path)
             result = engine.transcribe(audio_input)
             return result
 
         result = await run_in_threadpool(do_transcription)
+
 
         logger.info(f"Transcription complete: {len(result.segments)} segments")
 

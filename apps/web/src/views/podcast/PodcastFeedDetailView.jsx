@@ -28,6 +28,7 @@ import {
 } from "lucide-react";
 import * as podcastApi from "../../api/podcast";
 import { usePodcast } from "../../context/PodcastContext";
+import { useGlobalState } from "../../context/GlobalContext";
 import { useToast, Dialog, DialogButton } from "../../components/ui";
 
 function formatDuration(seconds) {
@@ -80,6 +81,9 @@ export default function PodcastFeedDetailView() {
     removeDownload,
     finishedEpisodes,
   } = usePodcast();
+  const {
+    state: { settings },
+  } = useGlobalState();
   const { addToast } = useToast();
 
   const [feed, setFeed] = useState(null);
@@ -318,9 +322,18 @@ export default function PodcastFeedDetailView() {
         setTranscriptStatus((prev) => ({ ...prev, [episode.id]: "pending" }));
 
         // Start both operations in parallel
+        const remoteUrl = settings.transcriptionRemoteEnabled
+          ? settings.transcriptionRemoteUrl
+          : null;
+        const apiKey = settings.transcriptionRemoteEnabled
+          ? settings.transcriptionRemoteApiKey
+          : null;
+
         const transcribePromise = podcastApi.transcribeEpisode(
           episode.id,
           forceRestart,
+          remoteUrl,
+          apiKey,
         );
 
         // Start client-side download if not already cached
@@ -341,7 +354,16 @@ export default function PodcastFeedDetailView() {
         addToast("Failed to start transcription: " + e.message, "error");
       }
     },
-    [navigate, addToast, transcriptStatus, offlineEpisodes, startDownload],
+    [
+      navigate,
+      addToast,
+      transcriptStatus,
+      offlineEpisodes,
+      startDownload,
+      settings.transcriptionRemoteEnabled,
+      settings.transcriptionRemoteUrl,
+      settings.transcriptionRemoteApiKey,
+    ],
   );
 
   // Poll transcript status

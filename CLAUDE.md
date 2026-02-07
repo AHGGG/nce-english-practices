@@ -295,18 +295,16 @@ Offline playback with PWA support, audio caching via Cache API, and episode stat
 
 #### AI Transcription (Intensive Listening Mode)
 
-Podcast episodes can be transcribed using AI to enable time-aligned subtitle display, similar to Audiobook.
+Podcast episodes can be transcribed using AI to enable time-aligned subtitle display.
 
 - **Design Document**: `docs/podcast-ai-transcription-design.md`
+- **Architecture**: `Client-Server` (Optional Remote Transcription)
 - **Transcription Engine**: `app/services/transcription/` - Pluggable engine architecture
-  - `base.py` - `BaseTranscriptionEngine` abstract interface
-  - `schemas.py` - `TranscriptionSegment`, `AudioInput`, `TranscriptionResult`
-  - `sensevoice.py` - SenseVoice local GPU implementation
-  - `utils.py` - Audio loading (multi-backend), chunking, overlap merging utilities
-- **API**: `POST /api/podcast/episode/{id}/transcribe` - Trigger transcription
+  - `remote.py` - HTTP Client for remote GPU worker
+  - `sensevoice.py` - Local SenseVoice GPU implementation
+- **API**: `POST /api/podcast/episode/{id}/transcribe` - Trigger transcription (accepts `remote_url` & `api_key`)
 - **Data Model**: `PodcastEpisode.transcript_segments` (JSONB) stores time-aligned segments
 - **Frontend**: "Intensive Listening" button in `PodcastFeedDetailView.jsx`
-- **Unified Player**: `/player/podcast/{id}` route using `AudioContentRenderer`
 
 **Audio Format Support**:
 
@@ -375,15 +373,15 @@ A centralized logging system that collects both frontend and backend logs.
   > Don't commit `logs/unified.log` to git.
 
 **Categories** (Generic, not vendor-specific):
-| Category | Description | Color |
+| Category        | Description                   | Color  |
 | --------------- | ----------------------------- | ------ |
-| `user_input` | User speech/text, STT results | Blue |
-| `agent_output` | AI responses, TTS | Green |
-| `function_call` | Tool/function executions | Violet |
-| `audio` | Audio processing, chunks | Cyan |
-| `network` | API calls, WebSocket, latency | Yellow |
-| `lifecycle` | Connect/disconnect/init | White |
-| `general` | Default | White |
+| `user_input`    | User speech/text, STT results | Blue   |
+| `agent_output`  | AI responses, TTS             | Green  |
+| `function_call` | Tool/function executions      | Violet |
+| `audio`         | Audio processing, chunks      | Cyan   |
+| `network`       | API calls, WebSocket, latency | Yellow |
+| `lifecycle`     | Connect/disconnect/init       | White  |
+| `general`       | Default                       | White  |
 
 **For AI Debugging**: Read `logs/unified.log` directly:
 
@@ -454,6 +452,7 @@ React Native + Expo + NativeWind architecture. Covers audio background tasks, We
 | **Mobile Architecture**      | [docs/MOBILE_ARCHITECTURE_PLAN.md](docs/MOBILE_ARCHITECTURE_PLAN.md)                       | **移动端开发** - 跨端复用架构与迁移计划                          |
 | **Mobile Dev Pitfalls**      | [docs/skills/mobile-dev-pitfalls.md](docs/skills/mobile-dev-pitfalls.md)                   | **移动端开发** - NativeWind 样式问题、Alpha 语法、条件 className |
 | Mobile Quick Reference       | [docs/MOBILE_QUICK_REFERENCE.md](docs/MOBILE_QUICK_REFERENCE.md)                           | **移动端开发** - 快速参考与代码模板                              |
+| Transcription Service        | [docs/transcription-service.md](docs/transcription-service.md)                             | **远程转写服务** - Client/Server 配置指南                        |
 | User Administration          | [docs/skills/user-administration.md](docs/skills/user-administration.md)                   | **管理用户** - 创建、迁移数据、重置密码                          |
 | Database Management          | [docs/skills/database-management.md](docs/skills/database-management.md)                   | **数据库维护** - Alembic 迁移命令                                |
 | Dictionary Maintenance       | [docs/skills/dictionary-maintenance.md](docs/skills/dictionary-maintenance.md)             | **词典维护** - Parser Golden Standard 测试                       |

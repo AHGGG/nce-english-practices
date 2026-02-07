@@ -21,41 +21,53 @@ __all__ = [
 _default_engine: BaseTranscriptionEngine | None = None
 
 
-def get_default_engine() -> BaseTranscriptionEngine:
+def get_default_engine(
+    remote_url: str | None = None, api_key: str | None = None
+) -> BaseTranscriptionEngine:
     """
-    Get the default transcription engine (singleton).
+    Get the transcription engine.
 
-    The engine instance is created once and reused across all requests.
-    The underlying model is lazy-loaded on first transcription.
+    Args:
+        remote_url: Optional URL for remote transcription.
+                   If provided, returns a new RemoteTranscriptionEngine instance.
+                   If None, returns the singleton local SenseVoiceEngine.
+        api_key: Optional API key for remote transcription.
 
     Returns:
-        The default engine instance (SenseVoice)
-
-    Raises:
-        ImportError: If the engine dependencies are not installed
+        Transcription engine instance
     """
     global _default_engine
 
-    if _default_engine is None:
-        from .sensevoice import SenseVoiceEngine
+    # If remote URL is provided, always return a new Remote engine (stateless)
+    if remote_url:
+        from .remote import RemoteTranscriptionEngine
 
-        _default_engine = SenseVoiceEngine()
+        return RemoteTranscriptionEngine(remote_url, api_key=api_key)
+
+    # Otherwise return singleton local engine
+    if _default_engine is None:
+        try:
+            from .sensevoice import SenseVoiceEngine
+
+            _default_engine = SenseVoiceEngine()
+        except ImportError as e:
+            # Provide a clear error if optional dependencies are missing
+            raise ImportError(
+                "Local transcription dependencies (funasr, torch) not found. "
+                "Please install with 'pip install .[local-asr]' or configure a Remote URL."
+            ) from e
 
     return _default_engine
 
 
 def preload_engine() -> None:
     """
-    Preload the transcription engine and model.
-
-    Call this at application startup to avoid cold-start latency
-    on the first transcription request.
-
-    Example:
-        # In main.py or startup hook
-        from app.services.transcription import preload_engine
-        preload_engine()
+    Preload the local transcription engine model if available.
     """
-    engine = get_default_engine()
-    # Trigger model loading
-    engine._load_model()
+    try:
+        engine = get_default_engine()
+        # Only SenseVoiceEngine has _load_model
+        if hasattr(engine, "_load_model"):
+            engine._load_model()  # type: ignore
+    except ImportError:
+        pass  # Skip if local engine not installed

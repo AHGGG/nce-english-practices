@@ -330,51 +330,43 @@ export async function syncPosition(episodeId, data) {
 }
 
 /**
- * Resolve position conflict between client and server.
+ * Trigger AI transcription for an episode.
  * @param {number} episodeId
- * @param {object} clientData - { position, timestamp, deviceId, ... }
+ * @param {boolean} force - Force restart if stuck in processing/pending
+ * @param {string|null} remoteUrl - Optional remote transcription URL
+ * @param {string|null} apiKey - Optional remote API Key
+ * @returns {Promise<{status: string, message: string}>}
  */
-export async function resolvePosition(episodeId, clientData) {
+export async function transcribeEpisode(
+  episodeId,
+  force = false,
+  remoteUrl = null,
+  apiKey = null,
+) {
   const response = await authFetch(
-    `${BASE_URL}/episode/${episodeId}/position/resolve`,
+    `${BASE_URL}/episode/${episodeId}/transcribe`,
     {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        position: clientData.position,
-        is_finished: clientData.isFinished || false,
-        duration: clientData.duration,
-        timestamp: clientData.timestamp,
-        device_id: clientData.deviceId,
-        device_type: clientData.deviceType,
-        playback_rate: clientData.playbackRate,
+        force,
+        remote_url: remoteUrl || undefined,
+        api_key: apiKey || undefined,
       }),
     },
   );
-  if (!response.ok) throw new Error("Resolve failed");
-  return response.json();
-}
 
-/**
- * List user's active devices.
- */
-export async function getDevices() {
-  const response = await authFetch(`${BASE_URL}/devices`);
-  if (!response.ok) throw new Error("Failed to list devices");
-  return response.json();
-}
+  if (response.status === 409) {
+    const data = await response.json();
+    return { status: "in_progress", message: data.detail };
+  }
 
-/**
- * Get details for multiple episodes by ID.
- * Used for efficient bulk loading (e.g., downloads page).
- */
-export async function getEpisodesBatch(episodeIds) {
-  const response = await authFetch(`${BASE_URL}/episodes/batch`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ episode_ids: episodeIds }),
-  });
-  if (!response.ok) throw new Error("Failed to get episodes");
+  if (!response.ok) {
+    const error = await response
+      .json()
+      .catch(() => ({ detail: "Transcription failed" }));
+    throw new Error(error.detail || "Transcription failed");
+  }
   return response.json();
 }
 
@@ -411,32 +403,6 @@ export async function downloadEpisode(episodeId) {
   const response = await authFetch(`${BASE_URL}/episode/${episodeId}/download`);
   if (!response.ok) throw new Error("Download failed");
   return response.blob();
-}
-
-/**
- * Trigger AI transcription for an episode.
- * @param {number} episodeId
- * @param {boolean} force - Force restart if stuck in processing/pending
- * @returns {Promise<{status: string, message: string}>}
- */
-export async function transcribeEpisode(episodeId, force = false) {
-  const url = force
-    ? `${BASE_URL}/episode/${episodeId}/transcribe?force=true`
-    : `${BASE_URL}/episode/${episodeId}/transcribe`;
-  const response = await authFetch(url, {
-    method: "POST",
-  });
-  if (response.status === 409) {
-    const data = await response.json();
-    return { status: "in_progress", message: data.detail };
-  }
-  if (!response.ok) {
-    const error = await response
-      .json()
-      .catch(() => ({ detail: "Transcription failed" }));
-    throw new Error(error.detail || "Transcription failed");
-  }
-  return response.json();
 }
 
 /**

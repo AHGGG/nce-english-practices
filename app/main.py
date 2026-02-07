@@ -32,9 +32,11 @@ from app.api.routers import (
     podcast,
     vocabulary,
     audiobook,
+    transcription,
 )
 
 from app.services.log_collector import setup_logging
+
 import logging
 
 # Configure logging
@@ -148,8 +150,10 @@ app.include_router(images.router)
 app.include_router(podcast.router)
 app.include_router(vocabulary.router)
 app.include_router(audiobook.router)
+app.include_router(transcription.router)
 
 from app.models.schemas import RemoteLog  # noqa: E402
+
 from app.services.log_collector import (  # noqa: E402
     log_collector,
     LogEntry,

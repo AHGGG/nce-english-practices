@@ -1,6 +1,6 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
-import { ChevronLeft, Volume2, Gauge, Settings } from "lucide-react";
+import { ChevronLeft, Volume2, Gauge, Settings, Cloud } from "lucide-react";
 import { useGlobalState } from "../context/GlobalContext";
 
 // --- Reusable Components for Scalability ---
@@ -144,6 +144,55 @@ const SettingsPage = () => {
                 onChange={(val) => updateSetting("podcastSpeed", val)}
               />
             </SettingsRow>
+          </SettingsSection>
+
+          {/* Transcription Settings */}
+          <SettingsSection title="Transcription Service" icon={Cloud}>
+            <SettingsRow
+              title="Remote Transcription"
+              description="Offload transcription to a remote GPU server. Useful if running on a low-power device."
+            >
+              <Toggle
+                value={settings.transcriptionRemoteEnabled}
+                onChange={(val) =>
+                  updateSetting("transcriptionRemoteEnabled", val)
+                }
+              />
+            </SettingsRow>
+
+            {settings.transcriptionRemoteEnabled && (
+              <>
+                <SettingsRow
+                  title="Server URL"
+                  description="The full URL of the remote transcription endpoint (e.g. http://192.168.1.100:8000/transcribe)."
+                >
+                  <input
+                    type="text"
+                    value={settings.transcriptionRemoteUrl}
+                    onChange={(e) =>
+                      updateSetting("transcriptionRemoteUrl", e.target.value)
+                    }
+                    placeholder="http://server:port/transcribe"
+                    className="bg-black/20 border border-white/10 rounded-lg px-4 py-2 text-sm text-white focus:outline-none focus:border-accent-primary w-full max-w-xs font-mono"
+                  />
+                </SettingsRow>
+
+                <SettingsRow
+                  title="API Key"
+                  description="Optional API key if the remote server requires authentication."
+                >
+                  <input
+                    type="password"
+                    value={settings.transcriptionRemoteApiKey || ""}
+                    onChange={(e) =>
+                      updateSetting("transcriptionRemoteApiKey", e.target.value)
+                    }
+                    placeholder="sk-..."
+                    className="bg-black/20 border border-white/10 rounded-lg px-4 py-2 text-sm text-white focus:outline-none focus:border-accent-primary w-full max-w-xs font-mono"
+                  />
+                </SettingsRow>
+              </>
+            )}
           </SettingsSection>
         </div>
       </div>
