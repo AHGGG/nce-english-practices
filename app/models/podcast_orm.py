@@ -124,7 +124,10 @@ class PodcastEpisode(Base):
     transcript_text: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     transcript_status: Mapped[str] = mapped_column(
         String(20), default="none"
-    )  # none, pending, completed, failed
+    )  # none, pending, processing, completed, failed
+    transcript_segments: Mapped[Optional[List[dict]]] = mapped_column(
+        JSON, nullable=True
+    )  # Time-aligned segments: [{"start_time": 0.0, "end_time": 2.5, "text": "...", ...}]
 
     # Timestamps
     created_at: Mapped[datetime] = mapped_column(TIMESTAMP, server_default=func.now())

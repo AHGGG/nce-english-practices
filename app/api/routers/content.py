@@ -746,3 +746,138 @@ async def get_article_status(
 
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
+
+
+# ============================================================
+# Unified Audio Player API (Podcast + Audiobook)
+# ============================================================
+
+
+@router.get("/api/content/player/{source_type}/{content_id}")
+async def get_player_content(
+    source_type: str,
+    content_id: str,
+    track: int = 0,
+    user_id: str = Depends(get_current_user_id),
+):
+    """
+    Get unified content bundle for audio player.
+
+    Supports both podcast episodes (with transcription) and audiobooks.
+    Returns ContentBundle format compatible with AudioContentRenderer.
+
+    Args:
+        source_type: "podcast" or "audiobook"
+        content_id: Episode ID (podcast) or book ID (audiobook)
+        track: Track index for audiobooks (default 0)
+
+    Returns:
+        ContentBundle with audio_url and time-aligned segments
+    """
+    from app.models.content_schemas import ContentBundle, ContentBlock, BlockType
+
+    if source_type == "podcast":
+        return await _get_podcast_player_content(int(content_id), user_id)
+    elif source_type == "audiobook":
+        return await _get_audiobook_player_content(content_id, track)
+    else:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Invalid source_type: {source_type}. Must be 'podcast' or 'audiobook'",
+        )
+
+
+async def _get_podcast_player_content(episode_id: int, user_id: str):
+    """Get podcast episode content for unified player."""
+    from app.core.db import AsyncSessionLocal
+    from app.models.podcast_orm import PodcastEpisode, PodcastFeed, UserEpisodeState
+    from app.models.content_schemas import (
+        ContentBundle,
+        ContentBlock,
+        BlockType,
+        SourceType,
+    )
+
+    async with AsyncSessionLocal() as db:
+        # Get episode with feed info
+        stmt = (
+            select(PodcastEpisode, PodcastFeed)
+            .join(PodcastFeed, PodcastEpisode.feed_id == PodcastFeed.id)
+            .where(PodcastEpisode.id == episode_id)
+        )
+        result = await db.execute(stmt)
+        row = result.first()
+
+        if not row:
+            raise HTTPException(status_code=404, detail="Episode not found")
+
+        episode, feed = row
+
+        # Check if transcription is available
+        if episode.transcript_status != "completed" or not episode.transcript_segments:
+            raise HTTPException(
+                status_code=400,
+                detail="Transcription not available. Please generate transcription first.",
+            )
+
+        # Get user playback state
+        state_stmt = select(UserEpisodeState).where(
+            UserEpisodeState.user_id == user_id,
+            UserEpisodeState.episode_id == episode_id,
+        )
+        state_result = await db.execute(state_stmt)
+        user_state = state_result.scalar_one_or_none()
+
+        # Convert transcript_segments to ContentBlocks
+        blocks = []
+        for seg in episode.transcript_segments:
+            block = ContentBlock(
+                type=BlockType.AUDIO_SEGMENT,
+                text=seg.get("text", ""),
+                sentences=[seg.get("text", "")],
+                start_time=seg.get("start_time", 0.0),
+                end_time=seg.get("end_time", 0.0),
+            )
+            blocks.append(block)
+
+        # Build full text
+        full_text = " ".join(seg.get("text", "") for seg in episode.transcript_segments)
+
+        return ContentBundle(
+            id=f"podcast:{episode_id}",
+            source_type=SourceType.PODCAST,
+            title=episode.title,
+            audio_url=episode.audio_url,  # Use original URL (browser can access directly)
+            blocks=blocks,
+            full_text=full_text,
+            metadata={
+                "episode_id": episode_id,
+                "feed_id": feed.id,
+                "feed_title": feed.title,
+                "description": episode.description,
+                "duration_seconds": episode.duration_seconds,
+                "published_at": episode.published_at.isoformat()
+                if episode.published_at
+                else None,
+                "image_url": episode.image_url or feed.image_url,
+                "current_position": user_state.current_position_seconds
+                if user_state
+                else 0.0,
+                "is_finished": user_state.is_finished if user_state else False,
+            },
+        )
+
+
+async def _get_audiobook_player_content(book_id: str, track_index: int):
+    """Get audiobook content for unified player."""
+    from app.services.content_providers.audiobook_provider import AudiobookProvider
+
+    provider = AudiobookProvider()
+
+    try:
+        bundle = await provider.fetch(book_id=book_id, track_index=track_index)
+        return bundle
+    except FileNotFoundError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))

@@ -34,6 +34,9 @@ import PodcastDownloadsView from "./views/podcast/PodcastDownloadsView";
 // Audiobook
 import { AudiobookLibraryView, AudiobookPlayerView } from "./views/audiobook";
 
+// Unified Player
+import UnifiedPlayerView from "./views/player/UnifiedPlayerView";
+
 /**
  * Public Route - Redirects to nav if already authenticated
  */
@@ -229,6 +232,16 @@ function AppRoutes() {
         element={
           <ProtectedRoute>
             <AudiobookPlayerView />
+          </ProtectedRoute>
+        }
+      />
+
+      {/* Unified Player route (Podcast intensive listening + Audiobook) */}
+      <Route
+        path="/player/:sourceType/:contentId"
+        element={
+          <ProtectedRoute>
+            <UnifiedPlayerView />
           </ProtectedRoute>
         }
       />

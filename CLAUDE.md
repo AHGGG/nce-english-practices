@@ -293,6 +293,21 @@ Structured data from Longman LDOCE6++ dictionary.
 
 Offline playback with PWA support, audio caching via Cache API, and episode state tracking (resume position, finished status). See: [Podcast System Documentation](docs/podcast-system.md)
 
+#### AI Transcription (Intensive Listening Mode)
+
+Podcast episodes can be transcribed using AI to enable time-aligned subtitle display, similar to Audiobook.
+
+- **Design Document**: `docs/podcast-ai-transcription-design.md`
+- **Transcription Engine**: `app/services/transcription/` - Pluggable engine architecture
+  - `base.py` - `BaseTranscriptionEngine` abstract interface
+  - `schemas.py` - `TranscriptionSegment`, `AudioInput`, `TranscriptionResult`
+  - `sensevoice.py` - SenseVoice local GPU implementation
+  - `utils.py` - Audio chunking, overlap merging utilities
+- **API**: `POST /api/podcast/episode/{id}/transcribe` - Trigger transcription
+- **Data Model**: `PodcastEpisode.transcript_segments` (JSONB) stores time-aligned segments
+- **Frontend**: "Intensive Listening" button in `PodcastFeedDetailView.jsx`
+- **Unified Player**: `/player/podcast/{id}` route using `AudioContentRenderer`
+
 ### Audiobook System
 
 Local audiobook playback with synchronized subtitle highlighting.
@@ -342,15 +357,15 @@ A centralized logging system that collects both frontend and backend logs.
   > Don't commit `logs/unified.log` to git.
 
 **Categories** (Generic, not vendor-specific):
-| Category | Description | Color |
-|----------|-------------|-------|
-| `user_input` | User speech/text, STT results | Blue |
-| `agent_output` | AI responses, TTS | Green |
-| `function_call` | Tool/function executions | Violet |
-| `audio` | Audio processing, chunks | Cyan |
-| `network` | API calls, WebSocket, latency | Yellow |
-| `lifecycle` | Connect/disconnect/init | White |
-| `general` | Default | White |
+| Category        | Description                   | Color  |
+| --------------- | ----------------------------- | ------ |
+| `user_input`    | User speech/text, STT results | Blue   |
+| `agent_output`  | AI responses, TTS             | Green  |
+| `function_call` | Tool/function executions      | Violet |
+| `audio`         | Audio processing, chunks      | Cyan   |
+| `network`       | API calls, WebSocket, latency | Yellow |
+| `lifecycle`     | Connect/disconnect/init       | White  |
+| `general`       | Default                       | White  |
 
 **For AI Debugging**: Read `logs/unified.log` directly:
 

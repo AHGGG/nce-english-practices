@@ -107,6 +107,7 @@ class EpisodeResponse(BaseModel):
     image_url: Optional[str]
     published_at: Optional[str]
     transcript_status: str
+    transcript_segments: Optional[List[dict]] = None  # Time-aligned segments
     # User state for resume playback
     current_position: float = 0.0
     is_finished: bool = False
@@ -1157,3 +1158,179 @@ async def download_episode(
         headers=response_headers,
         media_type=response_headers["Content-Type"],
     )
+
+
+# --- Transcription API ---
+
+
+class TranscribeResponse(BaseModel):
+    status: str
+    message: str
+
+
+@router.post("/episode/{episode_id}/transcribe", response_model=TranscribeResponse)
+async def transcribe_episode(
+    episode_id: int,
+    force: bool = False,
+    user_id: str = Depends(get_current_user_id),
+):
+    """
+    Trigger AI transcription for a podcast episode.
+
+    This endpoint starts a background transcription job using SenseVoice.
+    The transcription runs asynchronously - poll the episode status to check progress.
+
+    Args:
+        force: If True, reset stuck transcription and restart
+
+    Returns:
+        - 202: Transcription started
+        - 409: Transcription already in progress (use force=true to override)
+        - 404: Episode not found
+    """
+    from sqlalchemy import select, update
+    from app.models.podcast_orm import PodcastEpisode
+    from fastapi import BackgroundTasks
+    from fastapi.concurrency import run_in_threadpool
+
+    async with AsyncSessionLocal() as db:
+        # Get episode
+        stmt = select(PodcastEpisode).where(PodcastEpisode.id == episode_id)
+        result = await db.execute(stmt)
+        episode = result.scalar_one_or_none()
+
+        if not episode:
+            raise HTTPException(status_code=404, detail="Episode not found")
+
+        # Check current status
+        if episode.transcript_status in ("processing", "pending"):
+            if not force:
+                raise HTTPException(
+                    status_code=409,
+                    detail=f"Transcription already {episode.transcript_status}. Use force=true to restart.",
+                )
+            # Force mode: log and continue
+            logger.warning(
+                f"Force restarting transcription for episode {episode_id} (was {episode.transcript_status})"
+            )
+
+        # Update status to pending
+        await db.execute(
+            update(PodcastEpisode)
+            .where(PodcastEpisode.id == episode_id)
+            .values(transcript_status="pending")
+        )
+        await db.commit()
+
+        # Get audio URL for background task
+        audio_url = episode.audio_url
+
+    # Start background transcription task
+    import asyncio
+
+    asyncio.create_task(_run_transcription(episode_id, audio_url))
+
+    return TranscribeResponse(
+        status="pending",
+        message="Transcription started. Check episode status for progress.",
+    )
+
+
+async def _run_transcription(episode_id: int, audio_url: str):
+    """
+    Background task to run transcription.
+
+    Downloads audio, runs SenseVoice, and saves results to database.
+    """
+    import tempfile
+    import httpx
+    from pathlib import Path
+    from sqlalchemy import update
+    from app.models.podcast_orm import PodcastEpisode
+    from fastapi.concurrency import run_in_threadpool
+
+    logger.info(f"Starting transcription for episode {episode_id}")
+
+    try:
+        # Update status to processing
+        async with AsyncSessionLocal() as db:
+            await db.execute(
+                update(PodcastEpisode)
+                .where(PodcastEpisode.id == episode_id)
+                .values(transcript_status="processing")
+            )
+            await db.commit()
+
+        # Download audio to temp file
+        temp_dir = Path(tempfile.mkdtemp(prefix="podcast_transcribe_"))
+        audio_path = temp_dir / "audio.mp3"
+
+        logger.info(f"Downloading audio from {audio_url}")
+
+        proxies = settings.PROXY_URL if settings.PROXY_URL else None
+        async with httpx.AsyncClient(
+            timeout=300.0,  # 5 minutes for large files
+            follow_redirects=True,
+            proxy=proxies,
+            headers={"User-Agent": BROWSER_USER_AGENT},
+        ) as client:
+            response = await client.get(audio_url)
+            response.raise_for_status()
+
+            with open(audio_path, "wb") as f:
+                f.write(response.content)
+
+        logger.info(f"Audio downloaded to {audio_path}")
+
+        # Run transcription in thread pool (CPU-bound)
+        def do_transcription():
+            from app.services.transcription import AudioInput, get_default_engine
+
+            engine = get_default_engine()
+            audio_input = AudioInput.from_file(audio_path)
+            result = engine.transcribe(audio_input)
+            return result
+
+        result = await run_in_threadpool(do_transcription)
+
+        logger.info(f"Transcription complete: {len(result.segments)} segments")
+
+        # Save results to database
+        segments_data = [seg.to_dict() for seg in result.segments]
+
+        async with AsyncSessionLocal() as db:
+            await db.execute(
+                update(PodcastEpisode)
+                .where(PodcastEpisode.id == episode_id)
+                .values(
+                    transcript_status="completed",
+                    transcript_text=result.full_text,
+                    transcript_segments=segments_data,
+                )
+            )
+            await db.commit()
+
+        logger.info(f"Transcription saved for episode {episode_id}")
+
+        # Cleanup temp files
+        try:
+            audio_path.unlink()
+            temp_dir.rmdir()
+        except Exception as e:
+            logger.warning(f"Failed to cleanup temp files: {e}")
+
+    except Exception as e:
+        import traceback
+        logger.error(f"Transcription failed for episode {episode_id}: {e}\n{traceback.format_exc()}")
+
+        # Update status to failed
+        try:
+            async with AsyncSessionLocal() as db:
+                await db.execute(
+                    update(PodcastEpisode)
+                    .where(PodcastEpisode.id == episode_id)
+                    .values(transcript_status="failed")
+                )
+                await db.commit()
+        except Exception as db_error:
+            logger.error(f"Failed to update status to failed: {db_error}")

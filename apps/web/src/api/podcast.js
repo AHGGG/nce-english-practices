@@ -412,3 +412,40 @@ export async function downloadEpisode(episodeId) {
   if (!response.ok) throw new Error("Download failed");
   return response.blob();
 }
+
+/**
+ * Trigger AI transcription for an episode.
+ * @param {number} episodeId
+ * @param {boolean} force - Force restart if stuck in processing/pending
+ * @returns {Promise<{status: string, message: string}>}
+ */
+export async function transcribeEpisode(episodeId, force = false) {
+  const url = force
+    ? `${BASE_URL}/episode/${episodeId}/transcribe?force=true`
+    : `${BASE_URL}/episode/${episodeId}/transcribe`;
+  const response = await authFetch(url, {
+    method: "POST",
+  });
+  if (response.status === 409) {
+    const data = await response.json();
+    return { status: "in_progress", message: data.detail };
+  }
+  if (!response.ok) {
+    const error = await response
+      .json()
+      .catch(() => ({ detail: "Transcription failed" }));
+    throw new Error(error.detail || "Transcription failed");
+  }
+  return response.json();
+}
+
+/**
+ * Get episode details including transcript status.
+ * @param {number} episodeId
+ * @returns {Promise<object>}
+ */
+export async function getEpisodeDetail(episodeId) {
+  const response = await authFetch(`${BASE_URL}/episode/${episodeId}`);
+  if (!response.ok) throw new Error("Failed to get episode");
+  return response.json();
+}

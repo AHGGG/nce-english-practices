@@ -406,4 +406,7 @@ export class AudioContentRenderer implements ContentRenderer {
   }
 }
 
+// Export the component for direct use
+export { AudioContentRendererComponent };
+
 export default AudioContentRenderer;

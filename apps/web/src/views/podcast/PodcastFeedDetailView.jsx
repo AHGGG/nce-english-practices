@@ -24,6 +24,7 @@ import {
   Info,
   Check,
   Plus,
+  BookOpen,
 } from "lucide-react";
 import * as podcastApi from "../../api/podcast";
 import { usePodcast } from "../../context/PodcastContext";
@@ -290,6 +291,135 @@ export default function PodcastFeedDetailView() {
       playEpisode(episode, feed, null);
     }
   }
+
+  // Transcription state: { [episodeId]: 'none' | 'pending' | 'processing' | 'completed' | 'failed' }
+  const [transcriptStatus, setTranscriptStatus] = useState({});
+
+  // Handle intensive listening mode button click
+  const handleIntensiveListening = useCallback(
+    async (episode, forceRestart = false) => {
+      const status =
+        episode.transcript_status || transcriptStatus[episode.id] || "none";
+
+      if (status === "completed") {
+        // Navigate to unified player
+        navigate(`/player/podcast/${episode.id}`);
+        return;
+      }
+
+      if ((status === "pending" || status === "processing") && !forceRestart) {
+        addToast("Transcription in progress. Please wait...", "info");
+        return;
+      }
+
+      // Start transcription (or force restart)
+      try {
+        setTranscriptStatus((prev) => ({ ...prev, [episode.id]: "pending" }));
+        const result = await podcastApi.transcribeEpisode(episode.id, forceRestart);
+        addToast(result.message || "Transcription started", "success");
+
+        // Start polling for status
+        pollTranscriptStatus(episode.id);
+      } catch (e) {
+        setTranscriptStatus((prev) => ({ ...prev, [episode.id]: "failed" }));
+        addToast("Failed to start transcription: " + e.message, "error");
+      }
+    },
+    [navigate, addToast, transcriptStatus],
+  );
+
+  // Poll transcript status
+  const pollTranscriptStatus = useCallback(
+    async (episodeId) => {
+      const poll = async () => {
+        try {
+          // Use batch endpoint to get episode details
+          const items = await podcastApi.getEpisodesBatch([episodeId]);
+          const item = items?.[0];
+          if (!item) return;
+
+          // Note: batch endpoint returns { episode: {...}, feed: {...} }
+          const status = item.episode?.transcript_status || item.transcript_status;
+          setTranscriptStatus((prev) => ({ ...prev, [episodeId]: status }));
+
+          // Update episode in list
+          setEpisodes((prev) =>
+            prev.map((e) =>
+              e.id === episodeId ? { ...e, transcript_status: status } : e,
+            ),
+          );
+
+          if (status === "completed") {
+            addToast(
+              "Transcription complete! You can now enter intensive listening mode.",
+              "success",
+            );
+          } else if (status === "failed") {
+            addToast("Transcription failed. Please try again.", "error");
+          } else if (status === "pending" || status === "processing") {
+            // Continue polling
+            setTimeout(poll, 5000);
+          }
+        } catch (e) {
+          console.error("Failed to poll transcript status:", e);
+        }
+      };
+
+      poll();
+    },
+    [addToast],
+  );
+
+  // Render intensive listening button
+  const renderIntensiveListeningButton = (episode) => {
+    const status =
+      episode.transcript_status || transcriptStatus[episode.id] || "none";
+
+    if (status === "pending" || status === "processing") {
+      return (
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            // Long press or click to force restart
+            handleIntensiveListening(episode, true);
+          }}
+          className="flex-shrink-0 p-3 text-amber-400 hover:bg-amber-500/10 rounded-lg transition-colors border border-transparent hover:border-amber-500/30"
+          title="Generating transcript... Click to restart if stuck"
+        >
+          <Loader2 className="w-5 h-5 animate-spin" />
+        </button>
+      );
+    }
+
+    if (status === "completed") {
+      return (
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            handleIntensiveListening(episode);
+          }}
+          className="flex-shrink-0 p-3 text-accent-primary hover:bg-accent-primary/10 rounded-lg transition-colors border border-transparent hover:border-accent-primary/30"
+          title="Enter intensive listening mode"
+        >
+          <BookOpen className="w-5 h-5" />
+        </button>
+      );
+    }
+
+    // Default: not transcribed
+    return (
+      <button
+        onClick={(e) => {
+          e.stopPropagation();
+          handleIntensiveListening(episode);
+        }}
+        className="flex-shrink-0 p-3 text-white/40 hover:text-accent-primary hover:bg-accent-primary/10 rounded-lg transition-colors border border-transparent hover:border-accent-primary/20"
+        title="Generate transcript for intensive listening"
+      >
+        <BookOpen className="w-5 h-5" />
+      </button>
+    );
+  };
 
   const handleDownloadClick = useCallback(
     async (episode) => {
@@ -758,8 +888,9 @@ export default function PodcastFeedDetailView() {
                     </div>
                   </div>
 
-                  {/* Download button - always visible, but styled cleanly */}
-                  <div className="opacity-40 group-hover:opacity-100 transition-opacity">
+                  {/* Action buttons - always visible, but styled cleanly */}
+                  <div className="flex items-center gap-1 opacity-40 group-hover:opacity-100 transition-opacity">
+                    {renderIntensiveListeningButton(episode)}
                     {renderDownloadButton(episode)}
                   </div>
                 </div>
