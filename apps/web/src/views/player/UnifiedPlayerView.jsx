@@ -9,6 +9,7 @@ import { useState, useEffect, useMemo, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { ArrowLeft, Loader2, AlertCircle } from "lucide-react";
 import { authFetch } from "../../api/auth";
+import { getCachedAudioUrl } from "../../utils/offline";
 
 // Import the component directly (not the class)
 import { AudioContentRendererComponent } from "../../components/content/renderers/AudioContentRenderer";
@@ -68,6 +69,17 @@ export default function UnifiedPlayerView() {
       }
 
       const data = await response.json();
+
+      // For podcast, try to use cached audio from Cache API
+      // This avoids re-downloading audio that was cached during transcription
+      if (sourceType === "podcast" && data.audio_url) {
+        const cachedUrl = await getCachedAudioUrl(data.audio_url);
+        if (cachedUrl) {
+          console.log("[UnifiedPlayer] Using cached audio URL");
+          data.audio_url = cachedUrl;
+        }
+      }
+
       setBundle(data);
     } catch (e) {
       setError(e.message);
@@ -160,7 +172,9 @@ export default function UnifiedPlayerView() {
       <div className="flex-1 flex min-h-0 relative">
         {/* Main content */}
         <main className="flex-1 flex flex-col min-h-0">
-          {rendererProps && <AudioContentRendererComponent {...rendererProps} />}
+          {rendererProps && (
+            <AudioContentRendererComponent {...rendererProps} />
+          )}
         </main>
 
         {/* Word Inspector Sidebar */}

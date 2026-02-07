@@ -312,10 +312,26 @@ export default function PodcastFeedDetailView() {
         return;
       }
 
-      // Start transcription (or force restart)
+      // Start transcription and client-side download in parallel
+      // This ensures audio is cached locally while server transcribes
       try {
         setTranscriptStatus((prev) => ({ ...prev, [episode.id]: "pending" }));
-        const result = await podcastApi.transcribeEpisode(episode.id, forceRestart);
+
+        // Start both operations in parallel
+        const transcribePromise = podcastApi.transcribeEpisode(
+          episode.id,
+          forceRestart,
+        );
+
+        // Start client-side download if not already cached
+        const isAlreadyCached = offlineEpisodes.has(episode.id);
+        if (!isAlreadyCached) {
+          // Fire and forget - don't await, let it download in background
+          startDownload(episode);
+        }
+
+        // Wait for transcription API call to complete (just the trigger, not the actual transcription)
+        const result = await transcribePromise;
         addToast(result.message || "Transcription started", "success");
 
         // Start polling for status
@@ -325,7 +341,7 @@ export default function PodcastFeedDetailView() {
         addToast("Failed to start transcription: " + e.message, "error");
       }
     },
-    [navigate, addToast, transcriptStatus],
+    [navigate, addToast, transcriptStatus, offlineEpisodes, startDownload],
   );
 
   // Poll transcript status
@@ -339,7 +355,8 @@ export default function PodcastFeedDetailView() {
           if (!item) return;
 
           // Note: batch endpoint returns { episode: {...}, feed: {...} }
-          const status = item.episode?.transcript_status || item.transcript_status;
+          const status =
+            item.episode?.transcript_status || item.transcript_status;
           setTranscriptStatus((prev) => ({ ...prev, [episodeId]: status }));
 
           // Update episode in list
