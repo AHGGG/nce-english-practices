@@ -20,6 +20,8 @@ class Settings(BaseSettings):
     # SenseVoice Settings
     # default: iic/SenseVoice, can also be set to FunAudioLLM/Fun-ASR-Nano-2512
     SENSEVOICE_MODEL: str = "iic/SenseVoiceSmall"
+    # Preload ASR model on startup (increases startup time but faster first request)
+    SENSEVOICE_PRELOAD: bool = False
 
     # Database Settings
     # Default to local postgres if not set. Users should set this in .env

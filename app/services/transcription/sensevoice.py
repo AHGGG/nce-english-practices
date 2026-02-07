@@ -9,10 +9,12 @@ Supports two model types:
 - FunAudioLLM/Fun-ASR-Nano-2512: New ASR large model with 31 language support
 """
 
+from __future__ import annotations
+
 import logging
 import re
 from pathlib import Path
-from typing import Optional
+from typing import TYPE_CHECKING, Any, Optional
 
 from app.config import settings
 from .base import BaseTranscriptionEngine, TranscriptionError
@@ -24,10 +26,16 @@ from .utils import (
     merge_overlapping_segments,
 )
 
+if TYPE_CHECKING:
+    from funasr import AutoModel
+
 logger = logging.getLogger(__name__)
 
 # Model type detection
 FUN_ASR_NANO_MODELS = {"FunAudioLLM/Fun-ASR-Nano-2512", "Fun-ASR-Nano-2512"}
+
+# Pre-compiled regex patterns (avoid re-compiling in hot paths)
+SENSEVOICE_TOKEN_PATTERN = re.compile(r"<\|[^|]+\|>")  # <|en|>, <|EMO_UNKNOWN|>, etc.
 
 
 class SenseVoiceEngine(BaseTranscriptionEngine):
@@ -42,8 +50,14 @@ class SenseVoiceEngine(BaseTranscriptionEngine):
     """
 
     # Chunking configuration
-    CHUNK_DURATION = 30.0  # seconds per chunk
+    # Fun-ASR-Nano can handle longer chunks with batch_size_s parameter
+    CHUNK_DURATION = 30.0  # seconds per chunk (default)
+    CHUNK_DURATION_FUN_ASR = 60.0  # Fun-ASR-Nano supports longer chunks
     OVERLAP_DURATION = 2.0  # overlap between chunks
+
+    # Batch size for inference (seconds of audio to process at once)
+    BATCH_SIZE_S = 60  # SenseVoice default
+    BATCH_SIZE_S_FUN_ASR = 5  # Fun-ASR-Nano recommended (from official example)
 
     # SenseVoice event tags
     EVENT_PATTERN = re.compile(r"\[([A-Za-z]+)\]")
@@ -68,7 +82,7 @@ class SenseVoiceEngine(BaseTranscriptionEngine):
         """
         self.model_size = model_size
         self.device = device
-        self._model = None
+        self._model: Any = None  # FunASR AutoModel instance (lazy loaded)
         self._model_loaded = False
         self._is_fun_asr_nano = False  # Flag for Fun-ASR-Nano model type
 
@@ -110,6 +124,7 @@ class SenseVoiceEngine(BaseTranscriptionEngine):
                 self._model = AutoModel(
                     model=model_name,
                     device=self.device,
+                    disable_update=True,  # Skip version check for faster startup
                     trust_remote_code=True,
                     remote_code=model_py_path,
                 )
@@ -273,9 +288,11 @@ class SenseVoiceEngine(BaseTranscriptionEngine):
         """Transcribe using Fun-ASR-Nano model for short audio."""
         try:
             # Fun-ASR-Nano without VAD - for short audio only
+            # Use batch_size_s for better performance
             result = self._model.generate(
-                input=str(audio_path),
+                input=[str(audio_path)],  # Fun-ASR-Nano expects list input
                 cache={},
+                batch_size_s=self.BATCH_SIZE_S_FUN_ASR,
             )
 
             logger.debug(f"Fun-ASR-Nano raw result type: {type(result)}")
@@ -291,37 +308,160 @@ class SenseVoiceEngine(BaseTranscriptionEngine):
             )
 
     def _parse_fun_asr_nano_result(self, result: list) -> list[TranscriptionSegment]:
-        """Parse Fun-ASR-Nano output into TranscriptionSegments."""
+        """
+        Parse Fun-ASR-Nano output into TranscriptionSegments.
+
+        Fun-ASR-Nano returns token-level timestamps in the format:
+        {
+            'key': 'filename',
+            'text': 'transcribed text',
+            'timestamps': [
+                {'token': 'word', 'start_time': 0.06, 'end_time': 0.12, 'score': 0.0},
+                ...
+            ]
+        }
+        """
         segments = []
 
         if not result:
             return segments
 
         for item in result:
-            if isinstance(item, dict):
-                text = item.get("text", "")
-                # Fun-ASR-Nano returns text directly
-                if text:
-                    # Clean up the text
-                    clean_text = self._clean_text(text)
+            if not isinstance(item, dict):
+                # Handle string result (fallback)
+                if isinstance(item, str):
+                    clean_text = self._clean_text(item)
                     if clean_text:
-                        segment = TranscriptionSegment(
+                        segments.append(
+                            TranscriptionSegment(
+                                start_time=0.0,
+                                end_time=0.0,
+                                text=clean_text,
+                            )
+                        )
+                continue
+
+            text = item.get("text", "")
+            timestamps = item.get("timestamps", [])
+
+            if timestamps:
+                # Fun-ASR-Nano provides token-level timestamps
+                # Group tokens into word-level segments for better readability
+                segments.extend(self._group_tokens_to_segments(timestamps))
+            elif text:
+                # Fallback: no timestamps available
+                clean_text = self._clean_text(text)
+                if clean_text:
+                    segments.append(
+                        TranscriptionSegment(
                             start_time=0.0,
                             end_time=0.0,
                             text=clean_text,
                         )
-                        segments.append(segment)
-            elif isinstance(item, str):
-                clean_text = self._clean_text(item)
-                if clean_text:
-                    segment = TranscriptionSegment(
-                        start_time=0.0,
-                        end_time=0.0,
-                        text=clean_text,
                     )
-                    segments.append(segment)
 
         return segments
+
+    def _group_tokens_to_segments(
+        self, timestamps: list[dict], max_segment_duration: float = 15.0
+    ) -> list[TranscriptionSegment]:
+        """
+        Group token-level timestamps into sentence-level segments.
+
+        Fun-ASR-Nano returns BPE subword tokens where:
+        - Tokens starting with space (e.g., ' Day', ' is') indicate new words
+        - Tokens without space (e.g., 'V', 'al', 'ent') are subword continuations
+        - Punctuation like '.' is a separate token
+
+        Args:
+            timestamps: List of token timestamps from Fun-ASR-Nano
+            max_segment_duration: Maximum duration for a single segment
+
+        Returns:
+            List of TranscriptionSegments with proper sentence grouping
+        """
+        if not timestamps:
+            return []
+
+        # Sentence-ending punctuation (as standalone tokens)
+        sentence_end_tokens = {".", "!", "?", "。", "！", "？"}
+
+        segments = []
+        current_tokens = []
+        current_start = None
+        current_end = None
+
+        for ts in timestamps:
+            token = ts.get("token", "")
+            start_time = ts.get("start_time", 0.0)
+            end_time = ts.get("end_time", 0.0)
+
+            if not token:
+                continue
+
+            # Initialize segment start
+            if current_start is None:
+                current_start = start_time
+
+            current_end = end_time
+            current_tokens.append(token)
+
+            # Check if this token is sentence-ending punctuation
+            is_sentence_end = token.strip() in sentence_end_tokens
+
+            # Check segment duration
+            segment_duration = current_end - current_start
+
+            # Create segment on sentence boundary or max duration
+            if is_sentence_end or segment_duration >= max_segment_duration:
+                text = self._merge_tokens(current_tokens)
+                clean_text = self._clean_text(text)
+                if clean_text:
+                    segments.append(
+                        TranscriptionSegment(
+                            start_time=current_start,
+                            end_time=current_end,
+                            text=clean_text,
+                        )
+                    )
+                # Reset for next segment
+                current_tokens = []
+                current_start = None
+                current_end = None
+
+        # Handle remaining tokens (no sentence-ending punctuation at the end)
+        if current_tokens and current_start is not None:
+            text = self._merge_tokens(current_tokens)
+            clean_text = self._clean_text(text)
+            if clean_text:
+                segments.append(
+                    TranscriptionSegment(
+                        start_time=current_start,
+                        end_time=current_end or current_start,
+                        text=clean_text,
+                    )
+                )
+
+        return segments
+
+    def _merge_tokens(self, tokens: list[str]) -> str:
+        """
+        Merge BPE tokens into readable text.
+
+        Handles common BPE patterns:
+        - Tokens starting with space indicate word boundaries
+        - Tokens without space are continuations
+        """
+        if not tokens:
+            return ""
+
+        # Simple concatenation - BPE tokens usually include spacing info
+        result = "".join(tokens)
+
+        # Clean up multiple spaces
+        result = re.sub(r"\s+", " ", result)
+
+        return result.strip()
 
     def _transcribe_fun_asr_nano_chunked(
         self, audio_path: Path, total_duration: float
@@ -329,39 +469,38 @@ class SenseVoiceEngine(BaseTranscriptionEngine):
         """Transcribe long audio using Fun-ASR-Nano by chunking manually."""
         chunks = None
         try:
-            # Split audio into chunks
+            # Split audio into chunks - Fun-ASR-Nano can handle longer chunks
             chunks = chunk_audio(
                 audio_path,
-                chunk_duration=self.CHUNK_DURATION,
+                chunk_duration=self.CHUNK_DURATION_FUN_ASR,
                 overlap_duration=self.OVERLAP_DURATION,
             )
 
             logger.info(f"Processing {len(chunks)} chunks with Fun-ASR-Nano")
 
             all_segments: list[TranscriptionSegment] = []
-            current_time = 0.0
 
-            for i, (chunk_path, start_time, end_time) in enumerate(chunks):
+            for i, (chunk_path, chunk_start, chunk_end) in enumerate(chunks):
                 logger.debug(
-                    f"Processing chunk {i + 1}/{len(chunks)}: {start_time:.1f}s - {end_time:.1f}s"
+                    f"Processing chunk {i + 1}/{len(chunks)}: {chunk_start:.1f}s - {chunk_end:.1f}s"
                 )
 
                 try:
                     result = self._model.generate(
-                        input=str(chunk_path),
+                        input=[str(chunk_path)],  # Fun-ASR-Nano expects list input
                         cache={},
+                        batch_size_s=self.BATCH_SIZE_S_FUN_ASR,
                     )
 
                     logger.debug(f"Chunk {i + 1} result: {result}")
 
-                    # Parse result and adjust timestamps
+                    # Parse result - now returns segments with token-level timestamps
                     chunk_segments = self._parse_fun_asr_nano_result(result)
 
-                    # Set approximate timestamps based on chunk position
-                    chunk_duration = end_time - start_time
+                    # Adjust timestamps to global timeline
                     for seg in chunk_segments:
-                        seg.start_time = start_time
-                        seg.end_time = end_time
+                        seg.start_time += chunk_start
+                        seg.end_time += chunk_start
                         all_segments.append(seg)
 
                 except Exception as e:
@@ -405,8 +544,6 @@ class SenseVoiceEngine(BaseTranscriptionEngine):
 
         return merged
 
-        return segments
-
     def _transcribe_single(self, audio_path: Path) -> list[TranscriptionSegment]:
         """Transcribe a single audio file without chunking."""
         try:
@@ -415,7 +552,7 @@ class SenseVoiceEngine(BaseTranscriptionEngine):
                 cache={},
                 language="auto",
                 use_itn=True,
-                batch_size_s=60,
+                batch_size_s=self.BATCH_SIZE_S,
             )
 
             return self._parse_result(result)
@@ -456,7 +593,7 @@ class SenseVoiceEngine(BaseTranscriptionEngine):
                         cache={},
                         language="auto",
                         use_itn=True,
-                        batch_size_s=60,
+                        batch_size_s=self.BATCH_SIZE_S,
                     )
 
                     chunk_segments = self._parse_result(result)
@@ -539,11 +676,8 @@ class SenseVoiceEngine(BaseTranscriptionEngine):
         emotion = None
         clean_text = text
 
-        # Remove SenseVoice special tokens: <|en|>, <|EMO_UNKNOWN|>, <|Speech|>, <|withitn|>, etc.
-        import re
-
-        sensevoice_token_pattern = re.compile(r"<\|[^|]+\|>")
-        clean_text = sensevoice_token_pattern.sub("", clean_text)
+        # Remove SenseVoice special tokens using pre-compiled pattern
+        clean_text = SENSEVOICE_TOKEN_PATTERN.sub("", clean_text)
 
         for match in self.EVENT_PATTERN.finditer(text):
             tag = match.group(1)
@@ -587,9 +721,8 @@ class SenseVoiceEngine(BaseTranscriptionEngine):
         if not text:
             return ""
 
-        # Remove SenseVoice/FunASR special tokens: <|en|>, <|EMO_UNKNOWN|>, <|Speech|>, etc.
-        sensevoice_token_pattern = re.compile(r"<\|[^|]+\|>")
-        clean_text = sensevoice_token_pattern.sub("", text)
+        # Remove SenseVoice/FunASR special tokens using pre-compiled pattern
+        clean_text = SENSEVOICE_TOKEN_PATTERN.sub("", text)
 
         # Remove event tags like [Music], [Laughter], etc.
         clean_text = self.EVENT_PATTERN.sub("", clean_text)
