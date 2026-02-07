@@ -17,6 +17,10 @@ class Settings(BaseSettings):
     GEMINI_API_KEY: str = ""  # Can also be set via GOOGLE_API_KEY in env if pydantic picks it up, but explicit is better
     GEMINI_VOICE_MODEL_NAME: str = "gemini-2.0-flash-exp"
 
+    # SenseVoice Settings
+    # default: iic/SenseVoice, can also be set to FunAudioLLM/Fun-ASR-Nano-2512
+    SENSEVOICE_MODEL: str = "iic/SenseVoiceSmall"
+
     # Database Settings
     # Default to local postgres if not set. Users should set this in .env
     DATABASE_URL: str = (

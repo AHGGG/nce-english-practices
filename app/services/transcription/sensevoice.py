@@ -3,6 +3,10 @@ SenseVoice transcription engine implementation.
 
 Uses FunAudioLLM/SenseVoice for local GPU-based speech recognition.
 https://github.com/FunAudioLLM/SenseVoice
+
+Supports two model types:
+- iic/SenseVoiceSmall: Original SenseVoice model
+- FunAudioLLM/Fun-ASR-Nano-2512: New ASR large model with 31 language support
 """
 
 import logging
@@ -10,6 +14,7 @@ import re
 from pathlib import Path
 from typing import Optional
 
+from app.config import settings
 from .base import BaseTranscriptionEngine, TranscriptionError
 from .schemas import AudioInput, TranscriptionResult, TranscriptionSegment
 from .utils import (
@@ -20,6 +25,9 @@ from .utils import (
 )
 
 logger = logging.getLogger(__name__)
+
+# Model type detection
+FUN_ASR_NANO_MODELS = {"FunAudioLLM/Fun-ASR-Nano-2512", "Fun-ASR-Nano-2512"}
 
 
 class SenseVoiceEngine(BaseTranscriptionEngine):
@@ -50,7 +58,7 @@ class SenseVoiceEngine(BaseTranscriptionEngine):
     }
     EVENT_TAGS = {"Music", "Laughter", "Cough", "Applause", "BGM", "Speech"}
 
-    def __init__(self, model_size: str = "small", device: str = "cuda"):
+    def __init__(self, model_size: str = "small", device: str = "cuda:0"):
         """
         Initialize SenseVoice engine.
 
@@ -62,6 +70,7 @@ class SenseVoiceEngine(BaseTranscriptionEngine):
         self.device = device
         self._model = None
         self._model_loaded = False
+        self._is_fun_asr_nano = False  # Flag for Fun-ASR-Nano model type
 
     @property
     def name(self) -> str:
@@ -76,19 +85,43 @@ class SenseVoiceEngine(BaseTranscriptionEngine):
             from funasr import AutoModel
 
             # ModelScope model ID format: namespace/name
-            model_name = (
-                "iic/SenseVoiceSmall"
-                if self.model_size == "small"
-                else "iic/SenseVoiceLarge"
+            # Configured in app/config.py (default: iic/SenseVoiceSmall)
+            model_name = settings.SENSEVOICE_MODEL
+
+            # Check if using Fun-ASR-Nano model (requires VAD)
+            self._is_fun_asr_nano = any(
+                nano_model in model_name for nano_model in FUN_ASR_NANO_MODELS
             )
 
-            logger.info(f"Loading SenseVoice model: {model_name}")
-            self._model = AutoModel(
-                model=model_name,
-                trust_remote_code=True,
-                device=self.device,
-                disable_update=True,  # Skip version check for faster startup
+            logger.info(
+                f"Loading SenseVoice model: {model_name} (Fun-ASR-Nano: {self._is_fun_asr_nano})"
             )
+
+            if self._is_fun_asr_nano:
+                # Fun-ASR-Nano requires VAD model for long audio and remote_code
+                # Reference: https://github.com/FunAudioLLM/Fun-ASR
+                # The model.py needs to be downloaded from the Fun-ASR repo
+                # We'll download it to a local cache if not present
+                model_py_path = self._ensure_fun_asr_model_code()
+
+                # Note: We load WITHOUT VAD model to avoid FunASR's inference_with_vad bug
+                # (KeyError when timestamp format doesn't match expected list format)
+                # Instead, we'll handle long audio by chunking manually
+                self._model = AutoModel(
+                    model=model_name,
+                    device=self.device,
+                    trust_remote_code=True,
+                    remote_code=model_py_path,
+                )
+            else:
+                # Original SenseVoice model
+                self._model = AutoModel(
+                    model=model_name,
+                    trust_remote_code=True,
+                    device=self.device,
+                    disable_update=True,  # Skip version check for faster startup
+                )
+
             self._model_loaded = True
             logger.info("SenseVoice model loaded successfully")
 
@@ -104,6 +137,70 @@ class SenseVoiceEngine(BaseTranscriptionEngine):
                 engine=self.name,
                 cause=e,
             )
+
+    def _ensure_fun_asr_model_code(self) -> str:
+        """
+        Ensure the Fun-ASR model code files are available locally.
+        Downloads from GitHub if not present.
+
+        Fun-ASR model.py has dependencies on:
+        - ctc.py (CTC class)
+        - tools/utils.py (forced_align function)
+
+        We need to download all these files and set up the proper directory structure.
+
+        Returns:
+            Path to the model.py file (relative path for FunASR compatibility)
+        """
+        import sys
+        import urllib.request
+
+        # Create directory structure for Fun-ASR code
+        # Use project root for Windows compatibility with FunASR's path handling
+        project_root = Path(__file__).parent.parent.parent.parent
+        fun_asr_dir = project_root / "fun_asr_code"
+        tools_dir = fun_asr_dir / "tools"
+
+        fun_asr_dir.mkdir(parents=True, exist_ok=True)
+        tools_dir.mkdir(parents=True, exist_ok=True)
+
+        # Files to download from Fun-ASR repository
+        files_to_download = [
+            ("model.py", fun_asr_dir / "model.py"),
+            ("ctc.py", fun_asr_dir / "ctc.py"),
+            ("tools/utils.py", tools_dir / "utils.py"),
+        ]
+
+        base_url = "https://raw.githubusercontent.com/FunAudioLLM/Fun-ASR/main"
+
+        for remote_path, local_path in files_to_download:
+            if not local_path.exists():
+                url = f"{base_url}/{remote_path}"
+                logger.info(f"Downloading Fun-ASR {remote_path}...")
+                try:
+                    urllib.request.urlretrieve(url, local_path)
+                    logger.info(f"Downloaded {remote_path} to {local_path}")
+                except Exception as e:
+                    raise TranscriptionError(
+                        f"Failed to download Fun-ASR {remote_path}: {e}",
+                        engine=self.name,
+                        cause=e,
+                    )
+
+        # Create __init__.py for tools package if not exists
+        tools_init = tools_dir / "__init__.py"
+        if not tools_init.exists():
+            tools_init.write_text("# Fun-ASR tools package\n")
+
+        # Add fun_asr_code directory to Python path so imports work
+        fun_asr_dir_str = str(fun_asr_dir)
+        if fun_asr_dir_str not in sys.path:
+            sys.path.insert(0, fun_asr_dir_str)
+            logger.info(f"Added {fun_asr_dir_str} to Python path")
+
+        # Return relative path from fun_asr_code directory
+        # FunASR will add this directory to sys.path and import "model"
+        return "./fun_asr_code/model.py"
 
     def is_available(self) -> bool:
         """Check if SenseVoice is available."""
@@ -144,8 +241,15 @@ class SenseVoiceEngine(BaseTranscriptionEngine):
 
         logger.info(f"Transcribing audio: {audio_path} ({total_duration:.1f}s)")
 
-        # Decide whether to chunk
-        if total_duration <= self.CHUNK_DURATION + 5:
+        if self._is_fun_asr_nano:
+            # Fun-ASR-Nano: use chunking for long audio (VAD has compatibility issues)
+            if total_duration <= self.CHUNK_DURATION + 5:
+                segments = self._transcribe_fun_asr_nano(audio_path)
+            else:
+                segments = self._transcribe_fun_asr_nano_chunked(
+                    audio_path, total_duration
+                )
+        elif total_duration <= self.CHUNK_DURATION + 5:
             # Short audio: process directly
             segments = self._transcribe_single(audio_path)
         else:
@@ -164,6 +268,144 @@ class SenseVoiceEngine(BaseTranscriptionEngine):
             duration=total_duration,
             language=language,
         )
+
+    def _transcribe_fun_asr_nano(self, audio_path: Path) -> list[TranscriptionSegment]:
+        """Transcribe using Fun-ASR-Nano model for short audio."""
+        try:
+            # Fun-ASR-Nano without VAD - for short audio only
+            result = self._model.generate(
+                input=str(audio_path),
+                cache={},
+            )
+
+            logger.debug(f"Fun-ASR-Nano raw result type: {type(result)}")
+            logger.debug(f"Fun-ASR-Nano raw result: {result}")
+            return self._parse_fun_asr_nano_result(result)
+
+        except Exception as e:
+            logger.exception("Fun-ASR-Nano transcription failed")
+            raise TranscriptionError(
+                f"Transcription failed: {e}",
+                engine=self.name,
+                cause=e,
+            )
+
+    def _parse_fun_asr_nano_result(self, result: list) -> list[TranscriptionSegment]:
+        """Parse Fun-ASR-Nano output into TranscriptionSegments."""
+        segments = []
+
+        if not result:
+            return segments
+
+        for item in result:
+            if isinstance(item, dict):
+                text = item.get("text", "")
+                # Fun-ASR-Nano returns text directly
+                if text:
+                    # Clean up the text
+                    clean_text = self._clean_text(text)
+                    if clean_text:
+                        segment = TranscriptionSegment(
+                            start_time=0.0,
+                            end_time=0.0,
+                            text=clean_text,
+                        )
+                        segments.append(segment)
+            elif isinstance(item, str):
+                clean_text = self._clean_text(item)
+                if clean_text:
+                    segment = TranscriptionSegment(
+                        start_time=0.0,
+                        end_time=0.0,
+                        text=clean_text,
+                    )
+                    segments.append(segment)
+
+        return segments
+
+    def _transcribe_fun_asr_nano_chunked(
+        self, audio_path: Path, total_duration: float
+    ) -> list[TranscriptionSegment]:
+        """Transcribe long audio using Fun-ASR-Nano by chunking manually."""
+        chunks = None
+        try:
+            # Split audio into chunks
+            chunks = chunk_audio(
+                audio_path,
+                chunk_duration=self.CHUNK_DURATION,
+                overlap_duration=self.OVERLAP_DURATION,
+            )
+
+            logger.info(f"Processing {len(chunks)} chunks with Fun-ASR-Nano")
+
+            all_segments: list[TranscriptionSegment] = []
+            current_time = 0.0
+
+            for i, (chunk_path, start_time, end_time) in enumerate(chunks):
+                logger.debug(
+                    f"Processing chunk {i + 1}/{len(chunks)}: {start_time:.1f}s - {end_time:.1f}s"
+                )
+
+                try:
+                    result = self._model.generate(
+                        input=str(chunk_path),
+                        cache={},
+                    )
+
+                    logger.debug(f"Chunk {i + 1} result: {result}")
+
+                    # Parse result and adjust timestamps
+                    chunk_segments = self._parse_fun_asr_nano_result(result)
+
+                    # Set approximate timestamps based on chunk position
+                    chunk_duration = end_time - start_time
+                    for seg in chunk_segments:
+                        seg.start_time = start_time
+                        seg.end_time = end_time
+                        all_segments.append(seg)
+
+                except Exception as e:
+                    logger.warning(f"Failed to transcribe chunk {i + 1}: {e}")
+                    # Continue with other chunks
+
+            # Merge segments with same text in overlapping regions
+            merged_segments = self._merge_adjacent_segments(all_segments)
+
+            return merged_segments
+
+        finally:
+            # Clean up temporary chunk files
+            if chunks:
+                cleanup_chunks(chunks)
+
+    def _merge_adjacent_segments(
+        self, segments: list[TranscriptionSegment]
+    ) -> list[TranscriptionSegment]:
+        """Merge adjacent segments that might have duplicate text from overlapping chunks."""
+        if not segments:
+            return []
+
+        merged = [segments[0]]
+
+        for seg in segments[1:]:
+            last = merged[-1]
+            # If segments overlap and have similar text, merge them
+            if last.end_time >= seg.start_time:
+                # Check for duplicate/similar text
+                if seg.text in last.text or last.text in seg.text:
+                    # Extend the last segment
+                    last.end_time = max(last.end_time, seg.end_time)
+                    if len(seg.text) > len(last.text):
+                        last.text = seg.text
+                else:
+                    # Different text, keep both but adjust times
+                    merged.append(seg)
+            else:
+                merged.append(seg)
+
+        return merged
+
+        return segments
 
     def _transcribe_single(self, audio_path: Path) -> list[TranscriptionSegment]:
         """Transcribe a single audio file without chunking."""
@@ -299,6 +541,7 @@ class SenseVoiceEngine(BaseTranscriptionEngine):
 
         # Remove SenseVoice special tokens: <|en|>, <|EMO_UNKNOWN|>, <|Speech|>, <|withitn|>, etc.
         import re
+
         sensevoice_token_pattern = re.compile(r"<\|[^|]+\|>")
         clean_text = sensevoice_token_pattern.sub("", clean_text)
 
@@ -337,4 +580,18 @@ class SenseVoiceEngine(BaseTranscriptionEngine):
             return "en"  # Default to English for podcast content
 
         # Return most common language
-        return max(lang_counts, key=lang_counts.get)
+        return max(lang_counts, key=lambda k: lang_counts[k])
+
+    def _clean_text(self, text: str) -> str:
+        """Clean text by removing special tokens and tags."""
+        if not text:
+            return ""
+
+        # Remove SenseVoice/FunASR special tokens: <|en|>, <|EMO_UNKNOWN|>, <|Speech|>, etc.
+        sensevoice_token_pattern = re.compile(r"<\|[^|]+\|>")
+        clean_text = sensevoice_token_pattern.sub("", text)
+
+        # Remove event tags like [Music], [Laughter], etc.
+        clean_text = self.EVENT_PATTERN.sub("", clean_text)
+
+        return clean_text.strip()
