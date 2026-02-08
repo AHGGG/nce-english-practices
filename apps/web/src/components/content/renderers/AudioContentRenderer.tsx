@@ -9,7 +9,13 @@ import {
   Loader2,
   Gauge,
 } from "lucide-react";
-import { useAudioPlayer, PLAYBACK_RATES, type AudioSegment } from "@nce/shared";
+import {
+  useAudioPlayer,
+  PLAYBACK_RATES,
+  type AudioSegment,
+  type AudioPlayerState,
+  type AudioPlayerActions,
+} from "@nce/shared";
 import type {
   ContentRenderer,
   ContentRendererProps,
@@ -310,36 +316,25 @@ function PlayerControls({
 }
 
 // ============================================================
-// Main Component
+// Audio Player UI Component (Presentational)
 // ============================================================
 
-function AudioContentRendererComponent({
-  bundle,
+interface AudioPlayerUIProps extends ContentRendererProps {
+  segments: AudioSegment[];
+  state: AudioPlayerState;
+  actions: AudioPlayerActions;
+}
+
+export function AudioPlayerUI({
+  segments,
+  state,
+  actions,
   highlightSet,
   studyHighlightSet,
   knownWords,
   showHighlights = true,
   onWordClick,
-}: ContentRendererProps) {
-  // Convert ContentBlocks to AudioSegments
-  const segments: AudioSegment[] = useMemo(() => {
-    return bundle.blocks
-      .filter((block) => block.type === "audio_segment")
-      .map((block, idx) => ({
-        index: idx,
-        text: block.text || "",
-        sentences: block.sentences || [block.text || ""],
-        startTime: block.start_time || 0,
-        endTime: block.end_time || 0,
-      }));
-  }, [bundle.blocks]);
-
-  // Audio player hook
-  const { state, actions } = useAudioPlayer({
-    audioUrl: bundle.audio_url || "",
-    segments,
-  });
-
+}: AudioPlayerUIProps) {
   // Handle segment click to seek
   const handleSegmentClick = useCallback(
     (index: number) => {
@@ -395,6 +390,42 @@ function AudioContentRendererComponent({
         onRateChange={actions.setPlaybackRate}
       />
     </div>
+  );
+}
+
+// ============================================================
+// Main Component
+// ============================================================
+
+function AudioContentRendererComponent(props: ContentRendererProps) {
+  const { bundle } = props;
+
+  // Convert ContentBlocks to AudioSegments
+  const segments: AudioSegment[] = useMemo(() => {
+    return bundle.blocks
+      .filter((block) => block.type === "audio_segment")
+      .map((block, idx) => ({
+        index: idx,
+        text: block.text || "",
+        sentences: block.sentences || [block.text || ""],
+        startTime: block.start_time || 0,
+        endTime: block.end_time || 0,
+      }));
+  }, [bundle.blocks]);
+
+  // Audio player hook
+  const { state, actions } = useAudioPlayer({
+    audioUrl: bundle.audio_url || "",
+    segments,
+  });
+
+  return (
+    <AudioPlayerUI
+      {...props}
+      segments={segments}
+      state={state}
+      actions={actions}
+    />
   );
 }
 

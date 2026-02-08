@@ -5,14 +5,15 @@
  * and Audiobook sources using the shared AudioContentRenderer.
  */
 
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { ArrowLeft, Loader2, AlertCircle } from "lucide-react";
 import { authFetch } from "../../api/auth";
 import { getCachedAudioUrl } from "../../utils/offline";
+import { useAudioPlayer } from "@nce/shared";
 
 // Import the component directly (not the class)
-import { AudioContentRendererComponent } from "../../components/content/renderers/AudioContentRenderer";
+import { AudioPlayerUI } from "../../components/content/renderers/AudioContentRenderer";
 import WordInspector from "../../components/reading/WordInspector";
 import useWordExplainer from "../../hooks/useWordExplainer";
 
@@ -22,6 +23,10 @@ export default function UnifiedPlayerView() {
   const [bundle, setBundle] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+
+  // Audio Player State Tracking
+  const wasPlayingRef = useRef(false);
+  const prevSelectedWordRef = useRef(null);
 
   // Word explanation
   const {
@@ -96,6 +101,49 @@ export default function UnifiedPlayerView() {
     [hookHandleWordClick],
   );
 
+  // Convert ContentBlocks to AudioSegments
+  const segments = useMemo(() => {
+    if (!bundle?.blocks) return [];
+    return bundle.blocks
+      .filter((block) => block.type === "audio_segment")
+      .map((block, idx) => ({
+        index: idx,
+        text: block.text || "",
+        sentences: block.sentences || [block.text || ""],
+        startTime: block.start_time || 0,
+        endTime: block.end_time || 0,
+      }));
+  }, [bundle?.blocks]);
+
+  // Audio Player Hook
+  const { state: audioState, actions: audioActions } = useAudioPlayer({
+    audioUrl: bundle?.audio_url || "",
+    segments,
+  });
+
+  // Handle auto-pause/resume on word lookup
+  useEffect(() => {
+    const prevSelectedWord = prevSelectedWordRef.current;
+
+    if (selectedWord && !prevSelectedWord) {
+      // Opening Inspector
+      if (audioState.isPlaying) {
+        wasPlayingRef.current = true;
+        audioActions.pause();
+      } else {
+        wasPlayingRef.current = false;
+      }
+    } else if (!selectedWord && prevSelectedWord) {
+      // Closing Inspector
+      if (wasPlayingRef.current) {
+        audioActions.play();
+        wasPlayingRef.current = false;
+      }
+    }
+
+    prevSelectedWordRef.current = selectedWord;
+  }, [selectedWord, audioState.isPlaying, audioActions]);
+
   // Convert bundle to renderer props format
   const rendererProps = useMemo(() => {
     if (!bundle) return null;
@@ -106,8 +154,12 @@ export default function UnifiedPlayerView() {
       knownWords: new Set(),
       showHighlights: true,
       onWordClick: handleWordClick,
+      // Pass player state/actions/segments
+      segments,
+      state: audioState,
+      actions: audioActions,
     };
-  }, [bundle, handleWordClick]);
+  }, [bundle, handleWordClick, segments, audioState, audioActions]);
 
   if (loading) {
     return (
@@ -172,9 +224,7 @@ export default function UnifiedPlayerView() {
       <div className="flex-1 flex min-h-0 relative">
         {/* Main content */}
         <main className="flex-1 flex flex-col min-h-0">
-          {rendererProps && (
-            <AudioContentRendererComponent {...rendererProps} />
-          )}
+          {rendererProps && <AudioPlayerUI {...rendererProps} />}
         </main>
 
         {/* Word Inspector Sidebar */}
