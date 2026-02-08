@@ -73,6 +73,20 @@ async def lifespan(app: FastAPI):
 
     asyncio.create_task(podcast_service.start_cache_refresher(initial_delay=3600))
 
+    # Start Content Analysis Service (analyze EPUBs in background)
+    from app.services.content_analysis import content_analysis_service
+
+    async def run_content_analysis():
+        """Run content analysis with a delay to let server start first."""
+        await asyncio.sleep(30)  # Wait 30s for server to fully start
+        try:
+            stats = await content_analysis_service.analyze_all_epubs()
+            logger.info(f"Content analysis complete: {stats}")
+        except Exception as e:
+            logger.error(f"Content analysis failed: {e}")
+
+    asyncio.create_task(run_content_analysis())
+
     yield
 
     # Cleanup

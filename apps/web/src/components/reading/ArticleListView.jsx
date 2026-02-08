@@ -10,8 +10,12 @@ import {
   ChevronDown,
   Search,
   X,
+  Sparkles,
 } from "lucide-react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
+import { useToast } from "../ui";
+import RecommendModal from "./RecommendModal";
+import { calculateScore } from "./recommendUtils";
 
 /**
  * Get status styling based on article status
@@ -68,8 +72,14 @@ const ArticleListView = ({
   onArticleClick,
 }) => {
   const navigate = useNavigate();
+  const { addToast } = useToast();
   const [isBookMenuOpen, setIsBookMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+
+  // Recommendation state
+  const [isRecommendModalOpen, setIsRecommendModalOpen] = useState(false);
+  const [recommendPrefs, setRecommendPrefs] = useState(null);
+  const [animateList, setAnimateList] = useState(false);
 
   // Scroll to top on mount
   useEffect(() => {
@@ -80,11 +90,50 @@ const ArticleListView = ({
   const currentBook = books.find((b) => b.filename === selectedBookFilename);
   const currentBookTitle = currentBook ? currentBook.title : "Library";
 
+  // Calculate scores and sort articles
+  const { rankedArticles, bestMatchSourceId } = useMemo(() => {
+    if (
+      !recommendPrefs ||
+      (!recommendPrefs.topics.length && !recommendPrefs.customKeywords.trim())
+    ) {
+      // No preferences set, return original order
+      return {
+        rankedArticles: articles,
+        bestMatchSourceId: null,
+      };
+    }
+
+    // Calculate scores for all articles
+    const scored = articles.map((article) => ({
+      ...article,
+      _score: calculateScore(
+        article,
+        recommendPrefs.topics,
+        recommendPrefs.customKeywords,
+      ),
+    }));
+
+    // Sort by score descending
+    const sorted = [...scored].sort((a, b) => b._score - a._score);
+
+    // Find best match (highest positive score)
+    const topArticle = sorted[0];
+    const bestMatch =
+      topArticle && topArticle._score > 0 ? topArticle.source_id : null;
+
+    return {
+      rankedArticles: sorted,
+      bestMatchSourceId: bestMatch,
+    };
+  }, [articles, recommendPrefs]);
+
   // Filter articles based on search query
-  const filteredArticles = articles.filter((article) => {
-    if (!searchQuery) return true;
-    return article.title.toLowerCase().includes(searchQuery.toLowerCase());
-  });
+  const filteredArticles = useMemo(() => {
+    return rankedArticles.filter((article) => {
+      if (!searchQuery) return true;
+      return article.title.toLowerCase().includes(searchQuery.toLowerCase());
+    });
+  }, [rankedArticles, searchQuery]);
 
   // Separate completed and non-completed articles
   const completedArticles = filteredArticles.filter(
@@ -95,11 +144,48 @@ const ArticleListView = ({
   );
   const [now] = useState(() => Date.now());
 
-  const renderArticleCard = (article, idx, showOriginalIndex = false) => {
+  // Handle apply preferences
+  const handleApplyPrefs = useCallback(
+    (prefs) => {
+      setRecommendPrefs(prefs);
+
+      // Trigger animation
+      setAnimateList(true);
+      setTimeout(() => setAnimateList(false), 500);
+
+      // Calculate match count for toast (inline calculation to avoid stale closure)
+      const hasPrefs = prefs.topics.length > 0 || prefs.customKeywords.trim();
+      if (hasPrefs) {
+        // Calculate matches immediately for the toast
+        const scored = articles.map((article) => ({
+          ...article,
+          _score: calculateScore(article, prefs.topics, prefs.customKeywords),
+        }));
+        const matches = scored.filter((a) => a._score > 0).length;
+
+        if (matches > 0) {
+          addToast(
+            `Found ${matches} articles matching your interests`,
+            "success",
+          );
+        } else {
+          addToast("No exact matches found. Showing all articles.", "info");
+        }
+      } else {
+        addToast("Preferences cleared. Showing default order.", "info");
+      }
+    },
+    [addToast, articles],
+  );
+
+  const renderArticleCard = (article, idx) => {
     const statusConfig = getStatusConfig(article.status);
     // Calculate display index based on original full list to keep numbering consistent
     const originalIndex = articles.indexOf(article);
     const displayIdx = originalIndex + 1;
+
+    // Check if this is the best match
+    const isBestMatch = article.source_id === bestMatchSourceId;
 
     // Check if recently accessed (within 24 hours)
     const lastActivity = Math.max(
@@ -112,8 +198,23 @@ const ArticleListView = ({
       <button
         key={article.source_id}
         onClick={() => onArticleClick(article.source_id)}
-        className={`group relative flex flex-col items-start text-left p-4 md:p-8 bg-white/[0.02] backdrop-blur-sm border ${statusConfig.borderClass} hover:border-accent-primary/50 transition-all duration-500 h-full hover:shadow-[0_10px_40px_-10px_rgba(var(--color-accent-primary-rgb),0.1)] hover:-translate-y-1 rounded-2xl overflow-hidden`}
+        className={`group relative flex flex-col items-start text-left p-4 md:p-8 bg-white/[0.02] backdrop-blur-sm border ${isBestMatch ? "border-yellow-500/50 ring-2 ring-yellow-500/20" : statusConfig.borderClass} hover:border-accent-primary/50 transition-all duration-500 h-full hover:shadow-[0_10px_40px_-10px_rgba(var(--color-accent-primary-rgb),0.1)] hover:-translate-y-1 rounded-2xl overflow-hidden ${animateList ? "animate-in fade-in slide-in-from-bottom-2 duration-300" : ""}`}
+        style={{ animationDelay: animateList ? `${idx * 30}ms` : "0ms" }}
       >
+        {/* BEST MATCH Ribbon */}
+        {isBestMatch && (
+          <div className="absolute -top-1 -left-1 z-20">
+            <div className="relative">
+              <div className="bg-gradient-to-r from-yellow-500 to-amber-500 text-black text-[9px] font-bold uppercase tracking-wider px-3 py-1.5 rounded-br-lg rounded-tl-lg shadow-lg flex items-center gap-1">
+                <Sparkles size={10} />
+                BEST MATCH
+              </div>
+              {/* Ribbon fold effect */}
+              <div className="absolute -bottom-1 left-0 w-2 h-2 bg-yellow-700 clip-fold" />
+            </div>
+          </div>
+        )}
+
         {/* Background Gradient */}
         <div className="absolute inset-0 bg-gradient-to-br from-white/[0.02] to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
 
@@ -258,24 +359,46 @@ const ArticleListView = ({
             )}
           </div>
 
-          {/* Search Bar */}
-          <div className="relative w-full md:w-96">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-white/40 pointer-events-none" />
-            <input
-              type="text"
-              placeholder="Filter articles..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full h-12 bg-white/5 border border-white/10 rounded-xl pl-12 pr-12 text-base text-white placeholder:text-white/30 focus:outline-none focus:border-accent-primary/50 focus:bg-white/10 transition-all"
-            />
-            {searchQuery && (
-              <button
-                onClick={() => setSearchQuery("")}
-                className="absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded-full hover:bg-white/10 text-white/40 hover:text-white transition-colors"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            )}
+          {/* Search Bar + Recommend Button */}
+          <div className="flex items-center gap-3">
+            <div className="relative flex-1 md:w-96 md:flex-none">
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-white/40 pointer-events-none" />
+              <input
+                type="text"
+                placeholder="Filter articles..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full h-12 bg-white/5 border border-white/10 rounded-xl pl-12 pr-12 text-base text-white placeholder:text-white/30 focus:outline-none focus:border-accent-primary/50 focus:bg-white/10 transition-all"
+              />
+              {searchQuery && (
+                <button
+                  onClick={() => setSearchQuery("")}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded-full hover:bg-white/10 text-white/40 hover:text-white transition-colors"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              )}
+            </div>
+
+            {/* Recommend Button */}
+            <button
+              onClick={() => setIsRecommendModalOpen(true)}
+              className={`h-12 px-4 rounded-xl font-medium text-sm flex items-center gap-2 transition-all ${
+                recommendPrefs &&
+                (recommendPrefs.topics.length > 0 ||
+                  recommendPrefs.customKeywords.trim())
+                  ? "bg-gradient-to-r from-yellow-500/20 to-amber-500/20 border border-yellow-500/40 text-yellow-400 hover:border-yellow-500/60"
+                  : "bg-white/5 border border-white/10 text-white/70 hover:text-white hover:bg-white/10"
+              }`}
+            >
+              <Sparkles size={16} />
+              <span className="hidden md:inline">Recommend</span>
+              {recommendPrefs && recommendPrefs.topics.length > 0 && (
+                <span className="w-5 h-5 rounded-full bg-yellow-500 text-black text-[10px] font-bold flex items-center justify-center">
+                  {recommendPrefs.topics.length}
+                </span>
+              )}
+            </button>
           </div>
         </div>
 
@@ -332,7 +455,7 @@ const ArticleListView = ({
 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 md:gap-6 max-w-[1920px] mb-8 md:mb-16">
                   {nonCompletedArticles.map((article, idx) =>
-                    renderArticleCard(article, idx, true),
+                    renderArticleCard(article, idx),
                   )}
                 </div>
               </>
@@ -352,7 +475,7 @@ const ArticleListView = ({
 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 md:gap-6 max-w-[1920px]">
                   {completedArticles.map((article, idx) =>
-                    renderArticleCard(article, idx, true),
+                    renderArticleCard(article, idx),
                   )}
                 </div>
               </>
@@ -368,6 +491,21 @@ const ArticleListView = ({
           </>
         )}
       </main>
+
+      {/* Recommend Modal */}
+      <RecommendModal
+        isOpen={isRecommendModalOpen}
+        onClose={() => setIsRecommendModalOpen(false)}
+        onApply={handleApplyPrefs}
+        initialPrefs={recommendPrefs}
+      />
+
+      {/* Custom styles for ribbon fold */}
+      <style>{`
+        .clip-fold {
+          clip-path: polygon(0 0, 100% 100%, 0 100%);
+        }
+      `}</style>
     </div>
   );
 };

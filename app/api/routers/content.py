@@ -206,6 +206,19 @@ async def list_epub_articles_with_status(
 
         source_ids = [a["source_id"] for a in valid_articles]
 
+        # Batch Query 0: Fetch cached overviews (topics & difficulty)
+        from app.services.content_analysis import content_analysis_service
+
+        article_titles = [a["title"] for a in valid_articles]
+        overviews = await content_analysis_service.get_cached_overviews(article_titles)
+
+        # Create a title->hash mapping for lookup
+        import hashlib
+
+        title_to_hash = {
+            t: hashlib.md5(t.encode("utf-8")).hexdigest() for t in article_titles
+        }
+
         # Fetch status data with batch queries
         async with AsyncSessionLocal() as db:
             # Batch Query 1: Reading sessions
@@ -304,6 +317,16 @@ async def list_epub_articles_with_status(
                 "unclear_count": study["unclear_count"],
             }
             article["status"] = status
+
+            # Add cached overview data (topics & difficulty)
+            title_hash = title_to_hash.get(article["title"])
+            if title_hash and title_hash in overviews:
+                overview = overviews[title_hash]
+                article["topics"] = overview["key_topics"]
+                article["difficulty_hint"] = overview["difficulty_hint"]
+            else:
+                article["topics"] = []
+                article["difficulty_hint"] = ""
 
         return {
             "filename": filename,
