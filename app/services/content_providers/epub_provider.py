@@ -34,25 +34,25 @@ def _get_cached_epub(filename: str, epub_dir: Path) -> Optional[Dict[str, Any]]:
     """Get cached EPUB data if valid (not expired, file not modified)."""
     if filename not in _epub_cache:
         return None
-    
+
     entry = _epub_cache[filename]
     filepath = (epub_dir / filename).resolve()
-    
+
     # Check if file still exists and hasn't been modified
     if not filepath.exists():
         del _epub_cache[filename]
         return None
-    
+
     current_mtime = filepath.stat().st_mtime
     if entry["mtime"] != current_mtime:
         del _epub_cache[filename]
         return None
-    
+
     # Check TTL
     if time.time() - entry["accessed"] > _CACHE_TTL_SECONDS:
         del _epub_cache[filename]
         return None
-    
+
     # Update access time
     entry["accessed"] = time.time()
     return entry["data"]
@@ -64,7 +64,7 @@ def _set_cached_epub(filename: str, data: Dict[str, Any], mtime: float) -> None:
     if len(_epub_cache) >= _CACHE_MAX_ENTRIES and filename not in _epub_cache:
         oldest = min(_epub_cache.items(), key=lambda x: x[1]["accessed"])
         del _epub_cache[oldest[0]]
-    
+
     _epub_cache[filename] = {
         "data": data,
         "mtime": mtime,
@@ -130,14 +130,14 @@ class EpubProvider(BaseContentProvider):
 
             # Extract articles with image position tracking
             self._cached_articles = self._extract_articles(book)
-            
+
             # Store in module-level cache
             _set_cached_epub(
                 filename,
                 {"articles": self._cached_articles, "images": self._cached_images},
                 filepath.stat().st_mtime,
             )
-            
+
             return True
         except Exception:
             logger.exception("Error loading EPUB %s", filename)
@@ -201,9 +201,18 @@ class EpubProvider(BaseContentProvider):
                         else item.get_name()
                     )
 
+                    # Determine if it's a TOC page (before cleanup)
+                    is_toc = bool(soup.find(class_="calibre_feed_list"))
+
                     # Cleanup scripts/styles
                     for script in soup(["script", "style"]):
                         script.decompose()
+
+                    # Cleanup Calibre generated navigation
+                    for nav in soup.find_all(
+                        class_=["calibre_navbar", "calibre_nav", "calibre_feed_list"]
+                    ):
+                        nav.decompose()
 
                     # Extract images with their context (before removing them for text extraction)
                     images = []
@@ -234,7 +243,8 @@ class EpubProvider(BaseContentProvider):
                     # Precompute block-based sentence count for consistency with article content
                     blocks = self._extract_structured_blocks(soup)
                     block_sentence_count = sum(
-                        len(block.sentences) for block in blocks 
+                        len(block.sentences)
+                        for block in blocks
                         if block.type.value == "paragraph" and block.sentences
                     )
 
@@ -245,7 +255,7 @@ class EpubProvider(BaseContentProvider):
                             "source_id": item.get_name(),
                             "raw_images": images,
                             "raw_html": str(soup),  # Store for structured parsing
-                            "is_toc": bool(soup.find(class_="calibre_feed_list")),
+                            "is_toc": is_toc,
                             "block_sentence_count": block_sentence_count,  # Cached for performance
                         }
                     )
