@@ -16,6 +16,8 @@ import {
   type AudioPlayerState,
   type AudioPlayerActions,
 } from "@nce/shared";
+import { useToast } from "../../../components/ui/Toast";
+import { transcribeAudiobook } from "../../../api/audiobook";
 import type {
   ContentRenderer,
   ContentRendererProps,
@@ -333,6 +335,8 @@ interface AudioPlayerUIProps extends ContentRendererProps {
   segments: AudioSegment[];
   state: AudioPlayerState;
   actions: AudioPlayerActions;
+  onTranscribe?: () => Promise<void>;
+  isTranscribing?: boolean;
 }
 
 export function AudioPlayerUI({
@@ -346,6 +350,8 @@ export function AudioPlayerUI({
   showHighlights = true,
   getCollocations,
   onWordClick,
+  onTranscribe,
+  isTranscribing,
 }: AudioPlayerUIProps) {
   // Handle segment click to seek
   const handleSegmentClick = useCallback(
@@ -380,11 +386,42 @@ export function AudioPlayerUI({
               />
             ))
           ) : (
-            <div className="text-center text-text-muted py-12">
-              <p>No subtitle segments available.</p>
-              <p className="text-sm mt-2">
-                Audio will play without synchronized text.
-              </p>
+            <div className="text-center text-text-muted py-12 space-y-4">
+              <div>
+                <p>No subtitle segments available.</p>
+                <p className="text-sm mt-2 opacity-60">
+                  Audio will play without synchronized text.
+                </p>
+              </div>
+
+              {onTranscribe && (
+                <button
+                  onClick={onTranscribe}
+                  disabled={isTranscribing}
+                  className="
+                    inline-flex items-center gap-2 px-4 py-2 
+                    bg-white/5 hover:bg-white/10 active:bg-white/15 
+                    border border-white/10 rounded-full 
+                    text-sm font-medium text-white/80 transition-all
+                    disabled:opacity-50 disabled:cursor-not-allowed
+                  "
+                >
+                  {isTranscribing ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      <span>Starting Transcription...</span>
+                    </>
+                  ) : (
+                    <>
+                      <span className="relative flex h-2 w-2">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-accent-primary opacity-75"></span>
+                        <span className="relative inline-flex rounded-full h-2 w-2 bg-accent-primary"></span>
+                      </span>
+                      <span>Auto-Transcribe with AI</span>
+                    </>
+                  )}
+                </button>
+              )}
             </div>
           )}
         </div>

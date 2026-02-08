@@ -20,6 +20,8 @@ import {
 } from "../../components/content";
 import WordInspector from "../../components/reading/WordInspector";
 import useWordExplainer from "../../hooks/useWordExplainer";
+import { useToast } from "../../components/ui/Toast";
+import { transcribeAudiobook } from "../../api/audiobook";
 
 // Initialize renderers on load
 initializeRenderers();
@@ -35,6 +37,8 @@ export default function AudiobookPlayerView() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [showTrackList, setShowTrackList] = useState(true); // Default to open on desktop
+  const [isTranscribing, setIsTranscribing] = useState(false);
+  const { addToast } = useToast();
 
   // Word explanation
   const {
@@ -97,6 +101,24 @@ export default function AudiobookPlayerView() {
     },
     [setSearchParams],
   );
+
+  // Handle transcription
+  const handleTranscribe = useCallback(async () => {
+    if (!bundle) return;
+    setIsTranscribing(true);
+    try {
+      await transcribeAudiobook(bookId, currentTrack, true);
+      addToast(
+        "Transcription started. This may take a few minutes.",
+        "success",
+      );
+    } catch (err) {
+      console.error("Transcription failed:", err);
+      addToast(err.message || "Failed to start transcription", "error");
+    } finally {
+      setIsTranscribing(false);
+    }
+  }, [bookId, currentTrack, bundle, addToast]);
 
   // Get renderer for the bundle
   const renderer = bundle
@@ -166,6 +188,8 @@ export default function AudiobookPlayerView() {
               bundle,
               showHighlights: true,
               onWordClick: handleWordClick,
+              onTranscribe: handleTranscribe,
+              isTranscribing: isTranscribing,
             })
           ) : (
             <div className="flex-1 flex items-center justify-center text-text-muted">

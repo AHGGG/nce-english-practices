@@ -131,6 +131,12 @@ export interface ContentRendererProps {
   /** 图片点击回调 */
   onImageClick?: (src: string, alt?: string, caption?: string) => void;
 
+  /** 自动转写回调 (Audiobook) */
+  onTranscribe?: () => Promise<void>;
+
+  /** 转写状态 (Audiobook) */
+  isTranscribing?: boolean;
+
   /** 阅读追踪器 */
   tracker?: ReadingTrackerRef;
 
