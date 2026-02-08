@@ -415,3 +415,19 @@ export async function getEpisodeDetail(episodeId) {
   if (!response.ok) throw new Error("Failed to get episode");
   return response.json();
 }
+
+/**
+ * Get details for multiple episodes by ID (batch request).
+ * Used for efficient bulk loading (e.g., downloads page).
+ * @param {Array<number>} episodeIds
+ * @returns {Promise<Array<{episode: object, feed: object}>>}
+ */
+export async function getEpisodesBatch(episodeIds) {
+  const response = await authFetch(`${BASE_URL}/episodes/batch`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ episode_ids: episodeIds }),
+  });
+  if (!response.ok) throw new Error("Failed to get episodes");
+  return response.json();
+}

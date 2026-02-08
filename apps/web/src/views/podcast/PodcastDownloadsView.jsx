@@ -18,9 +18,11 @@ import {
   RefreshCw,
   Check,
   Download,
+  BookOpen,
 } from "lucide-react";
 import PodcastLayout from "../../components/podcast/PodcastLayout";
 import { usePodcast } from "../../context/PodcastContext";
+import { useGlobalState } from "../../context/GlobalContext";
 import * as podcastApi from "../../api/podcast";
 import { useToast, Dialog, DialogButton } from "../../components/ui";
 
@@ -60,6 +62,9 @@ export default function PodcastDownloadsView() {
     cancelDownload,
     finishedEpisodes,
   } = usePodcast();
+  const {
+    state: { settings },
+  } = useGlobalState();
   const { addToast } = useToast();
 
   const [episodes, setEpisodes] = useState([]);
@@ -69,6 +74,8 @@ export default function PodcastDownloadsView() {
   const [deleting, setDeleting] = useState({});
   const [clearing, setClearing] = useState(false);
   const [showClearConfirm, setShowClearConfirm] = useState(false);
+  // Transcription state: { [episodeId]: 'none' | 'pending' | 'processing' | 'completed' | 'failed' }
+  const [transcriptStatus, setTranscriptStatus] = useState({});
 
   // Load offline episodes
   const loadEpisodes = useCallback(async () => {
@@ -189,6 +196,152 @@ export default function PodcastDownloadsView() {
     } finally {
       setClearing(false);
     }
+  };
+
+  // Handle intensive listening mode button click
+  const handleIntensiveListening = useCallback(
+    async (episode, forceRestart = false) => {
+      const status =
+        episode.transcript_status || transcriptStatus[episode.id] || "none";
+
+      if (status === "completed") {
+        // Navigate to unified player
+        navigate(`/player/podcast/${episode.id}`);
+        return;
+      }
+
+      if ((status === "pending" || status === "processing") && !forceRestart) {
+        addToast("Transcription in progress. Please wait...", "info");
+        return;
+      }
+
+      // Start transcription
+      try {
+        setTranscriptStatus((prev) => ({ ...prev, [episode.id]: "pending" }));
+
+        const remoteUrl = settings?.transcriptionRemoteEnabled
+          ? settings.transcriptionRemoteUrl
+          : null;
+        const apiKey = settings?.transcriptionRemoteEnabled
+          ? settings.transcriptionRemoteApiKey
+          : null;
+
+        const result = await podcastApi.transcribeEpisode(
+          episode.id,
+          forceRestart,
+          remoteUrl,
+          apiKey,
+        );
+        addToast(result.message || "Transcription started", "success");
+
+        // Start polling for status
+        pollTranscriptStatus(episode.id);
+      } catch (e) {
+        setTranscriptStatus((prev) => ({ ...prev, [episode.id]: "failed" }));
+        addToast("Failed to start transcription: " + e.message, "error");
+      }
+    },
+    [
+      navigate,
+      addToast,
+      transcriptStatus,
+      settings?.transcriptionRemoteEnabled,
+      settings?.transcriptionRemoteUrl,
+      settings?.transcriptionRemoteApiKey,
+    ],
+  );
+
+  // Poll transcript status
+  const pollTranscriptStatus = useCallback(
+    async (episodeId) => {
+      const poll = async () => {
+        try {
+          const items = await podcastApi.getEpisodesBatch([episodeId]);
+          const item = items?.[0];
+          if (!item) return;
+
+          const status =
+            item.episode?.transcript_status || item.transcript_status;
+          setTranscriptStatus((prev) => ({ ...prev, [episodeId]: status }));
+
+          // Update episode in list
+          setEpisodes((prev) =>
+            prev.map((e) =>
+              e.episode.id === episodeId
+                ? { ...e, episode: { ...e.episode, transcript_status: status } }
+                : e,
+            ),
+          );
+
+          if (status === "completed") {
+            addToast(
+              "Transcription complete! You can now enter intensive listening mode.",
+              "success",
+            );
+          } else if (status === "failed") {
+            addToast("Transcription failed. Please try again.", "error");
+          } else if (status === "pending" || status === "processing") {
+            // Continue polling
+            setTimeout(poll, 5000);
+          }
+        } catch (e) {
+          console.error("Failed to poll transcript status:", e);
+        }
+      };
+
+      poll();
+    },
+    [addToast],
+  );
+
+  // Render intensive listening button
+  const renderIntensiveListeningButton = (episode) => {
+    const status =
+      episode.transcript_status || transcriptStatus[episode.id] || "none";
+
+    if (status === "pending" || status === "processing") {
+      return (
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            handleIntensiveListening(episode, true);
+          }}
+          className="flex-shrink-0 p-3 text-amber-400 hover:bg-amber-500/10 rounded-xl transition-colors border border-transparent hover:border-amber-500/30"
+          title="Generating transcript... Click to restart if stuck"
+        >
+          <Loader2 className="w-5 h-5 animate-spin" />
+        </button>
+      );
+    }
+
+    if (status === "completed") {
+      return (
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            handleIntensiveListening(episode);
+          }}
+          className="flex-shrink-0 p-3 text-accent-primary hover:bg-accent-primary/10 rounded-xl transition-colors border border-transparent hover:border-accent-primary/30"
+          title="Enter intensive listening mode"
+        >
+          <BookOpen className="w-5 h-5" />
+        </button>
+      );
+    }
+
+    // Default: not transcribed
+    return (
+      <button
+        onClick={(e) => {
+          e.stopPropagation();
+          handleIntensiveListening(episode);
+        }}
+        className="flex-shrink-0 p-3 text-white/40 hover:text-accent-primary hover:bg-accent-primary/10 rounded-xl transition-colors border border-transparent hover:border-accent-primary/20"
+        title="Generate transcript for intensive listening"
+      >
+        <BookOpen className="w-5 h-5" />
+      </button>
+    );
   };
 
   return (
@@ -446,24 +599,32 @@ export default function PodcastDownloadsView() {
                     </div>
                   </div>
 
-                  {/* Delete/Cancel button */}
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleDelete(item);
-                    }}
-                    disabled={deleting[ep.id]}
-                    className="flex-shrink-0 p-3 text-white/20 hover:text-red-400 hover:bg-red-500/10 rounded-xl transition-colors sm:self-center self-start relative z-10"
-                    title={
-                      isDownloading ? "Cancel download" : "Remove download"
-                    }
-                  >
-                    {deleting[ep.id] ? (
-                      <Loader2 className="w-5 h-5 animate-spin" />
-                    ) : (
-                      <Trash2 className="w-5 h-5" />
-                    )}
-                  </button>
+                  {/* Action buttons */}
+                  <div className="flex items-center gap-1 flex-shrink-0 sm:self-center self-start">
+                    {/* Intensive Listening button - only show for completed downloads */}
+                    {!isDownloading &&
+                      !isError &&
+                      renderIntensiveListeningButton(ep)}
+
+                    {/* Delete/Cancel button */}
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDelete(item);
+                      }}
+                      disabled={deleting[ep.id]}
+                      className="flex-shrink-0 p-3 text-white/20 hover:text-red-400 hover:bg-red-500/10 rounded-xl transition-colors relative z-10"
+                      title={
+                        isDownloading ? "Cancel download" : "Remove download"
+                      }
+                    >
+                      {deleting[ep.id] ? (
+                        <Loader2 className="w-5 h-5 animate-spin" />
+                      ) : (
+                        <Trash2 className="w-5 h-5" />
+                      )}
+                    </button>
+                  </div>
 
                   {/* Progress bar (thin line at the bottom of the card) */}
                   {!isFinished && progressPercent > 0 && (
