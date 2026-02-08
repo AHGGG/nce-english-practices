@@ -32,7 +32,9 @@ class User(Base):
     )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    email: Mapped[str] = mapped_column(String(255), unique=True, index=True, nullable=False)
+    email: Mapped[str] = mapped_column(
+        String(255), unique=True, index=True, nullable=False
+    )
     hashed_password: Mapped[str] = mapped_column(String(255), nullable=False)
     username: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
 
@@ -61,6 +63,7 @@ class User(Base):
     def user_id_str(self) -> str:
         """Return string user_id for compatibility with existing code."""
         return str(self.id)
+
 
 class Story(Base):
     """
@@ -568,6 +571,29 @@ class ArticleOverviewCache(Base):
     created_at: Mapped[datetime] = mapped_column(TIMESTAMP, server_default=func.now())
 
 
+class ArticleAnalysisFailure(Base):
+    """
+    Tracks failed article analysis attempts to prevent infinite retries.
+    """
+
+    __tablename__ = "article_analysis_failures"
+    __table_args__ = (Index("idx_analysis_failure_hash", "title_hash", unique=True),)
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    title_hash: Mapped[str] = mapped_column(
+        String(32), unique=True, index=True
+    )  # MD5 hash
+    title: Mapped[str] = mapped_column(Text)  # Original title for debugging
+
+    failure_count: Mapped[int] = mapped_column(Integer, default=1)
+    last_error: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+
+    created_at: Mapped[datetime] = mapped_column(TIMESTAMP, server_default=func.now())
+    updated_at: Mapped[datetime] = mapped_column(
+        TIMESTAMP, server_default=func.now(), onupdate=func.now()
+    )
+
+
 class SentenceCollocationCache(Base):
     """Cached collocation detection results per sentence."""
 
@@ -686,4 +712,3 @@ class GeneratedImage(Base):
     __table_args__ = (
         Index("ix_generated_images_word_context", "word", "context_hash"),
     )
-

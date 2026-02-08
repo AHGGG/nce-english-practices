@@ -13,11 +13,11 @@ import logging
 from typing import Optional, List, Dict, Any
 from pathlib import Path
 
-from sqlalchemy import select
+from sqlalchemy import select, func
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 
 from app.core.db import AsyncSessionLocal
-from app.models.orm import ArticleOverviewCache
+from app.models.orm import ArticleOverviewCache, ArticleAnalysisFailure
 from app.services.llm import llm_service
 from app.services.content_providers.epub_provider import EpubProvider
 
@@ -29,8 +29,11 @@ logger = logging.getLogger(__name__)
 # ============================================================
 
 MAX_CONCURRENCY = 5  # Semaphore limit for parallel LLM calls
-MAX_RETRIES = 3  # Per-article retry count
+MAX_RETRIES = 3  # Per-article retry count within a single run
 CIRCUIT_BREAKER_THRESHOLD = 3  # Stop after N consecutive failures
+MAX_PERSISTENT_FAILURES = (
+    1  # Stop retrying after 1 failure event (which includes MAX_RETRIES attempts)
+)
 FIRST_WORDS_LIMIT = 3000  # First N words for context
 LAST_WORDS_LIMIT = 1000  # Last N words for context
 
@@ -95,6 +98,60 @@ class ContentAnalysisService:
                 )
             )
             return {row[0] for row in result.fetchall()}
+
+    async def _get_persistent_failures(self, title_hashes: List[str]) -> Dict[str, int]:
+        """
+        Batch query to get failure counts for articles.
+        Returns {title_hash: failure_count}.
+        """
+        if not title_hashes:
+            return {}
+
+        async with AsyncSessionLocal() as db:
+            result = await db.execute(
+                select(
+                    ArticleAnalysisFailure.title_hash,
+                    ArticleAnalysisFailure.failure_count,
+                ).where(ArticleAnalysisFailure.title_hash.in_(title_hashes))
+            )
+            return {row[0]: row[1] for row in result.fetchall()}
+
+    async def _record_persistent_failure(self, title_hash: str, title: str, error: str):
+        """
+        Increment failure count for an article or create a new record.
+        """
+        async with AsyncSessionLocal() as db:
+            # Upsert logic: Update failure_count = failure_count + 1 on conflict
+            stmt = pg_insert(ArticleAnalysisFailure).values(
+                title_hash=title_hash,
+                title=title,
+                failure_count=1,
+                last_error=str(error),
+            )
+            stmt = stmt.on_conflict_do_update(
+                index_elements=["title_hash"],
+                set_={
+                    "failure_count": ArticleAnalysisFailure.failure_count + 1,
+                    "last_error": str(error),
+                    "updated_at": func.now(),
+                },
+            )
+            await db.execute(stmt)
+            await db.commit()
+
+    async def _clear_persistent_failure(self, title_hash: str):
+        """
+        Remove failure record on success.
+        """
+        from sqlalchemy import delete
+
+        async with AsyncSessionLocal() as db:
+            await db.execute(
+                delete(ArticleAnalysisFailure).where(
+                    ArticleAnalysisFailure.title_hash == title_hash
+                )
+            )
+            await db.commit()
 
     async def _analyze_article(
         self, title: str, full_text: str
@@ -168,12 +225,14 @@ Respond in this exact JSON format (no markdown, no code blocks):
         Process a single article with retry logic.
         Returns True on success, False on failure.
         """
+        last_error = None
         for attempt in range(MAX_RETRIES):
             try:
                 async with self._semaphore:
                     result = await self._analyze_article(title, full_text)
 
                 if result is None:
+                    last_error = "LLM returned None"
                     await asyncio.sleep(2**attempt)  # Exponential backoff
                     continue
 
@@ -191,15 +250,24 @@ Respond in this exact JSON format (no markdown, no code blocks):
                     await db.execute(stmt)
                     await db.commit()
 
+                # Success: clear any previous failure record
+                await self._clear_persistent_failure(title_hash)
+
                 logger.info(f"[Analysis] Cached: {title[:60]}...")
                 return True
 
             except Exception as e:
+                last_error = str(e)
                 logger.warning(
                     f"[Analysis] Attempt {attempt + 1}/{MAX_RETRIES} failed: {e}"
                 )
                 await asyncio.sleep(2**attempt)
 
+        # If we reach here, all retries failed
+        logger.error(
+            f"[Analysis] Persistent failure for '{title[:50]}...': {last_error}"
+        )
+        await self._record_persistent_failure(title_hash, title, last_error)
         return False
 
     async def analyze_all_epubs(self) -> Dict[str, Any]:
@@ -272,6 +340,30 @@ Respond in this exact JSON format (no markdown, no code blocks):
             uncached = [
                 a for a in articles_to_process if a["title_hash"] not in existing
             ]
+
+            # Check for persistent failures (skip any that have failed completely once)
+            if uncached:
+                uncached_hashes = [a["title_hash"] for a in uncached]
+                failures = await self._get_persistent_failures(uncached_hashes)
+
+                # Filter out those with persistent failures
+                valid_uncached = []
+                skipped_count = 0
+                for a in uncached:
+                    f_count = failures.get(a["title_hash"], 0)
+                    if f_count < MAX_PERSISTENT_FAILURES:
+                        valid_uncached.append(a)
+                    else:
+                        skipped_count += 1
+
+                if skipped_count > 0:
+                    logger.warning(
+                        f"[Analysis] Skipped {skipped_count} articles due to "
+                        f"previous persistent failures"
+                    )
+
+                uncached = valid_uncached
+
             logger.info(
                 f"[Analysis] {len(uncached)} articles need analysis, "
                 f"{stats['already_cached']} already cached"
