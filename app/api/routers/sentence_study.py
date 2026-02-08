@@ -32,11 +32,14 @@ from app.models.sentence_study_schemas import (
     StudyHighlightsResponse,
     DetectCollocationsRequest,
     DetectCollocationsResponse,
+    DetectCollocationsBatchRequest,
+    DetectCollocationsBatchResponse,
     PrefetchCollocationsRequest,
     ReviewQueueItem,
     ReviewRequest,
     WordToReview,
     ProfileResponse,
+    CollocationItem,
 )
 from app.api.routers.auth import get_current_user_id
 
@@ -449,7 +452,10 @@ async def detect_collocations(
     collocations = await sentence_study_service.get_or_detect_collocations(
         db=db, sentence=req.sentence
     )
-    return DetectCollocationsResponse(collocations=collocations)
+    # Convert dict to CollocationItem for type safety
+    return DetectCollocationsResponse(
+        collocations=[CollocationItem(**c) for c in collocations]
+    )
 
 
 @router.post("/prefetch-collocations")
@@ -472,6 +478,38 @@ async def prefetch_collocations(req: PrefetchCollocationsRequest):
 
     asyncio.create_task(_prefetch())
     return {"status": "prefetching", "count": len(sentences_to_prefetch)}
+
+
+@router.post(
+    "/detect-collocations-batch", response_model=DetectCollocationsBatchResponse
+)
+async def detect_collocations_batch(
+    req: DetectCollocationsBatchRequest, db: AsyncSession = Depends(get_db)
+):
+    """
+    Detect collocations for multiple sentences at once (max 10).
+    Useful for batch loading when scrolling through content.
+    Backend has 3-layer cache (Memory -> DB -> LLM), so cached sentences return instantly.
+    """
+    import asyncio
+
+    sentences = req.sentences[:10]  # Limit to 10 sentences
+
+    async def detect_one(sentence: str):
+        try:
+            collocations = await sentence_study_service.get_or_detect_collocations(
+                db=db, sentence=sentence
+            )
+            # Convert dict to CollocationItem
+            return sentence, [CollocationItem(**c) for c in collocations]
+        except Exception as e:
+            print(f"Collocation detection failed for sentence: {e}")
+            return sentence, []
+
+    # Run all detections in parallel
+    results = await asyncio.gather(*[detect_one(s) for s in sentences])
+
+    return DetectCollocationsBatchResponse(results=dict(results))
 
 
 # ============================================================

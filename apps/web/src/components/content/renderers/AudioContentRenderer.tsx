@@ -20,6 +20,7 @@ import type {
   ContentRenderer,
   ContentRendererProps,
   ContentBundle,
+  Collocation,
 } from "../types";
 import { SentenceBlock } from "../shared";
 
@@ -42,9 +43,11 @@ interface AudioSegmentBlockProps {
   segment: AudioSegment;
   isActive: boolean;
   highlightSet?: Set<string>;
-  studyHighlightSet?: Set<string>;
+  studyWordSet?: Set<string>;
+  studyPhraseSet?: Set<string>;
   knownWords?: Set<string>;
   showHighlights?: boolean;
+  getCollocations?: (sentence: string) => Collocation[];
   onClick?: () => void;
   onWordClick?: (word: string, sentence: string) => void;
 }
@@ -53,9 +56,11 @@ function AudioSegmentBlock({
   segment,
   isActive,
   highlightSet,
-  studyHighlightSet,
+  studyWordSet,
+  studyPhraseSet,
   knownWords,
   showHighlights,
+  getCollocations,
   onClick,
   onWordClick,
 }: AudioSegmentBlockProps) {
@@ -121,16 +126,21 @@ function AudioSegmentBlock({
       <div
         className={`space-y-0.5 text-lg leading-snug font-sans ${isActive ? "text-white" : "text-white/80"}`}
       >
-        {segment.sentences.map((sentence: string, idx: number) => (
-          <SentenceBlock
-            key={idx}
-            text={sentence}
-            highlightSet={highlightSet}
-            studyHighlightSet={studyHighlightSet}
-            knownWords={knownWords}
-            showHighlights={showHighlights}
-          />
-        ))}
+        {segment.sentences.map((sentence: string, idx: number) => {
+          const collocations = getCollocations?.(sentence) || [];
+          return (
+            <SentenceBlock
+              key={idx}
+              text={sentence}
+              highlightSet={highlightSet}
+              studyWordSet={studyWordSet}
+              studyPhraseSet={studyPhraseSet}
+              knownWords={knownWords}
+              showHighlights={showHighlights}
+              collocations={collocations}
+            />
+          );
+        })}
       </div>
     </div>
   );
@@ -330,9 +340,11 @@ export function AudioPlayerUI({
   state,
   actions,
   highlightSet,
-  studyHighlightSet,
+  studyWordSet,
+  studyPhraseSet,
   knownWords,
   showHighlights = true,
+  getCollocations,
   onWordClick,
 }: AudioPlayerUIProps) {
   // Handle segment click to seek
@@ -358,9 +370,11 @@ export function AudioPlayerUI({
                 segment={segment}
                 isActive={segment.index === state.activeSegmentIndex}
                 highlightSet={highlightSet}
-                studyHighlightSet={studyHighlightSet}
+                studyWordSet={studyWordSet}
+                studyPhraseSet={studyPhraseSet}
                 knownWords={knownWords}
                 showHighlights={showHighlights}
+                getCollocations={getCollocations}
                 onClick={() => handleSegmentClick(segment.index)}
                 onWordClick={onWordClick}
               />

@@ -67,7 +67,8 @@ export interface ContentBundle {
 
   // Frontend-enriched fields (added by hooks)
   highlightSet?: Set<string>;
-  studyHighlightSet?: Set<string>;
+  studyWordSet?: Set<string>;
+  studyPhraseSet?: Set<string>;
   unclearSentenceMap?: Record<number, UnclearSentenceInfo>;
 }
 
@@ -103,8 +104,11 @@ export interface ContentRendererProps {
   /** 词汇高亮集合 */
   highlightSet?: Set<string>;
 
-  /** 学习高亮集合（查过的词） */
-  studyHighlightSet?: Set<string>;
+  /** 学习单词集合 (looked up during study - amber underline) */
+  studyWordSet?: Set<string>;
+
+  /** 学习短语集合 (looked up during study - amber background) */
+  studyPhraseSet?: Set<string>;
 
   /** 已知词汇集合 */
   knownWords?: Set<string>;
@@ -112,8 +116,8 @@ export interface ContentRendererProps {
   /** 是否显示高亮 */
   showHighlights?: boolean;
 
-  /** 搭配词组 */
-  collocations?: Collocation[];
+  /** 获取句子的搭配词组回调 */
+  getCollocations?: (sentence: string) => Collocation[];
 
   /** 不清楚句子映射 */
   unclearSentenceMap?: Record<number, UnclearSentenceInfo>;
@@ -252,11 +256,14 @@ export interface SentenceBlockProps {
   /** 句子文本 */
   text: string;
 
-  /** 词汇高亮集合 */
+  /** 词汇高亮集合 (COCA/CET vocabulary) */
   highlightSet?: Set<string>;
 
-  /** 学习高亮集合 */
-  studyHighlightSet?: Set<string>;
+  /** 学习单词集合 (looked up during study - amber underline) */
+  studyWordSet?: Set<string>;
+
+  /** 学习短语集合 (looked up during study - amber background) */
+  studyPhraseSet?: Set<string>;
 
   /** 已知词汇 */
   knownWords?: Set<string>;

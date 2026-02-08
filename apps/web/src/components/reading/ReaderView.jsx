@@ -30,6 +30,10 @@ const ReaderView = ({
   onSweep,
   trackerRef,
   calibrationBanner,
+  // Collocation support
+  getCollocations,
+  loadCollocations,
+  prefetchCollocations,
 }) => {
   const mainRef = useRef(null);
   const sentinelRef = useRef(null);
@@ -95,6 +99,81 @@ const ReaderView = ({
 
     return () => observer.disconnect();
   }, [totalContentCount, visibleCount, trackerRef, article, renderer]);
+
+  // Collocation loading: Load collocations for visible sentences
+  useEffect(() => {
+    if (!article?.blocks || !loadCollocations) {
+      return;
+    }
+
+    // Extract all sentences from blocks
+    const allSentences = [];
+    article.blocks.forEach((block) => {
+      if (block.type === "paragraph" && block.sentences) {
+        allSentences.push(...block.sentences);
+      }
+    });
+
+    if (!allSentences.length) {
+      return;
+    }
+
+    // Immediately load collocations for first batch of sentences
+    const initialBatch = allSentences.slice(0, 10);
+    loadCollocations(initialBatch);
+
+    // Prefetch next batch
+    if (prefetchCollocations && allSentences.length > 10) {
+      prefetchCollocations(allSentences.slice(10, 20));
+    }
+
+    // Set up observer for lazy loading remaining sentences
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const visibleSentences = [];
+
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            const sentenceText = entry.target.dataset.sentenceText;
+            if (sentenceText) {
+              visibleSentences.push(sentenceText);
+            }
+          }
+        });
+
+        if (visibleSentences.length > 0) {
+          loadCollocations(visibleSentences);
+        }
+      },
+      { rootMargin: "200px", threshold: 0.1 },
+    );
+
+    // Use MutationObserver to wait for DOM elements
+    const mutationObserver = new MutationObserver(() => {
+      const sentenceEls = document.querySelectorAll("[data-sentence-text]");
+      if (sentenceEls.length > 0) {
+        sentenceEls.forEach((el) => observer.observe(el));
+        mutationObserver.disconnect();
+      }
+    });
+
+    mutationObserver.observe(document.body, {
+      childList: true,
+      subtree: true,
+    });
+
+    // Also try immediately in case DOM is already ready
+    const sentenceEls = document.querySelectorAll("[data-sentence-text]");
+    if (sentenceEls.length > 0) {
+      sentenceEls.forEach((el) => observer.observe(el));
+      mutationObserver.disconnect();
+    }
+
+    return () => {
+      observer.disconnect();
+      mutationObserver.disconnect();
+    };
+  }, [article, loadCollocations, prefetchCollocations]);
 
   // Event delegation: handle clicks on article container
   const handleArticleClick = useCallback(
@@ -186,14 +265,22 @@ const ReaderView = ({
               <div key={`p-${blockIdx}`} className="mb-4">
                 {block.sentences.map((sentence, sentIdx) => {
                   const globalIdx = startIdx + sentIdx;
+                  // Get collocations for this sentence (if loaded)
+                  const collocations = getCollocations?.(sentence) || [];
                   return (
-                    <span key={`s-${globalIdx}`} data-sentence-idx={globalIdx}>
+                    <span
+                      key={`s-${globalIdx}`}
+                      data-sentence-idx={globalIdx}
+                      data-sentence-text={sentence}
+                    >
                       <MemoizedSentence
                         text={sentence}
                         highlightSet={article.highlightSet}
-                        studyHighlightSet={article.studyHighlightSet}
+                        studyWordSet={article.studyWordSet}
+                        studyPhraseSet={article.studyPhraseSet}
                         showHighlights={showHighlights}
                         unclearInfo={article.unclearSentenceMap?.[globalIdx]}
+                        collocations={collocations}
                       />{" "}
                     </span>
                   );
@@ -344,9 +431,12 @@ const ReaderView = ({
                 {renderer.render({
                   bundle: article,
                   highlightSet: article.highlightSet,
-                  studyHighlightSet: article.studyHighlightSet,
-                  knownWords: article.knownWords, // Ensure this is passed if available
+                  studyWordSet: article.studyWordSet,
+                  studyPhraseSet: article.studyPhraseSet,
+                  knownWords: article.knownWords,
                   showHighlights,
+                  getCollocations,
+                  unclearSentenceMap: article.unclearSentenceMap,
                   onWordClick,
                   onSentenceClick,
                   onImageClick,

@@ -164,7 +164,8 @@ const StudyingView = ({
                 <MemoizedSentence
                   text={currentSentence.text}
                   highlightSet={highlightSet}
-                  studyHighlightSet={globalDifficultWords} // Use global difficult words as study highlights (Amber color)
+                  studyWordSet={globalDifficultWords} // Use global difficult words as study word highlights (Amber underline)
+                  studyPhraseSet={new Set()} // No phrase highlights in sentence study mode
                   knownWords={knownWords}
                   showHighlights={true}
                   collocations={collocations}

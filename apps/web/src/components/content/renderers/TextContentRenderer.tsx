@@ -20,6 +20,7 @@ const BATCH_SIZE = 20;
  * - Block-based 渲染 (heading, paragraph, image, subtitle)
  * - 渐进加载
  * - 词汇高亮
+ * - 搭配词组高亮 (通过 getCollocations 回调)
  * - 事件委托
  */
 export class TextContentRenderer implements ContentRenderer {
@@ -41,10 +42,11 @@ export class TextContentRenderer implements ContentRenderer {
 function TextContentRendererComponent({
   bundle,
   highlightSet,
-  studyHighlightSet,
+  studyWordSet,
+  studyPhraseSet,
   knownWords,
   showHighlights = true,
-  collocations = [],
+  getCollocations,
   unclearSentenceMap = {},
   onWordClick,
   onSentenceClick,
@@ -200,17 +202,22 @@ function TextContentRendererComponent({
               <div key={`p-${blockIdx}`} className="mb-4">
                 {block.sentences?.map((sentence, sentIdx) => {
                   const globalIdx = startIdx + sentIdx;
+                  // Get collocations for this sentence via callback
+                  const collocations = getCollocations?.(sentence) || [];
                   return (
-                    <span key={`s-${globalIdx}`} data-sentence-idx={globalIdx}>
+                    <span
+                      key={`s-${globalIdx}`}
+                      data-sentence-idx={globalIdx}
+                      data-sentence-text={sentence}
+                    >
                       <SentenceBlock
                         text={sentence}
                         highlightSet={highlightSet}
-                        studyHighlightSet={studyHighlightSet}
+                        studyWordSet={studyWordSet}
+                        studyPhraseSet={studyPhraseSet}
                         knownWords={knownWords}
                         showHighlights={showHighlights}
-                        collocations={collocations.filter(
-                          (c) => c.start_word_idx >= 0, // TODO: 按句子过滤
-                        )}
+                        collocations={collocations}
                         unclearInfo={unclearSentenceMap[globalIdx]}
                       />{" "}
                     </span>
@@ -246,12 +253,14 @@ function TextContentRendererComponent({
           {bundle.sentences.map((sentenceObj, sentIdx) => {
             const text =
               typeof sentenceObj === "string" ? sentenceObj : sentenceObj.text;
+            const collocations = getCollocations?.(text) || [];
             return (
               <span key={`s-${sentIdx}`} data-sentence-idx={sentIdx}>
                 <SentenceBlock
                   text={text}
                   highlightSet={highlightSet}
-                  studyHighlightSet={studyHighlightSet}
+                  studyWordSet={studyWordSet}
+                  studyPhraseSet={studyPhraseSet}
                   knownWords={knownWords}
                   showHighlights={showHighlights}
                   collocations={collocations}

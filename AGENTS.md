@@ -339,6 +339,16 @@ Local audiobook playback with synchronized subtitle highlighting.
 - **Subtitle Formats**: SRT, VTT, LRC
 - **Directory Structure**: `resources/audiobooks/{book_id}/` containing `audio.mp3` + `subtitles.srt` + optional `metadata.json`
 
+### Content Renderer System
+
+Unified rendering system for different content types (epub, podcast, audiobook). See: [Content Renderer Skill](docs/skills/content-renderer.md)
+
+**CRITICAL Memory**:
+
+- Use `studyWordSet` + `studyPhraseSet` (NOT `studyHighlightSet`) - split for different rendering styles
+- Use `getCollocations` callback (NOT static collocations array) - each sentence needs its own collocations
+- `MemoizedSentence.jsx` re-exports `SentenceBlock` - always use `SentenceBlock` for new code
+
 ### Coach Service (Agentic)
 
 Central orchestrator for "Neural Link" mode with tool-using agent pattern. LLM decides UI components via DSML parser. Includes Voice/WebSocket integration. See: [Coach Service Documentation](docs/coach-service.md)
@@ -439,6 +449,17 @@ Get-Content logs/unified.log -Tail 50   # Last 50 lines
 
 Windows testing conflicts, Tailwind CSS variable issues, NativeWind alpha syntax limitations, podcast RSS limits, and Docker dependency management. See: [Common Pitfalls Documentation](docs/common-pitfalls.md)
 
+### Content Renderer Pitfalls
+
+See: [Content Renderer Skill](docs/skills/content-renderer.md) for detailed pitfalls and solutions.
+
+**Quick Reference**:
+
+- Use `studyWordSet` + `studyPhraseSet` (NOT `studyHighlightSet`)
+- Use `getCollocations` callback (NOT static collocations array)
+- `MemoizedSentence.jsx` re-exports `SentenceBlock` - always use `SentenceBlock` for new code
+- When using renderer, pass custom logic via props (renderer handles all rendering internally)
+
 ## Mobile Architecture & Guidelines
 
 React Native + Expo + NativeWind architecture. Covers audio background tasks, WebView bridge, voice PTT, Zustand persistence, and SSE streaming. See: [Mobile Architecture Documentation](docs/mobile-architecture.md)
@@ -449,6 +470,7 @@ React Native + Expo + NativeWind architecture. Covers audio background tasks, We
 
 | Skill                        | 路径                                                                                       | 何时使用                                                         |
 | ---------------------------- | ------------------------------------------------------------------------------------------ | ---------------------------------------------------------------- |
+| **Content Renderer**         | [docs/skills/content-renderer.md](docs/skills/content-renderer.md)                         | **内容渲染** - SentenceBlock、Collocation、Renderer 架构         |
 | **Mobile Architecture**      | [docs/MOBILE_ARCHITECTURE_PLAN.md](docs/MOBILE_ARCHITECTURE_PLAN.md)                       | **移动端开发** - 跨端复用架构与迁移计划                          |
 | **Mobile Dev Pitfalls**      | [docs/skills/mobile-dev-pitfalls.md](docs/skills/mobile-dev-pitfalls.md)                   | **移动端开发** - NativeWind 样式问题、Alpha 语法、条件 className |
 | Mobile Quick Reference       | [docs/MOBILE_QUICK_REFERENCE.md](docs/MOBILE_QUICK_REFERENCE.md)                           | **移动端开发** - 快速参考与代码模板                              |

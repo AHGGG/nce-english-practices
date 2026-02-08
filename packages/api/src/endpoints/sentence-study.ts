@@ -100,6 +100,22 @@ export const sentenceStudyApi = {
     return res.json();
   },
 
+  // Detect collocations for multiple sentences at once (batch)
+  async detectCollocationsBatch(
+    sentences: string[],
+  ): Promise<{ results: Record<string, any[]> }> {
+    const res = await authFetch(
+      "/api/sentence-study/detect-collocations-batch",
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ sentences: sentences.slice(0, 10) }),
+      },
+    );
+    if (!res.ok) return { results: {} };
+    return res.json();
+  },
+
   // Prefetch collocations (fire-and-forget)
   prefetchCollocations(sentences: string[]) {
     if (!sentences?.length) return;

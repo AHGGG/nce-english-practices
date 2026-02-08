@@ -10,7 +10,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { ArrowLeft, Loader2, AlertCircle } from "lucide-react";
 import { authFetch } from "../../api/auth";
 import { getCachedAudioUrl } from "../../utils/offline";
-import { useAudioPlayer } from "@nce/shared";
+import { useAudioPlayer, useCollocationLoader } from "@nce/shared";
 
 // Import the component directly (not the class)
 import { AudioPlayerUI } from "../../components/content/renderers/AudioContentRenderer";
@@ -27,6 +27,11 @@ export default function UnifiedPlayerView() {
   // Audio Player State Tracking
   const wasPlayingRef = useRef(false);
   const prevSelectedWordRef = useRef(null);
+
+  // Collocation loader for phrase highlighting
+  const { getCollocations, loadCollocations } = useCollocationLoader({
+    prefetchAhead: 3,
+  });
 
   // Word explanation
   const {
@@ -93,6 +98,26 @@ export default function UnifiedPlayerView() {
     }
   }
 
+  // Load collocations when bundle is ready
+  useEffect(() => {
+    if (!bundle?.blocks) return;
+
+    // Extract all sentences from audio segments
+    const allSentences = [];
+    bundle.blocks.forEach((block) => {
+      if (block.type === "audio_segment" && block.sentences) {
+        allSentences.push(...block.sentences);
+      } else if (block.type === "audio_segment" && block.text) {
+        allSentences.push(block.text);
+      }
+    });
+
+    if (allSentences.length > 0) {
+      // Load collocations for first batch
+      loadCollocations(allSentences.slice(0, 20));
+    }
+  }, [bundle, loadCollocations]);
+
   // Handle word click
   const handleWordClick = useCallback(
     (word, sentence) => {
@@ -150,16 +175,25 @@ export default function UnifiedPlayerView() {
     return {
       bundle,
       highlightSet: new Set(),
-      studyHighlightSet: new Set(),
+      studyWordSet: new Set(),
+      studyPhraseSet: new Set(),
       knownWords: new Set(),
       showHighlights: true,
+      getCollocations,
       onWordClick: handleWordClick,
       // Pass player state/actions/segments
       segments,
       state: audioState,
       actions: audioActions,
     };
-  }, [bundle, handleWordClick, segments, audioState, audioActions]);
+  }, [
+    bundle,
+    getCollocations,
+    handleWordClick,
+    segments,
+    audioState,
+    audioActions,
+  ]);
 
   if (loading) {
     return (

@@ -6,7 +6,7 @@ import type { SentenceBlockProps, Collocation } from "../types";
  *
  * 功能：
  * - 词汇高亮 (COCA/CET)
- * - 学习高亮 (查过的词 - amber)
+ * - 学习高亮 (查过的词 - amber underline, 查过的短语 - amber background)
  * - 搭配词组渲染
  * - 不清楚句子标记
  *
@@ -48,8 +48,8 @@ const arePropsEqual = (
   if (prev.text !== next.text) return false;
   if (prev.showHighlights !== next.showHighlights) return false;
   if (!areSetsEqual(prev.highlightSet, next.highlightSet)) return false;
-  if (!areSetsEqual(prev.studyHighlightSet, next.studyHighlightSet))
-    return false;
+  if (!areSetsEqual(prev.studyWordSet, next.studyWordSet)) return false;
+  if (!areSetsEqual(prev.studyPhraseSet, next.studyPhraseSet)) return false;
   if (!areSetsEqual(prev.knownWords, next.knownWords)) return false;
   if (prev.collocations !== next.collocations) return false;
   if (prev.unclearInfo !== next.unclearInfo) return false;
@@ -59,7 +59,8 @@ const arePropsEqual = (
 export const SentenceBlock = memo(function SentenceBlock({
   text,
   highlightSet,
-  studyHighlightSet,
+  studyWordSet = new Set(),
+  studyPhraseSet = new Set(),
   knownWords = new Set(),
   showHighlights = true,
   collocations = [],
@@ -161,10 +162,11 @@ export const SentenceBlock = memo(function SentenceBlock({
         const collocationText = collocationTokens.join("");
         const phraseText = collocInfo.text.toLowerCase();
         const isStudiedPhrase =
-          showHighlights && studyHighlightSet?.has(phraseText);
+          showHighlights && studyPhraseSet?.has(phraseText);
 
+        // Amber background for studied phrases, golden dashed border for detected but not studied
         const phraseClassName = isStudiedPhrase
-          ? "reading-word cursor-pointer px-0.5 text-category-amber border-b-2 border-category-amber bg-category-amber/10"
+          ? "reading-word cursor-pointer px-1 py-0.5 rounded text-category-amber bg-category-amber/15 border border-category-amber/50"
           : "reading-word cursor-pointer px-0.5 border-b-2 border-dashed border-neon-gold hover:bg-neon-gold/10 hover:text-neon-gold";
 
         result.push(
@@ -207,13 +209,14 @@ export const SentenceBlock = memo(function SentenceBlock({
         const isKnown = knownWords.has(clean);
         const isVocabHighlighted =
           !isKnown && showHighlights && highlightSet?.has(clean);
-        const isStudyHighlighted =
-          !isKnown && showHighlights && studyHighlightSet?.has(clean);
+        const isStudyWordHighlighted =
+          !isKnown && showHighlights && studyWordSet?.has(clean);
 
+        // Priority: Study word (amber underline) > Vocab highlight (green) > Normal
         let className = "reading-word cursor-pointer px-0.5 ";
-        if (isStudyHighlighted) {
-          className +=
-            "text-category-amber border-b border-category-amber/50 bg-category-amber/10";
+        if (isStudyWordHighlighted) {
+          // Amber underline for single words looked up during Sentence Study
+          className += "text-category-amber border-b-2 border-category-amber";
         } else if (isVocabHighlighted) {
           className += "text-accent-primary border-b border-accent-primary/50";
         } else {
@@ -227,7 +230,7 @@ export const SentenceBlock = memo(function SentenceBlock({
             data-sentence={text}
             className={className}
             title={
-              isStudyHighlighted
+              isStudyWordHighlighted
                 ? "📚 You looked this up during study"
                 : undefined
             }
@@ -248,7 +251,8 @@ export const SentenceBlock = memo(function SentenceBlock({
     wordIndexMap,
     showHighlights,
     highlightSet,
-    studyHighlightSet,
+    studyWordSet,
+    studyPhraseSet,
     knownWords,
     text,
   ]);

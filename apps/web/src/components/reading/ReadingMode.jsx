@@ -13,6 +13,7 @@ import {
 import useWordExplainer from "../../hooks/useWordExplainer";
 import { useGlobalState } from "../../context/GlobalContext";
 import { authFetch } from "../../api/auth";
+import { useCollocationLoader } from "@nce/shared";
 
 import { useToast, Dialog, DialogButton } from "../ui";
 
@@ -98,6 +99,10 @@ const ReadingMode = () => {
   // Sentence Inspector state (for unclear sentences)
   const [selectedSentence, setSelectedSentence] = useState(null);
   const [selectedSentenceInfo, setSelectedSentenceInfo] = useState(null);
+
+  // Collocation loader for phrase highlighting
+  const { getCollocations, loadCollocations, prefetchCollocations } =
+    useCollocationLoader({ prefetchAhead: 5 });
 
   // Dialog & Toast
   const [confirmAction, setConfirmAction] = useState(null);
@@ -234,10 +239,19 @@ const ReadingMode = () => {
         data.highlightSet = new Set(
           (data.highlights || []).map((w) => w.toLowerCase()),
         );
-        // Study highlights (words looked up during Sentence Study) - shown in a different color
-        data.studyHighlightSet = new Set(
-          (data.study_highlights || []).map((w) => w.toLowerCase()),
-        );
+        // Study highlights - separate words and phrases for different rendering
+        // Words: single words looked up → amber underline
+        // Phrases: multi-word phrases → matched via collocation detection → amber background
+        data.studyWordSet = new Set();
+        data.studyPhraseSet = new Set();
+        (data.study_highlights || []).forEach((item) => {
+          const lower = item.toLowerCase().trim();
+          if (lower.includes(" ")) {
+            data.studyPhraseSet.add(lower);
+          } else if (lower.length > 1) {
+            data.studyWordSet.add(lower);
+          }
+        });
         // Unclear sentence map (sentence_index -> unclear info)
         data.unclearSentenceMap = {};
         (data.unclear_sentences || []).forEach((info) => {
@@ -445,6 +459,9 @@ const ReadingMode = () => {
         onSweep={handleSweep}
         trackerRef={trackerRef}
         calibrationBanner={calibrationBanner}
+        getCollocations={getCollocations}
+        loadCollocations={loadCollocations}
+        prefetchCollocations={prefetchCollocations}
       />
 
       <WordInspector

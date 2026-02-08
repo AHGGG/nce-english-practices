@@ -27,3 +27,11 @@ export {
   type AudioPlayerActions,
   type UseAudioPlayerReturn,
 } from "./useAudioPlayer";
+
+// Collocation Detection (shared across Reading, Audiobook, Podcast)
+export {
+  useCollocationLoader,
+  type Collocation,
+  type UseCollocationLoaderOptions,
+  type UseCollocationLoaderReturn,
+} from "./useCollocationLoader";

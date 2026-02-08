@@ -170,6 +170,18 @@ class PrefetchCollocationsRequest(BaseModel):
     sentences: List[str]  # Up to 5 sentences to prefetch
 
 
+class DetectCollocationsBatchRequest(BaseModel):
+    """Request to detect collocations for multiple sentences at once."""
+
+    sentences: List[str]  # Up to 10 sentences
+
+
+class DetectCollocationsBatchResponse(BaseModel):
+    """Response with collocations for multiple sentences."""
+
+    results: Dict[str, List[CollocationItem]]  # sentence -> collocations
+
+
 # ============================================================
 # SRS Review Models
 # ============================================================
