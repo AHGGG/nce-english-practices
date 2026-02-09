@@ -1,0 +1,687 @@
+{
+  "word": "beautiful",
+  "found": true,
+  "entries": [
+    {
+      "headword": "beautiful",
+      "hyphenation": "beautiful",
+      "homnum": null,
+      "pronunciation": "ˈbjuːtəfəl",
+      "pronunciation_ame": null,
+      "part_of_speech": "adjective",
+      "inflections": null,
+      "audio": {
+        "bre_url": "/dict/resource?path=hwd/bre/3/beautiful0205.mp3",
+        "ame_url": "/dict/resource?path=hwd/ame/a/beautiful.mp3"
+      },
+      "senses": [
+        {
+          "index": 1,
+          "definition": "someone or something that is beautiful is extremely attractive to look at",
+          "definition_cn": "美丽的﹐美好的﹐优美的",
+          "grammar": null,
+          "examples": [
+            {
+              "text": "She was even more beautiful than I had remembered.",
+              "translation": "她比我记忆中更美。",
+              "audio_url": "/dict/resource?path=exa/bre/5/p008-000911121.mp3"
+            },
+            {
+              "text": "a beautiful bunch of flowers",
+              "translation": "一束美丽的花",
+              "audio_url": "/dict/resource?path=exa/bre/0/p008-000911122.mp3"
+            }
+          ],
+          "collocations": []
+        },
+        {
+          "index": 2,
+          "definition": "very good or giving you great pleasure",
+          "definition_cn": "极好的﹐极妙的",
+          "grammar": null,
+          "examples": [
+            {
+              "text": "beautiful music",
+              "translation": "美妙的音乐",
+              "audio_url": "/dict/resource?path=exa/bre/0/p008-001651192.mp3"
+            },
+            {
+              "text": "What a beautiful shot!",
+              "translation": "射门真漂亮！",
+              "audio_url": "/dict/resource?path=exa/bre/a/p008-000911127.mp3"
+            },
+            {
+              "text": "The weather was beautiful.",
+              "translation": "天气好极了。",
+              "audio_url": "/dict/resource?path=exa/bre/2/p008-000911128.mp3"
+            }
+          ],
+          "collocations": []
+        }
+      ],
+      "phrasal_verbs": [],
+      "etymology": null,
+      "verb_table": null,
+      "extra_examples": [
+        {
+          "text": "\"Do you like the house?\" \"Like it? It's beautiful!\"",
+          "source": "OTHER_DICTIONARIES"
+        },
+        {
+          "text": "a beautiful bird with bright blue feathers",
+          "source": "OTHER_DICTIONARIES"
+        },
+        {
+          "text": "a beautiful catch",
+          "source": "OTHER_DICTIONARIES"
+        },
+        {
+          "text": "a beautiful woman!",
+          "source": "OTHER_DICTIONARIES"
+        },
+        {
+          "text": "a restaurant with beautiful views over Sorrento and the Gulf of Naples",
+          "source": "OTHER_DICTIONARIES"
+        },
+        {
+          "text": "Cornwall has some of the most beautiful stretches of coastline in Britain.",
+          "source": "OTHER_DICTIONARIES"
+        },
+        {
+          "text": "Florence is such a beautiful city.",
+          "source": "OTHER_DICTIONARIES"
+        },
+        {
+          "text": "How did two people like Sara and Rob have such beautiful children?",
+          "source": "OTHER_DICTIONARIES"
+        },
+        {
+          "text": "Karen was even more beautiful than I had remembered.",
+          "source": "OTHER_DICTIONARIES"
+        },
+        {
+          "text": "Parents always believe that their baby is the most beautiful baby in the world.",
+          "source": "OTHER_DICTIONARIES"
+        },
+        {
+          "text": "She has a beautiful smile.",
+          "source": "OTHER_DICTIONARIES"
+        },
+        {
+          "text": "Standing in the doorway was a beautiful woman with long black hair and green eyes.",
+          "source": "OTHER_DICTIONARIES"
+        },
+        {
+          "text": "That's a beautiful dog. What kind is he?",
+          "source": "OTHER_DICTIONARIES"
+        },
+        {
+          "text": "The scenery was incredibly beautiful.",
+          "source": "OTHER_DICTIONARIES"
+        },
+        {
+          "text": "You look beautiful tonight.",
+          "source": "OTHER_DICTIONARIES"
+        },
+        {
+          "text": "And she was wearing a beautiful pair of sapphire earrings Zack had bought her in London.",
+          "source": "CORPUS"
+        },
+        {
+          "text": "Big can be beautiful, and surprisingly few of the buildings here display the empty pedantry conspicuous in contemporary paintings and sculpture.",
+          "source": "CORPUS"
+        },
+        {
+          "text": "It reminded him of his homeland, his beautiful land of mountains and lakes.",
+          "source": "CORPUS"
+        },
+        {
+          "text": "Now she was under a Christmas tree, the most beautiful and best-decorated tree she could imagine.",
+          "source": "CORPUS"
+        },
+        {
+          "text": "She found it practical as well as beautiful.",
+          "source": "CORPUS"
+        },
+        {
+          "text": "The mountains and the lake were calm and beautiful, and at last Elizabeth and I were together.",
+          "source": "CORPUS"
+        },
+        {
+          "text": "Their beautiful movement and artistic sign language adds a new dimension to the production.",
+          "source": "CORPUS"
+        }
+      ],
+      "thesaurus": {
+        "topic": "person",
+        "entries": [
+          {
+            "word": "beautiful",
+            "definition": "a beautiful woman or child has perfect good looks〔女子或儿童〕美丽的﹐漂亮的",
+            "examples": [
+              "Grace Kelly was a very beautiful woman.格雷丝·凯莉是一个非常美丽的女人。",
+              "a beautiful baby一个漂亮的宝宝"
+            ]
+          },
+          {
+            "word": "good-looking",
+            "definition": "a good-looking person looks nice.Good-lookingis very common in spoken English好看的﹐漂亮的〔口语中很常用〕",
+            "examples": [
+              "He’s a good-looking guy, but he’s a bit boring.他相貌不错﹐但性格有点儿乏味。",
+              "Do you think she’s good-looking?"
+            ]
+          },
+          {
+            "word": "attractive",
+            "definition": "an attractive person looks nice, especially in a way that makes you feel sexually interested in them有吸引力的﹐有魅力的〔尤指性感〕",
+            "examples": [
+              "She’s a very attractive woman.她是个相当有魅力的女人。",
+              "A lot of women find him attractive.很多女人觉得他很有魅力。"
+            ]
+          },
+          {
+            "word": "pretty",
+            "definition": "a pretty girl or woman looks nice – used especially about a woman who has a nice face〔女性〕漂亮的﹐好看的〔尤指相貌标致〕",
+            "examples": [
+              "You look pretty with your hair down.你披着头发看上去很漂亮。",
+              "She has a very pretty face."
+            ]
+          },
+          {
+            "word": "handsome",
+            "definition": "a handsome man or boy looks nice – used especially about a man who has a nice face.Handsomeis also sometimes used, especially in literature, to describe a woman who is good-looking and has a strong face〔男性〕英俊的﹐帅气的〔尤指相貌端正〕﹔〔女子〕美丽而轮廓分明的〔尤用于文学作品中〕",
+            "examples": [
+              "He was tall, dark, and handsome.他身材高大﹐肤色黝黑﹐非常英俊。",
+              "She was a big, handsome woman."
+            ]
+          },
+          {
+            "word": "gorgeous/stunning",
+            "definition": "extremely attractive.Gorgeousis used especially by women非常漂亮的﹐极其吸引人的〔gorgeous尤为女性使用〕",
+            "examples": [
+              "She thinks Brad Pitt is gorgeous.她觉得布拉德·皮特帅极了。",
+              "You look absolutely stunning in that dress!你穿那条裙子太漂亮了！"
+            ]
+          },
+          {
+            "word": "cute",
+            "definition": "nice to look at – used about animals, babies, children, and young adults漂亮的﹐逗人喜爱的〔用于动物﹑婴儿、儿童和年轻人〕",
+            "examples": [
+              "a cute little puppy可爱的小狗",
+              "She thinks you’re cute!她觉得你很可爱！"
+            ]
+          },
+          {
+            "word": "lovely",
+            "definition": "used when saying that someone looks very nice美丽的﹐迷人的",
+            "examples": [
+              "You look lovely tonight.今晚你看上去很迷人。"
+            ]
+          },
+          {
+            "word": "beautiful",
+            "definition": "used to describe something that looks, feels, sounds etc so good that it gives you a lot of pleasure极好的﹐优美的﹐美妙的",
+            "examples": [
+              "a beautiful tropical beach一片美丽的热带沙滩",
+              "a beautiful song一首动听的歌曲",
+              "The weather was beautiful.天气很好。"
+            ]
+          },
+          {
+            "word": "lovely",
+            "definition": "used when saying that something looks, feels, or sounds very nice好的﹐佳的",
+            "examples": [
+              "What a lovely day!多好的天气！",
+              "a lovely voice动听的嗓音",
+              "a lovely perfume"
+            ]
+          }
+        ],
+        "word_sets": []
+      },
+      "collocations": [
+        {
+          "pattern": "as",
+          "part_of_speech": "ADVERB",
+          "examples": [
+            {
+              "text": "My parents remembered her and often spoke of her, saying that her flight was as beautiful as an autumn sunset.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "I never saw anything as beautiful as that stone you were carving.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "Big is no longer seen as beautiful.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "She was as beautiful as ever.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "The mountains are at least as beautiful as he suggests.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "The sheds were as beautiful as I remembered them.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "Nothing as beautiful as this could be wrong, he told himself.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "Megan Wai-la was as beautiful as the elegant Jennifer Sung-ah, but was poorly dressed.",
+              "translation": null,
+              "audio_url": null
+            }
+          ]
+        },
+        {
+          "pattern": "how",
+          "part_of_speech": "ADVERB",
+          "examples": [
+            {
+              "text": "I can not tell you how beautiful is Tacita Dean's film of this house she found by accident.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "He was there, on campus, an hour early. How beautiful it was!",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "Gazing down, Luke thought how beautiful she was despite the tear-stains and the swollen eyelids.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "Just think about how beautiful it is there, full of angels and lovely light.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "He wanted to make people aware of how beautiful the fish were and why they should be nurtured.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "First time viewers of such work will be astonished by how beautiful they are.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "Sometimes it's so they can moon around and say how beautiful it all was and pretend they're still lifers there.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "The hungry wolf pointed out how beautiful the forest was and suggested she slow down and look around.",
+              "translation": null,
+              "audio_url": null
+            }
+          ]
+        },
+        {
+          "pattern": "more",
+          "part_of_speech": "ADVERB",
+          "examples": [
+            {
+              "text": "And if we're wicked and shouldn't be seen, why are we becoming more beautiful?",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "She was smart and probably more beautiful than wise, a woman who saw passion as life itself.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "Far more beautiful, replied Léonie.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "Therefore I find them incomparably more beautiful than the domesticated varieties.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "As he went into the garden, Nick thought she had never looked more beautiful or more desirable.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "The next day, Ashputtel went to the festival again and looked even more beautiful than ever.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "Earth was more beautiful than she could have imagined; it didn't seem fair when everyone was out to kill her.",
+              "translation": null,
+              "audio_url": null
+            }
+          ]
+        },
+        {
+          "pattern": "most",
+          "part_of_speech": "ADVERB",
+          "examples": [
+            {
+              "text": "It was without doubt the most beautiful thing she had ever owned, or ever would.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "The Goddess of Love and Beauty knew very well where the most beautiful woman on earth was to be found.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "You have been allocated to one of the most beautiful planets created.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "It was just beautiful the most beautiful night of my life.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "Fortunately, the easiest species to start with are also among the most beautiful.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "You are the most beautiful golfer this club has ever seen.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "She was the most beautiful girl in the entire school.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "This must surely be one of the most beautiful forms of propaganda.",
+              "translation": null,
+              "audio_url": null
+            }
+          ]
+        },
+        {
+          "pattern": "really",
+          "part_of_speech": "ADVERB",
+          "examples": [
+            {
+              "text": "We started off at Saffron Walden which has a castle some really beautiful old buildings.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "And come up with an elegant, really beautiful solution that works.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "She hardly looked to be thirty; she looked beautiful, really beautiful.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "They are really beautiful and I really think he should have them.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "In the process we may find that bald is really beautiful after all.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "Three really beautiful evening dresses, each individually wrapped in the black tissue-paper.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "What I had chanced upon was a mile race of six glorious runners, a really beautiful thing.",
+              "translation": null,
+              "audio_url": null
+            }
+          ]
+        },
+        {
+          "pattern": "so",
+          "part_of_speech": "ADVERB",
+          "examples": [
+            {
+              "text": "No city she had ever walked in was half so beautiful.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "It's so beautiful it's sort of scary - you know, feeling so excited at the lights.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "On television she was so beautiful and glamorous, and here she looked so tired and almost old.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "And the scenery here in Yorkshire is so beautiful!",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "He was dead and Apollo kneeling beside him wept for him, dying so young, so beautiful.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "It struck me that there was nothing there half so beautiful as the vision just presented by its derelict predecessor.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "The entire disc swings to the rafters with that special Monk oddness -- oh so beautiful, oh so unique.",
+              "translation": null,
+              "audio_url": null
+            }
+          ]
+        },
+        {
+          "pattern": "very",
+          "part_of_speech": "ADVERB",
+          "examples": [
+            {
+              "text": "I found them very beautiful, and so those weeks with Chris set the cast of my life.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "For the first time she saw that he was no longer ugly or misshapen or grotesque, but very beautiful.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "One was a very beautiful blonde and the man with her was tall and fair too, almost as fair as Mitch.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "It was a very beautiful morning for flying.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "There is nothing to suggest that she was very clever, very holy, very gifted or very beautiful.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "I was beginning to feel very beautiful.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "Ducks are very beautiful, a riot of colour.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "The song is haunting and very beautiful.",
+              "translation": null,
+              "audio_url": null
+            }
+          ]
+        },
+        {
+          "pattern": "city",
+          "part_of_speech": "NOUN",
+          "examples": [
+            {
+              "text": "This beautiful city of parks and flowers boasts one of the most impressive parliament buildings in the world.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "Tourism will increase in an aesthetically and ecologically beautiful city.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "Prague before 1939 was a beautiful city.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "The beautiful city of Norwich, and Peterborough with its cathedral and excellent shops, are both within 50 miles.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "The trip provides seven hours in one of the world's most beautiful cities.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "The beautiful city of York is 40 miles away.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "It isn't a particularly beautiful city in the sense that Paris, London or Dublin are.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "But, seriously, to me Cork is a beautiful city.",
+              "translation": null,
+              "audio_url": null
+            }
+          ]
+        },
+        {
+          "pattern": "country",
+          "part_of_speech": "NOUN",
+          "examples": [
+            {
+              "text": "Recommended to anyone keen to delve beneath the stock images of this troubled but beautiful country.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "He shared a popular corporate dream: Opening a restaurant in some beautiful country town.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "Take a little tour in our beautiful country - sit in the sunshine - drink some wine.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "Fine people; a beautiful country.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "The emphasis there is not on staying indoors, but on learning how to enjoy a sunny, beautiful country and survive.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "Would you like to see our beautiful country, Mrs Harland?",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "The roads are sinuous but almost empty, and they will take you through some of the most beautiful country in Provence.",
+              "translation": null,
+              "audio_url": null
+            }
+          ]
+        },
+        {
+          "pattern": "creature",
+          "part_of_speech": "NOUN",
+          "examples": [
+            {
+              "text": "His doe's a beautiful creature, too.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "Dominic remains, I would say, a preposterously beautiful creature.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "The Copper Beech Naiads were the most beautiful creatures any of them had ever seen.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "To me, Dominic was always a beautiful creature.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "It is the same with visual responses to light and darkness, to summer and winter, to beautiful creatures or plants.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "They were beautiful creatures with red legs, black head and thorax, and black white-ringed antennae.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "Even if I break your cage, I can't reach you, beautiful creature!",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "At the sight they forgot the goddess and turned in pursuit of the beautiful creature.",
+              "translation": null,
+              "audio_url": null
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "raw_html": null
+}

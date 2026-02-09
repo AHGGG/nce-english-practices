@@ -1,0 +1,1291 @@
+{
+  "word": "make",
+  "found": true,
+  "entries": [
+    {
+      "headword": "make",
+      "hyphenation": "make",
+      "homnum": 1,
+      "pronunciation": "meɪk",
+      "pronunciation_ame": null,
+      "part_of_speech": "verb",
+      "inflections": "(past tense and past participle made /meɪd/)",
+      "audio": {
+        "bre_url": "/dict/resource?path=hwd/bre/a/ld45make.mp3",
+        "ame_url": "/dict/resource?path=hwd/ame/a/ld45make.mp3"
+      },
+      "senses": [
+        {
+          "index": 1,
+          "definition": "to produce something, for example by putting the different parts of it together",
+          "definition_cn": "制造﹐做﹐组装",
+          "grammar": "[transitive]",
+          "examples": [
+            {
+              "text": "I’m going to show you how to make a box for your tools.",
+              "translation": "我来教你怎么做一个箱子存放工具。",
+              "audio_url": "/dict/resource?path=exa/bre/5/p008-000175125.mp3"
+            },
+            {
+              "text": "A family of mice had made their nest in the roof.",
+              "translation": "一窝老鼠在屋顶上安了家。",
+              "audio_url": "/dict/resource?path=exa/bre/8/p008-001842179.mp3"
+            },
+            {
+              "text": "She made her own wedding dress.",
+              "translation": "她的婚纱是自己做的。",
+              "audio_url": "/dict/resource?path=exa/bre/2/p008-000175126.mp3"
+            }
+          ],
+          "collocations": []
+        },
+        {
+          "index": 2,
+          "definition": "used with some nouns to say that someone does something",
+          "definition_cn": "进行，作出〔与某些名词连用﹐表示某人做某事〕",
+          "grammar": "[transitive]",
+          "examples": [
+            {
+              "text": "Anyone can make a mistake.",
+              "translation": "任何人都可能犯错。",
+              "audio_url": "/dict/resource?path=exa/bre/1/p008-001842194.mp3"
+            },
+            {
+              "text": "I can’t make a decision just yet.",
+              "translation": "我还没法作出决定。",
+              "audio_url": "/dict/resource?path=exa/bre/6/p008-001842195.mp3"
+            },
+            {
+              "text": "I need to make a quick phone call.",
+              "translation": "我需要很快地打个电话。",
+              "audio_url": "/dict/resource?path=exa/bre/f/p008-001942768.mp3"
+            }
+          ],
+          "collocations": []
+        },
+        {
+          "index": 3,
+          "definition": "to cook or prepare food or drink",
+          "definition_cn": "做，准备〔食物或饮料〕",
+          "grammar": "[transitive]",
+          "examples": [
+            {
+              "text": "When was the last time you made a cake?",
+              "translation": "你上次做蛋糕是什么时候？",
+              "audio_url": "/dict/resource?path=exa/bre/a/p008-001976194.mp3"
+            },
+            {
+              "text": "John was making breakfast in the kitchen.",
+              "translation": "约翰在厨房做早餐。",
+              "audio_url": "/dict/resource?path=exa/bre/c/p008-001976195.mp3"
+            },
+            {
+              "text": "Who’s going to make the tea?",
+              "translation": "谁去泡茶？",
+              "audio_url": "/dict/resource?path=exa/bre/f/p008-001976196.mp3"
+            }
+          ],
+          "collocations": []
+        },
+        {
+          "index": 4,
+          "definition": "to cause something to happen, or cause a particular state or condition",
+          "definition_cn": "引起﹐导致﹔使发生",
+          "grammar": "[transitive]",
+          "examples": [
+            {
+              "text": "Its beautiful beaches make this a highly popular area with tourists.",
+              "translation": "美丽的海滩使这里成为游客云集的地方。",
+              "audio_url": "/dict/resource?path=exa/bre/4/p008-001842206.mp3"
+            },
+            {
+              "text": "It was this movie which made him a star.",
+              "translation": "就是这部电影使他成为明星的。",
+              "audio_url": "/dict/resource?path=exa/bre/2/p008-001842207.mp3"
+            },
+            {
+              "text": "His attitude made him very unpopular with colleagues.",
+              "translation": "他的态度使他很不受同事欢迎。",
+              "audio_url": "/dict/resource?path=exa/bre/c/p008-001842208.mp3"
+            }
+          ],
+          "collocations": []
+        },
+        {
+          "index": 5,
+          "definition": "to force someone to do something",
+          "definition_cn": "强迫﹐逼迫",
+          "grammar": "[transitive]",
+          "examples": [
+            {
+              "text": "My parents always make me do my homework before I go out.",
+              "translation": "我父母总是要我做完作业才能出去。",
+              "audio_url": "/dict/resource?path=exa/bre/a/p008-000175247.mp3"
+            },
+            {
+              "text": "I was made to wait four hours before I was examined by a doctor.",
+              "translation": "我被迫等了四个小时才有一个医生给我做检查。",
+              "audio_url": "/dict/resource?path=exa/bre/2/p008-000175251.mp3"
+            },
+            {
+              "text": "My parents always make me do my homework before I go out.",
+              "translation": "我父母总是要我做完作业才能出去。",
+              "audio_url": "/dict/resource?path=exa/bre/a/p008-000175247.mp3"
+            }
+          ],
+          "collocations": []
+        },
+        {
+          "index": 6,
+          "definition": "to cause a mark, hole etc to appear",
+          "definition_cn": "使形成﹐留下",
+          "grammar": "[transitive]",
+          "examples": [
+            {
+              "text": "Make a hole in the paper.",
+              "translation": "在纸上挖一个洞。",
+              "audio_url": "/dict/resource?path=exa/bre/7/p008-000175146.mp3"
+            },
+            {
+              "text": "The cup has made a mark on the table.",
+              "translation": "茶杯在桌上留了个印痕。",
+              "audio_url": "/dict/resource?path=exa/bre/8/p008-001842231.mp3"
+            }
+          ],
+          "collocations": []
+        },
+        {
+          "index": 7,
+          "definition": "to succeed in getting somewhere in time for something or when this is difficult",
+          "definition_cn": "〔尤指在困难情况下〕准时到达﹐赶上",
+          "grammar": "[transitive]",
+          "examples": [
+            {
+              "text": "If we run, we should make it.",
+              "translation": "如果我们跑的话﹐应该来得及。",
+              "audio_url": "/dict/resource?path=exa/bre/6/p008-000175322.mp3"
+            },
+            {
+              "text": "With blood pouring from his leg, he made it to a nearby house.",
+              "translation": "虽然腿上鲜血直流﹐他还是坚持走到了附近的一所房子。",
+              "audio_url": "/dict/resource?path=exa/bre/1/p008-000175325.mp3"
+            },
+            {
+              "text": "He came to the US and not only made it but made it big (=was extremely successful).",
+              "translation": "他来到美国﹐不仅成功了﹐而且是大获成功。",
+              "audio_url": "/dict/resource?path=exa/bre/d/p008-001842234.mp3"
+            }
+          ],
+          "collocations": []
+        },
+        {
+          "index": 8,
+          "definition": "to be able to go to something that has been arranged for a particular date or time",
+          "definition_cn": "能够出席[参加]会议/聚会/周二的活动等",
+          "grammar": "[transitive]",
+          "examples": [
+            {
+              "text": "I’m sorry, I can’t make Friday after all.",
+              "translation": "对不起﹐我礼拜五还是不行。",
+              "audio_url": "/dict/resource?path=exa/bre/4/p008-000175427.mp3"
+            },
+            {
+              "text": "Will you be able to make the next meeting?",
+              "translation": "下一个会议你能参加吗？",
+              "audio_url": "/dict/resource?path=exa/bre/4/p008-000175428.mp3"
+            }
+          ],
+          "collocations": []
+        },
+        {
+          "index": 9,
+          "definition": "to succeed in achieving a particular position, rate etc",
+          "definition_cn": "成功获得[达到]〔某一位置﹑速度等〕",
+          "grammar": "[transitive]",
+          "examples": [
+            {
+              "text": "He was never good enough to make the team.",
+              "translation": "他一直都不够好﹐进不了球队。",
+              "audio_url": "/dict/resource?path=exa/bre/e/p008-001842318.mp3"
+            },
+            {
+              "text": "I don’t think we’ll make the deadline.",
+              "translation": "我认为我们无法按时完成。",
+              "audio_url": "/dict/resource?path=exa/bre/e/p008-001842320.mp3"
+            }
+          ],
+          "collocations": []
+        },
+        {
+          "index": 10,
+          "definition": "to earn or get money",
+          "definition_cn": "挣得，获得〔钱〕",
+          "grammar": "[transitive]",
+          "examples": [
+            {
+              "text": "The plan could cost you more than you would make.",
+              "translation": "这个计划可能会让你入不敷出。",
+              "audio_url": "/dict/resource?path=exa/bre/b/p008-001842267.mp3"
+            },
+            {
+              "text": "They made a profit of £140 million.",
+              "translation": "他们获得了1.4亿英镑的利润。",
+              "audio_url": "/dict/resource?path=exa/bre/3/p008-001842268.mp3"
+            },
+            {
+              "text": "His one aim in life was to make money.",
+              "translation": "他人生的一个目标就是挣钱。",
+              "audio_url": "/dict/resource?path=exa/bre/2/p008-001842272.mp3"
+            }
+          ],
+          "collocations": []
+        }
+      ],
+      "phrasal_verbs": [
+        {
+          "phrase": "make away withsomebody/something",
+          "definition": "to steal something and take it away with you",
+          "definition_cn": "偷走〔某物〕",
+          "examples": [
+            {
+              "text": "Thieves made away with the contents of the safe.",
+              "translation": "小偷把保险柜里的东西都偷走了。",
+              "audio_url": "/dict/resource?path=exa/bre/c/p008-000175609.mp3"
+            }
+          ]
+        },
+        {
+          "phrase": "make forsomething",
+          "definition": "to go in the direction of a particular place",
+          "definition_cn": "朝…走[驶]去",
+          "examples": [
+            {
+              "text": "I think it’s time we made for home.",
+              "translation": "我想我们该回家了。",
+              "audio_url": "/dict/resource?path=exa/bre/7/p008-000175624.mp3"
+            }
+          ]
+        },
+        {
+          "phrase": "makesomebody/somethingintosomething",
+          "definition": "to change something so that it has a different form or purpose",
+          "definition_cn": "把…变成",
+          "examples": [
+            {
+              "text": "We can make your room into a study.",
+              "translation": "我们可以把你的房间改成书房。",
+              "audio_url": "/dict/resource?path=exa/bre/6/p008-000175649.mp3"
+            }
+          ]
+        },
+        {
+          "phrase": "makesomethingofsomebody/something",
+          "definition": "to have a particular opinion about or understanding of something or someone",
+          "definition_cn": "理解﹔看待",
+          "examples": [
+            {
+              "text": "I didn’t know what to make of her.",
+              "translation": "我不知道该如何看待她。",
+              "audio_url": "/dict/resource?path=exa/bre/8/p008-000175667.mp3"
+            },
+            {
+              "text": "What do you make of the idea?",
+              "translation": "你对这个主意有什么看法？",
+              "audio_url": "/dict/resource?path=exa/bre/5/p008-000175668.mp3"
+            }
+          ]
+        },
+        {
+          "phrase": "make off",
+          "definition": "to leave quickly, especially in order to escape",
+          "definition_cn": "〔尤指为了逃跑〕匆忙离开，溜掉",
+          "examples": [
+            {
+              "text": "The men made off as the police arrived.",
+              "translation": "警察一到这些人就赶快开溜。",
+              "audio_url": "/dict/resource?path=exa/bre/a/p008-001976245.mp3"
+            },
+            {
+              "text": "The getaway car made off towards Horrocks Avenue.",
+              "translation": "逃逸汽车往霍罗克斯大街方向开去。",
+              "audio_url": "/dict/resource?path=exa/bre/2/p008-001976248.mp3"
+            },
+            {
+              "text": "The getaway car made off towards Horrocks Avenue.",
+              "translation": "逃逸汽车往霍罗克斯大街方向开去。",
+              "audio_url": "/dict/resource?path=exa/bre/2/p008-001976248.mp3"
+            }
+          ]
+        },
+        {
+          "phrase": "make off withsomething",
+          "definition": "to steal something and take it away with you",
+          "definition_cn": "偷走〔某物〕",
+          "examples": [
+            {
+              "text": "Thieves broke into the school and made off with computer equipment worth £40,000.",
+              "translation": "窃贼闯入学校﹐盗走了价值四万英镑的计算机设备。",
+              "audio_url": "/dict/resource?path=exa/bre/b/p008-000175727.mp3"
+            }
+          ]
+        },
+        {
+          "phrase": "make out",
+          "definition": "to be just able to see or hear something",
+          "definition_cn": "〔勉强〕看出﹐辨认出﹔听出",
+          "examples": [
+            {
+              "text": "He could just make out a dark shape moving towards him.",
+              "translation": "他隐约看到有个黑影朝他走来。",
+              "audio_url": "/dict/resource?path=exa/bre/9/p008-000175737.mp3"
+            },
+            {
+              "text": "I couldn’t make out what he was saying.",
+              "translation": "我听不清他在说些什么。",
+              "audio_url": "/dict/resource?path=exa/bre/c/p008-000175740.mp3"
+            },
+            {
+              "text": "I couldn’t make out what he was saying.",
+              "translation": "我听不清他在说些什么。",
+              "audio_url": "/dict/resource?path=exa/bre/c/p008-000175740.mp3"
+            }
+          ]
+        },
+        {
+          "phrase": "makesomethingout ofsomebody/something",
+          "definition": "to change a person or thing into something else",
+          "definition_cn": "使变成",
+          "examples": [
+            {
+              "text": "The Olympics can make sporting heroes out of previously little-known athletes.",
+              "translation": "奥运会能把原本名不见经传的运动员变成体育英雄。",
+              "audio_url": "/dict/resource?path=exa/bre/9/p008-002025324.mp3"
+            }
+          ]
+        },
+        {
+          "phrase": "makesomething/somebody ↔over",
+          "definition": "to officially and legally give money or property to someone else",
+          "definition_cn": "〔正式合法地〕转让〔钱财或不动产〕",
+          "examples": [
+            {
+              "text": "He made over the whole estate to his son.",
+              "translation": "他把全部财产转让给了自己的儿子。",
+              "audio_url": "/dict/resource?path=exa/bre/5/p008-000175800.mp3"
+            },
+            {
+              "text": "He made over the whole estate to his son.",
+              "translation": "他把全部财产转让给了自己的儿子。",
+              "audio_url": "/dict/resource?path=exa/bre/5/p008-000175800.mp3"
+            }
+          ]
+        },
+        {
+          "phrase": "make towardssomething",
+          "definition": "to start moving towards something",
+          "definition_cn": "朝…移动﹐移向…",
+          "examples": [
+            {
+              "text": "She made towards the door.",
+              "translation": "她向门口走去。",
+              "audio_url": "/dict/resource?path=exa/bre/e/p008-000175821.mp3"
+            }
+          ]
+        }
+      ],
+      "etymology": {
+        "century": null,
+        "origin": "macian",
+        "meaning": null,
+        "note": "Old English"
+      },
+      "verb_table": {
+        "lemma": "make",
+        "simple_forms": [
+          {
+            "tense": "Present",
+            "person": "I, you, we, they",
+            "form": "make",
+            "auxiliary": null
+          },
+          {
+            "tense": "Present",
+            "person": "he, she, it",
+            "form": "makes",
+            "auxiliary": null
+          },
+          {
+            "tense": "Past",
+            "person": "I, you, he, she, it, we, they",
+            "form": "made",
+            "auxiliary": null
+          },
+          {
+            "tense": "Present perfect",
+            "person": "I, you, we, they",
+            "form": "made",
+            "auxiliary": "have"
+          },
+          {
+            "tense": "Present perfect",
+            "person": "he, she, it",
+            "form": "made",
+            "auxiliary": "has"
+          },
+          {
+            "tense": "Past perfect",
+            "person": "I, you, he, she, it, we, they",
+            "form": "made",
+            "auxiliary": "had"
+          },
+          {
+            "tense": "Future",
+            "person": "I, you, he, she, it, we, they",
+            "form": "make",
+            "auxiliary": "will"
+          },
+          {
+            "tense": "Future perfect",
+            "person": "I, you, he, she, it, we, they",
+            "form": "made",
+            "auxiliary": "will have"
+          }
+        ],
+        "continuous_forms": [
+          {
+            "tense": "Present",
+            "person": "I",
+            "form": "making",
+            "auxiliary": "am"
+          },
+          {
+            "tense": "Present",
+            "person": "he, she, it",
+            "form": "making",
+            "auxiliary": "is"
+          },
+          {
+            "tense": "Present",
+            "person": "you, we, they",
+            "form": "making",
+            "auxiliary": "are"
+          },
+          {
+            "tense": "Past",
+            "person": "I, he, she, it",
+            "form": "making",
+            "auxiliary": "was"
+          },
+          {
+            "tense": "Past",
+            "person": "you, we, they",
+            "form": "making",
+            "auxiliary": "were"
+          },
+          {
+            "tense": "Present perfect",
+            "person": "I, you, we, they",
+            "form": "making",
+            "auxiliary": "have been"
+          },
+          {
+            "tense": "Present perfect",
+            "person": "he, she, it",
+            "form": "making",
+            "auxiliary": "has been"
+          },
+          {
+            "tense": "Past perfect",
+            "person": "I, you, he, she, it, we, they",
+            "form": "making",
+            "auxiliary": "had been"
+          },
+          {
+            "tense": "Future",
+            "person": "I, you, he, she, it, we, they",
+            "form": "making",
+            "auxiliary": "will be"
+          },
+          {
+            "tense": "Future perfect",
+            "person": "I, you, he, she, it, we, they",
+            "form": "making",
+            "auxiliary": "will have been"
+          }
+        ]
+      },
+      "extra_examples": [
+        {
+          "text": "\"How much do I owe you for the meal?'' \"I make it $10.50.''",
+          "source": "OTHER_DICTIONARIES"
+        },
+        {
+          "text": "a bag made of leather",
+          "source": "OTHER_DICTIONARIES"
+        },
+        {
+          "text": "a car made in Japan",
+          "source": "OTHER_DICTIONARIES"
+        },
+        {
+          "text": "Archie doesn't even make an effort to help out around the house.",
+          "source": "OTHER_DICTIONARIES"
+        },
+        {
+          "text": "At school the other kids always made jokes about my name.",
+          "source": "OTHER_DICTIONARIES"
+        },
+        {
+          "text": "British Telecom made over $3 billion last year.",
+          "source": "OTHER_DICTIONARIES"
+        },
+        {
+          "text": "Carol's making carrot cake for dessert.",
+          "source": "OTHER_DICTIONARIES"
+        },
+        {
+          "text": "Children with the disease rarely make it past their tenth birthday.",
+          "source": "OTHER_DICTIONARIES"
+        },
+        {
+          "text": "Cooper's going to make a good doctor one day.",
+          "source": "OTHER_DICTIONARIES"
+        },
+        {
+          "text": "Diane makes all her own clothes.",
+          "source": "OTHER_DICTIONARIES"
+        },
+        {
+          "text": "Did you make that dress yourself?",
+          "source": "OTHER_DICTIONARIES"
+        },
+        {
+          "text": "Don't they make a cute couple?",
+          "source": "OTHER_DICTIONARIES"
+        },
+        {
+          "text": "Ella makes a lot of money.",
+          "source": "OTHER_DICTIONARIES"
+        },
+        {
+          "text": "Engineers have been working throughout the night to make the bridge safe.",
+          "source": "OTHER_DICTIONARIES"
+        },
+        {
+          "text": "For me, the trip to Caracas made the holiday.",
+          "source": "OTHER_DICTIONARIES"
+        },
+        {
+          "text": "He'll make a good father.",
+          "source": "OTHER_DICTIONARIES"
+        },
+        {
+          "text": "He made two small holes in the wood.",
+          "source": "OTHER_DICTIONARIES"
+        },
+        {
+          "text": "He could make things very difficult for us.",
+          "source": "OTHER_DICTIONARIES"
+        },
+        {
+          "text": "He ran 30 yards to make his second touchdown of the quarter.",
+          "source": "OTHER_DICTIONARIES"
+        },
+        {
+          "text": "He was starting to wonder if he would ever make it in the Major Leagues.",
+          "source": "OTHER_DICTIONARIES"
+        }
+      ],
+      "thesaurus": {
+        "topic": "to make something",
+        "entries": [
+          {
+            "word": "make",
+            "definition": "used about things you make yourself, or things that are made in a factory制作﹔制造",
+            "examples": [
+              "Diane makes all her own clothes.黛安娜的衣服都是自己做的。",
+              "My camera was made in China.我的相机是中国制造的。"
+            ]
+          },
+          {
+            "word": "produce",
+            "definition": "to make something in large quantities to be sold, or to make something as the result of a natural process制造﹐生产﹔产生",
+            "examples": [
+              "The factory produces high-quality steel.该工厂生产优质钢材。",
+              "Japan produces some of the most advanced mobile phones.",
+              "The pancreas is a gland in your body which produces hormones.胰腺是人体内分泌激素的一个腺体。"
+            ]
+          },
+          {
+            "word": "create",
+            "definition": "to make something new and original创造",
+            "examples": [
+              "Tarantino created a whole new style of films.塔伦蒂诺创造了一种全新的电影风格。",
+              "Many companies invest a lot of money in creating new products.许多公司投入大笔资金创制新产品。",
+              "Potter was famous for creating characters such as ‘Peter Rabbit’."
+            ]
+          },
+          {
+            "word": "manufacture",
+            "definition": "to make machines, cars, equipment etc in factories〔在工厂〕生产﹐制造〔机器﹑汽车﹑设备等〕",
+            "examples": [
+              "The company manufactures aircraft parts.该公司生产飞机零部件。"
+            ]
+          },
+          {
+            "word": "mass-produce",
+            "definition": "to make very large quantities of something in a factory〔在工厂〕大批量生产",
+            "examples": [
+              "They developed a way to mass-produce the drug.他们研发出一种新方法﹐可以大批量生产这种药物。"
+            ]
+          },
+          {
+            "word": "develop",
+            "definition": "to design and make something new over a period of time研制〔新产品〕",
+            "examples": [
+              "In 1962, Enders developed an effective vaccine against measles.1962年﹐恩德斯研制出一种可有效预防麻疹的疫苗。",
+              "The company is developing new anti-virus software.该公司正在开发一款新的杀毒软件。"
+            ]
+          },
+          {
+            "word": "form",
+            "definition": "to make something as the result of a natural process or chemical reaction〔经过自然过程或化学反应而〕形成,产生",
+            "examples": [
+              "Hydrogen and oxygen combine to form water.氢和氧结合生成水。",
+              "The research will help us understand how planets are formed.这项研究可帮助我们了解行星是怎样形成的。"
+            ]
+          },
+          {
+            "word": "generate",
+            "definition": "to make something such as heat, electricity, or power产生〔热﹑电﹑动力等〕",
+            "examples": [
+              "Wind can be used to generate electricity.风力可用来发电。"
+            ]
+          },
+          {
+            "word": "make",
+            "definition": "to produce something which did not exist before",
+            "examples": [
+              "Diane makes all her own clothes.黛安娜的衣服都是自己做的。",
+              "The furniture was made by a Swedish firm.",
+              "They've just finished making a movie about life during the Civil War."
+            ]
+          },
+          {
+            "word": "produce",
+            "definition": "to make large quantities of food, equipment, or other goods by means of industrial processes",
+            "examples": [
+              "The dairy produced over 1500 tonnes of butter per year.",
+              "They produce cheap goods for export to the United States.",
+              "a factory that produces high-quality steel"
+            ]
+          }
+        ],
+        "word_sets": []
+      },
+      "collocations": [
+        {
+          "pattern": "appearance",
+          "part_of_speech": "NOUN",
+          "examples": [
+            {
+              "text": "He may even make a good appearance of doing so.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "I shall make only infrequent appearances at the Board.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "A prickling sensation running the length of her spine told her that Rourke had made an appearance.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "During the millions of years since they first made their appearance, at least a hundred species of Proboscidea have come and gone.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "When they first made their appearance in this country, crag rats sported nailed boots and tweed plus-fours.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "Master Alexander makes his first recorded appearance as witness to a settlement presided over by Archbishop Langton in 1216.",
+              "translation": null,
+              "audio_url": null
+            }
+          ]
+        },
+        {
+          "pattern": "arrangement",
+          "part_of_speech": "NOUN",
+          "examples": [
+            {
+              "text": "Details of the programme will be distributed in good time beforehand but please make arrangements now to be represented.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "She made arrangements for her children, then relinquished herself of her title.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "Schools and colleges which choose to make their own arrangements may welcome help from the department's consultant.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "The fishermen were simply making arrangements to save their own skins.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "Some may make arrangements to meet again.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "If the family has not made arrangements, his body will be cremated at state expense.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "No doubt they sit at the table, plotting and planning, making arrangements.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "If you have special dietary needs, make arrangements before you leave.",
+              "translation": null,
+              "audio_url": null
+            }
+          ]
+        },
+        {
+          "pattern": "attempt",
+          "part_of_speech": "NOUN",
+          "examples": [
+            {
+              "text": "When a man as attractive as Crilly makes an attempt to leave the circle, the girls get bothered.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "He decided to make a last attempt to stay on the Waterfate story.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "By scorning concert-hall constants, Karajan was making a realistic attempt to put music on film.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "Q: I have made several attempts to grow gourds.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "The Carrion swoop around the adventurers, but make no attempt to carry anyone off.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "However, few make any attempt to define it or shape it in positive ways.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "Hank had made no attempt to defend himself.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "It was right outside the wire where they had made their attempt to breach the perimeter.",
+              "translation": null,
+              "audio_url": null
+            }
+          ]
+        },
+        {
+          "pattern": "call",
+          "part_of_speech": "NOUN",
+          "examples": [
+            {
+              "text": "We can give our troops the means to make that call.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "All you did was make a telephone call.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "When you make your calls, ensure that you speak clearly and precisely.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "I listened while Ted made a phone call.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "He had previously denied making such calls.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "It was Graham herself, ignoring strong advice from Post lawyers, who made the call.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "He had made a few calls, but couldn't have chosen a worse time to be setting up a casual liaison.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "And then we repaired to empty Hebron town offices to make our calls from computer printouts covered with the notes.",
+              "translation": null,
+              "audio_url": null
+            }
+          ]
+        },
+        {
+          "pattern": "change",
+          "part_of_speech": "NOUN",
+          "examples": [
+            {
+              "text": "Picasso then abandoned the painting briefly before beginning to make increasingly radical changes to it.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "At Unisys, another Rancho Bernardo semiconductor company, officials said they made the same change last year.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "But equally, the moths only took a hundred years to make their change.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "And he has tried to make some changes in his work.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "The winners in Tuesday's election take office in 10 days, and they can begin making changes soon after.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "In making the change, the Church effectively admitted that on these points the Reformers had been in the right.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "The three participating high schools had made minimal changes in curriculum or instruction.",
+              "translation": null,
+              "audio_url": null
+            }
+          ]
+        },
+        {
+          "pattern": "choice",
+          "part_of_speech": "NOUN",
+          "examples": [
+            {
+              "text": "Let the consumer make the choice.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "It's at this point that you have to start making choices, and you have several options.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "The Plan is therefore about making choices.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "Consumption in leisure and holidaying became increasingly linked to the capacity of the individual consumer to make choices within the market.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "Instead of lying in bed they are up and about and have freedom to make choices about their routine and daily life.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "The Regional Committees will be informed immediately of this selection so that they can take it into account when making their own choices.",
+              "translation": null,
+              "audio_url": null
+            }
+          ]
+        },
+        {
+          "pattern": "claim",
+          "part_of_speech": "NOUN",
+          "examples": [
+            {
+              "text": "Those who sit on the Treasury Bench make claims about average net income increases.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "But it is too far north to make a credible claim.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "One option is to make a claim.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "Boxing is truly nocturnal; no other sport can make that claim.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "We can not pay if farmers do not make the claims.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "The power of their work speaks for itself, makes an unparalleled claim.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "After that, it may be too late to make a claim.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "The flames of the auto-da-fe had crackled in recent years for people who made such claims.",
+              "translation": null,
+              "audio_url": null
+            }
+          ]
+        },
+        {
+          "pattern": "comment",
+          "part_of_speech": "NOUN",
+          "examples": [
+            {
+              "text": "But I have to make one comment you might not care to hear: A woman does have a choice.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "He was also criticized for employing a staff member who made inappropriate comments about a committee witness's religion.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "Furthermore, artists who are also critics are especially likely to make vivid comments on the methods and techniques of old art.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "This will give everyone a chance to read the material, make comments, and come prepared for a discussion.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "Politicians, pundits and royal watchers have all made public comment on the private life of Charles and Diana.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "Students occasionally make silly, ridiculous comments that are not likely to be true.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "We made the following comments on such expectations.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "Beier denied making such comments and said Clark was a good manager.",
+              "translation": null,
+              "audio_url": null
+            }
+          ]
+        },
+        {
+          "pattern": "contribution",
+          "part_of_speech": "NOUN",
+          "examples": [
+            {
+              "text": "Our reader was invited to make his annual contribution to his Equitable Life pension plan.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "To be sure, some small-business lobbying groups do not make political contributions.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "Clark made two key contributions to the development of pharmacology and hence medicine.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "He thought she would make a splendid contribution.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "He made outstanding contributions to all branches of children's surgery but his lifelong interest was the aetiology of malformations.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "We try to create an atmosphere in which employees can enjoy themselves and prosper and make significant contributions.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "They have both made very substantial contributions to the progress of the Group and we will miss their sound advice.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "In an apparent money laundering scheme, impoverished monastics made contributions for which they were reimbursed.",
+              "translation": null,
+              "audio_url": null
+            }
+          ]
+        },
+        {
+          "pattern": "debut",
+          "part_of_speech": "NOUN",
+          "examples": [
+            {
+              "text": "That hardly seems to be the case as beach volleyball makes its Olympic debut this month.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "New boy John Byrne makes his home debut together with Matt Elliott.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "He decides, literally, to play for time and makes a debut at Nero's banquet that evening.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "Acting on instinct, he decided to make their debut album something better than the usual cash-in of the time.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "Meanwhile, Gazza is now almost certain to make his Lazio debut in their friendly against former club Tottenham on September 23.",
+              "translation": null,
+              "audio_url": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "headword": "make",
+      "hyphenation": "make",
+      "homnum": 2,
+      "pronunciation": null,
+      "pronunciation_ame": null,
+      "part_of_speech": "noun",
+      "inflections": null,
+      "audio": {
+        "bre_url": "/dict/resource?path=hwd/bre/6/ld45make_1.mp3",
+        "ame_url": "/dict/resource?path=hwd/ame/6/ld45make_1.mp3"
+      },
+      "senses": [
+        {
+          "index": 1,
+          "definition": "the name of a particular product or of the company that makes it",
+          "definition_cn": "〔产品或公司的〕牌子﹐品牌",
+          "grammar": "[countable]",
+          "examples": [
+            {
+              "text": "What make is your car?",
+              "translation": "你的车是什么牌子的？",
+              "audio_url": "/dict/resource?path=exa/bre/5/p008-000180024.mp3"
+            },
+            {
+              "text": "It’s one of the most popular makes of satellite phone on the market.",
+              "translation": "这是市场上最流行的卫星电话品牌之一。",
+              "audio_url": "/dict/resource?path=exa/bre/2/p008-000180027.mp3"
+            },
+            {
+              "text": "It’s one of the most popular makes of satellite phone on the market.",
+              "translation": "这是市场上最流行的卫星电话品牌之一。",
+              "audio_url": "/dict/resource?path=exa/bre/2/p008-000180027.mp3"
+            }
+          ],
+          "collocations": []
+        },
+        {
+          "index": 2,
+          "definition": "to be trying to get money or power – used to show disapproval",
+          "definition_cn": "极力谋求权钱〔含贬义〕",
+          "grammar": "[countable]",
+          "examples": [
+            {
+              "text": "He was just a salesman on the make.",
+              "translation": "他就是个只想赚钱的推销员。",
+              "audio_url": "/dict/resource?path=exa/bre/7/p008-001976358.mp3"
+            }
+          ],
+          "collocations": []
+        }
+      ],
+      "phrasal_verbs": [],
+      "etymology": null,
+      "verb_table": null,
+      "extra_examples": [
+        {
+          "text": "\"What make of car was she driving?\" \"A Mercedes.\"",
+          "source": "OTHER_DICTIONARIES"
+        },
+        {
+          "text": "Mention the missile but not the make.",
+          "source": "CORPUS"
+        },
+        {
+          "text": "Not poverty beaten down, poverty rather on the make, without being clever enough to make it.",
+          "source": "CORPUS"
+        },
+        {
+          "text": "To my knowledge there are currently four different makes of locator available.",
+          "source": "CORPUS"
+        }
+      ],
+      "thesaurus": {
+        "topic": "a type of product",
+        "entries": [
+          {
+            "word": "brand",
+            "definition": "the name of a type of product made by a company, especially one that you use every day such as food or cleaning products",
+            "examples": [
+              "a survey to find out which brand of toothpaste people prefer",
+              "advertising for a well-known brand of cigarettes"
+            ]
+          },
+          {
+            "word": "make",
+            "definition": "a type of product made by a particular company – used especially about things such as machines, equipment, or cars",
+            "examples": [
+              "‘What make of car do you drive?’ ‘A Ford.’"
+            ]
+          },
+          {
+            "word": "model",
+            "definition": "one particular type or design of a vehicle, machine etc",
+            "examples": [
+              "The new models are much faster."
+            ]
+          },
+          {
+            "word": "make",
+            "definition": "to produce something which did not exist before",
+            "examples": [
+              "Diane makes all her own clothes.黛安娜的衣服都是自己做的。",
+              "The furniture was made by a Swedish firm.",
+              "They've just finished making a movie about life during the Civil War."
+            ]
+          },
+          {
+            "word": "produce",
+            "definition": "to make large quantities of food, equipment, or other goods by means of industrial processes",
+            "examples": [
+              "The dairy produced over 1500 tonnes of butter per year.",
+              "They produce cheap goods for export to the United States.",
+              "a factory that produces high-quality steel"
+            ]
+          },
+          {
+            "word": "manufacture",
+            "definition": "to make machines, equipment, cars etc in factories",
+            "examples": [
+              "He works for a small company manufacturing aluminium products.",
+              "The car was designed, developed, and manufactured in collaboration with Honda."
+            ]
+          },
+          {
+            "word": "mass-produce",
+            "definition": "to make goods in very large quantities using special industrial processes",
+            "examples": [
+              "Henry Ford made his fortune mass-producing the Model T.",
+              "The bike is the first mass-produced bicycle to have full front and rear suspension."
+            ]
+          },
+          {
+            "word": "churn out/turn out",
+            "definition": "to make large quantities of things, especially without caring about quality",
+            "examples": [
+              "They turn out cheap souvenirs for tourists.",
+              "Churning out pamphlets and booklets is ineffective if consumers cannot understand the messages.",
+              "As long as people keep buying these products, the company will keep turning them out."
+            ]
+          },
+          {
+            "word": "create",
+            "definition": "to invent something new and original in art, music, fashion etc",
+            "examples": [
+              "Picasso created a completely new style of painting.",
+              "She wanted to create a garden to complement her beautiful home.",
+              "This dish was created by master chef Marco Pierre White."
+            ]
+          },
+          {
+            "word": "fashion",
+            "definition": "to make something using your hands or simple tools",
+            "examples": [
+              "Two million years ago our ancestors began to fashion stone tools.",
+              "The man had fashioned a turban from a strip of torn cloth."
+            ]
+          }
+        ],
+        "word_sets": []
+      },
+      "collocations": [
+        {
+          "pattern": "different",
+          "part_of_speech": "ADJECTIVE",
+          "examples": [
+            {
+              "text": "To my knowledge there are currently four different makes of locator available.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "A convertible drove by, but it was white and a different make.",
+              "translation": null,
+              "audio_url": null
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "raw_html": null
+}

@@ -16,7 +16,7 @@ class Settings(BaseSettings):
 
     # Voice / Gemini Settings
     GEMINI_API_KEY: str = ""  # Can also be set via GOOGLE_API_KEY in env if pydantic picks it up, but explicit is better
-    GEMINI_VOICE_MODEL_NAME: str = "gemini-2.0-flash-exp"
+    GEMINI_VOICE_MODEL_NAME: str = "gemini-2.5-flash-native-audio-latest"
 
     # SenseVoice Settings
     # default: iic/SenseVoice, can also be set to iic/SenseVoiceSmall(faster but without timestamps)

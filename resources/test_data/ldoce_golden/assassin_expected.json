@@ -1,0 +1,122 @@
+{
+  "word": "assassin",
+  "found": true,
+  "entries": [
+    {
+      "headword": "assassin",
+      "hyphenation": "assassin",
+      "homnum": null,
+      "pronunciation": "əˈsæsɪn",
+      "pronunciation_ame": null,
+      "part_of_speech": "noun",
+      "inflections": null,
+      "audio": {
+        "bre_url": "/dict/resource?path=hwd/bre/b/assassin0205.mp3",
+        "ame_url": "/dict/resource?path=hwd/ame/c/assassin.mp3"
+      },
+      "senses": [
+        {
+          "index": 1,
+          "definition": "someone who murders an important person",
+          "definition_cn": "暗杀者﹐刺客",
+          "grammar": "[countable]",
+          "examples": [
+            {
+              "text": "Kennedy’s assassin is assumed to have been Lee Harvey Oswald.",
+              "translation": "暗杀肯尼迪的人据说是李·哈维·奥斯瓦尔德。",
+              "audio_url": "/dict/resource?path=exa/bre/a/p008-000921912.mp3"
+            }
+          ],
+          "collocations": []
+        }
+      ],
+      "phrasal_verbs": [],
+      "etymology": {
+        "century": "1500-1600",
+        "origin": "assassinus",
+        "meaning": "‘one who smokes hashish (and then kills religious enemies)’",
+        "note": "Medieval Latin, fromArabichashshashin, fromhashish"
+      },
+      "verb_table": null,
+      "extra_examples": [
+        {
+          "text": "Although the assassins were never caught, it is commonly believed that they were working for the government.",
+          "source": "OTHER_DICTIONARIES"
+        },
+        {
+          "text": "His assassins must have been aware of his security arrangements.",
+          "source": "OTHER_DICTIONARIES"
+        },
+        {
+          "text": "Professional assassins are going to stab somebody over and over again and leave all this evidence besides?",
+          "source": "CORPUS"
+        },
+        {
+          "text": "The assassin had planned to shoot Park in the lobby of the theater, but failed to get an unobstructed view.",
+          "source": "CORPUS"
+        },
+        {
+          "text": "The danger from the footpad, the silent assassin, was always present, here in his church or across the river.",
+          "source": "CORPUS"
+        },
+        {
+          "text": "The would-be assassin was a member of the presidential bodyguard and of the elite Revolutionary Guard.",
+          "source": "CORPUS"
+        },
+        {
+          "text": "Whoever had sent these assassins had completely underestimated the fat knight.",
+          "source": "CORPUS"
+        }
+      ],
+      "thesaurus": {
+        "topic": "someone who kills another person",
+        "entries": [
+          {
+            "word": "murderer",
+            "definition": "someone who has deliberately killed another person",
+            "examples": [
+              "Do you think the police will ever catch her murderer?",
+              "A convicted murderer was on the run last night after escaping from Lewes prison.",
+              "In prison he enjoyed reading biographies of other mass murderers."
+            ]
+          },
+          {
+            "word": "killer",
+            "definition": "someone who deliberately kills someone else - used especially in newspapers",
+            "examples": [
+              "The victim's best friend, Joanne, is convinced the killer is local.",
+              "The judge described him as \"a cold-blooded killer\".",
+              "Police are searching for the killer of a 9 year old boy."
+            ]
+          },
+          {
+            "word": "assassin",
+            "definition": "someone who kills a famous or important person, sometimes because someone else has paid them to do it",
+            "examples": [
+              "Although the assassins were never caught, it is commonly believed that they were working for the government.",
+              "His assassins must have been aware of his security arrangements."
+            ]
+          },
+          {
+            "word": "hitman/contract killer",
+            "definition": "someone who is paid to kill people illegally",
+            "examples": [
+              "The hitman used the top floor room of a hotel opposite the square.",
+              "The police believe the murder could be the work of a contract killer."
+            ]
+          },
+          {
+            "word": "psychopath",
+            "definition": "someone who has a mental illness that makes them kill people",
+            "examples": [
+              "Dr Green said that, in his opinion, Perry was a dangerous psychopath who might kill again."
+            ]
+          }
+        ],
+        "word_sets": []
+      },
+      "collocations": []
+    }
+  ],
+  "raw_html": null
+}

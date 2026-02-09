@@ -1,0 +1,1307 @@
+{
+  "word": "give",
+  "found": true,
+  "entries": [
+    {
+      "headword": "give",
+      "hyphenation": "give",
+      "homnum": 1,
+      "pronunciation": "ɡɪv",
+      "pronunciation_ame": null,
+      "part_of_speech": "verb",
+      "inflections": "(past tense gave /ɡeɪv/, past participle given /ˈɡɪvən/)",
+      "audio": {
+        "bre_url": "/dict/resource?path=hwd/bre/4/give_v0205.mp3",
+        "ame_url": "/dict/resource?path=hwd/ame/3/give1.mp3"
+      },
+      "senses": [
+        {
+          "index": 1,
+          "definition": "to let someone have something as a present, or to provide something for someone",
+          "definition_cn": "赠送﹐给予﹐捐赠",
+          "grammar": "[intransitive, transitive]",
+          "examples": [
+            {
+              "text": "What did Bob give you for your birthday?",
+              "translation": "你生日鲍勃送了你什么？",
+              "audio_url": "/dict/resource?path=exa/bre/6/p008-001521944.mp3"
+            },
+            {
+              "text": "Researchers were given a £10,000 grant to continue their work.",
+              "translation": "研究人员得到一万英镑的经费以继续他们的研究。",
+              "audio_url": "/dict/resource?path=exa/bre/c/p008-001521942.mp3"
+            },
+            {
+              "text": "I’ve got some old diaries that my grandmother gave me years ago.",
+              "translation": "我有几本旧日记本﹐是多年前祖母给我的。",
+              "audio_url": "/dict/resource?path=exa/bre/a/p008-001521943.mp3"
+            }
+          ],
+          "collocations": []
+        },
+        {
+          "index": 2,
+          "definition": "to put something in someone’s hand",
+          "definition_cn": "交给﹐递给﹐拿给",
+          "grammar": "[transitive]",
+          "examples": [
+            {
+              "text": "Give me the letter, please.",
+              "translation": "请把信给我。",
+              "audio_url": "/dict/resource?path=exa/bre/2/p008-001521955.mp3"
+            },
+            {
+              "text": "He poured some wine into a glass and gave it to her.",
+              "translation": "他倒了一杯酒递给她。",
+              "audio_url": "/dict/resource?path=exa/bre/c/p008-001521958.mp3"
+            },
+            {
+              "text": "Give me the letter, please.",
+              "translation": "请把信给我。",
+              "audio_url": "/dict/resource?path=exa/bre/2/p008-001521955.mp3"
+            }
+          ],
+          "collocations": []
+        },
+        {
+          "index": 3,
+          "definition": "to allow or make it possible for someone to do something",
+          "definition_cn": "允许﹐许可",
+          "grammar": "[transitive]",
+          "examples": [
+            {
+              "text": "He finally gave us permission to leave.",
+              "translation": "他最后还是允许我们离开。",
+              "audio_url": "/dict/resource?path=exa/bre/2/p008-001800821.mp3"
+            },
+            {
+              "text": "These meetings give everyone a chance to express their opinions.",
+              "translation": "这些会议给每个人发表意见的机会。",
+              "audio_url": "/dict/resource?path=exa/bre/d/p008-001522118.mp3"
+            },
+            {
+              "text": "Students are given the freedom to choose their own topics.",
+              "translation": "学生有选择课题的自主权。",
+              "audio_url": "/dict/resource?path=exa/bre/6/p008-001522112.mp3"
+            }
+          ],
+          "collocations": []
+        },
+        {
+          "index": 4,
+          "definition": "to tell someone information or details about something, or to tell someone what they should do",
+          "definition_cn": "给予﹐提供〔信息〕",
+          "grammar": "[transitive]",
+          "examples": [
+            {
+              "text": "She gave me some information on university courses.",
+              "translation": "她向我提供了一些有关大学课程的信息。",
+              "audio_url": "/dict/resource?path=exa/bre/9/p008-001800837.mp3"
+            },
+            {
+              "text": "My secretary will be able to give you more details.",
+              "translation": "我的秘书会告诉你更详细的情况。",
+              "audio_url": "/dict/resource?path=exa/bre/d/p008-001521979.mp3"
+            },
+            {
+              "text": "Let me give you some advice.",
+              "translation": "我给你一些建议吧。",
+              "audio_url": "/dict/resource?path=exa/bre/7/p008-001981320.mp3"
+            }
+          ],
+          "collocations": []
+        },
+        {
+          "index": 5,
+          "definition": "to do something by making a movement with your hand, face, body etc",
+          "definition_cn": "〔用手、脸、身体等〕做〔动作〕",
+          "grammar": "[transitive]",
+          "examples": [
+            {
+              "text": "She gave a little frown.",
+              "translation": "她轻轻皱了皱眉头。",
+              "audio_url": "/dict/resource?path=exa/bre/4/p008-001800850.mp3"
+            },
+            {
+              "text": "Joel gave me a smile as I walked in.",
+              "translation": "我走进去的时候乔尔对我笑了笑。",
+              "audio_url": "/dict/resource?path=exa/bre/a/p008-001800855.mp3"
+            },
+            {
+              "text": "He gave her a big hug.",
+              "translation": "他给了她一个大大的拥抱。",
+              "audio_url": "/dict/resource?path=exa/bre/1/p008-001800856.mp3"
+            }
+          ],
+          "collocations": []
+        },
+        {
+          "index": 6,
+          "definition": "to make a speech, perform a piece of music etc for a group of people",
+          "definition_cn": "发表〔讲话等〕﹔举行〔演出等〕",
+          "grammar": "[transitive]",
+          "examples": [
+            {
+              "text": "He’s giving a talk on early Roman pottery.",
+              "translation": "他要作一个关于古罗马早期陶器的报告。",
+              "audio_url": "/dict/resource?path=exa/bre/0/p008-001800860.mp3"
+            },
+            {
+              "text": "They gave one of their best performances to date.",
+              "translation": "他们的这次演出是迄今为止最好的几场之一。",
+              "audio_url": "/dict/resource?path=exa/bre/c/p008-001800861.mp3"
+            }
+          ],
+          "collocations": []
+        },
+        {
+          "index": 7,
+          "definition": "to make someone have a feeling",
+          "definition_cn": "使产生〔某种感觉〕",
+          "grammar": "[transitive]",
+          "examples": [
+            {
+              "text": "He gave us quite a shock.",
+              "translation": "他让我们十分震惊。",
+              "audio_url": "/dict/resource?path=exa/bre/1/p008-001522087.mp3"
+            },
+            {
+              "text": "The course has given me a lot more confidence.",
+              "translation": "这门课程使我增加了不少信心。",
+              "audio_url": "/dict/resource?path=exa/bre/c/p008-001981366.mp3"
+            },
+            {
+              "text": "His job did not give him much sense of fulfilment.",
+              "translation": "他的工作没有给他多少成就感。",
+              "audio_url": "/dict/resource?path=exa/bre/f/p008-001800873.mp3"
+            }
+          ],
+          "collocations": []
+        },
+        {
+          "index": 8,
+          "definition": "to make someone have problems",
+          "definition_cn": "给…带来〔问题〕",
+          "grammar": "[transitive]",
+          "examples": [
+            {
+              "text": "The new software has given us quite a few problems.",
+              "translation": "这种新软件给我们带来不少问题。",
+              "audio_url": "/dict/resource?path=exa/bre/c/p008-001800885.mp3"
+            },
+            {
+              "text": "The new software has given us quite a few problems.",
+              "translation": "这种新软件给我们带来不少问题。",
+              "audio_url": "/dict/resource?path=exa/bre/c/p008-001800885.mp3"
+            }
+          ],
+          "collocations": []
+        },
+        {
+          "index": 9,
+          "definition": "to infect someone with the same illness that you have",
+          "definition_cn": "传染",
+          "grammar": "[transitive]",
+          "examples": [
+            {
+              "text": "Don’t come too close – I don’t want you to give me your cold!",
+              "translation": "别离我太近——我可不想让你把感冒传给我！",
+              "audio_url": "/dict/resource?path=exa/bre/2/p008-001522096.mp3"
+            },
+            {
+              "text": "It’s very unlikely a doctor could give HIV to a patient.",
+              "translation": "医生把艾滋病病毒传染给病人的可能性极小。",
+              "audio_url": "/dict/resource?path=exa/bre/7/p008-001522099.mp3"
+            },
+            {
+              "text": "Don’t come too close – I don’t want you to give me your cold!",
+              "translation": "别离我太近——我可不想让你把感冒传给我！",
+              "audio_url": "/dict/resource?path=exa/bre/2/p008-001522096.mp3"
+            }
+          ],
+          "collocations": []
+        },
+        {
+          "index": 10,
+          "definition": "to organize a social event such as a party",
+          "definition_cn": "举办﹐举行〔聚会等〕",
+          "grammar": "[transitive]",
+          "examples": [
+            {
+              "text": "We’re giving a small party for dad’s birthday next week.",
+              "translation": "下个星期爸爸生日﹐我们要为他举行一个小小的派对。",
+              "audio_url": "/dict/resource?path=exa/bre/9/p008-001800864.mp3"
+            }
+          ],
+          "collocations": []
+        }
+      ],
+      "phrasal_verbs": [
+        {
+          "phrase": "givesomebody/somethingaway",
+          "definition": "to give something to someone because you do not want or need it for yourself",
+          "definition_cn": "分送﹐送掉〔不需要的东西〕",
+          "examples": [
+            {
+              "text": "I gave most of my books away when I left college.",
+              "translation": "我大学毕业时把大部分书都送掉了。",
+              "audio_url": "/dict/resource?path=exa/bre/f/p008-001522304.mp3"
+            },
+            {
+              "text": "Give your old clothes away to a thrift shop.",
+              "translation": "把你的旧衣服送去慈善商店吧。",
+              "audio_url": "/dict/resource?path=exa/bre/3/p008-001800969.mp3"
+            },
+            {
+              "text": "Give your old clothes away to a thrift shop.",
+              "translation": "把你的旧衣服送去慈善商店吧。",
+              "audio_url": "/dict/resource?path=exa/bre/3/p008-001800969.mp3"
+            }
+          ]
+        },
+        {
+          "phrase": "givesomething ↔back",
+          "definition": "to give something to the person it belongs to or the person who gave it to you",
+          "definition_cn": "归还﹐还给",
+          "examples": [
+            {
+              "text": "This isn’t your money and you must give it back.",
+              "translation": "这不是你的钱﹐你一定要还回去。",
+              "audio_url": "/dict/resource?path=exa/bre/e/p008-001800989.mp3"
+            },
+            {
+              "text": "Of course you can have a look at it, as long as you give it back.",
+              "translation": "你当然可以看﹐但是你要还回来。",
+              "audio_url": "/dict/resource?path=exa/bre/d/p008-001800990.mp3"
+            },
+            {
+              "text": "I’ll give the keys back to you tomorrow morning.",
+              "translation": "我明天早上把钥匙还给你。",
+              "audio_url": "/dict/resource?path=exa/bre/2/p008-001522366.mp3"
+            }
+          ]
+        },
+        {
+          "phrase": "give in",
+          "definition": "to finally agree to do or accept something that you had at first opposed, especially because someone has forced or persuaded you to",
+          "definition_cn": "屈服﹐让步",
+          "examples": [
+            {
+              "text": "Eventually I gave in and accepted the job on their terms.",
+              "translation": "最后我作出让步﹐按照他们的条件接受了这份工作。",
+              "audio_url": "/dict/resource?path=exa/bre/f/p008-001522389.mp3"
+            },
+            {
+              "text": "Bob’s wife went on at him so much that eventually he gave in.",
+              "translation": "鲍勃的妻子对他不依不饶﹐他终于屈服了。",
+              "audio_url": "/dict/resource?path=exa/bre/f/p008-001801003.mp3"
+            },
+            {
+              "text": "The government refused to give in to their demands.",
+              "translation": "政府对他们的要求拒不妥协。",
+              "audio_url": "/dict/resource?path=exa/bre/5/p008-001522392.mp3"
+            }
+          ]
+        },
+        {
+          "phrase": "give in tosomething",
+          "definition": "to no longer try to stop yourself from doing something you want to do",
+          "definition_cn": "不再克制﹐屈服于",
+          "examples": [
+            {
+              "text": "Don’t give in to the temptation to argue back.",
+              "translation": "不要一时冲动就还嘴。",
+              "audio_url": "/dict/resource?path=exa/bre/3/p008-001801011.mp3"
+            },
+            {
+              "text": "If you feel the urge for a cigarette, try not to give in to it.",
+              "translation": "如果烟瘾上来﹐要尽量克制。",
+              "audio_url": "/dict/resource?path=exa/bre/7/p008-001522419.mp3"
+            }
+          ]
+        },
+        {
+          "phrase": "give ofsomething",
+          "definition": "if you give of yourself, your time, your money etc, you do things for other people without expecting anything in return",
+          "definition_cn": "献出〔自身﹑时间﹑金钱等〕",
+          "examples": [
+            {
+              "text": "Retired people are often willing to give of their time to help with community projects.",
+              "translation": "退休老人常常愿意抽出时间来给社区项目帮忙。",
+              "audio_url": "/dict/resource?path=exa/bre/9/p008-001522430.mp3"
+            }
+          ]
+        },
+        {
+          "phrase": "give offsomething",
+          "definition": "to produce a smell, light, heat, a sound etc",
+          "definition_cn": "发出〔气味﹑光﹑热﹑声音等〕",
+          "examples": [
+            {
+              "text": "The wood gave off a sweet, perfumed smell as it burned.",
+              "translation": "木头燃烧时散发出甜甜的香味。",
+              "audio_url": "/dict/resource?path=exa/bre/2/p008-001522441.mp3"
+            }
+          ]
+        },
+        {
+          "phrase": "give ontosomething",
+          "definition": "if a window, door, or building gives onto a particular place, it leads to that place or you can see that place from it",
+          "definition_cn": "〔窗﹑门或建筑物〕通向﹐面朝",
+          "examples": [
+            {
+              "text": "the garden gate that gives onto the main road",
+              "translation": "面朝大路的花园大门",
+              "audio_url": "/dict/resource?path=exa/bre/e/p008-001522452.mp3"
+            },
+            {
+              "text": "a small balcony giving onto fields",
+              "translation": "面向田地的小阳台",
+              "audio_url": "/dict/resource?path=exa/bre/9/p008-001522453.mp3"
+            }
+          ]
+        },
+        {
+          "phrase": "give out",
+          "definition": "to give something to each person in a group",
+          "definition_cn": "分发某物",
+          "examples": [
+            {
+              "text": "Can you give the drinks out, please?",
+              "translation": "请你把饮料分给大家好吗？",
+              "audio_url": "/dict/resource?path=exa/bre/a/p008-001801014.mp3"
+            },
+            {
+              "text": "Students were giving out leaflets to everyone on the street.",
+              "translation": "学生们正在街上向每个人分发传单。",
+              "audio_url": "/dict/resource?path=exa/bre/e/p008-001522462.mp3"
+            },
+            {
+              "text": "Students were giving out leaflets to everyone on the street.",
+              "translation": "学生们正在街上向每个人分发传单。",
+              "audio_url": "/dict/resource?path=exa/bre/e/p008-001522462.mp3"
+            }
+          ]
+        },
+        {
+          "phrase": "give over",
+          "definition": "to stop doing or saying something that is annoying other people",
+          "definition_cn": "停止〔做或说烦人的事情〕",
+          "examples": [
+            {
+              "text": "I wish you lot would just give over!",
+              "translation": "你们这些家伙消停些好吗！",
+              "audio_url": "/dict/resource?path=exa/bre/0/p008-001522507.mp3"
+            },
+            {
+              "text": "Oh, give over complaining, we’re nearly there.",
+              "translation": "噢﹐别发牢骚了﹐我们快到了。",
+              "audio_url": "/dict/resource?path=exa/bre/7/p008-001522510.mp3"
+            },
+            {
+              "text": "Oh, give over complaining, we’re nearly there.",
+              "translation": "噢﹐别发牢骚了﹐我们快到了。",
+              "audio_url": "/dict/resource?path=exa/bre/7/p008-001522510.mp3"
+            }
+          ]
+        },
+        {
+          "phrase": "givesomethingover tosomebody/something",
+          "definition": "to be used for a particular purpose",
+          "definition_cn": "被用于某一目的",
+          "examples": [
+            {
+              "text": "The land surrounding the village was given over to vineyards.",
+              "translation": "村子周围的土地都用来做葡萄园。",
+              "audio_url": "/dict/resource?path=exa/bre/d/p008-001522520.mp3"
+            },
+            {
+              "text": "The whole day was given over to cooking and preparing for the celebrations.",
+              "translation": "那一整天都在做饭菜和准备庆祝活动。",
+              "audio_url": "/dict/resource?path=exa/bre/0/p008-001522521.mp3"
+            }
+          ]
+        }
+      ],
+      "etymology": {
+        "century": null,
+        "origin": "giefan",
+        "meaning": null,
+        "note": "Old English"
+      },
+      "verb_table": {
+        "lemma": "give",
+        "simple_forms": [
+          {
+            "tense": "Present",
+            "person": "I, you, we, they",
+            "form": "give",
+            "auxiliary": null
+          },
+          {
+            "tense": "Present",
+            "person": "he, she, it",
+            "form": "gives",
+            "auxiliary": null
+          },
+          {
+            "tense": "Past",
+            "person": "I, you, he, she, it, we, they",
+            "form": "gave",
+            "auxiliary": null
+          },
+          {
+            "tense": "Present perfect",
+            "person": "I, you, we, they",
+            "form": "given",
+            "auxiliary": "have"
+          },
+          {
+            "tense": "Present perfect",
+            "person": "he, she, it",
+            "form": "given",
+            "auxiliary": "has"
+          },
+          {
+            "tense": "Past perfect",
+            "person": "I, you, he, she, it, we, they",
+            "form": "given",
+            "auxiliary": "had"
+          },
+          {
+            "tense": "Future",
+            "person": "I, you, he, she, it, we, they",
+            "form": "give",
+            "auxiliary": "will"
+          },
+          {
+            "tense": "Future perfect",
+            "person": "I, you, he, she, it, we, they",
+            "form": "given",
+            "auxiliary": "will have"
+          }
+        ],
+        "continuous_forms": [
+          {
+            "tense": "Present",
+            "person": "I",
+            "form": "giving",
+            "auxiliary": "am"
+          },
+          {
+            "tense": "Present",
+            "person": "he, she, it",
+            "form": "giving",
+            "auxiliary": "is"
+          },
+          {
+            "tense": "Present",
+            "person": "you, we, they",
+            "form": "giving",
+            "auxiliary": "are"
+          },
+          {
+            "tense": "Past",
+            "person": "I, he, she, it",
+            "form": "giving",
+            "auxiliary": "was"
+          },
+          {
+            "tense": "Past",
+            "person": "you, we, they",
+            "form": "giving",
+            "auxiliary": "were"
+          },
+          {
+            "tense": "Present perfect",
+            "person": "I, you, we, they",
+            "form": "giving",
+            "auxiliary": "have been"
+          },
+          {
+            "tense": "Present perfect",
+            "person": "he, she, it",
+            "form": "giving",
+            "auxiliary": "has been"
+          },
+          {
+            "tense": "Past perfect",
+            "person": "I, you, he, she, it, we, they",
+            "form": "giving",
+            "auxiliary": "had been"
+          },
+          {
+            "tense": "Future",
+            "person": "I, you, he, she, it, we, they",
+            "form": "giving",
+            "auxiliary": "will be"
+          },
+          {
+            "tense": "Future perfect",
+            "person": "I, you, he, she, it, we, they",
+            "form": "giving",
+            "auxiliary": "will have been"
+          }
+        ]
+      },
+      "extra_examples": [
+        {
+          "text": "'Have you peeled the carrots?' 'No, I gave them to Dad to do.'",
+          "source": "OTHER_DICTIONARIES"
+        },
+        {
+          "text": "\"I don't really want to spend that much.\" \"OK, how much are you prepared to give?\"",
+          "source": "OTHER_DICTIONARIES"
+        },
+        {
+          "text": "Give me a call at 8:00.",
+          "source": "OTHER_DICTIONARIES"
+        },
+        {
+          "text": "About a quarter of Britons regularly give to charity.",
+          "source": "OTHER_DICTIONARIES"
+        },
+        {
+          "text": "Angie did a really good interview, but they gave the job to someone with more experience.",
+          "source": "OTHER_DICTIONARIES"
+        },
+        {
+          "text": "Can you give me a ride to the office tomorrow?",
+          "source": "OTHER_DICTIONARIES"
+        },
+        {
+          "text": "Come on, give Grandpa a hug.",
+          "source": "OTHER_DICTIONARIES"
+        },
+        {
+          "text": "Davis gives a wonderful performance as an 81-year-old man.",
+          "source": "OTHER_DICTIONARIES"
+        },
+        {
+          "text": "Did they give you the asking price for the house?",
+          "source": "OTHER_DICTIONARIES"
+        },
+        {
+          "text": "Don't worry if swimsuits are tight -- they always give a little.",
+          "source": "OTHER_DICTIONARIES"
+        },
+        {
+          "text": "Dr Hebden will be giving a lecture later this week on the role of women in the economy.",
+          "source": "OTHER_DICTIONARIES"
+        },
+        {
+          "text": "He gives generously to the church.",
+          "source": "OTHER_DICTIONARIES"
+        },
+        {
+          "text": "He said he'd give £40 for the painting, so I said yes.",
+          "source": "OTHER_DICTIONARIES"
+        },
+        {
+          "text": "His new hairstyle gives him a youthful look.",
+          "source": "OTHER_DICTIONARIES"
+        },
+        {
+          "text": "His uniform gave him an air of authority.",
+          "source": "OTHER_DICTIONARIES"
+        },
+        {
+          "text": "I'm giving a dinner party on Thursday night. Would you like to come?",
+          "source": "OTHER_DICTIONARIES"
+        },
+        {
+          "text": "I gave my nieces and nephews $20 each.",
+          "source": "OTHER_DICTIONARIES"
+        },
+        {
+          "text": "I asked Joel's teacher if we should give him some Level 4 work.",
+          "source": "OTHER_DICTIONARIES"
+        },
+        {
+          "text": "If you're bored, I'll give you something to do.",
+          "source": "OTHER_DICTIONARIES"
+        },
+        {
+          "text": "LA Weekly magazine gives information about what's on in Los Angeles every week.",
+          "source": "OTHER_DICTIONARIES"
+        },
+        {
+          "text": "A bigger fact in history than so-called historians give credit for.",
+          "source": "CORPUS"
+        },
+        {
+          "text": "Companies are already paying for training programs to give employees the basic skills they should have learned in high school.",
+          "source": "CORPUS"
+        },
+        {
+          "text": "That was why she could not, must not, give up on the boy.",
+          "source": "CORPUS"
+        },
+        {
+          "text": "Their steep decline has given grim satisfaction to their legions of detractors.",
+          "source": "CORPUS"
+        },
+        {
+          "text": "They gave the woman a mattress on the floor.",
+          "source": "CORPUS"
+        },
+        {
+          "text": "We merely suggest or advise rather than give orders.",
+          "source": "CORPUS"
+        }
+      ],
+      "thesaurus": {
+        "topic": "to give something to a group of people",
+        "entries": [
+          {
+            "word": "give",
+            "definition": "to let someone have something, without expecting to be paid for it赠送﹐给予",
+            "examples": [
+              "He was always giving me gifts.他总是送我礼物。",
+              "They gave a free drink to all their customers.他们给所有顾客都送一杯免费饮料。"
+            ]
+          },
+          {
+            "word": "donate",
+            "definition": "to give money to an organization that helps people or protects something, or to give your blood or part of your body to save someone’s life捐赠﹐捐献",
+            "examples": [
+              "The company donates 1 per cent of its profits to charity.这家公司把利润的1%捐赠给慈善机构。",
+              "70% of people wanted to donate their organs after death.有70%的人想要去世后捐献自己的器官。"
+            ]
+          },
+          {
+            "word": "award",
+            "definition": "to officially give money or a prize to someone奖励﹐授予",
+            "examples": [
+              "She was awarded a million dollars in damages.她得到了一百万美元的损失赔偿。",
+              "Hollywood awarded him an Oscar for his performance.好莱坞给他颁发了奥斯卡表演奖。"
+            ]
+          },
+          {
+            "word": "present",
+            "definition": "to formally or officially give something to someone by putting it in their hands, especially at a formal ceremony〔尤指在正式典礼上〕颁发﹐授予",
+            "examples": [
+              "They presented her with a bouquet of flowers.他们给她献上了一束花。"
+            ]
+          },
+          {
+            "word": "leave",
+            "definition": "to officially arrange for someone to have something that you own after your death〔死后〕留给﹐遗赠",
+            "examples": [
+              "He left most of his property to his wife.他把大部分财产都留给了妻子。"
+            ]
+          },
+          {
+            "word": "lavish somebody with something/lavish something on somebody",
+            "definition": "to give someone a lot of something, especially praise, attention, or gifts给予某人大量某物",
+            "examples": [
+              "After his team won, the press lavished him with praise.他的球队获胜之后﹐报界对他盛赞有加。"
+            ]
+          },
+          {
+            "word": "confer",
+            "definition": "to give someone an honour, a university degree, or the right or power to do something授予﹐赋予〔荣誉﹑学位﹑权利或权力〕",
+            "examples": [
+              "the powers conferred on him by Parliament议会授予他的权力",
+              "the highest honor that her country could confer on her"
+            ]
+          },
+          {
+            "word": "bestow",
+            "definition": "to give someone something to show how much they are respected, for example an honour, a title, or a gift – a very formal use",
+            "examples": [
+              "He was also bestowed the title of ‘Cultural Ambassador of Grenada’."
+            ]
+          },
+          {
+            "word": "hand something out/give something out",
+            "definition": "to give something to each of the people in a group分发某物",
+            "examples": [
+              "The teacher handed out the test papers.老师把测验卷子分发下去。",
+              "I’m going to give out some forms for you to fill in."
+            ]
+          },
+          {
+            "word": "distribute",
+            "definition": "to give things to a large number of people, especially in the streets〔尤在街上〕散发",
+            "examples": [
+              "Anti-war protesters were distributing leaflets.反战示威抗议者在散发传单。"
+            ]
+          }
+        ],
+        "word_sets": [
+          "access",
+          "acquit",
+          "acquittal",
+          "actionable",
+          "act of God",
+          "adjourn",
+          "administer",
+          "admissible",
+          "ADR",
+          "adversarial",
+          "advocate",
+          "affidavit",
+          "age",
+          "aggrieved",
+          "agreement",
+          "annual return,",
+          "anti-dumping",
+          "antitrust",
+          "Appeal Court",
+          "appear"
+        ]
+      },
+      "collocations": [
+        {
+          "pattern": "away",
+          "part_of_speech": "ADVERB",
+          "examples": [
+            {
+              "text": "It costs 99p for 275g from major supermarkets, but we have 1,000 vouchers, plus recipe booklets, to give away.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "They lost because they simply gave away the third quarter in a thorough display of immaturity and sloppiness.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "Pallister was responsible for one goal and Ince gave away the free kick for the other.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "Taking a page from the Netscape playbook, Microsoft is giving away key pieces of Internet software.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "We've got 24 copies to give away.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "Insurers learned that the state regulators would, during the panic, give away the store in rate increases.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "If you do, you give away your age.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "Microsoft also gives away its own Web browser, the Internet Explorer.",
+              "translation": null,
+              "audio_url": null
+            }
+          ]
+        },
+        {
+          "pattern": "in",
+          "part_of_speech": "ADVERB",
+          "examples": [
+            {
+              "text": "In the end I gave in and reluctantly mounted the narrow stairs.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "But we held him firmly throughout, and at last he gave in and told me all I wished to know.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "When I glanced at Terri, I saw that she too had given in to her customary narcoleptic state.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "She felt a shrinking in herself, the old pathetic readiness to give in quietly.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "Table 14, and body weights are given in Append.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "Several people took to squatting on the floor with shoes removed, having given in to the weight of their metallic dresses.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "But he wouldn't give in!",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "If this was what you chose, then you had to give in to it.",
+              "translation": null,
+              "audio_url": null
+            }
+          ]
+        },
+        {
+          "pattern": "up",
+          "part_of_speech": "ADVERB",
+          "examples": [
+            {
+              "text": "He'd given up woodwork, having driven a splinter through his thumbnail.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "I tried to count all the glaciers and gave up at 30.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "After three days searching, I gave up.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "No one knew exactly what inspired her elliptic comments, and her relations had long since given up trying to interpret them.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "Magnus grew fat on brown wholemeal scraps and Gina gave up trying to keep him away.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "The parish clergy had to give up their concubines and accept a higher degree of accountability for performance of their duties.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "Eva gave up learning Urdu and listening to sitar music at breakfast.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "I gave up on the pigpen.",
+              "translation": null,
+              "audio_url": null
+            }
+          ]
+        },
+        {
+          "pattern": "account",
+          "part_of_speech": "NOUN",
+          "examples": [
+            {
+              "text": "Herodotos gives mainly an account of single ships' actions; he adds details, but gives no overall picture.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "And yes, giving Jeff the Candice account will free up Mike and Terry.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "Edward, invited to give an account of himself and be frank about it, did so.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "Taylor would later give contradictory accounts of just how long he worked at the lathe before being named gang boss.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "And it gives a rudimentary account of how I can do this.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "Old Jack gave a fair account of himself with an ample ton.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "However, the orchestra gave a vigorous account of the work with a truly thrilling end.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "The detailed history in the previous chapters has given an account of Ian Paisley's personal combination of religion and politics.",
+              "translation": null,
+              "audio_url": null
+            }
+          ]
+        },
+        {
+          "pattern": "advice",
+          "part_of_speech": "NOUN",
+          "examples": [
+            {
+              "text": "The building control officer will usually give advice in this area and careful layout and design can usually maximise site usage.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "He is now preparing information for distribution to commercial rose growers and to retail nurseries to give advice on controlling the pests.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "The next tactic they use is to give us advice.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "The Hon. Gentleman should perhaps speak to some of his own colleagues who gave me that advice.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "An accompanying booklet gives advice on timber selection, and how timber can be harvested locally at minimal cost.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "Suppose when the White House Detail asks for Harry it isn't to give evidence, but advice?",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "For strict conventionalism gives only the negative advice that judges must not pretend to be deciding such cases on legal grounds.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "He or she is best placed to give you legal advice, and to liaise with the other professional agencies involved.",
+              "translation": null,
+              "audio_url": null
+            }
+          ]
+        },
+        {
+          "pattern": "answer",
+          "part_of_speech": "NOUN",
+          "examples": [
+            {
+              "text": "Clearly we can not as yet give a definitive answer to this question.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "Besides, I was not at all sure that she had given a negative answer to my question.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "He has a reputation for taking on issues other politicians avoid and for giving frank answers.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "At home we were soon given the answer to a question which had been puzzling us: Who had saved us?",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "Johnson gave his answer in a speech on April 7, 1965, at Johns Hopkins University.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "You just have to give a straight answer.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "Daisy, Daisy, give me your answer, do.",
+              "translation": null,
+              "audio_url": null
+            }
+          ]
+        },
+        {
+          "pattern": "attention",
+          "part_of_speech": "NOUN",
+          "examples": [
+            {
+              "text": "These dimensions will be given particular attention in the revision process.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "He wobbles back and forth between the two, giving neither the attention it deserves.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "But as a synthesizer, he is worth giving more attention than history has accorded him so far.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "As his most recently departed boyfriend I thought he would at last give me the attention I deserved.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "Minor offences are being given the greatest attention with no extra funds and with no obvious benefit.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "In the years after the first outbreak in the United States, polio was given little attention.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "The fact that in practice logistic problems in public libraries are not given enough attention is noted above.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "Comrade leaders at all levels, you must give it your full attention.",
+              "translation": null,
+              "audio_url": null
+            }
+          ]
+        },
+        {
+          "pattern": "boost",
+          "part_of_speech": "NOUN",
+          "examples": [
+            {
+              "text": "No doubt the chancellor, Gordon Brown, will give it a boost just before the election.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "But the deal gives Apple a psychological boost and some breathing room.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "When people join a slimming club they are, in effect, giving themselves a boost, a social reward for slimming.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "It might just give the game the boost it needs over there.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "Further cuts in government spending will be needed to give a promised new boost to industry.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "Fishing industry lands a big boost Scarborough's fishing industry has been given a big boost thanks to shoals of scallops.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "It should lead to a greater efficiency among the police and give a much-needed boost to the fight against crime.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "We gave chase using extra boost and climbing to height of 16000.",
+              "translation": null,
+              "audio_url": null
+            }
+          ]
+        },
+        {
+          "pattern": "chance",
+          "part_of_speech": "NOUN",
+          "examples": [
+            {
+              "text": "A thump close by gave me my chance.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "What kind of work would give you the chance to see those dreams come true?",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "His brother was to be given a second chance.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "I never gave them a chance for that, and besides, Dad would skin them alive.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "Our prizes give you the chance to be penny foolish for once.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "His two upcoming nominations will give the president a chance to change that.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "This gave me a chance to check out the spectator balconies which overhang the two long sides of the water.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "Those who have ever given fencing a chance up-close, probably realize that it always has been an entertaining event.",
+              "translation": null,
+              "audio_url": null
+            }
+          ]
+        },
+        {
+          "pattern": "choice",
+          "part_of_speech": "NOUN",
+          "examples": [
+            {
+              "text": "We have also introduced a reform which will give people more choice as to who represents them legally in court.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "I may even go so far as to say that I prefer cowards to heroes, given a choice.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "The C A R E service gives a choice of five subscription schemes ranging from £69 to £30.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "Only one in four said that, if given a choice, they would prefer to stay at home.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "Would it be possible to give choices of title which indicate discourse type as well?",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "People already in Yosemite were given the choice of staying or being evacuated.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "It's not as if I gave you much choice.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "The firm takes as given the variety choice and pricing strategies of other firms in the industry.",
+              "translation": null,
+              "audio_url": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "headword": "give",
+      "hyphenation": "give",
+      "homnum": 2,
+      "pronunciation": null,
+      "pronunciation_ame": null,
+      "part_of_speech": "noun",
+      "inflections": null,
+      "audio": {
+        "bre_url": "/dict/resource?path=hwd/bre/4/give_v0205.mp3",
+        "ame_url": "/dict/resource?path=hwd/ame/3/give1.mp3"
+      },
+      "senses": [
+        {
+          "index": 1,
+          "definition": "the ability of a material or substance to bend or stretch when put under pressure",
+          "definition_cn": "伸展性﹐弹性",
+          "grammar": "[uncountable]",
+          "examples": [
+            {
+              "text": "The rope has quite a bit of give in it.",
+              "translation": "这绳子相当有弹性。",
+              "audio_url": "/dict/resource?path=exa/bre/d/p008-001297195.mp3"
+            }
+          ],
+          "collocations": []
+        }
+      ],
+      "phrasal_verbs": [],
+      "etymology": null,
+      "verb_table": null,
+      "extra_examples": [
+        {
+          "text": "This skirt doesn't have a lot of give to it.",
+          "source": "OTHER_DICTIONARIES"
+        },
+        {
+          "text": "Obviously, in any negotiations there has to be a give and a take.",
+          "source": "CORPUS"
+        },
+        {
+          "text": "There was hardly any give at all.",
+          "source": "CORPUS"
+        }
+      ],
+      "thesaurus": null,
+      "collocations": [
+        {
+          "pattern": "rise",
+          "part_of_speech": "NOUN",
+          "examples": [
+            {
+              "text": "These give rise to pegmatites, very coarse-grained rocks that may include crystals as much as several meters across.",
+              "translation": null,
+              "audio_url": null
+            }
+          ]
+        },
+        {
+          "pattern": "take",
+          "part_of_speech": "VERB",
+          "examples": [
+            {
+              "text": "Not that I don't admire roaring entertainers, but a talk show requires some give and take, some exchange.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "Much of this takes place in the give and take of the unstructured world of the playground.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "But animals can have no expectations in this sense since they lack moral personality - a sense of rightful give and take.",
+              "translation": null,
+              "audio_url": null
+            }
+          ]
+        },
+        {
+          "pattern": "has ... give",
+          "part_of_speech": null,
+          "examples": [
+            {
+              "text": "The rope has quite a bit of give in it.",
+              "translation": "这绳子相当有弹性。",
+              "audio_url": null
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "raw_html": null
+}

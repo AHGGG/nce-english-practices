@@ -1,0 +1,440 @@
+{
+  "word": "hoist",
+  "found": true,
+  "entries": [
+    {
+      "headword": "hoist",
+      "hyphenation": "hoist",
+      "homnum": 1,
+      "pronunciation": "hɔɪst",
+      "pronunciation_ame": null,
+      "part_of_speech": "verb",
+      "inflections": null,
+      "audio": {
+        "bre_url": "/dict/resource?path=hwd/bre/3/hoist_v0205.mp3",
+        "ame_url": "/dict/resource?path=hwd/ame/4/hoist1.mp3"
+      },
+      "senses": [
+        {
+          "index": 1,
+          "definition": "to raise, lift, or pull something up, especially using ropes",
+          "definition_cn": "〔尤指用绳子〕吊起﹐升起﹐提起",
+          "grammar": "[transitive]",
+          "examples": [
+            {
+              "text": "The crew hurried to hoist the flag.",
+              "translation": "船员们急忙把旗子升起来。",
+              "audio_url": "/dict/resource?path=exa/bre/8/p008-001387582.mp3"
+            }
+          ],
+          "collocations": []
+        },
+        {
+          "index": 2,
+          "definition": "to be harmed or embarrassed by the plans you had made to hurt other people – often used humorously",
+          "definition_cn": "搬起石头砸自己的脚﹐害人反害己〔常为幽默用法〕",
+          "grammar": "[transitive]",
+          "examples": [],
+          "collocations": []
+        }
+      ],
+      "phrasal_verbs": [],
+      "etymology": {
+        "century": "1500-1600",
+        "origin": "hoise",
+        "meaning": "‘to lift’",
+        "note": "(15-19 centuries), probably fromMiddle Dutchhischen"
+      },
+      "verb_table": {
+        "lemma": "hoist",
+        "simple_forms": [
+          {
+            "tense": "Present",
+            "person": "I, you, we, they",
+            "form": "hoist",
+            "auxiliary": null
+          },
+          {
+            "tense": "Present",
+            "person": "he, she, it",
+            "form": "hoists",
+            "auxiliary": null
+          },
+          {
+            "tense": "Past",
+            "person": "I, you, he, she, it, we, they",
+            "form": "hoisted",
+            "auxiliary": null
+          },
+          {
+            "tense": "Present perfect",
+            "person": "I, you, we, they",
+            "form": "hoisted",
+            "auxiliary": "have"
+          },
+          {
+            "tense": "Present perfect",
+            "person": "he, she, it",
+            "form": "hoisted",
+            "auxiliary": "has"
+          },
+          {
+            "tense": "Past perfect",
+            "person": "I, you, he, she, it, we, they",
+            "form": "hoisted",
+            "auxiliary": "had"
+          },
+          {
+            "tense": "Future",
+            "person": "I, you, he, she, it, we, they",
+            "form": "hoist",
+            "auxiliary": "will"
+          },
+          {
+            "tense": "Future perfect",
+            "person": "I, you, he, she, it, we, they",
+            "form": "hoisted",
+            "auxiliary": "will have"
+          }
+        ],
+        "continuous_forms": [
+          {
+            "tense": "Present",
+            "person": "I",
+            "form": "hoisting",
+            "auxiliary": "am"
+          },
+          {
+            "tense": "Present",
+            "person": "he, she, it",
+            "form": "hoisting",
+            "auxiliary": "is"
+          },
+          {
+            "tense": "Present",
+            "person": "you, we, they",
+            "form": "hoisting",
+            "auxiliary": "are"
+          },
+          {
+            "tense": "Past",
+            "person": "I, he, she, it",
+            "form": "hoisting",
+            "auxiliary": "was"
+          },
+          {
+            "tense": "Past",
+            "person": "you, we, they",
+            "form": "hoisting",
+            "auxiliary": "were"
+          },
+          {
+            "tense": "Present perfect",
+            "person": "I, you, we, they",
+            "form": "hoisting",
+            "auxiliary": "have been"
+          },
+          {
+            "tense": "Present perfect",
+            "person": "he, she, it",
+            "form": "hoisting",
+            "auxiliary": "has been"
+          },
+          {
+            "tense": "Past perfect",
+            "person": "I, you, he, she, it, we, they",
+            "form": "hoisting",
+            "auxiliary": "had been"
+          },
+          {
+            "tense": "Future",
+            "person": "I, you, he, she, it, we, they",
+            "form": "hoisting",
+            "auxiliary": "will be"
+          },
+          {
+            "tense": "Future perfect",
+            "person": "I, you, he, she, it, we, they",
+            "form": "hoisting",
+            "auxiliary": "will have been"
+          }
+        ]
+      },
+      "extra_examples": [
+        {
+          "text": "A school custodian hoisted the American flag every morning.",
+          "source": "OTHER_DICTIONARIES"
+        },
+        {
+          "text": "Fathers hoisted sons on their shoulders to see Mr. Mandela.",
+          "source": "OTHER_DICTIONARIES"
+        },
+        {
+          "text": "Joe picked up the sack and hoisted it onto the truck.",
+          "source": "OTHER_DICTIONARIES"
+        },
+        {
+          "text": "The crowd hoisted him onto their shoulders and carried him triumphantly down the main street.",
+          "source": "OTHER_DICTIONARIES"
+        },
+        {
+          "text": "A third, operating the crane, which commands the entire foundry floor, hoists the ladle.",
+          "source": "CORPUS"
+        },
+        {
+          "text": "Bill Maher hoists a fat folder filled with newspaper clippings on to a virtually empty desk in his new Los Angeles office.",
+          "source": "CORPUS"
+        },
+        {
+          "text": "She parked the car and hoisted the plastic carriers from the boot, perching the flat, be-ribboned pâtisserie box on top.",
+          "source": "CORPUS"
+        },
+        {
+          "text": "The plan, evidently, is to hoist Pretoria with its own petard.",
+          "source": "CORPUS"
+        },
+        {
+          "text": "Three burly workmen duly arrived, complete with truck and mini-crane, to hoist the heavy bins into position.",
+          "source": "CORPUS"
+        },
+        {
+          "text": "Upon arrival at the docks, the Spitfires were immediately hoisted on to the carrier deck.",
+          "source": "CORPUS"
+        },
+        {
+          "text": "We fired, I think, about six shots when our recall signal was hoisted on the Cumberland.",
+          "source": "CORPUS"
+        }
+      ],
+      "thesaurus": {
+        "topic": "to lift a person or thing",
+        "entries": [
+          {
+            "word": "lift (up)",
+            "definition": "to move something or someone upwards to a higher position, especially something heavy, either by using your hands or a machine",
+            "examples": [
+              "You shouldn’t lift anything heavy if you have a bad back.",
+              "She lifted the lid from a huge pot and took a sniff.",
+              "They lifted me onto a stretcher and took me to the ambulance."
+            ]
+          },
+          {
+            "word": "raise",
+            "definition": "to lift something to a higher position for a short time before lowering it again.Raiseis more formal thanlift",
+            "examples": [
+              "The bridge can be raised to allow ships to pass under it.",
+              "‘Cheers, everyone!’ said Larry, raising his glass."
+            ]
+          },
+          {
+            "word": "pick up",
+            "definition": "to lift something up from the ground, from a table etc, especially something small or light",
+            "examples": [
+              "She picked up her bag and left the room.",
+              "Tom picked the papers up off the floor.",
+              "Why don’t you just pick up the phone and call him?"
+            ]
+          },
+          {
+            "word": "scoop up",
+            "definition": "to lift someone or something quickly from the ground, from a table etc, using your hand or arm",
+            "examples": [
+              "She bent down and scooped up the little dog."
+            ]
+          },
+          {
+            "word": "hoist",
+            "definition": "to lift up something which is heavy and difficult to carry",
+            "examples": [
+              "Joe picked up the sack and hoisted it onto the truck.",
+              "The crowd hoisted him onto their shoulders and carried him triumphantly down the main street."
+            ]
+          },
+          {
+            "word": "elevate",
+            "definition": "to lift something to a higher position and keep it there",
+            "examples": [
+              "The doctor advised me to rest and elevate my ankle."
+            ]
+          },
+          {
+            "word": "put your hand up",
+            "definition": "to lift your arm into the air, for example because you want to speak in a class or when voting",
+            "examples": [
+              "Put your hand up if you know the answer."
+            ]
+          },
+          {
+            "word": "lift",
+            "definition": "to move something upwards to a higher position, especially something heavy, either by using your hands or a machine",
+            "examples": [
+              "His doctor has told him that he must not lift anything heavy.",
+              "She lifted the lid from a huge pot and took a sniff.",
+              "They lifted me onto a stretcher and took me to the ambulance."
+            ]
+          },
+          {
+            "word": "lift up",
+            "definition": "to move something upwards to a higher position and hold it there - use this especially about something fairly heavy that you use your hands to move",
+            "examples": [
+              "He lifted her up in his arms.",
+              "Can you help me lift up this table so we can get the carpet under it?",
+              "Six men lifted up the coffin and carried it out of the church."
+            ]
+          },
+          {
+            "word": "pick up",
+            "definition": "to lift something up from the ground, from a table etc, especially something small or light",
+            "examples": [
+              "She picked up her bag and left the room.",
+              "Maurin picked up the gun and put it in his pocket.",
+              "The lioness picked her cub up by its neck."
+            ]
+          }
+        ],
+        "word_sets": []
+      },
+      "collocations": [
+        {
+          "pattern": "flag",
+          "part_of_speech": "NOUN",
+          "examples": [
+            {
+              "text": "The sanctity of traditional ownership and lineage are hoisted like clannish flags.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "Behaviouralism, for instance, has self-consciously hoisted its own flag and been sharply critical of Realism.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "Another community, Jank'o Amaya, is now hoisting its own white flag.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "In its place we hoisted our own flag.",
+              "translation": null,
+              "audio_url": null
+            }
+          ]
+        },
+        {
+          "pattern": "petard",
+          "part_of_speech": "NOUN",
+          "examples": [
+            {
+              "text": "He discovered that he was being hoist with his own petard.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "As elsewhere, a too zealous objector is hoist by his own petard.",
+              "translation": null,
+              "audio_url": null
+            }
+          ]
+        },
+        {
+          "pattern": "sail",
+          "part_of_speech": "NOUN",
+          "examples": [
+            {
+              "text": "And King Bucar and they who escaped with him hoisted sails and went their way, and never more turned their heads.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "But the captain mocked him for a silly fool and bade the crew hasten to hoist the sail.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "Then, before hoisting the sail, I trundled the wheelbarrow on to the road.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "We would push out the boat, hoist the sail and visit the lobster pots and conger lines.",
+              "translation": null,
+              "audio_url": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "headword": "hoist",
+      "hyphenation": "hoist",
+      "homnum": 2,
+      "pronunciation": null,
+      "pronunciation_ame": null,
+      "part_of_speech": "noun",
+      "inflections": null,
+      "audio": {
+        "bre_url": "/dict/resource?path=hwd/bre/3/hoist_v0205.mp3",
+        "ame_url": "/dict/resource?path=hwd/ame/4/hoist1.mp3"
+      },
+      "senses": [
+        {
+          "index": 1,
+          "definition": "a piece of equipment used for lifting heavy objects with ropes",
+          "definition_cn": "吊升机械﹐起重机",
+          "grammar": "[countable]",
+          "examples": [
+            {
+              "text": "a boat hoist",
+              "translation": "吊艇机",
+              "audio_url": "/dict/resource?path=exa/bre/b/p008-001727470.mp3"
+            }
+          ],
+          "collocations": []
+        },
+        {
+          "index": 2,
+          "definition": "a movement that lifts something up",
+          "definition_cn": "吊起﹐提起﹐升起",
+          "grammar": "[usually singular]",
+          "examples": [
+            {
+              "text": "Give me a hoist onto your shoulders.",
+              "translation": "你把我扛到肩膀上吧。",
+              "audio_url": "/dict/resource?path=exa/bre/1/ldoce5_exa000783.mp3"
+            }
+          ],
+          "collocations": []
+        }
+      ],
+      "phrasal_verbs": [],
+      "etymology": null,
+      "verb_table": null,
+      "extra_examples": [
+        {
+          "text": "High Street banks raised their lending rates by two percent following the Government's initial interest rate hoist.",
+          "source": "CORPUS"
+        },
+        {
+          "text": "It was the hoist for the backhoe.",
+          "source": "CORPUS"
+        },
+        {
+          "text": "The hoist turned, and the bell was allowed to 42 slide down to touch the calm surface of the water.",
+          "source": "CORPUS"
+        },
+        {
+          "text": "Tregoning will never operate a hoist again, not in California.",
+          "source": "CORPUS"
+        },
+        {
+          "text": "When possible, lifting should be avoided and appropriate equipment, such as a hoist, used in preference.",
+          "source": "CORPUS"
+        }
+      ],
+      "thesaurus": null,
+      "collocations": []
+    }
+  ],
+  "raw_html": null
+}

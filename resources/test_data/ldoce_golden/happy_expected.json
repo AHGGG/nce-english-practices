@@ -1,0 +1,853 @@
+{
+  "word": "happy",
+  "found": true,
+  "entries": [
+    {
+      "headword": "happy",
+      "hyphenation": "happy",
+      "homnum": null,
+      "pronunciation": "ˈhæpi",
+      "pronunciation_ame": null,
+      "part_of_speech": "adjective",
+      "inflections": "(comparative happier, superlative happiest)",
+      "audio": {
+        "bre_url": "/dict/resource?path=hwd/bre/1/ld45happy.mp3",
+        "ame_url": "/dict/resource?path=hwd/ame/1/ld45happy.mp3"
+      },
+      "senses": [
+        {
+          "index": 1,
+          "definition": "having feelings of pleasure, for example because something good has happened to you or you are very satisfied with your life",
+          "definition_cn": "高兴的﹐快乐的",
+          "grammar": "[not before noun]",
+          "examples": [
+            {
+              "text": "It’s a lovely house and we’ve been very happy here.",
+              "translation": "房子很漂亮﹐我们住在这里非常开心。",
+              "audio_url": "/dict/resource?path=exa/bre/9/p008-001711682.mp3"
+            },
+            {
+              "text": "I’ve never felt happier in my life.",
+              "translation": "我一生从未感到如此快乐。",
+              "audio_url": "/dict/resource?path=exa/bre/2/p008-001711683.mp3"
+            },
+            {
+              "text": "He was a happy child who rarely cried.",
+              "translation": "他是一个快乐的孩子﹐很少哭鼻子。",
+              "audio_url": "/dict/resource?path=exa/bre/8/p008-001343572.mp3"
+            }
+          ],
+          "collocations": []
+        },
+        {
+          "index": 2,
+          "definition": "a happy time, relationship, event etc is a good one that makes you feel happy",
+          "definition_cn": "〔使人感到〕愉快的，幸福的",
+          "grammar": "[usually before noun]",
+          "examples": [
+            {
+              "text": "This has been the happiest day of my life.",
+              "translation": "这是我一生中最快乐的一天。",
+              "audio_url": "/dict/resource?path=exa/bre/a/p008-001343590.mp3"
+            },
+            {
+              "text": "They had a very happy marriage.",
+              "translation": "他们的婚姻很美满。",
+              "audio_url": "/dict/resource?path=exa/bre/9/p008-001711706.mp3"
+            },
+            {
+              "text": "I have lots of happy memories of the place.",
+              "translation": "我对那地方有着许多美好的回忆。",
+              "audio_url": "/dict/resource?path=exa/bre/0/p008-001711707.mp3"
+            }
+          ],
+          "collocations": []
+        },
+        {
+          "index": 3,
+          "definition": "satisfied or not worried",
+          "definition_cn": "感到满意[放心]的",
+          "grammar": "[not before noun]",
+          "examples": [
+            {
+              "text": "On the whole, I’m happy with the way I look.",
+              "translation": "总体来说﹐我对自己的外貌比较满意。",
+              "audio_url": "/dict/resource?path=exa/bre/5/p008-001343602.mp3"
+            },
+            {
+              "text": "People living nearby are not happy with the decision.",
+              "translation": "附近的居民对这一决定感到不满。",
+              "audio_url": "/dict/resource?path=exa/bre/7/p008-001711718.mp3"
+            },
+            {
+              "text": "Mum wasn’t happy about Tess going off travelling on her own.",
+              "translation": "妈妈不放心特丝单独外出旅行。",
+              "audio_url": "/dict/resource?path=exa/bre/2/ldoce6exa_00413.mp3"
+            }
+          ],
+          "collocations": []
+        },
+        {
+          "index": 4,
+          "definition": "to be very willing to do something, especially to help someone",
+          "definition_cn": "乐意做某事〔尤指帮助别人〕",
+          "grammar": "[not before noun]",
+          "examples": [
+            {
+              "text": "Our team will be happy to help.",
+              "translation": "我们的团队很乐意帮忙。",
+              "audio_url": "/dict/resource?path=exa/bre/9/p008-001711724.mp3"
+            },
+            {
+              "text": "I’d be happy to take you in my car.",
+              "translation": "我很乐意开车送你去。",
+              "audio_url": "/dict/resource?path=exa/bre/7/p008-001343610.mp3"
+            }
+          ],
+          "collocations": []
+        },
+        {
+          "index": 5,
+          "definition": "used to wish someone happiness on a special occasion",
+          "definition_cn": "生日/新年/圣诞节等快乐",
+          "grammar": "[not before noun]",
+          "examples": [
+            {
+              "text": "Happy Birthday, Michael!",
+              "translation": "生日快乐﹐迈克尔！",
+              "audio_url": "/dict/resource?path=exa/bre/8/p008-001711725.mp3"
+            },
+            {
+              "text": "Happy Thanksgiving, everyone!",
+              "translation": "大家感恩节快乐！",
+              "audio_url": "/dict/resource?path=exa/bre/2/p008-001711726.mp3"
+            }
+          ],
+          "collocations": []
+        },
+        {
+          "index": 6,
+          "definition": "used to wish someone happiness on their birthday",
+          "definition_cn": "生日快乐﹐长命百岁",
+          "grammar": "[not before noun]",
+          "examples": [],
+          "collocations": []
+        },
+        {
+          "index": 7,
+          "definition": "fortunate or lucky",
+          "definition_cn": "幸运的",
+          "grammar": "[only before noun]",
+          "examples": [
+            {
+              "text": "By a happy coincidence, James was also in town that weekend.",
+              "translation": "巧得很﹐詹姆斯那个周末也在城里。",
+              "audio_url": "/dict/resource?path=exa/bre/6/p008-001711733.mp3"
+            },
+            {
+              "text": "I’m in the happy position of not having to work.",
+              "translation": "我运气真好﹐不用工作。",
+              "audio_url": "/dict/resource?path=exa/bre/3/p008-001711737.mp3"
+            }
+          ],
+          "collocations": []
+        },
+        {
+          "index": 8,
+          "definition": "a way of doing something that is not extreme but is somewhere between two possible choices",
+          "definition_cn": "〔两件事之间〕皆大欢喜的折中办法",
+          "grammar": "[not before noun]",
+          "examples": [
+            {
+              "text": "I always tried to strike a happy medium between having a home that looked like a bomb had hit it and becoming obsessively tidy.",
+              "translation": "我一直想找个满意的折中办法﹐使家里既不会像被炸过那样乱﹐也不会像有洁癖似的过分齐整。",
+              "audio_url": "/dict/resource?path=exa/bre/6/p008-001711741.mp3"
+            }
+          ],
+          "collocations": []
+        },
+        {
+          "index": 9,
+          "definition": "suitable",
+          "definition_cn": "合适的，恰当的",
+          "grammar": "[only before noun]",
+          "examples": [
+            {
+              "text": "His choice of words was not a very happy one.",
+              "translation": "他的措辞不十分恰当。",
+              "audio_url": "/dict/resource?path=exa/bre/2/p008-001343640.mp3"
+            }
+          ],
+          "collocations": []
+        },
+        {
+          "index": 10,
+          "definition": "if you are in or go to your happy place, you imagine you are in a place that makes you feel calm and happy, because it helps you stop thinking about a bad situation",
+          "definition_cn": "一个/你的快乐之乡〔指通过美好的想象来摆脱烦恼等的思想境界〕",
+          "grammar": "[not before noun]",
+          "examples": [],
+          "collocations": []
+        }
+      ],
+      "phrasal_verbs": [],
+      "etymology": {
+        "century": "1300-1400",
+        "origin": "hap",
+        "meaning": "‘chance, luck’",
+        "note": "(13-20 centuries), fromOld Norsep"
+      },
+      "verb_table": null,
+      "extra_examples": [
+        {
+          "text": "a happy baby",
+          "source": "OTHER_DICTIONARIES"
+        },
+        {
+          "text": "Doctors said they were happy with how the operation had gone.",
+          "source": "OTHER_DICTIONARIES"
+        },
+        {
+          "text": "Everyone thought their marriage was happy.",
+          "source": "OTHER_DICTIONARIES"
+        },
+        {
+          "text": "For the first five years of their marriage they were very happy.",
+          "source": "OTHER_DICTIONARIES"
+        },
+        {
+          "text": "Grandma is so happy that everyone will be there for Christmas.",
+          "source": "OTHER_DICTIONARIES"
+        },
+        {
+          "text": "He had a very happy childhood.",
+          "source": "OTHER_DICTIONARIES"
+        },
+        {
+          "text": "I'd gotten a lot done over the weekend and was happy about that.",
+          "source": "OTHER_DICTIONARIES"
+        },
+        {
+          "text": "I'm just happy to be home again.",
+          "source": "OTHER_DICTIONARIES"
+        },
+        {
+          "text": "I'm so happy for you - I know how much you wanted the job.",
+          "source": "OTHER_DICTIONARIES"
+        },
+        {
+          "text": "I could hear the happy sound of the street musicians.",
+          "source": "OTHER_DICTIONARIES"
+        },
+        {
+          "text": "I was very happy to be back home.",
+          "source": "OTHER_DICTIONARIES"
+        },
+        {
+          "text": "Is she happy about being pregnant?",
+          "source": "OTHER_DICTIONARIES"
+        },
+        {
+          "text": "Mike was a happy child and never gave us any trouble at all.",
+          "source": "OTHER_DICTIONARIES"
+        },
+        {
+          "text": "Most children's stories have happy endings.",
+          "source": "OTHER_DICTIONARIES"
+        },
+        {
+          "text": "Most fairy tales have a happy ending.",
+          "source": "OTHER_DICTIONARIES"
+        },
+        {
+          "text": "My years at college were the happiest time of my life.",
+          "source": "OTHER_DICTIONARIES"
+        },
+        {
+          "text": "Pinker stated that he was perfectly happy with the arrangement.",
+          "source": "OTHER_DICTIONARIES"
+        },
+        {
+          "text": "Sarah's main aim in life is simply to be happy.",
+          "source": "OTHER_DICTIONARIES"
+        },
+        {
+          "text": "She seems a lot happier now that she's got a new job.",
+          "source": "OTHER_DICTIONARIES"
+        },
+        {
+          "text": "The children's happy faces were reward enough.",
+          "source": "OTHER_DICTIONARIES"
+        },
+        {
+          "text": "He gave little appearance of being unusually happy.",
+          "source": "CORPUS"
+        },
+        {
+          "text": "I wasn't very happy about that so I finished with him.",
+          "source": "CORPUS"
+        },
+        {
+          "text": "In fact, my childhood on Lewis can be described as a happy one.",
+          "source": "CORPUS"
+        },
+        {
+          "text": "Maggie suddenly shuddered, and twisted away, her happy expression replaced by one of painful memories.",
+          "source": "CORPUS"
+        },
+        {
+          "text": "The Grange has always been a happy house and still has a faint atmosphere of piety, fully intended by Mr Teulon.",
+          "source": "CORPUS"
+        },
+        {
+          "text": "With a politics of opinion, I am happy enough.",
+          "source": "CORPUS"
+        },
+        {
+          "text": "You know happiness is being able to assume you are happy.",
+          "source": "CORPUS"
+        }
+      ],
+      "thesaurus": {
+        "topic": "very happy",
+        "entries": [
+          {
+            "word": "happy",
+            "definition": null,
+            "examples": [
+              "Are you happy in your new job?你的新工作干得开心吗？",
+              "The film has a happy ending.影片结局圆满。",
+              "a happy childhood快乐的童年"
+            ]
+          },
+          {
+            "word": "cheerful",
+            "definition": "looking happy〔看起来〕高兴的﹐愉快的",
+            "examples": [
+              "a cheerful face/expression愉快的面孔/表情",
+              "The room looked bright and cheerful(=it made you feel good).屋子看起来明亮宜人。",
+              "He seems a lot more cheerful today.今天他好像高兴多了。"
+            ]
+          },
+          {
+            "word": "be in a good mood",
+            "definition": "to feel happy and relaxed心情好",
+            "examples": [
+              "It was the day before the vacation and everyone was in a good mood.那天是假期的前一天﹐大家心情都不错。"
+            ]
+          },
+          {
+            "word": "contented",
+            "definition": "feeling happy with your life, job, situation etc〔对生活﹑工作﹑处境等〕满意的﹐满足的",
+            "examples": [
+              "He was contented with his job as a cycle mechanic.他对自己自行车修理工的工作挺满意。",
+              "She sat down with a contented expression on her face.她坐了下来，一脸心满意足。"
+            ]
+          },
+          {
+            "word": "pleased/glad",
+            "definition": "happy because something good has happened〔因有好事发生而〕高兴的﹐满意的",
+            "examples": [
+              "I’m pleased I passed my exam.我很高兴自己通过了考试。",
+              "He was glad to see someone that he knew.看到认识的人他很高兴。"
+            ]
+          },
+          {
+            "word": "delighted",
+            "definition": "very happy because something good has happened〔因有好事发生而〕非常高兴的",
+            "examples": [
+              "The doctors say they are delighted with her progress.医生们表示对她的进步很满意。"
+            ]
+          },
+          {
+            "word": "thrilled",
+            "definition": "very happy and excited about something非常兴奋的﹔极为激动的",
+            "examples": [
+              "He’s thrilled at the idea of going to Disneyworld.想到要去迪士尼世界﹐他非常兴奋。"
+            ]
+          },
+          {
+            "word": "overjoyed",
+            "definition": "very happy because you have heard some good news〔听说好消息后〕极为高兴的",
+            "examples": [
+              "She was overjoyed when she found out that her son was safe.得知儿子平安无事﹐她欣喜若狂。"
+            ]
+          },
+          {
+            "word": "be on top of the world",
+            "definition": "to be very happy非常高兴",
+            "examples": [
+              "I was over the moon when I won the championship.我得了冠军﹐乐不可支。"
+            ]
+          },
+          {
+            "word": "ecstatic",
+            "definition": "extremely happy狂喜的﹐欣喜若狂的",
+            "examples": [
+              "The crowd were ecstatic, and cheered wildly.观众欣喜若狂﹐欢声雷动。",
+              "ecstatic fans欢腾的球迷"
+            ]
+          }
+        ],
+        "word_sets": []
+      },
+      "collocations": [
+        {
+          "pattern": "as",
+          "part_of_speech": "ADVERB",
+          "examples": [
+            {
+              "text": "Make Mrs. Jervis, my dear son, as happy as you can.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "He wanted them to be as happy together as they were right now.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "A barren cat, she reminded herself quickly, is just as happy.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "He is as happy today as the folks who pay him.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "They moved to a house in the same quiet village, and were just as happy.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "Montana, 41, seemed as happy as the children to be playing in the zoo.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "Ken wasn't as happy with this one as he had been with its predecessor.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "After Ian won, I was probably as happy as he was.",
+              "translation": null,
+              "audio_url": null
+            }
+          ]
+        },
+        {
+          "pattern": "how",
+          "part_of_speech": "ADVERB",
+          "examples": [
+            {
+              "text": "Everyone had said how happy and beautiful and brave and in love they were, and it had been true.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "I heard again how happy everyone was that I was able to come for the year.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "I went along to some services and again I saw how happy people were.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "Guys, do you know how happy I am at this moment?",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "She wanted to prove to Madame Gloriana that she had been wrong - to let her see how happy she was.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "Others will see how happy we are and envy us, as they already have.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "She remembered how different, how happy he had been when he returned after midnight.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "If people knew how happy it can make you, we would all be writing all the time.",
+              "translation": null,
+              "audio_url": null
+            }
+          ]
+        },
+        {
+          "pattern": "just",
+          "part_of_speech": "ADVERB",
+          "examples": [
+            {
+              "text": "The Glenman was right in saying that the days are gone when players are just happy pulling on the Glentoran shirt.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "For myself, I was happy. Just happy.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "The island was my home now, not my prison, and I was just happy to be alive.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "A guy like Gonzalez is just happy to have a uniform.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "While Halliday takes on a new role, David Irwin is just happy to return to the scene.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "I was just happy to survive.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "It seems to me, gone are the days when Glentoran and Linfield players are just happy with pulling on the shirt.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "As a result, he got good information, not just happy talk.",
+              "translation": null,
+              "audio_url": null
+            }
+          ]
+        },
+        {
+          "pattern": "much",
+          "part_of_speech": "ADVERB",
+          "examples": [
+            {
+              "text": "When Anna left Inspector Aziz, she was much happier.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "But they were much happier after they found the brass pot.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "The human eye and brain are much happier reading short to medium length unjustified lines although books are conventionally justified.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "He knew Blanche would be much happier with the file photo the same newspaper had used of her.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "She would feel so much happier if they had and it was over.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "Others are much happier to have their judgements explored and can check their claims.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "I was feeling much happier than I had for two years.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "Session three Two weeks later Liz had moved in with her brother and sister-in-law and seemed much happier in herself.",
+              "translation": null,
+              "audio_url": null
+            }
+          ]
+        },
+        {
+          "pattern": "perfectly",
+          "part_of_speech": "ADVERB",
+          "examples": [
+            {
+              "text": "At the moment she was perfectly happy.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "The hospitals are the ones that introduced this legislation, and they are perfectly happy with the review process.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "She had been perfectly happy at Group.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "I told myself he was no sick cat, but I could see that he was not perfectly happy.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "Those perfectly happy in their affections never read novels, because real love is so much more fascinating than that described.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "He looks perfectly happy, his past and future far away on this festive afternoon.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "Bruno felt perfectly happy in that bed; he seemed to forget all his worries.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "Dana had seemed perfectly happy in Solihull with Roman dancing attention on her every night.",
+              "translation": null,
+              "audio_url": null
+            }
+          ]
+        },
+        {
+          "pattern": "quite",
+          "part_of_speech": "ADVERB",
+          "examples": [
+            {
+              "text": "The Norderns looked at Marx who stood before them as if he was quite happy to stand there in silence all day.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "Although crowds mean money, the rulers of cricket have never been quite happy about them.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "Whilst the computer is quite happy dealing with angles expressed in radians, you may prefer to express angles in degrees.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "She would have been quite happy to have fatherless children.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "I would have been quite happy if he had gone on for longer.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "Nevertheless, I was quite happy.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "He grumbled all the time, but was really quite happy because he did not allow himself to worry.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "He'd been quite happy, relieved even, to hand her over to Mr Taylor's care.",
+              "translation": null,
+              "audio_url": null
+            }
+          ]
+        },
+        {
+          "pattern": "really",
+          "part_of_speech": "ADVERB",
+          "examples": [
+            {
+              "text": "And after 23 years, they are still married, still really happy.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "Everyone figures that Keiko is really happy about all this.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "Although the village people had almost forgotten her trouble, she decided she could never be really happy in Marlott.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "She finally got back and the tree was really happy that she was back.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "I am only really happy when working in front of my subject or from careful drawings made in front of the subject.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "They're only really happy when they're coming down on people.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "I should have been really happy, but instead I felt a depression come over me.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "I remember feeling really happy when I was told I had at least six or seven years to live.",
+              "translation": null,
+              "audio_url": null
+            }
+          ]
+        },
+        {
+          "pattern": "so",
+          "part_of_speech": "ADVERB",
+          "examples": [
+            {
+              "text": "I went swimming, and I was so happy I cried into the sea for three-quarters of an hour.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "I was so happy for her.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "Mungo reflected that he had never seen Emily so happy.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "He had been so happy before.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "They've been married for 11 years and they've always been so happy.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "So why is homemaker Toshio Someya so happy?",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "I am so happy to make your acquaintance.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "I was so happy that I told a friend from home, and he told every-one.",
+              "translation": null,
+              "audio_url": null
+            }
+          ]
+        },
+        {
+          "pattern": "too",
+          "part_of_speech": "ADVERB",
+          "examples": [
+            {
+              "text": "There must be dozens of women who'd be only too happy to marry him.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "Then there are those of us who are only too happy Louisiana enacted the law.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "After the ban years, she had been only too happy to take the money her sons thrust on her.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "But she was too happy to be teased.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "They will be only too happy to oblige.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "And no one at the university is too happy about it now.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "Bobby was too happy to be bothered.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "These people are too happy, too success-ful, too clean, too orderly.",
+              "translation": null,
+              "audio_url": null
+            }
+          ]
+        },
+        {
+          "pattern": "very",
+          "part_of_speech": "ADVERB",
+          "examples": [
+            {
+              "text": "Those that did write back stated that they were very happy with their present designs.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "Hercules became very happy and very drunk and very noisy.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "Fifteen minutes later, one very tired arm and one very happy angler.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "They could be very happy, it's a quiet street; it is a paradise.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "His wife was very happy and vowed to raise the girl properly.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "Dressed in a smart, grey suit and black tie, the former Beatle looked very happy.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "He and Dickie were very happy together, and that was that.",
+              "translation": null,
+              "audio_url": null
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "raw_html": null
+}

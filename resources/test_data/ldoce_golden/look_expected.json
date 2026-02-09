@@ -1,0 +1,1734 @@
+{
+  "word": "look",
+  "found": true,
+  "entries": [
+    {
+      "headword": "look",
+      "hyphenation": "look",
+      "homnum": 1,
+      "pronunciation": "lʊk",
+      "pronunciation_ame": null,
+      "part_of_speech": "verb",
+      "inflections": null,
+      "audio": {
+        "bre_url": "/dict/resource?path=hwd/bre/d/brelasdelook.mp3",
+        "ame_url": "/dict/resource?path=hwd/ame/9/look1.mp3"
+      },
+      "senses": [
+        {
+          "index": 1,
+          "definition": "to turn your eyes towards something, so that you can see it",
+          "definition_cn": "看﹐瞧﹐望",
+          "grammar": "[intransitive]",
+          "examples": [
+            {
+              "text": "We sneaked out while Jessie’s mom wasn’t looking.",
+              "translation": "我们趁杰茜的妈妈没有看到﹐偷偷地溜了出去。",
+              "audio_url": "/dict/resource?path=exa/bre/d/p008-001512178.mp3"
+            },
+            {
+              "text": "If you look carefully you can see that the painting represents a human figure.",
+              "translation": "如果仔细看﹐就会看出画上是一个人形。",
+              "audio_url": "/dict/resource?path=exa/bre/d/p008-001512179.mp3"
+            },
+            {
+              "text": "Gina covered her eyes, afraid to look.",
+              "translation": "吉娜捂住眼睛﹐不敢看。",
+              "audio_url": "/dict/resource?path=exa/bre/d/p008-001831566.mp3"
+            }
+          ],
+          "collocations": []
+        },
+        {
+          "index": 2,
+          "definition": "to try to find something",
+          "definition_cn": "寻找",
+          "grammar": "[intransitive]",
+          "examples": [
+            {
+              "text": "I looked everywhere but Jimmy was nowhere to be found.",
+              "translation": "我到处都找遍了﹐可吉米还是不见踪影。",
+              "audio_url": "/dict/resource?path=exa/bre/8/p008-001512199.mp3"
+            },
+            {
+              "text": "Could you help me look for my contact lens?",
+              "translation": "你帮我找一下隐形眼镜好吗？",
+              "audio_url": "/dict/resource?path=exa/bre/2/p008-001831569.mp3"
+            },
+            {
+              "text": "If you’re looking for a bargain, try the local market.",
+              "translation": "如果你想找便宜货﹐到当地的市场去看看吧。",
+              "audio_url": "/dict/resource?path=exa/bre/a/p008-001831570.mp3"
+            }
+          ],
+          "collocations": []
+        },
+        {
+          "index": 3,
+          "definition": "to seem",
+          "definition_cn": "看似﹐看起来",
+          "grammar": "[linking verb]",
+          "examples": [
+            {
+              "text": "From the way things look at the moment, the Republicans are unlikely to win this election.",
+              "translation": "照目前的形势来看﹐本届大选共和党获胜无望。",
+              "audio_url": "/dict/resource?path=exa/bre/5/p008-001512208.mp3"
+            },
+            {
+              "text": "The future’s looking good.",
+              "translation": "前途看似一片光明。",
+              "audio_url": "/dict/resource?path=exa/bre/2/p008-001965746.mp3"
+            },
+            {
+              "text": "It looks as if it might rain later.",
+              "translation": "看来一会儿可能要下雨。",
+              "audio_url": "/dict/resource?path=exa/bre/0/p008-001965750.mp3"
+            }
+          ],
+          "collocations": []
+        },
+        {
+          "index": 4,
+          "definition": "to have a particular appearance",
+          "definition_cn": "看上去﹐看起来",
+          "grammar": "[linking verb]",
+          "examples": [
+            {
+              "text": "How do I look?",
+              "translation": "我看上去怎么样？",
+              "audio_url": "/dict/resource?path=exa/bre/c/p008-001831589.mp3"
+            },
+            {
+              "text": "You look tired. You should go to bed.",
+              "translation": "你看上去很累﹐应该上床睡觉了。",
+              "audio_url": "/dict/resource?path=exa/bre/b/p008-001831592.mp3"
+            },
+            {
+              "text": "He looked as if he hadn’t washed for a week.",
+              "translation": "他看上去好像一个星期没有洗澡了。",
+              "audio_url": "/dict/resource?path=exa/bre/c/p008-001831595.mp3"
+            }
+          ],
+          "collocations": []
+        },
+        {
+          "index": 5,
+          "definition": "to look at someone with a very angry expression on your face",
+          "definition_cn": "怒视某人",
+          "grammar": "[intransitive]",
+          "examples": [],
+          "collocations": []
+        },
+        {
+          "index": 6,
+          "definition": "to look at someone carefully from their head to their feet, as if you are forming an opinion about them",
+          "definition_cn": "上下打量某人",
+          "grammar": "[intransitive]",
+          "examples": [],
+          "collocations": []
+        },
+        {
+          "index": 7,
+          "definition": "to look directly at someone when you are speaking to them, especially to show that you are not afraid of them or that you are telling the truth",
+          "definition_cn": "正视某人〔尤表示不怕对方或自己说的是实话〕",
+          "grammar": "[intransitive]",
+          "examples": [
+            {
+              "text": "Owen didn’t dare look his father in the eye.",
+              "translation": "欧文不敢正眼看父亲。",
+              "audio_url": "/dict/resource?path=exa/bre/c/p008-001512244.mp3"
+            }
+          ],
+          "collocations": []
+        },
+        {
+          "index": 8,
+          "definition": "to behave as if you think that someone or something is not good enough for you",
+          "definition_cn": "看不起某人/某事物﹐轻视某人/某事物",
+          "grammar": "[intransitive]",
+          "examples": [
+            {
+              "text": "He looks down his nose at anyone foreign.",
+              "translation": "他看不起外国人。",
+              "audio_url": "/dict/resource?path=exa/bre/4/p008-001512250.mp3"
+            }
+          ],
+          "collocations": []
+        },
+        {
+          "index": 9,
+          "definition": "to ignore something bad that is happening and not try to stop it",
+          "definition_cn": "掉过头去（装作没看见）",
+          "grammar": "[intransitive]",
+          "examples": [
+            {
+              "text": "Prison guards looked the other way as the man was attacked by fellow prisoners.",
+              "translation": "那人遭其狱友殴打时﹐狱警掉过头去装作没看见。",
+              "audio_url": "/dict/resource?path=exa/bre/2/p008-001831611.mp3"
+            }
+          ],
+          "collocations": []
+        },
+        {
+          "index": 10,
+          "definition": "used to say that something you are offering is exactly what someone has been trying to find",
+          "definition_cn": "不用到别处找了〔表示你所提供的正是某人一直在寻找的〕",
+          "grammar": "[intransitive]",
+          "examples": [
+            {
+              "text": "Want a quiet country retreat for your weekend break? Then look no further!",
+              "translation": "周末想在乡村找一个安静的去处吗？那不用到别处找了！",
+              "audio_url": "/dict/resource?path=exa/bre/3/p008-001831617.mp3"
+            }
+          ],
+          "collocations": []
+        }
+      ],
+      "phrasal_verbs": [
+        {
+          "phrase": "look aftersomebody/something",
+          "definition": "to take care of someone by helping them, giving them what they need, or keeping them safe",
+          "definition_cn": "照顾﹐照料",
+          "examples": [
+            {
+              "text": "Don’t worry, I’ll look after the kids tomorrow.",
+              "translation": "不用担心﹐明天我来照看孩子。",
+              "audio_url": "/dict/resource?path=exa/bre/a/p008-001512334.mp3"
+            },
+            {
+              "text": "Susan looked after us very well. She’s an excellent cook.",
+              "translation": "苏珊把我们照顾得很好﹐她是个很出色的厨师。",
+              "audio_url": "/dict/resource?path=exa/bre/5/p008-001512335.mp3"
+            },
+            {
+              "text": "You could tell that the horse had been well looked after.",
+              "translation": "看得出这匹马被照料得很好。",
+              "audio_url": "/dict/resource?path=exa/bre/f/p008-001831618.mp3"
+            }
+          ]
+        },
+        {
+          "phrase": "look ahead",
+          "definition": "to think about and plan for what might happen in the future",
+          "definition_cn": "向前看﹐计划未来﹐考虑将来",
+          "examples": [
+            {
+              "text": "Looking ahead, we must expect radical changes to be made in our system of government.",
+              "translation": "展望未来﹐我们的政治体制必须要有根本性的变革。",
+              "audio_url": "/dict/resource?path=exa/bre/7/p008-001512363.mp3"
+            }
+          ]
+        },
+        {
+          "phrase": "look around",
+          "definition": "to try to find something",
+          "definition_cn": "寻找",
+          "examples": [
+            {
+              "text": "Jason’s going to start looking around for a new job.",
+              "translation": "贾森正打算开始找新工作。",
+              "audio_url": "/dict/resource?path=exa/bre/0/p008-001512375.mp3"
+            },
+            {
+              "text": "Jason’s going to start looking around for a new job.",
+              "translation": "贾森正打算开始找新工作。",
+              "audio_url": "/dict/resource?path=exa/bre/0/p008-001512375.mp3"
+            }
+          ]
+        },
+        {
+          "phrase": "look atsomebody/something",
+          "definition": "to turn your eyes towards someone or something, so that you can see them",
+          "definition_cn": "看〔某人或某物〕",
+          "examples": [
+            {
+              "text": "The twins looked at each other and smiled.",
+              "translation": "这对双胞胎相视而笑。",
+              "audio_url": "/dict/resource?path=exa/bre/d/p008-001512392.mp3"
+            }
+          ]
+        },
+        {
+          "phrase": "look back",
+          "definition": "to think about something that happened in the past",
+          "definition_cn": "回忆起﹐回顾",
+          "examples": [
+            {
+              "text": "When I look back on those days I realize I was desperately unhappy.",
+              "translation": "当我回想起那些日子﹐我明白自己当时痛苦极了。",
+              "audio_url": "/dict/resource?path=exa/bre/a/p008-001512431.mp3"
+            },
+            {
+              "text": "Looking back on it, I still can’t figure out what went wrong.",
+              "translation": "我现在回想起来还是不明白什么地方出了问题。",
+              "audio_url": "/dict/resource?path=exa/bre/f/p008-001512435.mp3"
+            },
+            {
+              "text": "When I look back on those days I realize I was desperately unhappy.",
+              "translation": "当我回想起那些日子﹐我明白自己当时痛苦极了。",
+              "audio_url": "/dict/resource?path=exa/bre/a/p008-001512431.mp3"
+            }
+          ]
+        },
+        {
+          "phrase": "look down onsomething/somebody",
+          "definition": "to think that you are better than someone else, for example because you are more successful, or of a higher social class than they are",
+          "definition_cn": "轻视﹐瞧不起",
+          "examples": [
+            {
+              "text": "Mr Garcia looks down on anyone who hasn’t had a college education.",
+              "translation": "加西亚先生看不起没有受过大学教育的人。",
+              "audio_url": "/dict/resource?path=exa/bre/a/p008-001512451.mp3"
+            }
+          ]
+        },
+        {
+          "phrase": "look forsomebody/something",
+          "definition": "to try to find something that you have lost, or someone who is not where they should be",
+          "definition_cn": "寻找",
+          "examples": [
+            {
+              "text": "I’m looking for Steve – have you seen him?",
+              "translation": "我在找史蒂夫——你见过他吗？",
+              "audio_url": "/dict/resource?path=exa/bre/2/p008-001512462.mp3"
+            },
+            {
+              "text": "Detectives are still looking for the escaped prisoner.",
+              "translation": "警探仍在寻找越狱犯。",
+              "audio_url": "/dict/resource?path=exa/bre/8/p008-001512463.mp3"
+            }
+          ]
+        },
+        {
+          "phrase": "look forward tosomething",
+          "definition": "to be excited and pleased about something that is going to happen",
+          "definition_cn": "〔兴奋地〕期待﹐盼望",
+          "examples": [
+            {
+              "text": "I’m really looking forward to our vacation.",
+              "translation": "我热切期待着我们的假期。",
+              "audio_url": "/dict/resource?path=exa/bre/8/p008-001512491.mp3"
+            },
+            {
+              "text": "My mother says she’s looking forward to meeting you.",
+              "translation": "我母亲说她盼望着与你见面。",
+              "audio_url": "/dict/resource?path=exa/bre/a/p008-001512494.mp3"
+            },
+            {
+              "text": "My mother says she’s looking forward to meeting you.",
+              "translation": "我母亲说她盼望着与你见面。",
+              "audio_url": "/dict/resource?path=exa/bre/a/p008-001512494.mp3"
+            }
+          ]
+        },
+        {
+          "phrase": "look in",
+          "definition": "to make a short visit to someone, while you are going somewhere else, especially if they are ill or need help",
+          "definition_cn": "〔顺道〕探望﹐看望〔尤在某人生病或需要帮忙时〕",
+          "examples": []
+        },
+        {
+          "phrase": "look intosomething",
+          "definition": "to try to find out the truth about a problem, crime etc in order to solve it",
+          "definition_cn": "调查〔问题﹑罪行等〕",
+          "examples": []
+        }
+      ],
+      "etymology": {
+        "century": null,
+        "origin": "locian",
+        "meaning": null,
+        "note": "Old English"
+      },
+      "verb_table": {
+        "lemma": "look",
+        "simple_forms": [
+          {
+            "tense": "Present",
+            "person": "I, you, we, they",
+            "form": "look",
+            "auxiliary": null
+          },
+          {
+            "tense": "Present",
+            "person": "he, she, it",
+            "form": "looks",
+            "auxiliary": null
+          },
+          {
+            "tense": "Past",
+            "person": "I, you, he, she, it, we, they",
+            "form": "looked",
+            "auxiliary": null
+          },
+          {
+            "tense": "Present perfect",
+            "person": "I, you, we, they",
+            "form": "looked",
+            "auxiliary": "have"
+          },
+          {
+            "tense": "Present perfect",
+            "person": "he, she, it",
+            "form": "looked",
+            "auxiliary": "has"
+          },
+          {
+            "tense": "Past perfect",
+            "person": "I, you, he, she, it, we, they",
+            "form": "looked",
+            "auxiliary": "had"
+          },
+          {
+            "tense": "Future",
+            "person": "I, you, he, she, it, we, they",
+            "form": "look",
+            "auxiliary": "will"
+          },
+          {
+            "tense": "Future perfect",
+            "person": "I, you, he, she, it, we, they",
+            "form": "looked",
+            "auxiliary": "will have"
+          }
+        ],
+        "continuous_forms": [
+          {
+            "tense": "Present",
+            "person": "I",
+            "form": "looking",
+            "auxiliary": "am"
+          },
+          {
+            "tense": "Present",
+            "person": "he, she, it",
+            "form": "looking",
+            "auxiliary": "is"
+          },
+          {
+            "tense": "Present",
+            "person": "you, we, they",
+            "form": "looking",
+            "auxiliary": "are"
+          },
+          {
+            "tense": "Past",
+            "person": "I, he, she, it",
+            "form": "looking",
+            "auxiliary": "was"
+          },
+          {
+            "tense": "Past",
+            "person": "you, we, they",
+            "form": "looking",
+            "auxiliary": "were"
+          },
+          {
+            "tense": "Present perfect",
+            "person": "I, you, we, they",
+            "form": "looking",
+            "auxiliary": "have been"
+          },
+          {
+            "tense": "Present perfect",
+            "person": "he, she, it",
+            "form": "looking",
+            "auxiliary": "has been"
+          },
+          {
+            "tense": "Past perfect",
+            "person": "I, you, he, she, it, we, they",
+            "form": "looking",
+            "auxiliary": "had been"
+          },
+          {
+            "tense": "Future",
+            "person": "I, you, he, she, it, we, they",
+            "form": "looking",
+            "auxiliary": "will be"
+          },
+          {
+            "tense": "Future perfect",
+            "person": "I, you, he, she, it, we, they",
+            "form": "looking",
+            "auxiliary": "will have been"
+          }
+        ]
+      },
+      "extra_examples": [
+        {
+          "text": "\"Come on, it's time to go,\" he said, looking at his watch.",
+          "source": "OTHER_DICTIONARIES"
+        },
+        {
+          "text": "\"You were a hippie?\" she asked, looking at her father in disbelief.",
+          "source": "OTHER_DICTIONARIES"
+        },
+        {
+          "text": "Look at me when I'm talking to you.",
+          "source": "OTHER_DICTIONARIES"
+        },
+        {
+          "text": "Look, I'm very serious about this.",
+          "source": "OTHER_DICTIONARIES"
+        },
+        {
+          "text": "Look, there are some swans on the river.",
+          "source": "OTHER_DICTIONARIES"
+        },
+        {
+          "text": "Did you look under the bed?",
+          "source": "OTHER_DICTIONARIES"
+        },
+        {
+          "text": "Do these jeans make me look fat?",
+          "source": "OTHER_DICTIONARIES"
+        },
+        {
+          "text": "Doesn't she look beautiful!",
+          "source": "OTHER_DICTIONARIES"
+        },
+        {
+          "text": "I'm glad you've shaved off that beard. It makes you look ten years younger!",
+          "source": "OTHER_DICTIONARIES"
+        },
+        {
+          "text": "I've looked everywhere, but I can't find my gloves.",
+          "source": "OTHER_DICTIONARIES"
+        },
+        {
+          "text": "I always look through the peephole before I open the door for anyone.",
+          "source": "OTHER_DICTIONARIES"
+        },
+        {
+          "text": "If you look closely, you can see ducks at the edge of the lake.",
+          "source": "OTHER_DICTIONARIES"
+        },
+        {
+          "text": "It looks as if we are going to need more help.",
+          "source": "OTHER_DICTIONARIES"
+        },
+        {
+          "text": "She's really pretty - she looks like a model.",
+          "source": "OTHER_DICTIONARIES"
+        },
+        {
+          "text": "That book looks interesting.",
+          "source": "OTHER_DICTIONARIES"
+        },
+        {
+          "text": "That coat looks nice and warm. Where did you get it?",
+          "source": "OTHER_DICTIONARIES"
+        },
+        {
+          "text": "The burglar was holding what looked like a shotgun.",
+          "source": "OTHER_DICTIONARIES"
+        },
+        {
+          "text": "The cake didn't look very good, but it tasted all right.",
+          "source": "OTHER_DICTIONARIES"
+        },
+        {
+          "text": "The teacher stopped and looked around to see if there were any questions.",
+          "source": "OTHER_DICTIONARIES"
+        },
+        {
+          "text": "Tom looked out the window over the dry, barren landscape.",
+          "source": "OTHER_DICTIONARIES"
+        },
+        {
+          "text": "He sent one of his aides to California to ask Wilson to be chairman of the committee and to look him over.",
+          "source": "CORPUS"
+        },
+        {
+          "text": "He took his seat in coach, and after an hour or so began to look for them.",
+          "source": "CORPUS"
+        },
+        {
+          "text": "He was also looking for ways to satisfy the recurrent Treasury demands for economy.",
+          "source": "CORPUS"
+        },
+        {
+          "text": "It looks dumb now, and it will look a lot dumber later.",
+          "source": "CORPUS"
+        },
+        {
+          "text": "New buildings look good, but often money is better spent on people.",
+          "source": "CORPUS"
+        },
+        {
+          "text": "Now some of them look unkempt, neglected, despite the fine new houses and gardens which are springing up.",
+          "source": "CORPUS"
+        },
+        {
+          "text": "The permed young man and the woman in red exchanged glances, both looking quite abashed.",
+          "source": "CORPUS"
+        },
+        {
+          "text": "When she looked back at the road, the red saloon was coming towards her.",
+          "source": "CORPUS"
+        }
+      ],
+      "thesaurus": {
+        "topic": "to look at somebody or something",
+        "entries": [
+          {
+            "word": "look",
+            "definition": "to turn your eyes towards someone or something, so that you can see them看﹐瞧﹐望",
+            "examples": [
+              "You should never look directly at the sun.绝不可直视太阳。",
+              "After a while, he turned and looked at me.过了一会儿﹐他转过身来看着我。"
+            ]
+          },
+          {
+            "word": "have/take a look",
+            "definition": "to look at something quickly, especially in order to find or check something〔尤指为寻找或检查某物〕看一看",
+            "examples": [
+              "I’ll have a look in my desk.我会在书桌里找一找。",
+              "Take a look at this!看看这个！"
+            ]
+          },
+          {
+            "word": "glance",
+            "definition": "to look at someone or something for a short time and then look quickly away瞥﹐看一眼",
+            "examples": [
+              "Damien glanced nervously at his watch.达米安紧张地瞥了一眼手表。"
+            ]
+          },
+          {
+            "word": "peek/peep",
+            "definition": "to look quickly at something – used especially when you are not supposed to look, or when you are looking through a small gap偷看﹐窥视",
+            "examples": [
+              "The door was open so he peeked inside.门开着﹐他偷偷朝里面看。",
+              "Katy peeped at her birthday present on the table.凯蒂悄悄看桌上的生日礼物。"
+            ]
+          },
+          {
+            "word": "peer",
+            "definition": "to look very carefully, especially because you cannot see well仔细看﹐盯着看",
+            "examples": [
+              "Kenji was peering at the screen.健治仔细看着屏幕。"
+            ]
+          },
+          {
+            "word": "glare",
+            "definition": "to look at someone in an angry way怒视",
+            "examples": [
+              "She glared at me as I got up to leave.我起身要走时她愤怒地瞪着我。"
+            ]
+          },
+          {
+            "word": "stare",
+            "definition": "to look at someone or something for a long time without moving your eyes凝视﹐注视",
+            "examples": [
+              "It’s rude to stare.盯着别人看很不礼貌。",
+              "She stared straight into the camera.她直视相机镜头。"
+            ]
+          },
+          {
+            "word": "gaze",
+            "definition": "to look at someone or something for a long time, often without realizing that you are doing it〔常指无意识地〕凝视",
+            "examples": [
+              "She gazed out of the window.她呆呆地望着窗外。",
+              "He lay on his bed gazing at the ceiling.他躺在床上凝视着天花板。"
+            ]
+          },
+          {
+            "word": "gape",
+            "definition": "to look at someone or something for a long time, usually with your mouth open, because you are very shocked or surprised瞠目结舌地注视",
+            "examples": [
+              "People gaped at him with wide-open mouths.人们张大嘴巴﹐目不转睛地看着他。"
+            ]
+          },
+          {
+            "word": "regard",
+            "definition": "to look at someone or something, especially in a particular way〔尤以某种方式〕看",
+            "examples": [
+              "He regarded her steadily.他定定地看着她。"
+            ]
+          }
+        ],
+        "word_sets": []
+      },
+      "collocations": [
+        {
+          "pattern": "face",
+          "part_of_speech": "NOUN",
+          "examples": [
+            {
+              "text": "She was already by his side before she thought of how her face and hair must look.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "How vivid and alive their faces looked.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "He was still breathing hard from his few minutes of play, but his face looked like stone.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "Light suit, short hair, spotty face, but looking in charge.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "Each time a man looked away and refused to back him up, and the panic on his face doubled.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "Her face looked big in the papers.",
+              "translation": null,
+              "audio_url": null
+            }
+          ]
+        },
+        {
+          "pattern": "mirror",
+          "part_of_speech": "NOUN",
+          "examples": [
+            {
+              "text": "It is comparable with the oddness which might visit all our outward appearances if we stopped looking in mirror.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "I looked into the mirror, my green eyes looking back out at me showing no emotion, no excitement at all.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "I looked into the little mirror for just a moment.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "I looked into the mirror, searching once again into the riddle of my face.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "I kept looking in the mirror but not, you understand, for traffic.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "He looked in the gilt mirror.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "When he had finished looking in the mirror to put in his buttonhole rose, it was time to go.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "He looks in the mirror three, no, four, no, five times.",
+              "translation": null,
+              "audio_url": null
+            }
+          ]
+        },
+        {
+          "pattern": "shoulder",
+          "part_of_speech": "NOUN",
+          "examples": [
+            {
+              "text": "Arthur looked over some one's shoulder but said nothing.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "With wet clothes clinging to her back, she looked skeletal, her shoulder blades poking up like sharp crags.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "You never know what's out there, they said, looking fearfully over their shoulders.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "Ahead, Ember turned into the tunnel-mouth, not even looking over his shoulder.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "Then the Texas native looked over his shoulder.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "Somehow, with the glasses on, she felt compelled to look back over her shoulder all the time.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "I looked over his shoulder while he consulted a little list.",
+              "translation": null,
+              "audio_url": null
+            }
+          ]
+        },
+        {
+          "pattern": "window",
+          "part_of_speech": "NOUN",
+          "examples": [
+            {
+              "text": "Thee buses were photographed with a few surprised giraffes looking in the windows.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "They were the ones standing on packing crates outside the post hospital, looking proudly through the windows into the nursery.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "One was turning the pages of an old copy of Hotel & Caterer, the other was looking out of the window.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "When I took my children to bed at night they would pause to look through a little knee-high window which lit the stairs.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "I whispered, looking out the window.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "It gave me the foothold I needed to pull myself up and look in at the window.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "Whenever I look out of the window, they are crouched innocently in seemingly random positions.",
+              "translation": null,
+              "audio_url": null
+            }
+          ]
+        },
+        {
+          "pattern": "stand",
+          "part_of_speech": "VERB",
+          "examples": [
+            {
+              "text": "He stepped back a pace, smiling broadly as he saw the young woman who stood before him, looking slightly surprised.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "He walked Stanley to the door and stood looking into the street with a worried expression.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "Slowly, step by step, she crept along the terrace until she stood there, looking in.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "They stood there looking at each other.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "I stood looking him over for about a minute and then went round the room.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "The people standing around us looked embarrassed.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "He walked slowly over to the door, and stood looking down at her.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "Instead I stood up and looked around.",
+              "translation": null,
+              "audio_url": null
+            }
+          ]
+        },
+        {
+          "pattern": "turn",
+          "part_of_speech": "VERB",
+          "examples": [
+            {
+              "text": "They turned to look back at the emptiness they had crossed.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "Even a very good marriage is not one where everyone turns and looks when you walk into the room.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "She turns to look at him.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "Gao Yang turned to look at him.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "They passed the hill, but she did not turn to look at the graveyard.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "Suddenly she turned and looked at him.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "Karr turned, looking for further assassins, then, satisfied there were none, looked down at Tolonen.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "When I reached the crest of the hill I turned to look back.",
+              "translation": null,
+              "audio_url": null
+            }
+          ]
+        },
+        {
+          "pattern": "look good/bad etc",
+          "part_of_speech": null,
+          "examples": [
+            {
+              "text": "The future’s looking good.",
+              "translation": "前途看似一片光明。",
+              "audio_url": null
+            }
+          ]
+        },
+        {
+          "pattern": "it looks as if/as though/like看来",
+          "part_of_speech": null,
+          "examples": [
+            {
+              "text": "It looks as if it might rain later.",
+              "translation": "看来一会儿可能要下雨。",
+              "audio_url": null
+            },
+            {
+              "text": "It looks like they won’t be needing us anymore.",
+              "translation": "看来他们不再需要我们了。",
+              "audio_url": null
+            }
+          ]
+        },
+        {
+          "pattern": "made ... look",
+          "part_of_speech": null,
+          "examples": [
+            {
+              "text": "You made me look really stupid in front of all my friends!",
+              "translation": "你让我在所有朋友面前出尽了洋相！",
+              "audio_url": null
+            }
+          ]
+        },
+        {
+          "pattern": "look tired/happy/sad etc",
+          "part_of_speech": null,
+          "examples": [
+            {
+              "text": "You look tired. You should go to bed.",
+              "translation": "你看上去很累﹐应该上床睡觉了。",
+              "audio_url": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "headword": "look",
+      "hyphenation": "look",
+      "homnum": 2,
+      "pronunciation": null,
+      "pronunciation_ame": null,
+      "part_of_speech": "noun",
+      "inflections": null,
+      "audio": {
+        "bre_url": "/dict/resource?path=hwd/bre/d/brelasdelook.mp3",
+        "ame_url": "/dict/resource?path=hwd/ame/9/look1.mp3"
+      },
+      "senses": [
+        {
+          "index": 1,
+          "definition": "an act of looking at something",
+          "definition_cn": "看﹐瞧",
+          "grammar": "[countable usually singular]",
+          "examples": [
+            {
+              "text": "Let me have a look at that – I think it’s mine.",
+              "translation": "让我看一下那个东西——我想它是我的。",
+              "audio_url": "/dict/resource?path=exa/bre/b/p008-001533109.mp3"
+            },
+            {
+              "text": "Take a good look at the photo and see if you recognize anyone in it.",
+              "translation": "好好看看这张照片﹐看你能不能认出来里面的哪个人。",
+              "audio_url": "/dict/resource?path=exa/bre/2/p008-001831631.mp3"
+            },
+            {
+              "text": "I took one look at the coat and decided it wasn’t worth £50.",
+              "translation": "我看了那件外套一眼﹐觉得不值50英镑。",
+              "audio_url": "/dict/resource?path=exa/bre/e/p008-001831635.mp3"
+            }
+          ],
+          "collocations": []
+        },
+        {
+          "index": 2,
+          "definition": "an expression that you make with your eyes or face",
+          "definition_cn": "眼色﹔神色﹐脸色﹐表情",
+          "grammar": "[countable]",
+          "examples": [
+            {
+              "text": "Mike gave him such a severe look he didn’t dare argue.",
+              "translation": "迈克严厉地看了他一眼﹐他就不敢再争论了。",
+              "audio_url": "/dict/resource?path=exa/bre/4/p008-001533137.mp3"
+            },
+            {
+              "text": "Why has Jake been giving me dirty looks (=unfriendly looks) all morning?",
+              "translation": "为什么杰克整个上午都不给我好脸色看？",
+              "audio_url": "/dict/resource?path=exa/bre/4/p008-001831639.mp3"
+            }
+          ],
+          "collocations": []
+        },
+        {
+          "index": 3,
+          "definition": "an act of examining something and thinking about it",
+          "definition_cn": "察看﹔考虑",
+          "grammar": "[singular]",
+          "examples": [
+            {
+              "text": "Have you had a chance to take a look at my proposal yet?",
+              "translation": "你考虑过我的提议了吗？",
+              "audio_url": "/dict/resource?path=exa/bre/8/p008-001831652.mp3"
+            },
+            {
+              "text": "I asked the vet to have a quick look at the puppies as well.",
+              "translation": "我叫兽医顺便也看一下这些小狗。",
+              "audio_url": "/dict/resource?path=exa/bre/3/p008-001831653.mp3"
+            },
+            {
+              "text": "It’s time to take a fresh look at the old problem of low pay.",
+              "translation": "是时候该重新考虑一下低薪这个老问题了。",
+              "audio_url": "/dict/resource?path=exa/bre/d/p008-001831657.mp3"
+            }
+          ],
+          "collocations": []
+        },
+        {
+          "index": 4,
+          "definition": "an attempt to find something",
+          "definition_cn": "寻找",
+          "grammar": "[singular]",
+          "examples": [
+            {
+              "text": "I can’t find them anywhere. Have a look yourself.",
+              "translation": "我哪里也找不着﹐你自己找吧。",
+              "audio_url": "/dict/resource?path=exa/bre/0/p008-001831672.mp3"
+            },
+            {
+              "text": "She had a good look (=searched carefully) through the files.",
+              "translation": "她在文件中仔细地找过了。",
+              "audio_url": "/dict/resource?path=exa/bre/b/p008-001831676.mp3"
+            }
+          ],
+          "collocations": []
+        },
+        {
+          "index": 5,
+          "definition": "the appearance that someone or something has",
+          "definition_cn": "外观﹐外表",
+          "grammar": "[countable usually singular]",
+          "examples": [
+            {
+              "text": "The area has a very seedy look to it.",
+              "translation": "这个地区看上去乌烟瘴气。",
+              "audio_url": "/dict/resource?path=exa/bre/e/p008-001533147.mp3"
+            },
+            {
+              "text": "Mr Flynn had a tired, ill look in his eyes.",
+              "translation": "弗林先生的眼中显出倦意，看着病恹恹的。",
+              "audio_url": "/dict/resource?path=exa/bre/a/p008-001533148.mp3"
+            },
+            {
+              "text": "We should turn back now. It’s getting dark and I don’t like the look of those rain clouds.",
+              "translation": "我们现在应该回去了。天越来越黑﹐这乌云密布的样子有些不妙。",
+              "audio_url": "/dict/resource?path=exa/bre/f/p008-001533156.mp3"
+            }
+          ],
+          "collocations": []
+        },
+        {
+          "index": 6,
+          "definition": "the way something seems to be",
+          "definition_cn": "样子",
+          "grammar": "[countable]",
+          "examples": [
+            {
+              "text": "The neighbours are back from holiday by the looks of it (=that is how it seems).",
+              "translation": "看样子邻居已经度假回来了。",
+              "audio_url": "/dict/resource?path=exa/bre/a/p008-001831687.mp3"
+            },
+            {
+              "text": "I don’t like the look of this new policy (=I do not like the way it seems).",
+              "translation": "我不喜欢这项新政策。",
+              "audio_url": "/dict/resource?path=exa/bre/e/p008-001831692.mp3"
+            }
+          ],
+          "collocations": []
+        },
+        {
+          "index": 7,
+          "definition": "physical attractiveness",
+          "definition_cn": "美貌，〔吸引人的〕外貌",
+          "grammar": "[plural]",
+          "examples": [
+            {
+              "text": "Fiona’s got everything – looks, money and youth.",
+              "translation": "菲奥娜什么都有——美貌﹑财富和青春。",
+              "audio_url": "/dict/resource?path=exa/bre/1/p008-001533163.mp3"
+            },
+            {
+              "text": "You get your good looks from your mother.",
+              "translation": "你继承了你母亲的美貌。",
+              "audio_url": "/dict/resource?path=exa/bre/e/p008-001831697.mp3"
+            },
+            {
+              "text": "When she lost her looks (=became less attractive) she found it difficult to get work.",
+              "translation": "没有了当年的美貌﹐她觉得找工作难了。",
+              "audio_url": "/dict/resource?path=exa/bre/8/p008-001831701.mp3"
+            }
+          ],
+          "collocations": []
+        },
+        {
+          "index": 8,
+          "definition": "a particular style in clothes, hair, furniture etc",
+          "definition_cn": "〔服装﹑头发﹑家具等的〕时尚﹐风格﹐样式",
+          "grammar": "[singular]",
+          "examples": [
+            {
+              "text": "The hippy look is back again.",
+              "translation": "嬉皮士风格又再度流行了。",
+              "audio_url": "/dict/resource?path=exa/bre/d/p008-001533178.mp3"
+            }
+          ],
+          "collocations": []
+        },
+        {
+          "index": 9,
+          "definition": "used to say that someone is looking at someone else in a very angry or unfriendly way",
+          "definition_cn": "如果眼神能杀人〔指怒目而视〕",
+          "grammar": "[countable usually singular]",
+          "examples": [],
+          "collocations": []
+        }
+      ],
+      "phrasal_verbs": [],
+      "etymology": null,
+      "verb_table": null,
+      "extra_examples": [
+        {
+          "text": "A look of relief crossed his face.",
+          "source": "OTHER_DICTIONARIES"
+        },
+        {
+          "text": "After winning, she had a look of pure joy on her face.",
+          "source": "OTHER_DICTIONARIES"
+        },
+        {
+          "text": "Computer graphics gave the creature a watery look.",
+          "source": "OTHER_DICTIONARIES"
+        },
+        {
+          "text": "From the look of it, I'd say the chair was about 100 years old, maybe 150.",
+          "source": "OTHER_DICTIONARIES"
+        },
+        {
+          "text": "He's trying for a '70s disco look.",
+          "source": "OTHER_DICTIONARIES"
+        },
+        {
+          "text": "He normally wore a slightly amused look on his round face.",
+          "source": "OTHER_DICTIONARIES"
+        },
+        {
+          "text": "Her long straight hair and dark eye make-up give her a sort of late-'60s look.",
+          "source": "OTHER_DICTIONARIES"
+        },
+        {
+          "text": "Here's a brief look at some of the problems we'll be facing in the coming year.",
+          "source": "OTHER_DICTIONARIES"
+        },
+        {
+          "text": "I was getting disapproving looks from the people around me.",
+          "source": "OTHER_DICTIONARIES"
+        },
+        {
+          "text": "Mrs. Moody had it in for me - I could tell by the look in her eyes.",
+          "source": "OTHER_DICTIONARIES"
+        },
+        {
+          "text": "Sapporo, Japan, has the look of a Wisconsin city in winter.",
+          "source": "OTHER_DICTIONARIES"
+        },
+        {
+          "text": "Sarah needed only one look at her daughter's face to know something was wrong.",
+          "source": "OTHER_DICTIONARIES"
+        },
+        {
+          "text": "She's been giving me dirty looks all morning. What have I done wrong?",
+          "source": "OTHER_DICTIONARIES"
+        },
+        {
+          "text": "She has a pensive, almost sad look about her.",
+          "source": "OTHER_DICTIONARIES"
+        },
+        {
+          "text": "Sheila nodded and gave him a sympathetic look.",
+          "source": "OTHER_DICTIONARIES"
+        },
+        {
+          "text": "The text is fine but the look of the page is all wrong.",
+          "source": "OTHER_DICTIONARIES"
+        },
+        {
+          "text": "You should have seen the look on his face when I told him I was leaving.",
+          "source": "OTHER_DICTIONARIES"
+        },
+        {
+          "text": "A look passed between the two men as George took the loafers.",
+          "source": "CORPUS"
+        },
+        {
+          "text": "A kiss-and-tell look behind the scenes of a sport always turns heads with book publishers.",
+          "source": "CORPUS"
+        },
+        {
+          "text": "As he passed the window, he saw Percy standing at the cash register with a hurt look.",
+          "source": "CORPUS"
+        },
+        {
+          "text": "Oh, well ... You will have a look at the lines over the weekend, won't you?",
+          "source": "CORPUS"
+        },
+        {
+          "text": "She learnt a look and a posture and a set of adjectives which passed for being hip in the Village.",
+          "source": "CORPUS"
+        },
+        {
+          "text": "When the shrieks of his gang became too much, he lifted his hand and his face took on a furious look.",
+          "source": "CORPUS"
+        }
+      ],
+      "thesaurus": {
+        "topic": "to look at somebody or something",
+        "entries": [
+          {
+            "word": "look",
+            "definition": "an act of looking at something看﹐瞧",
+            "examples": [
+              "Let mehave a look atthe map.",
+              "Itook aquicklookaround the room."
+            ]
+          },
+          {
+            "word": "glance",
+            "definition": "a quick look at something before looking away again",
+            "examples": [
+              "Susancast aquickglanceat me(=she looked quickly at me).",
+              "He could not resist asidelong glance(=quickly looking to the side)to see what was happening on the other side of the road."
+            ]
+          },
+          {
+            "word": "glimpse",
+            "definition": "a short look at someone or something in which you do not see them very clearly",
+            "examples": [
+              "Fans were hoping tocatch a glimpse ofthe singer as he left the hotel.",
+              "I had only afleeting glimpse(=a very quick look)of the two men as they ran away."
+            ]
+          },
+          {
+            "word": "gaze",
+            "definition": "a long steady look",
+            "examples": [
+              "Eddiefixedhisgaze onthe floor.",
+              "She looked up andmethisgaze(=looked at him when he was looking at her)."
+            ]
+          },
+          {
+            "word": "stare",
+            "definition": "a long direct look, especially in an unfriendly way or in a way that shows you are surprised",
+            "examples": [
+              "He was watching me with a cold stare.",
+              "My cheery ‘Good Morning’ was met with ablank stare(=a stare which shows no emotion)."
+            ]
+          },
+          {
+            "word": "glare",
+            "definition": "an angry look at someone",
+            "examples": [
+              "She gave him a hostile glare as he entered the room."
+            ]
+          },
+          {
+            "word": "frown",
+            "definition": "a confused or annoyed look",
+            "examples": [
+              "‘Anyway,’ she said with a frown, ‘I don’t see how there could be a connection.’"
+            ]
+          },
+          {
+            "word": "look",
+            "definition": "to turn your eyes towards something so that you can see it",
+            "examples": [
+              "Look, there are some swans on the river.",
+              "\"Come on, it's time to go,\" he said, looking at his watch.",
+              "Look at me when I'm talking to you."
+            ]
+          },
+          {
+            "word": "take a look/have a look",
+            "definition": "to look at something, especially something interesting or unusual",
+            "examples": [
+              "\"I think there's something wrong with the car.\" \"Do you want me to have a look?\"",
+              "We climbed to the top of the tower to have a look at the view.",
+              "\"You'd better take a look at this,\" she said, passing me a letter."
+            ]
+          },
+          {
+            "word": "look over",
+            "definition": "to quickly look at the details of someone or something, especially before you officially agree to buy it, use it etc",
+            "examples": [
+              "We looked over several apartments before finally choosing this one.",
+              "If you want, I can look over your English homework for you.",
+              "Would you care to look the document over before you sign?"
+            ]
+          }
+        ],
+        "word_sets": []
+      },
+      "collocations": [
+        {
+          "pattern": "close",
+          "part_of_speech": "ADJECTIVE",
+          "examples": [
+            {
+              "text": "Take a close look at your pension position.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "Take a closer look at the warning labels surrounding you on a daily basis.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "Let's have a closer look at the factors involved in the blades striking the tailboom.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "Instead of razing it, commissioners asked for a closer look at its remodeling cost.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "She finally decided that she would go down to the garden and take a closer look.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "They passed a hundred yards away and never so much as changed course to take a closer look.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "My curiosity had been piqued, so after the service I slipped up to the band area to take a closer look.",
+              "translation": null,
+              "audio_url": null
+            }
+          ]
+        },
+        {
+          "pattern": "fresh",
+          "part_of_speech": "ADJECTIVE",
+          "examples": [
+            {
+              "text": "IntelliDraw takes a fresh look at the way people work with images.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "It was time to take a fresh look.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "You can achieve the freshest look with minimum make-up.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "Other revelations came from taking a fresh look at the data.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "He'd poked at the soil with a hoe to give it a fresh look.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "You can choose from either the graceful resilience of hardwood or the fresh, flawless look of uPVC.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "The new Community Care Act should prompt a fresh look at services for carers and those they look after.",
+              "translation": null,
+              "audio_url": null
+            }
+          ]
+        },
+        {
+          "pattern": "good",
+          "part_of_speech": "ADJECTIVE",
+          "examples": [
+            {
+              "text": "Step out and have a good look around.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "With his dark good looks and meticulous personal style, he made a lasting, if rather forbidding impression on lay people.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "If one liked that uncompromisingly masculine type of good looks, she thought, trying to tell herself she did not.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "I got a very good look at her, as she did at us.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "But then, it was not his good looks that made him famous.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "A good look at the bottom end of a drummer tended to lower crowd sympathy.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "Have a good look at that remedy and see if your intuitive feelings can be justified.",
+              "translation": null,
+              "audio_url": null
+            }
+          ]
+        },
+        {
+          "pattern": "hard",
+          "part_of_speech": "ADJECTIVE",
+          "examples": [
+            {
+              "text": "It was less than a hundred metres away, and gave us a long hard look as we stood there.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "Clarisa gave her a hard look.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "The hard look that seems wrong on a face so young was suddenly gone.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "I gave him a hard look.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "The next time you see a personal computer, take a long, hard look.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "She wanted some one outside Orkney to take a long, hard look at what was happening within the islands.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "I intend to take a real hard and mean look at this deal.",
+              "translation": null,
+              "audio_url": null
+            }
+          ]
+        },
+        {
+          "pattern": "long",
+          "part_of_speech": "ADJECTIVE",
+          "examples": [
+            {
+              "text": "Take a good long look at yourself in a mirror, with and without the wrongly-sized items.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "The plump girl behind the counter gave him a long look as he paid.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "Travis gave her appearance one long look before disappearing upstream the way she had come.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "I took a good long look at my chip.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "The next stage is to take a long, hard look at yourself.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "The next time you see a personal computer, take a long, hard look.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "He gave me a long look.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "Now she was stubbornly determined to have a good, long look at the Horseshoe.",
+              "translation": null,
+              "audio_url": null
+            }
+          ]
+        },
+        {
+          "pattern": "new",
+          "part_of_speech": "ADJECTIVE",
+          "examples": [
+            {
+              "text": "Pepsi says it considered more than 3, 000 designs on the way to its new look.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "Observant readers will also notice a new look to the columnists who grace the back end of our editorial pages.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "Now and then she mounted a short lived campaign to achieve a new look.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "But since the controversy is still very much alive, it seems advisable to take a new look at this issue.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "Several fans have complained about the new look.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "And do you know, the new look was the culprit?",
+              "translation": null,
+              "audio_url": null
+            }
+          ]
+        },
+        {
+          "pattern": "odd",
+          "part_of_speech": "ADJECTIVE",
+          "examples": [
+            {
+              "text": "He gave me an odd look as if I was telling strange stories.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "After her outburst, she now remained silent, darting odd looks of triumph at her betrayer.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "We received some odd looks from customers but most smiled and fussed over Spike & Molly.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "When I came down the proprietor gave me an odd look and said the gentleman was waiting for me outside.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "SHe noticed Tammuz flicking odd looks at the girl.",
+              "translation": null,
+              "audio_url": null
+            }
+          ]
+        },
+        {
+          "pattern": "quick",
+          "part_of_speech": "ADJECTIVE",
+          "examples": [
+            {
+              "text": "As he raced up the narrow track he took a quick look over his shoulder.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "Here is a quick look at the old and new labels.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "They went up on to the platform, and took a quick look into the Porter's room.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "Then, have a quick look at the floor area in - and immediately surrounding - the kiosk.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "Brian took a quick look at his wife.",
+              "translation": null,
+              "audio_url": null
+            }
+          ]
+        },
+        {
+          "pattern": "cast",
+          "part_of_speech": "VERB",
+          "examples": [
+            {
+              "text": "She cast a regretful look at the big double bed with its luxurious continental quilt.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "As the baby grew older, she cast an envying look at pink.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "All he could produce was a stiff upper lip, while young Lady C cast meaningful looks at sturdy gamekeeper Mellors.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "A few days after my gift was discovered, Milagros cast me a worried look at dinner.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "Snyde came closer, reached out a paw and touched Whillan's flank strangely, casting a lingering look at it.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "Hattie Johnson cast an unthinking look at Ezra, her nine-year-old boy.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "He automatically steps into the room, casting a melodramatic look over his shoulder.",
+              "translation": null,
+              "audio_url": null
+            }
+          ]
+        },
+        {
+          "pattern": "exchange",
+          "part_of_speech": "VERB",
+          "examples": [
+            {
+              "text": "The patients loved it and several laughed out loud at her antics, while Martha and Yvonne exchanged looks of glee.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "They exchanged looks full of sadness, as if they had both lost something.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "He watched as Gilbert exchanged a look with an equally shell-shocked Frye ... and then hurried quickly towards the reception door.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "Papi exchanged a helpless look with Mami.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "Riven and Ratagan exchanged a look, and Riven realised that the big man knew everything.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "As you began again, all of us around you exchanged more pained looks.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "The two men exchange a look and put their revolvers back into their holsters.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "Jess and Red exchange another look.",
+              "translation": null,
+              "audio_url": null
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "raw_html": null
+}
