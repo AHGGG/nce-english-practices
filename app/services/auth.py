@@ -6,6 +6,20 @@ Designed for production use with proper security practices.
 from datetime import datetime, timedelta, timezone
 from typing import Optional, Tuple
 import jwt
+import bcrypt
+
+# Patch bcrypt for passlib compatibility (bcrypt >= 4.0.0 removed __about__)
+if not hasattr(bcrypt, "__about__"):
+    try:
+        from bcrypt import __version__ as bcrypt_version
+    except ImportError:
+        bcrypt_version = "4.0.0"
+
+    class _BcryptAbout:
+        __version__ = bcrypt_version
+
+    bcrypt.__about__ = _BcryptAbout()
+
 from passlib.context import CryptContext
 from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
