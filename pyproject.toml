@@ -27,7 +27,7 @@ dependencies = [
     "ebooklib>=0.20",
     "lxml>=6.0.2",
     "passlib[bcrypt]>=1.7.4",
-    "python-jose[cryptography]>=3.5.0",
+    "pyjwt>=2.8.0",
     "email-validator>=2.3.0",
     "bcrypt>=4.0.0,<5.0.0",
     "rich>=14.2.0",
@@ -36,6 +36,7 @@ dependencies = [
     "mutagen>=1.47.0",
     "soundfile>=0.13.1",
     "numpy>=2.0",
+    "antlr4-python3-runtime==4.9.3",
 ]
 
 # PyTorch with CUDA support - installed separately via:

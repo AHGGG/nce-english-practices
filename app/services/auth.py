@@ -5,7 +5,7 @@ Designed for production use with proper security practices.
 
 from datetime import datetime, timedelta, timezone
 from typing import Optional, Tuple
-from jose import JWTError, jwt
+import jwt
 from passlib.context import CryptContext
 from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -94,7 +94,7 @@ def verify_token(token: str, expected_type: str = "access") -> Optional[TokenDat
         return TokenData(
             user_id=int(user_id), email=email, role=role, token_type=token_type
         )
-    except (JWTError, ValueError, KeyError) as e:
+    except (jwt.InvalidTokenError, ValueError, KeyError) as e:
         # Log for debugging in tests
         import logging
 
