@@ -4,8 +4,6 @@ from app.models.orm import (
     VocabLearningLog,
     WordProficiency,
     SentenceLearningRecord,
-    UserGoal,
-    Attempt,
 )
 
 __all__ = [
@@ -16,6 +14,4 @@ __all__ = [
     "VocabLearningLog",
     "WordProficiency",
     "SentenceLearningRecord",
-    "UserGoal",
-    "Attempt",
 ]

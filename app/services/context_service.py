@@ -210,7 +210,6 @@ class ContextService:
                     context_type=ContextType.DICTIONARY_EXAMPLE,
                     text_content=example,
                     source=dict_name,
-                    story_id=None,
                     audio_url=None,
                 )
                 contexts.append(ctx)
@@ -243,7 +242,6 @@ class ContextService:
                 context_type=ctx.context_type.value,
                 text_content=ctx.text_content,
                 source=ctx.source,
-                story_id=ctx.story_id,
                 audio_url=ctx.audio_url,
             )
             db.add(orm_obj)
@@ -257,7 +255,6 @@ class ContextService:
                     context_type=ContextType(orm_obj.context_type),
                     text_content=orm_obj.text_content,
                     source=orm_obj.source,
-                    story_id=orm_obj.story_id,
                     audio_url=orm_obj.audio_url,
                     created_at=orm_obj.created_at,
                 )
@@ -299,7 +296,6 @@ class ContextService:
                 context_type=ContextType(row.context_type),
                 text_content=row.text_content,
                 source=row.source,
-                story_id=row.story_id,
                 audio_url=row.audio_url,
                 created_at=row.created_at,
             )
@@ -327,7 +323,6 @@ class ContextService:
             context_type=ContextType(row.context_type),
             text_content=row.text_content,
             source=row.source,
-            story_id=row.story_id,
             audio_url=row.audio_url,
             created_at=row.created_at,
         )

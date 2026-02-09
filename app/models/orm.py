@@ -65,56 +65,6 @@ class User(Base):
         return str(self.id)
 
 
-class Story(Base):
-    """
-    Generated Stories cache.
-    Previously table 'stories'.
-    """
-
-    __tablename__ = "stories"
-    __table_args__ = (Index("idx_story_topic_tense", "topic", "target_tense"),)
-
-    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    topic: Mapped[str] = mapped_column(Text)
-    target_tense: Mapped[str] = mapped_column(Text)
-    title: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
-    content: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
-    highlights: Mapped[List[Dict[str, Any]]] = mapped_column(
-        JSON, default=list
-    )  # Renamed from highlights_json
-    grammar_notes: Mapped[List[Dict[str, Any]]] = mapped_column(
-        JSON, default=list
-    )  # Renamed from notes_json
-    created_at: Mapped[datetime] = mapped_column(TIMESTAMP, server_default=func.now())
-
-
-class Attempt(Base):
-    """
-    User practice attempts/results.
-    Previously table 'attempts'.
-    """
-
-    __tablename__ = "attempts"
-
-    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    activity_type: Mapped[str] = mapped_column(
-        Text, index=True
-    )  # 'quiz', 'scenario', 'mission'
-    topic: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
-    tense: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
-
-    input_data: Mapped[Dict[str, Any]] = mapped_column(JSON)
-    user_response: Mapped[Dict[str, Any]] = mapped_column(JSON)
-
-    is_pass: Mapped[bool] = mapped_column(Boolean)
-    xp_earned: Mapped[int] = mapped_column(Integer, default=0)
-    duration_seconds: Mapped[int] = mapped_column(Integer, default=0)
-
-    created_at: Mapped[datetime] = mapped_column(
-        TIMESTAMP, server_default=func.now(), index=True
-    )
-
-
 class ContextResource(Base):
     """
     Unified context resource storage.
@@ -142,15 +92,11 @@ class ContextResource(Base):
         Text
     )  # "Collins" | "LDOCE" | "ai_generated" | URL
 
-    story_id: Mapped[Optional[int]] = mapped_column(
-        ForeignKey("stories.id"), nullable=True
-    )
     audio_url: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
 
     created_at: Mapped[datetime] = mapped_column(TIMESTAMP, server_default=func.now())
 
     # Relationships
-    story: Mapped[Optional["Story"]] = relationship("Story", backref="contexts")
     learning_records: Mapped[List["ContextLearningRecord"]] = relationship(
         "ContextLearningRecord", back_populates="context", cascade="all, delete-orphan"
     )
@@ -354,29 +300,6 @@ class UserComprehensionProfile(Base):
     weak_vocabulary_topics: Mapped[List[str]] = mapped_column(JSON, default=list)
 
     # Timestamps
-    created_at: Mapped[datetime] = mapped_column(TIMESTAMP, server_default=func.now())
-    updated_at: Mapped[datetime] = mapped_column(
-        TIMESTAMP, server_default=func.now(), onupdate=func.now()
-    )
-
-
-class UserGoal(Base):
-    """
-    User-defined learning goals for gamification.
-    Supports daily targets for new words, reviews, study time, and reading.
-    """
-
-    __tablename__ = "user_goals"
-    __table_args__ = (Index("idx_user_goals_user", "user_id"),)
-
-    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    user_id: Mapped[str] = mapped_column(Text, default="default_user")
-
-    # Goal type: 'new_words', 'review_words', 'study_minutes', 'reading_words'
-    goal_type: Mapped[str] = mapped_column(Text)
-    target_value: Mapped[int] = mapped_column(Integer, default=10)
-    is_active: Mapped[bool] = mapped_column(Boolean, default=True)
-
     created_at: Mapped[datetime] = mapped_column(TIMESTAMP, server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(
         TIMESTAMP, server_default=func.now(), onupdate=func.now()

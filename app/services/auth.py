@@ -44,7 +44,9 @@ def create_access_token(
         )
 
     to_encode.update({"exp": expire, "type": "access"})
-    encoded_jwt = jwt.encode(to_encode, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
+    encoded_jwt = jwt.encode(
+        to_encode, settings.SECRET_KEY, algorithm=settings.ALGORITHM
+    )
     return encoded_jwt, expire
 
 
@@ -64,7 +66,9 @@ def create_refresh_token(
         )
 
     to_encode.update({"exp": expire, "type": "refresh"})
-    encoded_jwt = jwt.encode(to_encode, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
+    encoded_jwt = jwt.encode(
+        to_encode, settings.SECRET_KEY, algorithm=settings.ALGORITHM
+    )
     return encoded_jwt, expire
 
 
@@ -76,7 +80,9 @@ def verify_token(token: str, expected_type: str = "access") -> Optional[TokenDat
     if not token:
         return None
     try:
-        payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
+        payload = jwt.decode(
+            token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM]
+        )
         user_id = payload.get("sub")
         email = payload.get("email")
         role = payload.get("role", "user")
@@ -85,10 +91,13 @@ def verify_token(token: str, expected_type: str = "access") -> Optional[TokenDat
         if user_id is None or token_type != expected_type:
             return None
 
-        return TokenData(user_id=int(user_id), email=email, role=role, token_type=token_type)
+        return TokenData(
+            user_id=int(user_id), email=email, role=role, token_type=token_type
+        )
     except (JWTError, ValueError, KeyError) as e:
         # Log for debugging in tests
         import logging
+
         logging.debug(f"Token verification failed: {e}")
         return None
 
@@ -182,7 +191,6 @@ async def migrate_default_user_data(db: AsyncSession, new_user_id: int) -> int:
         WordProficiency,
         VocabLearningLog,
         UserComprehensionProfile,
-        UserGoal,
         ReadingSession,
         UserCalibration,
         SentenceLearningRecord,
@@ -199,7 +207,6 @@ async def migrate_default_user_data(db: AsyncSession, new_user_id: int) -> int:
         WordProficiency,
         VocabLearningLog,
         UserComprehensionProfile,
-        UserGoal,
         ReadingSession,
         UserCalibration,
         SentenceLearningRecord,
