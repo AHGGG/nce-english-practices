@@ -123,16 +123,6 @@ class Settings(BaseSettings):
 
 settings = Settings()
 
-# Backwards compatibility exports
-HOME_DIR = settings.home_dir
-THEMES_DIR = settings.themes_dir
-PROGRESS_FILE = settings.progress_file
-EXPORT_FILE = settings.export_file
-MODEL_NAME = settings.MODEL_NAME
-OPENAI_API_KEY = settings.DEEPSEEK_API_KEY
-OPENAI_BASE_URL = settings.DEEPSEEK_BASE_URL
-GEMINI_API_KEY = settings.GEMINI_API_KEY or os.getenv("GOOGLE_API_KEY")
-
 
 def check_model_availability(client):
     """Probe the LLM API to confirm connectivity and return (ok, message)."""

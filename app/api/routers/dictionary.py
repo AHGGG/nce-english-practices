@@ -11,7 +11,7 @@ from app.models.collins_schemas import CollinsWord
 from app.services.ldoce_parser import ldoce_parser
 from app.models.ldoce_schemas import LDOCEWord
 from typing import Literal, Union
-from app.config import MODEL_NAME
+from app.config import settings
 import logging
 
 logger = logging.getLogger(__name__)
@@ -125,7 +125,7 @@ async def api_dict_context(payload: DictionaryContextRequest):
 
         response = await run_in_threadpool(
             lambda: llm_service.sync_client.chat.completions.create(
-                model=MODEL_NAME,
+                model=settings.MODEL_NAME,
                 messages=[{"role": "user", "content": prompt}],
                 temperature=0.3,
                 response_format={

@@ -7,9 +7,10 @@ from app.services.llm import LLMService
 
 
 def test_llm_init_no_keys():
+    # Patch the settings object in app.services.llm
     with (
-        patch("app.services.llm.OPENAI_API_KEY", None),
-        patch("app.services.llm.GEMINI_API_KEY", None),
+        patch("app.services.llm.settings.DEEPSEEK_API_KEY", ""),
+        patch("app.services.llm.settings.GEMINI_API_KEY", ""),
     ):
         service = LLMService()
         assert service.sync_client is None
@@ -19,8 +20,8 @@ def test_llm_init_no_keys():
 
 def test_llm_init_with_keys():
     with (
-        patch("app.services.llm.OPENAI_API_KEY", "sk-test"),
-        patch("app.services.llm.GEMINI_API_KEY", "gemini-test"),
+        patch("app.services.llm.settings.DEEPSEEK_API_KEY", "sk-test"),
+        patch("app.services.llm.settings.GEMINI_API_KEY", "gemini-test"),
     ):
         service = LLMService()
         assert service.sync_client is None  # Sync client is removed

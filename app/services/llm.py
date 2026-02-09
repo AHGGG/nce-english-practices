@@ -3,21 +3,15 @@ from __future__ import annotations
 from typing import Optional, Dict, Any, List, AsyncGenerator
 from openai import AsyncOpenAI
 from google import genai
-from app.config import (
-    settings,
-    OPENAI_API_KEY,
-    OPENAI_BASE_URL,
-    GEMINI_API_KEY,
-    MODEL_NAME,
-)
+from app.config import settings
 
 
 class LLMService:
     def __init__(self):
         # 1. Initialize OpenAI / DeepSeek Clients
-        self.api_key = OPENAI_API_KEY
-        self.base_url = OPENAI_BASE_URL
-        self.model_name = MODEL_NAME
+        self.api_key = settings.DEEPSEEK_API_KEY
+        self.base_url = settings.DEEPSEEK_BASE_URL
+        self.model_name = settings.MODEL_NAME
 
         # Sync Client (Removed)
         self.sync_client = None
@@ -32,7 +26,7 @@ class LLMService:
 
         # 2. Initialize Gemini Client (Voice)
         # Priority: Settings > Env Vars
-        self.gemini_key = GEMINI_API_KEY
+        self.gemini_key = settings.GEMINI_API_KEY
         if self.gemini_key:
             self.voice_client = genai.Client(
                 api_key=self.gemini_key, http_options={"api_version": "v1beta"}

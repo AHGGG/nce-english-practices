@@ -51,6 +51,15 @@ load_dotenv()
 # Setup unified logging (bridges Python logging to logs/unified.log)
 setup_logging()
 
+from app.config import settings
+
+# Security check for SECRET_KEY
+if settings.SECRET_KEY == "dev-secret-key-change-in-production-use-openssl-rand-hex-32":
+    logger.warning(
+        "🚨 SECURITY WARNING: Using default insecure SECRET_KEY! "
+        "Set SECRET_KEY env variable in production."
+    )
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
