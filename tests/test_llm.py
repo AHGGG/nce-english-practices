@@ -23,30 +23,9 @@ def test_llm_init_with_keys():
         patch("app.services.llm.GEMINI_API_KEY", "gemini-test"),
     ):
         service = LLMService()
-        assert service.sync_client is not None
+        assert service.sync_client is None  # Sync client is removed
         assert service.async_client is not None
         assert service.voice_client is not None
-
-
-def test_chat_complete_sync_success():
-    service = LLMService()
-    # Mock sync_client
-    mock_client = MagicMock()
-    mock_completion = MagicMock()
-    mock_completion.choices = [MagicMock(message=MagicMock(content="Hello World"))]
-    mock_client.chat.completions.create.return_value = mock_completion
-    service.sync_client = mock_client
-
-    result = service.chat_complete_sync(messages=[{"role": "user", "content": "Hi"}])
-    assert result == "Hello World"
-    mock_client.chat.completions.create.assert_called_once()
-
-
-def test_chat_complete_sync_no_client():
-    service = LLMService()
-    service.sync_client = None
-    with pytest.raises(RuntimeError):
-        service.chat_complete_sync(messages=[])
 
 
 @pytest.mark.asyncio

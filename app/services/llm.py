@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from typing import Optional, Dict, Any, List, AsyncGenerator
-from openai import OpenAI, AsyncOpenAI
+from openai import AsyncOpenAI
 from google import genai
 from app.config import (
     settings,
@@ -19,13 +19,8 @@ class LLMService:
         self.base_url = OPENAI_BASE_URL
         self.model_name = MODEL_NAME
 
-        # Sync Client
-        if self.api_key:
-            self.sync_client = OpenAI(
-                api_key=self.api_key, base_url=self.base_url, timeout=30.0
-            )
-        else:
-            self.sync_client = None
+        # Sync Client (Removed)
+        self.sync_client = None
 
         # Async Client
         if self.api_key:
@@ -61,9 +56,6 @@ class LLMService:
 
     # --- Accessors ---
 
-    def get_sync_client(self) -> Optional[OpenAI]:
-        return self.sync_client
-
     def get_async_client(self) -> Optional[AsyncOpenAI]:
         return self.async_client
 
@@ -74,26 +66,6 @@ class LLMService:
         return self.dashscope_client
 
     # --- Methods ---
-
-    def chat_complete_sync(
-        self,
-        messages: List[Dict[str, str]],
-        temperature: float = 0.7,
-        model: str = None,
-    ) -> str:
-        """
-        Wrapper for synchronous chat completion.
-        """
-        if not self.sync_client:
-            raise RuntimeError(
-                "OpenAI/DeepSeek client is not configured (API Key missing)."
-            )
-
-        model = model or self.model_name
-        response = self.sync_client.chat.completions.create(
-            model=model, messages=messages, temperature=temperature
-        )
-        return response.choices[0].message.content.strip()
 
     async def chat_complete(
         self,
