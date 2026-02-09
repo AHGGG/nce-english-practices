@@ -42,6 +42,7 @@ from app.models.sentence_study_schemas import (
     CollocationItem,
 )
 from app.api.routers.auth import get_current_user_id
+from app.services.log_collector import log_collector, LogLevel, LogCategory
 
 router = APIRouter(prefix="/api/sentence-study", tags=["sentence-study"])
 
@@ -503,7 +504,12 @@ async def detect_collocations_batch(
             # Convert dict to CollocationItem
             return sentence, [CollocationItem(**c) for c in collocations]
         except Exception as e:
-            print(f"Collocation detection failed for sentence: {e}")
+            log_collector.log(
+                f"Collocation detection failed for sentence: {e}",
+                level=LogLevel.WARN,
+                category=LogCategory.GENERAL,
+                source="backend",
+            )
             return sentence, []
 
     # Run all detections in parallel

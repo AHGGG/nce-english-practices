@@ -8,6 +8,8 @@ from app.services.content_service import content_service
 from app.models.content_schemas import SourceType
 from app.models.orm import ReadingSession, SentenceLearningRecord, ReviewItem
 
+from app.services.log_collector import log_collector, LogLevel, LogCategory
+
 router = APIRouter()
 
 
@@ -420,7 +422,12 @@ async def get_article_content(
                 )
                 result["highlights"] = highlights
             except Exception as e:
-                print(f"Highlight identification failed: {e}")
+                log_collector.log(
+                    f"Highlight identification failed: {e}",
+                    level=LogLevel.WARN,
+                    category=LogCategory.GENERAL,
+                    source="backend",
+                )
                 # Continue without highlights
 
         # Fetch study-based highlights (words/phrases looked up during Sentence Study)
@@ -513,7 +520,12 @@ async def get_article_content(
             import traceback
 
             traceback.print_exc()
-            print(f"Study highlights fetch failed: {e}")
+            log_collector.log(
+                f"Study highlights fetch failed: {e}",
+                level=LogLevel.ERROR,
+                category=LogCategory.GENERAL,
+                source="backend",
+            )
             result["unclear_sentences"] = []  # Ensure the field exists even on error
             # Continue without study highlights
 

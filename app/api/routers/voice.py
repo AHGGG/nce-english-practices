@@ -15,10 +15,18 @@ class VoiceTokenRequest(BaseModel):
     tense: str
 
 
+from app.services.log_collector import log_collector, LogLevel, LogCategory
+
+
 @router.websocket("/ws/voice")
 async def websocket_endpoint(websocket: WebSocket):
     await websocket.accept()
-    print("WS: Client Connected (Delegating to VoiceSession)")
+    log_collector.log(
+        "WS: Client Connected (Delegating to VoiceSession)",
+        level=LogLevel.INFO,
+        category=LogCategory.LIFECYCLE,
+        source="backend",
+    )
 
     session = VoiceSession(websocket)
     await session.run()

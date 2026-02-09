@@ -59,7 +59,7 @@ async def lifespan(app: FastAPI):
     # It seems Alembic is used or database.py handles it.
 
     # Load dictionary on startup (Background)
-    print("Startup: Initiating dictionary loading in background...")
+    logger.info("Startup: Initiating dictionary loading in background...")
     # Run synchronous load_dictionaries in a thread to avoid blocking the event loop
     asyncio.create_task(asyncio.to_thread(dict_manager.load_dictionaries))
 
@@ -266,9 +266,9 @@ if __name__ == "__main__":
     use_https = os.getenv("USE_HTTPS", "false").lower() == "true"
 
     if use_https and ssl_keyfile and ssl_certfile:
-        print("Starting with HTTPS (self-signed certificate)")
-        print("Access via: https://192.168.0.100:8000")
-        print("Note: Accept the security warning in your browser")
+        logger.info("Starting with HTTPS (self-signed certificate)")
+        logger.info("Access via: https://192.168.0.100:8000")
+        logger.info("Note: Accept the security warning in your browser")
         uvicorn.run(
             "app.main:app",
             host="0.0.0.0",
@@ -279,13 +279,15 @@ if __name__ == "__main__":
             ssl_certfile=ssl_certfile,
         )
     else:
-        print("Starting with HTTP (Default)")
+        logger.info("Starting with HTTP (Default)")
         if use_https:
-            print(
+            logger.warning(
                 "WARNING: HTTPS requested but certificates (key.pem/cert.pem) not found."
             )
-        print("For mobile voice, generate cert: uv run python scripts/generate_cert.py")
-        print("To enable HTTPS: ./scripts/dev.ps1 -Https")
+        logger.info(
+            "For mobile voice, generate cert: uv run python scripts/generate_cert.py"
+        )
+        logger.info("To enable HTTPS: ./scripts/dev.ps1 -Https")
         uvicorn.run(
             "app.main:app",
             host="0.0.0.0",

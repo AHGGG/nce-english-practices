@@ -15,7 +15,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.db import get_db
 from app.models.orm import ReviewItem, ReviewLog
 from app.api.routers.auth import get_current_user_id
-
+from app.services.log_collector import log_collector, LogLevel, LogCategory
 
 router = APIRouter(prefix="/api/review", tags=["review"])
 
@@ -565,7 +565,12 @@ async def get_review_context(
         )
 
     except Exception as e:
-        print(f"Error fetching context: {e}")
+        log_collector.log(
+            f"Error fetching context: {e}",
+            level=LogLevel.WARN,
+            category=LogCategory.GENERAL,
+            source="backend",
+        )
         # Graceful fallback
         return ReviewContextResponse(target_sentence=item.sentence_text)
 
