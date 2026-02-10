@@ -311,6 +311,18 @@ else:
 if __name__ == "__main__":
     import uvicorn
     import os
+    import copy
+    from uvicorn.config import LOGGING_CONFIG
+
+    # Customize Uvicorn logging to match application format (with timestamps)
+    log_config = copy.deepcopy(LOGGING_CONFIG)
+    # Use standard logging format with timestamps
+    log_config["formatters"]["default"]["fmt"] = (
+        "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+    )
+    log_config["formatters"]["access"]["fmt"] = (
+        '%(asctime)s - %(name)s - %(levelname)s - %(client_addr)s - "%(request_line)s" %(status_code)s'
+    )
 
     # Check for SSL certificates and intent
     ssl_keyfile = "key.pem" if os.path.exists("key.pem") else None
@@ -329,6 +341,7 @@ if __name__ == "__main__":
             reload_excludes=[".git", "__pycache__", "node_modules"],
             ssl_keyfile=ssl_keyfile,
             ssl_certfile=ssl_certfile,
+            log_config=log_config,
         )
     else:
         logger.info("Starting with HTTP (Default)")
@@ -346,4 +359,5 @@ if __name__ == "__main__":
             port=8000,
             reload=True,
             reload_excludes=[".git", "__pycache__", "node_modules"],
+            log_config=log_config,
         )
