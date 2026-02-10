@@ -12,7 +12,6 @@ import {
   Loader2,
   CloudOff,
   HardDrive,
-  Clock,
   AlertCircle,
   Music,
   RefreshCw,
@@ -485,7 +484,7 @@ export default function PodcastDownloadsView() {
               return (
                 <div
                   key={ep.id}
-                  className={`group relative flex items-start sm:items-center gap-4 p-4 md:p-5 rounded-2xl transition-all duration-300 border ${
+                  className={`group relative flex items-center gap-3 sm:gap-4 p-3 sm:p-4 rounded-xl transition-all duration-300 border ${
                     isCurrentEpisode
                       ? "bg-accent-primary/10 border-accent-primary/30 shadow-[0_0_30px_rgba(var(--color-accent-primary-rgb),0.1)]"
                       : isFinished
@@ -494,24 +493,24 @@ export default function PodcastDownloadsView() {
                   }`}
                 >
                   {/* Play button or Download Spinner */}
-                  <div className="flex-shrink-0 pt-1 sm:pt-0">
+                  <div className="flex-shrink-0 pt-0">
                     {isDownloading ? (
-                      <div className="w-12 h-12 md:w-14 md:h-14 flex items-center justify-center bg-white/5 rounded-xl border border-white/10">
-                        <div className="relative w-8 h-8">
-                          <svg className="w-8 h-8 -rotate-90">
+                      <div className="w-10 h-10 sm:w-12 sm:h-12 flex items-center justify-center bg-white/5 rounded-xl border border-white/10">
+                        <div className="relative w-6 h-6 sm:w-8 sm:h-8">
+                          <svg className="w-6 h-6 sm:w-8 sm:h-8 -rotate-90">
                             <circle
-                              cx="16"
-                              cy="16"
-                              r="12"
+                              cx="50%"
+                              cy="50%"
+                              r="45%"
                               strokeWidth="3"
                               stroke="currentColor"
                               fill="none"
                               className="text-white/10"
                             />
                             <circle
-                              cx="16"
-                              cy="16"
-                              r="12"
+                              cx="50%"
+                              cy="50%"
+                              r="45%"
                               strokeWidth="3"
                               stroke="currentColor"
                               fill="none"
@@ -528,29 +527,29 @@ export default function PodcastDownloadsView() {
                     ) : (
                       <button
                         onClick={() => handlePlay(item)}
-                        className={`w-12 h-12 md:w-14 md:h-14 rounded-xl flex items-center justify-center transition-all duration-300 ${
+                        className={`w-10 h-10 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center transition-all duration-300 ${
                           isCurrentEpisode
                             ? "bg-accent-primary text-black shadow-lg shadow-accent-primary/30 scale-105"
                             : isFinished
-                              ? "bg-transparent border-2 border-accent-success/30 text-accent-success hover:bg-accent-success/10"
+                              ? "bg-transparent border border-accent-success/30 text-accent-success hover:bg-accent-success/10"
                               : "bg-white/5 border border-white/10 text-white hover:bg-white/10 hover:border-white/20 hover:scale-105 shadow-lg shadow-black/20"
                         }`}
                       >
                         {isCurrentEpisode && isPlaying ? (
-                          <Pause className="w-5 h-5 md:w-6 md:h-6 fill-current" />
+                          <Pause className="w-4 h-4 sm:w-5 sm:h-5 fill-current" />
                         ) : isFinished && !isCurrentEpisode ? (
-                          <Check className="w-5 h-5 md:w-6 md:h-6 stroke-[3]" />
+                          <Check className="w-4 h-4 sm:w-5 sm:h-5 stroke-[3]" />
                         ) : (
-                          <Play className="w-5 h-5 md:w-6 md:h-6 ml-0.5 fill-current" />
+                          <Play className="w-4 h-4 sm:w-5 sm:h-5 ml-0.5 fill-current" />
                         )}
                       </button>
                     )}
                   </div>
 
                   {/* Episode info */}
-                  <div className="flex-1 min-w-0 flex flex-col gap-1.5">
+                  <div className="flex-1 min-w-0 py-1">
                     <h3
-                      className={`text-base md:text-lg font-bold font-serif leading-tight line-clamp-2 transition-colors ${
+                      className={`text-sm sm:text-base font-medium line-clamp-2 mb-1.5 transition-colors leading-snug ${
                         isCurrentEpisode
                           ? "text-accent-primary"
                           : isFinished
@@ -561,14 +560,14 @@ export default function PodcastDownloadsView() {
                       {ep.title}
                     </h3>
 
-                    <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-[10px] md:text-xs font-mono text-white/40 uppercase tracking-wider">
+                    <div className="flex flex-wrap items-center gap-x-3 sm:gap-x-4 gap-y-1 text-[10px] font-mono text-white/40 uppercase tracking-wider">
                       <span className="truncate max-w-[150px] text-white/60 font-bold">
                         {item.feed.title}
                       </span>
 
                       {ep.duration_seconds && (
                         <span className="flex items-center gap-1.5">
-                          <Clock className="w-3 h-3 text-white/20" />
+                          <span className="w-1 h-1 rounded-full bg-white/20" />
                           {formatDuration(ep.duration_seconds)}
                         </span>
                       )}
