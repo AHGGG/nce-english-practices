@@ -276,6 +276,19 @@ export function PodcastProvider({ children }) {
     // 2. Lower-frequency Cloud Sync (5s)
     const cloudSyncInterval = setInterval(async () => {
       if (isPlaying && sessionId) {
+        // 1. Sync Analytics (Time Spent)
+        // We use refs to get latest values without restarting the interval
+        if (listenedSecondsRef.current > 0) {
+          podcastApi
+            .updateListeningSession(
+              sessionId,
+              listenedSecondsRef.current,
+              audioRef.current?.currentTime || 0,
+            )
+            .catch((e) => console.warn("[Podcast] Session update failed:", e));
+        }
+
+        // 2. Sync Position (Resume State)
         const localPos = await getLocalPosition(currentEpisode.id);
         if (localPos) {
           podcastApi
@@ -286,7 +299,7 @@ export function PodcastProvider({ children }) {
               deviceType: localPos.deviceType,
               playbackRate: localPos.playbackRate,
               isFinished: localPos.isFinished || false,
-              duration: Math.round(audioRef.current.duration),
+              duration: Math.round(audioRef.current?.duration || 0),
             })
             .catch((e) => console.warn("[Podcast] Cloud sync failed:", e));
         }
@@ -354,7 +367,7 @@ export function PodcastProvider({ children }) {
       audioRef.current?.removeEventListener("pause", handlePause);
       window.removeEventListener("beforeunload", handleBeforeUnload);
     };
-  }, [currentEpisode, isPlaying, sessionId, playbackRate, listenedSeconds]);
+  }, [currentEpisode, isPlaying, sessionId, playbackRate]); // Removed listenedSeconds to avoid restarting interval
 
   // Load offline episodes and storage info on mount
   useEffect(() => {
