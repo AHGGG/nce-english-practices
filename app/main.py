@@ -1,4 +1,6 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
+from fastapi.responses import JSONResponse
+from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from contextlib import asynccontextmanager
 import asyncio
@@ -103,6 +105,47 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(title="NCE English Practice", lifespan=lifespan)
+
+# --- Global Exception Handlers ---
+
+
+@app.exception_handler(StarletteHTTPException)
+async def http_exception_handler(request: Request, exc: StarletteHTTPException):
+    """
+    Handle HTTP exceptions with logging.
+    """
+    # Only log 500s as errors, 4xx as warnings or info to avoid noise
+    if exc.status_code >= 500:
+        logger.error(f"HTTP {exc.status_code}: {exc.detail} - {request.url}")
+    else:
+        logger.warning(f"HTTP {exc.status_code}: {exc.detail} - {request.url}")
+
+    return JSONResponse(
+        status_code=exc.status_code,
+        content={"detail": exc.detail},
+    )
+
+
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    """
+    Catch-all exception handler for unhandled errors.
+    Prevents app crash and logs full traceback.
+    """
+    import traceback
+
+    error_msg = (
+        f"Unhandled Exception: {str(exc)}\nURL: {request.url}\n{traceback.format_exc()}"
+    )
+    logger.error(error_msg)
+
+    return JSONResponse(
+        status_code=500,
+        content={"detail": "Internal Server Error. Please check server logs."},
+    )
+
+
+# --- End Handlers ---
 
 # Configure CORS
 from fastapi.middleware.cors import CORSMiddleware

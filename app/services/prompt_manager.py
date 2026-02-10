@@ -1,6 +1,9 @@
 import yaml
+import logging
 from pathlib import Path
 from typing import Dict, Any, Optional
+
+logger = logging.getLogger(__name__)
 
 
 class PromptManager:
@@ -11,15 +14,15 @@ class PromptManager:
 
     def load_prompts(self):
         if not self.config_path.exists():
-            print(f"Warning: Prompt config not found at {self.config_path}")
+            logger.warning(f"Warning: Prompt config not found at {self.config_path}")
             return
 
         try:
             with open(self.config_path, "r", encoding="utf-8") as f:
                 self.prompts = yaml.safe_load(f) or {}
-            print(f"Loaded {len(self.prompts)} prompt sections.")
+            logger.info(f"Loaded {len(self.prompts)} prompt sections.")
         except Exception as e:
-            print(f"Failed to load prompts: {e}")
+            logger.error(f"Failed to load prompts: {e}")
 
     def get(self, key_path: str, default: Optional[str] = None) -> str:
         """

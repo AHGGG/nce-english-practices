@@ -4,8 +4,11 @@ TTS Service - Text-to-Speech using Deepgram API (Primary) with Edge TTS fallback
 
 import httpx
 import edge_tts
+import logging
 
 from app.config import settings
+
+logger = logging.getLogger(__name__)
 
 
 class TTSService:
@@ -26,7 +29,7 @@ class TTSService:
             try:
                 return await self._generate_deepgram(text, voice)
             except Exception as e:
-                print(f"Deepgram TTS failed, falling back to Edge TTS: {e}")
+                logger.warning(f"Deepgram TTS failed, falling back to Edge TTS: {e}")
 
         # Fallback to Edge TTS
         return await self._generate_edge(text, voice)
