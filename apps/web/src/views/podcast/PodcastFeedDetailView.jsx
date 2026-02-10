@@ -422,10 +422,10 @@ export default function PodcastFeedDetailView() {
             // Long press or click to force restart
             handleIntensiveListening(episode, true);
           }}
-          className="flex-shrink-0 p-3 text-amber-400 hover:bg-amber-500/10 rounded-lg transition-colors border border-transparent hover:border-amber-500/30"
+          className="flex-shrink-0 p-2 sm:p-3 text-amber-400 hover:bg-amber-500/10 rounded-lg transition-colors border border-transparent hover:border-amber-500/30"
           title="Generating transcript... Click to restart if stuck"
         >
-          <Loader2 className="w-5 h-5 animate-spin" />
+          <Loader2 className="w-4 h-4 sm:w-5 sm:h-5 animate-spin" />
         </button>
       );
     }
@@ -437,10 +437,10 @@ export default function PodcastFeedDetailView() {
             e.stopPropagation();
             handleIntensiveListening(episode);
           }}
-          className="flex-shrink-0 p-3 text-accent-primary hover:bg-accent-primary/10 rounded-lg transition-colors border border-transparent hover:border-accent-primary/30"
+          className="flex-shrink-0 p-2 sm:p-3 text-accent-primary hover:bg-accent-primary/10 rounded-lg transition-colors border border-transparent hover:border-accent-primary/30"
           title="Enter intensive listening mode"
         >
-          <BookOpen className="w-5 h-5" />
+          <BookOpen className="w-4 h-4 sm:w-5 sm:h-5" />
         </button>
       );
     }
@@ -452,10 +452,10 @@ export default function PodcastFeedDetailView() {
           e.stopPropagation();
           handleIntensiveListening(episode);
         }}
-        className="flex-shrink-0 p-3 text-white/40 hover:text-accent-primary hover:bg-accent-primary/10 rounded-lg transition-colors border border-transparent hover:border-accent-primary/20"
+        className="flex-shrink-0 p-2 sm:p-3 text-white/40 hover:text-accent-primary hover:bg-accent-primary/10 rounded-lg transition-colors border border-transparent hover:border-accent-primary/20"
         title="Generate transcript for intensive listening"
       >
-        <BookOpen className="w-5 h-5" />
+        <BookOpen className="w-4 h-4 sm:w-5 sm:h-5" />
       </button>
     );
   };
@@ -511,9 +511,12 @@ export default function PodcastFeedDetailView() {
     if (state.status === "downloading") {
       return (
         <div className="flex-shrink-0 flex items-center gap-2">
-          <div className="relative w-10 h-10 group">
+          <div className="relative w-8 h-8 sm:w-10 sm:h-10 group">
             {/* Progress ring */}
-            <svg className="w-10 h-10 -rotate-90">
+            <svg
+              className="w-8 h-8 sm:w-10 sm:h-10 -rotate-90"
+              viewBox="0 0 40 40"
+            >
               <circle
                 cx="20"
                 cy="20"
@@ -565,10 +568,10 @@ export default function PodcastFeedDetailView() {
             // Retry download
             handleDownloadClick(episode);
           }}
-          className="flex-shrink-0 p-3 text-red-400 hover:bg-red-500/10 rounded-lg transition-colors border border-transparent hover:border-red-500/30"
+          className="flex-shrink-0 p-2 sm:p-3 text-red-400 hover:bg-red-500/10 rounded-lg transition-colors border border-transparent hover:border-red-500/30"
           title={state.error || "Download failed. Click to retry."}
         >
-          <AlertCircle className="w-5 h-5" />
+          <AlertCircle className="w-4 h-4 sm:w-5 sm:h-5" />
         </button>
       );
     }
@@ -580,10 +583,10 @@ export default function PodcastFeedDetailView() {
             e.stopPropagation();
             handleDownloadClick(episode); // Will offer to remove
           }}
-          className="flex-shrink-0 p-3 text-accent-success hover:bg-accent-success/10 rounded-lg transition-colors border border-transparent hover:border-accent-success/30"
+          className="flex-shrink-0 p-2 sm:p-3 text-accent-success hover:bg-accent-success/10 rounded-lg transition-colors border border-transparent hover:border-accent-success/30"
           title="Downloaded. Click to remove."
         >
-          <CheckCircle2 className="w-5 h-5" />
+          <CheckCircle2 className="w-4 h-4 sm:w-5 sm:h-5" />
         </button>
       );
     }
@@ -595,10 +598,10 @@ export default function PodcastFeedDetailView() {
           e.stopPropagation();
           handleDownloadClick(episode);
         }}
-        className="flex-shrink-0 p-3 text-white/40 hover:text-accent-primary hover:bg-accent-primary/10 rounded-lg transition-colors border border-transparent hover:border-accent-primary/20"
+        className="flex-shrink-0 p-2 sm:p-3 text-white/40 hover:text-accent-primary hover:bg-accent-primary/10 rounded-lg transition-colors border border-transparent hover:border-accent-primary/20"
         title="Download for offline"
       >
-        <Download className="w-5 h-5" />
+        <Download className="w-4 h-4 sm:w-5 sm:h-5" />
       </button>
     );
   };
@@ -842,7 +845,7 @@ export default function PodcastFeedDetailView() {
               return (
                 <div
                   key={episode.id}
-                  className={`group relative flex items-center gap-4 p-4 rounded-xl transition-all duration-300 border ${
+                  className={`group relative flex items-center gap-3 sm:gap-4 p-3 sm:p-4 rounded-xl transition-all duration-300 border ${
                     isCurrentEpisode
                       ? "bg-accent-primary/10 border-accent-primary/30 shadow-[0_0_30px_rgba(var(--color-accent-primary-rgb),0.1)]"
                       : isFinished
@@ -852,7 +855,7 @@ export default function PodcastFeedDetailView() {
                 >
                   <button
                     onClick={() => handlePlayEpisode(episode)}
-                    className={`flex-shrink-0 w-12 h-12 rounded-xl flex items-center justify-center transition-all duration-300 ${
+                    className={`flex-shrink-0 w-10 h-10 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center transition-all duration-300 ${
                       isCurrentEpisode
                         ? "bg-accent-primary text-black shadow-lg shadow-accent-primary/30 scale-105"
                         : isFinished
@@ -861,17 +864,17 @@ export default function PodcastFeedDetailView() {
                     }`}
                   >
                     {isCurrentEpisode && isPlaying ? (
-                      <Pause className="w-5 h-5 fill-current" />
+                      <Pause className="w-4 h-4 sm:w-5 sm:h-5 fill-current" />
                     ) : isFinished && !isCurrentEpisode ? (
-                      <Check className="w-5 h-5 stroke-[3]" />
+                      <Check className="w-4 h-4 sm:w-5 sm:h-5 stroke-[3]" />
                     ) : (
-                      <Play className="w-5 h-5 ml-0.5 fill-current" />
+                      <Play className="w-4 h-4 sm:w-5 sm:h-5 ml-0.5 fill-current" />
                     )}
                   </button>
 
                   <div className="flex-1 min-w-0 py-1">
                     <h3
-                      className={`text-base font-medium line-clamp-1 mb-2 transition-colors ${
+                      className={`text-sm sm:text-base font-medium line-clamp-2 mb-1.5 transition-colors leading-snug ${
                         isCurrentEpisode
                           ? "text-accent-primary"
                           : isFinished
@@ -882,10 +885,10 @@ export default function PodcastFeedDetailView() {
                     >
                       {episode.title}
                       {isOffline && (
-                        <CloudOff className="inline-block w-3.5 h-3.5 ml-2 text-accent-success" />
+                        <CloudOff className="inline-block w-3 h-3 ml-1.5 text-accent-success" />
                       )}
                     </h3>
-                    <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-[10px] font-mono text-white/40 uppercase tracking-wider">
+                    <div className="flex flex-wrap items-center gap-x-3 sm:gap-x-4 gap-y-1 text-[10px] font-mono text-white/40 uppercase tracking-wider">
                       {episode.published_at && (
                         <span className="flex items-center gap-1.5">
                           <Clock className="w-3 h-3 text-white/20" />
