@@ -25,12 +25,12 @@ async def generate_golden_standard(word: str, output_dir: Path):
     """Generate golden standard HTML and expected JSON for a word."""
 
     print("🔍 Loading dictionaries...")
-    dict_manager.load_dictionaries()
+    await dict_manager.load_dictionaries()
 
     print(f"🔍 Looking up '{word}' in LDOCE...")
 
     # Get raw dictionary results
-    results = dict_manager.lookup(word)
+    results = await dict_manager.lookup(word)
 
     # Find LDOCE result
     ldoce_html = None

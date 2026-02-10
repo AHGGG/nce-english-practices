@@ -69,8 +69,8 @@ async def lifespan(app: FastAPI):
 
     # Load dictionary on startup (Background)
     logger.info("Startup: Initiating dictionary loading in background...")
-    # Run synchronous load_dictionaries in a thread to avoid blocking the event loop
-    asyncio.create_task(asyncio.to_thread(dict_manager.load_dictionaries))
+    # Run async load_dictionaries directly in background
+    asyncio.create_task(dict_manager.load_dictionaries())
 
     # Start AUI Input Listener (Postgres LISTEN/NOTIFY)
     from app.services.aui_input import input_service

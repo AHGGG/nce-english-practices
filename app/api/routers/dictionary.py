@@ -61,13 +61,13 @@ async def get_dict_asset(file_path: str):
     filename = os.path.basename(file_path)
 
     # Try exact match first
-    content, media_type = dict_manager.get_resource(file_path)
+    content, media_type = await dict_manager.get_resource(file_path)
     if content:
         return Response(content=content, media_type=media_type)
 
     # Try basename match
     if filename != file_path:
-        content, media_type = dict_manager.get_resource(filename)
+        content, media_type = await dict_manager.get_resource(filename)
         if content:
             return Response(content=content, media_type=media_type)
 
@@ -75,8 +75,8 @@ async def get_dict_asset(file_path: str):
 
 
 @router.get("/dict/resource")
-def get_resource_legacy(path: str):
-    content, media_type = dict_manager.get_resource(path)
+async def get_resource_legacy(path: str):
+    content, media_type = await dict_manager.get_resource(path)
     if not content:
         raise HTTPException(status_code=404, detail="Resource not found")
 
@@ -86,9 +86,7 @@ def get_resource_legacy(path: str):
 @router.post("/api/dictionary/lookup")
 async def api_dict_lookup(payload: DictionaryLookupRequest):
     try:
-        from fastapi.concurrency import run_in_threadpool
-
-        results = await run_in_threadpool(dict_manager.lookup, payload.word)
+        results = await dict_manager.lookup(payload.word)
         return {"results": results}
     except Exception:
         logger.exception("Dict Lookup Error")
@@ -198,9 +196,9 @@ async def _get_collins_word_internal(
     MAX_CROSS_REF_DEPTH = 2  # Allow max 2 levels of cross-references
 
     try:
-        # Lookup in dictionary (runs in threadpool as it may be slow)
+        # Lookup in dictionary (Async, Non-blocking)
         t1 = time.time()
-        results = await run_in_threadpool(dict_manager.lookup, word)
+        results = await dict_manager.lookup(word)
         t2 = time.time()
         logger.debug(f"Collins dict_manager.lookup('{word}'): {(t2 - t1) * 1000:.1f}ms")
 
@@ -296,8 +294,8 @@ async def get_ldoce_word(
         return _ldoce_cache[cache_key]
 
     try:
-        # Lookup in dictionary
-        results = await run_in_threadpool(dict_manager.lookup, word)
+        # Lookup in dictionary (Async, Non-blocking)
+        results = await dict_manager.lookup(word)
 
         # Find LDOCE dictionary result
         ldoce_html = None

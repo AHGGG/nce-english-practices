@@ -94,10 +94,10 @@ async def lookup_word(params: Dict[str, Any], websocket=None) -> Dict[str, Any]:
 
     try:
         # Load dictionaries if not already loaded
-        dict_manager.load_dictionaries()
+        await dict_manager.load_dictionaries()
 
         # Look up the word
-        results = dict_manager.lookup(word)
+        results = await dict_manager.lookup(word)
 
         logger.info(f"Lookup results for '{word}': {results}")
 
