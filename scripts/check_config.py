@@ -5,12 +5,13 @@ from pathlib import Path
 # Add project root to path
 sys.path.append(str(Path(__file__).parent.parent))
 
-from app.services.voice_lab import voice_lab_service
+from app.services.voice_lab import get_voice_lab_service
 
 
 async def print_config():
-    config = voice_lab_service.get_all_configs()
+    config = get_voice_lab_service().get_all_configs()
     print("--- Dashscope Config ---")
+
     print(config.get("dashscope"))
 
 

@@ -4,7 +4,7 @@ from difflib import SequenceMatcher
 from dataclasses import dataclass
 import time
 
-from app.services.voice_lab import voice_lab_service
+from app.services.voice_lab import get_voice_lab_service
 
 # Setup Logger
 logger = logging.getLogger(__name__)
@@ -39,10 +39,11 @@ class VoiceTester:
         """
         start_time = time.time()
         try:
-            tts_provider = voice_lab_service.get_provider(tts_provider_name)
-            stt_judge = voice_lab_service.get_provider(stt_judge_name)
+            tts_provider = get_voice_lab_service().get_provider(tts_provider_name)
+            stt_judge = get_voice_lab_service().get_provider(stt_judge_name)
 
             # 1. Generate Audio
+
             audio_chunks = []
             async for chunk in tts_provider.tts(text, voice_id, tts_model):
                 audio_chunks.append(chunk)
@@ -94,13 +95,13 @@ class VoiceTester:
         """
         start_time = time.time()
         try:
-            stt_provider = voice_lab_service.get_provider(stt_provider_name)
+            stt_provider = get_voice_lab_service().get_provider(stt_provider_name)
 
             # 1. Get Reference Audio
             audio_data = reference_audio
             if not audio_data:
                 # Generate integrity reference
-                tts_ref = voice_lab_service.get_provider(tts_ref_name)
+                tts_ref = get_voice_lab_service().get_provider(tts_ref_name)
                 chunks = []
                 async for chunk in tts_ref.tts(text, tts_ref_voice, tts_ref_model):
                     chunks.append(chunk)
@@ -141,9 +142,9 @@ class VoiceTester:
         """
         start_time = time.time()
         try:
-            sts_provider = voice_lab_service.get_provider(sts_provider_name)
-            tts_ref = voice_lab_service.get_provider(tts_ref_name)
-            stt_judge = voice_lab_service.get_provider(stt_judge_name)
+            sts_provider = get_voice_lab_service().get_provider(sts_provider_name)
+            tts_ref = get_voice_lab_service().get_provider(tts_ref_name)
+            stt_judge = get_voice_lab_service().get_provider(stt_judge_name)
 
             # 1. Generate Source Audio (Reference)
             source_chunks = []

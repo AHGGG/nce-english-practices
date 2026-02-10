@@ -782,4 +782,12 @@ class VoiceLabService:
         return {name: p.get_config() for name, p in self.providers.items()}
 
 
-voice_lab_service = VoiceLabService()
+_service_instance: Optional[VoiceLabService] = None
+
+
+def get_voice_lab_service() -> VoiceLabService:
+    """Lazy loader for VoiceLabService singleton."""
+    global _service_instance
+    if _service_instance is None:
+        _service_instance = VoiceLabService()
+    return _service_instance

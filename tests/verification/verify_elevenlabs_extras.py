@@ -5,7 +5,7 @@ import sys
 # Ensure app imports work
 sys.path.insert(0, os.getcwd())
 
-from app.services.voice_lab import voice_lab_service
+from app.services.voice_lab import get_voice_lab_service
 from app.config import settings
 
 
@@ -16,9 +16,10 @@ async def verify_elevenlabs_extras():
         print("SKIP: No ELEVENLABS_API_KEY found in env.")
         return
 
-    provider = voice_lab_service.get_provider("elevenlabs")
+    provider = get_voice_lab_service().get_provider("elevenlabs")
 
     # 1. Test Text to Sound Effects
+
     print("\n1. Testing Text to Sound Effects ('Cinematic Boom')...")
     try:
         sfx_chunks = []

@@ -1,6 +1,6 @@
 from fastapi import APIRouter, UploadFile, File, Form, WebSocket, HTTPException
 from fastapi.responses import StreamingResponse
-from app.services.voice_lab import voice_lab_service
+from app.services.voice_lab import get_voice_lab_service
 from app.core.utils import validate_input
 import logging
 
@@ -13,7 +13,7 @@ router = APIRouter(prefix="/api/voice-lab", tags=["voice-lab"])
 async def get_config():
     """Get available providers, voices, and models."""
     try:
-        return voice_lab_service.get_all_configs()
+        return get_voice_lab_service().get_all_configs()
     except HTTPException:
         raise
     except Exception as e:
@@ -35,7 +35,7 @@ async def tts_endpoint(
 
     try:
         logger.info(f"TTS Request: {provider} - {voice_id}")
-        svc = voice_lab_service.get_provider(provider)
+        svc = get_voice_lab_service().get_provider(provider)
 
         async def audio_gen():
             try:
@@ -63,7 +63,7 @@ async def stt_endpoint(provider: str = Form(...), file: UploadFile = File(...)):
     """Transcribe audio file."""
     try:
         logger.info(f"STT Request: {provider}")
-        svc = voice_lab_service.get_provider(provider)
+        svc = get_voice_lab_service().get_provider(provider)
         content = await file.read()
         text = await svc.stt(content)
         return {"text": text}
@@ -86,10 +86,11 @@ async def assess_endpoint(
 
     try:
         logger.info(f"Assessment Request: {provider}")
-        svc = voice_lab_service.get_provider(provider)
+        svc = get_voice_lab_service().get_provider(provider)
         content = await file.read()
 
         # Call assess method
+
         result = await svc.assess(content, reference_text)
         return result
     except HTTPException:
