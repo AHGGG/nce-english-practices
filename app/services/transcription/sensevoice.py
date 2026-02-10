@@ -168,7 +168,7 @@ class SenseVoiceEngine(BaseTranscriptionEngine):
             Path to the model.py file (relative path for FunASR compatibility)
         """
         import sys
-        import urllib.request
+        import httpx
 
         # Create directory structure for Fun-ASR code
         # Use project root for Windows compatibility with FunASR's path handling
@@ -188,12 +188,20 @@ class SenseVoiceEngine(BaseTranscriptionEngine):
 
         base_url = "https://raw.githubusercontent.com/FunAudioLLM/Fun-ASR/main"
 
+        proxies = settings.PROXY_URL if settings.PROXY_URL else None
+
         for remote_path, local_path in files_to_download:
             if not local_path.exists():
                 url = f"{base_url}/{remote_path}"
                 logger.info(f"Downloading Fun-ASR {remote_path}...")
                 try:
-                    urllib.request.urlretrieve(url, local_path)
+                    # Use proxy= for single proxy URL string in httpx
+                    with httpx.Client(
+                        proxy=proxies, timeout=30.0, follow_redirects=True
+                    ) as client:
+                        response = client.get(url)
+                        response.raise_for_status()
+                        local_path.write_bytes(response.content)
                     logger.info(f"Downloaded {remote_path} to {local_path}")
                 except Exception as e:
                     raise TranscriptionError(

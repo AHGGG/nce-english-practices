@@ -5,6 +5,9 @@ from typing import AsyncGenerator, Optional, Dict, Any
 
 from app.config import settings
 
+from fastapi.concurrency import run_in_threadpool
+from starlette.concurrency import iterate_in_threadpool
+
 # Setup Logger
 logger = logging.getLogger(__name__)
 
@@ -629,18 +632,23 @@ class DashscopeProvider(VoiceProvider):
         yield create_wav_header(sample_rate=24000, channels=1, bits_per_sample=16)
 
         try:
-            response = dashscope.MultiModalConversation.call(
-                api_key=self.api_key,
-                model=model,
-                text=text,
-                voice=voice,
-                language_type="Chinese"
-                if any("\u4e00" <= c <= "\u9fff" for c in text)
-                else "English",  # specific to qwen tts needs? or maybe auto? user snippet shows Chinese.
-                stream=True,
-            )
+            # Run the synchronous Dashscope call in a thread pool
+            def _get_response_iterator():
+                return dashscope.MultiModalConversation.call(
+                    api_key=self.api_key,
+                    model=model,
+                    text=text,
+                    voice=voice,
+                    language_type="Chinese"
+                    if any("\u4e00" <= c <= "\u9fff" for c in text)
+                    else "English",
+                    stream=True,
+                )
 
-            for chunk in response:
+            response = await run_in_threadpool(_get_response_iterator)
+
+            # Iterate over the generator in the thread pool to avoid blocking the event loop
+            async for chunk in iterate_in_threadpool(response):
                 if chunk.status_code != 200:
                     logger.error(
                         f"Dashscope TTS Chunk Error: {chunk.code} - {chunk.message}"
@@ -698,13 +706,16 @@ class DashscopeProvider(VoiceProvider):
                 },
             ]
 
-            response = dashscope.MultiModalConversation.call(
-                api_key=self.api_key,
-                model=model or "qwen3-asr-flash",
-                messages=messages,
-                result_format="message",
-                asr_options={"enable_lid": True, "enable_itn": False},
-            )
+            def _call_dashscope_asr():
+                return dashscope.MultiModalConversation.call(
+                    api_key=self.api_key,
+                    model=model or "qwen3-asr-flash",
+                    messages=messages,
+                    result_format="message",
+                    asr_options={"enable_lid": True, "enable_itn": False},
+                )
+
+            response = await run_in_threadpool(_call_dashscope_asr)
 
             if response.status_code == 200:
                 # Response format:

@@ -263,9 +263,12 @@ class DictionaryManager:
                 if html_content:
                     # Handle @@@LINK redirects
                     html_content = await self._follow_links(html_content, d)
-                    processed_html = self._process_html(
-                        html_content, d["name"], d["subdir"]
+
+                    # Process HTML in threadpool to avoid blocking event loop with BeautifulSoup
+                    processed_html = await run_in_threadpool(
+                        self._process_html, html_content, d["name"], d["subdir"]
                     )
+
                     results.append(
                         {
                             "dictionary": d["name"],

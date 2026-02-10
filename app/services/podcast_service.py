@@ -20,6 +20,7 @@ import feedparser
 from sqlalchemy import select, func, and_, update
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.ext.asyncio import AsyncSession
+from fastapi.concurrency import run_in_threadpool
 
 from app.config import settings
 from app.models.podcast_orm import (
@@ -287,7 +288,8 @@ class PodcastService:
                 else:
                     raise ValueError(f"Failed to fetch feed: {e}")
 
-            feed = feedparser.parse(content)
+            # Parse feed in threadpool (CPU bound)
+            feed = await run_in_threadpool(feedparser.parse, content)
 
             # Extract feed metadata
             feed_data = {
