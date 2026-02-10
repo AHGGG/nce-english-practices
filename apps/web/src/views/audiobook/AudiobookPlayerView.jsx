@@ -19,7 +19,7 @@ import {
   initializeRenderers,
 } from "../../components/content";
 import WordInspector from "../../components/reading/WordInspector";
-import useWordExplainer from "../../hooks/useWordExplainer";
+import { useWordExplainer } from "@nce/shared";
 import { useToast } from "../../components/ui/Toast";
 import { transcribeAudiobook } from "../../api/audiobook";
 

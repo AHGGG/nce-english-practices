@@ -23,7 +23,7 @@ import {
 } from "./constants";
 import { HIGHLIGHT_OPTIONS, mapLevelToOptionIndex } from "../reading/constants";
 import WordInspector from "../reading/WordInspector";
-import useWordExplainer from "../../hooks/useWordExplainer";
+import { useWordExplainer } from "@nce/shared";
 import { useGlobalState } from "../../context/GlobalContext";
 import { parseJSONSSEStream, isSSEResponse } from "../../utils/sseParser";
 import { useToast } from "../../components/ui/Toast";

@@ -10,12 +10,15 @@ import { useParams, useNavigate } from "react-router-dom";
 import { ArrowLeft, Loader2, AlertCircle } from "lucide-react";
 import { authFetch } from "../../api/auth";
 import { getCachedAudioUrl } from "../../utils/offline";
-import { useAudioPlayer, useCollocationLoader } from "@nce/shared";
+import {
+  useAudioPlayer,
+  useCollocationLoader,
+  useWordExplainer,
+} from "@nce/shared";
 
 // Import the component directly (not the class)
 import { AudioPlayerUI } from "../../components/content/renderers/AudioContentRenderer";
 import WordInspector from "../../components/reading/WordInspector";
-import useWordExplainer from "../../hooks/useWordExplainer";
 
 export default function UnifiedPlayerView() {
   const { sourceType, contentId } = useParams();

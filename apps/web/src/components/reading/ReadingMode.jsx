@@ -10,10 +10,9 @@ import {
   BATCH_SIZE,
   mapLevelToOptionIndex,
 } from "./constants";
-import useWordExplainer from "../../hooks/useWordExplainer";
 import { useGlobalState } from "../../context/GlobalContext";
 import { authFetch } from "../../api/auth";
-import { useCollocationLoader } from "@nce/shared";
+import { useCollocationLoader, useWordExplainer } from "@nce/shared";
 
 import { useToast, Dialog, DialogButton } from "../ui";
 
