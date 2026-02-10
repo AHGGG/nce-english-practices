@@ -431,3 +431,20 @@ export async function getEpisodesBatch(episodeIds) {
   if (!response.ok) throw new Error("Failed to get episodes");
   return response.json();
 }
+
+/**
+ * Resolve position conflict.
+ * Note: Caller must provide data with backend-compatible keys (snake_case).
+ */
+export async function resolvePosition(episodeId, data) {
+  const response = await authFetch(
+    `${BASE_URL}/episode/${episodeId}/position/resolve`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data),
+    },
+  );
+  if (!response.ok) throw new Error("Resolve failed");
+  return response.json();
+}
