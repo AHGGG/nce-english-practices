@@ -1,49 +1,87 @@
-# NCE English Practice (Universal App)
+# NCE English Practice
 
-An interactive English tense practice application powered by LLMs (DeepSeek/OpenAI).
-Built with **FastAPI**, **React**, and **Monorepo Architecture** (Web + Mobile ready).
+Full-stack English learning platform focused on reading, listening, and voice training.
 
-## Features
+## Core Features
 
-- **AI-Powered Vocabulary**: Generates context-aware vocabulary based on your chosen topic.
-- **Tense Matrix**: Automatically generates sentences across 4 time layers and 4 aspects.
-- **Interactive Practice**: Type your answers and get AI feedback.
-- **Hybrid Dictionary**: MDX dictionary support with images and audio.
-- **Voice Conversation**: Real-time voice practice with Gemini.
-- **Remote Transcription**: Offload heavy AI transcription tasks to a dedicated GPU server.
+| Module                      | Description                                                           |
+| --------------------------- | --------------------------------------------------------------------- |
+| **Dictionary**              | Collins COBUILD / LDOCE6++ MDX dictionaries with structured parsing   |
+| **Podcast**                 | RSS subscriptions, AI transcription, timeline subtitle playback       |
+| **Voice Lab**               | Real-time voice conversation (Deepgram STT + Gemini TTS)              |
+| **Sentence Study**          | Contextual sentence analysis and practice                             |
+| **Proficiency Calibration** | LLM-generated calibration sentences for vocabulary/grammar assessment |
+| **Review System**           | SM-2 spaced repetition algorithm powered review queue                 |
+| **Agent Mode**              | Context-aware AI coach with tool calling support                      |
+| **Audiobook**               | Subtitle-synced local audiobook playback                              |
 
-## Setup & Run
+## Tech Stack
 
-The project uses `pnpm` workspaces and `Turborepo`.
+**Backend**
 
-1. **Install Dependencies**:
+- FastAPI + SQLAlchemy 2.0 (async)
+- PostgreSQL + Alembic migrations
+- LLM: DeepSeek + Gemini Native Audio
 
-   ```bash
-   # Standard install (lightweight, supports Remote Transcription client)
-   pnpm install
-   uv sync
+**Frontend**
 
-   # Full install (includes local GPU transcription support)
-   uv sync --extra local-asr
-   ```
+- React 19 + Vite (Web)
+- React Native + Expo (Mobile)
+- Zustand state management + TanStack Query
 
-2. **Configuration**:
+**Architecture**
 
-   Create a `.env` file in the root (see `.env.example` or CLAUDE.md).
+- Monorepo: pnpm workspaces + Turborepo
+- Shared: API client, Hooks, Design Tokens
 
-3. **Run Full Stack**:
+## Quick Start
 
-   ```bash
-   pnpm turbo dev
-   ```
+```bash
+# Install dependencies
+pnpm install
+uv sync
 
-   - Frontend: http://localhost:5173
-   - Backend: http://localhost:8000
+# Configure environment
+cp .env.example .env
+
+# Run full stack
+pnpm turbo dev
+
+# Web: http://localhost:5173
+# API: http://localhost:8000
+```
 
 ## Project Structure
 
-- `apps/web`: React Frontend (Vite)
-- `apps/backend`: Proxy for Python Backend
-- `packages/shared`: Shared Business Logic & Hooks
-- `packages/api`: Shared API Client & Auth
-- `app/`: Python Backend Source Code
+```
+├── apps/
+│   ├── web/           # React Vite frontend
+│   ├── mobile/        # Expo mobile app
+│   └── backend/       # Proxy configuration
+├── packages/
+│   ├── api/           # Shared API client
+│   ├── shared/        # Shared hooks/utils
+│   ├── store/         # Zustand store
+│   └── ui-tokens/     # Design tokens
+├── app/               # Python backend
+│   ├── api/routers/   # FastAPI routes
+│   ├── services/      # Business logic
+│   └── models/        # ORM/Pydantic models
+├── resources/         # Dictionary/audio resources
+├── docs/skills/       # Detailed development guides
+└── tests/             # Test suite
+```
+
+## Development Commands
+
+```bash
+pnpm turbo dev          # Full stack development
+pnpm turbo lint         # Lint code
+uv run pytest tests -v  # Run tests
+```
+
+## Documentation
+
+- [CLAUDE.md](CLAUDE.md) - AI assistant development guide
+- [AGENTS.md](AGENTS.md) - Agent system documentation
+- `docs/skills/` - Detailed module documentation
