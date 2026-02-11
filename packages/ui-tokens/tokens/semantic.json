@@ -1,0 +1,70 @@
+{
+  "color": {
+    "bg": {
+      "base": {
+        "$value": "#050505",
+        "$type": "color",
+        "$description": "Page background - OLED optimized"
+      },
+      "surface": {
+        "$value": "#0A0A0A",
+        "$type": "color",
+        "$description": "Card/Component background"
+      },
+      "elevated": {
+        "$value": "#121212",
+        "$type": "color",
+        "$description": "Modal/Dialog background"
+      },
+      "gradient": {
+        "start": {
+          "$value": "#0a0f0d",
+          "$type": "color"
+        },
+        "end": {
+          "$value": "#152821",
+          "$type": "color"
+        }
+      }
+    },
+    "text": {
+      "primary": {
+        "$value": "#E0E0E0",
+        "$type": "color",
+        "$description": "Main content text"
+      },
+      "secondary": {
+        "$value": "#888888",
+        "$type": "color",
+        "$description": "Supporting text"
+      },
+      "muted": {
+        "$value": "#555555",
+        "$type": "color",
+        "$description": "Disabled/Hint text"
+      },
+      "inverse": {
+        "$value": "#050505",
+        "$type": "color",
+        "$description": "Text on dark backgrounds"
+      }
+    },
+    "border": {
+      "default": {
+        "$value": "#1A1A1A",
+        "$type": "color",
+        "$description": "Default border color"
+      },
+      "subtle": {
+        "$value": "#0F0F0F",
+        "$type": "color",
+        "$description": "Subtle border for dividers"
+      },
+      "hover": {
+        "$value": "#00FF94",
+        "$type": "color",
+        "$description": "Border color on hover"
+      }
+    }
+  }
+}

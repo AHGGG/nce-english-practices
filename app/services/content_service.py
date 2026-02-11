@@ -7,6 +7,7 @@ from app.services.content_providers.epub_provider import EpubProvider
 from app.services.content_providers.rss_provider import RssProvider
 from app.services.content_providers.podcast_provider import PodcastProvider
 from app.services.content_providers.plain_text_provider import PlainTextProvider
+from app.services.content_providers.audiobook_provider import AudiobookProvider
 
 
 class ContentService:
@@ -23,6 +24,7 @@ class ContentService:
         self.register_provider(RssProvider())
         self.register_provider(PodcastProvider())
         self.register_provider(PlainTextProvider())
+        self.register_provider(AudiobookProvider())
 
     def register_provider(self, provider: BaseContentProvider):
         """注册一个新的 Content Provider"""

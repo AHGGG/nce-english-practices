@@ -1,4 +1,6 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
+from fastapi.responses import JSONResponse
+from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from contextlib import asynccontextmanager
 import asyncio
@@ -7,6 +9,7 @@ import os
 
 from app.services.dictionary import dict_manager
 from app.api.routers import (
+    auth,
     voice,
     dictionary,
     content,
@@ -28,8 +31,14 @@ from app.api.routers import (
     review,
     verify,
     images,
+    podcast,
+    vocabulary,
+    audiobook,
+    transcription,
 )
+
 from app.services.log_collector import setup_logging
+
 import logging
 
 # Configure logging
@@ -44,6 +53,15 @@ load_dotenv()
 # Setup unified logging (bridges Python logging to logs/unified.log)
 setup_logging()
 
+from app.config import settings
+
+# Security check for SECRET_KEY
+if settings.SECRET_KEY == "dev-secret-key-change-in-production-use-openssl-rand-hex-32":
+    logger.warning(
+        "🚨 SECURITY WARNING: Using default insecure SECRET_KEY! "
+        "Set SECRET_KEY env variable in production."
+    )
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -52,14 +70,33 @@ async def lifespan(app: FastAPI):
     # It seems Alembic is used or database.py handles it.
 
     # Load dictionary on startup (Background)
-    print("Startup: Initiating dictionary loading in background...")
-    # Run synchronous load_dictionaries in a thread to avoid blocking the event loop
-    asyncio.create_task(asyncio.to_thread(dict_manager.load_dictionaries))
+    logger.info("Startup: Initiating dictionary loading in background...")
+    # Run async load_dictionaries directly in background
+    asyncio.create_task(dict_manager.load_dictionaries())
 
     # Start AUI Input Listener (Postgres LISTEN/NOTIFY)
     from app.services.aui_input import input_service
 
     await input_service.start_listener()
+
+    # Start Podcast Trending Cache Refresher (Every 12 hours, start after 1h delay)
+    from app.services.podcast_service import podcast_service
+
+    asyncio.create_task(podcast_service.start_cache_refresher(initial_delay=3600))
+
+    # Start Content Analysis Service (analyze EPUBs in background)
+    from app.services.content_analysis import content_analysis_service
+
+    async def run_content_analysis():
+        """Run content analysis with a delay to let server start first."""
+        await asyncio.sleep(30)  # Wait 30s for server to fully start
+        try:
+            stats = await content_analysis_service.analyze_all_epubs()
+            logger.info(f"Content analysis complete: {stats}")
+        except Exception as e:
+            logger.error(f"Content analysis failed: {e}")
+
+    asyncio.create_task(run_content_analysis())
 
     yield
 
@@ -69,7 +106,89 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title="NCE English Practice", lifespan=lifespan)
 
+# --- Global Exception Handlers ---
+
+
+@app.exception_handler(StarletteHTTPException)
+async def http_exception_handler(request: Request, exc: StarletteHTTPException):
+    """
+    Handle HTTP exceptions with logging.
+    """
+    # Only log 500s as errors, 4xx as warnings or info to avoid noise
+    if exc.status_code >= 500:
+        logger.error(f"HTTP {exc.status_code}: {exc.detail} - {request.url}")
+    else:
+        logger.warning(f"HTTP {exc.status_code}: {exc.detail} - {request.url}")
+
+    return JSONResponse(
+        status_code=exc.status_code,
+        content={"detail": exc.detail},
+    )
+
+
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    """
+    Catch-all exception handler for unhandled errors.
+    Prevents app crash and logs full traceback.
+    """
+    import traceback
+
+    error_msg = (
+        f"Unhandled Exception: {str(exc)}\nURL: {request.url}\n{traceback.format_exc()}"
+    )
+    logger.error(error_msg)
+
+    return JSONResponse(
+        status_code=500,
+        content={"detail": "Internal Server Error. Please check server logs."},
+    )
+
+
+# --- End Handlers ---
+
+# Configure CORS
+from fastapi.middleware.cors import CORSMiddleware
+
+# Define origins that are explicitly allowed
+origins = [
+    "http://localhost:3000",  # Web App
+    "http://localhost:5173",  # Vite Dev Server
+    "http://localhost:8081",  # Mobile Web (Expo)
+    "http://127.0.0.1:3000",
+    "http://127.0.0.1:8081",
+]
+
+# Allow all local network IPs dynamically for development convenience
+# This is important for Expo Go on physical devices
+import socket
+
+try:
+    hostname = socket.gethostname()
+    local_ip = socket.gethostbyname(hostname)
+    # Add common local subnets if needed, or just rely on regex/allow_origin_regex if FastAPI supported it better.
+    # Since FastAPI CORSMiddleware is strict, we can add wildcard "*" for development
+    # OR we just add the specific local IP detected.
+    origins.append(f"http://{local_ip}:8081")
+    origins.append(f"http://{local_ip}:3000")
+    origins.append(f"http://{local_ip}:8000")
+    origins.append(f"exp://{local_ip}:8081")
+except Exception:
+    pass
+
+app.add_middleware(
+    CORSMiddleware,
+    # In production, you might want to be stricter.
+    # For a dev/home server context, allowing "*" is often necessary for mobile apps
+    # because they might not send an Origin header, or it might be null.
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 # Include Routers
+app.include_router(auth.router)  # Auth routes first
 app.include_router(voice.router)
 app.include_router(dictionary.router)
 app.include_router(content.router)
@@ -94,9 +213,14 @@ app.include_router(voice_session.router)
 app.include_router(review.router)
 app.include_router(verify.router)
 app.include_router(images.router)
+app.include_router(podcast.router)
+app.include_router(vocabulary.router)
+app.include_router(audiobook.router)
+app.include_router(transcription.router)
 
-from app.models.schemas import RemoteLog
-from app.services.log_collector import (
+from app.models.schemas import RemoteLog  # noqa: E402
+
+from app.services.log_collector import (  # noqa: E402
     log_collector,
     LogEntry,
     LogSource,
@@ -104,7 +228,7 @@ from app.services.log_collector import (
     LogCategory,
     detect_category,
 )
-from datetime import datetime
+from datetime import datetime  # noqa: E402
 
 
 @app.post("/api/logs")
@@ -152,11 +276,11 @@ async def receive_remote_log(log: RemoteLog):
 
 # --- Static File Serving for Frontend SPA ---
 # Must be mounted AFTER all API routes to avoid shadowing them
-from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles  # noqa: E402
+from fastapi.responses import FileResponse  # noqa: E402
 
 frontend_dist = os.path.normpath(
-    os.path.join(os.path.dirname(__file__), "..", "frontend", "dist")
+    os.path.join(os.path.dirname(__file__), "..", "apps", "web", "dist")
 )
 index_html = os.path.join(frontend_dist, "index.html")
 
@@ -187,24 +311,53 @@ else:
 if __name__ == "__main__":
     import uvicorn
     import os
+    import copy
+    from uvicorn.config import LOGGING_CONFIG
 
-    # Check for SSL certificates
+    # Customize Uvicorn logging to match application format (with timestamps)
+    log_config = copy.deepcopy(LOGGING_CONFIG)
+    # Use standard logging format with timestamps
+    log_config["formatters"]["default"]["fmt"] = (
+        "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+    )
+    log_config["formatters"]["access"]["fmt"] = (
+        '%(asctime)s - %(name)s - %(levelname)s - %(client_addr)s - "%(request_line)s" %(status_code)s'
+    )
+
+    # Check for SSL certificates and intent
     ssl_keyfile = "key.pem" if os.path.exists("key.pem") else None
     ssl_certfile = "cert.pem" if os.path.exists("cert.pem") else None
+    use_https = os.getenv("USE_HTTPS", "false").lower() == "true"
 
-    if ssl_keyfile and ssl_certfile:
-        print("Starting with HTTPS (self-signed certificate)")
-        print("Access via: https://192.168.0.100:8000")
-        print("Note: Accept the security warning in your browser")
+    if use_https and ssl_keyfile and ssl_certfile:
+        logger.info("Starting with HTTPS (self-signed certificate)")
+        logger.info("Access via: https://192.168.0.100:8000")
+        logger.info("Note: Accept the security warning in your browser")
         uvicorn.run(
             "app.main:app",
             host="0.0.0.0",
             port=8000,
             reload=True,
+            reload_excludes=[".git", "__pycache__", "node_modules"],
             ssl_keyfile=ssl_keyfile,
             ssl_certfile=ssl_certfile,
+            log_config=log_config,
         )
     else:
-        print("Starting with HTTP (no SSL)")
-        print("For mobile voice, generate cert: uv run python scripts/generate_cert.py")
-        uvicorn.run("app.main:app", host="0.0.0.0", port=8000, reload=True)
+        logger.info("Starting with HTTP (Default)")
+        if use_https:
+            logger.warning(
+                "WARNING: HTTPS requested but certificates (key.pem/cert.pem) not found."
+            )
+        logger.info(
+            "For mobile voice, generate cert: uv run python scripts/generate_cert.py"
+        )
+        logger.info("To enable HTTPS: ./scripts/dev.ps1 -Https")
+        uvicorn.run(
+            "app.main:app",
+            host="0.0.0.0",
+            port=8000,
+            reload=True,
+            reload_excludes=[".git", "__pycache__", "node_modules"],
+            log_config=log_config,
+        )

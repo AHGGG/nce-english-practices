@@ -283,7 +283,7 @@ git commit -m "feat(api): include blocks in article response"
                         return (
                             <HeadingTag 
                                 key={`h-${blockIdx}`} 
-                                className="text-2xl font-serif text-white mt-8 mb-4"
+                                className="text-2xl font-serif text-text-primary mt-8 mb-4"
                             >
                                 {block.text}
                             </HeadingTag>

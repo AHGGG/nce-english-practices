@@ -1,0 +1,1031 @@
+{
+  "word": "water",
+  "found": true,
+  "entries": [
+    {
+      "headword": "water",
+      "hyphenation": "water",
+      "homnum": 1,
+      "pronunciation": "ˈwɔːtə",
+      "pronunciation_ame": "ˈwɒːtər, ˈwɑː-",
+      "part_of_speech": "noun",
+      "inflections": null,
+      "audio": {
+        "bre_url": "/dict/resource?path=hwd/bre/8/water_las2_br.mp3",
+        "ame_url": "/dict/resource?path=hwd/ame/f/water1.mp3"
+      },
+      "senses": [
+        {
+          "index": 1,
+          "definition": "the clear liquid without colour, smell, or taste that falls as rain and that is used for drinking, washing etc",
+          "definition_cn": "水",
+          "grammar": "[uncountable]",
+          "examples": [
+            {
+              "text": "There’s water all over the bathroom floor.",
+              "translation": "浴室地面上都是水。",
+              "audio_url": "/dict/resource?path=exa/bre/f/p008-001942814.mp3"
+            },
+            {
+              "text": "Does anyone want a drink of water?",
+              "translation": "有谁想喝杯水吗？",
+              "audio_url": "/dict/resource?path=exa/bre/9/p008-001942815.mp3"
+            },
+            {
+              "text": "a glass of sparkling mineral water",
+              "translation": "一杯有气矿泉水",
+              "audio_url": "/dict/resource?path=exa/bre/3/p008-001942819.mp3"
+            }
+          ],
+          "collocations": []
+        },
+        {
+          "index": 2,
+          "definition": "an area of water such as the sea, a lake etc",
+          "definition_cn": "水﹐水域〔如海﹑湖等〕",
+          "grammar": "[uncountable]",
+          "examples": [
+            {
+              "text": "Rangoon is surrounded on three sides by water.",
+              "translation": "仰光三面环水。",
+              "audio_url": "/dict/resource?path=exa/bre/3/p008-001602747.mp3"
+            },
+            {
+              "text": "Denzil dived into the water.",
+              "translation": "登齐尔跳入水中。",
+              "audio_url": "/dict/resource?path=exa/bre/b/p008-001602753.mp3"
+            },
+            {
+              "text": "He stepped down to the water’s edge.",
+              "translation": "他往下朝水边走去。",
+              "audio_url": "/dict/resource?path=exa/bre/4/p008-000509512.mp3"
+            }
+          ],
+          "collocations": []
+        },
+        {
+          "index": 3,
+          "definition": "a large area of water, especially an ocean that is near or belongs to a particular country",
+          "definition_cn": "水域﹔〔某国的〕领海﹐海域",
+          "grammar": "[plural]",
+          "examples": [
+            {
+              "text": "the coastal waters of Alaska",
+              "translation": "阿拉斯加沿海水域",
+              "audio_url": "/dict/resource?path=exa/bre/0/p008-000509533.mp3"
+            },
+            {
+              "text": "The ship drifted into Turkish territorial waters.",
+              "translation": "那艘船漂入了土耳其领海。",
+              "audio_url": "/dict/resource?path=exa/bre/e/p008-001602770.mp3"
+            },
+            {
+              "text": "a species found in inland waters (=not the sea, but rivers, lakes etc)",
+              "translation": "见于内陆水域的一个物种",
+              "audio_url": "/dict/resource?path=exa/bre/5/p008-001602774.mp3"
+            }
+          ],
+          "collocations": []
+        },
+        {
+          "index": 4,
+          "definition": "the highest or lowest level of the sea and some rivers",
+          "definition_cn": "〔海和一些河流的〕高潮/低潮",
+          "grammar": "[uncountable]",
+          "examples": [],
+          "collocations": []
+        },
+        {
+          "index": 5,
+          "definition": "a situation that is difficult, dangerous, or unfamiliar",
+          "definition_cn": "未知的境况/困难情况/隐晦的困境",
+          "grammar": "[uncountable]",
+          "examples": [
+            {
+              "text": "the uncharted waters of the 21st century",
+              "translation": "21世纪的未知数",
+              "audio_url": "/dict/resource?path=exa/bre/6/p008-001602782.mp3"
+            }
+          ],
+          "collocations": []
+        },
+        {
+          "index": 6,
+          "definition": "used to say that what happened in the past should be forgotten",
+          "definition_cn": "是过去的事了﹐已成往事",
+          "grammar": "[uncountable]",
+          "examples": [],
+          "collocations": []
+        },
+        {
+          "index": 7,
+          "definition": "if you use something or spend money like water, you use or spend large amounts of it when you should try to save it – used to show disapproval",
+          "definition_cn": "〔使用东西或花钱〕大量地﹐无节制地〔含贬义〕",
+          "grammar": "[uncountable]",
+          "examples": [
+            {
+              "text": "Some of the companies were spending money like water.",
+              "translation": "有些公司花钱如流水。",
+              "audio_url": "/dict/resource?path=exa/bre/3/p008-002031952.mp3"
+            }
+          ],
+          "collocations": []
+        },
+        {
+          "index": 8,
+          "definition": "if criticism, warnings etc are like water off a duck’s back, they have no effect on the person you are saying them to",
+          "definition_cn": "就像水过鸭背﹐像耳边风〔指批评﹑警告等对某人不起作用〕",
+          "grammar": "[uncountable]",
+          "examples": [],
+          "collocations": []
+        },
+        {
+          "index": 9,
+          "definition": "when a pregnant woman’s waters break, liquid comes from her body just before her baby is born",
+          "definition_cn": "某人的羊水破了〔指孕妇即将生产〕",
+          "grammar": "[uncountable]",
+          "examples": [],
+          "collocations": []
+        },
+        {
+          "index": 10,
+          "definition": "liquid around the brain or knee as the result of a disease",
+          "definition_cn": "脑部/膝关节积水",
+          "grammar": "[uncountable]",
+          "examples": [],
+          "collocations": []
+        }
+      ],
+      "phrasal_verbs": [],
+      "etymology": {
+        "century": null,
+        "origin": "wæter",
+        "meaning": null,
+        "note": "Old English"
+      },
+      "verb_table": null,
+      "extra_examples": [
+        {
+          "text": "All the rooms in the hotel have hot and cold running water.",
+          "source": "OTHER_DICTIONARIES"
+        },
+        {
+          "text": "As we got deeper into the forest we could hear the sound of running water.",
+          "source": "OTHER_DICTIONARIES"
+        },
+        {
+          "text": "By the end of the hot summer of '76, there was a serious water shortage.",
+          "source": "OTHER_DICTIONARIES"
+        },
+        {
+          "text": "Come swimming! The water's great!",
+          "source": "OTHER_DICTIONARIES"
+        },
+        {
+          "text": "Condensed milk is produced by removing about 50% of the water content of whole milk.",
+          "source": "OTHER_DICTIONARIES"
+        },
+        {
+          "text": "Could I have a glass of water, please?",
+          "source": "OTHER_DICTIONARIES"
+        },
+        {
+          "text": "Humans can't survive for more than a few days without water.",
+          "source": "OTHER_DICTIONARIES"
+        },
+        {
+          "text": "I'd just like a glass of water, please.",
+          "source": "OTHER_DICTIONARIES"
+        },
+        {
+          "text": "I can't believe our water bill is so high.",
+          "source": "OTHER_DICTIONARIES"
+        },
+        {
+          "text": "Never drink sea water.",
+          "source": "OTHER_DICTIONARIES"
+        },
+        {
+          "text": "Some of the bacteria are found in rivers, lakes, mud, and even rain water.",
+          "source": "OTHER_DICTIONARIES"
+        },
+        {
+          "text": "Stone fish lie on the ocean bed, often in shallow water.",
+          "source": "OTHER_DICTIONARIES"
+        },
+        {
+          "text": "The water level of the River Thames has risen 14\" in the past few days.",
+          "source": "OTHER_DICTIONARIES"
+        },
+        {
+          "text": "There's something floating on the water.",
+          "source": "OTHER_DICTIONARIES"
+        },
+        {
+          "text": "This reservoir supplies water to half of Los Angeles.",
+          "source": "OTHER_DICTIONARIES"
+        },
+        {
+          "text": "In a dilute solution in water, it is familiar as a household antiseptic.",
+          "source": "CORPUS"
+        },
+        {
+          "text": "It was all very slow, very lovely, the glow burning and the darkness coming and the water moving.",
+          "source": "CORPUS"
+        },
+        {
+          "text": "Nurse it along with a little water and sunshine for a few months.",
+          "source": "CORPUS"
+        },
+        {
+          "text": "Sugar maple sap is nearly tasteless and about 98 percent water.",
+          "source": "CORPUS"
+        },
+        {
+          "text": "Then it turned around and went back for a drink of water.",
+          "source": "CORPUS"
+        },
+        {
+          "text": "They maintained the momentum of the privatization programme in the late 1980s and early 1990s with the privatization of electricity and water.",
+          "source": "CORPUS"
+        }
+      ],
+      "thesaurus": {
+        "topic": "water",
+        "entries": [
+          {
+            "word": "water",
+            "definition": null,
+            "examples": [
+              "Could I have a glass of water, please?",
+              "Humans can't survive for more than a few days without water.",
+              "This reservoir supplies water to half of Los Angeles."
+            ]
+          },
+          {
+            "word": "moisture",
+            "definition": "the amount of wetness in something, especially in the earth or in the air, caused by the presence of water",
+            "examples": [
+              "In the summer, temperatures rose to 90 or 100 degrees, and the air was constantly heavy with moisture.",
+              "Moisture is essential for keeping your skin fresh and youthful.",
+              "Nearby ditches and walls affect the moisture content of the soil."
+            ]
+          },
+          {
+            "word": "flood",
+            "definition": "very large amounts of water covering an area of land or filling a building, caused by heavy rains and usually causing serious damage",
+            "examples": [
+              "Last winter, the town suffered the worst floods for fifty years.",
+              "There has been an extensive programme of restorations in Venice since the 1966 flood.",
+              "Yosemite National Park is restricting access to the Park in order to cope with the flood damage."
+            ]
+          },
+          {
+            "word": "flooding",
+            "definition": "a situation in which an area of land or part of a building is covered with water, for example as a result of heavy rain or burst water pipes",
+            "examples": [
+              "Parts of the harbour wall collapsed, causing serious flooding in the town.",
+              "The government is to receive £200,000 in emergency European Community aid, to help victims of the flooding."
+            ]
+          },
+          {
+            "word": "deluge",
+            "definition": "a situation in which an area of land is covered with very large amounts of water as a result of heavy rain",
+            "examples": [
+              "Many homes in Jakarta were flooded in the Indonesian capital's worst deluge for years."
+            ]
+          },
+          {
+            "word": "flood",
+            "definition": "if a river floods , or heavy rain, snow etc floods an area of land, it causes the land to become covered with very large amounts of water",
+            "examples": [
+              "Three major rivers have already flooded, and two more are on red alert.",
+              "After two days of continuous rain, the village was flooded.",
+              "Melting snow floods the valleys each spring."
+            ]
+          },
+          {
+            "word": "current",
+            "definition": "a continuous movement of water in a particular direction in the sea or in a river",
+            "examples": [
+              "The currents in these parts could carry a boat miles out to sea.",
+              "It's dangerous to swim in the sea here because the current is so strong.",
+              "The tiny young drift on the ocean currents, until a few are lucky enough to land in a suitable place and begin a new life."
+            ]
+          },
+          {
+            "word": "torrent",
+            "definition": "a large amount of water that moves quickly and strongly in a particular direction",
+            "examples": [
+              "The river occasionally becomes a torrent after a downpour, and may even cause flooding.",
+              "A torrent of water flowed down the street.",
+              "After five days of heavy rain the Telle River was a raging torrent."
+            ]
+          },
+          {
+            "word": "water",
+            "definition": "to pour water on plants, crops, or grass in order to make them grow",
+            "examples": [
+              "Would you mind watering my plants while I'm away?",
+              "During the drought, residents were barred from watering their gardens, or washing their cars.",
+              "Many farmers use low-flying aircraft to water their crops."
+            ]
+          },
+          {
+            "word": "irrigate",
+            "definition": "to provide a regular supply of water to large areas of land, in order to grow crops there, for example by using a system of pipes or long holes in the ground",
+            "examples": [
+              "The stored water is then used to irrigate nearby agricultural land.",
+              "A system of channels carries water down from the mountains to irrigate the soil."
+            ]
+          }
+        ],
+        "word_sets": [
+          "backwater",
+          "bank",
+          "bank",
+          "bare",
+          "barrier reef",
+          "bay",
+          "bayou",
+          "beach",
+          "beck",
+          "belt",
+          "billow",
+          "biting",
+          "bitter",
+          "black ice",
+          "blast",
+          "blazing",
+          "bleach",
+          "blizzard",
+          "blow",
+          "blowy"
+        ]
+      },
+      "collocations": [
+        {
+          "pattern": "drinking water",
+          "part_of_speech": "ADJECTIVES/NOUN + water",
+          "examples": []
+        },
+        {
+          "pattern": "the water supply",
+          "part_of_speech": "water + NOUN",
+          "examples": [
+            {
+              "text": "A dam was built to improve the water supply.",
+              "translation": null,
+              "audio_url": null
+            }
+          ]
+        },
+        {
+          "pattern": "a water shortage",
+          "part_of_speech": "water + NOUN",
+          "examples": [
+            {
+              "text": "There is a severe water shortage in many parts of the country.",
+              "translation": null,
+              "audio_url": null
+            }
+          ]
+        },
+        {
+          "pattern": "a glass of water",
+          "part_of_speech": "phrases",
+          "examples": [
+            {
+              "text": "She poured herself a glass of water.",
+              "translation": null,
+              "audio_url": null
+            }
+          ]
+        },
+        {
+          "pattern": "a drink of water",
+          "part_of_speech": "phrases",
+          "examples": [
+            {
+              "text": "He asked for a drink of water.",
+              "translation": null,
+              "audio_url": null
+            }
+          ]
+        },
+        {
+          "pattern": "turn the water off/on",
+          "part_of_speech": "verbs",
+          "examples": [
+            {
+              "text": "Turn the water off while you're brushing your teeth.",
+              "translation": null,
+              "audio_url": null
+            }
+          ]
+        },
+        {
+          "pattern": "water runs",
+          "part_of_speech": "verbs",
+          "examples": [
+            {
+              "text": "I let the cool water run down my back.",
+              "translation": null,
+              "audio_url": null
+            }
+          ]
+        },
+        {
+          "pattern": "water flows",
+          "part_of_speech": "verbs",
+          "examples": [
+            {
+              "text": "We watched the water flow under the bridge.",
+              "translation": null,
+              "audio_url": null
+            }
+          ]
+        },
+        {
+          "pattern": "boiling",
+          "part_of_speech": "ADJECTIVE",
+          "examples": [
+            {
+              "text": "Pour over enough boiling water to cover the fruit.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "Irene said, as Anastasia put a filter into the Chemex spooned in coffee, and poured on boiling water.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "Rinse the can out twice with boiling water to remove all the extract and pour the rinse water into the pan.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "Chop and add to casseroles or steep in boiling water for a few minutes before adding to salads.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "Cooking procedures: add boiling water and leave for several minutes to rehydrate.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "We found him at least two of my officers did, in a bath full of boiling water in the shower rooms.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "This is the boiling point of water at one atmosphere.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "Cook the lasagne in a large pan of salted, boiling water until just tender.",
+              "translation": null,
+              "audio_url": null
+            }
+          ]
+        },
+        {
+          "pattern": "clean",
+          "part_of_speech": "ADJECTIVE",
+          "examples": [
+            {
+              "text": "The only way to improve the health of the children is to ensure they get non-radiated food, clean water and air.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "Environmentalists have spread the alarm about clean air and water.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "The parts should then be rinsed clean in the soaking solution and then in clean hot water before reassembling.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "Alternatively, you will need to empty the bath and refill it with clean water.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "In many developing societies the lack of basic amenities, such as clean water and proper sanitation, produces an inherently unsafe environment.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "We kept the area very clean with water applied with a hose pipe.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "Nomatterwhat container you use, it is advisable to give it a thorough scrubbing with clean water.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "For many of the families, home is a single room with no clean water supply and no toilet.",
+              "translation": null,
+              "audio_url": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "headword": "water",
+      "hyphenation": "water",
+      "homnum": 2,
+      "pronunciation": null,
+      "pronunciation_ame": null,
+      "part_of_speech": "verb",
+      "inflections": null,
+      "audio": {
+        "bre_url": "/dict/resource?path=hwd/bre/8/water_las2_br.mp3",
+        "ame_url": "/dict/resource?path=hwd/ame/f/water1.mp3"
+      },
+      "senses": [
+        {
+          "index": 1,
+          "definition": "if you water plants or the ground they are growing in, you pour water on them",
+          "definition_cn": "给…浇水﹔灌溉",
+          "grammar": "[transitive]",
+          "examples": [
+            {
+              "text": "Will you water my houseplants while I’m away?",
+              "translation": "我不在时你能给我家里的盆栽浇浇水吗？",
+              "audio_url": "/dict/resource?path=exa/bre/c/p008-001602793.mp3"
+            },
+            {
+              "text": "The garden needs watering daily.",
+              "translation": "花园每天都需要浇水。",
+              "audio_url": "/dict/resource?path=exa/bre/5/p008-001602794.mp3"
+            }
+          ],
+          "collocations": []
+        },
+        {
+          "index": 2,
+          "definition": "if your eyes water, tears come out of them",
+          "definition_cn": "眼睛流泪",
+          "grammar": "[transitive]",
+          "examples": [
+            {
+              "text": "Chopping onions makes my eyes water.",
+              "translation": "切洋葱会使我眼睛流泪。",
+              "audio_url": "/dict/resource?path=exa/bre/3/p008-000509701.mp3"
+            }
+          ],
+          "collocations": []
+        },
+        {
+          "index": 3,
+          "definition": "to give an animal water to drink",
+          "definition_cn": "给〔牲畜〕饮水",
+          "grammar": "[transitive]",
+          "examples": [
+            {
+              "text": "Have the horses been fed and watered?",
+              "translation": "这些马喂过食饮过水了吗？",
+              "audio_url": "/dict/resource?path=exa/bre/f/p008-001602795.mp3"
+            }
+          ],
+          "collocations": []
+        },
+        {
+          "index": 4,
+          "definition": "if an area is watered by a river, the river flows through it and provides it with water",
+          "definition_cn": "〔江河〕流经并给〔某地区〕供水",
+          "grammar": "[transitive]",
+          "examples": [
+            {
+              "text": "Colombia is watered by several rivers.",
+              "translation": "有几条河流经哥伦比亚﹐为其提供水源。",
+              "audio_url": "/dict/resource?path=exa/bre/7/p008-000509725.mp3"
+            }
+          ],
+          "collocations": []
+        },
+        {
+          "index": 5,
+          "definition": "to add water to a drink to make it less strong",
+          "definition_cn": "加水冲淡﹔稀释",
+          "grammar": "[transitive]",
+          "examples": [],
+          "collocations": []
+        }
+      ],
+      "phrasal_verbs": [
+        {
+          "phrase": "watersomething ↔down",
+          "definition": "to make a statement, report etc less forceful by changing it or removing parts that may offend people – used to show disapproval",
+          "definition_cn": "〔通过修改或删减〕缓和〔声明、报告等〕的语气，使变得轻描淡写〔含贬义〕",
+          "examples": [
+            {
+              "text": "The report of the investigation had been watered down.",
+              "translation": "调查报告已被轻描淡写。",
+              "audio_url": "/dict/resource?path=exa/bre/8/p008-001602799.mp3"
+            }
+          ]
+        }
+      ],
+      "etymology": null,
+      "verb_table": {
+        "lemma": "water",
+        "simple_forms": [
+          {
+            "tense": "Present",
+            "person": "I, you, we, they",
+            "form": "water",
+            "auxiliary": null
+          },
+          {
+            "tense": "Present",
+            "person": "he, she, it",
+            "form": "waters",
+            "auxiliary": null
+          },
+          {
+            "tense": "Past",
+            "person": "I, you, he, she, it, we, they",
+            "form": "watered",
+            "auxiliary": null
+          },
+          {
+            "tense": "Present perfect",
+            "person": "I, you, we, they",
+            "form": "watered",
+            "auxiliary": "have"
+          },
+          {
+            "tense": "Present perfect",
+            "person": "he, she, it",
+            "form": "watered",
+            "auxiliary": "has"
+          },
+          {
+            "tense": "Past perfect",
+            "person": "I, you, he, she, it, we, they",
+            "form": "watered",
+            "auxiliary": "had"
+          },
+          {
+            "tense": "Future",
+            "person": "I, you, he, she, it, we, they",
+            "form": "water",
+            "auxiliary": "will"
+          },
+          {
+            "tense": "Future perfect",
+            "person": "I, you, he, she, it, we, they",
+            "form": "watered",
+            "auxiliary": "will have"
+          }
+        ],
+        "continuous_forms": [
+          {
+            "tense": "Present",
+            "person": "I",
+            "form": "watering",
+            "auxiliary": "am"
+          },
+          {
+            "tense": "Present",
+            "person": "he, she, it",
+            "form": "watering",
+            "auxiliary": "is"
+          },
+          {
+            "tense": "Present",
+            "person": "you, we, they",
+            "form": "watering",
+            "auxiliary": "are"
+          },
+          {
+            "tense": "Past",
+            "person": "I, he, she, it",
+            "form": "watering",
+            "auxiliary": "was"
+          },
+          {
+            "tense": "Past",
+            "person": "you, we, they",
+            "form": "watering",
+            "auxiliary": "were"
+          },
+          {
+            "tense": "Present perfect",
+            "person": "I, you, we, they",
+            "form": "watering",
+            "auxiliary": "have been"
+          },
+          {
+            "tense": "Present perfect",
+            "person": "he, she, it",
+            "form": "watering",
+            "auxiliary": "has been"
+          },
+          {
+            "tense": "Past perfect",
+            "person": "I, you, he, she, it, we, they",
+            "form": "watering",
+            "auxiliary": "had been"
+          },
+          {
+            "tense": "Future",
+            "person": "I, you, he, she, it, we, they",
+            "form": "watering",
+            "auxiliary": "will be"
+          },
+          {
+            "tense": "Future perfect",
+            "person": "I, you, he, she, it, we, they",
+            "form": "watering",
+            "auxiliary": "will have been"
+          }
+        ]
+      },
+      "extra_examples": [
+        {
+          "text": "Chopping onions always makes my eyes water.",
+          "source": "OTHER_DICTIONARIES"
+        },
+        {
+          "text": "Could you water my plants while I'm gone?",
+          "source": "OTHER_DICTIONARIES"
+        },
+        {
+          "text": "During the drought, residents were barred from watering their gardens, or washing their cars.",
+          "source": "OTHER_DICTIONARIES"
+        },
+        {
+          "text": "Many farmers use low-flying aircraft to water their crops.",
+          "source": "OTHER_DICTIONARIES"
+        },
+        {
+          "text": "The plain is watered by the Tigris and Euphrates rivers.",
+          "source": "OTHER_DICTIONARIES"
+        },
+        {
+          "text": "Would you mind watering my plants while I'm away?",
+          "source": "OTHER_DICTIONARIES"
+        },
+        {
+          "text": "After a tour of the facilities, our guests were fed and watered.",
+          "source": "CORPUS"
+        },
+        {
+          "text": "Cory Selliker, his eyes watering under the brim of his black Earnhardt cap, heard Marchman's advice to let go.",
+          "source": "CORPUS"
+        },
+        {
+          "text": "Make sure you water this summer.",
+          "source": "CORPUS"
+        }
+      ],
+      "thesaurus": {
+        "topic": "water",
+        "entries": [
+          {
+            "word": "water",
+            "definition": null,
+            "examples": [
+              "Could I have a glass of water, please?",
+              "Humans can't survive for more than a few days without water.",
+              "This reservoir supplies water to half of Los Angeles."
+            ]
+          },
+          {
+            "word": "moisture",
+            "definition": "the amount of wetness in something, especially in the earth or in the air, caused by the presence of water",
+            "examples": [
+              "In the summer, temperatures rose to 90 or 100 degrees, and the air was constantly heavy with moisture.",
+              "Moisture is essential for keeping your skin fresh and youthful.",
+              "Nearby ditches and walls affect the moisture content of the soil."
+            ]
+          },
+          {
+            "word": "flood",
+            "definition": "very large amounts of water covering an area of land or filling a building, caused by heavy rains and usually causing serious damage",
+            "examples": [
+              "Last winter, the town suffered the worst floods for fifty years.",
+              "There has been an extensive programme of restorations in Venice since the 1966 flood.",
+              "Yosemite National Park is restricting access to the Park in order to cope with the flood damage."
+            ]
+          },
+          {
+            "word": "flooding",
+            "definition": "a situation in which an area of land or part of a building is covered with water, for example as a result of heavy rain or burst water pipes",
+            "examples": [
+              "Parts of the harbour wall collapsed, causing serious flooding in the town.",
+              "The government is to receive £200,000 in emergency European Community aid, to help victims of the flooding."
+            ]
+          },
+          {
+            "word": "deluge",
+            "definition": "a situation in which an area of land is covered with very large amounts of water as a result of heavy rain",
+            "examples": [
+              "Many homes in Jakarta were flooded in the Indonesian capital's worst deluge for years."
+            ]
+          },
+          {
+            "word": "flood",
+            "definition": "if a river floods , or heavy rain, snow etc floods an area of land, it causes the land to become covered with very large amounts of water",
+            "examples": [
+              "Three major rivers have already flooded, and two more are on red alert.",
+              "After two days of continuous rain, the village was flooded.",
+              "Melting snow floods the valleys each spring."
+            ]
+          },
+          {
+            "word": "current",
+            "definition": "a continuous movement of water in a particular direction in the sea or in a river",
+            "examples": [
+              "The currents in these parts could carry a boat miles out to sea.",
+              "It's dangerous to swim in the sea here because the current is so strong.",
+              "The tiny young drift on the ocean currents, until a few are lucky enough to land in a suitable place and begin a new life."
+            ]
+          },
+          {
+            "word": "torrent",
+            "definition": "a large amount of water that moves quickly and strongly in a particular direction",
+            "examples": [
+              "The river occasionally becomes a torrent after a downpour, and may even cause flooding.",
+              "A torrent of water flowed down the street.",
+              "After five days of heavy rain the Telle River was a raging torrent."
+            ]
+          },
+          {
+            "word": "water",
+            "definition": "to pour water on plants, crops, or grass in order to make them grow",
+            "examples": [
+              "Would you mind watering my plants while I'm away?",
+              "During the drought, residents were barred from watering their gardens, or washing their cars.",
+              "Many farmers use low-flying aircraft to water their crops."
+            ]
+          },
+          {
+            "word": "irrigate",
+            "definition": "to provide a regular supply of water to large areas of land, in order to grow crops there, for example by using a system of pipes or long holes in the ground",
+            "examples": [
+              "The stored water is then used to irrigate nearby agricultural land.",
+              "A system of channels carries water down from the mountains to irrigate the soil."
+            ]
+          }
+        ],
+        "word_sets": [
+          "absinth",
+          "alcohol",
+          "ale",
+          "alehouse",
+          "aperitif",
+          "baby milk",
+          "bar",
+          "barfly",
+          "barhop",
+          "barkeeper",
+          "barley wine",
+          "barmaid",
+          "barman",
+          "bartender",
+          "beef tea",
+          "beer",
+          "benedictine",
+          "beverage",
+          "bibulous",
+          "bistro"
+        ]
+      },
+      "collocations": [
+        {
+          "pattern": "garden",
+          "part_of_speech": "NOUN",
+          "examples": [
+            {
+              "text": "Let us water our own gardens he would say.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "For years to come, the public will be watering the garden with money.",
+              "translation": null,
+              "audio_url": null
+            }
+          ]
+        },
+        {
+          "pattern": "mouth",
+          "part_of_speech": "NOUN",
+          "examples": [
+            {
+              "text": "His mouth watered and his eyes became lost in dreamy contemplation.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "Instantly his mouth began to water, and his heart gave a small leap ofjoy Crab cobbler!",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "His mouth watered with the hot buttery smell.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "It will have your mouth watering, just thinking about a good nut-brown ale or creamy porter.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "Already, my mouth is watering.",
+              "translation": null,
+              "audio_url": null
+            }
+          ]
+        },
+        {
+          "pattern": "plant",
+          "part_of_speech": "NOUN",
+          "examples": [
+            {
+              "text": "Geraldine hoovered the living room and watered her plants.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "Employees could not even clean out their drawers, water the plants or retrieve the family snapshots from their desks.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "He waters the plants three times a week.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "I prepared the soil with humus, watered the plants and sprayed with a garlic solution to deter bugs.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "He knew Sarah was at home, since he could see her watering the plants in her small garden.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "Just water the plant for three years with no trimming.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "She was out watering a few plants near the garage.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "We have to water the plant constantly due to yellowing leaves.",
+              "translation": null,
+              "audio_url": null
+            }
+          ]
+        },
+        {
+          "pattern": "feed",
+          "part_of_speech": "VERB",
+          "examples": [
+            {
+              "text": "Wherever you go, there will always be a mountain gasthaus somewhere close at hand to keep you fed and watered.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "Follow Lawn Tips and the newsletter links to find information about feeding, seeding and watering.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "We are well fed and watered by our willing support and once more I am into the fear of the unknown.",
+              "translation": null,
+              "audio_url": null
+            },
+            {
+              "text": "Live animals are transported across the continent packed tightly into lorries, often arriving half dead without having been fed or watered.",
+              "translation": null,
+              "audio_url": null
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "raw_html": null
+}

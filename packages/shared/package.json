@@ -1,0 +1,18 @@
+{
+  "name": "@nce/shared",
+  "version": "0.1.0",
+  "private": true,
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "dependencies": {
+    "@nce/api": "workspace:*",
+    "@tanstack/react-query": "^5.90.20",
+    "axios": "^1.13.2",
+    "zustand": "^4.5.2"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.3",
+    "react": "19.1.0",
+    "react-dom": "19.1.0"
+  }
+}

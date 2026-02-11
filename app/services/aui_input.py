@@ -71,9 +71,13 @@ class AUIInputService:
         if self._listener_task:
             self._listener_task.cancel()
             try:
-                await self._listener_task
-            except asyncio.CancelledError:
+                # Wait for task to finish with timeout (avoid hanging shutdown)
+                await asyncio.wait_for(self._listener_task, timeout=2.0)
+            except (asyncio.CancelledError, asyncio.TimeoutError):
                 pass
+            except Exception as e:
+                logger.error(f"Error stopping AUI listener: {e}")
+
             self._listener_task = None
 
         # CLEAR QUEUES: Queues are bound to the event loop.
@@ -122,7 +126,8 @@ class AUIInputService:
             finally:
                 if conn:
                     try:
-                        await conn.close()
+                        # Add timeout to close() to prevent hanging if DB is gone
+                        await asyncio.wait_for(conn.close(), timeout=2.0)
                     except Exception:
                         pass
 

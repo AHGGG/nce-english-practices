@@ -161,6 +161,9 @@ class LDOCEEntry(BaseModel):
     part_of_speech: Optional[str] = Field(
         None, description="Part of speech (verb, noun, adjective)"
     )
+    inflections: Optional[str] = Field(
+        None, description="Inflected forms (e.g. 'plural grogs', 'past tense went')"
+    )
     audio: Optional[LDOCEAudio] = Field(None, description="Audio pronunciations")
     senses: List[LDOCESense] = Field(
         default_factory=list, description="List of meanings"

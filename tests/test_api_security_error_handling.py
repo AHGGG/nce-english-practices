@@ -1,10 +1,9 @@
-
-import pytest
 from fastapi.testclient import TestClient
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 from app.main import app
 
 client = TestClient(app)
+
 
 def test_voice_lab_error_leak_prevention():
     """
@@ -12,7 +11,13 @@ def test_voice_lab_error_leak_prevention():
     """
     # We mock the voice_lab_service.get_all_configs method to raise an exception
     # with a sensitive secret message.
-    with patch("app.services.voice_lab.voice_lab_service.get_all_configs") as mock_get:
+    # Note: voice_lab_service is now a lazy loaded singleton accessed via get_voice_lab_service()
+    # But for mocking, we can mock the return value of get_voice_lab_service,
+    # OR we can mock the class method if we know the class.
+    # Easiest is to mock where it is used.
+    # app.api.routers.voice_lab calls get_voice_lab_service().get_all_configs()
+
+    with patch("app.services.voice_lab.VoiceLabService.get_all_configs") as mock_get:
         secret_message = "DB_PASSWORD_IS_12345"
         mock_get.side_effect = Exception(secret_message)
 

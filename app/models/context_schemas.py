@@ -38,7 +38,6 @@ class ContextResourceBase(BaseModel):
     source: str = Field(
         ..., description="来源 (dictionary name / 'ai_generated' / URL)"
     )
-    story_id: Optional[int] = Field(None, description="如果是Story类型，关联Story表")
     audio_url: Optional[str] = Field(None, description="语音URL (如果预生成)")
 
 

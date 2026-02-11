@@ -1,9 +1,10 @@
 import os
 import asyncio
-from app.services.voice_lab import voice_lab_service
+from app.services.voice_lab import get_voice_lab_service
 
 REFERENCE_TEXT = "This is a verification test."
 AUDIO_DIR = os.path.dirname(__file__)
+
 REFERENCE_AUDIO_PATH = os.path.join(AUDIO_DIR, "reference.wav")
 
 
@@ -37,7 +38,7 @@ async def get_or_create_reference_audio() -> bytes:
 
     for p_name in providers:
         try:
-            provider = voice_lab_service.get_provider(p_name)
+            provider = get_voice_lab_service().get_provider(p_name)
             # Use 'default' or first available voice
             config = provider.get_config()
             voice_id = config["voices"][0]
@@ -83,7 +84,7 @@ async def get_or_create_short_test_audio() -> bytes:
 
     for p_name in providers:
         try:
-            provider = voice_lab_service.get_provider(p_name)
+            provider = get_voice_lab_service().get_provider(p_name)
             config = provider.get_config()
             voice_id = config["voices"][0]
 

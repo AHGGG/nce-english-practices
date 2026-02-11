@@ -7,6 +7,7 @@ Run with: uv run python scripts/extract_ldoce_samples.py
 
 import os
 import sys
+import asyncio
 
 # Add project root to path
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -19,15 +20,15 @@ SAMPLE_WORDS = ["run", "beautiful", "simmer", "hello", "work"]
 OUTPUT_DIR = "tests/fixtures"
 
 
-def main():
+async def main():
     print("Loading dictionaries...")
-    dict_manager.load_dictionaries()
+    await dict_manager.load_dictionaries()
 
     os.makedirs(OUTPUT_DIR, exist_ok=True)
 
     for word in SAMPLE_WORDS:
         print(f"\nLooking up: {word}")
-        results = dict_manager.lookup(word)
+        results = await dict_manager.lookup(word)
 
         for result in results:
             dict_name = result.get("dictionary", "")
@@ -48,4 +49,4 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    asyncio.run(main())

@@ -4,6 +4,7 @@ Proficiency Service - Tracks word-level proficiency for the Voice CI Interface.
 Records HUH? and CONTINUE events to build a user's difficulty profile.
 """
 
+import logging
 from typing import Optional, List, Dict, Any
 import json
 from sqlalchemy import select
@@ -12,6 +13,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.db import AsyncSessionLocal
 from app.models.orm import WordProficiency, UserCalibration
+
+logger = logging.getLogger(__name__)
 
 
 class ProficiencyService:
@@ -387,7 +390,7 @@ class ProficiencyService:
                 )
                 syntax_report = json.loads(content)
             except Exception as e:
-                print(f"LLM Diagnosis validation failed: {e}")
+                logger.error(f"LLM Diagnosis validation failed: {e}")
                 syntax_report = {
                     "error": "Could not perform syntax diagnosis at this time."
                 }
@@ -508,7 +511,7 @@ Sentence two here.
             return sentences[:count]
 
         except Exception as e:
-            print(f"Error generating calibration session: {e}")
+            logger.error(f"Error generating calibration session: {e}")
             import traceback
 
             traceback.print_exc()

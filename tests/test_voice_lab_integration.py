@@ -6,7 +6,7 @@ These tests make real API calls and require valid API keys.
 """
 
 import pytest
-from app.services.voice_lab import voice_lab_service
+from app.services.voice_lab import get_voice_lab_service
 from app.config import settings
 from tests.verification.utils import (
     validate_audio_format,
@@ -50,7 +50,7 @@ async def test_deepgram_tts_stt_roundtrip(has_deepgram_key):
     Verify semantic consistency.
     """
     test_text = "Hello this is a test."
-    provider = voice_lab_service.get_provider("deepgram")
+    provider = get_voice_lab_service().get_provider("deepgram")
     config = provider.get_config()
     voice_id = config["voices"][0]
 
@@ -87,7 +87,7 @@ async def test_elevenlabs_tts_stt_roundtrip(has_elevenlabs_key):
     Verify semantic consistency.
     """
     test_text = "Hello this is a test."
-    provider = voice_lab_service.get_provider("elevenlabs")
+    provider = get_voice_lab_service().get_provider("elevenlabs")
     config = provider.get_config()
     voice_id = config["voices"][0]
 
@@ -120,8 +120,8 @@ async def test_google_tts_with_deepgram_stt(has_google_key, has_deepgram_key):
     """
     test_text = "This is a cross provider test."
 
-    google_provider = voice_lab_service.get_provider("google")
-    deepgram_provider = voice_lab_service.get_provider("deepgram")
+    google_provider = get_voice_lab_service().get_provider("google")
+    deepgram_provider = get_voice_lab_service().get_provider("deepgram")
 
     google_config = google_provider.get_config()
     voice_id = google_config["voices"][0]
@@ -156,7 +156,7 @@ async def test_elevenlabs_speech_to_speech(has_elevenlabs_key):
     2. Transform with STS
     3. Verify output audio is valid
     """
-    provider = voice_lab_service.get_provider("elevenlabs")
+    provider = get_voice_lab_service().get_provider("elevenlabs")
     config = provider.get_config()
 
     source_voice = config["voices"][0]
@@ -195,7 +195,7 @@ async def test_elevenlabs_text_to_sfx(has_elevenlabs_key):
     """
     Test ElevenLabs Sound Effects generation.
     """
-    provider = voice_lab_service.get_provider("elevenlabs")
+    provider = get_voice_lab_service().get_provider("elevenlabs")
 
     sfx_prompt = "Short beep sound"
 

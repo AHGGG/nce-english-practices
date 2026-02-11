@@ -1,0 +1,37 @@
+{
+  "name": "nce-monorepo",
+  "version": "0.0.0",
+  "private": true,
+  "packageManager": "pnpm@9.0.0",
+  "scripts": {
+    "build": "turbo build",
+    "dev": "turbo dev",
+    "lint": "turbo lint",
+    "clean": "turbo clean",
+    "gen:types": "turbo gen:types"
+  },
+  "devDependencies": {
+    "cross-env": "^10.1.0",
+    "prettier": "^3.2.5",
+    "turbo": "^2.3.3"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "pnpm": {
+    "overrides": {
+      "react": "19.1.0",
+      "react-dom": "19.1.0",
+      "@types/react": "19.1.0",
+      "use-sync-external-store": "1.1.0"
+    },
+    "peerDependencyRules": {
+      "ignoreMissing": [
+        "react"
+      ]
+    },
+    "patchedDependencies": {
+      "react-native-css-interop@0.2.1": "patches/react-native-css-interop@0.2.1.patch"
+    }
+  }
+}

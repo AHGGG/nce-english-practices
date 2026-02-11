@@ -1,6 +1,5 @@
 
 import pytest
-import asyncio
 from unittest.mock import AsyncMock, MagicMock, patch
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.services.image_generation import ImageGenerationService

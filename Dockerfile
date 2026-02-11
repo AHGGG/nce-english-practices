@@ -1,25 +1,40 @@
-# Stage 1: Build React Frontend
-FROM node:20 AS builder
+# Stage 1: Build Web App
+FROM node:20-slim AS builder
+ENV PNPM_HOME="/pnpm"
+ENV PATH="$PNPM_HOME:$PATH"
+RUN corepack enable
 
-WORKDIR /frontend
+WORKDIR /app
 
-# Copy frontend dependency files
-COPY frontend/package.json frontend/package-lock.json ./
+# Copy root config files
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml turbo.json ./
 
-# Install dependencies
-RUN npm ci
+# Copy package.json files for all workspaces to install dependencies effectively
+# We copy the source structure but only package.jsons first to leverage layer caching
+COPY apps/web/package.json ./apps/web/package.json
+COPY apps/mobile/package.json ./apps/mobile/package.json
+COPY apps/backend/package.json ./apps/backend/package.json
+COPY packages/api/package.json ./packages/api/package.json
+COPY packages/shared/package.json ./packages/shared/package.json
+COPY packages/store/package.json ./packages/store/package.json
+COPY packages/ui-tokens/package.json ./packages/ui-tokens/package.json
 
-# Copy frontend source code
-COPY frontend/ ./
+# Copy patches directory for pnpm patch functionality
+COPY patches ./patches
 
-# Build the React application
-RUN npm run build
+# Install dependencies (frozen lockfile for reproducibility)
+RUN pnpm install --frozen-lockfile
 
+# Copy source code
+COPY apps/web ./apps/web
+COPY packages ./packages
+
+# Build the web application
+RUN pnpm turbo build --filter=@nce/web
 
 # Stage 2: Python Backend
 FROM python:3.11-slim
 
-# Set working directory
 WORKDIR /app
 
 # Install system dependencies
@@ -28,6 +43,7 @@ RUN apt-get update && apt-get install -y \
     build-essential \
     libpq-dev \
     liblzo2-dev \
+    curl \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy backend dependency files
@@ -39,14 +55,16 @@ COPY --from=ghcr.io/astral-sh/uv:latest /uv /bin/uv
 
 # Install Python dependencies
 # We install the 'dictionary' extra to ensure all features are available
-RUN uv sync --frozen --extra dictionary
+RUN uv sync --extra dictionary
 
-# Copy application code
-COPY . .
+# Copy application code (backend logic in root and app folder)
+COPY app ./app
+COPY scripts ./scripts
+COPY alembic ./alembic
+COPY alembic.ini .
 
 # Copy built frontend assets from Stage 1
-# This places 'dist' into '/app/frontend/dist', which main.py expects
-COPY --from=builder /frontend/dist /app/frontend/dist
+COPY --from=builder /app/apps/web/dist /app/apps/web/dist
 
 # Environment variables
 ENV PYTHONUNBUFFERED=1
@@ -56,5 +74,5 @@ ENV PATH="/app/.venv/bin:$PATH"
 EXPOSE 8000
 
 # Run the application
-# We use app.main:app (FastAPI) which now serves static files too
+# We use app.main:app (FastAPI) which serves static files from the copied dist
 CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]

@@ -3,7 +3,7 @@ Reading Session API Router
 Tracks reading behavior with mixed signals for accurate input measurement.
 """
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
 from pydantic import BaseModel, model_validator
 from typing import Optional
 from app.database import (
@@ -13,6 +13,7 @@ from app.database import (
     end_reading_session,
     get_reading_stats_v2,
 )
+from app.api.routers.auth import get_current_user_id
 
 router = APIRouter(prefix="/api/reading", tags=["reading"])
 
@@ -76,10 +77,10 @@ class WordClickRequest(BaseModel):
 
 
 @router.post("/start")
-async def api_start_reading(body: StartSessionRequest):
+async def api_start_reading(body: StartSessionRequest, user_id: str = Depends(get_current_user_id)):
     """Start a new reading session."""
     session_id = await start_reading_session(
-        user_id="default_user",
+        user_id=user_id,
         source_type=body.source_type,
         source_id=body.source_id,
         article_title=body.article_title or "",
@@ -93,10 +94,13 @@ async def api_start_reading(body: StartSessionRequest):
 
 
 @router.put("/heartbeat")
-async def api_heartbeat(body: HeartbeatRequest):
+async def api_heartbeat(
+    body: HeartbeatRequest, user_id: str = Depends(get_current_user_id)
+):
     """Update reading progress (called periodically by frontend)."""
     success = await update_reading_session(
         session_id=body.session_id,
+        user_id=user_id,
         max_sentence_reached=body.max_sentence_reached,
         total_active_seconds=body.total_active_seconds,
         total_idle_seconds=body.total_idle_seconds,
@@ -106,17 +110,22 @@ async def api_heartbeat(body: HeartbeatRequest):
 
 
 @router.post("/word-click")
-async def api_word_click(body: WordClickRequest):
+async def api_word_click(
+    body: WordClickRequest, user_id: str = Depends(get_current_user_id)
+):
     """Increment word click count for high-confidence reading signal."""
-    success = await increment_word_click(body.session_id)
+    success = await increment_word_click(body.session_id, user_id=user_id)
     return {"success": success}
 
 
 @router.post("/end")
-async def api_end_reading(body: EndSessionRequest):
+async def api_end_reading(
+    body: EndSessionRequest, user_id: str = Depends(get_current_user_id)
+):
     """End reading session and calculate validated word count."""
     result = await end_reading_session(
         session_id=body.session_id,
+        user_id=user_id,
         final_data={
             "max_sentence_reached": body.max_sentence_reached,
             "total_active_seconds": body.total_active_seconds,
@@ -128,6 +137,6 @@ async def api_end_reading(body: EndSessionRequest):
 
 
 @router.get("/stats")
-async def api_reading_stats():
+async def api_reading_stats(user_id: str = Depends(get_current_user_id)):
     """Get reading statistics with validated word count."""
-    return await get_reading_stats_v2()
+    return await get_reading_stats_v2(user_id=user_id)

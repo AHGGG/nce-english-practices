@@ -8,7 +8,10 @@ from app.services.dictionary import dict_manager
 from app.services.llm import llm_service
 from app.services.collins_parser import collins_parser
 from app.models.collins_schemas import CollinsWord
-from app.config import MODEL_NAME
+from app.services.ldoce_parser import ldoce_parser
+from app.models.ldoce_schemas import LDOCEWord
+from typing import Literal, Union
+from app.config import settings
 import logging
 
 logger = logging.getLogger(__name__)
@@ -58,13 +61,13 @@ async def get_dict_asset(file_path: str):
     filename = os.path.basename(file_path)
 
     # Try exact match first
-    content, media_type = dict_manager.get_resource(file_path)
+    content, media_type = await dict_manager.get_resource(file_path)
     if content:
         return Response(content=content, media_type=media_type)
 
     # Try basename match
     if filename != file_path:
-        content, media_type = dict_manager.get_resource(filename)
+        content, media_type = await dict_manager.get_resource(filename)
         if content:
             return Response(content=content, media_type=media_type)
 
@@ -72,8 +75,8 @@ async def get_dict_asset(file_path: str):
 
 
 @router.get("/dict/resource")
-def get_resource_legacy(path: str):
-    content, media_type = dict_manager.get_resource(path)
+async def get_resource_legacy(path: str):
+    content, media_type = await dict_manager.get_resource(path)
     if not content:
         raise HTTPException(status_code=404, detail="Resource not found")
 
@@ -83,9 +86,7 @@ def get_resource_legacy(path: str):
 @router.post("/api/dictionary/lookup")
 async def api_dict_lookup(payload: DictionaryLookupRequest):
     try:
-        from fastapi.concurrency import run_in_threadpool
-
-        results = await run_in_threadpool(dict_manager.lookup, payload.word)
+        results = await dict_manager.lookup(payload.word)
         return {"results": results}
     except Exception:
         logger.exception("Dict Lookup Error")
@@ -122,20 +123,21 @@ async def api_dict_context(payload: DictionaryContextRequest):
 
         response = await run_in_threadpool(
             lambda: llm_service.sync_client.chat.completions.create(
-                model=MODEL_NAME,
+                model=settings.MODEL_NAME,
                 messages=[{"role": "user", "content": prompt}],
                 temperature=0.3,
-                response_format={"type": "json_object"},  # Force JSON if supported by model
+                response_format={
+                    "type": "json_object"
+                },  # Force JSON if supported by model
             )
         )
         content = (
-            response.choices[0].message.content.strip()
-            if response.choices
-            else ""
+            response.choices[0].message.content.strip() if response.choices else ""
         )
-        
+
         # Parse JSON
         import json
+
         try:
             data = json.loads(content)
             return {
@@ -145,11 +147,7 @@ async def api_dict_context(payload: DictionaryContextRequest):
             }
         except json.JSONDecodeError:
             # Fallback if model returns raw text despite instructions
-            return {
-                "explanation": content,
-                "needs_image": False,
-                "image_prompt": None
-            }
+            return {"explanation": content, "needs_image": False, "image_prompt": None}
     except Exception:
         logger.exception("AI Error")
         return {"explanation": "An error occurred while generating explanation."}
@@ -170,11 +168,39 @@ async def get_collins_word(
     - Senses with definitions, examples, translations
     - Synonyms, phrasal verbs
 
+    If the word is a cross-reference (e.g., "unequivocally" -> "unequivocal"),
+    automatically follows the reference and returns the base word's definition.
+
     Example: GET /api/dictionary/collins/simmer
     """
+    return await _get_collins_word_internal(word, include_raw_html, _recursion_depth=0)
+
+
+async def _get_collins_word_internal(
+    word: str,
+    include_raw_html: bool = False,
+    _recursion_depth: int = 0,
+) -> CollinsWord:
+    """
+    Internal helper for get_collins_word with recursion depth tracking.
+
+    Args:
+        word: Word to look up
+        include_raw_html: Whether to include raw HTML
+        _recursion_depth: Current recursion depth (prevents infinite loops)
+    """
+    import time
+
+    t_start = time.time()
+
+    MAX_CROSS_REF_DEPTH = 2  # Allow max 2 levels of cross-references
+
     try:
-        # Lookup in dictionary (runs in threadpool as it may be slow)
-        results = await run_in_threadpool(dict_manager.lookup, word)
+        # Lookup in dictionary (Async, Non-blocking)
+        t1 = time.time()
+        results = await dict_manager.lookup(word)
+        t2 = time.time()
+        logger.debug(f"Collins dict_manager.lookup('{word}'): {(t2 - t1) * 1000:.1f}ms")
 
         # Find Collins dictionary result
         collins_html = None
@@ -187,20 +213,56 @@ async def get_collins_word(
             return CollinsWord(word=word, found=False)
 
         # Parse the HTML
+        t3 = time.time()
         parsed = collins_parser.parse(
             collins_html, word, include_raw_html=include_raw_html
         )
+        t4 = time.time()
+        logger.debug(f"Collins parser.parse('{word}'): {(t4 - t3) * 1000:.1f}ms")
+
+        # Check if this is a cross-reference with no actual senses
+        if (
+            parsed.found
+            and parsed.entry
+            and len(parsed.entry.senses) == 0
+            and _recursion_depth < MAX_CROSS_REF_DEPTH
+        ):
+            # Try to extract cross-reference target
+            from bs4 import BeautifulSoup
+
+            soup = BeautifulSoup(collins_html, "lxml")
+            cross_ref = collins_parser._extract_cross_reference(soup)
+
+            if cross_ref and cross_ref.lower() != word.lower():
+                logger.info(
+                    f"Collins cross-reference: '{word}' -> '{cross_ref}' (depth={_recursion_depth})"
+                )
+                # Recursively look up the referenced word
+                ref_parsed = await _get_collins_word_internal(
+                    cross_ref, include_raw_html, _recursion_depth=_recursion_depth + 1
+                )
+
+                if (
+                    ref_parsed.found
+                    and ref_parsed.entry
+                    and len(ref_parsed.entry.senses) > 0
+                ):
+                    # Return the referenced word's entry but keep original word
+                    return CollinsWord(
+                        word=word,
+                        found=True,
+                        entry=ref_parsed.entry,
+                        raw_html=collins_html if include_raw_html else None,
+                    )
+
+        t_total = time.time() - t_start
+        logger.info(f"Collins API total for '{word}': {t_total * 1000:.1f}ms")
         return parsed
 
     except Exception:
         logger.exception("Collins Lookup Error")
         return CollinsWord(word=word, found=False)
 
-
-# Import LDOCE parser and schemas
-from app.services.ldoce_parser import ldoce_parser
-from app.models.ldoce_schemas import LDOCEWord
-from typing import Literal, Union
 
 # ========== LDOCE RESULT CACHE ==========
 # Cache parsed LDOCEWord results to avoid expensive re-parsing.
@@ -232,8 +294,8 @@ async def get_ldoce_word(
         return _ldoce_cache[cache_key]
 
     try:
-        # Lookup in dictionary
-        results = await run_in_threadpool(dict_manager.lookup, word)
+        # Lookup in dictionary (Async, Non-blocking)
+        results = await dict_manager.lookup(word)
 
         # Find LDOCE dictionary result
         ldoce_html = None

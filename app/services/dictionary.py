@@ -10,8 +10,14 @@ SQLite databases are created by running: scripts/convert_mdx_to_sqlite.py
 import os
 import mimetypes
 import sqlite3
+import aiosqlite
+import asyncio
 from typing import Optional, Tuple, List, Dict
 from bs4 import BeautifulSoup
+import logging
+from fastapi.concurrency import run_in_threadpool
+
+logger = logging.getLogger(__name__)
 
 # Global path configuration
 DICT_BASE_DIR = r"resources/dictionaries"
@@ -19,7 +25,7 @@ DICT_BASE_DIR = r"resources/dictionaries"
 
 class DictionaryManager:
     """
-    Manages dictionary lookups using SQLite databases.
+    Manages dictionary lookups using SQLite databases (Async with aiosqlite).
 
     Memory-efficient: Only opens database connections, data is queried on-demand.
     Falls back to legacy MDX loading if .db files are not found.
@@ -30,7 +36,11 @@ class DictionaryManager:
         self.loaded = False
         self._use_legacy = False
 
-    def load_dictionaries(self):
+        # LRU cache for lookup results
+        self._lookup_cache: dict = {}
+        self._cache_max_size: int = 500
+
+    async def load_dictionaries(self):
         """
         Scans DICT_BASE_DIR for .db files (SQLite) and opens connections.
         Falls back to legacy MDX loading if no .db files found.
@@ -44,7 +54,7 @@ class DictionaryManager:
             return
 
         if not os.path.exists(DICT_BASE_DIR):
-            print(f"Warning: Dictionary directory not found: {DICT_BASE_DIR}")
+            logger.warning(f"Warning: Dictionary directory not found: {DICT_BASE_DIR}")
             self.loaded = True
             return
 
@@ -56,30 +66,32 @@ class DictionaryManager:
                     db_files.append(os.path.join(root, file))
 
         if db_files:
-            print(f"Found {len(db_files)} SQLite dictionary database(s).")
-            self._load_sqlite_databases(db_files)
+            logger.info(f"Found {len(db_files)} SQLite dictionary database(s).")
+            await self._load_sqlite_databases(db_files)
         else:
             # Fallback to legacy MDX loading
-            print(
+            logger.warning(
                 "No SQLite databases found. Run: uv run python scripts/convert_mdx_to_sqlite.py"
             )
             self._use_legacy = True
-            self._load_legacy_mdx()
+            # Legacy loading is blocking, run in thread
+            await run_in_threadpool(self._load_legacy_mdx)
 
         self.loaded = True
-        print(f"Total dictionaries loaded: {len(self.databases)}")
+        logger.info(f"Total dictionaries loaded: {len(self.databases)}")
 
-    def _load_sqlite_databases(self, db_files: List[str]):
-        """Load SQLite database connections."""
+    async def _load_sqlite_databases(self, db_files: List[str]):
+        """Load SQLite database connections asynchronously."""
         for db_path in db_files:
             try:
-                print(f"Opening SQLite: {db_path} ...")
-                conn = sqlite3.connect(db_path, check_same_thread=False)
+                logger.info(f"Opening SQLite (Async): {db_path} ...")
+                # aiosqlite.connect
+                conn = await aiosqlite.connect(db_path, check_same_thread=False)
 
                 # Optimize for low memory usage
-                conn.execute("PRAGMA cache_size = -2000")  # 2MB cache
-                conn.execute("PRAGMA mmap_size = 268435456")  # 256MB mmap
-                conn.execute("PRAGMA query_only = ON")  # Read-only optimization
+                await conn.execute("PRAGMA cache_size = -2000")  # 2MB cache
+                await conn.execute("PRAGMA mmap_size = 268435456")  # 256MB mmap
+                await conn.execute("PRAGMA query_only = ON")  # Read-only optimization
 
                 # Calculate relative subdir for asset paths
                 rel_path = os.path.relpath(os.path.dirname(db_path), DICT_BASE_DIR)
@@ -90,19 +102,22 @@ class DictionaryManager:
                         "name": os.path.basename(db_path),
                         "conn": conn,
                         "subdir": rel_path if rel_path != "." else "",
+                        "_legacy": False,
                     }
                 )
-                print(f"  ✓ Opened {os.path.basename(db_path)}")
+                logger.info(f"  ✓ Opened {os.path.basename(db_path)}")
 
             except Exception as e:
-                print(f"Failed to open {db_path}: {e}")
+                logger.error(f"Failed to open {db_path}: {e}")
 
     def _load_legacy_mdx(self):
         """Legacy loading: Load MDX files into memory (high memory usage)."""
         try:
             from readmdict import MDX, MDD
         except ImportError:
-            print("Warning: readmdict not installed. Dictionary support disabled.")
+            logger.error(
+                "Warning: readmdict not installed. Dictionary support disabled."
+            )
             return
 
         import pickle
@@ -114,7 +129,7 @@ class DictionaryManager:
                 if file.lower().endswith(".mdx"):
                     mdx_files.append(os.path.join(root, file))
 
-        print(f"Found {len(mdx_files)} MDX dictionary files (legacy mode).")
+        logger.info(f"Found {len(mdx_files)} MDX dictionary files (legacy mode).")
 
         for mdx_path in mdx_files:
             try:
@@ -125,21 +140,21 @@ class DictionaryManager:
                     mdx_mtime = os.path.getmtime(mdx_path)
                     cache_mtime = os.path.getmtime(cache_path)
                     if cache_mtime > mdx_mtime:
-                        print(f"Loading cached dictionary: {cache_path} ...")
+                        logger.info(f"Loading cached dictionary: {cache_path} ...")
                         try:
                             with open(cache_path, "rb") as f:
                                 data = pickle.load(f)
                                 data["_legacy"] = True
                                 self.databases.append(data)
-                                print(
+                                logger.info(
                                     f"Loaded {len(data['mdx_cache'])} entries from cache."
                                 )
                                 loaded_from_cache = True
                         except Exception as e:
-                            print(f"Cache load failed ({e}), parsing MDX...")
+                            logger.error(f"Cache load failed ({e}), parsing MDX...")
 
                 if not loaded_from_cache:
-                    print(f"Loading MDX: {mdx_path} ...")
+                    logger.info(f"Loading MDX: {mdx_path} ...")
                     start_time = time.time()
                     mdx = MDX(mdx_path)
 
@@ -172,7 +187,7 @@ class DictionaryManager:
                     }
 
                     self.databases.append(dict_data)
-                    print(
+                    logger.info(
                         f"Loaded {len(mdx_cache)} entries in {time.time() - start_time:.2f}s"
                     )
 
@@ -183,10 +198,10 @@ class DictionaryManager:
                         pass
 
             except Exception as e:
-                print(f"Failed to load {mdx_path}: {e}")
+                logger.error(f"Failed to load {mdx_path}: {e}")
 
-    def get_resource(self, path: str) -> Tuple[Optional[bytes], str]:
-        """Get a resource (audio, image, CSS) from dictionary."""
+    async def get_resource(self, path: str) -> Tuple[Optional[bytes], str]:
+        """Get a resource (audio, image, CSS) from dictionary (Async)."""
         # Normalize path
         key = path.replace("/", "\\")
         if not key.startswith("\\"):
@@ -201,20 +216,20 @@ class DictionaryManager:
 
         for d in self.databases:
             if d.get("_legacy"):
-                # Legacy: use mdd_cache dict
+                # Legacy: use mdd_cache dict (Sync is fine, it's just dict lookup)
                 cache = d.get("mdd_cache", {})
                 content = cache.get(key_bytes_utf8)
                 if not content and key_bytes_gbk:
                     content = cache.get(key_bytes_gbk)
             else:
-                # SQLite: query resources table
+                # SQLite: query resources table (Async)
                 conn = d["conn"]
-                cursor = conn.execute(
+                async with conn.execute(
                     "SELECT content FROM resources WHERE path = ? OR path = ?",
                     (key_bytes_utf8, key_bytes_gbk or key_bytes_utf8),
-                )
-                row = cursor.fetchone()
-                content = row[0] if row else None
+                ) as cursor:
+                    row = await cursor.fetchone()
+                    content = row[0] if row else None
 
             if content:
                 media_type, _ = mimetypes.guess_type(path)
@@ -222,27 +237,43 @@ class DictionaryManager:
 
         return None, "application/octet-stream"
 
-    def lookup(self, word: str) -> List[Dict[str, str]]:
-        """Look up a word in all dictionaries."""
+    async def lookup(self, word: str) -> List[Dict[str, str]]:
+        """Look up a word in all dictionaries (Async)."""
         word = word.strip()
         word_lower = word.lower()
+
+        # Check cache first
+        cache_key = word_lower
+        if cache_key in self._lookup_cache:
+            logger.info(f"dict_manager cache HIT for '{word}'")
+            return self._lookup_cache[cache_key]
+
+        logger.info(f"dict_manager cache MISS for '{word}'")
 
         results = []
 
         for d in self.databases:
             if d.get("_legacy"):
+                # Use threadpool for legacy if it gets heavy, but simple dict lookup is fast enough for main thread
+                # unless _follow_links does heavy recursion.
+                # For consistency, we keep it simple here.
                 definition_bytes = self._lookup_legacy(word, d)
             else:
-                definition_bytes = self._lookup_sqlite(word, word_lower, d["conn"])
+                definition_bytes = await self._lookup_sqlite(
+                    word, word_lower, d["conn"]
+                )
 
             if definition_bytes:
                 html_content = self._decode_definition(definition_bytes)
                 if html_content:
                     # Handle @@@LINK redirects
-                    html_content = self._follow_links(html_content, d)
-                    processed_html = self._process_html(
-                        html_content, d["name"], d["subdir"]
+                    html_content = await self._follow_links(html_content, d)
+
+                    # Process HTML in threadpool to avoid blocking event loop with BeautifulSoup
+                    processed_html = await run_in_threadpool(
+                        self._process_html, html_content, d["name"], d["subdir"]
                     )
+
                     results.append(
                         {
                             "dictionary": d["name"],
@@ -251,18 +282,28 @@ class DictionaryManager:
                         }
                     )
 
+        # Store in cache (with eviction if too large)
+        if len(self._lookup_cache) >= self._cache_max_size:
+            # Remove oldest entries (FIFO-ish by clearing half)
+            keys_to_remove = list(self._lookup_cache.keys())[
+                : self._cache_max_size // 2
+            ]
+            for k in keys_to_remove:
+                del self._lookup_cache[k]
+        self._lookup_cache[cache_key] = results
+
         return results
 
-    def _lookup_sqlite(
-        self, word: str, word_lower: str, conn: sqlite3.Connection
+    async def _lookup_sqlite(
+        self, word: str, word_lower: str, conn: aiosqlite.Connection
     ) -> Optional[bytes]:
-        """Query SQLite database for word definition."""
-        cursor = conn.execute(
+        """Query SQLite database for word definition (Async)."""
+        async with conn.execute(
             "SELECT definition FROM entries WHERE word = ? OR word_lower = ? LIMIT 1",
             (word, word_lower),
-        )
-        row = cursor.fetchone()
-        return row[0] if row else None
+        ) as cursor:
+            row = await cursor.fetchone()
+            return row[0] if row else None
 
     def _lookup_legacy(self, word: str, d: Dict) -> Optional[bytes]:
         """Query legacy in-memory cache for word definition."""
@@ -282,8 +323,8 @@ class DictionaryManager:
             except UnicodeDecodeError:
                 return None
 
-    def _follow_links(self, html_content: str, d: Dict, depth: int = 0) -> str:
-        """Follow @@@LINK redirects in definition."""
+    async def _follow_links(self, html_content: str, d: Dict, depth: int = 0) -> str:
+        """Follow @@@LINK redirects in definition (Async support)."""
         if depth >= 5 or not html_content.startswith("@@@LINK="):
             return html_content
 
@@ -300,17 +341,17 @@ class DictionaryManager:
                         break
         else:
             # Query both word and word_lower for case-insensitive matching
-            cursor = d["conn"].execute(
+            cursor = await d["conn"].execute(
                 "SELECT definition FROM entries WHERE word = ? OR word_lower = ? LIMIT 1",
                 (target_word, target_word_lower),
             )
-            row = cursor.fetchone()
+            row = await cursor.fetchone()
             target_bytes = row[0] if row else None
 
         if target_bytes:
             new_content = self._decode_definition(target_bytes)
             if new_content:
-                return self._follow_links(new_content, d, depth + 1)
+                return await self._follow_links(new_content, d, depth + 1)
 
         return html_content
 

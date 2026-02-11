@@ -13,8 +13,10 @@ dist
 build
 *.egg-info
 .DS_Store
-frontend/node_modules
-frontend/dist
+node_modules
+apps/web/node_modules
+apps/web/dist
+packages/*/node_modules
 dev.db
 practice.db
 test.db
@@ -22,3 +24,4 @@ logs/
 resources/
 docs/
 tests/
+

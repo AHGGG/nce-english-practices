@@ -15,12 +15,13 @@ from app.database.core import (
     ReadingSession,
     SentenceLearningRecord,
 )
-from app.models.orm import VoiceSession, ReviewLog
+from app.models.orm import VoiceSession, ReviewLog, ReviewItem
+from app.models.podcast_orm import PodcastListeningSession
 
 logger = logging.getLogger(__name__)
 
 
-async def get_performance_data(days: int = 30) -> Dict[str, Any]:
+async def get_performance_data(days: int = 30, user_id: str = "default_user") -> Dict[str, Any]:
     """
     Get simplified performance data for dashboard.
     Returns: study time, reading stats, and memory curve data.
@@ -35,11 +36,17 @@ async def get_performance_data(days: int = 30) -> Dict[str, Any]:
             # Now: 1 query using scalar subqueries.
 
             # 1. Sentence Learning Records Subquery
+            # 1. Sentence Learning Records Subquery
             sentence_subq = select(
                 func.sum(SentenceLearningRecord.dwell_time_ms).label("s_time"),
                 func.sum(SentenceLearningRecord.word_count).label("s_words"),
                 func.count(func.distinct(SentenceLearningRecord.source_id)).label("s_articles")
-            ).where(SentenceLearningRecord.created_at >= cutoff).subquery()
+            ).where(
+                and_(
+                    SentenceLearningRecord.created_at >= cutoff,
+                    SentenceLearningRecord.user_id == user_id
+                )
+            ).subquery()
 
             # 2. Reading Sessions Subquery
             # DRY: Reusable filter condition
@@ -50,17 +57,42 @@ async def get_performance_data(days: int = 30) -> Dict[str, Any]:
                 func.sum(case((has_valid_quality, ReadingSession.validated_word_count), else_=0)).label("r_words"),
                 func.count(case((has_valid_quality, ReadingSession.id), else_=None)).label("r_sessions"),
                 func.count(func.distinct(case((has_valid_quality, ReadingSession.source_id), else_=None))).label("r_articles")
-            ).where(ReadingSession.started_at >= cutoff).subquery()
+            ).where(
+                and_(
+                    ReadingSession.started_at >= cutoff,
+                    ReadingSession.user_id == user_id
+                )
+            ).subquery()
 
             # 3. Voice Sessions Subquery
             voice_subq = select(
                 func.sum(VoiceSession.total_active_seconds).label("v_time")
-            ).where(VoiceSession.started_at >= cutoff).subquery()
+            ).where(
+                and_(
+                    VoiceSession.started_at >= cutoff,
+                    VoiceSession.user_id == user_id
+                )
+            ).subquery()
 
             # 4. Review Sessions Subquery
             review_subq = select(
                 func.sum(ReviewLog.duration_ms).label("rv_time")
-            ).where(ReviewLog.reviewed_at >= cutoff).subquery()
+            ).join(ReviewItem).where(
+                and_(
+                    ReviewLog.reviewed_at >= cutoff,
+                    ReviewItem.user_id == user_id
+                )
+            ).subquery()
+
+            # 5. Podcast Listening Sessions Subquery
+            podcast_subq = select(
+                func.sum(PodcastListeningSession.total_listened_seconds).label("p_time")
+            ).where(
+                and_(
+                    PodcastListeningSession.started_at >= cutoff,
+                    PodcastListeningSession.user_id == user_id
+                )
+            ).subquery()
 
             # Combined Query
             # Selecting columns from multiple subqueries creates a Cartesian product (cross join).
@@ -74,7 +106,8 @@ async def get_performance_data(days: int = 30) -> Dict[str, Any]:
                 reading_subq.c.r_sessions,
                 reading_subq.c.r_articles,
                 voice_subq.c.v_time,
-                review_subq.c.rv_time
+                review_subq.c.rv_time,
+                podcast_subq.c.p_time,
             )
 
             res = await session.execute(stmt)
@@ -96,7 +129,9 @@ async def get_performance_data(days: int = 30) -> Dict[str, Any]:
             review_ms = row.rv_time or 0
             review_seconds = review_ms // 1000
 
-            total_study_seconds = sentence_seconds + reading_seconds + voice_seconds + review_seconds
+            podcast_seconds = row.p_time or 0
+
+            total_study_seconds = sentence_seconds + reading_seconds + voice_seconds + review_seconds + podcast_seconds
 
             result["study_time"] = {
                 "total_seconds": total_study_seconds,
@@ -106,6 +141,7 @@ async def get_performance_data(days: int = 30) -> Dict[str, Any]:
                     "reading": reading_seconds,
                     "voice": voice_seconds,
                     "review": review_seconds,
+                    "podcast": podcast_seconds,
                 },
             }
 
@@ -133,27 +169,66 @@ async def get_performance_data(days: int = 30) -> Dict[str, Any]:
             }
 
 
-async def get_daily_study_time(days: int = 30) -> Dict[str, Any]:
+async def get_daily_study_time(
+    days: int = 30, 
+    user_id: str = "default_user",
+    timezone: str = "UTC"
+) -> Dict[str, Any]:
     """
     Get daily study time breakdown for the last N days.
     Groups by day and mode (sentence study, reading, voice).
+    
+    Args:
+        days: Number of days to look back
+        user_id: User identifier for filtering
+        timezone: IANA timezone string (e.g., 'Asia/Shanghai', 'America/New_York')
+                  for correct daily grouping. Without this, early morning sessions
+                  would be incorrectly attributed to the previous UTC day.
     """
     async with AsyncSessionLocal() as session:
         try:
             cutoff = datetime.utcnow() - timedelta(days=days)
-
-            # Helper to group by day (compatible with Postgres)
-            # day_group = func.date_trunc("day", SentenceLearningRecord.created_at)
+            
+            # Validate timezone - PostgreSQL will error on invalid timezone
+            # Common valid values: 'UTC', 'Asia/Shanghai', 'America/New_York', 'Europe/London'
+            user_tz = timezone
+            
+            # Helper function to create timezone-aware date truncation
+            # 
+            # IMPORTANT: PostgreSQL timezone() behavior with timestamp WITHOUT time zone:
+            #   timezone(zone, ts) assumes ts IS in that zone, returns UTC
+            # We need the OPPOSITE: treat ts as UTC, convert TO user's zone
+            #
+            # Solution: First mark as UTC, then convert to user timezone
+            #   timezone('Asia/Shanghai', timezone('UTC', col))
+            # = (col AT TIME ZONE 'UTC') AT TIME ZONE 'Asia/Shanghai'
+            #
+            # Example: col = 2026-01-18 23:00:00 (stored as UTC)
+            #   -> timezone('UTC', col) = 2026-01-18 23:00:00+00
+            #   -> timezone('Asia/Shanghai', ...) = 2026-01-19 07:00:00
+            #   -> date_trunc('day', ...) = 2026-01-19 (correct!)
+            def day_trunc_tz(col):
+                """Truncate timestamp to day in user's timezone."""
+                # col is timestamp without timezone, stored as UTC
+                # Step 1: Mark it as UTC (creates timestamptz)
+                # Step 2: Convert to user's timezone
+                # Step 3: Truncate to day
+                utc_aware = func.timezone("UTC", col)
+                user_local = func.timezone(user_tz, utc_aware)
+                return func.date_trunc("day", user_local)
 
             # 1. Sentence Study by Day
             sentence_stmt = (
                 select(
-                    func.date_trunc("day", SentenceLearningRecord.created_at).label(
-                        "day"
-                    ),
+                    day_trunc_tz(SentenceLearningRecord.created_at).label("day"),
                     func.sum(SentenceLearningRecord.dwell_time_ms),
                 )
-                .where(SentenceLearningRecord.created_at >= cutoff)
+                .where(
+                    and_(
+                        SentenceLearningRecord.created_at >= cutoff,
+                        SentenceLearningRecord.user_id == user_id
+                    )
+                )
                 .group_by("day")
                 .order_by("day")
             )
@@ -165,10 +240,15 @@ async def get_daily_study_time(days: int = 30) -> Dict[str, Any]:
             # 2. Reading by Day
             reading_stmt = (
                 select(
-                    func.date_trunc("day", ReadingSession.started_at).label("day"),
+                    day_trunc_tz(ReadingSession.started_at).label("day"),
                     func.sum(ReadingSession.total_active_seconds),
                 )
-                .where(ReadingSession.started_at >= cutoff)
+                .where(
+                    and_(
+                        ReadingSession.started_at >= cutoff,
+                        ReadingSession.user_id == user_id
+                    )
+                )
                 .group_by("day")
                 .order_by("day")
             )
@@ -180,10 +260,15 @@ async def get_daily_study_time(days: int = 30) -> Dict[str, Any]:
             # 3. Voice by Day
             voice_stmt = (
                 select(
-                    func.date_trunc("day", VoiceSession.started_at).label("day"),
+                    day_trunc_tz(VoiceSession.started_at).label("day"),
                     func.sum(VoiceSession.total_active_seconds),
                 )
-                .where(VoiceSession.started_at >= cutoff)
+                .where(
+                    and_(
+                        VoiceSession.started_at >= cutoff,
+                        VoiceSession.user_id == user_id
+                    )
+                )
                 .group_by("day")
                 .order_by("day")
             )
@@ -193,10 +278,16 @@ async def get_daily_study_time(days: int = 30) -> Dict[str, Any]:
             # 4. Review by Day
             review_stmt = (
                 select(
-                    func.date_trunc("day", ReviewLog.reviewed_at).label("day"),
+                    day_trunc_tz(ReviewLog.reviewed_at).label("day"),
                     func.sum(ReviewLog.duration_ms),
                 )
-                .where(ReviewLog.reviewed_at >= cutoff)
+                .join(ReviewItem)
+                .where(
+                    and_(
+                        ReviewLog.reviewed_at >= cutoff,
+                        ReviewItem.user_id == user_id
+                    )
+                )
                 .group_by("day")
                 .order_by("day")
             )
@@ -204,6 +295,24 @@ async def get_daily_study_time(days: int = 30) -> Dict[str, Any]:
             review_days = {
                 row[0].date().isoformat(): (row[1] or 0) // 1000 for row in review_res
             }
+
+            # 5. Podcast Listening by Day
+            podcast_stmt = (
+                select(
+                    day_trunc_tz(PodcastListeningSession.started_at).label("day"),
+                    func.sum(PodcastListeningSession.total_listened_seconds),
+                )
+                .where(
+                    and_(
+                        PodcastListeningSession.started_at >= cutoff,
+                        PodcastListeningSession.user_id == user_id
+                    )
+                )
+                .group_by("day")
+                .order_by("day")
+            )
+            podcast_res = await session.execute(podcast_stmt)
+            podcast_days = {row[0].date().isoformat(): row[1] or 0 for row in podcast_res}
 
             # Merge all days
             all_dates = sorted(
@@ -213,6 +322,7 @@ async def get_daily_study_time(days: int = 30) -> Dict[str, Any]:
                         + list(reading_days.keys())
                         + list(voice_days.keys())
                         + list(review_days.keys())
+                        + list(podcast_days.keys())
                     )
                 )
             )
@@ -223,6 +333,7 @@ async def get_daily_study_time(days: int = 30) -> Dict[str, Any]:
                 r_sec = reading_days.get(date_str, 0)
                 v_sec = voice_days.get(date_str, 0)
                 rv_sec = review_days.get(date_str, 0)
+                p_sec = podcast_days.get(date_str, 0)
                 daily_data.append(
                     {
                         "date": date_str,
@@ -230,7 +341,8 @@ async def get_daily_study_time(days: int = 30) -> Dict[str, Any]:
                         "reading": r_sec,
                         "voice": v_sec,
                         "review": rv_sec,
-                        "total": s_sec + r_sec + v_sec + rv_sec,
+                        "podcast": p_sec,
+                        "total": s_sec + r_sec + v_sec + rv_sec + p_sec,
                     }
                 )
 
@@ -251,18 +363,19 @@ async def get_memory_curve_data(user_id: str = "default_user") -> Dict[str, Any]
 
     Uses ReviewLog data from the SM-2 spaced repetition system for accurate tracking.
     """
-    from app.models.orm import ReviewItem, ReviewLog
 
     async with AsyncSessionLocal() as session:
         try:
             # Time buckets and their interval ranges
             # Bucket name -> (min_interval, max_interval)
+            # SM-2 Optimized Buckets:
+            # SM-2 intervals: 1 → 6 → ~15 → ~37 days
+            # Bucket boundaries designed to capture each SM-2 stage
             bucket_ranges = {
-                1: (0, 2),
-                3: (2, 5),
-                7: (5, 10),
-                14: (10, 21),
-                30: (21, 45),
+                1: (0, 3),     # Day 1: First review (interval=1)
+                6: (3, 10),    # Day 6: Second review (interval=6)
+                15: (10, 25),  # Day 15: Third review (interval≈15)
+                40: (25, 60),  # Day 40: Fourth+ review (interval≈37+)
             }
 
             # ⚡ OPTIMIZATION: Use database aggregation instead of fetching all logs.
@@ -290,7 +403,7 @@ async def get_memory_curve_data(user_id: str = "default_user") -> Dict[str, Any]
                 select(*selections)
                 .join(ReviewItem)
                 .where(ReviewItem.user_id == user_id)
-                .where(ReviewLog.interval_at_review < 45)
+                .where(ReviewLog.interval_at_review < 60)
             )
 
             result = await session.execute(stmt)
@@ -329,7 +442,7 @@ async def get_memory_curve_data(user_id: str = "default_user") -> Dict[str, Any]
             S = 10
             ebbinghaus_curve = [
                 {"day": day, "retention": round(math.exp(-day / S), 2)}
-                for day in [1, 3, 7, 14, 30]
+                for day in [1, 6, 15, 40]  # Match SM-2 bucket days
             ]
 
             return {

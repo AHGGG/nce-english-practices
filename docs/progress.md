@@ -546,8 +546,118 @@ AI coding assistants often complete changes without verifying correctness, requi
 - **Verification**: Browser validated against golden standard image.
 
 #### Files
-- `tests/test_ldoce_parser_golden.py`: New test suite.
-- `scripts/generate_ldoce_golden.py`: Data generator.
 - `app/services/ldoce_parser.py`: Logic fix.
 
+### ✅ Review Queue UX Enhancements (Phase 53) (2026-01-16)
+**Optimized Review Queue experience with clickable help words and visual cues.**
+
+#### Features
+- **Clickable Help Words**: "Forgot" panel help explanation now features a clickable version of the sentence.
+- **Contextual Lookup**: Clicking highlighted words in the help panel triggers the dictionary/AI inspector.
+- **Visual Cues**: Added pulse animation to highlighted words to guide user interaction.
+- **Layout Optimization**: Removed duplicate sentence display; main card remains visible and interactive when help is shown.
+
+#### Implementation
+- **Frontend**: `ReviewQueue.jsx`
+  - Integrated `useWordExplainer` hook.
+  - Enhanced `HighlightedSentence` with `clickable` prop and CSS pulse animation.
+  - Conditional rendering logic to toggle interactivity.
+
+#### Verification
+- **Manual**: Verified interaction flow (Forgot -> Click Highlight -> Inspector).
+
+
+
+
+### ✅ Visual Consistency & Explanation UI (Phase 54) (2026-01-16)
+**Unified the "Help" experience across Study and Review modes with a refined visual palette.**
+
+#### Problem
+- Review Queue had a legacy "help panel" design (Orange/Yellow).
+- Sentence Study had a different design.
+- The original "Green/Cyan/Purple" palette felt disconnected ("Green" implies success, not help).
+
+#### Solution
+- **Unified Component**: `ExplanationCard.jsx` now powers both Sentence Study and Review Queue help views.
+- **Knowledge Stream Palette**:
+  - **Stage 1 (Simple)**: Cyan (Clean Info)
+  - **Stage 2 (Detailed)**: Sky Blue (Structure)
+  - **Stage 3 (Deep)**: Indigo (Deep Analysis)
+- **Result**: A cohesive, professional "deep dive" aesthetic without semantic confusion.
+
+#### Verification
+- **Manual**: Verified consistent behavior in both modes.
+
+### ✅ Optional HTTPS Support (Phase 55) (2026-01-16)
+**Enabled optional HTTPS mode for Voice Development without breaking default workflow.**
+
+#### Problem
+- Mobile voice features (Gemini Live) require HTTPS to work (WebSocket/Mic constraints).
+- Running HTTPS by default causes browser security warnings every time.
+- PowerShell script logic forced a binary choice based on file existence, not intent.
+
+#### Solution
+- **Default to HTTP**: Standard `dev.ps1` runs in HTTP.
+- **Opt-in HTTPS**: Added `-Https` flag to `dev.ps1`.
+- **Frontend Config**: Updated `vite.config.js` to respect `HTTPS` env var and added `npm run dev:https`.
+
+#### Verification
+- **Manual**: Verified `./scripts/dev.ps1` runs on HTTP.
+- **Manual**: Verified `./scripts/dev.ps1 -Https` runs on HTTPS (with certs).
+- **Manual**: Verified `npm run dev` vs `npm run dev:https`.
+
+### ✅ Memory Curve Debugging (Phase 56) (2026-01-17)
+**Created deep diagnostic tools for memory curve validation.**
+
+#### Problem
+User reported that Memory Curve only displayed Day 1 data despite having study history.
+
+#### Diagnosis & Solution
+- **Diagnosis**: Analysis revealed the system was working correctly. Memory curve buckets rely on `interval_at_review`. Users with only recent reviews (interval 1.0) naturally fall entirely into the first bucket (0-2 days). Data for later buckets requires successful reviews over longer periods (6+ days).
+- **Solution**: Implemented a comprehensive debug page to visualize this internal state and prevent future confusion.
+
+#### Implementation
+- **Backend**: `GET /api/review/debug/memory-curve` returning detailed interval histograms and bucket breakdown.
+- **Frontend**: `MemoryCurveDebug.jsx` view with visualization of interval distribution and raw log inspection.
+- **Integration**: Linked from Performance Report header with `CURVE_DEBUG` button.
+
+#### Verification
+- **Manual**: Validated using the new debug page that 100% of logs were indeed in the 0-2 day bucket, confirming the "empty" curve was accurate.
+
+
+### ✅ Dual Dictionary UI (Phase 57) (2026-01-17)
+**Enabled simultaneous access to both LDOCE and Collins dictionaries with a unified tabbed interface.**
+
+#### Problem
+- Users could only see LDOCE results even when distinct Collins data was available.
+- "Phrasal verb" lookups were brittle if the exact phrase wasn't in the specific dictionary being queried.
+
+#### Solution
+- **Parallel Querying**: Frontend now queries both `/api/dictionary/ldoce` and `/api/dictionary/collins` in parallel.
+- **Unified Inspector**: `WordInspector` displays tabs ("LDOCE" | "Collins") when both sources return data.
+- **Collins Rendering**: Updated `DictionaryResults` to handle Collins-specific fields (UK/US pronunciation, frequency bands).
+- **Robust Fallback**: Phrase decomposition algorithm now attempts to find keywords in *both* dictionaries.
+
+#### Implementation
+- **Frontend Hook**: `useWordExplainer.js` refactored to use `Promise.all` and consolidated state (`{ ldoce: ..., collins: ... }`).
+- **UI Components**: 
+  - `WordInspector.jsx`: Added tab state and edge-to-edge tab styling.
+  - `DictionaryResults.jsx`: Added conditional rendering for standardizing distinct dictionary schemas.
+
+#### Verification
+### ✅ Fix Article Completion Bug (Phase 58) (2026-01-17)
+**Resolved discrepancy in sentence counting causing premature "Completed" status.**
+
+#### Problem
+- Article listing used `_split_sentences_lenient` on raw text (e.g., 33 sentences).
+- Study mode used structured block extraction (e.g., 31 sentences).
+- Progress tracking uses block-based index, but completion check compared against raw text count.
+- Result: Articles with `index >= block_count` were incorrectly marked COMPLETED.
+
+#### Solution
+- **Unified Counting**: Both article listing and status APIs now use block-based sentence extraction.
+- **Performance Optimization**: Pre-compute and cache `block_sentence_count` during EPUB loading to avoid repeated HTML parsing in list views.
+
+#### Verification
+- **Manual**: Verified "Are some types of sugar healthier than others?" now shows correct count (31) and "In Progress" status.
 

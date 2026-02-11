@@ -146,13 +146,17 @@ class LDOCEParser:
 
         # Headword
         hwd_elem = entryhead.select_one(".hwd")
-        headword = hwd_elem.get_text(strip=True) if hwd_elem else ""
+        headword = hwd_elem.get_text() if hwd_elem else ""
+        headword = re.sub(r"\s+", " ", headword).strip()
         if not headword:
             return None
 
         # Hyphenation
         hyph_elem = entryhead.select_one(".hyphenation")
-        hyphenation = hyph_elem.get_text(strip=True) if hyph_elem else None
+        hyphenation = None
+        if hyph_elem:
+            hyphenation = hyph_elem.get_text()
+            hyphenation = re.sub(r"\s+", " ", hyphenation).strip()
 
         # Homograph number (simmer1, simmer2)
         homnum_elem = entryhead.select_one(".homnum")
@@ -165,14 +169,24 @@ class LDOCEParser:
 
         # Part of speech
         pos_elem = entryhead.select_one(".pos")
-        pos = pos_elem.get_text(strip=True) if pos_elem else None
+        pos = pos_elem.get_text() if pos_elem else None
+        if pos:
+            pos = re.sub(r"\s+", " ", pos).strip()
+
+        # Inflections (e.g., plural grogs, past tense went)
+        inflections = None
+        infl_elem = entryhead.select_one(".inflections")
+        if infl_elem:
+            inflections = infl_elem.get_text()
+            inflections = re.sub(r"\s+", " ", inflections).strip()
 
         # Entry-level grammar (e.g., [transitive] for verbs)
         # This is used as fallback when senses don't have their own grammar
         entry_gram_elem = entryhead.select_one(".gram")
-        entry_grammar = (
-            entry_gram_elem.get_text(strip=True) if entry_gram_elem else None
-        )
+        entry_grammar = None
+        if entry_gram_elem:
+            entry_grammar = entry_gram_elem.get_text()
+            entry_grammar = re.sub(r"\s+", " ", entry_grammar).strip()
 
         # Pronunciation
         pron, pron_ame = self._extract_pronunciation(entryhead)
@@ -224,6 +238,7 @@ class LDOCEParser:
             pronunciation=pron,
             pronunciation_ame=pron_ame,
             part_of_speech=pos,
+            inflections=inflections,
             audio=audio,
             senses=senses,
             phrasal_verbs=phrasal_verbs,
@@ -244,12 +259,14 @@ class LDOCEParser:
         # Main pronunciation
         pron_elem = container.select_one(".pron")
         if pron_elem:
-            pron = pron_elem.get_text(strip=True)
+            pron = pron_elem.get_text()
+            pron = re.sub(r"\s+", " ", pron).strip()
 
         # American variant
         ame_elem = container.select_one(".amevarpron")
         if ame_elem:
-            pron_ame_text = ame_elem.get_text(strip=True)
+            pron_ame_text = ame_elem.get_text()
+            pron_ame_text = re.sub(r"\s+", " ", pron_ame_text).strip()
             # Clean up (remove leading $ symbols)
             pron_ame = re.sub(r"^[\$\s]+", "", pron_ame_text)
 
@@ -322,7 +339,9 @@ class LDOCEParser:
 
         # Grammar: prefer sense-level, fallback to entry-level
         gram_elem = sense_elem.select_one(".gram")
-        grammar = gram_elem.get_text(strip=True) if gram_elem else default_grammar
+        grammar = gram_elem.get_text() if gram_elem else default_grammar
+        if grammar and gram_elem:
+            grammar = re.sub(r"\s+", " ", grammar).strip()
 
         # Definition (English and Chinese)
         definition, definition_cn = self._extract_definition(sense_elem)
@@ -360,7 +379,9 @@ class LDOCEParser:
             # English definition
             en_elem = def_elem.select_one("en")
             if en_elem:
-                definition = en_elem.get_text(strip=True)
+                definition = en_elem.get_text()
+                # Clean up spaces: collapse multiple, and ensure standard spacing
+                definition = re.sub(r"\s+", " ", definition).strip()
             else:
                 # Fallback: if no <en> tag, get text directly from .def
                 # We must exclude <tran> tag content if it exists
@@ -372,7 +393,7 @@ class LDOCEParser:
                         text_parts.append(child.get_text(strip=True))
                     else:
                         text_parts.append(str(child).strip())
-                
+
                 definition = " ".join(part for part in text_parts if part)
 
         return definition, definition_cn
@@ -410,12 +431,14 @@ class LDOCEParser:
                 audio_url = self._make_audio_url(audio_link.get("href", ""))
 
             # Get text (excluding the audio icon)
-            text = exaen.get_text(strip=True)
+            text = exaen.get_text()
             # Remove any speaker icon artifacts
             text = re.sub(r"^[\s\ue000-\uf8ff]+", "", text)
+            text = re.sub(r"\s+", " ", text).strip()
         else:
             # Fallback: get direct text
-            text = example_elem.get_text(strip=True)
+            text = example_elem.get_text()
+            text = re.sub(r"\s+", " ", text).strip()
 
         if not text or len(text) < 5:
             return None
@@ -458,7 +481,7 @@ class LDOCEParser:
     def _parse_collocation_example(self, example_elem: Tag) -> Optional[LDOCEExample]:
         """Parse a collocation example (simpler structure)."""
         # Use separator=' ' to preserve spaces between HTML tags
-        text = example_elem.get_text(separator=" ")
+        text = example_elem.get_text()
         # Normalize: remove leading bullet, collapse multiple spaces, strip edges
         text = re.sub(r"^[·•\s]+", "", text)
         text = re.sub(r"\s+", " ", text).strip()
@@ -688,7 +711,7 @@ class LDOCEParser:
 
             for li in ul.select("li"):
                 # Use separator=' ' to preserve spaces between HTML tags
-                text = li.get_text(separator=" ")
+                text = li.get_text()
                 # Normalize: collapse multiple spaces, strip edges
                 text = re.sub(r"\s+", " ", text).strip()
                 if text and len(text) > 5:
@@ -803,7 +826,7 @@ class LDOCEParser:
                 if content:
                     for ex_elem in content.select("span.example"):
                         # Use separator=' ' to preserve spaces between HTML tags (e.g., <span class="colloinexa">)
-                        ex_text = ex_elem.get_text(separator=" ")
+                        ex_text = ex_elem.get_text()
                         # Normalize: remove leading bullets, collapse multiple spaces, strip edges
                         ex_text = re.sub(r"^[·•\s]+", "", ex_text)
                         ex_text = re.sub(r"\s+", " ", ex_text).strip()
@@ -840,9 +863,9 @@ class LDOCEParser:
                         exaen = ex_elem.select_one("exaen")
                         if exaen:
                             # Use separator=' ' to preserve spaces between HTML tags
-                            ex_text = exaen.get_text(separator=" ")
+                            ex_text = exaen.get_text()
                         else:
-                            ex_text = ex_elem.get_text(separator=" ")
+                            ex_text = ex_elem.get_text()
                         # Normalize: remove leading bullets, collapse multiple spaces, strip edges
                         ex_text = re.sub(r"^[·•\s]+", "", ex_text)
                         ex_text = re.sub(r"\s+", " ", ex_text).strip()

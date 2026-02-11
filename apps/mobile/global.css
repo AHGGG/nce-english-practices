@@ -1,0 +1,68 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ============================================
+ * Design System: "Cyber-Noir" - Modern Green Gradient
+ * 
+ * Mobile version - uses tokens from @nce/ui-tokens
+ * ============================================ */
+@import "@nce/ui-tokens/generated/css/variables.css";
+
+:root {
+  /* Override accent colors for RGB format (required for opacity support) */
+  --color-accent-primary: 0 255 148;
+  --color-accent-secondary: 0 212 255;
+  --color-accent-danger: 255 68 68;
+  --color-accent-info: 59 130 246;
+  --color-accent-warning: 255 184 0;
+  --color-accent-success: 0 255 148;
+
+  /* Neon Colors RGB */
+  --color-neon-green: 0 255 148;
+  --color-neon-cyan: 0 212 255;
+  --color-neon-purple: 155 89 182;
+  --color-neon-pink: 255 0 128;
+  --color-neon-lime: 180 255 0;
+  --color-neon-magenta: 255 0 255;
+  --color-neon-yellow: 255 230 0;
+  --color-neon-gold: 255 215 0;
+
+  /* Category Colors RGB */
+  --color-category-orange: 249 115 22;
+  --color-category-blue: 59 130 246;
+  --color-category-amber: 245 158 11;
+  --color-category-red: 239 68 68;
+  --color-category-gray: 107 114 128;
+  --color-category-indigo: 99 102 241;
+  --color-category-yellow: 234 179 8;
+
+  /* Border RGB for opacity */
+  --color-border-default: 26 26 26;
+  --color-border-subtle: 15 15 15;
+  --color-border-hover: 0 255 148;
+
+  /* Glass Effect Variables */
+  --glass-bg: rgba(255, 255, 255, 0.03);
+  --glass-border: rgba(255, 255, 255, 0.08);
+  --glass-hover: rgba(255, 255, 255, 0.05);
+
+  /* Chart Colors */
+  --color-chart-primary: rgb(0 212 255);
+  --color-chart-secondary: rgb(139 157 147);
+  --color-chart-bg: rgb(10 15 13);
+}
+
+@layer utilities {
+  /* Gradient Text */
+  .text-gradient {
+    background: linear-gradient(
+      135deg,
+      rgb(var(--color-accent-primary)) 0%,
+      rgb(var(--color-accent-secondary)) 100%
+    );
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+}

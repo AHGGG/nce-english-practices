@@ -17,6 +17,7 @@ from app.core.db import Base
 
 # Import all ORM models to register them with Base.metadata
 from app.models import orm  # noqa: F401
+from app.models import podcast_orm  # noqa: F401
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.

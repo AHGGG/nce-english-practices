@@ -1,0 +1,176 @@
+{
+  "color": {
+    "core": {
+      "black": {
+        "$value": "#000000",
+        "$type": "color",
+        "$description": "Pure black"
+      },
+      "white": {
+        "$value": "#FFFFFF",
+        "$type": "color",
+        "$description": "Pure white"
+      }
+    },
+    "neutral": {
+      "0": {
+        "$value": "#FFFFFF",
+        "$type": "color"
+      },
+      "100": {
+        "$value": "#F5F5F5",
+        "$type": "color"
+      },
+      "200": {
+        "$value": "#E5E5E5",
+        "$type": "color"
+      },
+      "300": {
+        "$value": "#D4D4D4",
+        "$type": "color"
+      },
+      "400": {
+        "$value": "#A3A3A3",
+        "$type": "color"
+      },
+      "500": {
+        "$value": "#737373",
+        "$type": "color"
+      },
+      "600": {
+        "$value": "#525252",
+        "$type": "color"
+      },
+      "700": {
+        "$value": "#404040",
+        "$type": "color"
+      },
+      "800": {
+        "$value": "#262626",
+        "$type": "color"
+      },
+      "900": {
+        "$value": "#171717",
+        "$type": "color"
+      }
+    },
+    "accent": {
+      "primary": {
+        "$value": "#00FF94",
+        "$type": "color",
+        "$description": "Matrix Green - Main accent color"
+      },
+      "secondary": {
+        "$value": "#00D4FF",
+        "$type": "color",
+        "$description": "Cyan - Secondary accent"
+      },
+      "danger": {
+        "$value": "#FF4444",
+        "$type": "color",
+        "$description": "Error/Danger state"
+      },
+      "info": {
+        "$value": "#3B82F6",
+        "$type": "color",
+        "$description": "Information/Link color"
+      },
+      "warning": {
+        "$value": "#FFB800",
+        "$type": "color",
+        "$description": "Warning state"
+      },
+      "success": {
+        "$value": "#00FF94",
+        "$type": "color",
+        "$description": "Success state"
+      }
+    },
+    "neon": {
+      "green": {
+        "$value": "#00FF94",
+        "$type": "color"
+      },
+      "cyan": {
+        "$value": "#00D4FF",
+        "$type": "color"
+      },
+      "purple": {
+        "$value": "#9B59B6",
+        "$type": "color"
+      },
+      "pink": {
+        "$value": "#FF0080",
+        "$type": "color"
+      },
+      "lime": {
+        "$value": "#B4FF00",
+        "$type": "color"
+      },
+      "magenta": {
+        "$value": "#FF00FF",
+        "$type": "color"
+      },
+      "yellow": {
+        "$value": "#FFE600",
+        "$type": "color"
+      },
+      "gold": {
+        "$value": "#FFD700",
+        "$type": "color"
+      }
+    },
+    "category": {
+      "orange": {
+        "$value": "#F97316",
+        "$type": "color"
+      },
+      "blue": {
+        "$value": "#3B82F6",
+        "$type": "color"
+      },
+      "amber": {
+        "$value": "#F59E0B",
+        "$type": "color"
+      },
+      "red": {
+        "$value": "#EF4444",
+        "$type": "color"
+      },
+      "gray": {
+        "$value": "#6B7280",
+        "$type": "color"
+      },
+      "indigo": {
+        "$value": "#6366F1",
+        "$type": "color"
+      },
+      "yellow": {
+        "$value": "#EAB308",
+        "$type": "color"
+      }
+    },
+    "light": {
+      "surface": {
+        "$value": "#FFFFFF",
+        "$type": "color",
+        "$description": "Light theme surface"
+      },
+      "border": {
+        "$value": "#E5E5E5",
+        "$type": "color",
+        "$description": "Light theme border"
+      },
+      "text": {
+        "$value": "#1A1A1A",
+        "$type": "color",
+        "$description": "Light theme text"
+      },
+      "textMuted": {
+        "$value": "#666666",
+        "$type": "color",
+        "$description": "Light theme muted text"
+      }
+    }
+  }
+}

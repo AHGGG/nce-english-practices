@@ -8,47 +8,41 @@ Schemas extracted to: app/models/sentence_study_schemas.py
 
 from fastapi import APIRouter, HTTPException, Depends
 from fastapi.responses import StreamingResponse
-from typing import Optional, List, Dict, Any
+from typing import Optional, List
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, case
-import hashlib
-import json
-from datetime import datetime, timedelta
+from datetime import datetime
 
 from app.core.db import get_db
 from app.models.orm import (
     SentenceLearningRecord,
     UserComprehensionProfile,
     WordProficiency,
-    ArticleOverviewCache,
-    SentenceCollocationCache,
     ReviewItem,
 )
-from app.services.llm import llm_service
-from app.services.sentence_study_service import (
-    sentence_study_service,
-    _overview_cache,
-    _collocation_cache,
-)
+from app.services.sentence_study_service import sentence_study_service
 from app.models.sentence_study_schemas import (
     StudyProgressResponse,
     RecordRequest,
     SimplifyRequest,
     OverviewRequest,
-    OverviewResponse,
     ExplainWordRequest,
     LastSessionResponse,
     UnclearSentenceInfo,
     StudyHighlightsResponse,
     DetectCollocationsRequest,
-    CollocationItem,
     DetectCollocationsResponse,
+    DetectCollocationsBatchRequest,
+    DetectCollocationsBatchResponse,
     PrefetchCollocationsRequest,
     ReviewQueueItem,
     ReviewRequest,
     WordToReview,
     ProfileResponse,
+    CollocationItem,
 )
+from app.api.routers.auth import get_current_user_id
+from app.services.log_collector import log_collector, LogLevel, LogCategory
 
 router = APIRouter(prefix="/api/sentence-study", tags=["sentence-study"])
 
@@ -59,11 +53,14 @@ router = APIRouter(prefix="/api/sentence-study", tags=["sentence-study"])
 
 
 @router.get("/last-session", response_model=Optional[LastSessionResponse])
-async def get_last_session(db: AsyncSession = Depends(get_db)):
+async def get_last_session(
+    user_id: str = Depends(get_current_user_id), db: AsyncSession = Depends(get_db)
+):
     """Get the user's last studied article/session."""
     # Find the most recent learning record
     result = await db.execute(
         select(SentenceLearningRecord)
+        .where(SentenceLearningRecord.user_id == user_id)
         .order_by(SentenceLearningRecord.created_at.desc())
         .limit(1)
     )
@@ -80,16 +77,24 @@ async def get_last_session(db: AsyncSession = Depends(get_db)):
 
 
 @router.get("/{source_id:path}/progress", response_model=StudyProgressResponse)
-async def get_study_progress(source_id: str, db: AsyncSession = Depends(get_db)):
+async def get_study_progress(
+    source_id: str,
+    user_id: str = Depends(get_current_user_id),
+    db: AsyncSession = Depends(get_db),
+):
     """Get study progress for an article."""
     # Count studied sentences and clear count
     result = await db.execute(
         select(
-            func.count(SentenceLearningRecord.id).label("total"),
+            func.count(func.distinct(SentenceLearningRecord.sentence_index)).label(
+                "total"
+            ),
             func.sum(
                 case((SentenceLearningRecord.initial_response == "clear", 1), else_=0)
             ).label("clear_count"),
-        ).where(SentenceLearningRecord.source_id == source_id)
+        )
+        .where(SentenceLearningRecord.source_id == source_id)
+        .where(SentenceLearningRecord.user_id == user_id)
     )
     row = result.first()
 
@@ -100,6 +105,7 @@ async def get_study_progress(source_id: str, db: AsyncSession = Depends(get_db))
     last_result = await db.execute(
         select(SentenceLearningRecord.sentence_index)
         .where(SentenceLearningRecord.source_id == source_id)
+        .where(SentenceLearningRecord.user_id == user_id)
         .order_by(SentenceLearningRecord.sentence_index.desc())
         .limit(1)
     )
@@ -121,6 +127,7 @@ async def get_study_progress(source_id: str, db: AsyncSession = Depends(get_db))
 async def get_study_highlights(
     source_id: str,
     total_sentences: int = 0,  # Total sentences in the article (from frontend)
+    user_id: str = Depends(get_current_user_id),
     db: AsyncSession = Depends(get_db),
 ):
     """Get all words/phrases looked up during study of an article.
@@ -131,6 +138,7 @@ async def get_study_highlights(
     result = await db.execute(
         select(SentenceLearningRecord)
         .where(SentenceLearningRecord.source_id == source_id)
+        .where(SentenceLearningRecord.user_id == user_id)
         .order_by(SentenceLearningRecord.sentence_index)
     )
     records = result.scalars().all()
@@ -182,7 +190,11 @@ async def get_study_highlights(
 
 
 @router.post("/record")
-async def record_learning(req: RecordRequest, db: AsyncSession = Depends(get_db)):
+async def record_learning(
+    req: RecordRequest,
+    user_id: str = Depends(get_current_user_id),
+    db: AsyncSession = Depends(get_db),
+):
     """Record a sentence learning result."""
 
     # Deduplicate clicks while preserving order
@@ -190,6 +202,7 @@ async def record_learning(req: RecordRequest, db: AsyncSession = Depends(get_db)
     unique_phrase_clicks = list(dict.fromkeys(req.phrase_clicks))
 
     record = SentenceLearningRecord(
+        user_id=user_id,
         source_type=req.source_type,
         source_id=req.source_id,
         sentence_index=req.sentence_index,
@@ -205,12 +218,12 @@ async def record_learning(req: RecordRequest, db: AsyncSession = Depends(get_db)
     )
 
     # ============================================================
-    # Deep Diagnosis & Profile Update
+    # Deep Diagnosis & Profile Update (Delegated to Service)
     # ============================================================
 
-    diagnosis_result = await _perform_deep_diagnosis(
+    diagnosis_result = await sentence_study_service.perform_deep_diagnosis(
         db=db,
-        user_id=req.user_id,
+        user_id=user_id,
         initial=req.initial_response,
         choice=req.unclear_choice,
         simplified=req.simplified_response,
@@ -229,22 +242,22 @@ async def record_learning(req: RecordRequest, db: AsyncSession = Depends(get_db)
     # --- SRS Scheduling ---
     # Set scheduled_review for sentences with gaps
     if diagnosis_result["gap_type"] is not None:
-        record.scheduled_review = datetime.utcnow() + _calculate_review_interval(
-            0
+        record.scheduled_review = (
+            datetime.utcnow()
+            + sentence_study_service.calculate_review_interval(
+                0, diagnosis_result["gap_type"]
+            )
         )  # First review
         record.review_count = 0
 
     db.add(record)
 
     # --- Update UserComprehensionProfile (Deep Integration) ---
-    await _update_user_profile_deep(
-        db, req.user_id, diagnosis_result, unique_word_clicks
+    await sentence_study_service.update_user_profile_deep(
+        db, user_id, diagnosis_result, unique_word_clicks
     )
 
     # --- Create ReviewItem for SM-2 based spaced repetition ---
-    # Entry conditions per design doc:
-    # 1. User clicked "Unclear"
-    # 2. User clicked "Clear" but looked up words/phrases
     should_create_review = req.initial_response == "unclear" or (
         req.initial_response == "clear" and (unique_word_clicks or unique_phrase_clicks)
     )
@@ -254,7 +267,7 @@ async def record_learning(req: RecordRequest, db: AsyncSession = Depends(get_db)
         # Check if review item already exists for this sentence
         existing_review = await db.execute(
             select(ReviewItem)
-            .where(ReviewItem.user_id == req.user_id)
+            .where(ReviewItem.user_id == user_id)
             .where(ReviewItem.source_id == req.source_id)
             .where(ReviewItem.sentence_index == req.sentence_index)
         )
@@ -271,7 +284,7 @@ async def record_learning(req: RecordRequest, db: AsyncSession = Depends(get_db)
             # Create new review item
             highlighted = list(set(unique_word_clicks + unique_phrase_clicks))
             review_item = ReviewItem(
-                user_id=req.user_id,
+                user_id=user_id,
                 source_id=req.source_id,
                 sentence_index=req.sentence_index,
                 sentence_text=req.sentence_text,
@@ -297,25 +310,13 @@ async def record_learning(req: RecordRequest, db: AsyncSession = Depends(get_db)
         "diagnosed_gap": diagnosis_result["gap_type"],
         "confidence": diagnosis_result["confidence"],
         "patterns": diagnosis_result["patterns"],
-        "review_item_id": review_item_id,  # NEW: Return review item ID if created
+        "review_item_id": review_item_id,
     }
 
 
 @router.post("/simplify")
 async def simplify_sentence(req: SimplifyRequest):
-    """Generate simplified version of a sentence using streaming LLM.
-
-    Returns Server-Sent Events (SSE) for real-time streaming display.
-    Supports 3 progressive stages:
-    - Stage 1: English simplification (simpler words or shorter sentences)
-    - Stage 2: Detailed English explanation with examples
-    - Stage 3: Chinese deep dive explanation (中文深度解释)
-
-    SSE format:
-    - data: {"type": "chunk", "content": "..."}
-    - data: {"type": "done", "stage": 1, "has_next_stage": true}
-    - data: {"type": "error", "message": "..."}
-    """
+    """Generate simplified version of a sentence using streaming LLM."""
 
     async def generate():
         async for chunk_json in sentence_study_service.stream_simplification(
@@ -343,121 +344,16 @@ async def generate_overview(req: OverviewRequest, db: AsyncSession = Depends(get
     """
     Generate article overview with English summary and Chinese translation.
     Cache priority: in-memory -> DB -> LLM generation.
-    First request streams via SSE, subsequent requests return cached JSON.
-
-    SSE format:
-    - data: {"type": "chunk", "content": "..."} - streaming content
-    - data: {"type": "done", "overview": {...}} - final result with full overview
-    - data: {"type": "cached", "overview": {...}} - cache hit
     """
 
-    # Generate cache key from title
-    cache_key = hashlib.md5(req.title.encode()).hexdigest()
-
-    # 1. Check in-memory cache first (hot path)
-    if cache_key in _overview_cache:
-        cached = _overview_cache[cache_key]
-        return OverviewResponse(**cached)
-
-    # 2. Check DB cache
-    db_result = await db.execute(
-        select(ArticleOverviewCache).where(ArticleOverviewCache.title_hash == cache_key)
-    )
-    db_cache = db_result.scalar_one_or_none()
-    if db_cache:
-        cached = {
-            "summary_en": db_cache.summary_en,
-            "summary_zh": db_cache.summary_zh,
-            "key_topics": db_cache.key_topics,
-            "difficulty_hint": db_cache.difficulty_hint,
-        }
-        _overview_cache[cache_key] = cached  # Warm in-memory cache
-        return OverviewResponse(**cached)
-
-    # 3. Generate via LLM (streaming)
-    # Truncate to first ~500 words for efficiency
-    words = req.full_text.split()
-    text_excerpt = " ".join(words[:500]) + ("..." if len(words) > 500 else "")
-
-    prompt = f"""Analyze this article and provide a brief overview to help a learner understand the context before studying it sentence by sentence.
-
-Article Title: {req.title}
-Total Sentences: {req.total_sentences}
-
-Article Excerpt:
-{text_excerpt}
-
-Respond in this exact JSON format:
-{{
-  "summary_en": "2-3 sentence summary of what this article is about",
-  "summary_zh": "中文翻译：2-3句话概括文章内容",
-  "key_topics": ["topic1", "topic2", "topic3"],
-  "difficulty_hint": "Brief note about vocabulary/grammar complexity"
-}}
-
-Return ONLY the JSON, no markdown formatting."""
-
     async def generate():
-        full_content = ""
-        try:
-            stream = await llm_service.async_client.chat.completions.create(
-                model=llm_service.model_name,
-                messages=[{"role": "user", "content": prompt}],
-                max_tokens=500,
-                temperature=0.3,
-                stream=True,
-            )
-
-            async for chunk in stream:
-                if chunk.choices and chunk.choices[0].delta.content:
-                    text = chunk.choices[0].delta.content
-                    full_content += text
-                    yield f"data: {json.dumps({'type': 'chunk', 'content': text})}\n\n"
-
-            # Parse the accumulated content
-            content = full_content.strip()
-            if content.startswith("```"):
-                content = content.split("\n", 1)[1].rsplit("```", 1)[0]
-
-            try:
-                data = json.loads(content)
-                result = {
-                    "summary_en": data.get("summary_en", "Unable to generate summary."),
-                    "summary_zh": data.get("summary_zh", "无法生成摘要。"),
-                    "key_topics": data.get("key_topics", []),
-                    "difficulty_hint": data.get("difficulty_hint", ""),
-                }
-            except json.JSONDecodeError:
-                result = {
-                    "summary_en": "This article covers various topics. Study the sentences to learn more.",
-                    "summary_zh": "本文涵盖多个主题。通过逐句学习了解更多。",
-                    "key_topics": [],
-                    "difficulty_hint": "Unable to analyze difficulty.",
-                }
-
-            # Cache in-memory
-            _overview_cache[cache_key] = result
-
-            # Persist to DB
-            try:
-                db.add(
-                    ArticleOverviewCache(
-                        title_hash=cache_key,
-                        title=req.title,
-                        summary_en=result["summary_en"],
-                        summary_zh=result["summary_zh"],
-                        key_topics=result["key_topics"],
-                        difficulty_hint=result["difficulty_hint"],
-                    )
-                )
-                await db.commit()
-            except Exception:
-                await db.rollback()  # Ignore duplicate key errors
-
-            yield f"data: {json.dumps({'type': 'done', 'overview': result})}\n\n"
-
-        except Exception as e:
-            yield f"data: {json.dumps({'type': 'error', 'message': str(e)})}\n\n"
+        async for chunk_json in sentence_study_service.stream_overview_generation(
+            db=db,
+            title=req.title,
+            full_text=req.full_text,
+            total_sentences=req.total_sentences,
+        ):
+            yield f"data: {chunk_json}\n\n"
 
     return StreamingResponse(
         generate(),
@@ -471,11 +367,7 @@ Return ONLY the JSON, no markdown formatting."""
 
 @router.post("/explain-word")
 async def explain_word_in_context(req: ExplainWordRequest):
-    """
-    Stream LLM explanation of a word in its sentence context.
-    Returns Server-Sent Events with text chunks.
-    """
-    # Support both 'text' (new) and 'word' (deprecated) fields
+    """Stream LLM explanation of a word in its sentence context."""
     text_to_explain = req.text or req.word
     if not text_to_explain:
         raise HTTPException(
@@ -490,12 +382,9 @@ async def explain_word_in_context(req: ExplainWordRequest):
             prev_sentence=req.prev_sentence,
             next_sentence=req.next_sentence,
         ):
-            # Stream already yields JSON formatted "data: ..." lines or just JSON strings
-            # If stream_word_explanation yields valid JSON strings, we wrap them in "data: ...\n\n"
-            # But stream_word_explanation yields json.dumps(...) so it is a single line string.
             yield f"data: {chunk}\n\n"
-        
-        yield "data: {\"type\": \"done\"}\n\n"
+
+        yield 'data: {"type": "done"}\n\n'
 
     return StreamingResponse(
         generate(),
@@ -507,224 +396,126 @@ async def explain_word_in_context(req: ExplainWordRequest):
     )
 
 
+@router.post("/explain-word-sync")
+async def explain_word_sync(req: ExplainWordRequest):
+    """
+    Non-streaming version for React Native mobile app.
+    Returns complete JSON response with explanation.
+    """
+    import logging
+
+    logger = logging.getLogger(__name__)
+
+    from app.services.sentence_study_service import sentence_study_service as svc
+
+    text_to_explain = req.text or req.word
+    if not text_to_explain:
+        raise HTTPException(
+            status_code=400, detail="Either 'text' or 'word' must be provided"
+        )
+
+    logger.info(
+        f"[explain-word-sync] text={text_to_explain}, sentence={req.sentence[:50] if req.sentence else 'N/A'}..."
+    )
+
+    try:
+        explanation = await svc.explain_word_sync(
+            text=text_to_explain,
+            sentence=req.sentence,
+            style=req.style,
+            prev_sentence=req.prev_sentence,
+            next_sentence=req.next_sentence,
+        )
+
+        logger.info(
+            f"[explain-word-sync] success, explanation length={len(explanation)}"
+        )
+
+        return {
+            "type": "complete",
+            "content": explanation,
+        }
+    except Exception as e:
+        logger.error(f"[explain-word-sync] error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 # ============================================================
 # Collocation Detection
 # ============================================================
-
-# Note: Models (DetectCollocationsRequest, CollocationItem, DetectCollocationsResponse)
-# are imported from app.models.sentence_study_schemas
 
 
 @router.post("/detect-collocations", response_model=DetectCollocationsResponse)
 async def detect_collocations(
     req: DetectCollocationsRequest, db: AsyncSession = Depends(get_db)
 ):
-    """
-    Detect common collocations/phrases in a sentence using LLM.
-    Cache priority: in-memory -> DB -> LLM generation.
-    Results are cached for efficiency.
-    """
-
-    cache_key = hashlib.md5(req.sentence.encode()).hexdigest()
-
-    # 1. Check in-memory cache (hot path)
-    if cache_key in _collocation_cache:
-        return DetectCollocationsResponse(collocations=_collocation_cache[cache_key])
-
-    # 2. Check DB cache
-    db_result = await db.execute(
-        select(SentenceCollocationCache).where(
-            SentenceCollocationCache.sentence_hash == cache_key
-        )
+    """Detect common collocations/phrases in a sentence using LLM."""
+    collocations = await sentence_study_service.get_or_detect_collocations(
+        db=db, sentence=req.sentence
     )
-    db_cache = db_result.scalar_one_or_none()
-    if db_cache:
-        _collocation_cache[cache_key] = db_cache.collocations  # Warm in-memory cache
-        return DetectCollocationsResponse(collocations=db_cache.collocations)
-
-    # 3. Generate via LLM
-    # Tokenize sentence to get word list with indices
-    words = req.sentence.split()
-
-    prompt = f"""Analyze this sentence and identify ALL common English collocations, phrasal verbs, and fixed expressions.
-
-Sentence: "{req.sentence}"
-
-Word list with indices:
-{chr(10).join([f"{i}: {w}" for i, w in enumerate(words)])}
-
-Return a JSON array of detected collocations. For each, provide:
-- "text": the exact collocation text
-- "key_word": the most difficult or least frequent word in the phrase to look up. Avoid common verbs (make, get, take, do, have, be) and prepositions unless they are the core meaning.
-- "start_word_idx": starting word index
-- "end_word_idx": ending word index (inclusive)
-
-Examples of collocations to detect:
-- Phrasal verbs: "sit down" (key_word: "sit"), "give up" (key_word: "give"), "look forward to" (key_word: "forward")
-- Fixed expressions: "in terms of" (key_word: "term"), "as a result" (key_word: "result"), "take advantage of" (key_word: "advantage")
-- Common combinations: "make a decision" (key_word: "decision"), "pay attention" (key_word: "attention"), "climate change" (key_word: "climate")
-
-IMPORTANT: Do NOT return overlapping collocations. If a word is part of multiple potential collocations, choose the longest or most meaningful one.
-For example, "a barrage of" is better than separate "a barrage" and "barrage of".
-
-Return ONLY the JSON array, no explanation. If no collocations found, return [].
-Example output: [{{"text": "sit down", "key_word": "sit", "start_word_idx": 2, "end_word_idx": 3}}]"""
-
-    try:
-        response = await llm_service.async_client.chat.completions.create(
-            model=llm_service.model_name,
-            messages=[{"role": "user", "content": prompt}],
-            max_tokens=300,
-            temperature=0.1,  # Low temp for consistent detection
-        )
-        content = response.choices[0].message.content.strip()
-
-        # Parse JSON response
-        if content.startswith("```"):
-            content = content.split("\n", 1)[1].rsplit("```", 1)[0]
-
-        collocations = json.loads(content)
-
-        # Validate and clean up results
-        valid_collocations = []
-        for c in collocations:
-            if all(k in c for k in ["text", "start_word_idx", "end_word_idx"]):
-                valid_collocations.append(CollocationItem(**c))
-
-        collocations_data = [c.model_dump() for c in valid_collocations]
-
-        # Cache in-memory
-        _collocation_cache[cache_key] = collocations_data
-
-        # Persist to DB
-        try:
-            db.add(
-                SentenceCollocationCache(
-                    sentence_hash=cache_key,
-                    sentence_preview=req.sentence[:100],
-                    collocations=collocations_data,
-                )
-            )
-            await db.commit()
-        except Exception:
-            await db.rollback()  # Ignore duplicate key errors
-
-        return DetectCollocationsResponse(collocations=valid_collocations)
-
-    except Exception:
-        # On error, return empty list (graceful degradation)
-        return DetectCollocationsResponse(collocations=[])
-
-
-# ============================================================
-# Prefetch Endpoint (On-demand Lookahead)
-# ============================================================
-
-# Note: PrefetchCollocationsRequest is imported from app.models.sentence_study_schemas
-
-
-async def _generate_and_cache_collocations(sentence: str, db: AsyncSession) -> None:
-    """Helper to generate collocations for a single sentence and cache to DB."""
-
-    cache_key = hashlib.md5(sentence.encode()).hexdigest()
-
-    # Skip if already in memory cache
-    if cache_key in _collocation_cache:
-        return
-
-    # Skip if already in DB
-    db_result = await db.execute(
-        select(SentenceCollocationCache).where(
-            SentenceCollocationCache.sentence_hash == cache_key
-        )
+    # Convert dict to CollocationItem for type safety
+    return DetectCollocationsResponse(
+        collocations=[CollocationItem(**c) for c in collocations]
     )
-    if db_result.scalar_one_or_none():
-        return
-
-    # Generate via LLM
-    words = sentence.split()
-    prompt = f"""Analyze this sentence and identify ALL common English collocations, phrasal verbs, and fixed expressions.
-
-Sentence: "{sentence}"
-
-Word list with indices:
-{chr(10).join([f"{i}: {w}" for i, w in enumerate(words)])}
-
-Return a JSON array of detected collocations. For each, provide:
-- "text": the exact collocation text
-- "key_word": the most difficult or least frequent word in the phrase to look up. Avoid common verbs (make, get, take, do, have, be) and prepositions unless they are the core meaning.
-- "start_word_idx": starting word index
-- "end_word_idx": ending word index (inclusive)
-
-IMPORTANT: Do NOT return overlapping collocations. If a word is part of multiple potential collocations, choose the longest or most meaningful one.
-
-Return ONLY the JSON array, no explanation. If no collocations found, return []."""
-
-    try:
-        response = await llm_service.async_client.chat.completions.create(
-            model=llm_service.model_name,
-            messages=[{"role": "user", "content": prompt}],
-            max_tokens=300,
-            temperature=0.1,
-        )
-        content = response.choices[0].message.content.strip()
-
-        if content.startswith("```"):
-            content = content.split("\n", 1)[1].rsplit("```", 1)[0]
-
-        collocations = json.loads(content)
-        valid_collocations = [
-            {
-                "text": c["text"],
-                "key_word": c.get("key_word"),
-                "start_word_idx": c["start_word_idx"],
-                "end_word_idx": c["end_word_idx"],
-            }
-            for c in collocations
-            if all(k in c for k in ["text", "start_word_idx", "end_word_idx"])
-        ]
-
-        # Cache in-memory
-        _collocation_cache[cache_key] = valid_collocations
-
-        # Persist to DB
-        db.add(
-            SentenceCollocationCache(
-                sentence_hash=cache_key,
-                sentence_preview=sentence[:100],
-                collocations=valid_collocations,
-            )
-        )
-        await db.commit()
-    except Exception:
-        await db.rollback()
 
 
 @router.post("/prefetch-collocations")
 async def prefetch_collocations(req: PrefetchCollocationsRequest):
-    """
-    Background prefetch collocations for upcoming sentences (lookahead).
-    Called by frontend when user reaches sentence N to prefetch N+1, N+2.
-    Limited to 5 sentences per request.
-    """
+    """Background prefetch collocations for upcoming sentences (lookahead)."""
     import asyncio
     from app.core.db import AsyncSessionLocal
 
-    sentences_to_prefetch = req.sentences[:5]  # Limit to 5
+    sentences_to_prefetch = req.sentences[:5]
 
     async def _prefetch():
         async with AsyncSessionLocal() as new_db:
             for sentence in sentences_to_prefetch:
                 try:
-                    await _generate_and_cache_collocations(sentence, new_db)
+                    await sentence_study_service.get_or_detect_collocations(
+                        new_db, sentence
+                    )
                 except Exception:
-                    pass  # Ignore errors, best-effort prefetch
+                    pass
 
-    # Use asyncio.create_task to run in background without blocking
-    # This works because we're already in the async event loop
     asyncio.create_task(_prefetch())
-
     return {"status": "prefetching", "count": len(sentences_to_prefetch)}
+
+
+@router.post(
+    "/detect-collocations-batch", response_model=DetectCollocationsBatchResponse
+)
+async def detect_collocations_batch(
+    req: DetectCollocationsBatchRequest, db: AsyncSession = Depends(get_db)
+):
+    """
+    Detect collocations for multiple sentences at once (max 10).
+    Useful for batch loading when scrolling through content.
+    Backend has 3-layer cache (Memory -> DB -> LLM), so cached sentences return instantly.
+    """
+    import asyncio
+
+    sentences = req.sentences[:10]  # Limit to 10 sentences
+
+    async def detect_one(sentence: str):
+        try:
+            collocations = await sentence_study_service.get_or_detect_collocations(
+                db=db, sentence=sentence
+            )
+            # Convert dict to CollocationItem
+            return sentence, [CollocationItem(**c) for c in collocations]
+        except Exception as e:
+            log_collector.log(
+                f"Collocation detection failed for sentence: {e}",
+                level=LogLevel.WARN,
+                category=LogCategory.GENERAL,
+                source="backend",
+            )
+            return sentence, []
+
+    # Run all detections in parallel
+    results = await asyncio.gather(*[detect_one(s) for s in sentences])
+
+    return DetectCollocationsBatchResponse(results=dict(results))
 
 
 # ============================================================
@@ -732,39 +523,9 @@ async def prefetch_collocations(req: PrefetchCollocationsRequest):
 # ============================================================
 
 
-def _calculate_review_interval(review_count: int, gap_type: str = None) -> timedelta:
-    """
-    Smart SRS interval based on review count and gap type.
-    - Collocations: hardest to retain, shortest intervals
-    - Meaning: medium difficulty (context understanding)
-    - Vocabulary/Structure: default intervals
-    """
-    base_intervals = [
-        1,
-        3,
-        7,
-        14,
-        30,
-    ]  # days (default for vocabulary, structure, fundamental)
-
-    if gap_type == "collocation":
-        # Collocations are hardest to remember
-        base_intervals = [1, 2, 4, 7, 14]
-    elif gap_type == "meaning":
-        # Context/meaning gaps need slightly shorter intervals (harder than vocab)
-        base_intervals = [1, 2, 5, 10, 21]
-
-    idx = min(review_count, len(base_intervals) - 1)
-    return timedelta(days=base_intervals[idx])
-
-
-# Note: ReviewQueueItem, ReviewRequest, WordToReview, ProfileResponse
-# are imported from app.models.sentence_study_schemas
-
-
 @router.get("/queue", response_model=List[ReviewQueueItem])
 async def get_review_queue(
-    user_id: str = "default_user", db: AsyncSession = Depends(get_db)
+    user_id: str = Depends(get_current_user_id), db: AsyncSession = Depends(get_db)
 ):
     """Get sentences due for review (scheduled_review <= now)."""
     now = datetime.utcnow()
@@ -798,10 +559,16 @@ async def get_review_queue(
 
 
 @router.post("/review")
-async def complete_review(req: ReviewRequest, db: AsyncSession = Depends(get_db)):
+async def complete_review(
+    req: ReviewRequest,
+    user_id: str = Depends(get_current_user_id),
+    db: AsyncSession = Depends(get_db),
+):
     """Complete a review and reschedule the sentence."""
     result = await db.execute(
-        select(SentenceLearningRecord).where(SentenceLearningRecord.id == req.record_id)
+        select(SentenceLearningRecord)
+        .where(SentenceLearningRecord.id == req.record_id)
+        .where(SentenceLearningRecord.user_id == user_id)
     )
     record = result.scalar_one_or_none()
 
@@ -811,13 +578,19 @@ async def complete_review(req: ReviewRequest, db: AsyncSession = Depends(get_db)
     if req.result == "clear":
         # User understood -> schedule further out
         record.review_count = (record.review_count or 0) + 1
-        record.scheduled_review = datetime.utcnow() + _calculate_review_interval(
-            record.review_count, record.diagnosed_gap_type
+        record.scheduled_review = (
+            datetime.utcnow()
+            + sentence_study_service.calculate_review_interval(
+                record.review_count, record.diagnosed_gap_type
+            )
         )
     else:
-        # User still unclear -> reset to short interval (keep gap type for next calculation)
-        record.scheduled_review = datetime.utcnow() + _calculate_review_interval(
-            0, record.diagnosed_gap_type
+        # User still unclear -> reset to short interval
+        record.scheduled_review = (
+            datetime.utcnow()
+            + sentence_study_service.calculate_review_interval(
+                0, record.diagnosed_gap_type
+            )
         )
         # Don't reset review_count to preserve history
 
@@ -832,10 +605,8 @@ async def complete_review(req: ReviewRequest, db: AsyncSession = Depends(get_db)
 
 @router.get("/profile", response_model=ProfileResponse)
 async def get_user_profile(
-    user_id: str = "default_user", db: AsyncSession = Depends(get_db)
+    user_id: str = Depends(get_current_user_id), db: AsyncSession = Depends(get_db)
 ):
-    """Get user comprehension profile with actionable stats."""
-
     # 1. Get study stats from SentenceLearningRecord
     stats_result = await db.execute(
         select(
@@ -942,260 +713,3 @@ async def get_user_profile(
         insights=insights,
         recommendation=recommendation,
     )
-
-
-# ============================================================
-# Diagnosis Utilities
-# ============================================================
-
-
-async def _analyze_user_history(
-    db: AsyncSession, user_id: str = "default_user"
-) -> Dict[str, str]:
-    """
-    Analyze recent user history to find patterns in learning gaps.
-    Returns a dict with 'common_gap': 'vocabulary' | 'structure' | 'mixed' | None
-    """
-    try:
-        # Get last 20 records where user had trouble
-        result = await db.execute(
-            select(SentenceLearningRecord)
-            .where(
-                SentenceLearningRecord.user_id == user_id,
-                SentenceLearningRecord.initial_response == "unclear",
-            )
-            .order_by(SentenceLearningRecord.created_at.desc())
-            .limit(20)
-        )
-        records = result.scalars().all()
-
-        if not records:
-            return {"common_gap": None}
-
-        vocab_count = 0
-        structure_count = 0
-
-        for r in records:
-            if r.diagnosed_gap_type == "vocabulary":
-                vocab_count += 1
-            elif r.diagnosed_gap_type == "structure":
-                structure_count += 1
-
-        total = len(records)
-        if vocab_count / total > 0.6:
-            return {"common_gap": "vocabulary"}
-        elif structure_count / total > 0.4:
-            return {"common_gap": "structure"}
-
-        # Optimization: Check for length correlation
-        long_sentence_fail_count = 0
-        for r in records:
-            if r.word_count > 20:
-                long_sentence_fail_count += 1
-
-        if long_sentence_fail_count / total > 0.5:
-            # User consistently fails long sentences -> likely a parsing/structure endurance issue
-            return {
-                "common_gap": "structure"
-            }  # Bias towards structure for long sentences
-
-        return {"common_gap": "mixed"}
-
-    except Exception:
-        return {"common_gap": None}
-
-
-# ============================================================
-# Deep Diagnosis Engine
-# ============================================================
-
-
-async def _perform_deep_diagnosis(
-    db: AsyncSession,
-    user_id: str,
-    initial: str,
-    choice: Optional[str],
-    simplified: Optional[str],
-    word_clicks: List[str],
-    phrase_clicks: List[str],
-    interactions: List[Dict],
-    dwell_ms: int,
-    word_count: int,
-    max_simplify_stage: Optional[
-        int
-    ] = None,  # NEW: Track how deep they went in explanations
-) -> Dict[str, Any]:
-    """
-    Comprehensive diagnosis logic combining explicit choices, implicit behaviors,
-    reading speed, history, interaction patterns, and simplification depth.
-    """
-    gap_type = None
-    confidence = 0.0
-    patterns = []
-
-    # --- 1. Base Diagnosis (Explicit Choice) ---
-    if initial == "clear":
-        gap_type = None
-        confidence = 1.0  # Tentative, reviewed below
-    elif choice == "vocabulary":
-        gap_type = "vocabulary"
-        confidence = 0.9 if simplified == "got_it" else 0.7
-    elif choice == "grammar":
-        gap_type = "structure"
-        confidence = 0.9 if simplified == "got_it" else 0.7
-    elif choice == "meaning":
-        gap_type = "meaning"
-        confidence = 0.9 if simplified == "got_it" else 0.7
-    elif choice == "collocation":
-        gap_type = "collocation"
-        confidence = 0.9
-    elif choice == "both":
-        gap_type = "fundamental"
-        confidence = 0.7
-
-    # --- 2. Implicit Signals Overrides ---
-
-    # A. Phrase Clicks -> Strong Collocation Signal
-    # If user clicked on phrases, they're struggling with collocations regardless of initial choice
-    if phrase_clicks:
-        gap_type = "collocation"
-        confidence = 0.85
-        patterns.append("phrase_lookup")
-
-    # B. Multi-word Lookups -> Collocation Signal
-    for event in interactions:
-        target = event.get("text") or event.get("word")
-        if target and isinstance(target, str) and " " in target.strip():
-            if gap_type != "collocation":
-                gap_type = "collocation"
-                confidence = 0.8
-                patterns.append("multi_word_query")
-            break
-
-    # C. Speed Analysis (The "False Clear" Detector)
-    if word_count > 0:
-        ms_per_word = dwell_ms / word_count
-        if ms_per_word > 800 and initial == "clear":
-            confidence = 0.6
-            patterns.append("slow_reading")
-
-    # D. Interaction Depth (The "Confusion" Detector)
-    deep_dive_count = sum(
-        1 for e in interactions if e.get("style") in ["chinese_deep", "simple"]
-    )
-    if deep_dive_count > 0:
-        if gap_type is None:
-            gap_type = "vocabulary"
-            confidence = 0.6
-            patterns.append("deep_dive_needed")
-        elif gap_type == "vocabulary":
-            patterns.append("nuance_confusion")
-
-    # E. Simplification Stage Depth (NEW): How many stages of explanation did they need?
-    if max_simplify_stage is not None:
-        if max_simplify_stage >= 3:
-            # Needed Chinese explanation - strong signal of difficulty
-            patterns.append("chinese_dive_needed")
-            confidence = min(1.0, confidence * 1.2)  # Boost confidence in diagnosis
-        elif max_simplify_stage == 2:
-            # Needed detailed explanation
-            patterns.append("detailed_explanation_needed")
-            confidence = min(1.0, confidence * 1.1)
-
-    # --- 3. Historical & Structural Analysis ---
-    if gap_type == "fundamental" or choice == "both":
-        history = await _analyze_user_history(db, user_id)
-        if history["common_gap"]:
-            patterns.append(f"history_{history['common_gap']}")
-            if history["common_gap"] == "vocabulary":
-                gap_type = "fundamental (vocab-heavy)"
-            elif history["common_gap"] == "structure":
-                gap_type = "fundamental (structure-heavy)"
-
-    # --- 4. Length Bias (Structure Endurance) ---
-    if word_count > 25 and gap_type in ["fundamental", "fundamental (structure-heavy)"]:
-        patterns.append("long_sentence_struggle")
-        gap_type = "structure"
-        confidence = 0.8
-
-    return {"gap_type": gap_type, "confidence": confidence, "patterns": patterns}
-
-
-async def _update_user_profile_deep(
-    db: AsyncSession, user_id: str, diagnosis: Dict[str, Any], word_clicks: List[str]
-):
-    """
-    Updates profile with granular insights from the deep diagnosis.
-    """
-    profile_result = await db.execute(
-        select(UserComprehensionProfile).where(
-            UserComprehensionProfile.user_id == user_id
-        )
-    )
-    profile = profile_result.scalar_one_or_none()
-
-    if not profile:
-        profile = UserComprehensionProfile(user_id=user_id)
-        db.add(profile)
-
-    gap = diagnosis["gap_type"]
-    patterns = diagnosis["patterns"]
-
-    # 1. Update Scores (handle None values)
-    if gap == "vocabulary" or gap == "collocation":
-        current_vocab = float(profile.vocabulary_score or 0.0)
-        profile.vocabulary_score = max(0.0, current_vocab - 0.1)
-    elif gap == "structure":
-        current_grammar = float(profile.grammar_score or 0.0)
-        profile.grammar_score = max(0.0, current_grammar - 0.1)
-    elif gap is None:
-        current_overall = float(profile.overall_score or 0.0)
-        profile.overall_score = current_overall + 0.01
-
-    # 2. Update Weak Topics (Vocabulary / Collocations)
-    if word_clicks:
-        current_weak_topics = (
-            list(profile.weak_vocabulary_topics)
-            if profile.weak_vocabulary_topics
-            else []
-        )
-        for word in word_clicks:
-            if word not in current_weak_topics:
-                current_weak_topics.append(word)
-        profile.weak_vocabulary_topics = current_weak_topics[-50:]
-
-        # Word Proficiency Logic
-        for word in word_clicks:
-            wp_result = await db.execute(
-                select(WordProficiency).where(
-                    WordProficiency.user_id == user_id, WordProficiency.word == word
-                )
-            )
-            wp = wp_result.scalar_one_or_none()
-            if wp:
-                wp.exposure_count += 1
-                wp.huh_count += 1
-                wp.last_seen_at = func.now()
-                wp.difficulty_score = float(wp.huh_count) / max(1, wp.exposure_count)
-                if wp.difficulty_score > 0.3:
-                    wp.status = "learning"
-            else:
-                db.add(
-                    WordProficiency(
-                        user_id=user_id,
-                        word=word,
-                        exposure_count=1,
-                        huh_count=1,
-                        difficulty_score=1.0,
-                        status="new",
-                    )
-                )
-
-    # 3. Update Common Gaps (Grammar/Patterns)
-    if patterns:
-        current_gaps = (
-            list(profile.common_grammar_gaps) if profile.common_grammar_gaps else []
-        )
-        for p in patterns:
-            current_gaps.append(p)
-        profile.common_grammar_gaps = current_gaps[-20:]

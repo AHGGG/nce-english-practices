@@ -1,7 +1,9 @@
 import asyncio
 import re
 import feedparser
+import httpx
 from typing import Any, List
+from app.config import settings
 from app.models.content_schemas import ContentBundle, ContentSentence, SourceType
 from app.services.content_providers.base import BaseContentProvider
 
@@ -32,15 +34,77 @@ class RssProvider(BaseContentProvider):
         return clean
 
     async def _get_feed(self, url: str) -> Any:
-        # Simple cache wrapper
-        # In a real app, check TTL or use cachetools
+        """
+        Fetch feed using robust HTTP client to mimic browser.
+        Fixes issues with 403 Forbidden (Cloudflare) and Timeouts.
+        """
         if url in self._feed_cache:
             return self._feed_cache[url]
 
-        loop = asyncio.get_event_loop()
-        feed = await loop.run_in_executor(None, feedparser.parse, url)
-        self._feed_cache[url] = feed
-        return feed
+        headers = {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36",
+            "Accept": "application/rss+xml, application/xml, application/atom+xml, text/xml;q=0.9, */*;q=0.8",
+        }
+
+        try:
+            proxies = settings.PROXY_URL if settings.PROXY_URL else None
+            content = None
+
+            # Attempt 1: Standard compliant request
+            try:
+                # Use 45s timeout (safe margin below Nginx default 60s)
+                async with httpx.AsyncClient(
+                    timeout=45.0, follow_redirects=True, proxy=proxies
+                ) as client:
+                    response = await client.get(url, headers=headers)
+                    response.raise_for_status()
+                    content = response.content
+            except Exception as e:
+                # Check if retryable (SSL, Timeout)
+                is_ssl_error = (
+                    "ssl" in str(e).lower() or "certificate" in str(e).lower()
+                )
+                is_conn_error = isinstance(
+                    e,
+                    (
+                        httpx.ConnectError,
+                        httpx.ReadTimeout,
+                        httpx.ConnectTimeout,
+                        httpx.NetworkError,
+                    ),
+                )
+
+                if is_ssl_error or is_conn_error:
+                    # Attempt 2: Relaxed Security
+                    try:
+                        async with httpx.AsyncClient(
+                            timeout=45.0,
+                            follow_redirects=True,
+                            verify=False,
+                            proxy=proxies,
+                        ) as client:
+                            response = await client.get(url, headers=headers)
+                            response.raise_for_status()
+                            content = response.content
+                    except Exception as e2:
+                        raise ValueError(
+                            f"Failed to fetch RSS feed {url} (after retry): {str(e2)}"
+                        )
+                else:
+                    raise e
+
+            # Parse content (run in executor to avoid blocking event loop)
+            loop = asyncio.get_event_loop()
+            feed = await loop.run_in_executor(None, feedparser.parse, content)
+
+            # Save to cache
+            self._feed_cache[url] = feed
+            return feed
+
+        except Exception as e:
+            # Fallback to simple parse if network fails (might work for local files or lucky cases)
+            # But mostly we want to raise the error to know what happened
+            raise ValueError(f"Failed to fetch RSS feed {url}: {str(e)}")
 
     async def fetch(
         self, url: str, article_index: int = 0, **kwargs: Any

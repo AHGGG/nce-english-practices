@@ -1,4 +1,5 @@
 from . import (
+    auth as auth,
     voice as voice,
     dictionary as dictionary,
     content as content,
@@ -18,4 +19,6 @@ from . import (
     sentence_study as sentence_study,
     voice_session as voice_session,
     images as images,
+    vocabulary as vocabulary,
+    audiobook as audiobook,
 )

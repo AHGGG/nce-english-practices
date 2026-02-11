@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(uv pip show funasr)",
+      "WebSearch",
+      "Bash(uv pip show numpy scipy)",
+      "Bash(findstr \"Version\")",
+      "Bash(uv add \"scipy<1.14\")"
+    ]
+  }
+}

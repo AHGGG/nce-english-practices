@@ -18,8 +18,11 @@ resources/
 key.pem
 cert.pem
 *.log
+logs/
+deploy/logs/
 
 node_modules/
+package-lock.json
 
 docs/voice/deepgram/examples
 
@@ -27,3 +30,7 @@ docs/**/*_ignore.md
 test.db-shm
 test.db-wal
 .agent/skills/*
+.turbo/
+.expo/
+
+.idea

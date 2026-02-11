@@ -1,8 +1,11 @@
 import asyncio
 import base64
+import logging
 from fastapi import WebSocket, WebSocketDisconnect
 from app.config import settings
 from app.services.llm import llm_service
+
+logger = logging.getLogger(__name__)
 
 VOICE_MODEL_NAME = settings.GEMINI_VOICE_MODEL_NAME
 
@@ -21,19 +24,19 @@ class VoiceSession:
         try:
             # 1. Handshake (Wait for config)
             config_data = await self.websocket.receive_json()
-            print(f"WS: Received Config: {config_data}")
+            logger.info(f"WS: Received Config: {config_data}")
 
             self.voice_name = config_data.get("voiceName", "Puck")
             self.sys_instruction = config_data.get(
                 "systemInstruction", "You are a helpful AI assistant."
             )
 
-            print(
+            logger.info(
                 f"WS: Config - Voice: {self.voice_name}, Instruction length: {len(self.sys_instruction)}"
             )
 
             if not llm_service.voice_client:
-                print("WS: Voice Client Unavailable")
+                logger.error("WS: Voice Client Unavailable")
                 await self.websocket.close()
                 return
 
@@ -52,7 +55,7 @@ class VoiceSession:
                     "system_instruction": {"parts": [{"text": self.sys_instruction}]},
                 },
             ) as session:
-                print("WS: Connected to Gemini Live")
+                logger.info("WS: Connected to Gemini Live")
 
                 # Notify frontend
                 await self.websocket.send_json({"type": "server_ready"})
@@ -65,24 +68,24 @@ class VoiceSession:
                         tg.create_task(self._receive_loop(session))
                 except* Exception as eg:
                     for exc in eg.exceptions:
-                        print(f"WS: Task error: {exc}")
+                        logger.error(f"WS: Task error: {exc}")
 
         except WebSocketDisconnect:
-            print("WS: Connection Closed (Handshake/Loop)")
+            logger.info("WS: Connection Closed (Handshake/Loop)")
         except Exception as e:
             # Check for Google API errors
-            print(f"WS: Connection Error: {e}")
+            logger.error(f"WS: Connection Error: {e}")
             if hasattr(e, "status_code"):
-                print(f"WS: API Status Code: {e.status_code}")
+                logger.error(f"WS: API Status Code: {e.status_code}")
             if hasattr(e, "message"):
-                print(f"WS: API Message: {e.message}")
+                logger.error(f"WS: API Message: {e.message}")
         finally:
             self.client_connected = False
             try:
                 await self.websocket.close()
             except Exception:
                 pass
-            print("WS: Cleanup Complete")
+            logger.info("WS: Cleanup Complete")
 
     async def _send_loop(self, session):
         """
@@ -93,15 +96,17 @@ class VoiceSession:
                 msg = await self.websocket.receive_json()
                 if msg.get("type") == "audio":
                     audio_data = base64.b64decode(msg["data"])
+                    # Default to PCM if not specified, but allow client to send other formats (e.g. audio/wav, audio/mp3)
+                    mime_type = msg.get("mimeType", "audio/pcm")
                     await session.send_realtime_input(
-                        audio={"data": audio_data, "mime_type": "audio/pcm"}
+                        audio={"data": audio_data, "mime_type": mime_type}
                     )
         except WebSocketDisconnect:
-            print("WS: Browser Disconnected")
+            logger.info("WS: Browser Disconnected")
             self.client_connected = False
             raise  # Propagate to cancel other task
         except Exception as e:
-            print(f"Error in _send_loop: {e}")
+            logger.error(f"Error in _send_loop: {e}")
             self.client_connected = False
             raise
 
@@ -177,6 +182,6 @@ class VoiceSession:
                             await self.websocket.send_json({"type": "interrupted"})
 
         except Exception as e:
-            print(f"Error in _receive_loop: {e}")
+            logger.error(f"Error in _receive_loop: {e}")
             self.client_connected = False
             raise

@@ -8,9 +8,18 @@ Contains LLM streaming, caching, and diagnosis utilities.
 import hashlib
 import json
 import logging
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Any
 from datetime import timedelta
 
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select, func
+from app.models.orm import (
+    ArticleOverviewCache,
+    SentenceCollocationCache,
+    SentenceLearningRecord,
+    UserComprehensionProfile,
+    WordProficiency,
+)
 
 from app.services.llm import llm_service
 
@@ -39,91 +48,78 @@ _collocation_cache: Dict[str, List[dict]] = {}
 # =============================================================================
 
 SIMPLIFY_PROMPTS = {
-    "vocabulary_stage1": """Rewrite this sentence using simpler vocabulary (COCA 0-3000 most common words), 
-but keep the exact grammatical structure unchanged:
-"{sentence}"
+    # Stage 1: Vocabulary Simplification
+    "stage1": """Rewrite this sentence using simpler vocabulary (COCA 0-2000 most common words).
+Keep the sentence structure exactly the same, only replace difficult words with simpler synonyms.
+
+Original: "{sentence}"
 
 Return ONLY the simplified sentence, no explanation.""",
-    "grammar_stage1": """Break this sentence into 2-3 shorter, simpler sentences 
-while keeping the same vocabulary words:
-"{sentence}"
+    # Stage 2: Grammar Simplification
+    "stage2": """Break this sentence into shorter, simpler sentences (Subject-Verb-Object).
+Keep the meaning but remove complex clauses. Use simple connecting words if needed.
 
-Return ONLY the simplified sentences, no explanation.""",
-    "meaning_stage1": """The learner knows the words and grammar, but doesn't understand what this sentence MEANS in context.
+Original: "{sentence}"
+
+Return ONLY the simplified structure (2-3 short sentences), no explanation.""",
+    # Stage 3: English Breakdown (Context & Meaning)
+    "stage3": """The learner has seen the simplified vocabulary and grammar but still finds it unclear.
+Provide a clear ENGLISH analysis of the sentence structure and meaning.
 
 Sentence: "{sentence}"
 
 Context:
 {context}
 
-Your job: Help them "get it". Provide:
+Respond in this format:
+1. **Analysis**: [Identify the main Subject, Verb, and Object. Explain how clauses are connected.]
+2. **Meaning**: [Simple English explanation of the overall meaning]
+3. **Key Terms**: [Briefly explain 1-2 difficult words/phrases]
 
-1. **Paraphrase**: Restate the sentence in completely different words (same meaning, different expression)
-2. **The Point**: What is the author trying to say? What's the takeaway?
-3. **Hidden Info**: Explain any cultural references, implied assumptions, or "reading between the lines"
-
-Keep it SHORT and CLEAR. Write like you're explaining to a smart friend who missed something obvious.""",
-    "both_stage1": """Explain this sentence in the simplest possible English (A1 level).
-Context:
-{context}
-
-Return ONLY a simple explanation of the CURRENT sentence, no extra text.""",
-    "stage2": """The learner still doesn't understand this sentence after a simple explanation.
-Please provide a MORE DETAILED explanation with:
-1. Break down the key phrases/idioms
-2. Explain the grammar structure
-3. Give a similar example sentence
-
-Context:
-{context}
-
-Keep explanations in simple English. Format:
-📖 Key phrases: ...
-🔧 Structure: ...
-💡 Similar example: ...""",
-    "stage3": """学习者经过两次解释仍然不理解这个句子，请用中文提供深度解释：
-
+Keep it encouraging and simple.""",
+    # Stage 4: Chinese Deep Dive
+    "stage4": """学习者经过前面的英文解释仍然不理解。请用中文提供深度解析。
+    
 句子："{sentence}"
 
 上下文：
 {context}
 
 请提供：
-1. 句子的完整中文翻译
-2. 语法结构分析
-3. 关键词组/搭配的解释
-4. 为什么这个表达对中国学习者可能困难
+1. **中文翻译**：准确顺畅的翻译
+2. **结构分析**：拆解句子成分
+3. **难点精讲**：重点讲解单词或语法难点
+4. **语境提示**：为什么这里用这个表达
 
-用中文回答。""",
+用中文回答，条理清晰。""",
 }
 
 
 EXPLAIN_PROMPTS = {
-    "default_word": """Explain "{text}" in this context:
+    "default_word": """Explain the meaning of "{text}" in the following sentence using simple, colloquial English.
 
 {context}
 
-Respond in this EXACT format (each section on its own line):
+Requirements:
+1. Explain the meaning in simple, conversational English (as if talking to a friend).
+2. If there are multiple meanings, choose the one that fits the context.
+3. Provide 1-2 simple example sentences (do not use the original sentence).
+4. Keep it casual and easy to understand.
 
-📖 MEANING:
-[2-3 sentence explanation of what it means here]
-
-💡 EXAMPLES:
-- [Example sentence 1]
-- [Example sentence 2]""",
-    "default_phrase": """Explain the phrase "{text}" in this context:
+Directly provide the explanation, no preamble.""",
+    "default_phrase": """Explain the meaning of the phrase "{text}" in the following sentence using simple, colloquial English.
 
 {context}
 
-Respond in this EXACT format (each section on its own line):
+Requirements:
+1. Explain the meaning in simple, conversational English.
+2. Explain when this phrase is typically used.
+3. Provide 1-2 daily life example sentences (do not use the original sentence).
+4. Keep it casual and easy to understand.
 
-📖 MEANING:
-[2-3 sentence explanation of what this phrase means here]
-
-💡 EXAMPLES:
-- [Example sentence 1]
-- [Example sentence 2]""",
+Directly provide the explanation, no preamble.""",
     "simple": """Explain the {item_type} "{text}" in the context of the sentence below.
+
 Explanation must be in SIMPLE ENGLISH, suitable for a beginner learner.
 Use simple vocabulary and short sentences.
 
@@ -144,20 +140,20 @@ Target: "{text}"
 Respond in simple English, one sentence only.""",
     # Detailed style - Stage 3 for Review Queue (Chinese deep explanation)
     "detailed": """请详细讲解句子中"{text}"这个{item_type}的含义和用法。
-结合以下上下文进行全方位的中文讲解：
-
-上下文：
-{context}
-
-讲解要求：
-1. 解释在当前语境下的确切含义
-2. 分析语法结构或搭配用法
-3. 给出一个类似用法的例句
-4. 为什么这个表达对中国学习者可能困难
-
-目标词汇："{text}"
-
-直接给出讲解内容，不要有多余的开场白。""",
+ 结合以下上下文进行全方位的中文讲解：
+ 
+ 上下文：
+ {context}
+ 
+ 讲解要求：
+ 1. 解释在当前语境下的确切含义
+ 2. 分析语法结构或搭配用法
+ 3. 给出一个类似用法的例句 (不要使用上面的原句)
+ 4. 为什么这个表达对中国学习者可能困难
+ 
+ 目标词汇："{text}"
+ 
+ 直接给出讲解内容，不要有多余的开场白。""",
     "chinese_deep": """请详细讲解句子中"{text}"这个{item_type}的含义和用法。
 结合以下上下文进行全方位的中文讲解：
 
@@ -173,6 +169,19 @@ Respond in simple English, one sentence only.""",
 目标词汇："{text}"
 
 直接给出讲解内容，不要有多余的开场白。""",
+    "english_structure": """Analyze the sentence structure and explain "{text}" in SIMPLE ENGLISH.
+
+Context:
+{context}
+
+Target: "{text}"
+
+Respond in this format:
+1. **Analysis**: Identify the subject, verb, and how "{text}" fits in the sentence.
+2. **Meaning**: Simple definition of "{text}" in this specific context.
+3. **Usage**: A short note on how to use this word/phrase.
+
+Keep English simple and clear.""",
 }
 
 
@@ -214,7 +223,6 @@ Respond in this exact JSON format:
 }}
 
 Return ONLY the JSON, no markdown formatting."""
-
 
 
 IMAGE_DETECTION_PROMPT = """You are helping an English learner understand the word "{word}" in the following sentence.
@@ -294,7 +302,7 @@ class SentenceStudyService:
         Stream LLM simplification with caching support.
         Yields SSE-formatted chunks.
         """
-        stage = max(1, min(3, stage))  # Clamp to 1-3
+        stage = max(1, min(4, stage))  # Clamp to 1-4
         cache_key = self.get_simplify_cache_key(sentence, simplify_type, stage)
 
         # Check cache
@@ -304,7 +312,7 @@ class SentenceStudyService:
                 {
                     "type": "done",
                     "stage": stage,
-                    "has_next_stage": stage < 3,
+                    "has_next_stage": stage < 4,
                     "cached": True,
                 }
             )
@@ -319,22 +327,17 @@ class SentenceStudyService:
             context_parts.append(f'Next sentence: "{next_sentence}"')
         context = "\n".join(context_parts)
 
-        # Select prompt
+        # Select prompt based on stage
         if stage == 1:
-            if simplify_type == "vocabulary":
-                prompt = SIMPLIFY_PROMPTS["vocabulary_stage1"].format(sentence=sentence)
-            elif simplify_type == "grammar":
-                prompt = SIMPLIFY_PROMPTS["grammar_stage1"].format(sentence=sentence)
-            elif simplify_type == "meaning":
-                prompt = SIMPLIFY_PROMPTS["meaning_stage1"].format(
-                    sentence=sentence, context=context
-                )
-            else:
-                prompt = SIMPLIFY_PROMPTS["both_stage1"].format(context=context)
+            prompt = SIMPLIFY_PROMPTS["stage1"].format(sentence=sentence)
         elif stage == 2:
-            prompt = SIMPLIFY_PROMPTS["stage2"].format(context=context)
-        else:
+            prompt = SIMPLIFY_PROMPTS["stage2"].format(sentence=sentence)
+        elif stage == 3:
             prompt = SIMPLIFY_PROMPTS["stage3"].format(
+                sentence=sentence, context=context
+            )
+        else:
+            prompt = SIMPLIFY_PROMPTS["stage4"].format(
                 sentence=sentence, context=context
             )
 
@@ -342,11 +345,13 @@ class SentenceStudyService:
         full_text = ""
         try:
             # Determine max tokens based on stage
-            if stage == 3:
-                max_gen_tokens = 1500
-            elif stage == 2:
-                max_gen_tokens = 800
-            else:
+            if stage == 4:  # Chinese deep dive needs more tokens
+                max_gen_tokens = 4000
+            elif stage == 3:  # English analysis
+                max_gen_tokens = 2000
+            elif stage == 2:  # Grammar simplification
+                max_gen_tokens = 500
+            else:  # Stage 1: Vocabulary simplification
                 max_gen_tokens = 300
 
             stream = await self.llm.async_client.chat.completions.create(
@@ -366,7 +371,7 @@ class SentenceStudyService:
             # Cache result
             _simplify_cache[cache_key] = full_text
             yield json.dumps(
-                {"type": "done", "stage": stage, "has_next_stage": stage < 3}
+                {"type": "done", "stage": stage, "has_next_stage": stage < 4}
             )
 
         except Exception as e:
@@ -388,32 +393,41 @@ class SentenceStudyService:
         """
         Stream LLM explanation of a word/phrase with caching.
         Yields JSON chunks: {"type": "chunk", "content": ...} OR {"type": "image_check", ...}
+
+        CRITICAL: Must use LLM stream=True directly, not call sync methods.
+        See AGENTS.md "React Native SSE Streaming" section.
         """
         import asyncio
         import json
         from app.config import settings
-        
+
+        cache_key = self.get_explain_cache_key(text, sentence, style)
+
         # Start parallel image check ONLY if feature is enabled
         detect_task = None
         if settings.ENABLE_IMAGE_GENERATION:
             context_parts_img = []
-            if prev_sentence: context_parts_img.append(prev_sentence)
+            if prev_sentence:
+                context_parts_img.append(prev_sentence)
             context_parts_img.append(sentence)
-            if next_sentence: context_parts_img.append(next_sentence)
+            if next_sentence:
+                context_parts_img.append(next_sentence)
             full_context = " ".join(context_parts_img)
-            
+
             detect_task = asyncio.create_task(
                 self.detect_image_suitability(text, sentence, full_context)
             )
 
-        cache_key = self.get_explain_cache_key(text, sentence, style)
-        image_check_sent = False  # Track if we already sent image_check
-
         # Check cache
         if cache_key in _explain_cache:
             cached = _explain_cache[cache_key]
-            # Yield cached content as chunks
-            yield json.dumps({"type": "chunk", "content": cached})
+            # Simulate streaming by yielding cached content in chunks (100 chars each)
+            chunk_size = 100
+            for i in range(0, len(cached), chunk_size):
+                yield json.dumps(
+                    {"type": "chunk", "content": cached[i : i + chunk_size]}
+                )
+            yield json.dumps({"type": "done"})
         else:
             # Build context for explanation
             context_parts = []
@@ -428,34 +442,44 @@ class SentenceStudyService:
             item_type = "短语" if is_phrase else "单词"
             item_type_en = "phrase" if is_phrase else "word"
 
-            # Select prompt based on style
+            max_gen_tokens = 1000
             if style == "brief":
                 prompt = EXPLAIN_PROMPTS["brief"].format(text=text, context=context)
+                max_gen_tokens = 300
             elif style == "detailed":
                 prompt = EXPLAIN_PROMPTS["detailed"].format(
                     text=text, context=context, item_type=item_type
                 )
+                max_gen_tokens = 2000
             elif style == "simple":
                 prompt = EXPLAIN_PROMPTS["simple"].format(
                     text=text, context=context, item_type=item_type_en
                 )
+                max_gen_tokens = 500
             elif style == "chinese_deep":
                 prompt = EXPLAIN_PROMPTS["chinese_deep"].format(
                     text=text, context=context, item_type=item_type
                 )
+                max_gen_tokens = 2000
+            elif style == "english_structure":
+                prompt = EXPLAIN_PROMPTS["english_structure"].format(
+                    text=text, context=context
+                )
+                max_gen_tokens = 1000
             else:
                 template = "default_phrase" if is_phrase else "default_word"
                 prompt = EXPLAIN_PROMPTS[template].format(text=text, context=context)
+                max_gen_tokens = 1000
 
-            # Stream from LLM
+            # DIRECT STREAM from LLM - CRITICAL for React Native SSE
             full_text = ""
             try:
                 stream = await self.llm.async_client.chat.completions.create(
                     model=self.llm.model_name,
                     messages=[{"role": "user", "content": prompt}],
-                    max_tokens=1000,
+                    max_tokens=max_gen_tokens,
                     temperature=0.3,
-                    stream=True,
+                    stream=True,  # MUST be True for real streaming
                 )
 
                 async for chunk in stream:
@@ -463,67 +487,697 @@ class SentenceStudyService:
                         content = chunk.choices[0].delta.content
                         full_text += content
                         yield json.dumps({"type": "chunk", "content": content})
-                    
-                    # Check if image detection completed during streaming
-                    if detect_task and not image_check_sent and detect_task.done():
-                        try:
-                            result = detect_task.result()
-                            if result and result.get("suitable"):
-                                yield json.dumps({
-                                    "type": "image_check", 
-                                    "suitable": True,
-                                    "image_prompt": result.get("image_prompt")
-                                })
-                            image_check_sent = True
-                        except Exception as e:
-                            logger.error(f"Image check task error during stream: {e}")
-                            image_check_sent = True
 
-                # Cache result
+                # Cache the complete response
                 _explain_cache[cache_key] = full_text
+                logger.info(
+                    f"[stream_word_explanation] Cached new explanation, length={len(full_text)}"
+                )
 
             except Exception as e:
-                logger.error(f"Explain stream error: {e}")
+                logger.error(f"Stream word explanation error: {e}")
                 yield json.dumps({"type": "error", "message": str(e)})
 
-        # Parallel Task Result: Check if image check completed (fallback if not sent during stream)
-        if detect_task and not image_check_sent:
+        # Parallel Task Result: Check if image check completed
+        if detect_task:
             try:
-                 result = await detect_task
-                 if result and result.get("suitable"):
-                     yield json.dumps({
-                         "type": "image_check", 
-                         "suitable": True,
-                         "image_prompt": result.get("image_prompt")
-                     })
+                result = await detect_task
+                if result and result.get("suitable"):
+                    yield json.dumps(
+                        {
+                            "type": "image_check",
+                            "suitable": True,
+                            "image_prompt": result.get("image_prompt"),
+                        }
+                    )
             except Exception as e:
                 logger.error(f"Image check task error: {e}")
 
-    async def detect_image_suitability(self, word: str, sentence: str, context: str = "") -> dict:
+        # Signal stream completion
+        yield json.dumps({"type": "done"})
+
+    async def explain_word_sync(
+        self,
+        text: str,
+        sentence: str,
+        style: str = "default",
+        prev_sentence: Optional[str] = None,
+        next_sentence: Optional[str] = None,
+    ) -> str:
+        """
+        Non-streaming version of word explanation for mobile/React Native.
+        Returns complete explanation text.
+        """
+        import json
+
+        cache_key = self.get_explain_cache_key(text, sentence, style)
+        logger.info(f"[explain_word_sync] cache_key={cache_key}, text={text}")
+
+        # Check cache first
+        if cache_key in _explain_cache:
+            logger.info(f"[explain_word_sync] Cache hit for {cache_key}")
+            return _explain_cache[cache_key]
+
+        logger.info(f"[explain_word_sync] Cache miss, calling LLM...")
+
+        # Build context for explanation
+        context_parts = []
+        if prev_sentence:
+            context_parts.append(f'Previous: "{prev_sentence}"')
+        context_parts.append(f'Current: "{sentence}"')
+        if next_sentence:
+            context_parts.append(f'Next: "{next_sentence}"')
+        context = "\n".join(context_parts)
+
+        is_phrase = " " in text.strip()
+        item_type = "短语" if is_phrase else "单词"
+        item_type_en = "phrase" if is_phrase else "word"
+
+        # Select prompt and max_tokens based on style
+        max_gen_tokens = 1000
+
+        if style == "brief":
+            prompt = EXPLAIN_PROMPTS["brief"].format(text=text, context=context)
+            max_gen_tokens = 300
+        elif style == "detailed":
+            prompt = EXPLAIN_PROMPTS["detailed"].format(
+                text=text, context=context, item_type=item_type
+            )
+            max_gen_tokens = 2000
+        elif style == "simple":
+            prompt = EXPLAIN_PROMPTS["simple"].format(
+                text=text, context=context, item_type=item_type_en
+            )
+            max_gen_tokens = 500
+        elif style == "chinese_deep":
+            prompt = EXPLAIN_PROMPTS["chinese_deep"].format(
+                text=text, context=context, item_type=item_type
+            )
+            max_gen_tokens = 2000
+        elif style == "english_structure":
+            prompt = EXPLAIN_PROMPTS["english_structure"].format(
+                text=text, context=context
+            )
+            max_gen_tokens = 1000
+        else:
+            template = "default_phrase" if is_phrase else "default_word"
+            prompt = EXPLAIN_PROMPTS[template].format(text=text, context=context)
+            max_gen_tokens = 1000
+
+        # Get full response from LLM (non-streaming)
+        try:
+            logger.info(
+                f"[explain_word_sync] Creating LLM request, model={self.llm.model_name}"
+            )
+
+            response = await self.llm.async_client.chat.completions.create(
+                model=self.llm.model_name,
+                messages=[{"role": "user", "content": prompt}],
+                max_tokens=max_gen_tokens,
+                temperature=0.3,
+                stream=False,
+            )
+
+            full_text = response.choices[0].message.content or ""
+            logger.info(
+                f"[explain_word_sync] LLM response received, length={len(full_text)}"
+            )
+
+            # Cache result
+            _explain_cache[cache_key] = full_text
+
+            return full_text
+
+        except Exception as e:
+            logger.error(f"Explain sync error: {e}")
+            raise
+
+    async def detect_image_suitability(
+        self, word: str, sentence: str, context: str = ""
+    ) -> dict:
         """Check if a word is suitable for image generation."""
         try:
-             prompt = IMAGE_DETECTION_PROMPT.format(word=word, sentence=sentence, context=context)
-             
-             response = await self.llm.async_client.chat.completions.create(
+            prompt = IMAGE_DETECTION_PROMPT.format(
+                word=word, sentence=sentence, context=context
+            )
+
+            response = await self.llm.async_client.chat.completions.create(
                 model=self.llm.model_name,
                 messages=[{"role": "user", "content": prompt}],
                 max_tokens=200,  # Increased for longer prompts
                 temperature=0.1,
                 response_format={"type": "json_object"},
-             )
-             content = response.choices[0].message.content
-             try:
-                 result = json.loads(content)
-                 # Log the result for debugging
-                 logger.info(f"[Image Detection] word='{word}', reasoning={result.get('reasoning')}, suitable={result.get('suitable')}, prompt={result.get('image_prompt')[:80] if result.get('image_prompt') else 'N/A'}...")
-                 return result
-             except:
-                 logger.warning(f"[Image Detection] Failed to parse JSON: {content[:200]}")
-                 return {"suitable": False, "image_prompt": None}
-                 
+            )
+            content = response.choices[0].message.content
+            if not content:
+                return {"suitable": False, "image_prompt": None}
+
+            try:
+                result = json.loads(content)
+                # Log the result for debugging
+                logger.info(
+                    f"[Image Detection] word='{word}', reasoning={result.get('reasoning')}, suitable={result.get('suitable')}, prompt={result.get('image_prompt')[:80] if result.get('image_prompt') else 'N/A'}..."
+                )
+                return result
+            except:
+                logger.warning(
+                    f"[Image Detection] Failed to parse JSON: {content[:200]}"
+                )
+                return {"suitable": False, "image_prompt": None}
+
         except Exception as e:
             logger.error(f"Image detection error: {e}")
             return {"suitable": False, "image_prompt": None}
+
+    # -------------------------------------------------------------------------
+    # SRS Interval Calculation
+    # -------------------------------------------------------------------------
+
+    # -------------------------------------------------------------------------
+    # Overview Generation
+    # -------------------------------------------------------------------------
+
+    async def get_or_generate_overview(
+        self, db: AsyncSession, title: str, full_text: str, total_sentences: int
+    ) -> Dict[str, Any]:
+        """
+        Generate article overview with English summary and Chinese translation.
+        Cache priority: in-memory -> DB -> LLM generation.
+        """
+        cache_key = self.get_overview_cache_key(title)
+
+        # 1. Check in-memory cache (hot path)
+        if cache_key in _overview_cache:
+            return _overview_cache[cache_key]
+
+        # 2. Check DB cache
+        db_result = await db.execute(
+            select(ArticleOverviewCache).where(
+                ArticleOverviewCache.title_hash == cache_key
+            )
+        )
+        db_cache = db_result.scalar_one_or_none()
+        if db_cache:
+            cached = {
+                "summary_en": db_cache.summary_en,
+                "summary_zh": db_cache.summary_zh,
+                "key_topics": db_cache.key_topics,
+                "difficulty_hint": db_cache.difficulty_hint,
+            }
+            _overview_cache[cache_key] = cached  # Warm in-memory cache
+            return cached
+
+        # 3. Generate via LLM (streaming)
+        # Truncate to first ~500 words for efficiency
+        words = full_text.split()
+        text_excerpt = " ".join(words[:500]) + ("..." if len(words) > 500 else "")
+
+        prompt = OVERVIEW_PROMPT.format(
+            title=title, total_sentences=total_sentences, excerpt=text_excerpt
+        )
+
+        full_content = ""
+        try:
+            stream = await self.llm.async_client.chat.completions.create(
+                model=self.llm.model_name,
+                messages=[{"role": "user", "content": prompt}],
+                max_tokens=500,
+                temperature=0.3,
+                stream=True,
+            )
+
+            async for chunk in stream:
+                if chunk.choices and chunk.choices[0].delta.content:
+                    text = chunk.choices[0].delta.content
+                    full_content += text
+                    # We are not streaming back to the router here directly in this method structure,
+                    # but the router expects a generator if it wants to stream.
+                    # However, to simplify, let's just await the full result for the service method
+                    # OR we can change the design.
+                    # The original router streamed the overview generation.
+                    # For now, let's keep it simple: collect and return.
+                    # If streaming is strictly required for UX, we might need a separate stream method.
+                    # But typically overview is fast enough or we can live with a short wait.
+                    # Wait, the router implementation `generate_overview` returns a StreamingResponse.
+                    # If I move this to service, I should probably expose a generator.
+
+            # Parse the accumulated content
+            content = full_content.strip()
+            if content.startswith("```"):
+                content = content.split("\n", 1)[1].rsplit("```", 1)[0]
+
+            try:
+                data = json.loads(content)
+                result = {
+                    "summary_en": data.get("summary_en", "Unable to generate summary."),
+                    "summary_zh": data.get("summary_zh", "无法生成摘要。"),
+                    "key_topics": data.get("key_topics", []),
+                    "difficulty_hint": data.get("difficulty_hint", ""),
+                }
+            except json.JSONDecodeError:
+                result = {
+                    "summary_en": "This article covers various topics. Study the sentences to learn more.",
+                    "summary_zh": "本文涵盖多个主题。通过逐句学习了解更多。",
+                    "key_topics": [],
+                    "difficulty_hint": "Unable to analyze difficulty.",
+                }
+
+            # Cache in-memory
+            _overview_cache[cache_key] = result
+
+            # Persist to DB
+            try:
+                db.add(
+                    ArticleOverviewCache(
+                        title_hash=cache_key,
+                        title=title,
+                        summary_en=result["summary_en"],
+                        summary_zh=result["summary_zh"],
+                        key_topics=result["key_topics"],
+                        difficulty_hint=result["difficulty_hint"],
+                    )
+                )
+                await db.commit()
+            except Exception:
+                await db.rollback()  # Ignore duplicate key errors
+
+            return result
+
+        except Exception as e:
+            logger.error(f"Overview generation error: {e}")
+            raise e
+
+    async def stream_overview_generation(
+        self, db: AsyncSession, title: str, full_text: str, total_sentences: int
+    ):
+        """
+        Streams overview generation chunks.
+        Yields:
+            - JSON string for cached result (immediate done)
+            - OR JSON chunks for streaming generation
+        """
+        cache_key = self.get_overview_cache_key(title)
+
+        # 1. Check caches
+        result = None
+        if cache_key in _overview_cache:
+            result = _overview_cache[cache_key]
+        else:
+            db_result = await db.execute(
+                select(ArticleOverviewCache).where(
+                    ArticleOverviewCache.title_hash == cache_key
+                )
+            )
+            db_cache = db_result.scalar_one_or_none()
+            if db_cache:
+                result = {
+                    "summary_en": db_cache.summary_en,
+                    "summary_zh": db_cache.summary_zh,
+                    "key_topics": db_cache.key_topics,
+                    "difficulty_hint": db_cache.difficulty_hint,
+                }
+                _overview_cache[cache_key] = result
+
+        if result:
+            yield json.dumps({"type": "done", "overview": result, "cached": True})
+            return
+
+        # 2. Generate
+        words = full_text.split()
+        text_excerpt = " ".join(words[:500]) + ("..." if len(words) > 500 else "")
+        prompt = OVERVIEW_PROMPT.format(
+            title=title, total_sentences=total_sentences, excerpt=text_excerpt
+        )
+
+        full_content = ""
+        try:
+            stream = await self.llm.async_client.chat.completions.create(
+                model=self.llm.model_name,
+                messages=[{"role": "user", "content": prompt}],
+                max_tokens=500,
+                temperature=0.3,
+                stream=True,
+            )
+
+            async for chunk in stream:
+                if chunk.choices and chunk.choices[0].delta.content:
+                    text = chunk.choices[0].delta.content
+                    full_content += text
+                    yield json.dumps({"type": "chunk", "content": text})
+
+            # Parse and Save
+            content = full_content.strip()
+            if content.startswith("```"):
+                content = content.split("\n", 1)[1].rsplit("```", 1)[0]
+
+            try:
+                data = json.loads(content)
+                final_result = {
+                    "summary_en": data.get("summary_en", "Unable to generate summary."),
+                    "summary_zh": data.get("summary_zh", "无法生成摘要。"),
+                    "key_topics": data.get("key_topics", []),
+                    "difficulty_hint": data.get("difficulty_hint", ""),
+                }
+            except json.JSONDecodeError:
+                final_result = {
+                    "summary_en": "This article covers various topics. Study the sentences to learn more.",
+                    "summary_zh": "本文涵盖多个主题。通过逐句学习了解更多。",
+                    "key_topics": [],
+                    "difficulty_hint": "Unable to analyze difficulty.",
+                }
+
+            _overview_cache[cache_key] = final_result
+
+            try:
+                db.add(
+                    ArticleOverviewCache(
+                        title_hash=cache_key,
+                        title=title,
+                        summary_en=final_result["summary_en"],
+                        summary_zh=final_result["summary_zh"],
+                        key_topics=final_result["key_topics"],
+                        difficulty_hint=final_result["difficulty_hint"],
+                    )
+                )
+                await db.commit()
+            except Exception:
+                await db.rollback()
+
+            yield json.dumps({"type": "done", "overview": final_result})
+
+        except Exception as e:
+            logger.error(f"Overview stream error: {e}")
+            yield json.dumps({"type": "error", "message": str(e)})
+
+    # -------------------------------------------------------------------------
+    # Collocation Detection
+    # -------------------------------------------------------------------------
+
+    async def get_or_detect_collocations(
+        self, db: AsyncSession, sentence: str
+    ) -> List[Dict[str, Any]]:
+        """
+        Detect collocations with caching (Memory -> DB -> LLM).
+        """
+        cache_key = self.get_collocation_cache_key(sentence)
+
+        # 1. Check in-memory
+        if cache_key in _collocation_cache:
+            return _collocation_cache[cache_key]
+
+        # 2. Check DB
+        db_result = await db.execute(
+            select(SentenceCollocationCache).where(
+                SentenceCollocationCache.sentence_hash == cache_key
+            )
+        )
+        db_cache = db_result.scalar_one_or_none()
+        if db_cache:
+            _collocation_cache[cache_key] = db_cache.collocations
+            return db_cache.collocations
+
+        # 3. Generate
+        words = sentence.split()
+        word_list_str = "\n".join([f"{i}: {w}" for i, w in enumerate(words)])
+        prompt = COLLOCATION_PROMPT.format(sentence=sentence, word_list=word_list_str)
+
+        try:
+            response = await self.llm.async_client.chat.completions.create(
+                model=self.llm.model_name,
+                messages=[{"role": "user", "content": prompt}],
+                max_tokens=300,
+                temperature=0.1,
+            )
+            content = response.choices[0].message.content.strip()
+
+            if content.startswith("```"):
+                content = content.split("\n", 1)[1].rsplit("```", 1)[0]
+
+            collocations = json.loads(content)
+
+            # Validation
+            valid_collocations = []
+            for c in collocations:
+                if all(k in c for k in ["text", "start_word_idx", "end_word_idx"]):
+                    valid_collocations.append(c)
+
+            # Cache
+            _collocation_cache[cache_key] = valid_collocations
+
+            try:
+                db.add(
+                    SentenceCollocationCache(
+                        sentence_hash=cache_key,
+                        sentence_preview=sentence[:100],
+                        collocations=valid_collocations,
+                    )
+                )
+                await db.commit()
+            except Exception:
+                await db.rollback()
+
+            return valid_collocations
+
+        except Exception as e:
+            logger.error(f"Collocation detection error: {e}")
+            return []
+
+    # -------------------------------------------------------------------------
+    # Diagnosis & Profiling
+    # -------------------------------------------------------------------------
+
+    async def analyze_user_history(
+        self, db: AsyncSession, user_id: str
+    ) -> Dict[str, Optional[str]]:
+        """
+        Analyze recent user history to find patterns in learning gaps.
+        """
+        try:
+            result = await db.execute(
+                select(SentenceLearningRecord)
+                .where(
+                    SentenceLearningRecord.user_id == user_id,
+                    SentenceLearningRecord.initial_response == "unclear",
+                )
+                .order_by(SentenceLearningRecord.created_at.desc())
+                .limit(20)
+            )
+            records = result.scalars().all()
+
+            if not records:
+                return {"common_gap": None}
+
+            vocab_count = 0
+            structure_count = 0
+
+            for r in records:
+                if r.diagnosed_gap_type == "vocabulary":
+                    vocab_count += 1
+                elif r.diagnosed_gap_type == "structure":
+                    structure_count += 1
+
+            total = len(records)
+            if vocab_count / total > 0.6:
+                return {"common_gap": "vocabulary"}
+            elif structure_count / total > 0.4:
+                return {"common_gap": "structure"}
+
+            # Length correlation
+            long_sentence_fail_count = sum(1 for r in records if r.word_count > 20)
+            if long_sentence_fail_count / total > 0.5:
+                return {"common_gap": "structure"}
+
+            return {"common_gap": "mixed"}
+
+        except Exception:
+            return {"common_gap": None}
+
+    async def perform_deep_diagnosis(
+        self,
+        db: AsyncSession,
+        user_id: str,
+        initial: str,
+        choice: Optional[str],
+        simplified: Optional[str],
+        word_clicks: List[str],
+        phrase_clicks: List[str],
+        interactions: List[Dict],
+        dwell_ms: int,
+        word_count: int,
+        max_simplify_stage: Optional[int] = None,
+    ) -> Dict[str, Any]:
+        """
+        Comprehensive diagnosis logic.
+        """
+        gap_type = None
+        confidence = 0.0
+        patterns = []
+
+        # 1. Base Diagnosis
+        if initial == "clear":
+            gap_type = None
+            confidence = 1.0
+        elif choice == "vocabulary":
+            gap_type = "vocabulary"
+            confidence = 0.9 if simplified == "got_it" else 0.7
+        elif choice == "grammar":
+            gap_type = "structure"
+            confidence = 0.9 if simplified == "got_it" else 0.7
+        elif choice == "meaning":
+            gap_type = "meaning"
+            confidence = 0.9 if simplified == "got_it" else 0.7
+        elif choice == "collocation":
+            gap_type = "collocation"
+            confidence = 0.9
+        elif choice == "both":
+            gap_type = "fundamental"
+            confidence = 0.7
+
+        # 2. Implicit Signals
+        if phrase_clicks:
+            gap_type = "collocation"
+            confidence = 0.85
+            patterns.append("phrase_lookup")
+
+        for event in interactions:
+            target = event.get("text") or event.get("word")
+            if target and isinstance(target, str) and " " in target.strip():
+                if gap_type != "collocation":
+                    gap_type = "collocation"
+                    confidence = 0.8
+                    patterns.append("multi_word_query")
+                break
+
+        if word_count > 0:
+            ms_per_word = dwell_ms / word_count
+            if ms_per_word > 800 and initial == "clear":
+                confidence = 0.6
+                patterns.append("slow_reading")
+
+        deep_dive_count = sum(
+            1 for e in interactions if e.get("style") in ["chinese_deep", "simple"]
+        )
+        if deep_dive_count > 0:
+            if gap_type is None:
+                gap_type = "vocabulary"
+                confidence = 0.6
+                patterns.append("deep_dive_needed")
+            elif gap_type == "vocabulary":
+                patterns.append("nuance_confusion")
+
+        if max_simplify_stage is not None:
+            if max_simplify_stage >= 3:
+                patterns.append("chinese_dive_needed")
+                confidence = min(1.0, confidence * 1.2)
+            elif max_simplify_stage == 2:
+                patterns.append("detailed_explanation_needed")
+                confidence = min(1.0, confidence * 1.1)
+
+        # 3. History
+        if gap_type == "fundamental" or choice == "both":
+            history = await self.analyze_user_history(db, user_id)
+            if history["common_gap"]:
+                patterns.append(f"history_{history['common_gap']}")
+                if history["common_gap"] == "vocabulary":
+                    gap_type = "fundamental (vocab-heavy)"
+                elif history["common_gap"] == "structure":
+                    gap_type = "fundamental (structure-heavy)"
+
+        # 4. Length Bias
+        if word_count > 25 and gap_type in [
+            "fundamental",
+            "fundamental (structure-heavy)",
+        ]:
+            patterns.append("long_sentence_struggle")
+            gap_type = "structure"
+            confidence = 0.8
+
+        return {"gap_type": gap_type, "confidence": confidence, "patterns": patterns}
+
+    async def update_user_profile_deep(
+        self,
+        db: AsyncSession,
+        user_id: str,
+        diagnosis: Dict[str, Any],
+        word_clicks: List[str],
+    ):
+        """
+        Updates profile with granular insights from the deep diagnosis.
+        """
+        result = await db.execute(
+            select(UserComprehensionProfile).where(
+                UserComprehensionProfile.user_id == user_id
+            )
+        )
+        profile = result.scalar_one_or_none()
+
+        if not profile:
+            profile = UserComprehensionProfile(user_id=user_id)
+            db.add(profile)
+
+        gap = diagnosis["gap_type"]
+        patterns = diagnosis["patterns"]
+
+        # 1. Update Scores
+        if gap == "vocabulary" or gap == "collocation":
+            current_vocab = float(profile.vocabulary_score or 0.0)
+            profile.vocabulary_score = max(0.0, current_vocab - 0.1)
+        elif gap == "structure":
+            current_grammar = float(profile.grammar_score or 0.0)
+            profile.grammar_score = max(0.0, current_grammar - 0.1)
+        elif gap is None:
+            current_overall = float(profile.overall_score or 0.0)
+            profile.overall_score = current_overall + 0.01
+
+        # 2. Update Weak Topics
+        if word_clicks:
+            current_weak_topics = (
+                list(profile.weak_vocabulary_topics)
+                if profile.weak_vocabulary_topics
+                else []
+            )
+            for word in word_clicks:
+                if word not in current_weak_topics:
+                    current_weak_topics.append(word)
+            profile.weak_vocabulary_topics = current_weak_topics[-50:]
+
+            # Word Proficiency
+            for word in word_clicks:
+                wp_result = await db.execute(
+                    select(WordProficiency).where(
+                        WordProficiency.user_id == user_id, WordProficiency.word == word
+                    )
+                )
+                wp = wp_result.scalar_one_or_none()
+                if wp:
+                    wp.exposure_count += 1
+                    wp.huh_count += 1
+                    wp.last_seen_at = func.now()
+                    wp.difficulty_score = float(wp.huh_count) / max(
+                        1, wp.exposure_count
+                    )
+                    if wp.difficulty_score > 0.3:
+                        wp.status = "learning"
+                else:
+                    db.add(
+                        WordProficiency(
+                            user_id=user_id,
+                            word=word,
+                            exposure_count=1,
+                            huh_count=1,
+                            difficulty_score=1.0,
+                            status="new",
+                        )
+                    )
+
+        # 3. Update Common Gaps
+        if patterns:
+            current_gaps = (
+                list(profile.common_grammar_gaps) if profile.common_grammar_gaps else []
+            )
+            for p in patterns:
+                current_gaps.append(p)
+            profile.common_grammar_gaps = current_gaps[-20:]
 
     # -------------------------------------------------------------------------
     # SRS Interval Calculation
@@ -534,20 +1188,28 @@ class SentenceStudyService:
     ) -> timedelta:
         """
         Smart SRS interval based on review count and gap type.
-        Collocations are harder to remember, use shorter intervals.
+        - Collocations: hardest to retain, shortest intervals
+        - Meaning: medium difficulty (context understanding)
+        - Vocabulary/Structure: default intervals
         """
-        base_intervals = [1, 3, 7, 14, 30, 60]  # days
+        base_intervals = [
+            1,
+            3,
+            7,
+            14,
+            30,
+            60,
+        ]  # days (default for vocabulary, structure, fundamental)
 
-        if review_count >= len(base_intervals):
-            interval_days = base_intervals[-1]
-        else:
-            interval_days = base_intervals[review_count]
-
-        # Collocations need more practice
         if gap_type == "collocation":
-            interval_days = max(1, int(interval_days * 0.7))
+            # Collocations are hardest to remember
+            base_intervals = [1, 2, 4, 7, 14, 30]
+        elif gap_type == "meaning":
+            # Context/meaning gaps need slightly shorter intervals (harder than vocab)
+            base_intervals = [1, 2, 5, 10, 21, 45]
 
-        return timedelta(days=interval_days)
+        idx = min(review_count, len(base_intervals) - 1)
+        return timedelta(days=base_intervals[idx])
 
 
 # =============================================================================

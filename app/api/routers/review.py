@@ -11,11 +11,11 @@ from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.engine import Result
 
 from app.core.db import get_db
 from app.models.orm import ReviewItem, ReviewLog
-
+from app.api.routers.auth import get_current_user_id
+from app.services.log_collector import log_collector, LogLevel, LogCategory
 
 router = APIRouter(prefix="/api/review", tags=["review"])
 
@@ -72,7 +72,6 @@ class CreateReviewRequest(BaseModel):
     sentence_text: str
     highlighted_items: List[str] = []
     difficulty_type: str = "vocabulary"
-    user_id: str = "default_user"
 
 
 class CreateReviewResponse(BaseModel):
@@ -117,29 +116,38 @@ def calculate_sm2(
     quality: int, ef: float, interval: float, repetition: int
 ) -> Dict[str, Any]:
     """
-    SM-2 algorithm implementation.
+    SM-2 algorithm implementation (matching the original SuperMemo 2 paper).
+
+    Reference: https://github.com/open-spaced-repetition/sm-2
+
+    Algorithm rules:
+    1. EF (Easiness Factor) is ONLY updated on successful reviews (quality >= 3)
+    2. On failure (quality < 3): EF stays unchanged, repetition resets to 0
+    3. Interval progression: 1 day -> 6 days -> (interval * EF)
 
     Args:
         quality: Review quality (1=forgot, 3=remembered, 5=easy)
-        ef: Current easiness factor
+        ef: Current easiness factor (minimum 1.3)
         interval: Current interval in days
         repetition: Number of consecutive successful reviews
 
     Returns:
         Dictionary with new_ef, new_interval, new_repetition
     """
-    # Map our 3-option quality to SM-2 scale (0-5)
-    # 1 (忘了) -> 1, 3 (想起来了) -> 3, 5 (太简单) -> 5
-
-    # Calculate new EF (Easiness Factor)
-    # EF' = EF + (0.1 - (5 - Q) * (0.08 + (5 - Q) * 0.02))
-    new_ef = ef + (0.1 - (5 - quality) * (0.08 + (5 - quality) * 0.02))
-    new_ef = max(1.3, new_ef)  # EF minimum is 1.3
-
     if quality < 3:  # Failed review
+        # On failure: reset repetition, set short interval, but keep EF unchanged
         new_repetition = 0
         new_interval = 1.0  # Reset to 1 day
-    else:  # Successful review
+        new_ef = ef  # EF does NOT change on incorrect responses (per original SM-2)
+    else:  # Successful review (quality >= 3)
+        # Update EF only on success
+        # EF' = EF + (0.1 - (5 - Q) * (0.08 + (5 - Q) * 0.02))
+        # When Q=5: EF increases by 0.1
+        # When Q=4: EF stays same (0.0)
+        # When Q=3: EF decreases by 0.14
+        new_ef = ef + (0.1 - (5 - quality) * (0.08 + (5 - quality) * 0.02))
+        new_ef = max(1.3, new_ef)  # EF minimum is 1.3
+
         new_repetition = repetition + 1
 
         if new_repetition == 1:
@@ -168,6 +176,7 @@ def calculate_theoretical_retention(days: int, stability: float = 10.0) -> float
 # API Endpoints
 # ============================================================
 
+
 class ReviewScheduleItem(BaseModel):
     id: int
     text: str
@@ -177,13 +186,16 @@ class ReviewScheduleItem(BaseModel):
     repetition: int
     last_review: Optional[Dict[str, Any]] = None
 
+
 class ReviewScheduleResponse(BaseModel):
     schedule: Dict[str, List[ReviewScheduleItem]]
+
 
 @router.get("/debug/schedule", response_model=ReviewScheduleResponse)
 async def get_review_schedule_debug(
     days: int = 14,
-    db: AsyncSession = Depends(get_db)
+    user_id: str = Depends(get_current_user_id),
+    db: AsyncSession = Depends(get_db),
 ):
     """
     Get detailed review schedule for debugging purposes.
@@ -196,14 +208,15 @@ async def get_review_schedule_debug(
     # We want everything that IS due or WILL BE due shortly.
     # Actually, let's just fetch all active items sorted by date for simplicity of debugging?
     # No, limit to range.
-    
+
     stmt = (
         select(ReviewItem)
+        .where(ReviewItem.user_id == user_id)
         .where(ReviewItem.next_review_at <= end_date)
         .order_by(ReviewItem.next_review_at.asc())
         # .limit(200) # Safety limit?
     )
-    
+
     result = await db.execute(stmt)
     items = result.scalars().all()
 
@@ -211,16 +224,14 @@ async def get_review_schedule_debug(
     # We can do a second query or join. N+1 is okay for debug endpoint usually, but let's be efficient.
     # Group ids
     item_ids = [item.id for item in items]
-    
+
     # Fetch latest log for each item
     # This is a bit complex in SQL (Window function), let's just lazy load or separate queries for now.
     # Since it's a debug page, let's fetch logs in bulk where item_id IN (...)
     # And allow multiple logs? No, just need the last one.
-    
+
     logs_map = {}
     if item_ids:
-
-        
         # Simple approach: fetch all logs for these items, sort desc, pick first in python
         # (Not efficient for production, fine for debug)
         log_stmt = (
@@ -230,22 +241,22 @@ async def get_review_schedule_debug(
         )
         log_result = await db.execute(log_stmt)
         all_logs = log_result.scalars().all()
-        
+
         for log in all_logs:
             if log.review_item_id not in logs_map:
                 logs_map[log.review_item_id] = log
 
     # 3. Group by Day
     schedule: Dict[str, List[ReviewScheduleItem]] = {}
-    
+
     for item in items:
         # Determine Key (Date)
         # Convert to YYYY-MM-DD
         due_date = item.next_review_at.strftime("%Y-%m-%d")
-        
+
         if due_date not in schedule:
             schedule[due_date] = []
-            
+
         last_log = logs_map.get(item.id)
         last_review_info = None
         if last_log:
@@ -253,9 +264,9 @@ async def get_review_schedule_debug(
                 "date": last_log.reviewed_at.isoformat(),
                 "quality": last_log.quality,
                 "duration_ms": last_log.duration_ms,
-                "interval_before": last_log.interval_at_review
+                "interval_before": last_log.interval_at_review,
             }
-            
+
         schedule[due_date].append(
             ReviewScheduleItem(
                 id=item.id,
@@ -264,21 +275,217 @@ async def get_review_schedule_debug(
                 ef=item.easiness_factor,
                 interval=item.interval_days,
                 repetition=item.repetition,
-                last_review=last_review_info
+                last_review=last_review_info,
             )
         )
 
     return ReviewScheduleResponse(schedule=schedule)
 
 
+class MemoryCurveDebugBucket(BaseModel):
+    """Debug info for a memory curve bucket."""
+
+    day: int
+    interval_range: str
+    sample_size: int
+    success_count: int
+    retention_rate: Optional[float]
+
+
+class MemoryCurveDebugLog(BaseModel):
+    """Debug info for a single review log."""
+
+    id: int
+    review_item_id: int
+    interval_at_review: float
+    quality: int
+    reviewed_at: str
+    duration_ms: int
+    sentence_preview: Optional[str] = None
+
+
+class MemoryCurveDebugResponse(BaseModel):
+    """Debug response for memory curve analysis."""
+
+    total_logs: int
+    interval_distribution: Dict[str, int]  # interval range -> count
+    buckets: List[MemoryCurveDebugBucket]
+    recent_logs: List[MemoryCurveDebugLog]
+    summary: Dict[str, Any]
+
+
+@router.get("/debug/memory-curve", response_model=MemoryCurveDebugResponse)
+async def get_memory_curve_debug(
+    user_id: str = Depends(get_current_user_id),
+    limit: int = 100,
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Get detailed debug info for memory curve analysis.
+    Shows ReviewLog data, interval distribution, and bucket statistics.
+    """
+    # SM-2 Optimized Buckets (same as in get_memory_curve_data)
+    # SM-2 intervals: 1 → 6 → ~15 → ~37 days
+    bucket_ranges = {
+        1: (0, 3),  # Day 1: First review (interval=1)
+        6: (3, 10),  # Day 6: Second review (interval=6)
+        15: (10, 25),  # Day 15: Third review (interval≈15)
+        40: (25, 60),  # Day 40: Fourth+ review (interval≈37+)
+    }
+
+    # 1. Get total log count
+    total_stmt = (
+        select(func.count())
+        .select_from(ReviewLog)
+        .join(ReviewItem)
+        .where(ReviewItem.user_id == user_id)
+    )
+    total_result = await db.execute(total_stmt)
+    total_logs = total_result.scalar() or 0
+
+    # 2. Get interval distribution
+    interval_dist_stmt = (
+        select(ReviewLog.interval_at_review, func.count().label("count"))
+        .join(ReviewItem)
+        .where(ReviewItem.user_id == user_id)
+        .group_by(ReviewLog.interval_at_review)
+        .order_by(ReviewLog.interval_at_review)
+    )
+    dist_result = await db.execute(interval_dist_stmt)
+    dist_rows = dist_result.all()
+
+    interval_distribution = {}
+    for row in dist_rows:
+        interval_val = row.interval_at_review
+        count = row.count
+        # Group into SM-2 aligned ranges
+        if interval_val < 3:
+            key = "0-3 days"
+        elif interval_val < 10:
+            key = "3-10 days"
+        elif interval_val < 25:
+            key = "10-25 days"
+        elif interval_val < 60:
+            key = "25-60 days"
+        else:
+            key = "60+ days"
+        interval_distribution[key] = interval_distribution.get(key, 0) + count
+
+    # 3. Get bucket statistics
+    from sqlalchemy import case
+
+    buckets = []
+    sorted_days = sorted(bucket_ranges.keys())
+
+    for day in sorted_days:
+        min_int, max_int = bucket_ranges[day]
+        bucket_stmt = (
+            select(
+                func.count().label("total"),
+                func.count(case((ReviewLog.quality >= 3, 1), else_=None)).label(
+                    "success"
+                ),
+            )
+            .select_from(ReviewLog)
+            .join(ReviewItem)
+            .where(ReviewItem.user_id == user_id)
+            .where(ReviewLog.interval_at_review >= min_int)
+            .where(ReviewLog.interval_at_review < max_int)
+        )
+        bucket_result = await db.execute(bucket_stmt)
+        bucket_row = bucket_result.one()
+
+        sample_size = bucket_row.total or 0
+        success_count = bucket_row.success or 0
+        retention_rate = (
+            round(success_count / sample_size, 2) if sample_size > 0 else None
+        )
+
+        buckets.append(
+            MemoryCurveDebugBucket(
+                day=day,
+                interval_range=f"{min_int}-{max_int}",
+                sample_size=sample_size,
+                success_count=success_count,
+                retention_rate=retention_rate,
+            )
+        )
+
+    # 4. Get recent logs with sentence preview
+    logs_stmt = (
+        select(ReviewLog, ReviewItem.sentence_text)
+        .join(ReviewItem)
+        .where(ReviewItem.user_id == user_id)
+        .order_by(ReviewLog.reviewed_at.desc())
+        .limit(limit)
+    )
+    logs_result = await db.execute(logs_stmt)
+    logs_rows = logs_result.all()
+
+    recent_logs = []
+    for row in logs_rows:
+        log = row[0]
+        sentence = row[1]
+        recent_logs.append(
+            MemoryCurveDebugLog(
+                id=log.id,
+                review_item_id=log.review_item_id,
+                interval_at_review=log.interval_at_review,
+                quality=log.quality,
+                reviewed_at=log.reviewed_at.isoformat(),
+                duration_ms=log.duration_ms,
+                sentence_preview=sentence[:50] + "..."
+                if sentence and len(sentence) > 50
+                else sentence,
+            )
+        )
+
+    # 5. Summary stats
+    avg_quality_stmt = (
+        select(func.avg(ReviewLog.quality))
+        .join(ReviewItem)
+        .where(ReviewItem.user_id == user_id)
+    )
+    avg_result = await db.execute(avg_quality_stmt)
+    avg_quality = avg_result.scalar()
+
+    summary = {
+        "total_logs": total_logs,
+        "avg_quality": round(avg_quality, 2) if avg_quality else None,
+        "buckets_with_data": sum(1 for b in buckets if b.sample_size > 0),
+        "total_buckets": len(buckets),
+        "explanation": (
+            "Memory curve uses interval_at_review to bucket reviews. "
+            "Buckets are SM-2 aligned: Day 1 (0-3), Day 6 (3-10), Day 15 (10-25), Day 40 (25-60). "
+            "Later buckets have data after successful reviews increase the interval."
+        ),
+    }
+
+    return MemoryCurveDebugResponse(
+        total_logs=total_logs,
+        interval_distribution=interval_distribution,
+        buckets=buckets,
+        recent_logs=recent_logs,
+        summary=summary,
+    )
+
+
 @router.get("/context/{item_id}", response_model=ReviewContextResponse)
-async def get_review_context(item_id: int, db: AsyncSession = Depends(get_db)):
+async def get_review_context(
+    item_id: int,
+    user_id: str = Depends(get_current_user_id),
+    db: AsyncSession = Depends(get_db),
+):
     """
     Get context (surrounding sentences) for a review item.
     Resolves the source content via ContentService.
     """
     # 1. Get Review Item
-    stmt = select(ReviewItem).where(ReviewItem.id == item_id)
+    stmt = (
+        select(ReviewItem)
+        .where(ReviewItem.id == item_id)
+        .where(ReviewItem.user_id == user_id)
+    )
     result = await db.execute(stmt)
     item = result.scalar_one_or_none()
 
@@ -358,14 +565,21 @@ async def get_review_context(item_id: int, db: AsyncSession = Depends(get_db)):
         )
 
     except Exception as e:
-        print(f"Error fetching context: {e}")
+        log_collector.log(
+            f"Error fetching context: {e}",
+            level=LogLevel.WARN,
+            category=LogCategory.GENERAL,
+            source="backend",
+        )
         # Graceful fallback
         return ReviewContextResponse(target_sentence=item.sentence_text)
 
 
 @router.get("/queue", response_model=ReviewQueueResponse)
 async def get_review_queue(
-    user_id: str = "default_user", limit: int = 20, db: AsyncSession = Depends(get_db)
+    user_id: str = Depends(get_current_user_id),
+    limit: int = 20,
+    db: AsyncSession = Depends(get_db),
 ):
     """Get review items that are due for review (next_review_at <= now)."""
     now = datetime.utcnow()
@@ -413,7 +627,9 @@ async def get_review_queue(
 
 @router.get("/random", response_model=ReviewQueueResponse)
 async def get_random_review(
-    user_id: str = "default_user", limit: int = 20, db: AsyncSession = Depends(get_db)
+    user_id: str = Depends(get_current_user_id),
+    limit: int = 20,
+    db: AsyncSession = Depends(get_db),
 ):
     """Get random review items for extra practice (does not affect SM-2 schedule)."""
     # Use random ordering
@@ -447,9 +663,131 @@ async def get_random_review(
     )
 
 
+@router.post("/undo", response_model=ReviewQueueItem)
+async def undo_last_review(
+    user_id: str = Depends(get_current_user_id), db: AsyncSession = Depends(get_db)
+):
+    """
+    Undo the last review action for the user.
+    Restores the item's state (interval, rep, EF) and deletes the log.
+    """
+    # 1. Find the latest review log for this user
+    log_stmt = (
+        select(ReviewLog)
+        .join(ReviewItem)
+        .where(ReviewItem.user_id == user_id)
+        .order_by(ReviewLog.reviewed_at.desc())
+        .limit(1)
+    )
+    result = await db.execute(log_stmt)
+    latest_log = result.scalar_one_or_none()
+
+    if not latest_log:
+        raise HTTPException(status_code=404, detail="No review history found to undo")
+
+    item = await db.get(ReviewItem, latest_log.review_item_id)
+    if not item:
+        raise HTTPException(status_code=404, detail="Reviewed item no longer exists")
+
+    # 2. Restore Stats
+    # Restore Interval
+    # The log stores the interval *at the time of review* (i.e. before the update)
+    restored_interval = latest_log.interval_at_review
+    item.interval_days = restored_interval
+
+    # Restore Easiness Factor (EF)
+    # If quality >= 3, EF was modified. We reverse the formula.
+    # NewEF = OldEF + (0.1 - (5-Q)*(0.08+(5-Q)*0.02))
+    # => OldEF = NewEF - (...)
+    if latest_log.quality >= 3:
+        q = latest_log.quality
+        delta = 0.1 - (5 - q) * (0.08 + (5 - q) * 0.02)
+        # We assume the current EF is the NewEF.
+        # Note: EF has a floor of 1.3. If reverting drops it below 1.3, it might be slightly inaccurate
+        # if the original was clipped. But essentially we subtract delta.
+        item.easiness_factor = max(1.3, item.easiness_factor - delta)
+    # If quality < 3, EF was not changed, so we keep current EF.
+
+    # Restore Repetition
+    # Calculates consecutive successes looking back from the *previous* log
+    # We query logs excluding the one we are deleting
+    history_stmt = (
+        select(ReviewLog)
+        .where(ReviewLog.review_item_id == item.id)
+        .where(ReviewLog.id != latest_log.id)  # Exclude current
+        .order_by(ReviewLog.reviewed_at.desc())
+    )
+    history_result = await db.execute(history_stmt)
+    history_logs = history_result.scalars().all()
+
+    consecutive_success = 0
+    prev_review_date = None
+
+    if history_logs:
+        prev_review_date = history_logs[0].reviewed_at
+        for log in history_logs:
+            if log.quality >= 3:
+                consecutive_success += 1
+            else:
+                break
+    else:
+        # No history means this was the first review
+        # Or no previous reviews exist
+        pass
+
+    item.repetition = consecutive_success
+    item.last_reviewed_at = prev_review_date
+
+    # 3. Prioritize the restored item
+    # To ensure the undone item appears at the top of the queue (immediate re-review),
+    # we set its next_review_at to be slightly earlier than the most overdue item.
+    # If we simply restored the original date, it might end up at the tail of the overdue queue.
+
+    # Find the earliest next_review_at currently in the user's queue
+    min_date_stmt = (
+        select(func.min(ReviewItem.next_review_at)).where(ReviewItem.user_id == user_id)
+        # We only care about items that are actually due (or about to be)
+        # But simply taking the absolute min of all items works too and ensures priority.
+    )
+    min_date_result = await db.execute(min_date_stmt)
+    earliest_date = min_date_result.scalar()
+
+    now = datetime.utcnow()
+
+    if earliest_date:
+        # Ensure we are earlier than the earliest item
+        # If earliest_date is in the future (no overdue items), this makes it due now-ish (earlier than future)
+        # If earliest_date is in the past (overdue backlog), this puts us at the front of the backlog.
+        # We assume earliest_date is naive UTC or consistent timezone.
+        item.next_review_at = earliest_date - timedelta(seconds=1)
+    else:
+        # No items in queue, set to now
+        item.next_review_at = now
+
+    # 4. Delete the log
+    await db.delete(latest_log)
+    await db.commit()
+    await db.refresh(item)
+
+    return ReviewQueueItem(
+        id=item.id,
+        source_id=item.source_id,
+        sentence_index=item.sentence_index,
+        sentence_text=item.sentence_text,
+        highlighted_items=item.highlighted_items or [],
+        difficulty_type=item.difficulty_type,
+        interval_days=item.interval_days,
+        repetition=item.repetition,
+        next_review_at=item.next_review_at.isoformat(),
+        created_at=item.created_at.isoformat(),
+    )
+
+
 @router.post("/complete", response_model=CompleteReviewResponse)
 async def complete_review(
-    req: CompleteReviewRequest, db: AsyncSession = Depends(get_db)
+    req: CompleteReviewRequest,
+    user_id: str = Depends(get_current_user_id),
+    db: AsyncSession = Depends(get_db),
 ):
     """Complete a review and update SM-2 scheduling parameters."""
     # Validate quality: 1=forgot, 2=remembered after help, 3=remembered, 5=easy
@@ -457,7 +795,11 @@ async def complete_review(
         raise HTTPException(status_code=400, detail="Quality must be 1, 2, 3, or 5")
 
     # Get the review item
-    stmt = select(ReviewItem).where(ReviewItem.id == req.item_id)
+    stmt = (
+        select(ReviewItem)
+        .where(ReviewItem.id == req.item_id)
+        .where(ReviewItem.user_id == user_id)
+    )
     result = await db.execute(stmt)
     item = result.scalar_one_or_none()
 
@@ -501,13 +843,15 @@ async def complete_review(
 
 @router.post("/create", response_model=CreateReviewResponse)
 async def create_review_item(
-    req: CreateReviewRequest, db: AsyncSession = Depends(get_db)
+    req: CreateReviewRequest,
+    user_id: str = Depends(get_current_user_id),
+    db: AsyncSession = Depends(get_db),
 ):
     """Create a new review item (typically called when user studies a sentence)."""
     # Check if item already exists (prevent duplicates)
     stmt = (
         select(ReviewItem)
-        .where(ReviewItem.user_id == req.user_id)
+        .where(ReviewItem.user_id == user_id)
         .where(ReviewItem.source_id == req.source_id)
         .where(ReviewItem.sentence_index == req.sentence_index)
     )
@@ -529,7 +873,7 @@ async def create_review_item(
     # Create new review item
     now = datetime.utcnow()
     item = ReviewItem(
-        user_id=req.user_id,
+        user_id=user_id,
         source_id=req.source_id,
         sentence_index=req.sentence_index,
         sentence_text=req.sentence_text,
@@ -552,7 +896,7 @@ async def create_review_item(
 
 @router.get("/memory-curve", response_model=MemoryCurveResponse)
 async def get_memory_curve(
-    user_id: str = "default_user", db: AsyncSession = Depends(get_db)
+    user_id: str = Depends(get_current_user_id), db: AsyncSession = Depends(get_db)
 ):
     """
     Get memory curve statistics comparing theoretical Ebbinghaus curve
@@ -593,7 +937,7 @@ async def get_memory_curve(
 
 @router.get("/stats")
 async def get_review_stats(
-    user_id: str = "default_user", db: AsyncSession = Depends(get_db)
+    user_id: str = Depends(get_current_user_id), db: AsyncSession = Depends(get_db)
 ):
     """Get overall review statistics for the user."""
     # Total items

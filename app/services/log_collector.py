@@ -112,7 +112,7 @@ class LogCollector:
             )
             f.write(startup_msg)
 
-        print(f"[LogCollector] Log file initialized: {self.LOG_FILE}")
+        logger.info(f"[LogCollector] Log file initialized: {self.LOG_FILE}")
 
     def _write_to_file(self, entry: LogEntry) -> None:
         """Write log entry to file (plain text, no colors)"""
@@ -140,7 +140,7 @@ class LogCollector:
                     f.write(line)
             except Exception as e:
                 # Don't crash on file write errors
-                print(f"[LogCollector] File write error: {e}")
+                logger.info(f"[LogCollector] File write error: {e}")
 
     def add(self, entry: LogEntry) -> None:
         """Add a log entry - print to terminal and write to file"""
@@ -196,29 +196,29 @@ class LogCollector:
 
         # Build and print the log line
         prefix = f"{Colors.DIM}{ts}{Colors.RESET} [{src_tag}] [{cat_tag}]"
-        print(f"{prefix} {color}{entry.message}{Colors.RESET}")
+        logger.info(f"{prefix} {color}{entry.message}{Colors.RESET}")
 
         # Print data if present (indented)
         if entry.data:
             # Handle stack traces specially
             stack = entry.data.get("stack")
             if stack:
-                print(f"{Colors.DIM}  Stack:{Colors.RESET}")
+                logger.info(f"{Colors.DIM}  Stack:{Colors.RESET}")
                 # Show more lines for errors
                 max_lines = 10 if entry.level == LogLevel.ERROR else 5
                 stack_lines = stack.split("\n")
                 for line in stack_lines[:max_lines]:
                     if line.strip():
-                        print(f"{Colors.DIM}    {line}{Colors.RESET}")
+                        logger.info(f"{Colors.DIM}    {line}{Colors.RESET}")
                 if len(stack_lines) > max_lines:
-                    print(
+                    logger.info(
                         f"{Colors.DIM}    ... ({len(stack_lines) - max_lines} more lines in unified.log){Colors.RESET}"
                     )
 
             # Print other data
             other_data = {k: v for k, v in entry.data.items() if k != "stack"}
             if other_data:
-                print(f"{Colors.DIM}  Data: {other_data}{Colors.RESET}")
+                logger.info(f"{Colors.DIM}  Data: {other_data}{Colors.RESET}")
 
     def get_recent_logs(
         self,
@@ -329,7 +329,7 @@ class LogCollector:
                     results.append(current_entry)
 
         except Exception as e:
-            print(f"[LogCollector] Error reading log file: {e}")
+            logger.info(f"[LogCollector] Error reading log file: {e}")
 
         return results
 
@@ -448,6 +448,7 @@ def detect_category(message: str, data: Optional[dict] = None) -> LogCategory:
 # =============================================================================
 
 import logging
+logger = logging.getLogger(__name__)
 
 
 class LogCollectorHandler(logging.Handler):

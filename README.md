@@ -1,45 +1,49 @@
-# NCE English Practice (Web App)
+# NCE English Practice (Universal App)
 
-An interactive English tense practice application powered by LLMs (DeepSeek/OpenAI). 
-Built with FastAPI and Vanilla JS, featuring a premium glassmorphism UI.
+An interactive English tense practice application powered by LLMs (DeepSeek/OpenAI).
+Built with **FastAPI**, **React**, and **Monorepo Architecture** (Web + Mobile ready).
 
 ## Features
 
 - **AI-Powered Vocabulary**: Generates context-aware vocabulary based on your chosen topic.
 - **Tense Matrix**: Automatically generates sentences across 4 time layers and 4 aspects.
-- **Interactive Practice**: (Coming soon) Type your answers and get AI feedback.
-- **Smart Caching**: Caches generated content to save API costs.
+- **Interactive Practice**: Type your answers and get AI feedback.
+- **Hybrid Dictionary**: MDX dictionary support with images and audio.
+- **Voice Conversation**: Real-time voice practice with Gemini.
+- **Remote Transcription**: Offload heavy AI transcription tasks to a dedicated GPU server.
 
-## Setup
+## Setup & Run
+
+The project uses `pnpm` workspaces and `Turborepo`.
 
 1. **Install Dependencies**:
+
    ```bash
+   # Standard install (lightweight, supports Remote Transcription client)
+   pnpm install
    uv sync
-   # OR
-   pip install -r requirements.txt
+
+   # Full install (includes local GPU transcription support)
+   uv sync --extra local-asr
    ```
-   *Note: Requires Python 3.11+*
 
 2. **Configuration**:
-   Create a `.env` file:
-   ```env
-   DEEPSEEK_API_KEY=your_key
-   DEEPSEEK_BASE_URL=https://api.deepseek.com/v1
-   MODEL_NAME=deepseek-chat
-   ```
 
-3. **Run the Server**:
+   Create a `.env` file in the root (see `.env.example` or CLAUDE.md).
+
+3. **Run Full Stack**:
+
    ```bash
-   uvicorn app:app --reload
+   pnpm turbo dev
    ```
 
-4. **Open Browser**:
-   Navigate to `http://127.0.0.1:8000`
+   - Frontend: http://localhost:5173
+   - Backend: http://localhost:8000
 
 ## Project Structure
 
-- `app.py`: FastAPI backend
-- `theme_vocab.py`: Vocabulary generation logic
-- `sentence_generator.py`: Sentence generation logic
-- `static/`: CSS and JS assets
-- `templates/`: HTML templates
+- `apps/web`: React Frontend (Vite)
+- `apps/backend`: Proxy for Python Backend
+- `packages/shared`: Shared Business Logic & Hooks
+- `packages/api`: Shared API Client & Auth
+- `app/`: Python Backend Source Code
