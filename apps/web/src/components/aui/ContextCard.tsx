@@ -1,0 +1,292 @@
+// @ts-nocheck
+/**
+ * ContextCard - AUI-compatible pure presentation component for context resources
+ * 
+ * This component receives all data via props and emits actions via callbacks.
+ * It should be registered in the AUI registry and rendered by AUIStreamHydrator.
+ */
+import React, { useState, useRef } from 'react';
+import { Volume2, VolumeX, Check, Loader2, BookOpen, Languages } from 'lucide-react';
+
+// Status badge styles
+const STATUS_STYLES = {
+    unseen: 'bg-text-muted/20 text-text-muted border-text-muted/30',
+    learning: 'bg-accent-warning/20 text-accent-warning border-accent-warning/30',
+    mastered: 'bg-accent-primary/20 text-accent-primary border-accent-primary/30',
+};
+
+const STATUS_LABELS = {
+    unseen: 'Unseen',
+    learning: 'Learning',
+    mastered: 'Mastered',
+};
+
+/**
+ * Highlight the target word in text content
+ */
+const HighlightedText = ({ text, word }) => {
+    if (!word || !text) return <span>{text}</span>;
+
+    // Create regex to match word and common forms
+    const wordLower = word.toLowerCase();
+    const patterns = [
+        word,
+        wordLower,
+        word.charAt(0).toUpperCase() + word.slice(1).toLowerCase(),
+        // Common morphological forms
+        wordLower + 's',
+        wordLower + 'ed',
+        wordLower + 'ing',
+        wordLower + 'd',
+        wordLower + 'es',
+        wordLower + 'er',
+        wordLower + 'est',
+    ].filter((v, i, a) => a.indexOf(v) === i); // dedupe
+
+    const regex = new RegExp(`\\b(${patterns.join('|')})\\b`, 'gi');
+    const parts = text.split(regex);
+
+    return (
+        <span>
+            {parts.map((part, i) => {
+                const isMatch = patterns.some(p =>
+                    part.toLowerCase() === p.toLowerCase()
+                );
+                return isMatch ? (
+                    <mark key={i} className="bg-neon-purple/30 text-neon-purple px-0.5 rounded font-semibold">
+                        {part}
+                    </mark>
+                ) : (
+                    <span key={i}>{part}</span>
+                );
+            })}
+        </span>
+    );
+};
+
+/**
+ * ContextCard - Display a single context resource
+ */
+const ContextCard = ({
+    id,
+    word,
+    text_content,
+    translation,        // New: Chinese translation
+    source = 'Unknown',
+    status = 'unseen',
+    grammar_pattern,     // New: e.g., "VERB noun"
+    show_actions = true,
+    compact = false,
+    onStatusChange,
+    onAction,
+    onViewDictionary,  // callback to open dictionary modal
+}) => {
+    const [isPlaying, setIsPlaying] = useState(false);
+    const [isLoadingAudio, setIsLoadingAudio] = useState(false);
+    // Local state for status - allows UI updates without backend
+    const [localStatus, setLocalStatus] = useState(status);
+    const [showTranslation, setShowTranslation] = useState(false);
+    const audioRef = useRef(null);
+
+    // Play TTS audio
+    const handlePlayAudio = async () => {
+        if (isPlaying) {
+            audioRef.current?.pause();
+            setIsPlaying(false);
+            return;
+        }
+
+        setIsLoadingAudio(true);
+        try {
+            // Use TTS API with text content directly
+            const audioUrl = `/api/tts?text=${encodeURIComponent(text_content)}`;
+
+            if (audioRef.current) {
+                audioRef.current.src = audioUrl;
+            } else {
+                audioRef.current = new Audio(audioUrl);
+            }
+
+            audioRef.current.onplay = () => {
+                setIsPlaying(true);
+                setIsLoadingAudio(false);
+            };
+            audioRef.current.onended = () => setIsPlaying(false);
+            audioRef.current.onerror = () => {
+                setIsPlaying(false);
+                setIsLoadingAudio(false);
+                console.error('Failed to play audio');
+            };
+
+            await audioRef.current.play();
+
+            // Emit AUI action
+            onAction?.('audio_played', { context_id: id, word });
+        } catch (error) {
+            console.error('Audio playback error:', error);
+            setIsLoadingAudio(false);
+        }
+    };
+
+    // Handle status change - update local state and notify parent
+    const handleStatusChange = (newStatus) => {
+        const oldStatus = localStatus;
+        setLocalStatus(newStatus); // Update local UI immediately
+
+        // Notify parent via callback (parent handles transport dispatch)
+        onStatusChange?.(id, newStatus);
+        onAction?.('status_changed', {
+            context_id: id,
+            old_status: oldStatus,
+            new_status: newStatus,
+            word
+        });
+    };
+
+    // Handle view dictionary
+    const handleViewDictionary = () => {
+        onViewDictionary?.(word);
+        onAction?.('view_dictionary', { word, source });
+        // Log for testing purposes
+        console.log('[ContextCard] View Dictionary clicked:', word);
+    };
+
+    // Get next status in cycle
+    const getNextStatus = () => {
+        const cycle = ['unseen', 'learning', 'mastered'];
+        const currentIndex = cycle.indexOf(localStatus);
+        return cycle[(currentIndex + 1) % cycle.length];
+    };
+
+    return (
+        <div className={`
+      relative border rounded-lg
+      bg-bg-elevated border-border
+      hover:border-text-secondary transition-colors
+      ${compact ? 'p-3' : 'p-4'}
+    `}>
+            {/* Header Row: Source/Grammar + Status */}
+            <div className="flex items-center justify-between mb-2 gap-2">
+                <div className="flex items-center gap-2">
+                    <span className="text-xs font-mono text-ink/50 uppercase tracking-wider">
+                        {source.replace('.mdx', '')}
+                    </span>
+                    {grammar_pattern && (
+                        <span className="text-xs px-1.5 py-0.5 rounded bg-accent-info/10 text-accent-info/70 font-mono">
+                            {grammar_pattern}
+                        </span>
+                    )}
+                </div>
+
+                <button
+                    onClick={() => handleStatusChange(getNextStatus())}
+                    className={`
+            text-xs px-2 py-0.5 rounded-full border
+            transition-all cursor-pointer
+            hover:scale-105 active:scale-95
+            ${STATUS_STYLES[localStatus]}
+          `}
+                    title={`Click to change (currently: ${STATUS_LABELS[localStatus]})`}
+                >
+                    {STATUS_LABELS[localStatus]}
+                </button>
+            </div>
+
+            {/* Text content with highlighted word */}
+            <p className={`
+        text-text-primary leading-relaxed
+        ${compact ? 'text-sm' : 'text-base'}
+      `}>
+                <HighlightedText text={text_content} word={word} />
+            </p>
+
+            {/* Translation (Chinese) - Hidden by default */}
+            {
+                translation && (
+                    <div className="mt-1.5">
+                        {showTranslation ? (
+                            <p
+                                className="text-sm text-text-secondary italic cursor-pointer hover:text-text-primary transition-colors"
+                                onClick={() => setShowTranslation(false)}
+                                title="Click to hide"
+                            >
+                                {translation}
+                            </p>
+                        ) : (
+                            <button
+                                onClick={() => setShowTranslation(true)}
+                                className="flex items-center gap-1.5 text-xs text-text-muted hover:text-text-secondary transition-colors mt-1"
+                            >
+                                <Languages className="w-3 h-3" />
+                                <span>Show Translation</span>
+                            </button>
+                        )}
+                    </div>
+                )
+            }
+
+            {/* Actions */}
+            {
+                show_actions && (
+                    <div className="flex items-center gap-2 mt-3 pt-3 border-t border-border flex-wrap">
+                        {/* Play audio button */}
+                        <button
+                            onClick={handlePlayAudio}
+                            disabled={isLoadingAudio}
+                            className={`
+              flex items-center gap-1.5 px-3 py-1.5 rounded
+              text-sm font-mono transition-all
+              ${isPlaying
+                                    ? 'bg-accent-info/20 text-accent-info border border-accent-info/30'
+                                    : 'bg-bg-elevated border border-border text-text-muted hover:bg-bg-elevated_hover hover:text-text-primary'
+                                }
+              disabled:opacity-50
+            `}
+                        >
+                            {isLoadingAudio ? (
+                                <Loader2 className="w-4 h-4 animate-spin" />
+                            ) : isPlaying ? (
+                                <VolumeX className="w-4 h-4" />
+                            ) : (
+                                <Volume2 className="w-4 h-4" />
+                            )}
+                            <span>{isPlaying ? 'Stop' : 'Listen'}</span>
+                        </button>
+
+                        {/* View in Dictionary button */}
+                        <button
+                            onClick={handleViewDictionary}
+                            className="
+              flex items-center gap-1.5 px-3 py-1.5 rounded
+              text-sm font-mono transition-all
+              bg-bg-elevated border border-border text-text-muted hover:bg-bg-elevated_hover hover:text-text-primary
+            "
+                        >
+                            <BookOpen className="w-4 h-4" />
+                            <span>Dictionary</span>
+                        </button>
+
+                        {/* Quick "mastered" button */}
+                        {localStatus !== 'mastered' && (
+                            <button
+                                onClick={() => handleStatusChange('mastered')}
+                                className="
+                flex items-center gap-1.5 px-3 py-1.5 rounded
+                text-sm font-mono transition-all
+                bg-accent-primary/10 text-accent-primary 
+                hover:bg-accent-primary/20 border border-accent-primary/20
+              "
+                            >
+                                <Check className="w-4 h-4" />
+                                <span>Got it</span>
+                            </button>
+                        )}
+                    </div>
+                )
+            }
+        </div >
+    );
+};
+
+export default ContextCard;
+
