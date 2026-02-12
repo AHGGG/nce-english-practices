@@ -8,7 +8,7 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { ArrowLeft, Loader2, AlertCircle } from "lucide-react";
-import { authFetch } from "../../api/auth";
+import { apiGet } from "../../api/auth";
 import { getCachedAudioUrl } from "../../utils/offline";
 import {
   useAudioPlayer,
@@ -72,16 +72,7 @@ export default function UnifiedPlayerView() {
       }
 
       const url = `/api/content/player/${sourceType}/${contentId}${params.toString() ? "?" + params.toString() : ""}`;
-      const response = await authFetch(url);
-
-      if (!response.ok) {
-        const data = await response.json().catch(() => ({}));
-        throw new Error(
-          data.detail || `Failed to load content (${response.status})`,
-        );
-      }
-
-      const data = await response.json();
+      const data = await apiGet(url);
 
       // For podcast, try to use cached audio from Cache API
       // This avoids re-downloading audio that was cached during transcription

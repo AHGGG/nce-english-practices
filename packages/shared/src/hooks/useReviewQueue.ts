@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from "react";
-import { authService } from "@nce/api";
+import { authService, apiGet, apiPost } from "@nce/api";
 import { parseJSONSSEStream, parseTextSSEStream } from "../utils/sseParser";
 
 export interface ReviewItem {
@@ -90,25 +90,19 @@ export function useReviewQueue(options: ReviewQueueOptions = {}) {
         const endpoint = isRandom ? "/api/review/random" : "/api/review/queue";
         const limit = options.limit || 20;
 
-        const [queueRes, statsRes] = await Promise.all([
-          authService.authFetch(`${endpoint}?limit=${limit}`),
-          authService.authFetch("/api/review/stats"),
+        const [queueData, statsData] = await Promise.all([
+          apiGet(`${endpoint}?limit=${limit}`),
+          apiGet("/api/review/stats"),
         ]);
-
-        if (!queueRes.ok || !statsRes.ok)
-          throw new Error("Failed to load data");
-
-        const queueData = await queueRes.json();
-        const statsData = await statsRes.json();
 
         setQueue(queueData.items || []);
         setStats(statsData);
-        setIsRandomMode(isRandom);
         setCurrentIndex(0);
+        setIsRandomMode(isRandom);
         setLastResult(null);
         setUndoState(null);
       } catch (e) {
-        console.error("Failed to load review queue:", e);
+        console.error("Failed to load queue:", e);
       } finally {
         setLoading(false);
       }
@@ -143,19 +137,12 @@ export function useReviewQueue(options: ReviewQueueOptions = {}) {
         }
 
         const duration = Date.now() - startTime;
-        const res = await authService.authFetch("/api/review/complete", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            item_id: currentItem.id,
-            quality,
-            duration_ms: duration,
-          }),
+        const result = await apiPost("/api/review/complete", {
+          item_id: currentItem.id,
+          quality,
+          duration_ms: duration,
         });
 
-        if (!res.ok) throw new Error("Submit failed");
-
-        const result = await res.json();
         setLastResult(result);
 
         // Save undo state
@@ -197,12 +184,7 @@ export function useReviewQueue(options: ReviewQueueOptions = {}) {
 
     try {
       if (undoState.mode === "undo") {
-        const res = await authService.authFetch("/api/review/undo", {
-          method: "POST",
-        });
-        if (!res.ok) throw new Error("Undo failed");
-
-        const restoredItem = await res.json();
+        const restoredItem = await apiPost("/api/review/undo", {});
         setQueue((prev) => [restoredItem, ...prev]);
         setCurrentIndex(0);
         setLastResult(null);
@@ -214,19 +196,12 @@ export function useReviewQueue(options: ReviewQueueOptions = {}) {
           total_reviews: Math.max(0, prev.total_reviews - 1),
         }));
       } else {
-        const res = await authService.authFetch("/api/review/complete", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            item_id: undoState.itemId,
-            quality: undoState.quality,
-            duration_ms: undoState.durationMs,
-          }),
+        const result = await apiPost("/api/review/complete", {
+          item_id: undoState.itemId,
+          quality: undoState.quality,
+          duration_ms: undoState.durationMs,
         });
 
-        if (!res.ok) throw new Error("Redo failed");
-
-        const result = await res.json();
         setLastResult(result);
 
         setQueue((prev) => prev.slice(1));
@@ -259,11 +234,7 @@ export function useReviewQueue(options: ReviewQueueOptions = {}) {
 
     setLoadingContext(true);
     try {
-      const res = await authService.authFetch(
-        `/api/review/context/${currentItem.id}`,
-      );
-      if (!res.ok) throw new Error("Failed to fetch context");
-      const data = await res.json();
+      const data = await apiGet(`/api/review/context/${currentItem.id}`);
       setContextData(data);
       setShowContext(true);
     } catch (e) {

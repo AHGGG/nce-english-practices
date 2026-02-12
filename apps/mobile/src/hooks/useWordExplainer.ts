@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { authFetch } from "@nce/api";
+import { apiGet, apiPost } from "@nce/api";
 import EventSource from "react-native-sse";
 import { getApiBaseUrl } from "../lib/platform-init";
 
@@ -61,13 +61,14 @@ export function useWordExplainer() {
       word: string,
     ): Promise<InspectorData> => {
       try {
-        const [ldoceRes, collinsRes] = await Promise.all([
-          authFetch(`/api/dictionary/ldoce/${encodeURIComponent(word)}`),
-          authFetch(`/api/dictionary/collins/${encodeURIComponent(word)}`),
+        const [ldoceData, collinsData] = await Promise.all([
+          apiGet(`/api/dictionary/ldoce/${encodeURIComponent(word)}`).catch(
+            () => null,
+          ),
+          apiGet(`/api/dictionary/collins/${encodeURIComponent(word)}`).catch(
+            () => null,
+          ),
         ]);
-
-        const ldoceData = ldoceRes.ok ? await ldoceRes.json() : null;
-        const collinsData = collinsRes.ok ? await collinsRes.json() : null;
 
         return {
           word,
@@ -421,22 +422,12 @@ export function useWordExplainer() {
 
     setIsGeneratingImage(true);
     try {
-      const genRes = await authFetch("/api/generated-images/generate", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          word: selectedWord,
-          sentence: currentSentenceContext,
-          image_prompt: imagePrompt,
-        }),
+      const genData = await apiPost("/api/generated-images/generate", {
+        word: selectedWord,
+        sentence: currentSentenceContext,
+        image_prompt: imagePrompt,
       });
-
-      if (genRes.ok) {
-        const genData = await genRes.json();
-        setGeneratedImage(genData.image_url);
-      } else {
-        console.error("Generate API failed:", genRes.status);
-      }
+      setGeneratedImage(genData.image_url);
     } catch (e) {
       console.error("Image generation failed", e);
     } finally {

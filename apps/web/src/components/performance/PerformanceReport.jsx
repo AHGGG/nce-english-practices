@@ -11,12 +11,11 @@ import {
   RefreshCw,
   Target,
 } from "lucide-react";
-import api from "../../api/client";
 import Card from "./cards/Card";
 import MemoryCurveChart from "./widgets/MemoryCurveChart";
 import { formatDuration, formatWordCount } from "./utils";
 
-import { authFetch } from "../../api/auth";
+import { apiGet } from "../../api/auth";
 
 /**
  * Unified Learning Analytics Dashboard
@@ -32,10 +31,8 @@ const PerformanceReport = () => {
   useEffect(() => {
     // Don't setLoading(true) here - it's either initial true or set by onClick
     Promise.all([
-      api.get(`/api/performance?days=${days}`),
-      authFetch("/api/sentence-study/profile").then((r) =>
-        r.ok ? r.json() : null,
-      ),
+      apiGet(`/api/performance?days=${days}`),
+      apiGet("/api/sentence-study/profile"),
     ])
       .then(([performanceData, profileData]) => {
         setData(performanceData);

@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Clock, ChevronLeft, Calendar, BarChart2 } from "lucide-react";
-import api from "../../api/client";
+import { apiGet } from "../../api/auth";
 import Card from "./cards/Card";
 import StudyTimeChart from "./widgets/StudyTimeChart";
 import { formatDuration } from "./utils";
@@ -17,12 +17,11 @@ const StudyTimeDetail = () => {
 
   useEffect(() => {
     // setLoading(true); // Moved to onClick to avoid synchronous setState warning
-    api
-      .get(
-        `/api/performance/study-time?days=${days}&tz=${encodeURIComponent(userTimezone)}`,
-      )
-      .then((res) => {
-        setData(res);
+    apiGet(
+      `/api/performance/study-time?days=${days}&tz=${encodeURIComponent(userTimezone)}`,
+    )
+      .then((data) => {
+        setData(data);
         setLoading(false);
       })
       .catch((err) => {

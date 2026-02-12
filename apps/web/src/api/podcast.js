@@ -2,7 +2,7 @@
  * Podcast API client.
  */
 
-import { authFetch } from "./auth";
+import { authFetch, apiGet, apiPost, apiDelete } from "./auth";
 
 const BASE_URL = "/api/podcast";
 
@@ -31,10 +31,8 @@ export async function searchPodcasts(
 
   const params = new URLSearchParams({ q: query, limit, country });
   if (category) params.append("category", category);
-  const response = await authFetch(`${BASE_URL}/search?${params}`);
-  if (!response.ok) throw new Error("Search failed");
 
-  const data = await response.json();
+  const data = await apiGet(`${BASE_URL}/search?${params}`);
 
   // Update cache (limit size to 20 entries to prevent leaks)
   if (searchCache.size > 20) {
@@ -56,92 +54,56 @@ export async function getTrendingPodcasts({
 } = {}) {
   const params = new URLSearchParams({ limit, country });
   if (category) params.append("category", category);
-  const response = await authFetch(`${BASE_URL}/trending?${params}`);
-  if (!response.ok) throw new Error("Failed to get trending podcasts");
-  return response.json();
+  return apiGet(`${BASE_URL}/trending?${params}`);
 }
 
 /**
  * Get podcast categories.
  */
 export async function getCategories() {
-  const response = await authFetch(`${BASE_URL}/categories`);
-  if (!response.ok) throw new Error("Failed to get categories");
-  return response.json();
+  return apiGet(`${BASE_URL}/categories`);
 }
 
 /**
  * Preview a podcast by RSS URL (without subscribing).
  */
 export async function previewPodcast(rssUrl) {
-  const response = await authFetch(`${BASE_URL}/preview`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ rss_url: rssUrl }),
-  });
-  if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.detail || "Preview failed");
-  }
-  return response.json();
+  return apiPost(`${BASE_URL}/preview`, { rss_url: rssUrl });
 }
 
 /**
  * Subscribe to a podcast by RSS URL.
  */
 export async function subscribeToPodcast(rssUrl) {
-  const response = await authFetch(`${BASE_URL}/subscribe`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ rss_url: rssUrl }),
-  });
-  if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.detail || "Subscribe failed");
-  }
-  return response.json();
+  return apiPost(`${BASE_URL}/subscribe`, { rss_url: rssUrl });
 }
 
 /**
  * Unsubscribe from a podcast.
  */
 export async function unsubscribeFromPodcast(feedId) {
-  const response = await authFetch(`${BASE_URL}/feed/${feedId}`, {
-    method: "DELETE",
-  });
-  if (!response.ok) throw new Error("Unsubscribe failed");
-  return response.json();
+  return apiDelete(`${BASE_URL}/feed/${feedId}`);
 }
 
 /**
  * Get all subscribed podcasts.
  */
 export async function getSubscriptions() {
-  const response = await authFetch(`${BASE_URL}/feeds`);
-  if (!response.ok) throw new Error("Failed to get subscriptions");
-  return response.json();
+  return apiGet(`${BASE_URL}/feeds`);
 }
 
 /**
  * Get feed details with episodes.
  */
 export async function getFeedDetail(feedId, limit = 50, offset = 0) {
-  const response = await authFetch(
-    `${BASE_URL}/feed/${feedId}?limit=${limit}&offset=${offset}`,
-  );
-  if (!response.ok) throw new Error("Failed to get feed");
-  return response.json();
+  return apiGet(`${BASE_URL}/feed/${feedId}?limit=${limit}&offset=${offset}`);
 }
 
 /**
  * Refresh a feed for new episodes.
  */
 export async function refreshFeed(feedId) {
-  const response = await authFetch(`${BASE_URL}/feed/${feedId}/refresh`, {
-    method: "POST",
-  });
-  if (!response.ok) throw new Error("Refresh failed");
-  return response.json();
+  return apiPost(`${BASE_URL}/feed/${feedId}/refresh`);
 }
 
 /**
@@ -151,6 +113,7 @@ export async function importOPML(file) {
   const formData = new FormData();
   formData.append("file", file);
 
+  // Use authFetch for FormData (no Content-Type header needed)
   const response = await authFetch(`${BASE_URL}/opml/import`, {
     method: "POST",
     body: formData,
@@ -169,12 +132,9 @@ export async function importOPMLStreaming(file, onProgress) {
   const formData = new FormData();
   formData.append("file", file);
 
-  // Get token for auth header
-  const token = localStorage.getItem("access_token");
-
-  const response = await fetch(`${BASE_URL}/opml/import/stream`, {
+  // Use authFetch for streaming - it handles token management properly
+  const response = await authFetch(`${BASE_URL}/opml/import/stream`, {
     method: "POST",
-    headers: token ? { Authorization: `Bearer ${token}` } : {},
     body: formData,
   });
 
@@ -239,13 +199,7 @@ export async function exportOPML() {
  * Start a listening session.
  */
 export async function startListeningSession(episodeId) {
-  const response = await authFetch(`${BASE_URL}/session/start`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ episode_id: episodeId }),
-  });
-  if (!response.ok) throw new Error("Failed to start session");
-  return response.json();
+  return apiPost(`${BASE_URL}/session/start`, { episode_id: episodeId });
 }
 
 /**
@@ -257,18 +211,12 @@ export async function updateListeningSession(
   position,
   isFinished = false,
 ) {
-  const response = await authFetch(`${BASE_URL}/session/update`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      session_id: sessionId,
-      total_listened_seconds: Math.floor(totalSeconds),
-      last_position_seconds: position,
-      is_finished: isFinished,
-    }),
+  return apiPost(`${BASE_URL}/session/update`, {
+    session_id: sessionId,
+    total_listened_seconds: Math.floor(totalSeconds),
+    last_position_seconds: position,
+    is_finished: isFinished,
   });
-  if (!response.ok) throw new Error("Failed to update session");
-  return response.json();
 }
 
 /**
@@ -280,27 +228,19 @@ export async function endListeningSession(
   position,
   isFinished = false,
 ) {
-  const response = await authFetch(`${BASE_URL}/session/end`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      session_id: sessionId,
-      total_listened_seconds: Math.floor(totalSeconds),
-      last_position_seconds: position,
-      is_finished: isFinished,
-    }),
+  return apiPost(`${BASE_URL}/session/end`, {
+    session_id: sessionId,
+    total_listened_seconds: Math.floor(totalSeconds),
+    last_position_seconds: position,
+    is_finished: isFinished,
   });
-  if (!response.ok) throw new Error("Failed to end session");
-  return response.json();
 }
 
 /**
  * Get last playback position for resume.
  */
 export async function getEpisodePosition(episodeId) {
-  const response = await authFetch(`${BASE_URL}/episode/${episodeId}/position`);
-  if (!response.ok) throw new Error("Failed to get position");
-  return response.json();
+  return apiGet(`${BASE_URL}/episode/${episodeId}/position`);
 }
 
 /**
@@ -309,24 +249,15 @@ export async function getEpisodePosition(episodeId) {
  * @param {object} data - { position, timestamp, deviceId, deviceType, playbackRate }
  */
 export async function syncPosition(episodeId, data) {
-  const response = await authFetch(
-    `${BASE_URL}/episode/${episodeId}/position/sync`,
-    {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        position: data.position,
-        is_finished: data.isFinished || false,
-        duration: data.duration,
-        timestamp: data.timestamp,
-        device_id: data.deviceId,
-        device_type: data.deviceType,
-        playback_rate: data.playbackRate,
-      }),
-    },
-  );
-  if (!response.ok) throw new Error("Sync failed");
-  return response.json();
+  return apiPost(`${BASE_URL}/episode/${episodeId}/position/sync`, {
+    position: data.position,
+    is_finished: data.isFinished || false,
+    duration: data.duration,
+    timestamp: data.timestamp,
+    device_id: data.deviceId,
+    device_type: data.deviceType,
+    playback_rate: data.playbackRate,
+  });
 }
 
 /**
@@ -343,42 +274,26 @@ export async function transcribeEpisode(
   remoteUrl = null,
   apiKey = null,
 ) {
-  const response = await authFetch(
-    `${BASE_URL}/episode/${episodeId}/transcribe`,
-    {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        force,
-        remote_url: remoteUrl || undefined,
-        api_key: apiKey || undefined,
-      }),
-    },
-  );
-
-  if (response.status === 409) {
-    const data = await response.json();
-    return { status: "in_progress", message: data.detail };
+  try {
+    return await apiPost(`${BASE_URL}/episode/${episodeId}/transcribe`, {
+      force,
+      remote_url: remoteUrl || undefined,
+      api_key: apiKey || undefined,
+    });
+  } catch (error) {
+    // Handle 409 Conflict specially
+    if (error.status === 409) {
+      return { status: "in_progress", message: error.message };
+    }
+    throw error;
   }
-
-  if (!response.ok) {
-    const error = await response
-      .json()
-      .catch(() => ({ detail: "Transcription failed" }));
-    throw new Error(error.detail || "Transcription failed");
-  }
-  return response.json();
 }
 
 /**
  * Get recently played episodes with resume positions.
  */
 export async function getRecentlyPlayed(limit = 10) {
-  const response = await authFetch(
-    `${BASE_URL}/recently-played?limit=${limit}`,
-  );
-  if (!response.ok) throw new Error("Failed to get recently played");
-  return response.json();
+  return apiGet(`${BASE_URL}/recently-played?limit=${limit}`);
 }
 
 /**
@@ -387,13 +302,9 @@ export async function getRecentlyPlayed(limit = 10) {
  * @returns {Promise<{updated: Object.<number, number>}>}
  */
 export async function checkEpisodeSizes(episodeIds) {
-  const response = await authFetch(`${BASE_URL}/episodes/check-size`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ episode_ids: episodeIds }),
+  return apiPost(`${BASE_URL}/episodes/check-size`, {
+    episode_ids: episodeIds,
   });
-  if (!response.ok) throw new Error("Failed to check sizes");
-  return response.json();
 }
 
 /**
@@ -411,9 +322,7 @@ export async function downloadEpisode(episodeId) {
  * @returns {Promise<object>}
  */
 export async function getEpisodeDetail(episodeId) {
-  const response = await authFetch(`${BASE_URL}/episode/${episodeId}`);
-  if (!response.ok) throw new Error("Failed to get episode");
-  return response.json();
+  return apiGet(`${BASE_URL}/episode/${episodeId}`);
 }
 
 /**
@@ -423,13 +332,7 @@ export async function getEpisodeDetail(episodeId) {
  * @returns {Promise<Array<{episode: object, feed: object}>>}
  */
 export async function getEpisodesBatch(episodeIds) {
-  const response = await authFetch(`${BASE_URL}/episodes/batch`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ episode_ids: episodeIds }),
-  });
-  if (!response.ok) throw new Error("Failed to get episodes");
-  return response.json();
+  return apiPost(`${BASE_URL}/episodes/batch`, { episode_ids: episodeIds });
 }
 
 /**
@@ -437,14 +340,5 @@ export async function getEpisodesBatch(episodeIds) {
  * Note: Caller must provide data with backend-compatible keys (snake_case).
  */
 export async function resolvePosition(episodeId, data) {
-  const response = await authFetch(
-    `${BASE_URL}/episode/${episodeId}/position/resolve`,
-    {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(data),
-    },
-  );
-  if (!response.ok) throw new Error("Resolve failed");
-  return response.json();
+  return apiPost(`${BASE_URL}/episode/${episodeId}/position/resolve`, data);
 }

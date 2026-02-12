@@ -1,53 +1,38 @@
-import { authFetch } from "../auth";
+import { apiGet, apiPost, authFetch } from "../auth";
 
 export const sentenceStudyApi = {
   // Get books for sentence study
   async getBooks() {
-    const res = await authFetch("/api/reading/epub/books");
-    if (!res.ok) throw new Error("Failed to get books");
-    return res.json();
+    return apiGet("/api/reading/epub/books");
   },
 
   // Get articles for a book (with status)
   async getArticles(filename?: string) {
     const params = filename ? `?filename=${encodeURIComponent(filename)}` : "";
-    const res = await authFetch(`/api/reading/epub/list-with-status${params}`);
-    if (!res.ok) throw new Error("Failed to get articles");
-    return res.json();
+    return apiGet(`/api/reading/epub/list-with-status${params}`);
   },
 
   // Get study progress
   async getProgress(sourceId: string) {
     console.log("[sentenceStudyApi.getProgress] Requesting:", sourceId);
-    const res = await authFetch(
-      `/api/sentence-study/${encodeURIComponent(sourceId)}/progress`,
-    );
-    console.log("[sentenceStudyApi.getProgress] Status:", res.status);
-    if (!res.ok) {
-      const text = await res.text();
-      console.log(
-        "[sentenceStudyApi.getProgress] Error response:",
-        text.substring(0, 200),
+    try {
+      const data = await apiGet(
+        `/api/sentence-study/${encodeURIComponent(sourceId)}/progress`,
       );
-      throw new Error(`Failed to get progress: ${res.status}`);
+      console.log(
+        "[sentenceStudyApi.getProgress] Response preview:",
+        JSON.stringify(data).substring(0, 200),
+      );
+      return data;
+    } catch (error) {
+      console.log("[sentenceStudyApi.getProgress] Error:", error);
+      throw error;
     }
-    const text = await res.text();
-    console.log(
-      "[sentenceStudyApi.getProgress] Response preview:",
-      text.substring(0, 200),
-    );
-    return JSON.parse(text);
   },
 
   // Record learning result
   async recordLearning(data: any) {
-    const res = await authFetch("/api/sentence-study/record", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(data),
-    });
-    if (!res.ok) throw new Error("Failed to record learning");
-    return res.json();
+    return apiPost("/api/sentence-study/record", data);
   },
 
   // Simplify sentence (streaming handled by parser)
@@ -81,48 +66,44 @@ export const sentenceStudyApi = {
 
   // Get completed session highlights
   async getStudyHighlights(sourceId: string, totalSentences: number) {
-    const res = await authFetch(
-      `/api/sentence-study/${encodeURIComponent(sourceId)}/study-highlights?total_sentences=${totalSentences}`,
-    );
-    if (!res.ok)
+    try {
+      return await apiGet(
+        `/api/sentence-study/${encodeURIComponent(sourceId)}/study-highlights?total_sentences=${totalSentences}`,
+      );
+    } catch {
       return { word_clicks: [], phrase_clicks: [], is_complete: false };
-    return res.json();
+    }
   },
 
   // Detect collocations
   async detectCollocations(sentence: string) {
-    const res = await authFetch("/api/sentence-study/detect-collocations", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ sentence }),
-    });
-    if (!res.ok) return { collocations: [] };
-    return res.json();
+    try {
+      return await apiPost("/api/sentence-study/detect-collocations", {
+        sentence,
+      });
+    } catch {
+      return { collocations: [] };
+    }
   },
 
   // Detect collocations for multiple sentences at once (batch)
   async detectCollocationsBatch(
     sentences: string[],
   ): Promise<{ results: Record<string, any[]> }> {
-    const res = await authFetch(
-      "/api/sentence-study/detect-collocations-batch",
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ sentences: sentences.slice(0, 10) }),
-      },
-    );
-    if (!res.ok) return { results: {} };
-    return res.json();
+    try {
+      return await apiPost("/api/sentence-study/detect-collocations-batch", {
+        sentences: sentences.slice(0, 10),
+      });
+    } catch {
+      return { results: {} };
+    }
   },
 
   // Prefetch collocations (fire-and-forget)
   prefetchCollocations(sentences: string[]) {
     if (!sentences?.length) return;
-    authFetch("/api/sentence-study/prefetch-collocations", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ sentences: sentences.slice(0, 5) }),
+    apiPost("/api/sentence-study/prefetch-collocations", {
+      sentences: sentences.slice(0, 5),
     }).catch(() => {});
   },
 };

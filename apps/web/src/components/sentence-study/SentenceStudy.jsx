@@ -28,7 +28,7 @@ import { useGlobalState } from "../../context/GlobalContext";
 import { parseJSONSSEStream, isSSEResponse } from "../../utils/sseParser";
 import { useToast } from "../../components/ui/Toast";
 
-import { authFetch } from "../../api/auth";
+import { apiPut } from "../../api/auth";
 
 // View components
 import {
@@ -676,22 +676,11 @@ const SentenceStudy = () => {
 
       // 2. Perform API call in background
       try {
-        const res = await authFetch("/api/proficiency/word", {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ word, status: "mastered" }),
-        });
-
-        if (res.ok) {
-          addToast(`Marked "${word}" as known`, "success");
-        } else {
-          console.error("API error:", res.status);
-          // Optional: Revert UI state if critical, but for "Mark Known" usually fine to just warn
-          addToast("Failed to sync status to server", "error");
-        }
+        await apiPut("/api/proficiency/word", { word, status: "mastered" });
+        addToast(`Marked "${word}" as known`, "success");
       } catch (e) {
         console.error("Failed to mark word as known:", e);
-        addToast("Network error - saved locally", "warning");
+        addToast("Failed to sync status to server", "error");
       }
     },
     [closeInspector, addToast],

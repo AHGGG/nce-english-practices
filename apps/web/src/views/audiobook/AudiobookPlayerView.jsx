@@ -13,7 +13,7 @@ import {
   PanelRight,
   X,
 } from "lucide-react";
-import { authFetch } from "../../api/auth";
+import { apiGet } from "../../api/auth";
 import {
   rendererRegistry,
   initializeRenderers,
@@ -64,11 +64,9 @@ export default function AudiobookPlayerView() {
       setIsLoading(true);
       setError(null);
       try {
-        const res = await authFetch(
+        const data = await apiGet(
           `/api/content/audiobook/${bookId}?track=${currentTrack}`,
         );
-        if (!res.ok) throw new Error("Failed to fetch audiobook");
-        const data = await res.json();
         setBundle(data);
       } catch (err) {
         setError(err.message);

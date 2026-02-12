@@ -4,7 +4,7 @@
  * Dictionary lookup functionality.
  */
 
-import { authFetch } from "../auth";
+import { apiGet } from "../auth";
 
 export interface DictionaryEntry {
   word: string;
@@ -28,22 +28,24 @@ export const dictionaryApi = {
    * Look up word in LDOCE dictionary
    */
   async lookupLdoce(word: string): Promise<DictionaryEntry | null> {
-    const res = await authFetch(
-      `/api/dictionary/ldoce/${encodeURIComponent(word)}`,
-    );
-    if (!res.ok) return null;
-    return res.json();
+    try {
+      return await apiGet(`/api/dictionary/ldoce/${encodeURIComponent(word)}`);
+    } catch {
+      return null;
+    }
   },
 
   /**
    * Look up word in Collins dictionary
    */
   async lookupCollins(word: string): Promise<DictionaryEntry | null> {
-    const res = await authFetch(
-      `/api/dictionary/collins/${encodeURIComponent(word)}`,
-    );
-    if (!res.ok) return null;
-    return res.json();
+    try {
+      return await apiGet(
+        `/api/dictionary/collins/${encodeURIComponent(word)}`,
+      );
+    } catch {
+      return null;
+    }
   },
 
   /**

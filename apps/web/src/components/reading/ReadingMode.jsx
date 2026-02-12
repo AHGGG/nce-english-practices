@@ -11,29 +11,15 @@ import {
   mapLevelToOptionIndex,
 } from "./constants";
 import { useGlobalState } from "../../context/GlobalContext";
-import { authFetch } from "../../api/auth";
+import { apiGet, apiPost, apiPut } from "../../api/auth";
 import { useCollocationLoader, useWordExplainer } from "@nce/shared";
 
 import { useToast, Dialog, DialogButton } from "../ui";
 
 // Simple API helper for ReadingTracker
 const api = {
-  post: async (url, data) => {
-    const res = await authFetch(url, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(data),
-    });
-    return res.json();
-  },
-  put: async (url, data) => {
-    const res = await authFetch(url, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(data),
-    });
-    return res.json();
-  },
+  post: apiPost,
+  put: apiPut,
 };
 
 /**
@@ -134,15 +120,12 @@ const ReadingMode = () => {
   // Fetch available books
   const fetchBooks = async () => {
     try {
-      const res = await authFetch("/api/reading/epub/books");
-      if (res.ok) {
-        const data = await res.json();
-        setBooks(data.books || []);
-        if (data.books && data.books.length > 0) {
-          // Default to first book if no selection
-          // Or could be persistent in localStorage later
-          setSelectedBookFilename(data.books[0].filename);
-        }
+      const data = await apiGet("/api/reading/epub/books");
+      setBooks(data.books || []);
+      if (data.books && data.books.length > 0) {
+        // Default to first book if no selection
+        // Or could be persistent in localStorage later
+        setSelectedBookFilename(data.books[0].filename);
       }
     } catch (e) {
       console.error("Failed to fetch books:", e);
@@ -159,16 +142,13 @@ const ReadingMode = () => {
   // Fetch user's calibration level and auto-select highlight option
   const fetchCalibrationLevel = async () => {
     try {
-      const res = await authFetch("/api/proficiency/calibration/level");
-      if (res.ok) {
-        const data = await res.json();
-        if (data.level !== null && data.level !== undefined) {
-          const optionIndex = mapLevelToOptionIndex(data.level);
-          setSelectedOptionIndex(optionIndex);
-          setCalibrationBanner(
-            `Based on your calibration (Level ${data.level}), we suggest: ${HIGHLIGHT_OPTIONS[optionIndex].label}`,
-          );
-        }
+      const data = await apiGet("/api/proficiency/calibration/level");
+      if (data.level !== null && data.level !== undefined) {
+        const optionIndex = mapLevelToOptionIndex(data.level);
+        setSelectedOptionIndex(optionIndex);
+        setCalibrationBanner(
+          `Based on your calibration (Level ${data.level}), we suggest: ${HIGHLIGHT_OPTIONS[optionIndex].label}`,
+        );
       }
     } catch (e) {
       console.error("Failed to fetch calibration level:", e);
@@ -189,27 +169,24 @@ const ReadingMode = () => {
     setIsLoading(true);
     try {
       // Use merged endpoint for better performance (single request instead of two)
-      const res = await authFetch(
+      const data = await apiGet(
         `/api/reading/epub/list-with-status?filename=${encodeURIComponent(filename)}`,
       );
-      if (res.ok) {
-        const data = await res.json();
-        const articlesData = data.articles || [];
+      const articlesData = data.articles || [];
 
-        setArticles(
-          articlesData.sort((a, b) => {
-            const timeA = Math.max(
-              new Date(a.last_read || 0).getTime(),
-              new Date(a.last_studied_at || 0).getTime(),
-            );
-            const timeB = Math.max(
-              new Date(b.last_read || 0).getTime(),
-              new Date(b.last_studied_at || 0).getTime(),
-            );
-            return timeB - timeA;
-          }),
-        );
-      }
+      setArticles(
+        articlesData.sort((a, b) => {
+          const timeA = Math.max(
+            new Date(a.last_read || 0).getTime(),
+            new Date(a.last_studied_at || 0).getTime(),
+          );
+          const timeB = Math.max(
+            new Date(b.last_read || 0).getTime(),
+            new Date(b.last_studied_at || 0).getTime(),
+          );
+          return timeB - timeA;
+        }),
+      );
     } catch (e) {
       console.error(e);
     }
@@ -231,49 +208,46 @@ const ReadingMode = () => {
         }
       }
 
-      const res = await authFetch(url);
-      if (res.ok) {
-        const data = await res.json();
-        // Vocabulary highlights (COCA, CET-4, etc.)
-        data.highlightSet = new Set(
-          (data.highlights || []).map((w) => w.toLowerCase()),
-        );
-        // Study highlights - separate words and phrases for different rendering
-        // Words: single words looked up → amber underline
-        // Phrases: multi-word phrases → matched via collocation detection → amber background
-        data.studyWordSet = new Set();
-        data.studyPhraseSet = new Set();
-        (data.study_highlights || []).forEach((item) => {
-          const lower = item.toLowerCase().trim();
-          if (lower.includes(" ")) {
-            data.studyPhraseSet.add(lower);
-          } else if (lower.length > 1) {
-            data.studyWordSet.add(lower);
-          }
-        });
-        // Unclear sentence map (sentence_index -> unclear info)
-        data.unclearSentenceMap = {};
-        (data.unclear_sentences || []).forEach((info) => {
-          data.unclearSentenceMap[info.sentence_index] = info;
-        });
-        setSelectedArticle(data);
-        setVisibleCount(BATCH_SIZE);
-
-        // Start reading session tracking
-        if (trackerRef.current) {
-          await trackerRef.current.end();
+      const data = await apiGet(url);
+      // Vocabulary highlights (COCA, CET-4, etc.)
+      data.highlightSet = new Set(
+        (data.highlights || []).map((w) => w.toLowerCase()),
+      );
+      // Study highlights - separate words and phrases for different rendering
+      // Words: single words looked up → amber underline
+      // Phrases: multi-word phrases → matched via collocation detection → amber background
+      data.studyWordSet = new Set();
+      data.studyPhraseSet = new Set();
+      (data.study_highlights || []).forEach((item) => {
+        const lower = item.toLowerCase().trim();
+        if (lower.includes(" ")) {
+          data.studyPhraseSet.add(lower);
+        } else if (lower.length > 1) {
+          data.studyWordSet.add(lower);
         }
-        trackerRef.current = new ReadingTracker(
-          {
-            id: sourceId,
-            source_type: "epub",
-            title: data.title,
-            sentences: data.sentences?.map((s) => s.text || s) || [],
-          },
-          api,
-        );
-        await trackerRef.current.start();
+      });
+      // Unclear sentence map (sentence_index -> unclear info)
+      data.unclearSentenceMap = {};
+      (data.unclear_sentences || []).forEach((info) => {
+        data.unclearSentenceMap[info.sentence_index] = info;
+      });
+      setSelectedArticle(data);
+      setVisibleCount(BATCH_SIZE);
+
+      // Start reading session tracking
+      if (trackerRef.current) {
+        await trackerRef.current.end();
       }
+      trackerRef.current = new ReadingTracker(
+        {
+          id: sourceId,
+          source_type: "epub",
+          title: data.title,
+          sentences: data.sentences?.map((s) => s.text || s) || [],
+        },
+        api,
+      );
+      await trackerRef.current.start();
     } catch (e) {
       console.error(e);
     }

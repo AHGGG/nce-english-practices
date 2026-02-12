@@ -1,4 +1,4 @@
-import { authFetch } from "../auth";
+import { apiGet, apiPost, authFetch } from "../auth";
 
 export interface VocabularyLogRequest {
   word: string;
@@ -28,15 +28,10 @@ export const vocabularyApi = {
    * Log a vocabulary lookup event
    */
   async logLookup(data: VocabularyLogRequest) {
-    const res = await authFetch("/api/vocabulary/log", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        source_type: "sentence_study",
-        ...data,
-      }),
+    return apiPost("/api/vocabulary/log", {
+      source_type: "sentence_study",
+      ...data,
     });
-    return res.json();
   },
 
   /**
@@ -46,18 +41,16 @@ export const vocabularyApi = {
     word: string,
     limit: number = 50,
   ): Promise<VocabularyContext[]> {
-    const res = await authFetch(
+    return apiGet(
       `/api/vocabulary/contexts?word=${encodeURIComponent(word)}&limit=${limit}`,
     );
-    return res.json();
   },
 
   /**
    * Get difficult words list
    */
   async getDifficultWords(): Promise<DifficultWordsResponse> {
-    const res = await authFetch("/api/vocabulary/difficult-words");
-    return res.json();
+    return apiGet("/api/vocabulary/difficult-words");
   },
 
   /**
@@ -100,9 +93,7 @@ export const vocabularyApi = {
 
     // Let's implement a safe fetch that returns empty if 404
     try {
-      const res = await authFetch(url);
-      if (!res.ok) return { words: [] };
-      return res.json();
+      return await apiGet(url);
     } catch (e) {
       console.warn("Failed to fetch vocabulary list", e);
       return { words: [] };

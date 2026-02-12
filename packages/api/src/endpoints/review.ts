@@ -1,4 +1,4 @@
-import { authFetch } from "../auth";
+import { apiGet, apiPost } from "../auth";
 
 export interface ReviewQueueItem {
   id: number;
@@ -38,8 +38,7 @@ export const reviewApi = {
    * Get review items that are due for review
    */
   async getQueue(limit: number = 20): Promise<ReviewQueueResponse> {
-    const res = await authFetch(`/api/review/queue?limit=${limit}`);
-    return res.json();
+    return apiGet(`/api/review/queue?limit=${limit}`);
   },
 
   /**
@@ -69,13 +68,7 @@ export const reviewApi = {
       difficulty_type: "vocabulary",
     };
 
-    const res = await authFetch("/api/review/create", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body),
-    });
-
-    return res.json();
+    return apiPost("/api/review/create", body);
   },
 
   /**
@@ -86,33 +79,24 @@ export const reviewApi = {
     quality: number,
     durationMs: number = 0,
   ) {
-    const res = await authFetch("/api/review/complete", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        item_id: itemId,
-        quality,
-        duration_ms: durationMs,
-      }),
+    return apiPost("/api/review/complete", {
+      item_id: itemId,
+      quality,
+      duration_ms: durationMs,
     });
-    return res.json();
   },
 
   /**
    * Undo the last review
    */
   async undoLastReview() {
-    const res = await authFetch("/api/review/undo", {
-      method: "POST",
-    });
-    return res.json();
+    return apiPost("/api/review/undo", {});
   },
 
   /**
    * Get review statistics
    */
   async getStats() {
-    const res = await authFetch("/api/review/stats");
-    return res.json();
+    return apiGet("/api/review/stats");
   },
 };

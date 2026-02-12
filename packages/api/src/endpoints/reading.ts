@@ -5,7 +5,7 @@
  * Used by both Web and Mobile apps.
  */
 
-import { authFetch } from "../auth";
+import { apiGet, apiPost, apiPut } from "../auth";
 
 // Request/Response types
 export interface StartSessionRequest {
@@ -50,9 +50,7 @@ export const readingApi = {
     if (filename) {
       url += `?filename=${encodeURIComponent(filename)}`;
     }
-    const res = await authFetch(url);
-    if (!res.ok) throw new Error("Failed to fetch articles");
-    return res.json();
+    return apiGet(url);
   },
 
   /**
@@ -60,37 +58,18 @@ export const readingApi = {
    */
   async getArticleDetail(id: string) {
     console.log("[readingApi.getArticleDetail] Requesting source_id:", id);
-    const res = await authFetch(
-      `/api/reading/article?source_id=${encodeURIComponent(id)}`,
-    );
-
-    console.log("[readingApi.getArticleDetail] Response status:", res.status);
-    console.log(
-      "[readingApi.getArticleDetail] Content-Type:",
-      res.headers.get("content-type"),
-    );
-
-    if (!res.ok) {
-      const errorText = await res.text().catch(() => "Unknown error");
-      console.log(
-        "[readingApi.getArticleDetail] Error response:",
-        errorText.substring(0, 200),
-      );
-      throw new Error(`Failed to fetch article (${res.status}): ${errorText}`);
-    }
-
-    const text = await res.text();
-    console.log(
-      "[readingApi.getArticleDetail] Response preview:",
-      text.substring(0, 200),
-    );
-
-    // Try to parse as JSON
     try {
-      return JSON.parse(text);
-    } catch (e) {
-      console.error("[readingApi.getArticleDetail] JSON parse error:", e);
-      throw new Error("Invalid JSON response from article endpoint");
+      const data = await apiGet(
+        `/api/reading/article?source_id=${encodeURIComponent(id)}`,
+      );
+      console.log(
+        "[readingApi.getArticleDetail] Response preview:",
+        JSON.stringify(data).substring(0, 200),
+      );
+      return data;
+    } catch (error) {
+      console.error("[readingApi.getArticleDetail] Error:", error);
+      throw error;
     }
   },
 
@@ -98,56 +77,34 @@ export const readingApi = {
    * Start a new reading session
    */
   async startSession(data: StartSessionRequest): Promise<StartSessionResponse> {
-    const res = await authFetch("/api/reading/start", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(data),
-    });
-    return res.json();
+    return apiPost("/api/reading/start", data);
   },
 
   /**
    * Send heartbeat to update session progress
    */
   async sendHeartbeat(data: HeartbeatRequest): Promise<{ success: boolean }> {
-    const res = await authFetch("/api/reading/heartbeat", {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(data),
-    });
-    return res.json();
+    return apiPut("/api/reading/heartbeat", data);
   },
 
   /**
    * End reading session
    */
   async endSession(data: EndSessionRequest): Promise<EndSessionResponse> {
-    const res = await authFetch("/api/reading/end", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(data),
-    });
-    return res.json();
+    return apiPost("/api/reading/end", data);
   },
 
   /**
    * Record word click (high-confidence reading signal)
    */
   async recordWordClick(sessionId: number): Promise<{ success: boolean }> {
-    const res = await authFetch("/api/reading/word-click", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ session_id: sessionId }),
-    });
-    return res.json();
+    return apiPost("/api/reading/word-click", { session_id: sessionId });
   },
 
   /**
    * Get reading statistics
    */
   async getStats() {
-    const res = await authFetch("/api/reading/stats");
-    if (!res.ok) throw new Error("Failed to fetch reading stats");
-    return res.json();
+    return apiGet("/api/reading/stats");
   },
 };

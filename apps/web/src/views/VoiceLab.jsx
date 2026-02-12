@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, Button, Tag } from "../components/ui";
 
-import { authFetch } from "../api/auth";
+import { apiGet } from "../api/auth";
 
 import TTSPanel from "../components/VoiceLab/TTSPanel";
 import STTPanel from "../components/VoiceLab/STTPanel";
@@ -65,8 +65,7 @@ const VoiceLab = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    authFetch("/api/voice-lab/config")
-      .then((res) => res.json())
+    apiGet("/api/voice-lab/config")
       .then((data) => {
         setConfig(data);
         setLoading(false);

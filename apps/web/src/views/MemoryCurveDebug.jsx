@@ -12,7 +12,7 @@ import {
   BookOpen,
   HelpCircle,
 } from "lucide-react";
-import { authFetch } from "../api/auth";
+import { apiGet } from "../api/auth";
 
 const MemoryCurveDebug = () => {
   const [data, setData] = useState(null);
@@ -27,11 +27,8 @@ const MemoryCurveDebug = () => {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const res = await authFetch("/api/review/debug/memory-curve");
-      if (res.ok) {
-        const json = await res.json();
-        setData(json);
-      }
+      const json = await apiGet("/api/review/debug/memory-curve");
+      setData(json);
     } catch (err) {
       console.error(err);
     } finally {

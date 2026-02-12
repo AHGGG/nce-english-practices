@@ -17,7 +17,7 @@ import {
 import { escapeHtml } from "../../utils/security";
 import VoiceSessionTracker from "../../utils/VoiceSessionTracker";
 
-import { authFetch } from "../../api/auth";
+import { authFetch, apiGet, apiPost, apiPut } from "../../api/auth";
 
 const NegotiationInterface = () => {
   const [sessionId, setSessionId] = useState(`session-${Date.now()}`);
@@ -85,26 +85,10 @@ const NegotiationInterface = () => {
 
   // Load voices and books on mount
   useEffect(() => {
-    // Initialize tracker with authFetch adapter to support token refresh
+    // Initialize tracker with API adapter to support token refresh
     const trackerApi = {
-      post: async (url, data) => {
-        const res = await authFetch(url, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(data),
-        });
-        if (!res.ok) throw new Error(`Tracker POST failed: ${res.status}`);
-        return res.json();
-      },
-      put: async (url, data) => {
-        const res = await authFetch(url, {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(data),
-        });
-        if (!res.ok) throw new Error(`Tracker PUT failed: ${res.status}`);
-        return res.json();
-      },
+      post: apiPost,
+      put: apiPut,
     };
     trackerRef.current = new VoiceSessionTracker(trackerApi);
 
@@ -115,15 +99,12 @@ const NegotiationInterface = () => {
 
     const fetchBooks = async () => {
       try {
-        const res = await authFetch("/api/books/");
-        if (res.ok) {
-          const data = await res.json();
-          setBooks(data);
-          // Default to first book if available (e.g. CET4), or keep empty for mixed
-          // If we want "Random Mix" as default, leave it empty.
-          // If we want to nudge user to a book, select first.
-          // Let's leave it empty (Random Mix) by default, or better: select nothing
-        }
+        const data = await apiGet("/api/books/");
+        setBooks(data);
+        // Default to first book if available (e.g. CET4), or keep empty for mixed
+        // If we want "Random Mix" as default, leave it empty.
+        // If we want to nudge user to a book, select first.
+        // Let's leave it empty (Random Mix) by default, or better: select nothing
       } catch (e) {
         console.error("Failed to fetch books", e);
       }
@@ -306,39 +287,35 @@ const NegotiationInterface = () => {
       }
 
       // Fetch real content from dictionary
-      const contentRes = await authFetch(getContentUrl());
-      let content = {
+      const content = await apiGet(getContentUrl()).catch(() => ({
         text: "The ubiquity of smartphones has changed how we communicate.",
         source_word: "ubiquity",
         definition: "",
         translation: "",
-      };
+      }));
 
-      if (contentRes.ok) {
-        content = await contentRes.json();
-        setCurrentText(content.text);
-        setSourceWord(content.source_word || "");
-        setDefinition(content.definition || "");
-        setTranslation(content.translation || "");
-        setHighlightedWords(content.highlights || []);
-        setArticleTitle(content.article_title || "");
-        setArticleLink(content.article_link || "");
+      setCurrentText(content.text);
+      setSourceWord(content.source_word || "");
+      setDefinition(content.definition || "");
+      setTranslation(content.translation || "");
+      setHighlightedWords(content.highlights || []);
+      setArticleTitle(content.article_title || "");
+      setArticleLink(content.article_link || "");
 
-        // Store sequential reading metadata
-        if (content.article_idx !== undefined) {
-          setRssArticleIdx(content.article_idx);
-          setRssSentenceIdx(content.sentence_idx || 0);
-          setRssTotalSentences(content.total_sentences || 0);
-          setRssHasNext(content.has_next || false);
-        }
+      // Store sequential reading metadata
+      if (content.article_idx !== undefined) {
+        setRssArticleIdx(content.article_idx);
+        setRssSentenceIdx(content.sentence_idx || 0);
+        setRssTotalSentences(content.total_sentences || 0);
+        setRssHasNext(content.has_next || false);
+      }
 
-        // Store raw content for debugging
-        setRawContent(content.raw_content || "");
+      // Store raw content for debugging
+      setRawContent(content.raw_content || "");
 
-        // Also fetch all examples for this word (only in Dictionary mode or when clicked)
-        if (content.source_word && !isRssMode) {
-          fetchWordExamples(content.source_word);
-        }
+      // Also fetch all examples for this word (only in Dictionary mode or when clicked)
+      if (content.source_word && !isRssMode) {
+        fetchWordExamples(content.source_word);
       }
 
       // Just speak the content - don't call /interact yet
@@ -399,12 +376,7 @@ const NegotiationInterface = () => {
         setNeedsContext(false); // Reset flag
       }
 
-      const res = await authFetch("/api/negotiation/interact", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(requestBody),
-      });
-      const data = await res.json();
+      const data = await apiPost("/api/negotiation/interact", requestBody);
       handleResponse(data);
     } catch (e) {
       console.error(e);
@@ -578,45 +550,42 @@ const NegotiationInterface = () => {
   // Fetch real content from the ContentFeeder API
   const fetchNextContent = async (excludeWord = null, customIndices = null) => {
     try {
-      const res = await authFetch(getContentUrl(excludeWord, customIndices));
-      if (res.ok) {
-        const data = await res.json();
-        setCurrentText(data.text);
-        setSourceWord(data.source_word || "");
-        setDefinition(data.definition || "");
-        setTranslation(data.translation || "");
-        setHighlightedWords(data.highlights || []);
-        setArticleTitle(data.article_title || "");
-        setArticleLink(data.article_link || "");
+      const data = await apiGet(getContentUrl(excludeWord, customIndices));
+      setCurrentText(data.text);
+      setSourceWord(data.source_word || "");
+      setDefinition(data.definition || "");
+      setTranslation(data.translation || "");
+      setHighlightedWords(data.highlights || []);
+      setArticleTitle(data.article_title || "");
+      setArticleLink(data.article_link || "");
 
-        // Store sequential reading metadata
-        if (data.article_idx !== undefined) {
-          setRssArticleIdx(data.article_idx);
-          setRssSentenceIdx(data.sentence_idx || 0);
-          setRssTotalSentences(data.total_sentences || 0);
-          setRssHasNext(data.has_next || false);
-        }
+      // Store sequential reading metadata
+      if (data.article_idx !== undefined) {
+        setRssArticleIdx(data.article_idx);
+        setRssSentenceIdx(data.sentence_idx || 0);
+        setRssTotalSentences(data.total_sentences || 0);
+        setRssHasNext(data.has_next || false);
+      }
 
-        // Store raw content for debugging
-        setRawContent(data.raw_content || "");
+      // Store raw content for debugging
+      setRawContent(data.raw_content || "");
 
-        // Reset scaffold visibility
-        setShowDefinition(false);
-        setShowTranslation(false);
+      // Reset scaffold visibility
+      setShowDefinition(false);
+      setShowTranslation(false);
 
-        // Also fetch all examples for this word (only in Dictionary mode)
-        if (data.source_word && !isRssMode) {
-          fetchWordExamples(data.source_word);
-        }
+      // Also fetch all examples for this word (only in Dictionary mode)
+      if (data.source_word && !isRssMode) {
+        fetchWordExamples(data.source_word);
+      }
 
-        // Speak the new content
-        speak(data.text);
+      // Speak the new content
+      speak(data.text);
 
-        // Trigger context generation
-        setContextScenario(""); // Clear previous
-        if (data.source_word && data.definition) {
-          fetchContextScenario(data.source_word, data.definition, data.text);
-        }
+      // Trigger context generation
+      setContextScenario(""); // Clear previous
+      if (data.source_word && data.definition) {
+        fetchContextScenario(data.source_word, data.definition, data.text);
       }
     } catch (e) {
       console.error("Failed to fetch next content:", e);
@@ -631,20 +600,12 @@ const NegotiationInterface = () => {
 
     setIsContextLoading(true);
     try {
-      const res = await authFetch("/api/negotiation/context", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          word: word,
-          definition: def,
-          target_sentence: sentence,
-        }),
+      const data = await apiPost("/api/negotiation/context", {
+        word: word,
+        definition: def,
+        target_sentence: sentence,
       });
-
-      if (res.ok) {
-        const data = await res.json();
-        setContextScenario(data.scenario);
-      }
+      setContextScenario(data.scenario);
     } catch (e) {
       console.error("Context fetch failed:", e);
     }
@@ -654,15 +615,12 @@ const NegotiationInterface = () => {
   // Fetch all examples for a word
   const fetchWordExamples = async (word) => {
     try {
-      const res = await authFetch(
+      const data = await apiGet(
         `/api/negotiation/word-examples?word=${encodeURIComponent(word)}`,
       );
-      if (res.ok) {
-        const data = await res.json();
-        setWordExamples(data);
-        setCurrentSenseIndex(0);
-        setCurrentExampleIndex(0);
-      }
+      setWordExamples(data);
+      setCurrentSenseIndex(0);
+      setCurrentExampleIndex(0);
     } catch (e) {
       console.error("Failed to fetch word examples:", e);
       setWordExamples(null);
@@ -697,7 +655,7 @@ const NegotiationInterface = () => {
       if (sourceId) params.append("source_id", sourceId);
 
       // Non-blocking: fire and forget (don't await)
-      authFetch(`/api/inspect?${params.toString()}`).catch((e) => {
+      apiGet(`/api/inspect?${params.toString()}`).catch((e) => {
         console.warn("Failed to log word inspection:", e);
       });
     } catch (e) {
@@ -1301,20 +1259,17 @@ const NegotiationInterface = () => {
                   ) {
                     try {
                       const wordToLookup = highlightedWords[0];
-                      const res = await authFetch(
+                      const data = await apiGet(
                         `/api/negotiation/word-examples?word=${encodeURIComponent(wordToLookup)}`,
                       );
-                      if (res.ok) {
-                        const data = await res.json();
-                        if (data.entries && data.entries.length > 0) {
-                          const firstDef =
-                            data.entries[0].senses[0]?.definition || "";
-                          setDefinition(
-                            `${wordToLookup.toUpperCase()}: ${firstDef}`,
-                          );
-                          // Also store examples for navigation
-                          setWordExamples(data);
-                        }
+                      if (data.entries && data.entries.length > 0) {
+                        const firstDef =
+                          data.entries[0].senses[0]?.definition || "";
+                        setDefinition(
+                          `${wordToLookup.toUpperCase()}: ${firstDef}`,
+                        );
+                        // Also store examples for navigation
+                        setWordExamples(data);
                       }
                     } catch (e) {
                       console.error("Failed to fetch definition:", e);

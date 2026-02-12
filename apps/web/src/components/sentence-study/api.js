@@ -2,133 +2,135 @@
  * Sentence Study API Client
  * Unified API calls for the SentenceStudy module
  */
-import { HIGHLIGHT_OPTIONS } from '../reading/constants';
-import { authFetch } from '../../api/auth';
+import { HIGHLIGHT_OPTIONS } from "../reading/constants";
+import { authFetch, apiGet, apiPost } from "../../api/auth";
 
-const BASE_URL = '';
+const BASE_URL = "";
 
 export const sentenceStudyApi = {
-    async getProgress(sourceId) {
-        const res = await authFetch(`${BASE_URL}/api/sentence-study/${encodeURIComponent(sourceId)}/progress`);
-        if (!res.ok) throw new Error(`Failed to get progress: ${res.statusText}`);
-        return res.json();
-    },
+  async getProgress(sourceId) {
+    return apiGet(
+      `${BASE_URL}/api/sentence-study/${encodeURIComponent(sourceId)}/progress`,
+    );
+  },
 
-    async recordLearning(data) {
-        const res = await authFetch(`${BASE_URL}/api/sentence-study/record`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(data)
-        });
-        if (!res.ok) throw new Error(`Failed to record learning: ${res.statusText}`);
-        return res.json();
-    },
+  async recordLearning(data) {
+    return apiPost(`${BASE_URL}/api/sentence-study/record`, data);
+  },
 
-    async simplify(data) {
-        const res = await authFetch(`${BASE_URL}/api/sentence-study/simplify`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(data)
-        });
-        if (!res.ok) throw new Error(`Failed to simplify: ${res.statusText}`);
-        return res.json();
-    },
+  async simplify(data) {
+    return apiPost(`${BASE_URL}/api/sentence-study/simplify`, data);
+  },
 
-    async getBooks() {
-        const res = await authFetch(`${BASE_URL}/api/reading/epub/books`);
-        if (!res.ok) throw new Error(`Failed to get books: ${res.statusText}`);
-        return res.json();
-    },
+  async getBooks() {
+    return apiGet(`${BASE_URL}/api/reading/epub/books`);
+  },
 
-    async getArticles(filename) {
-        // Use merged endpoint that includes status data (single request instead of two)
-        const url = new URL('/api/reading/epub/list-with-status', window.location.origin);
-        if (filename) {
-            url.searchParams.append('filename', filename);
-        }
-        const res = await authFetch(url.toString());
-        if (!res.ok) throw new Error(`Failed to get articles: ${res.statusText}`);
-        return res.json();
-    },
-
-    async getArticle(sourceId, optionIndex) {
-        const opt = HIGHLIGHT_OPTIONS[optionIndex] || HIGHLIGHT_OPTIONS[0];
-        const params = new URLSearchParams({
-            source_id: sourceId,
-            book_code: opt.bookCode || '',
-            min_sequence: opt.minSeq || 0,
-            max_sequence: opt.maxSeq || 99999
-        });
-        const res = await authFetch(`${BASE_URL}/api/reading/article?${params}`);
-        if (!res.ok) throw new Error(`Failed to get article: ${res.statusText}`);
-        return res.json();
-    },
-
-    async getCalibration() {
-        const res = await authFetch(`${BASE_URL}/api/proficiency/calibration/level`);
-        if (!res.ok) return null;
-        return res.json();
-    },
-
-    async getOverview(title, fullText, totalSentences) {
-        const res = await authFetch(`${BASE_URL}/api/sentence-study/overview`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ title, full_text: fullText, total_sentences: totalSentences })
-        });
-        return res;  // Return raw response for streaming support
-    },
-
-    async getLastSession() {
-        const res = await authFetch(`${BASE_URL}/api/sentence-study/last-session`);
-        if (!res.ok) return null;
-        return res.json();
-    },
-
-    // Prefetch collocations for upcoming sentences (fire-and-forget)
-    prefetchCollocations(sentences) {
-        if (!sentences || sentences.length === 0) return;
-        authFetch(`${BASE_URL}/api/sentence-study/prefetch-collocations`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ sentences: sentences.slice(0, 5) })
-        }).catch(() => { }); // Ignore errors, this is best-effort
-    },
-
-    // Get all words/phrases looked up during study (for COMPLETED view)
-    async getStudyHighlights(sourceId, totalSentences) {
-        const res = await authFetch(`${BASE_URL}/api/sentence-study/${encodeURIComponent(sourceId)}/study-highlights?total_sentences=${totalSentences}`);
-        if (!res.ok) return { word_clicks: [], phrase_clicks: [], is_complete: false };
-        return res.json();
-    },
-
-    // Fetch collocations for a sentence
-    async detectCollocations(sentence) {
-        const res = await authFetch(`${BASE_URL}/api/sentence-study/detect-collocations`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ sentence })
-        });
-        if (!res.ok) return { collocations: [] };
-        return res.json();
-    },
-
-    // Stream word explanation
-    async streamExplainWord(data) {
-        const res = await authFetch(`${BASE_URL}/api/sentence-study/explain-word`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(data)
-        });
-        return res;  // Return raw response for streaming
-    },
-
-    // Fetch dictionary entry
-    async getDictionary(word) {
-        const res = await authFetch(`${BASE_URL}/api/dictionary/ldoce/${encodeURIComponent(word)}`);
-        if (!res.ok) return null;
-        return res.json();
+  async getArticles(filename) {
+    // Use merged endpoint that includes status data (single request instead of two)
+    const url = new URL(
+      "/api/reading/epub/list-with-status",
+      window.location.origin,
+    );
+    if (filename) {
+      url.searchParams.append("filename", filename);
     }
+    return apiGet(url.toString());
+  },
+
+  async getArticle(sourceId, optionIndex) {
+    const opt = HIGHLIGHT_OPTIONS[optionIndex] || HIGHLIGHT_OPTIONS[0];
+    const params = new URLSearchParams({
+      source_id: sourceId,
+      book_code: opt.bookCode || "",
+      min_sequence: opt.minSeq || 0,
+      max_sequence: opt.maxSeq || 99999,
+    });
+    return apiGet(`${BASE_URL}/api/reading/article?${params}`);
+  },
+
+  async getCalibration() {
+    try {
+      return await apiGet(`${BASE_URL}/api/proficiency/calibration/level`);
+    } catch {
+      return null;
+    }
+  },
+
+  async getOverview(title, fullText, totalSentences) {
+    // Return raw response for streaming support
+    const res = await authFetch(`${BASE_URL}/api/sentence-study/overview`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        title,
+        full_text: fullText,
+        total_sentences: totalSentences,
+      }),
+    });
+    return res;
+  },
+
+  async getLastSession() {
+    try {
+      return await apiGet(`${BASE_URL}/api/sentence-study/last-session`);
+    } catch {
+      return null;
+    }
+  },
+
+  // Prefetch collocations for upcoming sentences (fire-and-forget)
+  prefetchCollocations(sentences) {
+    if (!sentences || sentences.length === 0) return;
+    apiPost(`${BASE_URL}/api/sentence-study/prefetch-collocations`, {
+      sentences: sentences.slice(0, 5),
+    }).catch(() => {}); // Ignore errors, this is best-effort
+  },
+
+  // Get all words/phrases looked up during study (for COMPLETED view)
+  async getStudyHighlights(sourceId, totalSentences) {
+    try {
+      return await apiGet(
+        `${BASE_URL}/api/sentence-study/${encodeURIComponent(sourceId)}/study-highlights?total_sentences=${totalSentences}`,
+      );
+    } catch {
+      return { word_clicks: [], phrase_clicks: [], is_complete: false };
+    }
+  },
+
+  // Fetch collocations for a sentence
+  async detectCollocations(sentence) {
+    try {
+      return await apiPost(
+        `${BASE_URL}/api/sentence-study/detect-collocations`,
+        { sentence },
+      );
+    } catch {
+      return { collocations: [] };
+    }
+  },
+
+  // Stream word explanation
+  async streamExplainWord(data) {
+    // Return raw response for streaming
+    const res = await authFetch(`${BASE_URL}/api/sentence-study/explain-word`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data),
+    });
+    return res;
+  },
+
+  // Fetch dictionary entry
+  async getDictionary(word) {
+    try {
+      return await apiGet(
+        `${BASE_URL}/api/dictionary/ldoce/${encodeURIComponent(word)}`,
+      );
+    } catch {
+      return null;
+    }
+  },
 };
 
 export default sentenceStudyApi;

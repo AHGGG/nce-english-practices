@@ -470,6 +470,7 @@ React Native + Expo + NativeWind architecture. Covers audio background tasks, We
 
 | Skill                        | 路径                                                                                       | 何时使用                                                         |
 | ---------------------------- | ------------------------------------------------------------------------------------------ | ---------------------------------------------------------------- |
+| **Enhanced API Client**      | [docs/skills/api-client.md](docs/skills/api-client.md)                                     | **HTTP 请求** - 便利方法、错误处理、流式响应、超时控制           |
 | **Content Renderer**         | [docs/skills/content-renderer.md](docs/skills/content-renderer.md)                         | **内容渲染** - SentenceBlock、Collocation、Renderer 架构         |
 | **Mobile Architecture**      | [docs/MOBILE_ARCHITECTURE_PLAN.md](docs/MOBILE_ARCHITECTURE_PLAN.md)                       | **移动端开发** - 跨端复用架构与迁移计划                          |
 | **Mobile Dev Pitfalls**      | [docs/skills/mobile-dev-pitfalls.md](docs/skills/mobile-dev-pitfalls.md)                   | **移动端开发** - NativeWind 样式问题、Alpha 语法、条件 className |

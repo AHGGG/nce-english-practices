@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { authService } from "@nce/api";
+import { apiGet } from "@nce/api";
 
 export interface PerformanceData {
   study_time: {
@@ -40,15 +40,10 @@ export function usePerformanceStats(days: number = 30) {
   const query = useQuery({
     queryKey: ["performance", days],
     queryFn: async () => {
-      const [perfRes, profileRes] = await Promise.all([
-        authService.authFetch(`/api/performance?days=${days}`),
-        authService.authFetch("/api/sentence-study/profile"),
+      const [stats, profile] = await Promise.all([
+        apiGet(`/api/performance?days=${days}`),
+        apiGet("/api/sentence-study/profile").catch(() => null),
       ]);
-
-      if (!perfRes.ok) throw new Error("Failed to fetch performance stats");
-      // Profile might fail if not initialized, handle gracefully
-      const profile = profileRes.ok ? await profileRes.json() : null;
-      const stats = await perfRes.json();
 
       return {
         stats: stats as PerformanceData,

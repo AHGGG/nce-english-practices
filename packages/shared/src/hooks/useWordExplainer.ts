@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { parseJSONSSEStream } from "../utils/sseParser";
-import { authFetch } from "@nce/api";
+import { apiPost, apiGet, authFetch } from "@nce/api";
 
 export interface ExtraContext {
   prevSentence: string | null;
@@ -59,13 +59,14 @@ export function useWordExplainer() {
     const fetchBothDictionaries = async (
       word: string,
     ): Promise<InspectorData> => {
-      const [ldoceRes, collinsRes] = await Promise.all([
-        authFetch(`/api/dictionary/ldoce/${encodeURIComponent(word)}`),
-        authFetch(`/api/dictionary/collins/${encodeURIComponent(word)}`),
+      const [ldoceData, collinsData] = await Promise.all([
+        apiGet(`/api/dictionary/ldoce/${encodeURIComponent(word)}`).catch(
+          () => null,
+        ),
+        apiGet(`/api/dictionary/collins/${encodeURIComponent(word)}`).catch(
+          () => null,
+        ),
       ]);
-
-      const ldoceData = ldoceRes.ok ? await ldoceRes.json() : null;
-      const collinsData = collinsRes.ok ? await collinsRes.json() : null;
 
       return {
         word,
@@ -79,14 +80,10 @@ export function useWordExplainer() {
       try {
         // Log the lookup in background (fire and forget)
         if (lookupWord) {
-          authFetch("/api/vocabulary/log", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              word: lookupWord,
-              context_sentence: currentSentenceContext,
-              source_type: "sentence_study",
-            }),
+          apiPost("/api/vocabulary/log", {
+            word: lookupWord,
+            context_sentence: currentSentenceContext,
+            source_type: "sentence_study",
           }).catch((err) => console.error("Failed to log vocab lookup:", err));
         }
 
@@ -376,26 +373,14 @@ export function useWordExplainer() {
 
     setIsGeneratingImage(true);
     try {
-      const genRes = await authFetch("/api/generated-images/generate", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          word: selectedWord,
-          sentence: currentSentenceContext,
-          image_prompt: imagePrompt,
-        }),
+      const genData = await apiPost("/api/generated-images/generate", {
+        word: selectedWord,
+        sentence: currentSentenceContext,
+        image_prompt: imagePrompt,
       });
 
-      if (genRes.ok) {
-        const genData = await genRes.json();
-        console.log(
-          "[useWordExplainer] Image URL received:",
-          genData.image_url,
-        );
-        setGeneratedImage(genData.image_url);
-      } else {
-        console.error("[useWordExplainer] Generate API failed:", genRes.status);
-      }
+      console.log("[useWordExplainer] Image URL received:", genData.image_url);
+      setGeneratedImage(genData.image_url);
     } catch (e) {
       console.error("[useWordExplainer] Image generation failed", e);
     } finally {

@@ -10,7 +10,7 @@ import {
   ChevronLeft,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { authFetch } from "../api/auth";
+import { apiGet } from "../api/auth";
 
 const ReviewDebug = () => {
   const navigate = useNavigate();
@@ -21,11 +21,8 @@ const ReviewDebug = () => {
   const fetchSchedule = React.useCallback(async () => {
     setLoading(true);
     try {
-      const res = await authFetch(`/api/review/debug/schedule?days=${days}`);
-      if (res.ok) {
-        const json = await res.json();
-        setSchedule(json.schedule || {});
-      }
+      const json = await apiGet(`/api/review/debug/schedule?days=${days}`);
+      setSchedule(json.schedule || {});
     } catch (err) {
       console.error(err);
     } finally {

@@ -19,7 +19,7 @@ import ExplanationCard from "../components/sentence-study/views/ExplanationCard"
 import { getGapTypeInfo } from "../components/sentence-study/constants";
 import { useWordExplainer } from "@nce/shared";
 import WordInspector from "../components/reading/WordInspector";
-import { authFetch } from "../api/auth";
+import { authFetch, apiGet, apiPost, ApiError } from "../api/auth";
 import { useToast } from "../components/ui";
 import { useGlobalState } from "../context/GlobalContext";
 import { usePodcast } from "../context/PodcastContext";
@@ -27,37 +27,23 @@ import { usePodcast } from "../context/PodcastContext";
 // API helpers for SM-2 review system
 const api = {
   async getQueue(limit = 20) {
-    const res = await authFetch(`/api/review/queue?limit=${limit}`);
-    if (!res.ok) throw new Error("Failed to fetch review queue");
-    return res.json();
+    return apiGet(`/api/review/queue?limit=${limit}`);
   },
   async getRandomQueue(limit = 20) {
-    const res = await authFetch(`/api/review/random?limit=${limit}`);
-    if (!res.ok) throw new Error("Failed to fetch random queue");
-    return res.json();
+    return apiGet(`/api/review/random?limit=${limit}`);
   },
   async complete(itemId, quality, durationMs = 0) {
-    const res = await authFetch("/api/review/complete", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        item_id: itemId,
-        quality,
-        duration_ms: durationMs,
-      }),
+    return apiPost("/api/review/complete", {
+      item_id: itemId,
+      quality,
+      duration_ms: durationMs,
     });
-    if (!res.ok) throw new Error("Failed to complete review");
-    return res.json();
   },
   async getStats() {
-    const res = await authFetch(`/api/review/stats`);
-    if (!res.ok) throw new Error("Failed to fetch stats");
-    return res.json();
+    return apiGet(`/api/review/stats`);
   },
   async getContext(itemId) {
-    const res = await authFetch(`/api/review/context/${itemId}`);
-    if (!res.ok) throw new Error("Failed to fetch context");
-    return res.json();
+    return apiGet(`/api/review/context/${itemId}`);
   },
 };
 
@@ -542,30 +528,25 @@ const ReviewQueue = () => {
     setIsSubmitting(true);
     try {
       if (undoState.mode === "undo") {
-        const res = await authFetch("/api/review/undo", {
-          method: "POST",
-        });
-
-        if (!res.ok) {
-          if (res.status === 404) {
+        try {
+          const restoredItem = await apiPost("/api/review/undo");
+          setQueue((prev) => [restoredItem, ...prev]);
+          setCurrentIndex(0);
+          setLastResult(null);
+          setStats((prev) => ({
+            ...prev,
+            due_items: prev.due_items + 1,
+            total_reviews: Math.max(0, prev.total_reviews - 1),
+          }));
+          setUndoState((prev) => ({ ...prev, mode: "redo" }));
+        } catch (error) {
+          if (error instanceof ApiError && error.is(404)) {
             addToast("无可撤销的历史记录", "warning");
             setUndoState(null);
           } else {
-            throw new Error("Undo failed");
+            throw error;
           }
-          return;
         }
-
-        const restoredItem = await res.json();
-        setQueue((prev) => [restoredItem, ...prev]);
-        setCurrentIndex(0);
-        setLastResult(null);
-        setStats((prev) => ({
-          ...prev,
-          due_items: prev.due_items + 1,
-          total_reviews: Math.max(0, prev.total_reviews - 1),
-        }));
-        setUndoState((prev) => ({ ...prev, mode: "redo" }));
       } else if (undoState.mode === "redo") {
         const result = await api.complete(
           undoState.itemId,

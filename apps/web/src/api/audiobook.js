@@ -1,4 +1,4 @@
-import client from "./client";
+import { apiGet, apiPost } from "./auth";
 
 /**
  * Transcribe an audiobook track.
@@ -11,12 +11,9 @@ export const transcribeAudiobook = async (
   trackIndex = 0,
   force = false,
 ) => {
-  return client.post(`/api/content/audiobook/${bookId}/transcribe`, null, {
-    params: {
-      track: trackIndex,
-      force,
-    },
-  });
+  return apiPost(
+    `/api/content/audiobook/${bookId}/transcribe?track=${trackIndex}&force=${force}`,
+  );
 };
 
 /**
@@ -25,14 +22,12 @@ export const transcribeAudiobook = async (
  * @param {number} track - The track index.
  */
 export const getAudiobook = async (bookId, track = 0) => {
-  return client.get(`/api/content/audiobook/${bookId}`, {
-    params: { track },
-  });
+  return apiGet(`/api/content/audiobook/${bookId}?track=${track}`);
 };
 
 /**
  * List all audiobooks.
  */
 export const listAudiobooks = async () => {
-  return client.get("/api/content/audiobook/");
+  return apiGet("/api/content/audiobook/");
 };

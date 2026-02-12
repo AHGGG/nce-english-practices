@@ -276,8 +276,226 @@ export class AuthService {
 
     return response;
   }
+
+  /**
+   * Handle response and extract JSON data with error handling
+   */
+  private async handleResponse<T>(response: Response): Promise<T> {
+    if (!response.ok) {
+      const contentType = response.headers.get("content-type");
+      let errorMessage = `Request failed with status ${response.status}`;
+
+      if (contentType?.includes("application/json")) {
+        try {
+          const error = await response.json();
+          errorMessage = error.detail || error.message || errorMessage;
+        } catch {
+          // Failed to parse error JSON
+        }
+      }
+
+      throw new ApiError(response.status, errorMessage, response);
+    }
+
+    const contentType = response.headers.get("content-type");
+    if (contentType?.includes("application/json")) {
+      return response.json();
+    }
+
+    // For non-JSON responses, return empty object
+    return {} as T;
+  }
+
+  /**
+   * GET request with automatic JSON parsing
+   */
+  async get<T = any>(url: string, options?: RequestInit): Promise<T> {
+    const response = await this.authFetch(url, {
+      ...options,
+      method: "GET",
+    });
+    return this.handleResponse<T>(response);
+  }
+
+  /**
+   * POST request with automatic JSON parsing
+   */
+  async post<T = any>(
+    url: string,
+    data?: any,
+    options?: RequestInit,
+  ): Promise<T> {
+    const headers: HeadersInit = {
+      "Content-Type": "application/json",
+      ...(options?.headers || {}),
+    };
+
+    const response = await this.authFetch(url, {
+      ...options,
+      method: "POST",
+      headers,
+      body: data !== undefined ? JSON.stringify(data) : undefined,
+    });
+    return this.handleResponse<T>(response);
+  }
+
+  /**
+   * PUT request with automatic JSON parsing
+   */
+  async put<T = any>(
+    url: string,
+    data?: any,
+    options?: RequestInit,
+  ): Promise<T> {
+    const headers: HeadersInit = {
+      "Content-Type": "application/json",
+      ...(options?.headers || {}),
+    };
+
+    const response = await this.authFetch(url, {
+      ...options,
+      method: "PUT",
+      headers,
+      body: data !== undefined ? JSON.stringify(data) : undefined,
+    });
+    return this.handleResponse<T>(response);
+  }
+
+  /**
+   * DELETE request with automatic JSON parsing
+   */
+  async delete<T = any>(url: string, options?: RequestInit): Promise<T> {
+    const response = await this.authFetch(url, {
+      ...options,
+      method: "DELETE",
+    });
+    return this.handleResponse<T>(response);
+  }
+
+  /**
+   * PATCH request with automatic JSON parsing
+   */
+  async patch<T = any>(
+    url: string,
+    data?: any,
+    options?: RequestInit,
+  ): Promise<T> {
+    const headers: HeadersInit = {
+      "Content-Type": "application/json",
+      ...(options?.headers || {}),
+    };
+
+    const response = await this.authFetch(url, {
+      ...options,
+      method: "PATCH",
+      headers,
+      body: data !== undefined ? JSON.stringify(data) : undefined,
+    });
+    return this.handleResponse<T>(response);
+  }
+
+  /**
+   * GET request with timeout
+   */
+  async getWithTimeout<T = any>(
+    url: string,
+    timeoutMs: number,
+    options?: RequestInit,
+  ): Promise<T> {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), timeoutMs);
+
+    try {
+      return await this.get<T>(url, {
+        ...options,
+        signal: controller.signal,
+      });
+    } catch (error) {
+      if (error instanceof Error && error.name === "AbortError") {
+        throw new ApiError(408, `Request timeout after ${timeoutMs}ms`);
+      }
+      throw error;
+    } finally {
+      clearTimeout(timeout);
+    }
+  }
+
+  /**
+   * POST request with timeout
+   */
+  async postWithTimeout<T = any>(
+    url: string,
+    data: any,
+    timeoutMs: number,
+    options?: RequestInit,
+  ): Promise<T> {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), timeoutMs);
+
+    try {
+      return await this.post<T>(url, data, {
+        ...options,
+        signal: controller.signal,
+      });
+    } catch (error) {
+      if (error instanceof Error && error.name === "AbortError") {
+        throw new ApiError(408, `Request timeout after ${timeoutMs}ms`);
+      }
+      throw error;
+    } finally {
+      clearTimeout(timeout);
+    }
+  }
+}
+
+/**
+ * Custom API Error class
+ */
+export class ApiError extends Error {
+  public readonly status: number;
+  public readonly response?: Response;
+
+  constructor(status: number, message: string, response?: Response) {
+    super(message);
+    this.name = "ApiError";
+    this.status = status;
+    this.response = response;
+
+    // Maintains proper stack trace for where our error was thrown (only available on V8)
+    if (Error.captureStackTrace) {
+      Error.captureStackTrace(this, ApiError);
+    }
+  }
+
+  /**
+   * Check if error is a specific HTTP status
+   */
+  is(status: number): boolean {
+    return this.status === status;
+  }
+
+  /**
+   * Check if error is a client error (4xx)
+   */
+  isClientError(): boolean {
+    return this.status >= 400 && this.status < 500;
+  }
+
+  /**
+   * Check if error is a server error (5xx)
+   */
+  isServerError(): boolean {
+    return this.status >= 500 && this.status < 600;
+  }
 }
 
 // Export a singleton for default web usage
 export const authService = new AuthService();
 export const authFetch = authService.authFetch.bind(authService);
+
+// Export convenience methods
+export const apiGet = authService.get.bind(authService);
+export const apiPost = authService.post.bind(authService);
+export const apiPut = authService.put.bind(authService);
+export const apiDelete = authService.delete.bind(authService);
+export const apiPatch = authService.patch.bind(authService);

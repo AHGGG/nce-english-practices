@@ -4,7 +4,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { ChevronLeft, Book, Headphones, Loader2 } from "lucide-react";
-import { authFetch } from "../../api/auth";
+import { apiGet } from "../../api/auth";
 
 export default function AudiobookLibraryView() {
   const navigate = useNavigate();
@@ -15,9 +15,7 @@ export default function AudiobookLibraryView() {
   useEffect(() => {
     const fetchAudiobooks = async () => {
       try {
-        const res = await authFetch("/api/content/audiobook/");
-        if (!res.ok) throw new Error("Failed to fetch audiobooks");
-        const data = await res.json();
+        const data = await apiGet("/api/content/audiobook/");
         setAudiobooks(data);
       } catch (err) {
         setError(err.message);

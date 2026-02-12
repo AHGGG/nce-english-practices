@@ -4,6 +4,7 @@ import {
   ItunesSearchResult,
   PodcastFeed,
   FeedDetailResponse,
+  apiPost,
 } from "@nce/api";
 
 export interface UsePodcastSearchOptions {
@@ -69,20 +70,10 @@ export function usePodcastFeed(feedId: number, limit = 20) {
   };
 }
 
-import { authService } from "@nce/api";
-
 export function usePodcastPreview(rssUrl: string) {
   const q = useQuery({
     queryKey: ["podcast", "preview", rssUrl],
-    queryFn: async () => {
-      const res = await authService.authFetch("/api/podcast/preview", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ rss_url: rssUrl }),
-      });
-      if (!res.ok) throw new Error("Preview failed");
-      return res.json() as Promise<FeedDetailResponse>;
-    },
+    queryFn: () => apiPost("/api/podcast/preview", { rss_url: rssUrl }),
     enabled: !!rssUrl,
   });
 

@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback } from "react";
-import { authService } from "@nce/api";
+import { apiGet, apiPost } from "@nce/api";
 
 export interface NegotiationState {
   sessionId: string;
@@ -59,29 +59,26 @@ export function useNegotiationSession(
           ? `/api/negotiation/next-content?exclude=${encodeURIComponent(excludeWord)}`
           : "/api/negotiation/next-content";
 
-        const res = await authService.authFetch(url);
-        if (res.ok) {
-          const data = await res.json();
-          setState((prev) => ({
-            ...prev,
-            currentText: data.text,
-            sourceWord: data.source_word || "",
-            definition: data.definition || "",
-            translation: data.translation || "",
-            // Reset scaffolds
-            step: "original",
-            isTextVisible: false,
-            scaffoldUsed: false,
-            contextScenario: "",
-          }));
+        const data = await apiGet(url);
+        setState((prev) => ({
+          ...prev,
+          currentText: data.text,
+          sourceWord: data.source_word || "",
+          definition: data.definition || "",
+          translation: data.translation || "",
+          // Reset scaffolds
+          step: "original",
+          isTextVisible: false,
+          scaffoldUsed: false,
+          contextScenario: "",
+        }));
 
-          // Speak
-          await playAudio(data.text);
+        // Speak
+        await playAudio(data.text);
 
-          // Fetch Context
-          if (data.source_word && data.definition) {
-            fetchContext(data.source_word, data.definition, data.text);
-          }
+        // Fetch Context
+        if (data.source_word && data.definition) {
+          fetchContext(data.source_word, data.definition, data.text);
         }
       } catch (e) {
         console.error(e);
@@ -92,19 +89,12 @@ export function useNegotiationSession(
 
   const fetchContext = async (word: string, def: string, sentence: string) => {
     try {
-      const res = await authService.authFetch("/api/negotiation/context", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          word,
-          definition: def,
-          target_sentence: sentence,
-        }),
+      const data = await apiPost("/api/negotiation/context", {
+        word,
+        definition: def,
+        target_sentence: sentence,
       });
-      if (res.ok) {
-        const data = await res.json();
-        setState((prev) => ({ ...prev, contextScenario: data.scenario }));
-      }
+      setState((prev) => ({ ...prev, contextScenario: data.scenario }));
     } catch (e) {
       console.error(e);
     }
@@ -128,13 +118,7 @@ export function useNegotiationSession(
         };
       }
 
-      const res = await authService.authFetch("/api/negotiation/interact", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
-      });
-
-      const data = await res.json();
+      const data = await apiPost("/api/negotiation/interact", body);
 
       // Update History
       const currentSnap = { ...state };

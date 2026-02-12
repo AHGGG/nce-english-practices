@@ -1,4 +1,4 @@
-import { authFetch } from "../auth";
+import { apiGet, apiPost, apiDelete } from "../auth";
 
 export interface ItunesSearchResult {
   itunes_id?: number;
@@ -45,41 +45,31 @@ export interface FeedDetailResponse {
 
 export const podcastApi = {
   async search(query: string, limit = 20) {
-    const res = await authFetch(
+    return apiGet(
       `/api/podcast/search?q=${encodeURIComponent(query)}&limit=${limit}`,
-    );
-    if (!res.ok) throw new Error("Search failed");
-    return res.json() as Promise<ItunesSearchResult[]>;
+    ) as Promise<ItunesSearchResult[]>;
   },
 
   async getTrending(limit = 20) {
-    const res = await authFetch(`/api/podcast/trending?limit=${limit}`);
-    if (!res.ok) throw new Error("Trending failed");
-    return res.json() as Promise<ItunesSearchResult[]>;
+    return apiGet(`/api/podcast/trending?limit=${limit}`) as Promise<
+      ItunesSearchResult[]
+    >;
   },
 
   async getSubscriptions() {
-    const res = await authFetch("/api/podcast/feeds");
-    if (!res.ok) throw new Error("Failed to fetch subscriptions");
-    return res.json() as Promise<PodcastFeed[]>;
+    return apiGet("/api/podcast/feeds") as Promise<PodcastFeed[]>;
   },
 
   async getFeed(feedId: number, limit = 50, offset = 0) {
-    const res = await authFetch(
+    return apiGet(
       `/api/podcast/feed/${feedId}?limit=${limit}&offset=${offset}`,
-    );
-    if (!res.ok) throw new Error("Failed to fetch feed");
-    return res.json() as Promise<FeedDetailResponse>;
+    ) as Promise<FeedDetailResponse>;
   },
 
   async getEpisode(episodeId: number) {
-    const res = await authFetch("/api/podcast/episodes/batch", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ episode_ids: [episodeId] }),
+    const data = await apiPost("/api/podcast/episodes/batch", {
+      episode_ids: [episodeId],
     });
-    if (!res.ok) throw new Error("Failed to fetch episode");
-    const data = await res.json();
     if (!data || data.length === 0) {
       throw new Error(`Episode ${episodeId} not found`);
     }
@@ -88,45 +78,27 @@ export const podcastApi = {
   },
 
   async preview(rssUrl: string) {
-    const res = await authFetch("/api/podcast/preview", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ rss_url: rssUrl }),
-    });
-    if (!res.ok) throw new Error("Preview failed");
-    return res.json() as Promise<FeedDetailResponse>;
+    return apiPost("/api/podcast/preview", {
+      rss_url: rssUrl,
+    }) as Promise<FeedDetailResponse>;
   },
 
   async subscribe(rssUrl: string) {
-    const res = await authFetch("/api/podcast/subscribe", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ rss_url: rssUrl }),
-    });
-    if (!res.ok) throw new Error("Subscribe failed");
-    return res.json() as Promise<PodcastFeed>;
+    return apiPost("/api/podcast/subscribe", {
+      rss_url: rssUrl,
+    }) as Promise<PodcastFeed>;
   },
 
   async unsubscribe(feedId: number) {
-    const res = await authFetch(`/api/podcast/feed/${feedId}`, {
-      method: "DELETE",
-    });
-    if (!res.ok) throw new Error("Unsubscribe failed");
-    return res.json();
+    return apiDelete(`/api/podcast/feed/${feedId}`);
   },
 
   async refreshFeed(feedId: number) {
-    const res = await authFetch(`/api/podcast/feed/${feedId}/refresh`, {
-      method: "POST",
-    });
-    if (!res.ok) throw new Error("Refresh failed");
-    return res.json();
+    return apiPost(`/api/podcast/feed/${feedId}/refresh`, {});
   },
 
   async getRecentlyPlayed() {
-    const res = await authFetch("/api/podcast/recently-played");
-    if (!res.ok) throw new Error("Failed to fetch history");
-    return res.json() as Promise<PodcastEpisode[]>;
+    return apiGet("/api/podcast/recently-played") as Promise<PodcastEpisode[]>;
   },
 
   async syncPosition(
@@ -135,31 +107,17 @@ export const podcastApi = {
     deviceId: string,
     deviceType: string = "mobile",
   ) {
-    const res = await authFetch(
-      `/api/podcast/episode/${episodeId}/position/sync`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          position_seconds: position,
-          device_id: deviceId,
-          device_type: deviceType,
-        }),
-      },
-    );
-    if (!res.ok) throw new Error("Sync failed");
-    return res.json();
+    return apiPost(`/api/podcast/episode/${episodeId}/position/sync`, {
+      position_seconds: position,
+      device_id: deviceId,
+      device_type: deviceType,
+    });
   },
 
   // Session Management
   session: {
     async start(episodeId: number) {
-      const res = await authFetch("/api/podcast/session/start", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ episode_id: episodeId }),
-      });
-      return res.json();
+      return apiPost("/api/podcast/session/start", { episode_id: episodeId });
     },
 
     async update(
@@ -168,17 +126,12 @@ export const podcastApi = {
       position: number,
       isFinished = false,
     ) {
-      const res = await authFetch("/api/podcast/session/update", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          session_id: sessionId,
-          total_listened_seconds: totalListened,
-          last_position_seconds: position,
-          is_finished: isFinished,
-        }),
+      return apiPost("/api/podcast/session/update", {
+        session_id: sessionId,
+        total_listened_seconds: totalListened,
+        last_position_seconds: position,
+        is_finished: isFinished,
       });
-      return res.json();
     },
 
     async end(
@@ -187,17 +140,12 @@ export const podcastApi = {
       position: number,
       isFinished = false,
     ) {
-      const res = await authFetch("/api/podcast/session/end", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          session_id: sessionId,
-          total_listened_seconds: totalListened,
-          last_position_seconds: position,
-          is_finished: isFinished,
-        }),
+      return apiPost("/api/podcast/session/end", {
+        session_id: sessionId,
+        total_listened_seconds: totalListened,
+        last_position_seconds: position,
+        is_finished: isFinished,
       });
-      return res.json();
     },
   },
 };
