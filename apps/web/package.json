@@ -8,6 +8,8 @@
     "dev:https": "vite --mode https",
     "build": "vite build",
     "lint": "eslint .",
+    "typecheck": "tsc --noEmit",
+    "typecheck:watch": "tsc --noEmit --watch",
     "gen:types": "uv run python ../../scripts/export_openapi.py > openapi.json && npx openapi-typescript openapi.json -o src/types/schema.d.ts",
     "preview": "vite preview"
   },
@@ -27,6 +29,8 @@
     "@eslint/js": "^9.39.1",
     "@nce/api": "workspace:*",
     "@nce/shared": "workspace:*",
+    "@typescript-eslint/eslint-plugin": "^8.46.1",
+    "@typescript-eslint/parser": "^8.46.1",
     "@types/node": "^25.0.10",
     "@types/react": "^19.2.9",
     "@types/react-dom": "^19.2.3",
