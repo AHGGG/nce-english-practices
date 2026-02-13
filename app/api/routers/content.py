@@ -456,65 +456,63 @@ async def get_article_content(
                 if phrase_clicks:
                     all_phrases.update(phrase_clicks)
 
-                # 2. Fetch article-specific unclear sentences
-                unclear_stmt = (
-                    select(
-                        SentenceLearningRecord.sentence_index,
-                        SentenceLearningRecord.initial_response,
-                        SentenceLearningRecord.unclear_choice,
-                        SentenceLearningRecord.interaction_log,
-                    )
-                    .where(SentenceLearningRecord.user_id == user_id)
-                    .where(SentenceLearningRecord.source_id == source_id)
-                    .where(SentenceLearningRecord.initial_response == "unclear")
+            # 2. Fetch article-specific unclear sentences
+            unclear_stmt = (
+                select(
+                    SentenceLearningRecord.sentence_index,
+                    SentenceLearningRecord.initial_response,
+                    SentenceLearningRecord.unclear_choice,
+                    SentenceLearningRecord.interaction_log,
                 )
-                unclear_records = await db.execute(unclear_stmt)
+                .where(SentenceLearningRecord.user_id == user_id)
+                .where(SentenceLearningRecord.source_id == source_id)
+                .where(SentenceLearningRecord.initial_response == "unclear")
+            )
+            unclear_records = await db.execute(unclear_stmt)
 
-                unclear_sentences = []
-                for row in unclear_records.fetchall():
-                    (
-                        sentence_index,
-                        initial_response,
-                        unclear_choice,
-                        interaction_log,
-                    ) = row
-                    # Determine max_simplify_stage from interaction_log if available
-                    max_stage = 0
-                    if interaction_log:
-                        for event in interaction_log:
-                            if event.get("action") == "simplify_stage":
-                                stage = event.get("stage", 0)
-                                if stage > max_stage:
-                                    max_stage = stage
-                    unclear_sentences.append(
-                        {
-                            "sentence_index": sentence_index,
-                            "unclear_choice": unclear_choice,
-                            "max_simplify_stage": max_stage,
-                        }
-                    )
-
-                # 3. Fetch mastered words to exclude from study_highlights
-                all_study_words = all_words | all_phrases
-                if all_study_words:
-                    mastered_stmt = (
-                        select(WordProficiency.word)
-                        .where(WordProficiency.user_id == user_id)
-                        .where(WordProficiency.status == "mastered")
-                    )
-                    mastered_result = await db.execute(mastered_stmt)
-                    mastered_words = {
-                        row[0].lower() for row in mastered_result.fetchall()
+            unclear_sentences = []
+            for row in unclear_records.fetchall():
+                (
+                    sentence_index,
+                    initial_response,
+                    unclear_choice,
+                    interaction_log,
+                ) = row
+                # Determine max_simplify_stage from interaction_log if available
+                max_stage = 0
+                if interaction_log:
+                    for event in interaction_log:
+                        if event.get("action") == "simplify_stage":
+                            stage = event.get("stage", 0)
+                            if stage > max_stage:
+                                max_stage = stage
+                unclear_sentences.append(
+                    {
+                        "sentence_index": sentence_index,
+                        "unclear_choice": unclear_choice,
+                        "max_simplify_stage": max_stage,
                     }
+                )
 
-                    # Exclude mastered words from study highlights
-                    all_study_words = {
-                        w for w in all_study_words if w.lower() not in mastered_words
-                    }
+            # 3. Fetch mastered words to exclude from study_highlights
+            all_study_words = all_words | all_phrases
+            if all_study_words:
+                mastered_stmt = (
+                    select(WordProficiency.word)
+                    .where(WordProficiency.user_id == user_id)
+                    .where(WordProficiency.status == "mastered")
+                )
+                mastered_result = await db.execute(mastered_stmt)
+                mastered_words = {row[0].lower() for row in mastered_result.fetchall()}
 
-                # Combine and return
-                result["study_highlights"] = list(all_study_words)
-                result["unclear_sentences"] = unclear_sentences
+                # Exclude mastered words from study highlights
+                all_study_words = {
+                    w for w in all_study_words if w.lower() not in mastered_words
+                }
+
+            # Combine and return
+            result["study_highlights"] = list(all_study_words)
+            result["unclear_sentences"] = unclear_sentences
         except Exception as e:
             import traceback
 
@@ -850,52 +848,52 @@ async def _get_podcast_player_content(episode_id: int, user_id: str, db: AsyncSe
             detail="Transcription not available. Please generate transcription first.",
         )
 
-        # Get user playback state
-        state_stmt = select(UserEpisodeState).where(
-            UserEpisodeState.user_id == user_id,
-            UserEpisodeState.episode_id == episode_id,
+    # Get user playback state
+    state_stmt = select(UserEpisodeState).where(
+        UserEpisodeState.user_id == user_id,
+        UserEpisodeState.episode_id == episode_id,
+    )
+    state_result = await db.execute(state_stmt)
+    user_state = state_result.scalar_one_or_none()
+
+    # Convert transcript_segments to ContentBlocks
+    blocks = []
+    for seg in episode.transcript_segments:
+        block = ContentBlock(
+            type=BlockType.AUDIO_SEGMENT,
+            text=seg.get("text", ""),
+            sentences=[seg.get("text", "")],
+            start_time=seg.get("start_time", 0.0),
+            end_time=seg.get("end_time", 0.0),
         )
-        state_result = await db.execute(state_stmt)
-        user_state = state_result.scalar_one_or_none()
+        blocks.append(block)
 
-        # Convert transcript_segments to ContentBlocks
-        blocks = []
-        for seg in episode.transcript_segments:
-            block = ContentBlock(
-                type=BlockType.AUDIO_SEGMENT,
-                text=seg.get("text", ""),
-                sentences=[seg.get("text", "")],
-                start_time=seg.get("start_time", 0.0),
-                end_time=seg.get("end_time", 0.0),
-            )
-            blocks.append(block)
+    # Build full text
+    full_text = " ".join(seg.get("text", "") for seg in episode.transcript_segments)
 
-        # Build full text
-        full_text = " ".join(seg.get("text", "") for seg in episode.transcript_segments)
-
-        return ContentBundle(
-            id=f"podcast:{episode_id}",
-            source_type=SourceType.PODCAST,
-            title=episode.title,
-            audio_url=episode.audio_url,  # Use original URL (browser can access directly)
-            blocks=blocks,
-            full_text=full_text,
-            metadata={
-                "episode_id": episode_id,
-                "feed_id": feed.id,
-                "feed_title": feed.title,
-                "description": episode.description,
-                "duration_seconds": episode.duration_seconds,
-                "published_at": episode.published_at.isoformat()
-                if episode.published_at
-                else None,
-                "image_url": episode.image_url or feed.image_url,
-                "current_position": user_state.current_position_seconds
-                if user_state
-                else 0.0,
-                "is_finished": user_state.is_finished if user_state else False,
-            },
-        )
+    return ContentBundle(
+        id=f"podcast:{episode_id}",
+        source_type=SourceType.PODCAST,
+        title=episode.title,
+        audio_url=episode.audio_url,  # Use original URL (browser can access directly)
+        blocks=blocks,
+        full_text=full_text,
+        metadata={
+            "episode_id": episode_id,
+            "feed_id": feed.id,
+            "feed_title": feed.title,
+            "description": episode.description,
+            "duration_seconds": episode.duration_seconds,
+            "published_at": episode.published_at.isoformat()
+            if episode.published_at
+            else None,
+            "image_url": episode.image_url or feed.image_url,
+            "current_position": user_state.current_position_seconds
+            if user_state
+            else 0.0,
+            "is_finished": user_state.is_finished if user_state else False,
+        },
+    )
 
 
 async def _get_audiobook_player_content(book_id: str, track_index: int):

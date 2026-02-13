@@ -7,6 +7,8 @@ from contextlib import asynccontextmanager
 import asyncio
 from dotenv import load_dotenv
 import os
+import traceback
+import uuid
 
 from app.services.dictionary import dict_manager
 from app.api.routers import (
@@ -131,14 +133,11 @@ async def lifespan(app: FastAPI):
 app = FastAPI(title="NCE English Practice", lifespan=lifespan)
 
 # --- Global Exception Handlers ---
-
-from fastapi import Request
-from fastapi.exceptions import RequestValidationError
-from starlette.exceptions import HTTPException as StarletteHTTPException
 from app.models.schemas import ErrorResponse
-from datetime import datetime
-import traceback
-import uuid
+
+
+def _is_debug_enabled() -> bool:
+    return os.getenv("DEBUG", "false").lower() == "true"
 
 
 @app.exception_handler(StarletteHTTPException)
@@ -158,8 +157,11 @@ async def http_exception_handler(request: Request, exc: StarletteHTTPException):
     return JSONResponse(
         status_code=exc.status_code,
         content=ErrorResponse(
-            error=f"HTTP_{exc.status_code}", message=exc.detail, request_id=request_id
-        ).model_dump(),
+            error=f"HTTP_{exc.status_code}",
+            message=str(exc.detail),
+            detail=exc.detail,
+            request_id=request_id,
+        ).model_dump(mode="json"),
     )
 
 
@@ -187,7 +189,7 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
             message="Request validation failed",
             detail=detail,
             request_id=request_id,
-        ).model_dump(),
+        ).model_dump(mode="json"),
     )
 
 
@@ -204,9 +206,9 @@ async def global_exception_handler(request: Request, exc: Exception):
         content=ErrorResponse(
             error="InternalError",
             message="An internal error occurred. Please check server logs.",
-            detail={"request_id": request_id} if not os.getenv("DEBUG") else str(exc),
+            detail={"request_id": request_id} if not _is_debug_enabled() else str(exc),
             request_id=request_id,
-        ).model_dump(),
+        ).model_dump(mode="json"),
     )
 
 
@@ -242,7 +244,7 @@ except Exception:
     pass
 
 # Check if we should allow all origins (dev mode only)
-allow_all = os.getenv("CORS_ALLOW_ALL", "false").lower() == "true"
+allow_all = settings.CORS_ALLOW_ALL
 if allow_all:
     import logging
 
