@@ -66,6 +66,8 @@ if settings.SECRET_KEY == "dev-secret-key-change-in-production-use-openssl-rand-
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    background_tasks: list[tuple[str, asyncio.Task]] = []
+
     # Initialize DB (Create tables)
     # The original main.py had comments about creating tables but didn't actually call create_all.
     # It seems Alembic is used or database.py handles it.
@@ -73,7 +75,8 @@ async def lifespan(app: FastAPI):
     # Load dictionary on startup (Background)
     logger.info("Startup: Initiating dictionary loading in background...")
     # Run async load_dictionaries directly in background
-    asyncio.create_task(dict_manager.load_dictionaries())
+    dictionary_load_task = asyncio.create_task(dict_manager.load_dictionaries())
+    background_tasks.append(("dictionary_loader", dictionary_load_task))
 
     # Start AUI Input Listener (Postgres LISTEN/NOTIFY)
     from app.services.aui_input import input_service
@@ -83,7 +86,10 @@ async def lifespan(app: FastAPI):
     # Start Podcast Trending Cache Refresher (Every 12 hours, start after 1h delay)
     from app.services.podcast_service import podcast_service
 
-    asyncio.create_task(podcast_service.start_cache_refresher(initial_delay=3600))
+    podcast_refresher_task = asyncio.create_task(
+        podcast_service.start_cache_refresher(initial_delay=3600)
+    )
+    background_tasks.append(("podcast_cache_refresher", podcast_refresher_task))
 
     # Start Content Analysis Service (analyze EPUBs in background)
     from app.services.content_analysis import content_analysis_service
@@ -97,12 +103,29 @@ async def lifespan(app: FastAPI):
         except Exception as e:
             logger.error(f"Content analysis failed: {e}")
 
-    asyncio.create_task(run_content_analysis())
+    content_analysis_task = asyncio.create_task(run_content_analysis())
+    background_tasks.append(("content_analysis", content_analysis_task))
 
     yield
 
     # Cleanup
+    for task_name, task in background_tasks:
+        if task.done():
+            continue
+        task.cancel()
+
+    for task_name, task in background_tasks:
+        if task.done():
+            continue
+        try:
+            await asyncio.wait_for(task, timeout=3.0)
+        except (asyncio.CancelledError, asyncio.TimeoutError):
+            logger.info(f"Background task cancelled during shutdown: {task_name}")
+        except Exception as e:
+            logger.warning(f"Background task error during shutdown ({task_name}): {e}")
+
     await input_service.stop_listener()
+    await dict_manager.shutdown()
 
 
 app = FastAPI(title="NCE English Practice", lifespan=lifespan)

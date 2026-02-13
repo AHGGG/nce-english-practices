@@ -105,6 +105,29 @@ class DictionaryManager:
             except Exception as e:
                 logger.error(f"Failed to open {db_path}: {e}")
 
+    async def shutdown(self):
+        """Close all opened dictionary resources for graceful shutdown/reload."""
+        closed = 0
+        for d in self.databases:
+            conn = d.get("conn")
+            if not conn:
+                continue
+            try:
+                result = conn.close()
+                if asyncio.iscoroutine(result):
+                    await result
+                closed += 1
+            except Exception as e:
+                logger.warning(f"Failed to close dictionary connection: {e}")
+
+        if closed:
+            logger.info(f"Closed {closed} dictionary connection(s).")
+
+        self.databases.clear()
+        self._lookup_cache.clear()
+        self.loaded = False
+        self._use_legacy = False
+
     def _load_legacy_mdx(self):
         """Legacy loading: Load MDX files into memory (high memory usage)."""
         try:
