@@ -262,11 +262,11 @@ export default function PodcastFeedDetailView() {
     hasAutoRefreshedRef.current = false; // Reset for new feed
   }, [feedId]);
 
-  // Auto-refresh logic: trigger refresh once when subscribed feed is loaded
+  // Auto-refresh logic: trigger refresh once when subscribed feed is loaded (silent)
   useEffect(() => {
     if (!loading && isSubscribed && !hasAutoRefreshedRef.current) {
       hasAutoRefreshedRef.current = true;
-      handleRefresh();
+      handleRefresh(true); // Silent refresh
     }
   }, [loading, isSubscribed, feedId]);
 
@@ -358,18 +358,34 @@ export default function PodcastFeedDetailView() {
     }
   }
 
-  async function handleRefresh() {
+  async function handleRefresh(silent = false) {
     try {
-      setRefreshing(true);
+      if (!silent) {
+        setRefreshing(true);
+      }
       const result = await podcastApi.refreshFeed(feedId);
       if (result.new_episodes > 0) {
-        loadFeed(true); // Reset to top
+        // Only reload if not silent refresh, otherwise just show toast
+        if (!silent) {
+          loadFeed(true); // Reset to top
+        } else {
+          // Silent refresh: reload in background without showing loading
+          const data = await podcastApi.getFeedDetail(feedId, PAGE_SIZE, 0);
+          setEpisodes(data.episodes);
+          setTotalEpisodes(data.total_episodes || data.episodes.length);
+        }
       }
-      addToast(`Found ${result.new_episodes} new episodes`, "success");
+      if (!silent) {
+        addToast(`Found ${result.new_episodes} new episodes`, "success");
+      }
     } catch (e: unknown) {
-      addToast("Refresh failed: " + getErrorMessage(e), "error");
+      if (!silent) {
+        addToast("Refresh failed: " + getErrorMessage(e), "error");
+      }
     } finally {
-      setRefreshing(false);
+      if (!silent) {
+        setRefreshing(false);
+      }
     }
   }
 
@@ -863,7 +879,7 @@ export default function PodcastFeedDetailView() {
 
             <div className="flex flex-wrap items-center gap-3">
               <button
-                onClick={handleRefresh}
+                onClick={() => handleRefresh(false)}
                 disabled={refreshing}
                 className="flex items-center gap-2 px-4 py-2.5 text-xs font-bold uppercase tracking-wider bg-white/5 text-white rounded-xl hover:bg-white/10 transition-colors border border-white/10"
               >
