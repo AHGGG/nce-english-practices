@@ -62,6 +62,17 @@ const getErrorMessage = (error: unknown): string => {
   return "Unknown error";
 };
 
+const PODCAST_ACCESS_COUNT_KEY = "podcast_access_count";
+
+function getPodcastAccessCounts(): Record<number, number> {
+  try {
+    const data = localStorage.getItem(PODCAST_ACCESS_COUNT_KEY);
+    return data ? JSON.parse(data) : {};
+  } catch {
+    return {};
+  }
+}
+
 export default function PodcastLibraryView() {
   const navigate = useNavigate();
   const [feeds, setFeeds] = useState<PodcastFeed[]>([]);
@@ -87,7 +98,11 @@ export default function PodcastLibraryView() {
     try {
       setLoading(true);
       const data = (await podcastApi.getSubscriptions()) as PodcastFeed[];
-      setFeeds(data);
+      const accessCounts = getPodcastAccessCounts();
+      const sortedFeeds = [...data].sort(
+        (a, b) => (accessCounts[b.id] || 0) - (accessCounts[a.id] || 0),
+      );
+      setFeeds(sortedFeeds);
     } catch (e: unknown) {
       setError(getErrorMessage(e));
     } finally {

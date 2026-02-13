@@ -115,6 +115,28 @@ const getErrorMessage = (error: unknown): string => {
   return "Unknown error";
 };
 
+const PODCAST_ACCESS_COUNT_KEY = "podcast_access_count";
+
+function getPodcastAccessCount(feedId: number): number {
+  try {
+    const data = localStorage.getItem(PODCAST_ACCESS_COUNT_KEY);
+    return data ? JSON.parse(data)[feedId] || 0 : 0;
+  } catch {
+    return 0;
+  }
+}
+
+function incrementPodcastAccess(feedId: number): void {
+  try {
+    const data = localStorage.getItem(PODCAST_ACCESS_COUNT_KEY);
+    const counts = data ? JSON.parse(data) : {};
+    counts[feedId] = (counts[feedId] || 0) + 1;
+    localStorage.setItem(PODCAST_ACCESS_COUNT_KEY, JSON.stringify(counts));
+  } catch {
+    // Ignore localStorage errors
+  }
+}
+
 function formatDuration(seconds: number | null | undefined) {
   if (!seconds) return "";
   const hours = Math.floor(seconds / 3600);
@@ -304,6 +326,9 @@ export default function PodcastFeedDetailView() {
       setIsSubscribed(result.is_subscribed);
       setTotalEpisodes(result.total_episodes || result.episodes.length); // Fallback
       setOffset(PAGE_SIZE); // Prepare next offset
+
+      // Record access count for sorting in library
+      incrementPodcastAccess(Number(feedId));
     } catch (e: unknown) {
       setError(getErrorMessage(e));
     } finally {
