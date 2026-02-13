@@ -1,8 +1,51 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Dict, List, Optional
+from datetime import datetime
+from typing import Dict, List, Optional, Any
 from pydantic import BaseModel, Field
+
+
+class ErrorResponse(BaseModel):
+    """Standard API error response format."""
+
+    error: str = Field(..., description="Error type/category")
+    message: str = Field(..., description="Human-readable error message")
+    detail: Optional[Any] = Field(None, description="Additional error details")
+    timestamp: datetime = Field(
+        default_factory=datetime.utcnow, description="Error timestamp"
+    )
+    request_id: Optional[str] = Field(None, description="Request ID for tracing")
+
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "error": "ValidationError",
+                "message": "Invalid email format",
+                "detail": {"field": "email", "value": "invalid-email"},
+                "timestamp": "2024-01-01T00:00:00Z",
+                "request_id": "abc123",
+            }
+        }
+
+
+class ValidationErrorResponse(ErrorResponse):
+    """Validation error with field details."""
+
+    error: str = "ValidationError"
+
+
+class NotFoundErrorResponse(ErrorResponse):
+    """Resource not found error."""
+
+    error: str = "NotFoundError"
+
+
+class InternalErrorResponse(ErrorResponse):
+    """Internal server error (hides details in production)."""
+
+    error: str = "InternalError"
+
 
 # --- Existing Dataclasses (Kept for backward compatibility with TUI/Legacy) ---
 

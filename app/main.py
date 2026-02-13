@@ -1,5 +1,6 @@
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
+from fastapi.exceptions import RequestValidationError
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from contextlib import asynccontextmanager
@@ -108,40 +109,81 @@ app = FastAPI(title="NCE English Practice", lifespan=lifespan)
 
 # --- Global Exception Handlers ---
 
+from fastapi import Request
+from fastapi.exceptions import RequestValidationError
+from starlette.exceptions import HTTPException as StarletteHTTPException
+from app.models.schemas import ErrorResponse
+from datetime import datetime
+import traceback
+import uuid
+
 
 @app.exception_handler(StarletteHTTPException)
 async def http_exception_handler(request: Request, exc: StarletteHTTPException):
-    """
-    Handle HTTP exceptions with logging.
-    """
-    # Only log 500s as errors, 4xx as warnings or info to avoid noise
+    """Handle HTTP exceptions with standardized format."""
+    request_id = str(uuid.uuid4())[:8]
+
     if exc.status_code >= 500:
-        logger.error(f"HTTP {exc.status_code}: {exc.detail} - {request.url}")
+        logger.error(
+            f"[{request_id}] HTTP {exc.status_code}: {exc.detail} - {request.url.path}"
+        )
     else:
-        logger.warning(f"HTTP {exc.status_code}: {exc.detail} - {request.url}")
+        logger.warning(
+            f"[{request_id}] HTTP {exc.status_code}: {exc.detail} - {request.url.path}"
+        )
 
     return JSONResponse(
         status_code=exc.status_code,
-        content={"detail": exc.detail},
+        content=ErrorResponse(
+            error=f"HTTP_{exc.status_code}", message=exc.detail, request_id=request_id
+        ).model_dump(),
+    )
+
+
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(request: Request, exc: RequestValidationError):
+    """Handle validation errors with detailed field information."""
+    request_id = str(uuid.uuid4())[:8]
+    errors = exc.errors()
+
+    logger.warning(f"[{request_id}] Validation error: {errors} - {request.url.path}")
+
+    detail = [
+        {
+            "field": ".".join(str(loc) for loc in err.get("loc", [])),
+            "message": err.get("msg", ""),
+            "type": err.get("type", ""),
+        }
+        for err in errors
+    ]
+
+    return JSONResponse(
+        status_code=422,
+        content=ErrorResponse(
+            error="ValidationError",
+            message="Request validation failed",
+            detail=detail,
+            request_id=request_id,
+        ).model_dump(),
     )
 
 
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
-    """
-    Catch-all exception handler for unhandled errors.
-    Prevents app crash and logs full traceback.
-    """
-    import traceback
+    """Catch-all handler - prevents app crash with standardized error response."""
+    request_id = str(uuid.uuid4())[:8]
 
-    error_msg = (
-        f"Unhandled Exception: {str(exc)}\nURL: {request.url}\n{traceback.format_exc()}"
-    )
+    error_msg = f"[{request_id}] Unhandled Exception: {str(exc)}\nURL: {request.url.path}\n{traceback.format_exc()}"
     logger.error(error_msg)
 
     return JSONResponse(
         status_code=500,
-        content={"detail": "Internal Server Error. Please check server logs."},
+        content=ErrorResponse(
+            error="InternalError",
+            message="An internal error occurred. Please check server logs.",
+            detail={"request_id": request_id} if not os.getenv("DEBUG") else str(exc),
+            request_id=request_id,
+        ).model_dump(),
     )
 
 
@@ -149,41 +191,50 @@ async def global_exception_handler(request: Request, exc: Exception):
 
 # Configure CORS
 from fastapi.middleware.cors import CORSMiddleware
-
-# Define origins that are explicitly allowed
-origins = [
-    "http://localhost:3000",  # Web App
-    "http://localhost:5173",  # Vite Dev Server
-    "http://localhost:8081",  # Mobile Web (Expo)
-    "http://127.0.0.1:3000",
-    "http://127.0.0.1:8081",
-]
-
-# Allow all local network IPs dynamically for development convenience
-# This is important for Expo Go on physical devices
 import socket
 
+# Default allowed origins (strict list for security)
+_origins = [
+    "http://localhost:3000",
+    "http://localhost:5173",
+    "http://localhost:8081",
+    "http://127.0.0.1:3000",
+    "http://127.0.0.1:8081",
+    "http://127.0.0.1:8000",
+]
+
+# Add dynamic local IP for development (Expo Go on physical devices)
 try:
     hostname = socket.gethostname()
     local_ip = socket.gethostbyname(hostname)
-    # Add common local subnets if needed, or just rely on regex/allow_origin_regex if FastAPI supported it better.
-    # Since FastAPI CORSMiddleware is strict, we can add wildcard "*" for development
-    # OR we just add the specific local IP detected.
-    origins.append(f"http://{local_ip}:8081")
-    origins.append(f"http://{local_ip}:3000")
-    origins.append(f"http://{local_ip}:8000")
-    origins.append(f"exp://{local_ip}:8081")
+    _origins.extend(
+        [
+            f"http://{local_ip}:8081",
+            f"http://{local_ip}:3000",
+            f"http://{local_ip}:8000",
+            f"exp://{local_ip}:8081",
+        ]
+    )
 except Exception:
     pass
 
+# Check if we should allow all origins (dev mode only)
+allow_all = os.getenv("CORS_ALLOW_ALL", "false").lower() == "true"
+if allow_all:
+    import logging
+
+    logging.warning(
+        "CORS_ALLOW_ALL=true - WARNING: Allowing all origins is insecure for production!"
+    )
+    cors_origins = ["*"]
+else:
+    cors_origins = _origins
+
 app.add_middleware(
     CORSMiddleware,
-    # In production, you might want to be stricter.
-    # For a dev/home server context, allowing "*" is often necessary for mobile apps
-    # because they might not send an Origin header, or it might be null.
-    allow_origins=["*"],
+    allow_origins=cors_origins,
     allow_credentials=True,
-    allow_methods=["*"],
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
     allow_headers=["*"],
 )
 
