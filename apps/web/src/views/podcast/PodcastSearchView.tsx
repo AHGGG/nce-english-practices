@@ -192,10 +192,10 @@ export default function PodcastSearchView() {
 
         {/* Categories */}
         {categories.length > 0 && (
-          <div className="flex gap-2 overflow-x-auto pb-4 custom-scrollbar mask-gradient-r">
+          <div className="flex gap-2 overflow-x-auto pb-2 -mx-2 px-2 md:mx-0 md:px-0 md:flex-wrap custom-scrollbar">
             <button
               onClick={() => setSelectedCategory(null)}
-              className={`px-4 py-2 rounded-full text-[10px] font-bold uppercase tracking-wider whitespace-nowrap transition-all border ${
+              className={`flex-shrink-0 px-3 py-1.5 md:px-4 md:py-2 rounded-full text-[10px] md:text-xs font-bold uppercase tracking-wider transition-all border ${
                 !selectedCategory
                   ? "bg-accent-primary text-[#0a0f0d] border-accent-primary shadow-[0_0_15px_rgba(var(--color-accent-primary-rgb),0.3)]"
                   : "bg-white/[0.03] border-white/10 text-white/60 hover:text-white hover:bg-white/[0.08] hover:border-white/20"
@@ -207,7 +207,7 @@ export default function PodcastSearchView() {
               <button
                 key={cat.id}
                 onClick={() => setSelectedCategory(cat)}
-                className={`px-4 py-2 rounded-full text-[10px] font-bold uppercase tracking-wider whitespace-nowrap transition-all border ${
+                className={`flex-shrink-0 px-3 py-1.5 md:px-4 md:py-2 rounded-full text-[10px] md:text-xs font-bold uppercase tracking-wider transition-all border ${
                   selectedCategory?.id === cat.id
                     ? "bg-accent-primary text-[#0a0f0d] border-accent-primary shadow-[0_0_15px_rgba(var(--color-accent-primary-rgb),0.3)]"
                     : "bg-white/[0.03] border-white/10 text-white/60 hover:text-white hover:bg-white/[0.08] hover:border-white/20"

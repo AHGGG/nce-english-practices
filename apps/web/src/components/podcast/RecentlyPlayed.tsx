@@ -96,7 +96,7 @@ export default function RecentlyPlayed() {
         </h2>
       </div>
 
-      <div className="flex gap-3 overflow-x-auto pb-2 -mx-4 px-4 scrollbar-thin">
+      <div className="flex gap-3 overflow-x-auto pb-2 -mx-4 px-4 custom-scrollbar">
         {items.map((item) => {
           const isCurrentEp = currentEpisode?.id === item.episode.id;
           const coverImage =

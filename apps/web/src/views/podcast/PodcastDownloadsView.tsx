@@ -411,24 +411,24 @@ export default function PodcastDownloadsView() {
     <PodcastLayout title="Downloads">
       <div className="space-y-8 animate-in slide-in-from-bottom-5 duration-700">
         {/* Storage card */}
-        <div className="p-6 md:p-8 bg-[#0a0f0d]/60 backdrop-blur-md border border-white/10 rounded-3xl relative overflow-hidden group">
+        <div className="p-4 md:p-8 bg-[#0a0f0d]/60 backdrop-blur-md border border-white/10 rounded-2xl md:rounded-3xl relative overflow-hidden group">
           <div className="absolute inset-0 bg-gradient-to-br from-accent-primary/5 via-transparent to-accent-success/5 opacity-0 group-hover:opacity-100 transition-opacity duration-1000 pointer-events-none" />
 
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 relative z-10">
-            <div className="flex items-center gap-5">
-              <div className="p-4 bg-accent-success/10 border border-accent-success/20 rounded-2xl shadow-[0_0_20px_rgba(var(--color-accent-success-rgb),0.15)] flex-shrink-0">
-                <CloudOff className="w-8 h-8 text-accent-success" />
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 md:gap-6 relative z-10">
+            <div className="flex items-center gap-3 md:gap-5">
+              <div className="p-3 md:p-4 bg-accent-success/10 border border-accent-success/20 rounded-xl md:rounded-2xl shadow-[0_0_20px_rgba(var(--color-accent-success-rgb),0.15)] flex-shrink-0">
+                <CloudOff className="w-6 h-6 md:w-8 md:h-8 text-accent-success" />
               </div>
               <div>
-                <h2 className="text-2xl font-bold font-serif text-white tracking-tight">
+                <h2 className="text-xl md:text-2xl font-bold font-serif text-white tracking-tight">
                   Offline Library
                 </h2>
-                <div className="flex items-center gap-3 mt-1.5">
-                  <span className="text-xs font-bold text-accent-success uppercase tracking-widest bg-accent-success/10 border border-accent-success/20 px-2 py-0.5 rounded-md">
+                <div className="flex items-center gap-2 md:gap-3 mt-1">
+                  <span className="text-[10px] md:text-xs font-bold text-accent-success uppercase tracking-widest bg-accent-success/10 border border-accent-success/20 px-1.5 md:px-2 py-0.5 rounded-md">
                     {episodes.length} Episodes
                   </span>
                   {storageInfo && (
-                    <span className="text-xs font-mono text-white/40">
+                    <span className="text-[10px] md:text-xs font-mono text-white/40">
                       {storageInfo.usedMB} used
                     </span>
                   )}
@@ -459,28 +459,28 @@ export default function PodcastDownloadsView() {
               )}
 
               {/* Actions */}
-              <div className="flex items-center gap-3 w-full sm:w-auto">
+              <div className="flex items-center gap-2 md:gap-3 w-full sm:w-auto">
                 <button
                   onClick={loadEpisodes}
-                  className="flex-1 sm:flex-none p-3 bg-white/5 border border-white/10 text-white/60 hover:text-white hover:bg-white/10 rounded-xl transition-all active:scale-95 flex justify-center"
+                  className="flex-1 sm:flex-none p-2.5 md:p-3 bg-white/5 border border-white/10 text-white/60 hover:text-white hover:bg-white/10 rounded-xl transition-all active:scale-95 flex justify-center"
                   title="Refresh list"
                 >
-                  <RefreshCw className="w-5 h-5" />
+                  <RefreshCw className="w-4 h-4 md:w-5 md:h-5" />
                 </button>
 
                 {episodes.length > 0 && (
                   <button
                     onClick={handleClearAll}
                     disabled={clearing}
-                    className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-5 py-3 text-xs font-bold uppercase tracking-wider text-red-400 bg-red-500/5 hover:bg-red-500/10 border border-red-500/10 hover:border-red-500/30 rounded-xl transition-all active:scale-95 whitespace-nowrap"
+                    className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 md:gap-2 px-3 md:px-5 py-2.5 md:py-3 text-[10px] md:text-xs font-bold uppercase tracking-wider text-red-400 bg-red-500/5 hover:bg-red-500/10 border border-red-500/10 hover:border-red-500/30 rounded-xl transition-all active:scale-95 whitespace-nowrap"
                     title="Clear all downloads"
                   >
                     {clearing ? (
-                      <Loader2 className="w-4 h-4 animate-spin" />
+                      <Loader2 className="w-3 h-3 md:w-4 md:h-4 animate-spin" />
                     ) : (
-                      <Trash2 className="w-4 h-4" />
+                      <Trash2 className="w-3 h-3 md:w-4 md:h-4" />
                     )}
-                    <span>Clear All</span>
+                    <span>Clear</span>
                   </button>
                 )}
               </div>
