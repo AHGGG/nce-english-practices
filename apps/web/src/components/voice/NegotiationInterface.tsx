@@ -1,4 +1,3 @@
-// @ts-nocheck
 import React, { useState, useEffect, useRef } from "react";
 import {
   Volume2,
@@ -20,13 +19,97 @@ import VoiceSessionTracker from "../../utils/VoiceSessionTracker";
 
 import { authFetch, apiGet, apiPost, apiPut } from "../../api/auth";
 
+type StepType = "original" | "explain_en" | "explain_cn" | string;
+
+interface BookOption {
+  code: string;
+  name: string;
+}
+
+interface BookRange {
+  start: number | null;
+  end: number | null;
+}
+
+interface ExampleItem {
+  text: string;
+  translation?: string;
+}
+
+interface SenseItem {
+  index?: string;
+  definition: string;
+  grammar_pattern?: string;
+  examples: ExampleItem[];
+}
+
+interface EntryItem {
+  senses: SenseItem[];
+}
+
+interface WordExampleSet {
+  word: string;
+  entries: EntryItem[];
+  total_examples: number;
+  total_senses: number;
+}
+
+interface StepSnapshot {
+  text: string;
+  step: StepType;
+  sourceWord: string;
+  definition: string;
+  translation: string;
+  senseIndex: number;
+  exampleIndex: number;
+}
+
+interface CustomIndices {
+  articleIdx: number;
+  sentenceIdx: number;
+}
+
+interface InteractionContext {
+  target_content: string;
+  source_type: string;
+  definition: string;
+  part_of_speech: string;
+  translation_hint: string;
+}
+
+interface InteractionRequest {
+  session_id: string;
+  user_intention: string;
+  context?: InteractionContext;
+}
+
+interface InteractionResponse {
+  audio_text: string;
+  next_step: StepType;
+}
+
+interface ContentResponse {
+  text: string;
+  source_word?: string;
+  definition?: string;
+  translation?: string;
+  highlights?: string[];
+  article_title?: string;
+  article_link?: string;
+  article_idx?: number;
+  sentence_idx?: number;
+  total_sentences?: number;
+  has_next?: boolean;
+  raw_content?: string;
+}
+
 const NegotiationInterface = () => {
   const [sessionId, setSessionId] = useState(`session-${Date.now()}`);
   const [currentText, setCurrentText] = useState(
     "The ubiquity of smartphones has changed how we communicate.",
   );
   const [isTextVisible, setIsTextVisible] = useState(false);
-  const [step, setStep] = useState("original");
+  const [step, setStep] = useState<StepType>("original");
   const [isLoading, setIsLoading] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [hasStarted, setHasStarted] = useState(false);
@@ -45,21 +128,24 @@ const NegotiationInterface = () => {
   const [showTranslation, setShowTranslation] = useState(false);
 
   // Step history for back navigation
-  const [stepHistory, setStepHistory] = useState([]);
+  const [stepHistory, setStepHistory] = useState<StepSnapshot[]>([]);
   const [historyIndex, setHistoryIndex] = useState(-1);
 
   // Playback speed (1.0 = normal, 0.75 = slow, 0.5 = very slow)
   const [playbackSpeed, setPlaybackSpeed] = useState(1.0);
 
   // Multi-example navigation
-  const [wordExamples, setWordExamples] = useState(null); // WordExampleSet from API
+  const [wordExamples, setWordExamples] = useState<WordExampleSet | null>(null); // WordExampleSet from API
   const [currentSenseIndex, setCurrentSenseIndex] = useState(0);
   const [currentExampleIndex, setCurrentExampleIndex] = useState(0);
 
   // Book selection
-  const [books, setBooks] = useState([]);
+  const [books, setBooks] = useState<BookOption[]>([]);
   const [selectedBook, setSelectedBook] = useState("");
-  const [bookRange, setBookRange] = useState({ start: null, end: null });
+  const [bookRange, setBookRange] = useState<BookRange>({
+    start: null,
+    end: null,
+  });
 
   // RSS Feed
   const [rssUrl, setRssUrl] = useState("");
@@ -67,7 +153,7 @@ const NegotiationInterface = () => {
   // EPUB Mode
   const [isEpubMode, setIsEpubMode] = useState(false);
   const [epubFile] = useState("TheEconomist.2025.12.27.epub");
-  const [highlightedWords, setHighlightedWords] = useState([]); // Array of words to highlight
+  const [highlightedWords, setHighlightedWords] = useState<string[]>([]); // Array of words to highlight
   const [articleTitle, setArticleTitle] = useState("");
   const [articleLink, setArticleLink] = useState("");
   // Sequential reading state
@@ -79,10 +165,10 @@ const NegotiationInterface = () => {
   const [rawContent, setRawContent] = useState("");
 
   // Voices ref to store loaded voices
-  const voicesRef = useRef([]);
+  const voicesRef = useRef<SpeechSynthesisVoice[]>([]);
 
   // Session Tracker
-  const trackerRef = useRef(null);
+  const trackerRef = useRef<VoiceSessionTracker | null>(null);
 
   // Load voices and books on mount
   useEffect(() => {
@@ -126,7 +212,10 @@ const NegotiationInterface = () => {
     };
   }, []);
 
-  const getContentUrl = (excludeWord = null, customIndices = null) => {
+  const getContentUrl = (
+    excludeWord: string | null = null,
+    customIndices: CustomIndices | null = null,
+  ) => {
     let url = selectedBook
       ? `/api/negotiation/next-content?book=${selectedBook}`
       : "/api/negotiation/next-content";
@@ -167,13 +256,13 @@ const NegotiationInterface = () => {
   };
 
   // Speak function using server-side TTS with caching
-  const audioRef = useRef(null);
-  const audioCacheRef = useRef({}); // Cache: { textHash -> audioUrl }
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const audioCacheRef = useRef<Record<string, string>>({}); // Cache: { textHash -> audioUrl }
 
   // Simple hash for cache key
-  const hashText = (text) => text.slice(0, 50) + "_" + text.length;
+  const hashText = (text: string) => text.slice(0, 50) + "_" + text.length;
 
-  const speak = async (text, langHint = "en") => {
+  const speak = async (text: string, langHint = "en") => {
     if (!text) return;
 
     // Stop any previous audio
@@ -240,7 +329,7 @@ const NegotiationInterface = () => {
   };
 
   // Fallback to browser TTS if server fails
-  const fallbackSpeak = (text, langHint = "en") => {
+  const fallbackSpeak = (text: string, langHint = "en") => {
     window.speechSynthesis.cancel();
     const utterance = new SpeechSynthesisUtterance(text);
 
@@ -342,7 +431,7 @@ const NegotiationInterface = () => {
     setIsLoading(false);
   };
 
-  const handleInteraction = async (intention) => {
+  const handleInteraction = async (intention: string) => {
     setIsLoading(true);
     try {
       // Log word inspection when user clicks HUH? (Source-Aware Drill-down)
@@ -354,7 +443,7 @@ const NegotiationInterface = () => {
       }
 
       // Build request body
-      const requestBody = {
+      const requestBody: InteractionRequest = {
         session_id: sessionId,
         user_intention: intention,
       };
@@ -377,7 +466,10 @@ const NegotiationInterface = () => {
         setNeedsContext(false); // Reset flag
       }
 
-      const data = await apiPost("/api/negotiation/interact", requestBody);
+      const data = (await apiPost(
+        "/api/negotiation/interact",
+        requestBody,
+      )) as InteractionResponse;
       handleResponse(data);
     } catch (e) {
       console.error(e);
@@ -385,7 +477,7 @@ const NegotiationInterface = () => {
     setIsLoading(false);
   };
 
-  const handleResponse = (data) => {
+  const handleResponse = (data: InteractionResponse) => {
     // Save current state to history before changing (for back navigation)
     // Include sense/example indices for complete state restoration
     const currentState = {
@@ -549,9 +641,14 @@ const NegotiationInterface = () => {
   };
 
   // Fetch real content from the ContentFeeder API
-  const fetchNextContent = async (excludeWord = null, customIndices = null) => {
+  const fetchNextContent = async (
+    excludeWord: string | null = null,
+    customIndices: CustomIndices | null = null,
+  ) => {
     try {
-      const data = await apiGet(getContentUrl(excludeWord, customIndices));
+      const data = (await apiGet(
+        getContentUrl(excludeWord, customIndices),
+      )) as ContentResponse;
       setCurrentText(data.text);
       setSourceWord(data.source_word || "");
       setDefinition(data.definition || "");
@@ -596,7 +693,11 @@ const NegotiationInterface = () => {
   };
 
   // Fetch context scenario from backend
-  const fetchContextScenario = async (word, def, sentence) => {
+  const fetchContextScenario = async (
+    word: string,
+    def: string,
+    sentence: string,
+  ) => {
     if (!word || !def || !sentence) return;
 
     setIsContextLoading(true);
@@ -614,11 +715,11 @@ const NegotiationInterface = () => {
   };
 
   // Fetch all examples for a word
-  const fetchWordExamples = async (word) => {
+  const fetchWordExamples = async (word: string) => {
     try {
-      const data = await apiGet(
+      const data = (await apiGet(
         `/api/negotiation/word-examples?word=${encodeURIComponent(word)}`,
-      );
+      )) as WordExampleSet;
       setWordExamples(data);
       setCurrentSenseIndex(0);
       setCurrentExampleIndex(0);
@@ -629,7 +730,7 @@ const NegotiationInterface = () => {
   };
 
   // Log word inspection to backend (Source-Aware Drill-down)
-  const logWordInspection = async (word, contextSentence) => {
+  const logWordInspection = async (word: string, contextSentence: string) => {
     if (!word) return;
 
     // Determine source type and ID based on current mode
@@ -800,7 +901,7 @@ const NegotiationInterface = () => {
   };
 
   // Jump to specific sense
-  const goToSense = (senseIdx) => {
+  const goToSense = (senseIdx: number) => {
     if (!wordExamples) return;
     // Reset step history when switching sense (new context)
     setStepHistory([]);

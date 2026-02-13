@@ -1,46 +1,70 @@
-// @ts-nocheck
-import React, { Suspense, useMemo } from 'react';
-import { getComponent } from './registry';
+import { Suspense } from "react";
+import type { ComponentType } from "react";
+import { getComponent } from "./registry";
+
+interface AUIRenderPacket {
+  id?: string;
+  type: "aui_render";
+  ui: {
+    component: string;
+    props?: Record<string, unknown>;
+  };
+  fallback_text?: string;
+}
+
+interface AUIHydratorProps {
+  packet: AUIRenderPacket | null;
+  onInteract?: (action: string, payload?: Record<string, unknown>) => void;
+}
 
 /**
  * AUIHydrator: The "Body" that the Agent inhabits.
  * Takes a plain JSON packet and hydrates it into a live React Component.
- * 
+ *
  * @param {Object} props
  * @param {Object} props.packet - The AUI JSON payload (type="aui_render")
  * @param {Function} props.onInteract - Callback when user interacts with the component
  */
-export const AUIHydrator = ({ packet, onInteract }) => {
-    // Direct lookup - getComponent should be stable or fast
-    const Component = (packet && packet.type === 'aui_render')
-        ? getComponent(packet.ui.component)
-        : null;
+export const AUIHydrator = ({ packet, onInteract }: AUIHydratorProps) => {
+  // Direct lookup - getComponent should be stable or fast
+  const Component: ComponentType<Record<string, unknown>> | null =
+    packet && packet.type === "aui_render"
+      ? (getComponent(packet.ui.component) as ComponentType<
+          Record<string, unknown>
+        > | null)
+      : null;
 
-    if (!packet || packet.type !== 'aui_render') {
-        return null;
-    }
+  if (!packet || packet.type !== "aui_render") {
+    return null;
+  }
 
-    const { ui, fallback_text } = packet;
+  const { ui, fallback_text } = packet;
 
-    if (!Component) {
-        // Fallback if component code not found on client
-        return (
-            <div className="p-4 border border-border rounded bg-bg-surface text-text-secondary">
-                <p className="mb-2 text-xs uppercase tracking-widest text-text-muted">
-                    AUI Fallback
-                </p>
-                <div className="whitespace-pre-wrap font-mono text-sm">
-                    {fallback_text}
-                </div>
-            </div>
-        );
-    }
-
+  if (!Component) {
+    // Fallback if component code not found on client
     return (
-        <Suspense fallback={<div className="animate-pulse h-20 bg-bg-surface rounded" />}>
-            <div className="aui-container my-4 animate-in fade-in slide-in-from-bottom-2 duration-500">
-                <Component {...ui.props} onInteract={onInteract} packetId={packet.id} />
-            </div>
-        </Suspense>
+      <div className="p-4 border border-border rounded bg-bg-surface text-text-secondary">
+        <p className="mb-2 text-xs uppercase tracking-widest text-text-muted">
+          AUI Fallback
+        </p>
+        <div className="whitespace-pre-wrap font-mono text-sm">
+          {fallback_text}
+        </div>
+      </div>
     );
+  }
+
+  return (
+    <Suspense
+      fallback={<div className="animate-pulse h-20 bg-bg-surface rounded" />}
+    >
+      <div className="aui-container my-4 animate-in fade-in slide-in-from-bottom-2 duration-500">
+        <Component
+          {...(ui.props || {})}
+          onInteract={onInteract}
+          packetId={packet.id}
+        />
+      </div>
+    </Suspense>
+  );
 };

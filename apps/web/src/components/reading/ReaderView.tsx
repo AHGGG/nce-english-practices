@@ -1,5 +1,5 @@
-// @ts-nocheck
-import React, { useRef, useEffect, useCallback } from "react";
+import { useRef, useEffect, useCallback } from "react";
+import type { Dispatch, MouseEvent, RefObject, SetStateAction } from "react";
 import {
   ChevronLeft,
   Zap,
@@ -11,6 +11,41 @@ import MemoizedSentence from "./MemoizedSentence";
 import MemoizedImage from "./MemoizedImage";
 import { HIGHLIGHT_OPTIONS, BATCH_SIZE } from "./constants";
 import { rendererRegistry } from "../content";
+import type { Collocation, ContentBundle, ReadingTrackerRef } from "../content";
+
+interface SentenceItem {
+  text: string;
+}
+
+interface ReadingArticle extends ContentBundle {
+  id: string;
+  title: string;
+  sentence_count?: number;
+  metadata?: Record<string, unknown> & { filename?: string };
+  sentences?: Array<string | SentenceItem>;
+  knownWords?: Set<string>;
+}
+
+interface ReaderViewProps {
+  article: ReadingArticle;
+  visibleCount: number;
+  setVisibleCount: Dispatch<SetStateAction<number>>;
+  selectedOptionIndex: number;
+  setSelectedOptionIndex: (index: number) => void;
+  showHighlights: boolean;
+  setShowHighlights: (show: boolean) => void;
+  selectedWord: string | null;
+  onWordClick: (word: string, sentence: string) => void;
+  onSentenceClick?: (sentence: string, meta?: Record<string, unknown>) => void;
+  onBackToLibrary: () => void;
+  onImageClick: (src: string, alt?: string, caption?: string) => void;
+  onSweep: () => void;
+  trackerRef?: RefObject<ReadingTrackerRef | null>;
+  calibrationBanner?: string | null;
+  getCollocations?: (sentence: string) => Collocation[];
+  loadCollocations?: (sentences: string[]) => void;
+  prefetchCollocations?: (sentences: string[]) => void;
+}
 
 /**
  * Reader View - Immersive article reading with word inspection
@@ -35,9 +70,9 @@ const ReaderView = ({
   getCollocations,
   loadCollocations,
   prefetchCollocations,
-}) => {
-  const mainRef = useRef(null);
-  const sentinelRef = useRef(null);
+}: ReaderViewProps) => {
+  const mainRef = useRef<HTMLElement | null>(null);
+  const sentinelRef = useRef<HTMLDivElement | null>(null);
 
   // Check if we have a new renderer for this content
   const renderer = rendererRegistry.getRendererForBundle(article);
@@ -85,9 +120,13 @@ const ReaderView = ({
       (entries) => {
         entries.forEach((entry) => {
           if (entry.isIntersecting && trackerRef.current) {
-            const idx = entry.target.dataset.sentenceIdx;
+            const target = entry.target as HTMLElement;
+            const idx = target.dataset.sentenceIdx;
             if (idx) {
-              trackerRef.current.onSentenceView(idx);
+              const parsed = Number.parseInt(idx, 10);
+              if (!Number.isNaN(parsed)) {
+                trackerRef.current.onSentenceView(parsed);
+              }
             }
           }
         });
@@ -95,7 +134,9 @@ const ReaderView = ({
       { rootMargin: "0px", threshold: 0.5 },
     );
 
-    const sentenceEls = document.querySelectorAll("[data-sentence-idx]");
+    const sentenceEls = document.querySelectorAll<HTMLElement>(
+      "[data-sentence-idx]",
+    );
     sentenceEls.forEach((el) => observer.observe(el));
 
     return () => observer.disconnect();
@@ -108,9 +149,12 @@ const ReaderView = ({
     }
 
     // Extract all sentences from blocks
-    const allSentences = [];
+    const allSentences: string[] = [];
     article.blocks.forEach((block) => {
-      if (block.type === "paragraph" && block.sentences) {
+      if (
+        (block.type === "paragraph" || block.type === "audio_segment") &&
+        block.sentences
+      ) {
         allSentences.push(...block.sentences);
       }
     });
@@ -131,11 +175,12 @@ const ReaderView = ({
     // Set up observer for lazy loading remaining sentences
     const observer = new IntersectionObserver(
       (entries) => {
-        const visibleSentences = [];
+        const visibleSentences: string[] = [];
 
         entries.forEach((entry) => {
           if (entry.isIntersecting) {
-            const sentenceText = entry.target.dataset.sentenceText;
+            const target = entry.target as HTMLElement;
+            const sentenceText = target.dataset.sentenceText;
             if (sentenceText) {
               visibleSentences.push(sentenceText);
             }
@@ -151,7 +196,9 @@ const ReaderView = ({
 
     // Use MutationObserver to wait for DOM elements
     const mutationObserver = new MutationObserver(() => {
-      const sentenceEls = document.querySelectorAll("[data-sentence-text]");
+      const sentenceEls = document.querySelectorAll<HTMLElement>(
+        "[data-sentence-text]",
+      );
       if (sentenceEls.length > 0) {
         sentenceEls.forEach((el) => observer.observe(el));
         mutationObserver.disconnect();
@@ -164,7 +211,9 @@ const ReaderView = ({
     });
 
     // Also try immediately in case DOM is already ready
-    const sentenceEls = document.querySelectorAll("[data-sentence-text]");
+    const sentenceEls = document.querySelectorAll<HTMLElement>(
+      "[data-sentence-text]",
+    );
     if (sentenceEls.length > 0) {
       sentenceEls.forEach((el) => observer.observe(el));
       mutationObserver.disconnect();
@@ -178,12 +227,12 @@ const ReaderView = ({
 
   // Event delegation: handle clicks on article container
   const handleArticleClick = useCallback(
-    (e) => {
-      const target = e.target;
+    (e: MouseEvent<HTMLElement>) => {
+      const target = e.target as HTMLElement;
 
       // Check if clicking on an unclear sentence (not on a word)
       // Walk up the tree to find if we clicked inside an unclear sentence
-      let el = target;
+      let el: HTMLElement | null = target;
       while (el && el !== e.currentTarget) {
         if (el.dataset?.unclearSentence === "true") {
           // Only trigger sentence click if we didn't click on a word
@@ -246,6 +295,7 @@ const ReaderView = ({
           }
 
           case "image": {
+            if (!block.image_path) return null;
             const imgUrl = `/api/reading/epub/image?filename=${encodeURIComponent(filename)}&image_path=${encodeURIComponent(block.image_path)}`;
             return (
               <MemoizedImage
@@ -259,12 +309,13 @@ const ReaderView = ({
           }
 
           case "paragraph": {
+            const paragraphSentences = block.sentences || [];
             const startIdx = globalSentenceIndex;
-            globalSentenceIndex += block.sentences.length;
+            globalSentenceIndex += paragraphSentences.length;
 
             return (
               <div key={`p-${blockIdx}`} className="mb-4">
-                {block.sentences.map((sentence, sentIdx) => {
+                {paragraphSentences.map((sentence, sentIdx) => {
                   const globalIdx = startIdx + sentIdx;
                   // Get collocations for this sentence (if loaded)
                   const collocations = getCollocations?.(sentence) || [];
@@ -421,7 +472,10 @@ const ReaderView = ({
                 <span>{article.sentence_count} SENTENCES</span>
                 <span className="text-white/20">/</span>
                 <span>
-                  {article.metadata?.filename?.split(".").slice(0, 2).join(" ")}
+                  {(article.metadata?.filename || "")
+                    .split(".")
+                    .slice(0, 2)
+                    .join(" ")}
                 </span>
               </div>
             </header>
@@ -441,7 +495,6 @@ const ReaderView = ({
                   onWordClick,
                   onSentenceClick,
                   onImageClick,
-                  tracker: trackerRef?.current,
                   visibleCount,
                   metadata: article.metadata,
                 })}

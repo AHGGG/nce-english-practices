@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * PlayerBar - Persistent footer player for podcast playback.
  * Enhanced with playback speed control and improved styling.
@@ -15,8 +14,9 @@ import {
   Gauge,
 } from "lucide-react";
 import { useState } from "react";
+import type { MouseEvent } from "react";
 
-function formatTime(seconds) {
+function formatTime(seconds: number) {
   if (!seconds || !isFinite(seconds)) return "0:00";
   const hours = Math.floor(seconds / 3600);
   const mins = Math.floor((seconds % 3600) / 60);
@@ -48,6 +48,8 @@ export default function PlayerBar() {
   const [showSpeedMenu, setShowSpeedMenu] = useState(false);
 
   const [isHoveringProgress, setIsHoveringProgress] = useState(false);
+  const coverImage =
+    currentEpisode?.image_url ?? currentFeed?.image_url ?? undefined;
 
   if (!currentEpisode) return null;
 
@@ -60,7 +62,7 @@ export default function PlayerBar() {
         className="h-1 bg-white/[0.1] cursor-pointer group relative transition-all duration-300 hover:h-2"
         onMouseEnter={() => setIsHoveringProgress(true)}
         onMouseLeave={() => setIsHoveringProgress(false)}
-        onClick={(e) => {
+        onClick={(e: MouseEvent<HTMLDivElement>) => {
           const rect = e.currentTarget.getBoundingClientRect();
           const percent = (e.clientX - rect.left) / rect.width;
           seek(percent * duration);
@@ -86,9 +88,9 @@ export default function PlayerBar() {
         {/* Episode info */}
         <div className="flex items-center gap-3 flex-1 min-w-0">
           <div className="relative flex-shrink-0">
-            {currentEpisode.image_url || currentFeed?.image_url ? (
+            {coverImage ? (
               <img
-                src={currentEpisode.image_url || currentFeed?.image_url}
+                src={coverImage}
                 alt=""
                 referrerPolicy="no-referrer"
                 className="w-12 h-12 md:w-14 md:h-14 rounded-md object-cover border border-white/10 shadow-lg"

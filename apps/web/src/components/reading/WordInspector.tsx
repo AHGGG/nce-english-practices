@@ -1,5 +1,5 @@
-// @ts-nocheck
-import React, { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect } from "react";
+import type { ReactElement, ReactNode } from "react";
 import {
   Volume2,
   X,
@@ -12,12 +12,87 @@ import {
   BookOpen,
   Mic,
   Calendar,
-  Clock,
 } from "lucide-react";
 import DictionaryResults from "../aui/DictionaryResults";
 import ReactMarkdown from "react-markdown";
 import DangerousHtml from "../Dictionary/DangerousHtml";
 import { getWordContexts } from "../../api/client";
+
+type ActiveTab = "LDOCE" | "Collins" | "HISTORY";
+
+interface DictionarySourcePayload {
+  found?: boolean;
+  entries?: unknown[];
+  entry?: unknown;
+}
+
+interface InspectorData {
+  found?: boolean;
+  ldoce?: DictionarySourcePayload;
+  collins?: DictionarySourcePayload;
+}
+
+interface HistoryItem {
+  source_type: string;
+  created_at: string;
+  context_sentence: string;
+}
+
+interface WordInspectorProps {
+  selectedWord: string | null;
+  inspectorData: InspectorData | unknown;
+  isInspecting: boolean;
+  onClose: () => void;
+  onPlayAudio: (word: string) => void;
+  onMarkAsKnown: (word: string) => void | Promise<void>;
+  currentSentenceContext: string | null;
+  contextExplanation?: string;
+  isExplaining?: boolean;
+  isPhrase?: boolean;
+  onExplainStyle?: (style: string) => void;
+  currentStyle?: string;
+  generatedImage?: string | null;
+  isGeneratingImage?: boolean;
+  canGenerateImage?: boolean;
+  onGenerateImage?: () => void;
+}
+
+const markdownComponents: Record<
+  string,
+  ({ children }: { children?: ReactNode }) => ReactElement
+> = {
+  p: ({ children }) => <p className="mb-2 last:mb-0">{children}</p>,
+  h2: ({ children }) => (
+    <h2 className="text-sm font-bold text-accent-primary uppercase tracking-wider mt-3 mb-1 first:mt-0">
+      {children}
+    </h2>
+  ),
+  h3: ({ children }) => (
+    <h3 className="text-xs font-bold text-accent-warning uppercase tracking-wider mt-2 mb-1">
+      {children}
+    </h3>
+  ),
+  ul: ({ children }) => (
+    <ul className="list-disc pl-4 mb-2 space-y-1">{children}</ul>
+  ),
+  ol: ({ children }) => (
+    <ol className="list-decimal pl-4 mb-2 space-y-1">{children}</ol>
+  ),
+  li: ({ children }) => (
+    <li className="pl-1 marker:text-accent-primary">{children}</li>
+  ),
+  strong: ({ children }) => (
+    <strong className="text-accent-primary font-bold">{children}</strong>
+  ),
+  em: ({ children }) => (
+    <em className="text-accent-warning not-italic">{children}</em>
+  ),
+  code: ({ children }) => (
+    <code className="bg-bg-elevated px-1 rounded text-accent-primary font-mono text-xs">
+      {children}
+    </code>
+  ),
+};
 
 /**
  * Word Inspector Panel - Shows dictionary definition for selected word
@@ -31,7 +106,7 @@ const WordInspector = ({
   onPlayAudio,
   onMarkAsKnown,
   // Context for history updates
-  currentSentenceContext,
+  currentSentenceContext: _currentSentenceContext,
   // New props for streaming context explanation
   contextExplanation = "",
   isExplaining = false,
@@ -43,23 +118,28 @@ const WordInspector = ({
   isGeneratingImage = false,
   canGenerateImage = false,
   onGenerateImage = () => {},
-}) => {
+}: WordInspectorProps) => {
+  const typedInspectorData = (inspectorData || null) as InspectorData | null;
   // Derive default tab from inspectorData (memoized to avoid recalculation)
   const defaultTab = useMemo(() => {
-    if (inspectorData?.ldoce?.found) return "LDOCE";
-    if (inspectorData?.collins?.found) return "Collins";
+    if (typedInspectorData?.ldoce?.found) return "LDOCE";
+    if (typedInspectorData?.collins?.found) return "Collins";
     return "LDOCE";
-  }, [inspectorData]);
+  }, [typedInspectorData]);
 
-  const [activeTab, setActiveTab] = useState(defaultTab);
-  const [history, setHistory] = useState([]);
+  const [activeTab, setActiveTab] = useState<ActiveTab>(
+    defaultTab as ActiveTab,
+  );
+  const [history, setHistory] = useState<HistoryItem[]>([]);
+  const [now] = useState(() => Date.now());
 
   useEffect(() => {
     if (selectedWord) {
-      setHistory([]);
       getWordContexts(selectedWord)
         .then((res) => {
-          if (res) setHistory(res);
+          if (Array.isArray(res)) {
+            setHistory(res as HistoryItem[]);
+          }
         })
         .catch(console.error);
     }
@@ -68,11 +148,12 @@ const WordInspector = ({
   // Update tab when data changes (but only if current tab is invalid)
   const effectiveTab = useMemo(() => {
     if (activeTab === "HISTORY" && history.length > 0) return "HISTORY";
-    if (activeTab === "LDOCE" && inspectorData?.ldoce?.found) return "LDOCE";
-    if (activeTab === "Collins" && inspectorData?.collins?.found)
+    if (activeTab === "LDOCE" && typedInspectorData?.ldoce?.found)
+      return "LDOCE";
+    if (activeTab === "Collins" && typedInspectorData?.collins?.found)
       return "Collins";
     return defaultTab;
-  }, [activeTab, inspectorData, defaultTab, history]);
+  }, [activeTab, typedInspectorData, defaultTab, history]);
 
   if (!selectedWord) return null;
 
@@ -130,53 +211,7 @@ const WordInspector = ({
               </div>
               <div className="text-sm text-white/90 leading-relaxed font-sans">
                 {contextExplanation ? (
-                  <ReactMarkdown
-                    components={{
-                      p: ({ children }) => (
-                        <p className="mb-2 last:mb-0">{children}</p>
-                      ),
-                      h2: ({ children }) => (
-                        <h2 className="text-sm font-bold text-accent-primary uppercase tracking-wider mt-3 mb-1 first:mt-0">
-                          {children}
-                        </h2>
-                      ),
-                      h3: ({ children }) => (
-                        <h3 className="text-xs font-bold text-accent-warning uppercase tracking-wider mt-2 mb-1">
-                          {children}
-                        </h3>
-                      ),
-                      ul: ({ children }) => (
-                        <ul className="list-disc pl-4 mb-2 space-y-1">
-                          {children}
-                        </ul>
-                      ),
-                      ol: ({ children }) => (
-                        <ol className="list-decimal pl-4 mb-2 space-y-1">
-                          {children}
-                        </ol>
-                      ),
-                      li: ({ children }) => (
-                        <li className="pl-1 marker:text-accent-primary">
-                          {children}
-                        </li>
-                      ),
-                      strong: ({ children }) => (
-                        <strong className="text-accent-primary font-bold">
-                          {children}
-                        </strong>
-                      ),
-                      em: ({ children }) => (
-                        <em className="text-accent-warning not-italic">
-                          {children}
-                        </em>
-                      ),
-                      code: ({ children }) => (
-                        <code className="bg-bg-elevated px-1 rounded text-accent-primary font-mono text-xs">
-                          {children}
-                        </code>
-                      ),
-                    }}
-                  >
+                  <ReactMarkdown components={markdownComponents}>
                     {contextExplanation}
                   </ReactMarkdown>
                 ) : (
@@ -257,11 +292,11 @@ const WordInspector = ({
                   Retrieving Data...
                 </span>
               </div>
-            ) : inspectorData?.found ? (
+            ) : typedInspectorData?.found ? (
               <div className="flex flex-col h-full">
                 {/* Dictionary Tabs */}
                 <div className="flex px-4 pt-2 gap-2 shrink-0 z-10 sticky top-0 bg-bg-base/95 backdrop-blur-xl">
-                  {inspectorData.ldoce?.found && (
+                  {typedInspectorData.ldoce?.found && (
                     <button
                       onClick={() => setActiveTab("LDOCE")}
                       className={`flex-1 py-2 text-[10px] font-bold uppercase tracking-widest transition-all rounded-t-lg border-b-2 ${
@@ -273,7 +308,7 @@ const WordInspector = ({
                       Longman
                     </button>
                   )}
-                  {inspectorData.collins?.found && (
+                  {typedInspectorData.collins?.found && (
                     <button
                       onClick={() => setActiveTab("Collins")}
                       className={`flex-1 py-2 text-[10px] font-bold uppercase tracking-widest transition-all rounded-t-lg border-b-2 ${
@@ -316,8 +351,7 @@ const WordInspector = ({
                       <div className="space-y-3">
                         {history.map((item, idx) => {
                           const date = new Date(item.created_at);
-                          const isRecent =
-                            Date.now() - date.getTime() < 86400000; // 24h
+                          const isRecent = now - date.getTime() < 86400000; // 24h
 
                           return (
                             <div
@@ -386,28 +420,31 @@ const WordInspector = ({
                     </div>
                   )}
 
-                  {effectiveTab === "LDOCE" && inspectorData.ldoce?.found && (
-                    <DictionaryResults
-                      word={selectedWord}
-                      source="LDOCE"
-                      entries={inspectorData.ldoce.entries}
-                    />
-                  )}
+                  {effectiveTab === "LDOCE" &&
+                    typedInspectorData.ldoce?.found && (
+                      <DictionaryResults
+                        word={selectedWord}
+                        source="LDOCE"
+                        entries={
+                          (typedInspectorData.ldoce.entries || []) as never[]
+                        }
+                      />
+                    )}
                   {effectiveTab === "Collins" &&
-                    inspectorData.collins?.found && (
+                    typedInspectorData.collins?.found && (
                       <DictionaryResults
                         word={selectedWord}
                         source="Collins"
                         entries={
-                          inspectorData.collins.entry
-                            ? [inspectorData.collins.entry]
-                            : []
+                          typedInspectorData.collins.entry
+                            ? ([typedInspectorData.collins.entry] as never[])
+                            : ([] as never[])
                         }
                       />
                     )}
                 </div>
               </div>
-            ) : inspectorData?.found === false ? (
+            ) : typedInspectorData?.found === false ? (
               <div className="flex flex-col items-center justify-center p-12 text-white/40">
                 <div className="p-4 rounded-full bg-white/5 mb-4">
                   <X className="w-8 h-8 opacity-50" />

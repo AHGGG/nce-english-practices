@@ -1,14 +1,29 @@
-// @ts-nocheck
 /**
  * BookShelfView - Book Selection Grid
  * Shows all available EPUB books for Sentence Study
  */
-import React from "react";
 import { useNavigate } from "react-router-dom";
 import { ChevronLeft, BookOpen, Loader2, GraduationCap } from "lucide-react";
 import { usePodcast } from "../../../context/PodcastContext";
 
-const BookShelfView = ({ books = [], loading = false, onSelectBook }) => {
+interface BookItem {
+  filename?: string;
+  id?: string;
+  title: string;
+  size_bytes: number;
+}
+
+interface BookShelfViewProps {
+  books?: BookItem[];
+  loading?: boolean;
+  onSelectBook: (bookFilename: string) => void;
+}
+
+const BookShelfView = ({
+  books = [],
+  loading = false,
+  onSelectBook,
+}: BookShelfViewProps) => {
   const { currentEpisode } = usePodcast();
   const navigate = useNavigate();
 
@@ -68,8 +83,9 @@ const BookShelfView = ({ books = [], loading = false, onSelectBook }) => {
               {books.map((book, i) => (
                 <button
                   key={i}
-                  onClick={() => onSelectBook(book)}
+                  onClick={() => onSelectBook(book.filename || "")}
                   className="group relative text-left p-6 border border-white/10 bg-white/[0.02] hover:bg-white/[0.05] hover:border-accent-primary/30 transition-all rounded-2xl flex flex-col h-full overflow-hidden hover:shadow-2xl hover:shadow-black/50 hover:-translate-y-1"
+                  disabled={!book.filename}
                 >
                   <div className="absolute inset-0 bg-gradient-to-br from-accent-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
 

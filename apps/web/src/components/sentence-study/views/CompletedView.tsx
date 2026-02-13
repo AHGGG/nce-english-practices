@@ -1,31 +1,65 @@
-// @ts-nocheck
 /**
  * CompletedView - Article completion summary
  * Shows stats and full article with highlighted lookups and unclear sentences
  * Clicking unclear sentences opens SentenceInspector for explanations
  */
 import React, { useState } from "react";
-import {
-  ChevronLeft,
-  CheckCircle,
-  BookMarked,
-  AlertCircle,
-  Trophy,
-  BarChart,
-} from "lucide-react";
+import { ChevronLeft, CheckCircle, BookMarked, Trophy } from "lucide-react";
 import SentenceInspector from "../../reading/SentenceInspector";
 import { getGapTypeInfo, DIFFICULTY_CHOICES } from "../constants";
 import { usePodcast } from "../../../context/PodcastContext";
 
+interface Progress {
+  studied_count: number;
+  clear_count: number;
+}
+
+interface UnclearSentenceInfo {
+  sentence_index: number;
+  unclear_choice?: string;
+}
+
+interface StudyHighlights {
+  word_clicks: string[];
+  phrase_clicks: string[];
+  unclear_sentences: UnclearSentenceInfo[];
+}
+
+interface ArticleData {
+  id?: string;
+  title?: string;
+}
+
+interface SentenceItem {
+  text: string;
+}
+
+interface CompletedViewProps {
+  article: ArticleData | null;
+  sentences?: Array<string | SentenceItem>;
+  studyHighlights?: StudyHighlights;
+  progress?: Progress;
+  onBack: () => void;
+  onWordClick?: (word: string, sentence: string) => void;
+}
+
 // Get border/bg class based on unclear type
-const getUnclearSentenceStyle = (unclearChoice) => {
-  const gapInfo = getGapTypeInfo(unclearChoice);
+const getUnclearSentenceStyle = (unclearChoice?: string) => {
+  const gapInfo = getGapTypeInfo(unclearChoice || "both");
   // Use slightly more vibrant/visible styles for the dark theme
   return `border-l-2 ${gapInfo.cssClasses.border} bg-white/[0.03] pl-4`;
 };
 
 // HighlightedText subcomponent
-const HighlightedText = ({ text, highlights = [], onWordClick }) => {
+const HighlightedText = ({
+  text,
+  highlights = [],
+  onWordClick,
+}: {
+  text: string;
+  highlights?: string[];
+  onWordClick?: (word: string, sentence: string) => void;
+}) => {
   if (!highlights || highlights.length === 0) {
     return <span>{text}</span>;
   }
@@ -72,11 +106,12 @@ const CompletedView = ({
   progress = { studied_count: 0, clear_count: 0 },
   onBack,
   onWordClick,
-}) => {
+}: CompletedViewProps) => {
   const { currentEpisode } = usePodcast();
   // Sentence Inspector state
-  const [selectedSentence, setSelectedSentence] = useState(null);
-  const [selectedSentenceInfo, setSelectedSentenceInfo] = useState(null);
+  const [selectedSentence, setSelectedSentence] = useState<string | null>(null);
+  const [selectedSentenceInfo, setSelectedSentenceInfo] =
+    useState<UnclearSentenceInfo | null>(null);
 
   const allHighlights = [
     ...(studyHighlights.word_clicks || []),
@@ -84,7 +119,7 @@ const CompletedView = ({
   ];
 
   // Build a map of sentence index -> unclear info for quick lookup
-  const unclearMap = {};
+  const unclearMap: Record<number, UnclearSentenceInfo> = {};
   (studyHighlights.unclear_sentences || []).forEach((info) => {
     unclearMap[info.sentence_index] = info;
   });
@@ -97,7 +132,10 @@ const CompletedView = ({
       : 0;
 
   // Handle sentence click for unclear sentences
-  const handleSentenceClick = (sentence, unclearInfo) => {
+  const handleSentenceClick = (
+    sentence: string,
+    unclearInfo: UnclearSentenceInfo,
+  ) => {
     setSelectedSentence(sentence);
     setSelectedSentenceInfo(unclearInfo);
   };
@@ -215,6 +253,8 @@ const CompletedView = ({
 
               <div className="font-serif text-lg leading-loose space-y-6 text-white/80">
                 {sentences.map((sentence, idx) => {
+                  const sentenceText =
+                    typeof sentence === "string" ? sentence : sentence.text;
                   const unclearInfo = unclearMap[idx];
                   const isUnclear = !!unclearInfo;
                   const sentenceClass = isUnclear
@@ -227,14 +267,13 @@ const CompletedView = ({
                       className={sentenceClass}
                       onClick={
                         isUnclear
-                          ? () =>
-                              handleSentenceClick(sentence.text, unclearInfo)
+                          ? () => handleSentenceClick(sentenceText, unclearInfo)
                           : undefined
                       }
                       title={isUnclear ? "Click to see explanation" : undefined}
                     >
                       <HighlightedText
-                        text={sentence.text}
+                        text={sentenceText}
                         highlights={allHighlights}
                         onWordClick={onWordClick}
                       />
@@ -249,7 +288,7 @@ const CompletedView = ({
           <div className="flex flex-col sm:flex-row justify-center gap-4 pt-4">
             <button
               onClick={() => {
-                window.location.href = `/reading?source_id=${encodeURIComponent(article?.id)}`;
+                window.location.href = `/reading?source_id=${encodeURIComponent(article?.id || "")}`;
               }}
               className="flex items-center justify-center gap-3 px-8 py-4 bg-accent-primary text-black font-bold uppercase tracking-widest text-sm rounded-xl hover:bg-white transition-all shadow-[0_0_20px_rgba(var(--color-accent-primary-rgb),0.3)] hover:shadow-[0_0_30px_rgba(var(--color-accent-primary-rgb),0.5)] active:scale-95"
             >

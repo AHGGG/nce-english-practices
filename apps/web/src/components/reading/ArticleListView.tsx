@@ -1,9 +1,39 @@
-// @ts-nocheck
-import React from "react";
 import UnifiedArticleListView from "../shared/UnifiedArticleListView";
 import { BookOpen } from "lucide-react";
 
-const ArticleListView = (props) => {
+interface StudyProgress {
+  studied_count: number;
+  total: number;
+}
+
+interface ArticleItem {
+  source_id: string;
+  title: string;
+  preview?: string;
+  status?: "completed" | "in_progress" | "read" | "new";
+  word_count?: number;
+  last_read?: string;
+  last_studied_at?: string;
+  study_progress?: StudyProgress;
+}
+
+interface BookItem {
+  filename?: string;
+  id?: string;
+  title: string;
+  size_bytes: number;
+}
+
+interface ArticleListViewProps {
+  articles: ArticleItem[];
+  isLoading?: boolean;
+  books?: BookItem[];
+  selectedBookFilename?: string;
+  onBookSelect: (filename: string) => void;
+  onArticleClick: (sourceId: string) => void;
+}
+
+const ArticleListView = (props: ArticleListViewProps) => {
   return (
     <UnifiedArticleListView
       {...props}

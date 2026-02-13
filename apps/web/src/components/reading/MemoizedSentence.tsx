@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * MemoizedSentence - Re-exports SentenceBlock from content/shared
  *

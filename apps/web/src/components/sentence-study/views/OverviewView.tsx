@@ -1,12 +1,31 @@
-// @ts-nocheck
 /**
  * OverviewView - Article Overview before studying
  * Shows summary, Chinese translation, key topics, and difficulty hint
  */
-import React from "react";
 import { motion } from "framer-motion";
 import { ChevronLeft, BookOpen, Loader2, GraduationCap } from "lucide-react";
 import { usePodcast } from "../../../context/PodcastContext";
+
+interface ArticleData {
+  title?: string;
+  sentence_count?: number;
+  sentences?: unknown[];
+}
+
+interface ArticleOverview {
+  summary_en?: string;
+  summary_zh?: string;
+  key_topics?: string[];
+  difficulty_hint?: string;
+}
+
+interface OverviewViewProps {
+  article: ArticleData | null;
+  overview: ArticleOverview | null;
+  overviewStreamContent?: string;
+  onBack: () => void;
+  onStartStudying: () => void;
+}
 
 const OverviewView = ({
   article,
@@ -14,17 +33,17 @@ const OverviewView = ({
   overviewStreamContent = "",
   onBack,
   onStartStudying,
-}) => {
+}: OverviewViewProps) => {
   const { currentEpisode } = usePodcast();
   const sentenceCount =
     article?.sentence_count || article?.sentences?.length || 0;
 
   // Helper to extract fields from partial JSON string
-  const parsePartialJSON = (jsonStr) => {
+  const parsePartialJSON = (jsonStr: string): ArticleOverview | null => {
     if (!jsonStr) return null;
-    const result = {};
+    const result: ArticleOverview = {};
 
-    const extractField = (key) => {
+    const extractField = (key: string): string | null => {
       // Match key and opening quote: "key": "
       const regex = new RegExp(`"${key}"\\s*:\\s*"`, "g");
       const match = regex.exec(jsonStr);
@@ -34,7 +53,7 @@ const OverviewView = ({
       let content = "";
       let isEscaped = false;
 
-      for (let i = startIndex; i < jsonStr.length; i++) {
+      for (let i = startIndex; i < jsonStr.length; i += 1) {
         const char = jsonStr[i];
         if (isEscaped) {
           content += char;
@@ -53,8 +72,8 @@ const OverviewView = ({
       return content;
     };
 
-    result.summary_en = extractField("summary_en");
-    result.summary_zh = extractField("summary_zh");
+    result.summary_en = extractField("summary_en") || undefined;
+    result.summary_zh = extractField("summary_zh") || undefined;
 
     // Simple array extraction for key_topics is harder, skipping for streaming
     // Only streaming text fields is critical
@@ -65,6 +84,7 @@ const OverviewView = ({
   const partialOverview = parsePartialJSON(overviewStreamContent);
   const displayOverview =
     overview || (partialOverview?.summary_en ? partialOverview : null);
+  const keyTopics = displayOverview?.key_topics || [];
   const isStreaming = !overview && !!overviewStreamContent;
 
   return (
@@ -173,9 +193,9 @@ const OverviewView = ({
               )}
 
               {/* Key Topics */}
-              {displayOverview.key_topics?.length > 0 && (
+              {keyTopics.length > 0 && (
                 <div className="flex flex-wrap gap-3 justify-center py-4">
-                  {displayOverview.key_topics.map((topic, i) => (
+                  {keyTopics.map((topic, i) => (
                     <span
                       key={i}
                       className="px-4 py-2 text-xs font-mono font-bold uppercase tracking-wider bg-white/5 border border-white/10 text-white/60 rounded-lg hover:text-white hover:bg-white/10 hover:border-white/20 transition-all cursor-default"

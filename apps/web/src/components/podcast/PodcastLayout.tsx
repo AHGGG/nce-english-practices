@@ -1,9 +1,9 @@
-// @ts-nocheck
 /**
  * Podcast Layout - Shared wrapper for podcast views with header and consistent styling.
  * Includes navigation tabs: Library, Search, Downloads
  */
 
+import type { ReactNode } from "react";
 import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import {
@@ -16,16 +16,27 @@ import {
 } from "lucide-react";
 import { getStorageEstimate, getOfflineEpisodeIds } from "../../utils/offline";
 
+interface PodcastLayoutProps {
+  children: ReactNode;
+  title?: string;
+  showBackButton?: boolean;
+}
+
+interface StorageInfo {
+  usedMB: string;
+  quotaMB: string;
+}
+
 export default function PodcastLayout({
   children,
   title,
   showBackButton = true,
-}) {
+}: PodcastLayoutProps) {
   const navigate = useNavigate();
   const location = useLocation();
 
-  const [storageInfo, setStorageInfo] = useState(null);
-  const [offlineCount, setOfflineCount] = useState(0);
+  const [storageInfo, setStorageInfo] = useState<StorageInfo | null>(null);
+  const [offlineCount] = useState(() => getOfflineEpisodeIds().length);
 
   const isLibrary = location.pathname === "/podcast";
   const isSearch = location.pathname === "/podcast/search";
@@ -34,7 +45,6 @@ export default function PodcastLayout({
   // Load storage info on mount
   useEffect(() => {
     getStorageEstimate().then(setStorageInfo);
-    setOfflineCount(getOfflineEpisodeIds().length);
   }, []);
 
   return (

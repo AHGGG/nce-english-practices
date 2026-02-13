@@ -1,11 +1,12 @@
-// @ts-nocheck
 import React, { useState, useEffect, useRef, useCallback } from "react";
+import type { RefObject } from "react";
 import ReadingTracker from "../../utils/ReadingTracker";
 import ArticleListView from "./ArticleListView";
 import ReaderView from "./ReaderView";
 import WordInspector from "./WordInspector";
 import SentenceInspector from "./SentenceInspector";
 import Lightbox from "./Lightbox";
+import type { ContentBlock, UnclearSentenceInfo } from "../content/types";
 import {
   HIGHLIGHT_OPTIONS,
   BATCH_SIZE,
@@ -23,6 +24,65 @@ const api = {
   put: apiPut,
 };
 
+interface BookItem {
+  filename: string;
+  id?: string;
+  title: string;
+  size_bytes: number;
+}
+
+interface ArticleListItem {
+  source_id: string;
+  id?: string;
+  title: string;
+  last_read?: string;
+  last_studied_at?: string;
+}
+
+interface ArticleSentence {
+  text: string;
+}
+
+interface ReadingArticleData {
+  id: string;
+  title: string;
+  source_type: "epub";
+  metadata?: Record<string, unknown> & { filename?: string };
+  sentence_count?: number;
+  sentences?: Array<string | ArticleSentence>;
+  blocks: ContentBlock[];
+  highlights?: string[];
+  study_highlights?: string[];
+  unclear_sentences?: UnclearSentenceInfo[];
+  highlightSet?: Set<string>;
+  studyWordSet?: Set<string>;
+  studyPhraseSet?: Set<string>;
+  knownWords?: Set<string>;
+  unclearSentenceMap?: Record<number, UnclearSentenceInfo>;
+}
+
+interface SweepRecommendation {
+  bands?: number[];
+}
+
+interface SweepResponse {
+  recommendation?: SweepRecommendation;
+}
+
+interface ConfirmAction {
+  isOpen: boolean;
+  title: string;
+  message: string;
+  confirmText: string;
+  onConfirm: () => void | Promise<void>;
+}
+
+interface LightboxImage {
+  src: string;
+  alt?: string;
+  caption?: string;
+}
+
 /**
  * Reading Mode - Premium Article Reader
  * Features:
@@ -33,13 +93,16 @@ const api = {
  */
 const ReadingMode = () => {
   // --- State ---
-  const [articles, setArticles] = useState([]);
-  const [selectedArticle, setSelectedArticle] = useState(null);
+  const [articles, setArticles] = useState<ArticleListItem[]>([]);
+  const [selectedArticle, setSelectedArticle] =
+    useState<ReadingArticleData | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
   // Books
-  const [books, setBooks] = useState([]);
-  const [selectedBookFilename, setSelectedBookFilename] = useState(null);
+  const [books, setBooks] = useState<BookItem[]>([]);
+  const [selectedBookFilename, setSelectedBookFilename] = useState<
+    string | undefined
+  >(undefined);
 
   // Settings
   const [selectedOptionIndex, setSelectedOptionIndex] = useState(0);
@@ -65,33 +128,40 @@ const ReadingMode = () => {
   } = useWordExplainer();
 
   // Progressive loading
-  const [visibleCount, setVisibleCount] = useState(BATCH_SIZE);
+  const [visibleCount, setVisibleCount] = useState<number>(BATCH_SIZE);
 
   // Audio
-  const audioRef = useRef(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
 
   // Lightbox
-  const [lightboxImage, setLightboxImage] = useState(null);
+  const [lightboxImage, setLightboxImage] = useState<LightboxImage | null>(
+    null,
+  );
 
   // Reading session tracking
-  const trackerRef = useRef(null);
+  const trackerRef = useRef<ReadingTracker | null>(null);
 
   // Track inspected words for Sweep
-  const inspectedWordsRef = useRef(new Set());
+  const inspectedWordsRef = useRef<Set<string>>(new Set());
 
   // Calibration banner state
-  const [calibrationBanner, setCalibrationBanner] = useState(null);
+  const [calibrationBanner, setCalibrationBanner] = useState<string | null>(
+    null,
+  );
 
   // Sentence Inspector state (for unclear sentences)
-  const [selectedSentence, setSelectedSentence] = useState(null);
-  const [selectedSentenceInfo, setSelectedSentenceInfo] = useState(null);
+  const [selectedSentence, setSelectedSentence] = useState<string | null>(null);
+  const [selectedSentenceInfo, setSelectedSentenceInfo] =
+    useState<UnclearSentenceInfo | null>(null);
 
   // Collocation loader for phrase highlighting
   const { getCollocations, loadCollocations, prefetchCollocations } =
     useCollocationLoader({ prefetchAhead: 5 });
 
   // Dialog & Toast
-  const [confirmAction, setConfirmAction] = useState(null);
+  const [confirmAction, setConfirmAction] = useState<ConfirmAction | null>(
+    null,
+  );
   const { addToast } = useToast();
   const {
     state: { settings },
@@ -122,7 +192,7 @@ const ReadingMode = () => {
   const fetchBooks = async () => {
     try {
       const data = await apiGet("/api/reading/epub/books");
-      setBooks(data.books || []);
+      setBooks((data.books || []) as BookItem[]);
       if (data.books && data.books.length > 0) {
         // Default to first book if no selection
         // Or could be persistent in localStorage later
@@ -165,7 +235,7 @@ const ReadingMode = () => {
   }, [selectedOptionIndex]);
 
   // --- Actions ---
-  const fetchArticleList = async (filename) => {
+  const fetchArticleList = async (filename: string) => {
     if (!filename) return;
     setIsLoading(true);
     try {
@@ -173,7 +243,7 @@ const ReadingMode = () => {
       const data = await apiGet(
         `/api/reading/epub/list-with-status?filename=${encodeURIComponent(filename)}`,
       );
-      const articlesData = data.articles || [];
+      const articlesData = (data.articles || []) as ArticleListItem[];
 
       setArticles(
         articlesData.sort((a, b) => {
@@ -194,7 +264,10 @@ const ReadingMode = () => {
     setIsLoading(false);
   };
 
-  const loadArticle = async (sourceId, optIndex = null) => {
+  const loadArticle = async (
+    sourceId: string,
+    optIndex: number | null = null,
+  ) => {
     setIsLoading(true);
     try {
       const idx = optIndex !== null ? optIndex : selectedOptionIndex;
@@ -209,29 +282,32 @@ const ReadingMode = () => {
         }
       }
 
-      const data = await apiGet(url);
+      const data = (await apiGet(url)) as ReadingArticleData;
       // Vocabulary highlights (COCA, CET-4, etc.)
       data.highlightSet = new Set(
-        (data.highlights || []).map((w) => w.toLowerCase()),
+        (data.highlights || []).map((w: string) => w.toLowerCase()),
       );
       // Study highlights - separate words and phrases for different rendering
       // Words: single words looked up → amber underline
       // Phrases: multi-word phrases → matched via collocation detection → amber background
-      data.studyWordSet = new Set();
-      data.studyPhraseSet = new Set();
-      (data.study_highlights || []).forEach((item) => {
+      const studyWordSet = new Set<string>();
+      const studyPhraseSet = new Set<string>();
+      (data.study_highlights || []).forEach((item: string) => {
         const lower = item.toLowerCase().trim();
         if (lower.includes(" ")) {
-          data.studyPhraseSet.add(lower);
+          studyPhraseSet.add(lower);
         } else if (lower.length > 1) {
-          data.studyWordSet.add(lower);
+          studyWordSet.add(lower);
         }
       });
+      data.studyWordSet = studyWordSet;
+      data.studyPhraseSet = studyPhraseSet;
       // Unclear sentence map (sentence_index -> unclear info)
-      data.unclearSentenceMap = {};
+      const unclearSentenceMap: Record<number, UnclearSentenceInfo> = {};
       (data.unclear_sentences || []).forEach((info) => {
-        data.unclearSentenceMap[info.sentence_index] = info;
+        unclearSentenceMap[info.sentence_index] = info;
       });
+      data.unclearSentenceMap = unclearSentenceMap;
       setSelectedArticle(data);
       setVisibleCount(BATCH_SIZE);
 
@@ -244,7 +320,10 @@ const ReadingMode = () => {
           id: sourceId,
           source_type: "epub",
           title: data.title,
-          sentences: data.sentences?.map((s) => s.text || s) || [],
+          sentences:
+            data.sentences?.map((sentence) =>
+              typeof sentence === "string" ? sentence : sentence.text || "",
+            ) || [],
         },
         api,
       );
@@ -255,7 +334,7 @@ const ReadingMode = () => {
     setIsLoading(false);
   };
 
-  const playTtsAudio = useCallback((text) => {
+  const playTtsAudio = useCallback((text: string) => {
     if (!text) return;
     if (audioRef.current) {
       audioRef.current.pause();
@@ -267,7 +346,7 @@ const ReadingMode = () => {
   }, []);
 
   const handleWordClick = useCallback(
-    (word, sentence) => {
+    (word: string, sentence: string) => {
       if (settings.autoPronounce) {
         playTtsAudio(word);
       }
@@ -278,22 +357,26 @@ const ReadingMode = () => {
   );
 
   const handleMarkAsKnown = useCallback(
-    async (word) => {
+    async (word: string) => {
       // 1. Optimistic Update - remove from BOTH highlight sets
       const lowerWord = word.toLowerCase();
       if (selectedArticle) {
         setSelectedArticle((prev) => {
+          if (!prev) return prev;
           const newHighlightSet = new Set(prev.highlightSet || []);
           newHighlightSet.delete(lowerWord);
 
-          // Also remove from studyHighlightSet (amber highlights from Sentence Study)
-          const newStudyHighlightSet = new Set(prev.studyHighlightSet || []);
-          newStudyHighlightSet.delete(lowerWord);
+          // Also remove from study highlight sets (words + phrases)
+          const newStudyWordSet = new Set(prev.studyWordSet || []);
+          newStudyWordSet.delete(lowerWord);
+          const newStudyPhraseSet = new Set(prev.studyPhraseSet || []);
+          newStudyPhraseSet.delete(lowerWord);
 
           return {
             ...prev,
             highlightSet: newHighlightSet,
-            studyHighlightSet: newStudyHighlightSet,
+            studyWordSet: newStudyWordSet,
+            studyPhraseSet: newStudyPhraseSet,
           };
         });
       }
@@ -342,18 +425,21 @@ const ReadingMode = () => {
     });
   }, [selectedArticle, addToast]); // executeSweep closure handled by defining it inside or via another useCallback
 
-  const executeSweep = async (sweptWords, inspected) => {
+  const executeSweep = async (sweptWords: string[], inspected: string[]) => {
     // Optimistic clear
-    setSelectedArticle((prev) => ({
-      ...prev,
-      highlightSet: new Set(),
-    }));
+    setSelectedArticle((prev) => {
+      if (!prev) return prev;
+      return {
+        ...prev,
+        highlightSet: new Set(),
+      };
+    });
 
     try {
-      const res = await api.post("/api/proficiency/sweep", {
+      const res = (await api.post("/api/proficiency/sweep", {
         swept_words: sweptWords,
         inspected_words: inspected,
-      });
+      })) as SweepResponse;
 
       addToast(`Marked ${sweptWords.length} words as known`, "success");
 
@@ -378,7 +464,8 @@ const ReadingMode = () => {
       }
     } catch (e) {
       console.error("Sweep failed", e);
-      addToast("Sweep failed: " + e.message, "error");
+      const message = e instanceof Error ? e.message : String(e);
+      addToast("Sweep failed: " + message, "error");
     }
   };
 
@@ -392,9 +479,12 @@ const ReadingMode = () => {
     closeInspector();
   }, []);
 
-  const handleImageClick = useCallback((src, alt, caption) => {
-    setLightboxImage({ src, alt, caption });
-  }, []);
+  const handleImageClick = useCallback(
+    (src: string, alt?: string, caption?: string) => {
+      setLightboxImage({ src, alt, caption });
+    },
+    [],
+  );
 
   // --- Views ---
   if (!selectedArticle) {
@@ -426,14 +516,25 @@ const ReadingMode = () => {
         onWordClick={handleWordClick}
         onSentenceClick={(sentence, info) => {
           setSelectedSentence(sentence);
-          setSelectedSentenceInfo(info);
+          setSelectedSentenceInfo((info || null) as UnclearSentenceInfo | null);
         }}
         onBackToLibrary={handleBackToLibrary}
         onImageClick={handleImageClick}
         onSweep={handleSweep}
-        trackerRef={trackerRef}
+        trackerRef={
+          trackerRef as unknown as RefObject<
+            import("../content/types").ReadingTrackerRef | null
+          >
+        }
         calibrationBanner={calibrationBanner}
-        getCollocations={getCollocations}
+        getCollocations={(sentence) =>
+          (getCollocations(sentence) || []).map((item) => ({
+            text: item.text,
+            key_word: item.key_word || "",
+            start_word_idx: item.start_word_idx,
+            end_word_idx: item.end_word_idx,
+          }))
+        }
         loadCollocations={loadCollocations}
         prefetchCollocations={prefetchCollocations}
       />
@@ -445,6 +546,7 @@ const ReadingMode = () => {
         onClose={closeInspector}
         onPlayAudio={playTtsAudio}
         onMarkAsKnown={handleMarkAsKnown}
+        currentSentenceContext={currentSentenceContext}
         contextExplanation={contextExplanation}
         isExplaining={isExplaining}
         isPhrase={isPhrase}
@@ -476,7 +578,7 @@ const ReadingMode = () => {
       />
 
       <Dialog
-        isOpen={confirmAction?.isOpen}
+        isOpen={Boolean(confirmAction?.isOpen)}
         onClose={() => setConfirmAction(null)}
         title={confirmAction?.title}
         footer={

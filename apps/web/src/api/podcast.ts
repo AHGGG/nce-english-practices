@@ -37,7 +37,7 @@ interface PositionSyncData {
   position: number;
   isFinished?: boolean;
   duration?: number;
-  timestamp?: string;
+  timestamp?: string | number;
   deviceId?: string;
   deviceType?: string;
   playbackRate?: number;

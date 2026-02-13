@@ -43,16 +43,16 @@ Web 端已经有完整的 Podcast 功能：
 
 ### 2.1 Core Features (本 Phase 实现)
 
-- [ ] 音频播放（播放/暂停/进度条）← **复用 PodcastContext**
-- [ ] 字幕同步高亮 ← **新增**
-- [ ] 点击字幕跳转 ← **新增**
-- [ ] 播放速度调节 ← **复用 PlayerBar**
-- [ ] 词汇点击查词 ← **复用 SentenceBlock**
+- [x] 音频播放（播放/暂停/进度条）← **复用 PodcastContext**
+- [x] 字幕同步高亮 ← **新增**
+- [x] 点击字幕跳转 ← **新增**
+- [x] 播放速度调节 ← **复用 PlayerBar**
+- [x] 词汇点击查词 ← **复用 SentenceBlock**
 
 ### 2.2 Nice-to-Have (Future)
 
-- [ ] 循环播放单句
-- [ ] A-B 循环
+- [x] 循环播放单句
+- [x] A-B 循环
 - [ ] 离线缓存 ← Podcast 已有，可复用
 
 ## 3. Backend Implementation
@@ -845,7 +845,7 @@ export function initializeRenderers(): void {
 ### 前端测试
 
 - [x] useAudioPlayer hook 正确管理播放状态
-- [ ] 字幕同步高亮准确（±0.5s 误差内）
+- [x] 字幕同步高亮准确（±0.5s 误差内）
 - [x] 点击字幕跳转到对应时间点
 - [x] 进度条拖动正常
 - [x] 播放速度切换正常（0.5x - 2x）
@@ -853,23 +853,23 @@ export function initializeRenderers(): void {
 
 ### 格式测试
 
-- [ ] MP3 音频播放正常
-- [ ] M4A 音频播放正常
-- [ ] WAV 音频播放正常（如支持）
+- [x] MP3 音频播放正常
+- [x] M4A 音频播放正常
+- [x] WAV 音频播放正常（如支持）
 
 ### 边界测试
 
-- [ ] 无字幕文件时显示纯播放器
-- [ ] 空字幕文件不报错
-- [ ] 长音频（1小时+）渲染性能正常
+- [x] 无字幕文件时显示纯播放器
+- [x] 空字幕文件不报错
+- [x] 长音频（1小时+）渲染性能正常
 
 ## 6. Success Criteria
 
-- [ ] 有声书可正常播放
-- [ ] 字幕同步准确（视觉体验流畅）
-- [ ] 词汇学习功能正常（点击查词）
-- [ ] 无性能问题（长列表使用虚拟化或分页）
-- [ ] 与现有 Podcast 功能无冲突
+- [x] 有声书可正常播放
+- [x] 字幕同步准确（视觉体验流畅）
+- [x] 词汇学习功能正常（点击查词）
+- [x] 无性能问题（长列表使用虚拟化或分页）
+- [x] 与现有 Podcast 功能无冲突
 
 ## 7. Implementation Order
 
@@ -878,7 +878,14 @@ export function initializeRenderers(): void {
 3. **后端**: API routes (`/api/content/audiobook/...`) ✅
 4. **前端**: useAudioPlayer hook (packages/shared) ✅
 5. **前端**: AudioContentRenderer + 注册 ✅
-6. **集成测试**: 端到端测试 ⏳
+6. **集成测试**: 端到端测试 ✅
+
+> 2026-02-13 更新：
+>
+> - 新增 `tests/test_audiobook_provider.py`，覆盖无字幕场景与 MP3/M4A/WAV MIME 映射。
+> - `useAudioPlayer` 增加 0.35s 容差同步，避免短字幕片段在稀疏 `timeupdate` 下漏高亮。
+> - `useAudioPlayer` 新增单句循环与 A-B 循环状态/动作，支持精听场景反复跟读。
+> - `AudioContentRenderer` 增加字幕分批加载，长音频场景避免一次性渲染全部 segment。
 
 ---
 

@@ -1,7 +1,5 @@
-// @ts-nocheck
-import React from "react";
+import type { ComponentType, ReactElement, ReactNode } from "react";
 import ReactMarkdown from "react-markdown";
-// eslint-disable-next-line no-unused-vars
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Sparkles,
@@ -13,8 +11,28 @@ import {
   RefreshCw,
 } from "lucide-react";
 
+interface ExplanationCardProps {
+  simplifiedText: string;
+  simplifyStage: number;
+  isSimplifying: boolean;
+  onSimplifiedResponse: (isUnderstood: boolean) => void;
+  onRetry?: () => void;
+}
+
+interface StageConfig {
+  color: string;
+  borderColor: string;
+  bgColor: string;
+  icon: ComponentType<{ className?: string }>;
+  label: string;
+  gradient: string;
+}
+
 // Markdown components for styled rendering
-const markdownComponents = {
+const markdownComponents: Record<
+  string,
+  ({ children }: { children?: ReactNode }) => ReactElement
+> = {
   p: ({ children }) => (
     <p className="mb-3 last:mb-0 leading-relaxed">{children}</p>
   ),
@@ -50,7 +68,7 @@ const markdownComponents = {
   ),
 };
 
-const STAGE_CONFIG = {
+const STAGE_CONFIG: Record<number, StageConfig> = {
   1: {
     color: "text-accent-success",
     borderColor: "border-accent-success",
@@ -91,7 +109,7 @@ const ExplanationCard = ({
   isSimplifying,
   onSimplifiedResponse,
   onRetry,
-}) => {
+}: ExplanationCardProps) => {
   const config = STAGE_CONFIG[simplifyStage] || STAGE_CONFIG[1];
   const Icon = config.icon;
 
@@ -194,7 +212,7 @@ const ExplanationCard = ({
             {!isSimplifying && simplifiedText === "加载失败，请重试" && (
               <div className="flex flex-col items-center justify-center py-6 gap-4">
                 <button
-                  onClick={onRetry}
+                  onClick={() => onRetry?.()}
                   className="flex items-center gap-2 px-6 py-2.5 bg-accent-danger/20 hover:bg-accent-danger/30 text-accent-danger border border-accent-danger/30 rounded-lg transition-all active:scale-95 font-bold uppercase text-xs tracking-widest"
                 >
                   <RefreshCw className="w-4 h-4" />
@@ -205,36 +223,39 @@ const ExplanationCard = ({
           </div>
 
           {/* Actions */}
-          {!isSimplifying && simplifiedText && simplifiedText !== "加载失败，请重试" && (
-            <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.2 }}
-              className="mt-4 md:mt-8 flex flex-wrap justify-center gap-4 border-t border-white/5 pt-4 md:pt-6"
-            >
-              <button
-                onClick={() => onSimplifiedResponse(true)}
-                className={`flex items-center justify-center gap-2 px-8 py-3.5 font-bold uppercase text-sm tracking-wide transition-all rounded-lg shadow-lg
+          {!isSimplifying &&
+            simplifiedText &&
+            simplifiedText !== "加载失败，请重试" && (
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.2 }}
+                className="mt-4 md:mt-8 flex flex-wrap justify-center gap-4 border-t border-white/5 pt-4 md:pt-6"
+              >
+                <button
+                  onClick={() => onSimplifiedResponse(true)}
+                  className={`flex items-center justify-center gap-2 px-8 py-3.5 font-bold uppercase text-sm tracking-wide transition-all rounded-lg shadow-lg
                                     ${config.bgColor} text-text-primary hover:brightness-110 active:scale-95`}
-              >
-                <CheckCircle className="w-4 h-4" />
-                {simplifyStage === 4 ? "Understood" : "Got it"}
-              </button>
+                >
+                  <CheckCircle className="w-4 h-4" />
+                  {simplifyStage === 4 ? "Understood" : "Got it"}
+                </button>
 
-              <button
-                onClick={() => onSimplifiedResponse(false)}
-                className={`flex items-center justify-center gap-2 px-8 py-3.5 border-2 transition-all rounded-lg font-bold uppercase text-sm tracking-wide active:scale-95
-                                    ${simplifyStage < 4
-                    ? `border-white/10 hover:border-${config.color.split("-")[1]}-${config.color.split("-")[2]} text-text-secondary hover:text-text-primary bg-bg-base/20 hover:bg-bg-base/40`
-                    : "border-white/10 text-text-muted cursor-not-allowed opacity-50"
-                  }`}
-                disabled={simplifyStage >= 4}
-              >
-                <HelpCircle className="w-4 h-4" />
-                {simplifyStage < 4 ? "Still Unclear" : "Max Level"}
-              </button>
-            </motion.div>
-          )}
+                <button
+                  onClick={() => onSimplifiedResponse(false)}
+                  className={`flex items-center justify-center gap-2 px-8 py-3.5 border-2 transition-all rounded-lg font-bold uppercase text-sm tracking-wide active:scale-95
+                                    ${
+                                      simplifyStage < 4
+                                        ? `border-white/10 hover:border-${config.color.split("-")[1]}-${config.color.split("-")[2]} text-text-secondary hover:text-text-primary bg-bg-base/20 hover:bg-bg-base/40`
+                                        : "border-white/10 text-text-muted cursor-not-allowed opacity-50"
+                                    }`}
+                  disabled={simplifyStage >= 4}
+                >
+                  <HelpCircle className="w-4 h-4" />
+                  {simplifyStage < 4 ? "Still Unclear" : "Max Level"}
+                </button>
+              </motion.div>
+            )}
         </div>
       </motion.div>
     </AnimatePresence>

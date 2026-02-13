@@ -68,6 +68,15 @@ export interface AudioPlayerState {
 
   /** Progress percentage (0-100) */
   progress: number;
+
+  /** Loop mode: off | current subtitle segment | A-B */
+  loopMode: "off" | "segment" | "ab";
+
+  /** A-B loop start in seconds */
+  loopStart: number | null;
+
+  /** A-B loop end in seconds */
+  loopEnd: number | null;
 }
 
 export interface AudioPlayerActions {
@@ -91,6 +100,21 @@ export interface AudioPlayerActions {
 
   /** Skip forward/backward by seconds */
   skip: (seconds: number) => void;
+
+  /** Toggle current-segment loop */
+  toggleSegmentLoop: () => void;
+
+  /** Set A marker at current time and enable A-B mode */
+  setABStart: () => void;
+
+  /** Set B marker at current time and enable A-B mode */
+  setABEnd: () => void;
+
+  /** Clear A-B markers and disable A-B loop */
+  clearABLoop: () => void;
+
+  /** Toggle A-B loop (requires both A and B markers) */
+  toggleABLoop: () => void;
 }
 
 export interface UseAudioPlayerReturn {
@@ -105,6 +129,59 @@ export interface UseAudioPlayerReturn {
 
 const DEFAULT_PLAYBACK_RATE = 1.0;
 const PLAYBACK_RATES = [0.5, 0.75, 1.0, 1.25, 1.5, 1.75, 2.0];
+const SEGMENT_SYNC_TOLERANCE_SECONDS = 0.35;
+
+function findActiveSegmentIndex(
+  time: number,
+  segments: AudioSegment[],
+  tolerance: number,
+): number {
+  if (segments.length === 0) return -1;
+
+  // Binary search around current playback position.
+  let left = 0;
+  let right = segments.length - 1;
+  let candidate = -1;
+  const target = time + tolerance;
+
+  while (left <= right) {
+    const mid = (left + right) >> 1;
+    if (segments[mid].startTime <= target) {
+      candidate = mid;
+      left = mid + 1;
+    } else {
+      right = mid - 1;
+    }
+  }
+
+  // Check nearby segments to avoid missing short cues between sparse timeupdate ticks.
+  const start = Math.max(0, candidate - 2);
+  const end = Math.min(segments.length - 1, candidate + 2);
+  for (let i = start; i <= end; i++) {
+    const seg = segments[i];
+    if (time >= seg.startTime - tolerance && time < seg.endTime + tolerance) {
+      return i;
+    }
+  }
+
+  // If in a short gap, snap to the next upcoming segment within tolerance.
+  const nextIndex = Math.min(candidate + 1, segments.length - 1);
+  const nextSeg = segments[nextIndex];
+  if (
+    nextSeg &&
+    nextSeg.startTime > time &&
+    nextSeg.startTime - time <= tolerance
+  ) {
+    return nextIndex;
+  }
+
+  // If playback is past all segments, keep the final segment active.
+  if (time >= segments[segments.length - 1].endTime) {
+    return segments.length - 1;
+  }
+
+  return -1;
+}
 
 // ============================================================
 // Hook Implementation
@@ -131,28 +208,18 @@ export function useAudioPlayer(
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
   const [playbackRate, setPlaybackRateState] = useState(initialPlaybackRate);
+  const [loopMode, setLoopMode] = useState<"off" | "segment" | "ab">("off");
+  const [loopStart, setLoopStart] = useState<number | null>(null);
+  const [loopEnd, setLoopEnd] = useState<number | null>(null);
+  const lastLoopJumpRef = useRef(0);
 
   // Computed: active segment index
   const activeSegmentIndex = useMemo(() => {
-    if (segments.length === 0) return -1;
-
-    // Find segment containing current time
-    for (let i = 0; i < segments.length; i++) {
-      const seg = segments[i];
-      if (currentTime >= seg.startTime && currentTime < seg.endTime) {
-        return i;
-      }
-    }
-
-    // If past all segments, return last one
-    if (
-      segments.length > 0 &&
-      currentTime >= segments[segments.length - 1].endTime
-    ) {
-      return segments.length - 1;
-    }
-
-    return -1;
+    return findActiveSegmentIndex(
+      currentTime,
+      segments,
+      SEGMENT_SYNC_TOLERANCE_SECONDS,
+    );
   }, [currentTime, segments]);
 
   // Computed: progress percentage
@@ -316,6 +383,75 @@ export function useAudioPlayer(
     [currentTime, seekTo],
   );
 
+  const toggleSegmentLoop = useCallback(() => {
+    setLoopMode((prev) => (prev === "segment" ? "off" : "segment"));
+  }, []);
+
+  const setABStart = useCallback(() => {
+    setLoopStart(currentTime);
+    setLoopEnd((prev) => (prev != null && prev <= currentTime ? null : prev));
+    setLoopMode("ab");
+  }, [currentTime]);
+
+  const setABEnd = useCallback(() => {
+    const nextEnd =
+      loopStart != null && currentTime <= loopStart
+        ? loopStart + 0.1
+        : currentTime;
+    setLoopEnd(nextEnd);
+    setLoopMode("ab");
+  }, [currentTime, loopStart]);
+
+  const clearABLoop = useCallback(() => {
+    setLoopStart(null);
+    setLoopEnd(null);
+    setLoopMode((prev) => (prev === "ab" ? "off" : prev));
+  }, []);
+
+  const toggleABLoop = useCallback(() => {
+    setLoopMode((prev) => {
+      if (prev === "ab") return "off";
+      if (loopStart != null && loopEnd != null && loopEnd > loopStart)
+        return "ab";
+      return prev;
+    });
+  }, [loopStart, loopEnd]);
+
+  useEffect(() => {
+    const now = performance.now();
+    if (now - lastLoopJumpRef.current < 120) {
+      return;
+    }
+
+    if (loopMode === "segment" && activeSegmentIndex >= 0) {
+      const seg = segments[activeSegmentIndex];
+      if (seg && currentTime >= seg.endTime - 0.03) {
+        seekTo(seg.startTime);
+        lastLoopJumpRef.current = now;
+      }
+      return;
+    }
+
+    if (
+      loopMode === "ab" &&
+      loopStart != null &&
+      loopEnd != null &&
+      loopEnd > loopStart &&
+      currentTime >= loopEnd - 0.03
+    ) {
+      seekTo(loopStart);
+      lastLoopJumpRef.current = now;
+    }
+  }, [
+    loopMode,
+    activeSegmentIndex,
+    segments,
+    currentTime,
+    loopStart,
+    loopEnd,
+    seekTo,
+  ]);
+
   // Build return object
   const state: AudioPlayerState = {
     isPlaying,
@@ -325,6 +461,9 @@ export function useAudioPlayer(
     playbackRate,
     activeSegmentIndex,
     progress,
+    loopMode,
+    loopStart,
+    loopEnd,
   };
 
   const actions: AudioPlayerActions = {
@@ -335,6 +474,11 @@ export function useAudioPlayer(
     seekToSegment,
     setPlaybackRate,
     skip,
+    toggleSegmentLoop,
+    setABStart,
+    setABEnd,
+    clearABLoop,
+    toggleABLoop,
   };
 
   return { state, actions, audioRef };

@@ -1,12 +1,29 @@
-// @ts-nocheck
 import { useState } from "react";
+import type { ChangeEvent } from "react";
 import { X, Sparkles, Check } from "lucide-react";
 import { TOPIC_CATEGORIES } from "./recommendUtils";
+
+interface RecommendPrefs {
+  topics: string[];
+  customKeywords: string;
+}
+
+interface RecommendModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onApply: (prefs: RecommendPrefs) => void;
+  initialPrefs?: RecommendPrefs | null;
+}
 
 /**
  * Recommend Modal - User preferences for article recommendations
  */
-const RecommendModal = ({ isOpen, onClose, onApply, initialPrefs }) => {
+const RecommendModal = ({
+  isOpen,
+  onClose,
+  onApply,
+  initialPrefs,
+}: RecommendModalProps) => {
   // Initialize state from initialPrefs when provided
   const [selectedTopics, setSelectedTopics] = useState(
     () => initialPrefs?.topics || [],
@@ -19,7 +36,7 @@ const RecommendModal = ({ isOpen, onClose, onApply, initialPrefs }) => {
   // Using a key-based reset pattern instead of useEffect with setState
   const modalKey = isOpen ? "open" : "closed";
 
-  const toggleTopic = (label) => {
+  const toggleTopic = (label: string) => {
     setSelectedTopics((prev) =>
       prev.includes(label) ? prev.filter((t) => t !== label) : [...prev, label],
     );
@@ -130,7 +147,9 @@ const RecommendModal = ({ isOpen, onClose, onApply, initialPrefs }) => {
               <input
                 type="text"
                 value={customKeywords}
-                onChange={(e) => setCustomKeywords(e.target.value)}
+                onChange={(e: ChangeEvent<HTMLInputElement>) =>
+                  setCustomKeywords(e.target.value)
+                }
                 placeholder="e.g., climate change, cryptocurrency"
                 className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-text-primary placeholder:text-text-tertiary focus:outline-none focus:border-accent-primary/50 transition-colors"
               />

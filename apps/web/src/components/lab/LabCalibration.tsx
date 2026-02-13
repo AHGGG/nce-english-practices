@@ -1,5 +1,5 @@
-// @ts-nocheck
-import React, { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback } from "react";
+import type { MouseEvent } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Check,
@@ -21,27 +21,51 @@ import { apiGet, apiPost, apiPut } from "../../api/auth";
  */
 const LabCalibration = () => {
   const navigate = useNavigate();
+
+  type Step =
+    | "intro"
+    | "reading"
+    | "leveling"
+    | "processing"
+    | "complete"
+    | "error";
+  type SentenceStatus = "confused" | "partial" | "clear";
+
+  interface CalibrationEntry {
+    sentence_text: string;
+    status: SentenceStatus;
+    confused_words: string[];
+  }
+
+  interface CalibrationDiagnosis {
+    words_mastered: number;
+    syntax_diagnosis?: {
+      weaknesses?: string[];
+      advice?: string;
+    };
+  }
+
   // --- State ---
-  const [step, setStep] = useState("intro"); // intro, reading, complete
-  const [sentences, setSentences] = useState([]);
+  const [step, setStep] = useState<Step>("intro"); // intro, reading, complete
+  const [sentences, setSentences] = useState<string[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [results, setResults] = useState([]); // { text, status, words }
-  const [diagnosis, setDiagnosis] = useState(null);
+  const [results, setResults] = useState<CalibrationEntry[]>([]);
+  const [diagnosis, setDiagnosis] = useState<CalibrationDiagnosis | null>(null);
 
   // Dictionary Inspection State
-  const [selectedWord, setSelectedWord] = useState(null);
-  const [inspectorData, setInspectorData] = useState(null);
+  const [selectedWord, setSelectedWord] = useState<string | null>(null);
+  const [inspectorData, setInspectorData] = useState<unknown>(null);
   const [isInspecting, setIsInspecting] = useState(false);
 
   const [currentLevel, setCurrentLevel] = useState(0);
-  const [inspectedWords, setInspectedWords] = useState(new Set()); // V3: Track words clicked per sentence
+  const [inspectedWords, setInspectedWords] = useState<Set<string>>(new Set());
 
   // Initial Load
   useEffect(() => {
-    fetchSession(0);
+    void fetchSession(0);
   }, []);
 
-  const fetchSession = async (level) => {
+  const fetchSession = async (level: number) => {
     try {
       const data = await apiGet(
         `/api/proficiency/calibration/session?level=${level}&count=5`,
@@ -84,15 +108,15 @@ const LabCalibration = () => {
       }
     };
 
-    fetchData();
+    void fetchData();
     return () => {
       cancelled = true;
     };
   }, [selectedWord]);
 
   // --- Handlers ---
-  const handleArticleClick = useCallback((e) => {
-    const target = e.target;
+  const handleArticleClick = useCallback((e: MouseEvent<HTMLDivElement>) => {
+    const target = e.target as HTMLElement;
     const word = target.dataset?.word;
 
     if (!word) return;
@@ -106,7 +130,7 @@ const LabCalibration = () => {
     setInspectedWords((prev) => new Set(prev).add(cleanWord));
   }, []);
 
-  const handleMarkAsKnown = async (word) => {
+  const handleMarkAsKnown = async (word: string) => {
     // Just API call, Lab doesn't need to update highlights visually right now (or could?)
     try {
       await apiPut("/api/proficiency/word", { word: word, status: "mastered" });
@@ -117,7 +141,7 @@ const LabCalibration = () => {
     setSelectedWord(null);
   };
 
-  const recordAndAdvance = (status) => {
+  const recordAndAdvance = (status: SentenceStatus) => {
     // Record result with inspected words
     const newEntry = {
       sentence_text: sentences[currentIndex],
@@ -163,7 +187,7 @@ const LabCalibration = () => {
     }
   };
 
-  const submitCalibration = async (finalData) => {
+  const submitCalibration = async (finalData: CalibrationEntry[]) => {
     setStep("processing");
     try {
       // 1. Analyze calibration data
@@ -242,7 +266,7 @@ const LabCalibration = () => {
             onClick={handleArticleClick}
           >
             <MemoizedSentence
-              text={sentences[currentIndex]}
+              text={sentences[currentIndex] || ""}
               showHighlights={false} // No pre-highlights in Lab for now
             />
           </div>
@@ -283,8 +307,9 @@ const LabCalibration = () => {
           selectedWord={selectedWord}
           inspectorData={inspectorData}
           isInspecting={isInspecting}
+          currentSentenceContext={null}
           onClose={() => setSelectedWord(null)}
-          onPlayAudio={(word) => {
+          onPlayAudio={(word: string) => {
             const url = `/api/tts?text=${encodeURIComponent(word)}`;
             new Audio(url).play();
           }}

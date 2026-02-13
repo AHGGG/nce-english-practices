@@ -1,10 +1,10 @@
-// @ts-nocheck
 /**
  * Podcast Context.
  * Manages global audio playback state and background downloads.
  */
 
 import {
+  type ReactNode,
   createContext,
   useContext,
   useState,
@@ -14,7 +14,6 @@ import {
 } from "react";
 import { useGlobalState } from "./GlobalContext";
 import * as podcastApi from "../api/podcast";
-import { authFetch } from "../api/auth";
 import { useToast } from "../components/ui";
 import {
   getCachedAudioUrl,
@@ -28,13 +27,74 @@ import {
   savePositionLocal,
   getLocalPosition,
   getLatestPosition,
-  getDeviceId,
-  getDeviceType,
 } from "../utils/localProgress";
 
-const PodcastContext = createContext(null);
+interface PodcastEpisode {
+  id: number;
+  title: string;
+  audio_url: string;
+  image_url?: string | null;
+  file_size?: number;
+}
 
-export function PodcastProvider({ children }) {
+interface PodcastFeed {
+  id: number;
+  title: string;
+  image_url?: string | null;
+}
+
+interface DownloadItemState {
+  status: "idle" | "downloading" | "done" | "error";
+  progress: number;
+  error?: string;
+}
+
+interface StorageInfo {
+  used: number;
+  quota: number;
+  usedMB: string;
+  quotaMB: string;
+}
+
+interface PodcastContextValue {
+  currentEpisode: PodcastEpisode | null;
+  currentFeed: PodcastFeed | null;
+  isPlaying: boolean;
+  isLoading: boolean;
+  currentTime: number;
+  duration: number;
+  listenedSeconds: number;
+  playbackRate: number;
+  downloadState: Record<number, DownloadItemState>;
+  offlineEpisodes: Set<number>;
+  storageInfo: StorageInfo | null;
+  finishedEpisodes: Set<number>;
+  playEpisode: (
+    episode: PodcastEpisode,
+    feed: PodcastFeed,
+    startPosition?: number | null,
+  ) => Promise<void>;
+  togglePlayPause: () => void;
+  seek: (seconds: number) => void;
+  skip: (seconds: number) => void;
+  stop: () => Promise<void>;
+  setPlaybackRate: (rate: number) => void;
+  startDownload: (episode: PodcastEpisode) => Promise<void>;
+  cancelDownload: (episodeId: number) => void;
+  removeDownload: (episodeId: number, audioUrl: string) => Promise<boolean>;
+  clearAllDownloads: () => Promise<boolean>;
+}
+
+const getErrorMessage = (error: unknown): string => {
+  if (error instanceof Error) return error.message;
+  return "Unknown error";
+};
+
+const PodcastContext = createContext<PodcastContextValue | undefined>(
+  undefined,
+);
+
+export function PodcastProvider({ children }: { children: ReactNode }) {
   const { addToast } = useToast();
   const {
     state: { settings },
@@ -42,8 +102,10 @@ export function PodcastProvider({ children }) {
   } = useGlobalState();
 
   // Current track info
-  const [currentEpisode, setCurrentEpisode] = useState(null);
-  const [currentFeed, setCurrentFeed] = useState(null);
+  const [currentEpisode, setCurrentEpisode] = useState<PodcastEpisode | null>(
+    null,
+  );
+  const [currentFeed, setCurrentFeed] = useState<PodcastFeed | null>(null);
 
   // Playback state
   const [isPlaying, setIsPlaying] = useState(false);
@@ -65,25 +127,31 @@ export function PodcastProvider({ children }) {
   }, [settings.podcastSpeed]);
 
   // Session tracking
-  const [sessionId, setSessionId] = useState(null);
+  const [sessionId, setSessionId] = useState<number | null>(null);
   const [listenedSeconds, setListenedSeconds] = useState(0);
   const lastUpdateRef = useRef(0);
 
   // Refs for use in ended event (avoids stale closures)
-  const sessionIdRef = useRef(null);
-  const currentEpisodeRef = useRef(null);
+  const sessionIdRef = useRef<number | null>(null);
+  const currentEpisodeRef = useRef<PodcastEpisode | null>(null);
   const listenedSecondsRef = useRef(0);
   const isFinishingRef = useRef(false);
 
   // Download state
   // { [episodeId]: { status: 'idle'|'downloading'|'done'|'error', progress: 0-100, error?: string } }
-  const [downloadState, setDownloadState] = useState({});
-  const [offlineEpisodes, setOfflineEpisodes] = useState(new Set());
-  const [storageInfo, setStorageInfo] = useState(null);
-  const abortControllersRef = useRef({});
+  const [downloadState, setDownloadState] = useState<
+    Record<number, DownloadItemState>
+  >({});
+  const [offlineEpisodes, setOfflineEpisodes] = useState<Set<number>>(
+    new Set(),
+  );
+  const [storageInfo, setStorageInfo] = useState<StorageInfo | null>(null);
+  const abortControllersRef = useRef<Record<number, AbortController>>({});
 
   // Track finished episodes (for real-time UI updates without page refresh)
-  const [finishedEpisodes, setFinishedEpisodes] = useState(new Set());
+  const [finishedEpisodes, setFinishedEpisodes] = useState<Set<number>>(
+    new Set(),
+  );
 
   // Keep refs in sync with state
   useEffect(() => {
@@ -99,7 +167,7 @@ export function PodcastProvider({ children }) {
   }, [listenedSeconds]);
 
   // Audio element ref
-  const audioRef = useRef(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
 
   // Initialize audio element
   useEffect(() => {
@@ -108,102 +176,99 @@ export function PodcastProvider({ children }) {
       audioRef.current.preload = "metadata";
 
       audioRef.current.addEventListener("loadedmetadata", () => {
-        setDuration(audioRef.current.duration);
+        const audio = audioRef.current;
+        if (!audio) return;
+        setDuration(audio.duration);
         setIsLoading(false);
       });
 
-      audioRef.current.addEventListener("timeupdate", async () => {
-        const time = audioRef.current.currentTime;
-        const dur = audioRef.current.duration;
-        setCurrentTime(time);
+      audioRef.current.addEventListener("timeupdate", () => {
+        void (async () => {
+          const audio = audioRef.current;
+          const episode = currentEpisodeRef.current;
+          const activeSessionId = sessionIdRef.current;
+          if (!audio || !episode) return;
 
-        // Track listened time (update every 5 seconds)
-        if (time - lastUpdateRef.current >= 5) {
-          setListenedSeconds((prev) => prev + 5);
-          lastUpdateRef.current = time;
-        }
+          const time = audio.currentTime;
+          const dur = audio.duration;
+          setCurrentTime(time);
 
-        // Auto-mark as finished if very close to end (handles edge cases with playback rate)
-        // Give 3 second buffer to account for floating point precision
-        if (
-          dur > 0 &&
-          time >= dur - 3 &&
-          !isFinishingRef.current &&
-          sessionIdRef.current
-        ) {
-          console.log(
-            "[Podcast] Near end detected (time:",
-            time,
-            ", duration:",
-            dur,
-            "), marking as finished",
-          );
-          isFinishingRef.current = true;
-          setIsPlaying(false);
-          audioRef.current.pause();
-
-          // Save locally first for offline resilience
-          await savePositionLocal(
-            currentEpisodeRef.current.id,
-            dur,
-            playbackRate,
-            true,
-          ).catch(console.error);
-
-          // Update finishedEpisodes state for real-time UI updates
-          setFinishedEpisodes(
-            (prev) => new Set([...prev, currentEpisodeRef.current.id]),
-          );
-
-          podcastApi
-            .endListeningSession(
-              sessionIdRef.current,
-              listenedSecondsRef.current,
-              dur, // Use full duration
-              true, // Mark as finished
-            )
-            .then(() => {
-              console.log(
-                "[Podcast] Episode marked completed (near-end detection)",
-              );
-            })
-            .catch((e) => {
-              console.error("Failed to mark episode finished:", e);
-            });
-
-          // Also sync the actual duration to the server if we have a position sync mechanism active
-          // This helps fix RSS duration mismatches for all future users
-          const localPos = await getLocalPosition(currentEpisodeRef.current.id);
-          if (localPos) {
-            podcastApi
-              .syncPosition(currentEpisodeRef.current.id, {
-                ...localPos,
-                duration: Math.round(dur),
-              })
-              .catch((e) => console.warn("Failed to sync actual duration:", e));
+          if (time - lastUpdateRef.current >= 5) {
+            setListenedSeconds((prev) => prev + 5);
+            lastUpdateRef.current = time;
           }
-        }
-      });
 
-      audioRef.current.addEventListener("ended", async () => {
-        console.log("[Podcast] Ended event fired");
-        isFinishingRef.current = true;
-        setIsPlaying(false);
+          if (
+            dur > 0 &&
+            time >= dur - 3 &&
+            !isFinishingRef.current &&
+            activeSessionId
+          ) {
+            console.log(
+              "[Podcast] Near end detected (time:",
+              time,
+              ", duration:",
+              dur,
+              "), marking as finished",
+            );
+            isFinishingRef.current = true;
+            setIsPlaying(false);
+            audio.pause();
 
-        // Mark episode as finished when playback completes
-        if (currentEpisodeRef.current) {
-          try {
-            // Ensure we send the full duration as position to avoid "99%" issues
-            const finalPosition = audioRef.current?.duration || 0;
-
-            // Update finishedEpisodes state for real-time UI updates
-            setFinishedEpisodes(
-              (prev) => new Set([...prev, currentEpisodeRef.current.id]),
+            await savePositionLocal(episode.id, dur, playbackRate, true).catch(
+              console.error,
             );
 
-            // Save locally first
+            setFinishedEpisodes((prev) => new Set([...prev, episode.id]));
+
+            podcastApi
+              .endListeningSession(
+                activeSessionId,
+                listenedSecondsRef.current,
+                dur,
+                true,
+              )
+              .then(() => {
+                console.log(
+                  "[Podcast] Episode marked completed (near-end detection)",
+                );
+              })
+              .catch((error) => {
+                console.error("Failed to mark episode finished:", error);
+              });
+
+            const localPos = await getLocalPosition(episode.id);
+            if (localPos) {
+              podcastApi
+                .syncPosition(episode.id, {
+                  ...localPos,
+                  duration: Math.round(dur),
+                })
+                .catch((error) =>
+                  console.warn("Failed to sync actual duration:", error),
+                );
+            }
+          }
+        })();
+      });
+
+      audioRef.current.addEventListener("ended", () => {
+        void (async () => {
+          console.log("[Podcast] Ended event fired");
+          isFinishingRef.current = true;
+          setIsPlaying(false);
+
+          const audio = audioRef.current;
+          const episode = currentEpisodeRef.current;
+          if (!episode) return;
+
+          try {
+            const finalPosition = audio?.duration || 0;
+
+            setFinishedEpisodes((prev) => new Set([...prev, episode.id]));
+
             savePositionLocal(
-              currentEpisodeRef.current.id,
+              episode.id,
               finalPosition,
               playbackRate,
               true,
@@ -219,34 +284,32 @@ export function PodcastProvider({ children }) {
               console.log("[Podcast] Episode finished, marked completed");
             }
 
-            // Sync final state and actual duration for consistency
-            const localPos = await getLocalPosition(
-              currentEpisodeRef.current.id,
-            );
+            const localPos = await getLocalPosition(episode.id);
             if (localPos) {
               podcastApi
-                .syncPosition(currentEpisodeRef.current.id, {
+                .syncPosition(episode.id, {
                   ...localPos,
-                  duration: Math.round(audioRef.current.duration),
+                  duration: Math.round(audio?.duration || 0),
                 })
-                .catch((e) =>
-                  console.warn("Failed to sync final position/duration:", e),
+                .catch((error) =>
+                  console.warn(
+                    "Failed to sync final position/duration:",
+                    error,
+                  ),
                 );
             }
-          } catch (e) {
-            console.error("Failed to mark episode finished:", e);
+          } catch (error) {
+            console.error("Failed to mark episode finished:", error);
           }
-        }
+        })();
       });
 
       audioRef.current.addEventListener("error", (e) => {
+        const audio = audioRef.current;
+        if (!audio) return;
         // Ignore error when src is empty (cleanup triggers this)
-        if (
-          !audioRef.current.src ||
-          audioRef.current.src === window.location.href
-        )
-          return;
-        console.error("Audio error:", e, audioRef.current.error);
+        if (!audio.src || audio.src === window.location.href) return;
+        console.error("Audio error:", e, audio.error);
         setIsLoading(false);
         setIsPlaying(false);
       });
@@ -386,7 +449,7 @@ export function PodcastProvider({ children }) {
 
   // --- Download Actions ---
 
-  const cancelDownload = useCallback((episodeId) => {
+  const cancelDownload = useCallback((episodeId: number) => {
     const controller = abortControllersRef.current[episodeId];
     if (controller) {
       controller.abort();
@@ -400,7 +463,7 @@ export function PodcastProvider({ children }) {
   }, []);
 
   const startDownload = useCallback(
-    async (episode) => {
+    async (episode: PodcastEpisode) => {
       const episodeId = episode.id;
 
       // Check if already downloaded (should be handled by UI, but safety check)
@@ -423,7 +486,7 @@ export function PodcastProvider({ children }) {
         const success = await downloadEpisodeForOffline(
           episodeId,
           episode.audio_url,
-          (received, total) => {
+          (received: number, total: number) => {
             const progress = Math.round((received / total) * 100);
             setDownloadState((prev) => ({
               ...prev,
@@ -448,7 +511,7 @@ export function PodcastProvider({ children }) {
           getStorageEstimate().then(setStorageInfo);
           addToast(`Downloaded "${episode.title}"`, "success");
         }
-      } catch (e) {
+      } catch (error) {
         if (controller.signal.aborted) {
           // Aborted by user - handled by cancelDownload usually, but ensure state is clean
           setDownloadState((prev) => {
@@ -459,9 +522,13 @@ export function PodcastProvider({ children }) {
           return;
         }
 
-        let errorMsg = e.message || "Unknown error";
+        let errorMsg = getErrorMessage(error);
         // Handle quota exceeded error
-        if (e.name === "QuotaExceededError" || errorMsg.includes("quota")) {
+        if (
+          error instanceof Error &&
+          (error.name === "QuotaExceededError" ||
+            errorMsg.toLowerCase().includes("quota"))
+        ) {
           errorMsg = "Storage full. Please free up space.";
         }
 
@@ -470,7 +537,7 @@ export function PodcastProvider({ children }) {
           [episodeId]: { status: "error", progress: 0, error: errorMsg },
         }));
         addToast(`Download failed: ${errorMsg}`, "error");
-        console.error("[Download] Failed:", e);
+        console.error("[Download] Failed:", error);
       } finally {
         delete abortControllersRef.current[episodeId];
       }
@@ -478,24 +545,27 @@ export function PodcastProvider({ children }) {
     [offlineEpisodes, addToast],
   );
 
-  const removeDownload = useCallback(async (episodeId, audioUrl) => {
-    const success = await removeOfflineEpisode(episodeId, audioUrl);
+  const removeDownload = useCallback(
+    async (episodeId: number, audioUrl: string) => {
+      const success = await removeOfflineEpisode(episodeId, audioUrl);
 
-    if (success) {
-      setOfflineEpisodes((prev) => {
-        const next = new Set(prev);
-        next.delete(episodeId);
-        return next;
-      });
-      setDownloadState((prev) => {
-        const next = { ...prev };
-        delete next[episodeId];
-        return next;
-      });
-      getStorageEstimate().then(setStorageInfo);
-    }
-    return success;
-  }, []);
+      if (success) {
+        setOfflineEpisodes((prev) => {
+          const next = new Set(prev);
+          next.delete(episodeId);
+          return next;
+        });
+        setDownloadState((prev) => {
+          const next = { ...prev };
+          delete next[episodeId];
+          return next;
+        });
+        getStorageEstimate().then(setStorageInfo);
+      }
+      return success;
+    },
+    [],
+  );
 
   const clearAllDownloads = useCallback(async () => {
     const success = await clearPodcastCache();
@@ -510,7 +580,11 @@ export function PodcastProvider({ children }) {
   // Play an episode
   // startPosition: optional position in seconds to start from (for resume)
   const playEpisode = useCallback(
-    async (episode, feed, startPosition = null) => {
+    async (
+      episode: PodcastEpisode,
+      feed: PodcastFeed,
+      startPosition: number | null = null,
+    ) => {
       if (!episode?.audio_url) return;
 
       setIsLoading(true);
@@ -550,6 +624,10 @@ export function PodcastProvider({ children }) {
       }
 
       const audio = audioRef.current;
+      if (!audio) {
+        setIsLoading(false);
+        return;
+      }
 
       // Define handler for when audio metadata is loaded
       const handleLoaded = async () => {
@@ -605,7 +683,7 @@ export function PodcastProvider({ children }) {
 
       // Try to get cached audio as Object URL (bypasses network entirely)
       const cachedUrl = await getCachedAudioUrl(episode.audio_url);
-      const audioSrc = cachedUrl || episode.audio_url;
+      const audioSrc = cachedUrl ?? episode.audio_url;
 
       // Now set the source - this triggers loading
       audio.src = audioSrc;
@@ -635,7 +713,7 @@ export function PodcastProvider({ children }) {
   }, [isPlaying]);
 
   // Seek to position
-  const seek = useCallback((seconds) => {
+  const seek = useCallback((seconds: number) => {
     if (audioRef.current) {
       audioRef.current.currentTime = seconds;
       setCurrentTime(seconds);
@@ -643,7 +721,7 @@ export function PodcastProvider({ children }) {
   }, []);
 
   // Skip forward/backward
-  const skip = useCallback((seconds) => {
+  const skip = useCallback((seconds: number) => {
     if (audioRef.current) {
       audioRef.current.currentTime = Math.max(
         0,
@@ -657,7 +735,7 @@ export function PodcastProvider({ children }) {
 
   // Set playback rate
   const setPlaybackRate = useCallback(
-    (rate) => {
+    (rate: number) => {
       if (audioRef.current) {
         audioRef.current.playbackRate = rate;
       }
@@ -693,7 +771,7 @@ export function PodcastProvider({ children }) {
     setListenedSeconds(0);
   }, [sessionId, listenedSeconds]);
 
-  const value = {
+  const value: PodcastContextValue = {
     // Playback State
     currentEpisode,
     currentFeed,
@@ -739,3 +817,11 @@ export function usePodcast() {
 }
 
 export default PodcastContext;
+
+export type {
+  PodcastEpisode,
+  PodcastFeed,
+  DownloadItemState,
+  StorageInfo,
+  PodcastContextValue,
+};

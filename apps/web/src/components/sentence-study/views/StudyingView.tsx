@@ -1,9 +1,9 @@
-// @ts-nocheck
 /**
  * StudyingView - Main sentence-by-sentence study interface
  * Shows current sentence with Clear/Unclear buttons and simplification flow
  */
-import React from "react";
+import { useState } from "react";
+import type { RefObject } from "react";
 import {
   ChevronLeft,
   CheckCircle,
@@ -14,6 +14,33 @@ import {
 import MemoizedSentence from "../../reading/MemoizedSentence";
 import ExplanationCard from "./ExplanationCard";
 import { usePodcast } from "../../../context/PodcastContext";
+import type { Collocation } from "../../content/types";
+
+interface SentenceItem {
+  text: string;
+}
+
+interface StudyingViewProps {
+  currentSentence: SentenceItem | null;
+  prevSentence: SentenceItem | null;
+  currentIndex: number;
+  totalSentences: number;
+  highlightSet?: Set<string>;
+  globalDifficultWords?: Set<string>;
+  knownWords?: Set<string>;
+  collocations?: Collocation[];
+  wordClicks?: string[];
+  simplifiedText?: string;
+  simplifyStage?: number;
+  isSimplifying?: boolean;
+  sentenceContainerRef?: RefObject<HTMLDivElement | null>;
+  onBack: () => void;
+  onWordClick: (word: string, sentence: string, keyWord?: string) => void;
+  onClear: () => void;
+  onUnclear: () => void;
+  onSimplifiedResponse: (isUnderstood: boolean) => void;
+  onUndo: () => void;
+}
 
 const StudyingView = ({
   // Data
@@ -27,9 +54,9 @@ const StudyingView = ({
   collocations = [],
   wordClicks = [],
   // State
-  simplifiedText,
-  simplifyStage,
-  isSimplifying,
+  simplifiedText = "",
+  simplifyStage = 1,
+  isSimplifying = false,
   // Refs
   sentenceContainerRef,
   // Handlers
@@ -39,9 +66,9 @@ const StudyingView = ({
   onUnclear,
   onSimplifiedResponse,
   onUndo,
-}) => {
+}: StudyingViewProps) => {
   const { currentEpisode } = usePodcast();
-  const [showContext, setShowContext] = React.useState(false);
+  const [showContext, setShowContext] = useState(false);
 
   const progressPercent =
     totalSentences > 0 ? (currentIndex / totalSentences) * 100 : 0;
@@ -151,8 +178,9 @@ const StudyingView = ({
               ref={sentenceContainerRef}
               className="p-6 md:p-12 font-serif text-xl md:text-3xl leading-relaxed text-left select-text relative"
               onClick={(e) => {
-                const word = e.target.dataset?.word;
-                const keyWord = e.target.dataset?.keyWord;
+                const target = e.target as HTMLElement;
+                const word = target.dataset?.word;
+                const keyWord = target.dataset?.keyWord;
                 if (word)
                   onWordClick(
                     word.toLowerCase(),
@@ -203,6 +231,7 @@ const StudyingView = ({
               simplifyStage={simplifyStage}
               isSimplifying={isSimplifying}
               onSimplifiedResponse={onSimplifiedResponse}
+              onRetry={onUnclear}
             />
           </div>
         </div>

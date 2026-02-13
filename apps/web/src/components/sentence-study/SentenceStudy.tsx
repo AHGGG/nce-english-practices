@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * SentenceStudy - Adaptive Sentence Learning Mode (ASL)
  *
@@ -12,24 +11,21 @@ import React, {
   useRef,
   useMemo,
 } from "react";
+import type { Collocation } from "../content/types";
 import { useNavigate } from "react-router-dom";
 
 // Local imports
 import sentenceStudyApi from "./api";
 import { getDifficultWords } from "../../api/client";
-import {
-  VIEW_STATES,
-  DIFFICULTY_CHOICES,
-  extractSentencesFromBlocks,
-} from "./constants";
-import { HIGHLIGHT_OPTIONS, mapLevelToOptionIndex } from "../reading/constants";
+import { VIEW_STATES, extractSentencesFromBlocks } from "./constants";
+import { mapLevelToOptionIndex } from "../reading/constants";
 import WordInspector from "../reading/WordInspector";
 import { useWordExplainer } from "@nce/shared";
 import { useGlobalState } from "../../context/GlobalContext";
 import { parseJSONSSEStream, isSSEResponse } from "../../utils/sseParser";
 import { useToast } from "../../components/ui/Toast";
 
-import { apiPut } from "../../api/auth";
+import { apiPut, authFetch } from "../../api/auth";
 
 // View components
 import {
@@ -40,49 +36,127 @@ import {
   CompletedView,
 } from "./views";
 
+interface BookItem {
+  filename: string;
+  id?: string;
+  title: string;
+  size_bytes: number;
+}
+
+interface ArticleItem {
+  source_id: string;
+  title: string;
+  sentence_count: number;
+  last_read?: string;
+  last_studied_at?: string;
+}
+
+interface SentenceObj {
+  text: string;
+}
+
+interface ArticleBlock {
+  type?: string;
+  sentences?: string[];
+}
+
+interface CurrentArticle {
+  id: string;
+  title: string;
+  full_text?: string;
+  sentence_count?: number;
+  sentences?: Array<string | SentenceObj>;
+  blocks?: ArticleBlock[];
+  highlightSet?: Set<string>;
+}
+
+interface ProgressState {
+  studied_count: number;
+  clear_count: number;
+  unclear_count: number;
+  current_index: number;
+}
+
+interface StudyHighlights {
+  word_clicks: string[];
+  phrase_clicks: string[];
+  unclear_sentences: Array<{ sentence_index: number; unclear_choice?: string }>;
+  studied_count?: number;
+  clear_count?: number;
+}
+
+interface OverviewData {
+  summary_en?: string;
+  summary_zh?: string;
+  key_topics?: string[];
+  difficulty_hint?: string;
+}
+
+interface LastSession {
+  source_id?: string;
+}
+
+interface CollocationResponse {
+  collocations?: Collocation[];
+}
+
+interface FlatSentence {
+  text: string;
+  blockIndex: number;
+  sentenceIndex: number;
+}
+
 const SentenceStudy = () => {
   const navigate = useNavigate();
 
   // View state
   const [view, setView] = useState(VIEW_STATES.BOOK_SHELF);
-  const [books, setBooks] = useState([]);
-  const [selectedBook, setSelectedBook] = useState(null);
-  const [articles, setArticles] = useState([]);
+  const [books, setBooks] = useState<BookItem[]>([]);
+  const [selectedBook, setSelectedBook] = useState<BookItem | null>(null);
+  const [articles, setArticles] = useState<ArticleItem[]>([]);
   const [loading, setLoading] = useState(true);
 
   // Article & sentence state
-  const [currentArticle, setCurrentArticle] = useState(null);
+  const [currentArticle, setCurrentArticle] = useState<CurrentArticle | null>(
+    null,
+  );
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [progress, setProgress] = useState({
+  const [progress, setProgress] = useState<ProgressState>({
     studied_count: 0,
     clear_count: 0,
     unclear_count: 0,
+    current_index: 0,
   });
 
   // Interaction state
-  const [wordClicks, setWordClicks] = useState([]);
-  const [phraseClicks, setPhraseClicks] = useState([]);
-  const [startTime, setStartTime] = useState(null);
+  const [wordClicks, setWordClicks] = useState<string[]>([]);
+  const [phraseClicks, setPhraseClicks] = useState<string[]>([]);
+  const [startTime, setStartTime] = useState<number | null>(null);
   // showDiagnose is removed in favor of 4-stage flow
-  const [simplifiedText, setSimplifiedText] = useState(null);
-  const [simplifyingType, setSimplifyingType] = useState(null);
+  const [simplifiedText, setSimplifiedText] = useState<string | null>(null);
+  const [simplifyingType, setSimplifyingType] = useState<string | null>(null);
   const [simplifyStage, setSimplifyStage] = useState(1);
   const [isSimplifying, setIsSimplifying] = useState(false);
 
   // Overview state
-  const [overview, setOverview] = useState(null);
+  const [overview, setOverview] = useState<OverviewData | null>(null);
 
   const [overviewStreamContent, setOverviewStreamContent] = useState("");
 
   // Global difficult words (for highlighting)
-  const [globalDifficultWords, setGlobalDifficultWords] = useState(new Set());
+  const [globalDifficultWords, setGlobalDifficultWords] = useState<Set<string>>(
+    new Set(),
+  );
   // Session known words (to explicitly remove highlights even if in calibration set)
-  const [sessionKnownWords, setSessionKnownWords] = useState(new Set());
+  const [sessionKnownWords, setSessionKnownWords] = useState<Set<string>>(
+    new Set(),
+  );
 
   // Study highlights state (for COMPLETED view)
-  const [studyHighlights, setStudyHighlights] = useState({
+  const [studyHighlights, setStudyHighlights] = useState<StudyHighlights>({
     word_clicks: [],
     phrase_clicks: [],
+    unclear_sentences: [],
   });
 
   const {
@@ -104,7 +178,7 @@ const SentenceStudy = () => {
   } = useWordExplainer();
 
   // Collocations
-  const [collocations, setCollocations] = useState([]);
+  const [collocations, setCollocations] = useState<Collocation[]>([]);
 
   const {
     state: { settings },
@@ -113,9 +187,9 @@ const SentenceStudy = () => {
   const { addToast } = useToast();
 
   // Refs
-  const audioRef = useRef(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
 
-  const sentenceContainerRef = useRef(null);
+  const sentenceContainerRef = useRef<HTMLDivElement | null>(null);
 
   // Highlight settings
   const [highlightOptionIndex, setHighlightOptionIndex] = useState(0);
@@ -123,11 +197,11 @@ const SentenceStudy = () => {
   // Compute flat sentence list from blocks
   const flatSentences = useMemo(() => {
     if (!currentArticle?.blocks?.length) return [];
-    return extractSentencesFromBlocks(currentArticle.blocks);
+    return extractSentencesFromBlocks(currentArticle.blocks) as FlatSentence[];
   }, [currentArticle]);
 
   // === Helper: Sort articles by recent activity (status already in API response) ===
-  const sortArticlesByActivity = (articlesList) => {
+  const sortArticlesByActivity = (articlesList: ArticleItem[]) => {
     return [...articlesList].sort((a, b) => {
       const timeA = Math.max(
         new Date(a.last_read || 0).getTime(),
@@ -141,8 +215,16 @@ const SentenceStudy = () => {
     });
   };
 
+  const fetchStatusAndSort = async (bookFilename: string) => {
+    const data = await sentenceStudyApi.getArticles(bookFilename);
+    const refreshed = ((data.articles || []) as ArticleItem[]).filter(
+      (article) => article.sentence_count > 0,
+    );
+    return sortArticlesByActivity(refreshed);
+  };
+
   // === Book Selection ===
-  const selectBook = async (bookFilename) => {
+  const selectBook = async (bookFilename: string) => {
     setLoading(true);
     // Find full book object from filename
     const book = books.find((b) => b.filename === bookFilename);
@@ -151,8 +233,8 @@ const SentenceStudy = () => {
     setSelectedBook(book);
     try {
       const data = await sentenceStudyApi.getArticles(book.filename);
-      const articlesList = (data.articles || []).filter(
-        (a) => a.sentence_count > 0,
+      const articlesList = ((data.articles || []) as ArticleItem[]).filter(
+        (article) => article.sentence_count > 0,
       );
       const sorted = sortArticlesByActivity(articlesList);
       setArticles(sorted);
@@ -176,18 +258,22 @@ const SentenceStudy = () => {
         getDifficultWords()
           .then((data) => {
             if (data && data.words) {
-              setGlobalDifficultWords(new Set(data.words));
+              setGlobalDifficultWords(new Set(data.words as string[]));
             }
           })
           .catch((e) => console.error("Failed to load difficult words:", e));
 
-        const [booksData, calibrationData, lastSession] = await Promise.all([
+        const [booksData, calibrationData, lastSession] = (await Promise.all([
           sentenceStudyApi.getBooks(),
           sentenceStudyApi.getCalibration(),
           sentenceStudyApi.getLastSession(),
-        ]);
+        ])) as [
+          { books?: BookItem[] },
+          { level?: number } | null,
+          LastSession | null,
+        ];
 
-        setBooks(booksData.books || []);
+        setBooks((booksData.books || []) as BookItem[]);
 
         // Auto-select first book if available and no URL params
         if (!urlSourceId && booksData.books && booksData.books.length > 0) {
@@ -199,9 +285,9 @@ const SentenceStudy = () => {
           const articlesData = await sentenceStudyApi.getArticles(
             defaultBook.filename,
           );
-          const filtered = (articlesData.articles || []).filter(
-            (a) => a.sentence_count > 0,
-          );
+          const filtered = (
+            (articlesData.articles || []) as ArticleItem[]
+          ).filter((article) => article.sentence_count > 0);
           const sorted = sortArticlesByActivity(filtered);
           setArticles(sorted);
           setView(VIEW_STATES.ARTICLE_LIST);
@@ -219,12 +305,14 @@ const SentenceStudy = () => {
             const book = (booksData.books || []).find(
               (b) => b.filename === filename,
             );
-            setSelectedBook(book || { filename, title: filename });
+            setSelectedBook(
+              book || { filename, title: filename, size_bytes: 0 },
+            );
 
             const articlesData = await sentenceStudyApi.getArticles(filename);
-            const filtered = (articlesData.articles || []).filter(
-              (a) => a.sentence_count > 0,
-            );
+            const filtered = (
+              (articlesData.articles || []) as ArticleItem[]
+            ).filter((article) => article.sentence_count > 0);
             const sorted = sortArticlesByActivity(filtered);
             setArticles(sorted);
 
@@ -248,12 +336,14 @@ const SentenceStudy = () => {
             const book = (booksData.books || []).find(
               (b) => b.filename === filename,
             );
-            setSelectedBook(book || { filename, title: filename });
+            setSelectedBook(
+              book || { filename, title: filename, size_bytes: 0 },
+            );
 
             const articlesData = await sentenceStudyApi.getArticles(filename);
-            const filtered = (articlesData.articles || []).filter(
-              (a) => a.sentence_count > 0,
-            );
+            const filtered = (
+              (articlesData.articles || []) as ArticleItem[]
+            ).filter((article) => article.sentence_count > 0);
             const sorted = sortArticlesByActivity(filtered);
             setArticles(sorted);
 
@@ -298,8 +388,9 @@ const SentenceStudy = () => {
 
     const fetchCollocations = async () => {
       try {
-        const data =
-          await sentenceStudyApi.detectCollocations(currentSentenceText);
+        const data = (await sentenceStudyApi.detectCollocations(
+          currentSentenceText,
+        )) as CollocationResponse;
         if (!cancelled) setCollocations(data.collocations || []);
       } catch (e) {
         console.error("Failed to detect collocations:", e);
@@ -313,7 +404,7 @@ const SentenceStudy = () => {
     const upcoming = flatSentences
       .slice(currentIndex + 1, currentIndex + 4)
       .map((s) => s?.text)
-      .filter(Boolean);
+      .filter((text): text is string => Boolean(text));
     if (upcoming.length > 0) sentenceStudyApi.prefetchCollocations(upcoming);
 
     return () => {
@@ -321,7 +412,7 @@ const SentenceStudy = () => {
     };
   }, [currentIndex, view, flatSentences]);
 
-  const playAudio = useCallback((text) => {
+  const playAudio = useCallback((text: string) => {
     if (!text) return;
     if (audioRef.current) audioRef.current.pause();
     const audio = new Audio(`/api/tts?text=${encodeURIComponent(text)}`);
@@ -330,17 +421,22 @@ const SentenceStudy = () => {
   }, []);
 
   const startStudying = useCallback(
-    async (sourceId) => {
+    async (sourceId: string) => {
       setLoading(true);
 
       try {
-        const [article, progressData] = await Promise.all([
+        const [article, progressData] = (await Promise.all([
           sentenceStudyApi.getArticle(sourceId, highlightOptionIndex),
           sentenceStudyApi.getProgress(sourceId),
-        ]);
+        ])) as [CurrentArticle, ProgressState];
 
         setCurrentArticle(article);
-        setProgress(progressData);
+        setProgress({
+          studied_count: progressData.studied_count ?? 0,
+          clear_count: progressData.clear_count ?? 0,
+          unclear_count: progressData.unclear_count ?? 0,
+          current_index: progressData.current_index ?? 0,
+        });
         setWordClicks([]);
         // setSimplifiedText(null);
         setOverviewStreamContent("");
@@ -349,13 +445,13 @@ const SentenceStudy = () => {
         const totalSentences =
           article.sentence_count || article.sentences?.length || 0;
         if (
-          progressData.current_index >= totalSentences &&
+          (progressData.current_index ?? 0) >= totalSentences &&
           totalSentences > 0
         ) {
-          const highlights = await sentenceStudyApi.getStudyHighlights(
+          const highlights = (await sentenceStudyApi.getStudyHighlights(
             sourceId,
             totalSentences,
-          );
+          )) as StudyHighlights;
           setStudyHighlights(highlights);
           setCurrentIndex(0);
           setView(VIEW_STATES.COMPLETED);
@@ -376,10 +472,11 @@ const SentenceStudy = () => {
           await parseJSONSSEStream(res, {
             onChunk: (content) =>
               setOverviewStreamContent((prev) => prev + content),
-            onDone: (data) => setOverview(data.overview),
+            onDone: (data) =>
+              setOverview((data.overview || null) as OverviewData),
           });
         } else {
-          setOverview(await res.json());
+          setOverview((await res.json()) as OverviewData);
         }
       } catch (e) {
         console.error("Failed to load article:", e);
@@ -398,7 +495,7 @@ const SentenceStudy = () => {
 
   // Track word/phrase clicks and delegate to hook
   const handleWordClick = useCallback(
-    (word, sentence, keyWord) => {
+    (word: string, sentence: string, keyWord?: string) => {
       if (!word) return;
       const cleanWord = word.toLowerCase().trim();
       if (cleanWord.length < 2) return;
@@ -445,7 +542,8 @@ const SentenceStudy = () => {
   );
 
   const handleClear = useCallback(async () => {
-    const dwellTime = Date.now() - startTime;
+    if (!currentArticle) return;
+    const dwellTime = Date.now() - (startTime ?? Date.now());
     const currentSentence = flatSentences[currentIndex];
     const wordCount =
       currentSentence?.text?.split(/\s+/).filter((w) => w.length > 0).length ||
@@ -474,7 +572,7 @@ const SentenceStudy = () => {
   ]);
 
   const handleDifficultyChoice = useCallback(
-    async (choice, stage = 1) => {
+    async (choice: string, stage = 1) => {
       setIsSimplifying(true);
       // Default to 'meaning' if not specified, though backend mainly uses stage now
       const type = choice || "meaning";
@@ -529,8 +627,9 @@ const SentenceStudy = () => {
   }, [handleDifficultyChoice]);
 
   const handleSimplifiedResponse = useCallback(
-    async (gotIt) => {
-      const dwellTime = Date.now() - startTime;
+    async (gotIt: boolean) => {
+      if (!currentArticle) return;
+      const dwellTime = Date.now() - (startTime ?? Date.now());
       const currentSentence = flatSentences[currentIndex];
       const wordCount =
         currentSentence?.text?.split(/\s+/).filter((w) => w.length > 0)
@@ -556,7 +655,7 @@ const SentenceStudy = () => {
       } else if (simplifyStage < 4) {
         // Move to next stage
         setSimplifiedText(null);
-        handleDifficultyChoice(simplifyingType, simplifyStage + 1);
+        handleDifficultyChoice(simplifyingType || "meaning", simplifyStage + 1);
       } else {
         // Max stage reached
         advanceToNext("unclear");
@@ -576,11 +675,13 @@ const SentenceStudy = () => {
   );
 
   const advanceToNext = useCallback(
-    async (result) => {
-      const updateProgress = (prev) => ({
+    async (result: "clear" | "unclear") => {
+      if (!currentArticle) return;
+
+      const updateProgress = (prev: ProgressState): ProgressState => ({
         ...prev,
         studied_count: prev.studied_count + 1,
-        current_index: prev.current_index + 1,
+        current_index: (prev.current_index || 0) + 1,
         clear_count:
           result === "clear" ? (prev.clear_count || 0) + 1 : prev.clear_count,
         unclear_count:
@@ -600,17 +701,17 @@ const SentenceStudy = () => {
         setProgress(updateProgress);
       } else {
         // Use backend API values for accurate progress when completing article
-        const highlights = await sentenceStudyApi.getStudyHighlights(
+        const highlights = (await sentenceStudyApi.getStudyHighlights(
           currentArticle.id,
           flatSentences.length,
-        );
+        )) as StudyHighlights;
         setStudyHighlights(highlights);
         // Use API response values to ensure accuracy (fixes clear rate display issue)
         setProgress((prev) => ({
           ...prev,
-          studied_count: highlights.studied_count,
-          clear_count: highlights.clear_count,
-          current_index: highlights.studied_count, // All sentences completed
+          studied_count: highlights.studied_count ?? prev.studied_count,
+          clear_count: highlights.clear_count ?? prev.clear_count,
+          current_index: highlights.studied_count ?? prev.studied_count, // All sentences completed
         }));
         setView(VIEW_STATES.COMPLETED);
       }
@@ -627,12 +728,14 @@ const SentenceStudy = () => {
       setView(VIEW_STATES.ARTICLE_LIST);
       setCurrentArticle(null);
       setCurrentIndex(0);
-      setStudyHighlights({ word_clicks: [], phrase_clicks: [] });
+      setStudyHighlights({
+        word_clicks: [],
+        phrase_clicks: [],
+        unclear_sentences: [],
+      });
       // Refresh article status to update completed status
       if (selectedBook?.filename) {
-        const sorted = await fetchStatusAndSort(selectedBook.filename, [
-          ...articles,
-        ]);
+        const sorted = await fetchStatusAndSort(selectedBook.filename);
         setArticles(sorted);
       }
     } else if (view === VIEW_STATES.ARTICLE_LIST) {
@@ -640,7 +743,7 @@ const SentenceStudy = () => {
     } else {
       navigate("/nav");
     }
-  }, [view, navigate, selectedBook, articles]);
+  }, [view, navigate, selectedBook]);
 
   const handleUndo = useCallback(() => {
     if (currentIndex > 0) {
@@ -655,7 +758,7 @@ const SentenceStudy = () => {
   }, [currentIndex]);
 
   const handleMarkAsKnown = useCallback(
-    async (word) => {
+    async (word: string) => {
       // 1. Optimistic UI update: Remove highlight & close modal immediately
       const lowerWord = word.toLowerCase();
 
@@ -746,7 +849,7 @@ const SentenceStudy = () => {
             knownWords={sessionKnownWords}
             collocations={collocations}
             wordClicks={wordClicks}
-            simplifiedText={simplifiedText}
+            simplifiedText={simplifiedText || undefined}
             simplifyStage={simplifyStage}
             isSimplifying={isSimplifying}
             sentenceContainerRef={sentenceContainerRef}
@@ -774,6 +877,7 @@ const SentenceStudy = () => {
           onClose={closeInspector}
           onPlayAudio={playAudio}
           onMarkAsKnown={handleMarkAsKnown}
+          currentSentenceContext={flatSentences[currentIndex]?.text || null}
           contextExplanation={contextExplanation}
           isExplaining={isExplaining}
           isPhrase={isPhrase}

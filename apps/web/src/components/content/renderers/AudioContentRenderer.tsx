@@ -209,10 +209,18 @@ interface PlayerControlsProps {
   duration: number;
   progress: number;
   playbackRate: number;
+  loopMode: "off" | "segment" | "ab";
+  loopStart: number | null;
+  loopEnd: number | null;
   onTogglePlay: () => void;
   onSeek: (time: number) => void;
   onSkip: (seconds: number) => void;
   onRateChange: (rate: number) => void;
+  onToggleSegmentLoop: () => void;
+  onSetABStart: () => void;
+  onSetABEnd: () => void;
+  onClearABLoop: () => void;
+  onToggleABLoop: () => void;
 }
 
 function PlayerControls({
@@ -222,10 +230,18 @@ function PlayerControls({
   duration,
   progress,
   playbackRate,
+  loopMode,
+  loopStart,
+  loopEnd,
   onTogglePlay,
   onSeek,
   onSkip,
   onRateChange,
+  onToggleSegmentLoop,
+  onSetABStart,
+  onSetABEnd,
+  onClearABLoop,
+  onToggleABLoop,
 }: PlayerControlsProps) {
   const [speedMenuOpen, setSpeedMenuOpen] = React.useState(false);
   const progressBarRef = useRef<HTMLDivElement>(null);
@@ -313,8 +329,59 @@ function PlayerControls({
           </button>
         </div>
 
-        {/* Speed Control & Extra Actions */}
-        <div className="w-24 flex justify-end">
+        {/* Speed Control & Loop Actions */}
+        <div className="w-72 flex justify-end items-center gap-2">
+          <button
+            onClick={onToggleSegmentLoop}
+            className={`px-2 py-1 rounded text-xs border transition-colors ${
+              loopMode === "segment"
+                ? "bg-accent-primary/15 text-accent-primary border-accent-primary/50"
+                : "bg-white/5 text-white/70 border-white/10 hover:bg-white/10"
+            }`}
+            title="Loop current subtitle segment"
+          >
+            SEG
+          </button>
+
+          <button
+            onClick={onSetABStart}
+            className="px-2 py-1 rounded text-xs border border-white/10 bg-white/5 text-white/70 hover:bg-white/10"
+            title="Set A point"
+          >
+            A
+          </button>
+
+          <button
+            onClick={onSetABEnd}
+            className="px-2 py-1 rounded text-xs border border-white/10 bg-white/5 text-white/70 hover:bg-white/10"
+            title="Set B point"
+          >
+            B
+          </button>
+
+          <button
+            onClick={onToggleABLoop}
+            disabled={
+              loopStart == null || loopEnd == null || loopEnd <= loopStart
+            }
+            className={`px-2 py-1 rounded text-xs border transition-colors disabled:opacity-40 ${
+              loopMode === "ab"
+                ? "bg-accent-primary/15 text-accent-primary border-accent-primary/50"
+                : "bg-white/5 text-white/70 border-white/10 hover:bg-white/10"
+            }`}
+            title="Toggle A-B loop"
+          >
+            A-B
+          </button>
+
+          <button
+            onClick={onClearABLoop}
+            className="px-2 py-1 rounded text-xs border border-white/10 bg-white/5 text-white/70 hover:bg-white/10"
+            title="Clear A-B points"
+          >
+            CLR
+          </button>
+
           <SpeedMenu
             currentRate={playbackRate}
             onRateChange={onRateChange}
@@ -322,6 +389,12 @@ function PlayerControls({
             onToggle={() => setSpeedMenuOpen(!speedMenuOpen)}
           />
         </div>
+      </div>
+
+      <div className="px-6 pb-3 -mt-1 text-[10px] font-mono text-white/35 max-w-4xl mx-auto w-full text-right">
+        Loop: {loopMode.toUpperCase()}
+        {loopStart != null && ` | A ${formatTime(loopStart)}`}
+        {loopEnd != null && ` | B ${formatTime(loopEnd)}`}
       </div>
     </div>
   );
@@ -340,6 +413,7 @@ interface AudioPlayerUIProps extends ContentRendererProps {
 }
 
 export function AudioPlayerUI({
+  bundle,
   segments,
   state,
   actions,
@@ -353,6 +427,40 @@ export function AudioPlayerUI({
   onTranscribe,
   isTranscribing,
 }: AudioPlayerUIProps) {
+  const loadMoreRef = useRef<HTMLDivElement | null>(null);
+  const [visibleCount, setVisibleCount] = React.useState(120);
+
+  useEffect(() => {
+    setVisibleCount(120);
+  }, [bundle?.id, segments.length]);
+
+  useEffect(() => {
+    if (state.activeSegmentIndex < 0) return;
+    if (state.activeSegmentIndex < visibleCount - 20) return;
+    setVisibleCount((prev) => Math.min(segments.length, prev + 120));
+  }, [state.activeSegmentIndex, visibleCount, segments.length]);
+
+  useEffect(() => {
+    if (visibleCount >= segments.length) return;
+    if (!loadMoreRef.current) return;
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (!entry.isIntersecting) return;
+        setVisibleCount((prev) => Math.min(segments.length, prev + 120));
+      },
+      { rootMargin: "320px" },
+    );
+
+    observer.observe(loadMoreRef.current);
+    return () => observer.disconnect();
+  }, [visibleCount, segments.length]);
+
+  const visibleSegments = useMemo(
+    () => segments.slice(0, visibleCount),
+    [segments, visibleCount],
+  );
+
   // Handle segment click to seek
   const handleSegmentClick = useCallback(
     (index: number) => {
@@ -370,21 +478,32 @@ export function AudioPlayerUI({
       <div className="flex-1 overflow-y-auto px-6 pt-12 pb-40 scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent hover:scrollbar-thumb-white/20">
         <div className="max-w-3xl mx-auto space-y-1">
           {segments.length > 0 ? (
-            segments.map((segment) => (
-              <AudioSegmentBlock
-                key={segment.index}
-                segment={segment}
-                isActive={segment.index === state.activeSegmentIndex}
-                highlightSet={highlightSet}
-                studyWordSet={studyWordSet}
-                studyPhraseSet={studyPhraseSet}
-                knownWords={knownWords}
-                showHighlights={showHighlights}
-                getCollocations={getCollocations}
-                onClick={() => handleSegmentClick(segment.index)}
-                onWordClick={onWordClick}
-              />
-            ))
+            <>
+              {visibleSegments.map((segment) => (
+                <AudioSegmentBlock
+                  key={segment.index}
+                  segment={segment}
+                  isActive={segment.index === state.activeSegmentIndex}
+                  highlightSet={highlightSet}
+                  studyWordSet={studyWordSet}
+                  studyPhraseSet={studyPhraseSet}
+                  knownWords={knownWords}
+                  showHighlights={showHighlights}
+                  getCollocations={getCollocations}
+                  onClick={() => handleSegmentClick(segment.index)}
+                  onWordClick={onWordClick}
+                />
+              ))}
+
+              {visibleCount < segments.length && (
+                <div
+                  ref={loadMoreRef}
+                  className="py-4 text-center text-xs font-mono text-white/40"
+                >
+                  Loading more subtitles... ({visibleCount}/{segments.length})
+                </div>
+              )}
+            </>
           ) : (
             <div className="text-center text-text-muted py-12 space-y-4">
               <div>
@@ -435,10 +554,18 @@ export function AudioPlayerUI({
         duration={state.duration}
         progress={state.progress}
         playbackRate={state.playbackRate}
+        loopMode={state.loopMode}
+        loopStart={state.loopStart}
+        loopEnd={state.loopEnd}
         onTogglePlay={actions.togglePlay}
         onSeek={actions.seekTo}
         onSkip={actions.skip}
         onRateChange={actions.setPlaybackRate}
+        onToggleSegmentLoop={actions.toggleSegmentLoop}
+        onSetABStart={actions.setABStart}
+        onSetABEnd={actions.setABEnd}
+        onClearABLoop={actions.clearABLoop}
+        onToggleABLoop={actions.toggleABLoop}
       />
     </div>
   );
