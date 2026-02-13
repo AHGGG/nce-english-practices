@@ -2,8 +2,10 @@ from fastapi import APIRouter, HTTPException, Response, Depends
 from typing import Optional, Dict, Any
 from bs4 import BeautifulSoup
 from sqlalchemy import select, func
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.routers.auth import get_current_user_id
+from app.core.db import get_db
 from app.services.content_service import content_service
 from app.models.content_schemas import SourceType
 from app.models.orm import ReadingSession, SentenceLearningRecord, ReviewItem
@@ -150,7 +152,9 @@ def list_epub_articles(filename: Optional[str] = None):
 
 @router.get("/api/reading/epub/list-with-status")
 async def list_epub_articles_with_status(
-    filename: Optional[str] = None, user_id: str = Depends(get_current_user_id)
+    filename: Optional[str] = None,
+    user_id: str = Depends(get_current_user_id),
+    db: AsyncSession = Depends(get_db),
 ):
     """
     List all articles with their reading/study status in a SINGLE request.
@@ -158,7 +162,6 @@ async def list_epub_articles_with_status(
     """
     try:
         from app.services.content_providers.epub_provider import EpubProvider
-        from app.core.db import AsyncSessionLocal
 
         provider = EpubProvider()
 
@@ -222,53 +225,50 @@ async def list_epub_articles_with_status(
         }
 
         # Fetch status data with batch queries
-        async with AsyncSessionLocal() as db:
-            # Batch Query 1: Reading sessions
-            reading_stats_result = await db.execute(
-                select(
-                    ReadingSession.source_id,
-                    func.count(ReadingSession.id).label("session_count"),
-                    func.max(ReadingSession.ended_at).label("last_read"),
-                )
-                .where(ReadingSession.user_id == user_id)
-                .where(ReadingSession.source_id.in_(source_ids))
-                .group_by(ReadingSession.source_id)
+        # Batch Query 1: Reading sessions
+        reading_stats_result = await db.execute(
+            select(
+                ReadingSession.source_id,
+                func.count(ReadingSession.id).label("session_count"),
+                func.max(ReadingSession.ended_at).label("last_read"),
             )
-            reading_stats = {
-                row.source_id: {"count": row.session_count, "last_read": row.last_read}
-                for row in reading_stats_result.fetchall()
-            }
+            .where(ReadingSession.user_id == user_id)
+            .where(ReadingSession.source_id.in_(source_ids))
+            .group_by(ReadingSession.source_id)
+        )
+        reading_stats = {
+            row.source_id: {"count": row.session_count, "last_read": row.last_read}
+            for row in reading_stats_result.fetchall()
+        }
 
-            # Batch Query 2: Study progress
-            study_stats_result = await db.execute(
-                select(
-                    SentenceLearningRecord.source_id,
-                    func.count(SentenceLearningRecord.id).label("studied_count"),
-                    func.count(SentenceLearningRecord.id)
-                    .filter(SentenceLearningRecord.initial_response == "clear")
-                    .label("clear_count"),
-                    func.count(SentenceLearningRecord.id)
-                    .filter(SentenceLearningRecord.initial_response == "unclear")
-                    .label("unclear_count"),
-                    func.max(SentenceLearningRecord.sentence_index).label("max_index"),
-                    func.max(SentenceLearningRecord.updated_at).label(
-                        "last_studied_at"
-                    ),
-                )
-                .where(SentenceLearningRecord.user_id == user_id)
-                .where(SentenceLearningRecord.source_id.in_(source_ids))
-                .group_by(SentenceLearningRecord.source_id)
+        # Batch Query 2: Study progress
+        study_stats_result = await db.execute(
+            select(
+                SentenceLearningRecord.source_id,
+                func.count(SentenceLearningRecord.id).label("studied_count"),
+                func.count(SentenceLearningRecord.id)
+                .filter(SentenceLearningRecord.initial_response == "clear")
+                .label("clear_count"),
+                func.count(SentenceLearningRecord.id)
+                .filter(SentenceLearningRecord.initial_response == "unclear")
+                .label("unclear_count"),
+                func.max(SentenceLearningRecord.sentence_index).label("max_index"),
+                func.max(SentenceLearningRecord.updated_at).label("last_studied_at"),
             )
-            study_stats = {
-                row.source_id: {
-                    "studied_count": row.studied_count or 0,
-                    "clear_count": row.clear_count or 0,
-                    "unclear_count": row.unclear_count or 0,
-                    "max_index": row.max_index,
-                    "last_studied_at": row.last_studied_at,
-                }
-                for row in study_stats_result.fetchall()
+            .where(SentenceLearningRecord.user_id == user_id)
+            .where(SentenceLearningRecord.source_id.in_(source_ids))
+            .group_by(SentenceLearningRecord.source_id)
+        )
+        study_stats = {
+            row.source_id: {
+                "studied_count": row.studied_count or 0,
+                "clear_count": row.clear_count or 0,
+                "unclear_count": row.unclear_count or 0,
+                "max_index": row.max_index,
+                "last_studied_at": row.last_studied_at,
             }
+            for row in study_stats_result.fetchall()
+        }
 
         # Merge status into articles
         for article in valid_articles:
@@ -352,6 +352,7 @@ async def get_article_content(
     min_sequence: Optional[int] = None,
     max_sequence: Optional[int] = None,
     user_id: str = Depends(get_current_user_id),
+    db: AsyncSession = Depends(get_db),
 ):
     """
     Get full article content by source_id.
@@ -433,29 +434,27 @@ async def get_article_content(
         # Fetch study-based highlights (words/phrases looked up during Sentence Study)
         # NOTE: study_highlights are GLOBAL (across all articles), not per-article
         try:
-            from app.core.db import AsyncSessionLocal
             from sqlalchemy import select
             from app.models.orm import WordProficiency
 
-            async with AsyncSessionLocal() as db:
-                # 1. Fetch GLOBAL word/phrase clicks (across ALL articles for this user)
-                global_words_stmt = (
-                    select(
-                        SentenceLearningRecord.word_clicks,
-                        SentenceLearningRecord.phrase_clicks,
-                    ).where(SentenceLearningRecord.user_id == user_id)
-                    # No source_id filter - we want ALL words the user has looked up
-                )
-                global_records = await db.execute(global_words_stmt)
+            # 1. Fetch GLOBAL word/phrase clicks (across ALL articles for this user)
+            global_words_stmt = (
+                select(
+                    SentenceLearningRecord.word_clicks,
+                    SentenceLearningRecord.phrase_clicks,
+                ).where(SentenceLearningRecord.user_id == user_id)
+                # No source_id filter - we want ALL words the user has looked up
+            )
+            global_records = await db.execute(global_words_stmt)
 
-                all_words = set()
-                all_phrases = set()
-                for row in global_records.fetchall():
-                    word_clicks, phrase_clicks = row
-                    if word_clicks:
-                        all_words.update(word_clicks)
-                    if phrase_clicks:
-                        all_phrases.update(phrase_clicks)
+            all_words = set()
+            all_phrases = set()
+            for row in global_records.fetchall():
+                word_clicks, phrase_clicks = row
+                if word_clicks:
+                    all_words.update(word_clicks)
+                if phrase_clicks:
+                    all_phrases.update(phrase_clicks)
 
                 # 2. Fetch article-specific unclear sentences
                 unclear_stmt = (
@@ -602,7 +601,9 @@ def get_epub_image(filename: str, image_path: str):
 
 @router.get("/api/content/article-status")
 async def get_article_status(
-    filename: str, user_id: str = Depends(get_current_user_id)
+    filename: str,
+    user_id: str = Depends(get_current_user_id),
+    db: AsyncSession = Depends(get_db),
 ):
     """
     Get combined reading and study status for all articles in an EPUB.
@@ -618,7 +619,6 @@ async def get_article_status(
     """
     try:
         from app.services.content_providers.epub_provider import EpubProvider
-        from app.core.db import AsyncSessionLocal
 
         provider = EpubProvider()
 
@@ -649,68 +649,64 @@ async def get_article_status(
 
         source_ids = [a["source_id"] for a in valid_articles]
 
-        async with AsyncSessionLocal() as db:
-            # Batch Query 1: Reading sessions stats (count + last_read) grouped by source_id
-            reading_stats_result = await db.execute(
-                select(
-                    ReadingSession.source_id,
-                    func.count(ReadingSession.id).label("session_count"),
-                    func.max(ReadingSession.ended_at).label("last_read"),
-                )
-                .where(ReadingSession.user_id == user_id)
-                .where(ReadingSession.source_id.in_(source_ids))
-                .group_by(ReadingSession.source_id)
+        # Batch Query 1: Reading sessions stats (count + last_read) grouped by source_id
+        reading_stats_result = await db.execute(
+            select(
+                ReadingSession.source_id,
+                func.count(ReadingSession.id).label("session_count"),
+                func.max(ReadingSession.ended_at).label("last_read"),
             )
-            reading_stats = {
-                row.source_id: {"count": row.session_count, "last_read": row.last_read}
-                for row in reading_stats_result.fetchall()
-            }
+            .where(ReadingSession.user_id == user_id)
+            .where(ReadingSession.source_id.in_(source_ids))
+            .group_by(ReadingSession.source_id)
+        )
+        reading_stats = {
+            row.source_id: {"count": row.session_count, "last_read": row.last_read}
+            for row in reading_stats_result.fetchall()
+        }
 
-            # Batch Query 2: Study progress grouped by source_id
-            study_stats_result = await db.execute(
-                select(
-                    SentenceLearningRecord.source_id,
-                    func.count(SentenceLearningRecord.id).label("studied_count"),
-                    func.count(SentenceLearningRecord.id)
-                    .filter(SentenceLearningRecord.initial_response == "clear")
-                    .label("clear_count"),
-                    func.count(SentenceLearningRecord.id)
-                    .filter(SentenceLearningRecord.initial_response == "unclear")
-                    .label("unclear_count"),
-                    func.max(SentenceLearningRecord.sentence_index).label("max_index"),
-                    func.max(SentenceLearningRecord.updated_at).label(
-                        "last_studied_at"
-                    ),
-                )
-                .where(SentenceLearningRecord.user_id == user_id)
-                .where(SentenceLearningRecord.source_id.in_(source_ids))
-                .group_by(SentenceLearningRecord.source_id)
+        # Batch Query 2: Study progress grouped by source_id
+        study_stats_result = await db.execute(
+            select(
+                SentenceLearningRecord.source_id,
+                func.count(SentenceLearningRecord.id).label("studied_count"),
+                func.count(SentenceLearningRecord.id)
+                .filter(SentenceLearningRecord.initial_response == "clear")
+                .label("clear_count"),
+                func.count(SentenceLearningRecord.id)
+                .filter(SentenceLearningRecord.initial_response == "unclear")
+                .label("unclear_count"),
+                func.max(SentenceLearningRecord.sentence_index).label("max_index"),
+                func.max(SentenceLearningRecord.updated_at).label("last_studied_at"),
             )
-            study_stats = {
-                row.source_id: {
-                    "studied_count": row.studied_count or 0,
-                    "clear_count": row.clear_count or 0,
-                    "unclear_count": row.unclear_count or 0,
-                    "max_index": row.max_index,
-                    "last_studied_at": row.last_studied_at,
-                }
-                for row in study_stats_result.fetchall()
+            .where(SentenceLearningRecord.user_id == user_id)
+            .where(SentenceLearningRecord.source_id.in_(source_ids))
+            .group_by(SentenceLearningRecord.source_id)
+        )
+        study_stats = {
+            row.source_id: {
+                "studied_count": row.studied_count or 0,
+                "clear_count": row.clear_count or 0,
+                "unclear_count": row.unclear_count or 0,
+                "max_index": row.max_index,
+                "last_studied_at": row.last_studied_at,
             }
+            for row in study_stats_result.fetchall()
+        }
 
-            # Batch Query 3: Review items count grouped by source_id
-            review_stats_result = await db.execute(
-                select(
-                    ReviewItem.source_id,
-                    func.count(ReviewItem.id).label("review_count"),
-                )
-                .where(ReviewItem.user_id == user_id)
-                .where(ReviewItem.source_id.in_(source_ids))
-                .group_by(ReviewItem.source_id)
+        # Batch Query 3: Review items count grouped by source_id
+        review_stats_result = await db.execute(
+            select(
+                ReviewItem.source_id,
+                func.count(ReviewItem.id).label("review_count"),
             )
-            review_stats = {
-                row.source_id: row.review_count
-                for row in review_stats_result.fetchall()
-            }
+            .where(ReviewItem.user_id == user_id)
+            .where(ReviewItem.source_id.in_(source_ids))
+            .group_by(ReviewItem.source_id)
+        )
+        review_stats = {
+            row.source_id: row.review_count for row in review_stats_result.fetchall()
+        }
 
         # Build response using batch query results
         articles = []
@@ -794,6 +790,7 @@ async def get_player_content(
     content_id: str,
     track: int = 0,
     user_id: str = Depends(get_current_user_id),
+    db: AsyncSession = Depends(get_db),
 ):
     """
     Get unified content bundle for audio player.
@@ -812,7 +809,7 @@ async def get_player_content(
     from app.models.content_schemas import ContentBundle, ContentBlock, BlockType
 
     if source_type == "podcast":
-        return await _get_podcast_player_content(int(content_id), user_id)
+        return await _get_podcast_player_content(int(content_id), user_id, db)
     elif source_type == "audiobook":
         return await _get_audiobook_player_content(content_id, track)
     else:
@@ -822,9 +819,8 @@ async def get_player_content(
         )
 
 
-async def _get_podcast_player_content(episode_id: int, user_id: str):
+async def _get_podcast_player_content(episode_id: int, user_id: str, db: AsyncSession):
     """Get podcast episode content for unified player."""
-    from app.core.db import AsyncSessionLocal
     from app.models.podcast_orm import PodcastEpisode, PodcastFeed, UserEpisodeState
     from app.models.content_schemas import (
         ContentBundle,
@@ -833,27 +829,26 @@ async def _get_podcast_player_content(episode_id: int, user_id: str):
         SourceType,
     )
 
-    async with AsyncSessionLocal() as db:
-        # Get episode with feed info
-        stmt = (
-            select(PodcastEpisode, PodcastFeed)
-            .join(PodcastFeed, PodcastEpisode.feed_id == PodcastFeed.id)
-            .where(PodcastEpisode.id == episode_id)
+    # Get episode with feed info
+    stmt = (
+        select(PodcastEpisode, PodcastFeed)
+        .join(PodcastFeed, PodcastEpisode.feed_id == PodcastFeed.id)
+        .where(PodcastEpisode.id == episode_id)
+    )
+    result = await db.execute(stmt)
+    row = result.first()
+
+    if not row:
+        raise HTTPException(status_code=404, detail="Episode not found")
+
+    episode, feed = row
+
+    # Check if transcription is available
+    if episode.transcript_status != "completed" or not episode.transcript_segments:
+        raise HTTPException(
+            status_code=400,
+            detail="Transcription not available. Please generate transcription first.",
         )
-        result = await db.execute(stmt)
-        row = result.first()
-
-        if not row:
-            raise HTTPException(status_code=404, detail="Episode not found")
-
-        episode, feed = row
-
-        # Check if transcription is available
-        if episode.transcript_status != "completed" or not episode.transcript_segments:
-            raise HTTPException(
-                status_code=400,
-                detail="Transcription not available. Please generate transcription first.",
-            )
 
         # Get user playback state
         state_stmt = select(UserEpisodeState).where(

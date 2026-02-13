@@ -2,23 +2,15 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import Dict, List, Optional, Any
-from pydantic import BaseModel, Field
+from typing import Dict, List, Optional, Any, Union
+from pydantic import BaseModel, Field, ConfigDict, field_serializer
 
 
 class ErrorResponse(BaseModel):
     """Standard API error response format."""
 
-    error: str = Field(..., description="Error type/category")
-    message: str = Field(..., description="Human-readable error message")
-    detail: Optional[Any] = Field(None, description="Additional error details")
-    timestamp: datetime = Field(
-        default_factory=datetime.utcnow, description="Error timestamp"
-    )
-    request_id: Optional[str] = Field(None, description="Request ID for tracing")
-
-    class Config:
-        json_schema_extra = {
+    model_config = ConfigDict(
+        json_schema_extra={
             "example": {
                 "error": "ValidationError",
                 "message": "Invalid email format",
@@ -27,6 +19,22 @@ class ErrorResponse(BaseModel):
                 "request_id": "abc123",
             }
         }
+    )
+
+    error: str = Field(..., description="Error type/category")
+    message: str = Field(..., description="Human-readable error message")
+    detail: Optional[Any] = Field(None, description="Additional error details")
+    timestamp: Union[datetime, str] = Field(
+        default_factory=datetime.utcnow, description="Error timestamp"
+    )
+    request_id: Optional[str] = Field(None, description="Request ID for tracing")
+
+    @field_serializer("timestamp")
+    def serialize_timestamp(self, value: datetime) -> str:
+        """Serialize datetime to ISO string for JSON compatibility."""
+        if isinstance(value, datetime):
+            return value.isoformat()
+        return str(value)
 
 
 class ValidationErrorResponse(ErrorResponse):

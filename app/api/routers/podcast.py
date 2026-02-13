@@ -9,11 +9,12 @@ from fastapi.responses import Response
 # from pydantic import BaseModel (Moved to schemas)
 from typing import List, Optional
 from datetime import datetime
+from sqlalchemy.ext.asyncio import AsyncSession
 import time
 
 from app.api.routers.auth import get_current_user_id
 from app.config import settings
-from app.core.db import AsyncSessionLocal
+from app.core.db import get_db, AsyncSessionLocal
 
 from app.services.podcast_service import podcast_service
 
@@ -220,40 +221,38 @@ async def proxy_external_image(token: str):
 
 
 @router.get("/feed/{feed_id}/image")
-async def get_feed_image(feed_id: int):
+async def get_feed_image(feed_id: int, db: AsyncSession = Depends(get_db)):
     """Proxy feed image."""
     # Note: Public endpoint (no auth) to allow easy use in <img> tags
-    async with AsyncSessionLocal() as db:
-        from app.models.podcast_orm import PodcastFeed
-        from sqlalchemy import select
+    from app.models.podcast_orm import PodcastFeed
+    from sqlalchemy import select
 
-        stmt = select(PodcastFeed.image_url).where(PodcastFeed.id == feed_id)
-        result = await db.execute(stmt)
-        image_url = result.scalar_one_or_none()
+    stmt = select(PodcastFeed.image_url).where(PodcastFeed.id == feed_id)
+    result = await db.execute(stmt)
+    image_url = result.scalar_one_or_none()
 
-        if not image_url:
-            # Return 404 so browser can show alt text or default
-            raise HTTPException(status_code=404, detail="Feed has no image")
+    if not image_url:
+        # Return 404 so browser can show alt text or default
+        raise HTTPException(status_code=404, detail="Feed has no image")
 
-        return await _proxy_image(image_url, f"feed_{feed_id}.jpg")
+    return await _proxy_image(image_url, f"feed_{feed_id}.jpg")
 
 
 @router.get("/episode/{episode_id}/image")
-async def get_episode_image(episode_id: int):
+async def get_episode_image(episode_id: int, db: AsyncSession = Depends(get_db)):
     """Proxy episode image."""
     # Note: Public endpoint (no auth)
-    async with AsyncSessionLocal() as db:
-        from app.models.podcast_orm import PodcastEpisode
-        from sqlalchemy import select
+    from app.models.podcast_orm import PodcastEpisode
+    from sqlalchemy import select
 
-        stmt = select(PodcastEpisode.image_url).where(PodcastEpisode.id == episode_id)
-        result = await db.execute(stmt)
-        image_url = result.scalar_one_or_none()
+    stmt = select(PodcastEpisode.image_url).where(PodcastEpisode.id == episode_id)
+    result = await db.execute(stmt)
+    image_url = result.scalar_one_or_none()
 
-        if not image_url:
-            raise HTTPException(status_code=404, detail="Episode has no image")
+    if not image_url:
+        raise HTTPException(status_code=404, detail="Episode has no image")
 
-        return await _proxy_image(image_url, f"episode_{episode_id}.jpg")
+    return await _proxy_image(image_url, f"episode_{episode_id}.jpg")
 
 
 @router.get("/search")
@@ -262,18 +261,18 @@ async def search_podcasts(
     limit: int = 20,
     country: str = "US",
     user_id: str = Depends(get_current_user_id),
+    db: AsyncSession = Depends(get_db),
 ) -> List[ItunesSearchResult]:
     """
     Search podcasts via iTunes.
     Includes subscription status for the current user.
     """
-    async with AsyncSessionLocal() as db:
-        results = await podcast_service.search_itunes(
-            db, q, user_id, limit=limit, country=country
-        )
+    results = await podcast_service.search_itunes(
+        db, q, user_id, limit=limit, country=country
+    )
 
-        # Return results directly (frontend handles images)
-        return [ItunesSearchResult(**r) for r in results]
+    # Return results directly (frontend handles images)
+    return [ItunesSearchResult(**r) for r in results]
 
 
 @router.get("/categories")
