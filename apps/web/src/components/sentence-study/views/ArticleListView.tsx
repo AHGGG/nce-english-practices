@@ -43,9 +43,9 @@ const ArticleListView = (props: ArticleListViewProps) => {
       {...props}
       title="Sentence Study"
       icon={BookOpen}
-      showSearch={false} // Maybe enable later if desired, but keep simple for now as per original
-      showRecommend={false}
-      showStats={false} // Original didn't have the same stats bar
+      showSearch={true}
+      showRecommend={true}
+      showStats={true}
       // Prop Mapping
       isLoading={props.loading}
       selectedBookId={selectedBookId}
