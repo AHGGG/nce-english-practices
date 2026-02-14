@@ -291,6 +291,22 @@ export async function getRecentlyPlayed(limit = 10) {
   return apiGet(`${BASE_URL}/recently-played?limit=${limit}`);
 }
 
+export async function getFavoriteEpisodeIds() {
+  return apiGet(`${BASE_URL}/favorites/ids`);
+}
+
+export async function getFavorites(limit = 100, offset = 0) {
+  return apiGet(`${BASE_URL}/favorites?limit=${limit}&offset=${offset}`);
+}
+
+export async function addFavoriteEpisode(episodeId: number) {
+  return apiPost(`${BASE_URL}/episode/${episodeId}/favorite`);
+}
+
+export async function removeFavoriteEpisode(episodeId: number) {
+  return apiDelete(`${BASE_URL}/episode/${episodeId}/favorite`);
+}
+
 export async function checkEpisodeSizes(episodeIds: number[]) {
   return apiPost(`${BASE_URL}/episodes/check-size`, {
     episode_ids: episodeIds,

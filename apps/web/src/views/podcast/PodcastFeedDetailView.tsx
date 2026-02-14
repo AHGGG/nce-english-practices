@@ -26,11 +26,18 @@ import {
   Check,
   Plus,
   BookOpen,
+  Heart,
+  ListPlus,
 } from "lucide-react";
 import * as podcastApi from "../../api/podcast";
 import { usePodcast } from "../../context/PodcastContext";
 import { useGlobalState } from "../../context/GlobalContext";
 import { useToast, Dialog, DialogButton } from "../../components/ui";
+import {
+  addEpisodeToPlaylist,
+  createPlaylist,
+  getPlaylists,
+} from "../../utils/podcastPlaylists";
 
 interface PodcastFeed {
   id: number;
@@ -200,6 +207,12 @@ export default function PodcastFeedDetailView() {
   const [refreshing, setRefreshing] = useState(false);
   const [subscribing, setSubscribing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [favoriteEpisodeIds, setFavoriteEpisodeIds] = useState<Set<number>>(
+    new Set(),
+  );
+  const [favoriteLoading, setFavoriteLoading] = useState<
+    Record<number, boolean>
+  >({});
 
   // Pagination
   const PAGE_SIZE = 50;
@@ -258,6 +271,7 @@ export default function PodcastFeedDetailView() {
 
   useEffect(() => {
     loadFeed(true);
+    void loadFavoriteIds();
     checkedSizeIdsRef.current.clear();
     hasAutoRefreshedRef.current = false; // Reset for new feed
   }, [feedId]);
@@ -333,6 +347,17 @@ export default function PodcastFeedDetailView() {
       setError(getErrorMessage(e));
     } finally {
       if (reset) setLoading(false);
+    }
+  }
+
+  async function loadFavoriteIds() {
+    try {
+      const result = (await podcastApi.getFavoriteEpisodeIds()) as {
+        episode_ids?: number[];
+      };
+      setFavoriteEpisodeIds(new Set(result.episode_ids || []));
+    } catch {
+      setFavoriteEpisodeIds(new Set());
     }
   }
 
@@ -431,6 +456,73 @@ export default function PodcastFeedDetailView() {
     } else {
       // Pass null to let playEpisode use internal robust resume logic (local + server + isFinished)
       playEpisode(episode, feed as PodcastFeed, null);
+    }
+  }
+
+  async function handleToggleFavorite(episodeId: number) {
+    const isFavorite = favoriteEpisodeIds.has(episodeId);
+    try {
+      setFavoriteLoading((prev) => ({ ...prev, [episodeId]: true }));
+      if (isFavorite) {
+        await podcastApi.removeFavoriteEpisode(episodeId);
+        setFavoriteEpisodeIds((prev) => {
+          const next = new Set(prev);
+          next.delete(episodeId);
+          return next;
+        });
+        addToast("Removed from favorites", "info");
+      } else {
+        await podcastApi.addFavoriteEpisode(episodeId);
+        setFavoriteEpisodeIds((prev) => {
+          const next = new Set(prev);
+          next.add(episodeId);
+          return next;
+        });
+        addToast("Added to favorites", "success");
+      }
+    } catch (e: unknown) {
+      addToast("Favorite update failed: " + getErrorMessage(e), "error");
+    } finally {
+      setFavoriteLoading((prev) => ({ ...prev, [episodeId]: false }));
+    }
+  }
+
+  function handleAddToPlaylist(episodeId: number) {
+    const playlists = getPlaylists();
+    if (playlists.length === 0) {
+      const name = window.prompt("No playlist yet. Create playlist name:");
+      if (!name) return;
+      try {
+        const created = createPlaylist(name);
+        addEpisodeToPlaylist(created.id, episodeId);
+        addToast(`Added to ${created.name}`, "success");
+      } catch (e: unknown) {
+        addToast("Failed to add playlist: " + getErrorMessage(e), "error");
+      }
+      return;
+    }
+
+    const options = playlists
+      .map((pl, idx) => `${idx + 1}. ${pl.name}`)
+      .join("\n");
+    const input = window.prompt(
+      `Choose playlist number:\n${options}\n\nOr type a new playlist name.`,
+    );
+    if (!input) return;
+
+    const pick = Number.parseInt(input, 10);
+    try {
+      if (!Number.isNaN(pick) && pick >= 1 && pick <= playlists.length) {
+        const selected = playlists[pick - 1];
+        addEpisodeToPlaylist(selected.id, episodeId);
+        addToast(`Added to ${selected.name}`, "success");
+      } else {
+        const created = createPlaylist(input);
+        addEpisodeToPlaylist(created.id, episodeId);
+        addToast(`Added to ${created.name}`, "success");
+      }
+    } catch (e: unknown) {
+      addToast("Failed to add playlist: " + getErrorMessage(e), "error");
     }
   }
 
@@ -1080,6 +1172,42 @@ export default function PodcastFeedDetailView() {
 
                   {/* Action buttons - always visible, but styled cleanly */}
                   <div className="flex items-center gap-1 opacity-40 group-hover:opacity-100 transition-opacity">
+                    <button
+                      onClick={(e: MouseEvent<HTMLButtonElement>) => {
+                        e.stopPropagation();
+                        void handleToggleFavorite(episode.id);
+                      }}
+                      disabled={favoriteLoading[episode.id]}
+                      className={`flex-shrink-0 p-2 sm:p-3 rounded-lg transition-colors border border-transparent ${
+                        favoriteEpisodeIds.has(episode.id)
+                          ? "text-red-400 hover:bg-red-500/10 hover:border-red-500/30"
+                          : "text-white/40 hover:text-red-400 hover:bg-red-500/10 hover:border-red-500/20"
+                      }`}
+                      title={
+                        favoriteEpisodeIds.has(episode.id)
+                          ? "Remove from favorites"
+                          : "Add to favorites"
+                      }
+                    >
+                      <Heart
+                        className="w-4 h-4 sm:w-5 sm:h-5"
+                        fill={
+                          favoriteEpisodeIds.has(episode.id)
+                            ? "currentColor"
+                            : "none"
+                        }
+                      />
+                    </button>
+                    <button
+                      onClick={(e: MouseEvent<HTMLButtonElement>) => {
+                        e.stopPropagation();
+                        handleAddToPlaylist(episode.id);
+                      }}
+                      className="flex-shrink-0 p-2 sm:p-3 text-white/40 hover:text-accent-primary hover:bg-accent-primary/10 rounded-lg transition-colors border border-transparent hover:border-accent-primary/20"
+                      title="Add to playlist"
+                    >
+                      <ListPlus className="w-4 h-4 sm:w-5 sm:h-5" />
+                    </button>
                     {renderIntensiveListeningButton(episode)}
                     {renderDownloadButton(episode)}
                   </div>

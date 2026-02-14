@@ -47,6 +47,9 @@ from app.models.podcast_schemas import (
     OPMLImportResult,
     TranscribeResponse,
     TranscribeRequest,
+    FavoriteToggleResponse,
+    FavoriteEpisodeItem,
+    FavoriteEpisodeIdsResponse,
 )
 
 # --- Proxy Helpers ---
@@ -925,6 +928,68 @@ async def get_recently_played(
     async with AsyncSessionLocal() as db:
         items = await podcast_service.get_recently_played(db, user_id, limit=limit)
         return items
+
+
+# --- Favorites ---
+
+
+@router.get("/favorites")
+async def get_favorites(
+    limit: int = 50,
+    offset: int = 0,
+    user_id: str = Depends(get_current_user_id),
+) -> List[FavoriteEpisodeItem]:
+    """Get user's favorite episodes."""
+    async with AsyncSessionLocal() as db:
+        items = await podcast_service.get_favorite_episodes(
+            db,
+            user_id,
+            limit=limit,
+            offset=offset,
+        )
+        return [FavoriteEpisodeItem(**item) for item in items]
+
+
+@router.get("/favorites/ids")
+async def get_favorite_ids(
+    user_id: str = Depends(get_current_user_id),
+) -> FavoriteEpisodeIdsResponse:
+    """Get all favorite episode IDs for current user."""
+    async with AsyncSessionLocal() as db:
+        episode_ids = await podcast_service.get_favorite_episode_ids(db, user_id)
+        return FavoriteEpisodeIdsResponse(episode_ids=episode_ids)
+
+
+@router.post("/episode/{episode_id}/favorite")
+async def add_episode_favorite(
+    episode_id: int,
+    user_id: str = Depends(get_current_user_id),
+) -> FavoriteToggleResponse:
+    """Add episode to favorites."""
+    async with AsyncSessionLocal() as db:
+        success = await podcast_service.set_episode_favorite(db, user_id, episode_id)
+        if not success:
+            raise HTTPException(status_code=404, detail="Episode not found")
+        return FavoriteToggleResponse(
+            success=True,
+            episode_id=episode_id,
+            is_favorite=True,
+        )
+
+
+@router.delete("/episode/{episode_id}/favorite")
+async def remove_episode_favorite(
+    episode_id: int,
+    user_id: str = Depends(get_current_user_id),
+) -> FavoriteToggleResponse:
+    """Remove episode from favorites."""
+    async with AsyncSessionLocal() as db:
+        await podcast_service.remove_episode_favorite(db, user_id, episode_id)
+        return FavoriteToggleResponse(
+            success=True,
+            episode_id=episode_id,
+            is_favorite=False,
+        )
 
 
 # --- Download ---

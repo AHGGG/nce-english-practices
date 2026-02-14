@@ -13,6 +13,8 @@ import {
   Library,
   CloudOff,
   HardDrive,
+  Heart,
+  ListMusic,
 } from "lucide-react";
 import { getStorageEstimate, getOfflineEpisodeIds } from "../../utils/offline";
 
@@ -41,6 +43,10 @@ export default function PodcastLayout({
   const isLibrary = location.pathname === "/podcast";
   const isSearch = location.pathname === "/podcast/search";
   const isDownloads = location.pathname === "/podcast/downloads";
+  const isFavorites = location.pathname === "/podcast/favorites";
+  const isPlaylists =
+    location.pathname === "/podcast/playlists" ||
+    location.pathname.startsWith("/podcast/playlist/");
 
   // Load storage info on mount
   useEffect(() => {
@@ -146,6 +152,30 @@ export default function PodcastLayout({
                   {offlineCount}
                 </span>
               )}
+            </button>
+
+            <button
+              onClick={() => navigate("/podcast/favorites")}
+              className={`flex-shrink-0 flex items-center gap-2 px-4 py-3 border-b-2 text-xs font-bold uppercase tracking-wider transition-all whitespace-nowrap ${
+                isFavorites
+                  ? "border-accent-primary text-accent-primary"
+                  : "border-transparent text-white/40 hover:text-white hover:bg-white/[0.02] rounded-t-lg"
+              }`}
+            >
+              <Heart className="w-4 h-4" />
+              <span>Favorites</span>
+            </button>
+
+            <button
+              onClick={() => navigate("/podcast/playlists")}
+              className={`flex-shrink-0 flex items-center gap-2 px-4 py-3 border-b-2 text-xs font-bold uppercase tracking-wider transition-all whitespace-nowrap ${
+                isPlaylists
+                  ? "border-accent-primary text-accent-primary"
+                  : "border-transparent text-white/40 hover:text-white hover:bg-white/[0.02] rounded-t-lg"
+              }`}
+            >
+              <ListMusic className="w-4 h-4" />
+              <span>Playlists</span>
             </button>
           </nav>
         </div>

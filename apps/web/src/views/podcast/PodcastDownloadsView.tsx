@@ -18,6 +18,7 @@ import {
   Check,
   Download,
   BookOpen,
+  Heart,
 } from "lucide-react";
 import PodcastLayout from "../../components/podcast/PodcastLayout";
 import { usePodcast } from "../../context/PodcastContext";
@@ -128,6 +129,23 @@ export default function PodcastDownloadsView() {
   const [transcriptStatus, setTranscriptStatus] = useState<
     Record<number, string>
   >({});
+  const [favoriteEpisodeIds, setFavoriteEpisodeIds] = useState<Set<number>>(
+    new Set(),
+  );
+  const [favoriteLoading, setFavoriteLoading] = useState<
+    Record<number, boolean>
+  >({});
+
+  const loadFavoriteIds = useCallback(async () => {
+    try {
+      const result = (await podcastApi.getFavoriteEpisodeIds()) as {
+        episode_ids?: number[];
+      };
+      setFavoriteEpisodeIds(new Set(result.episode_ids || []));
+    } catch {
+      setFavoriteEpisodeIds(new Set());
+    }
+  }, []);
 
   // Load offline episodes
   const loadEpisodes = useCallback(async () => {
@@ -194,6 +212,10 @@ export default function PodcastDownloadsView() {
     loadEpisodes();
   }, [offlineEpisodes.size, Object.keys(downloadState).length]); // Only reload when counts change
 
+  useEffect(() => {
+    void loadFavoriteIds();
+  }, [loadFavoriteIds]);
+
   const handlePlay = (item: EpisodeBatchItem) => {
     if (currentEpisode?.id === item.episode.id) {
       togglePlayPause();
@@ -229,6 +251,34 @@ export default function PodcastDownloadsView() {
       addToast("Failed to remove: " + getErrorMessage(e), "error");
     } finally {
       setDeleting((prev) => ({ ...prev, [episodeId]: false }));
+    }
+  };
+
+  const handleToggleFavorite = async (episodeId: number) => {
+    const isFavorite = favoriteEpisodeIds.has(episodeId);
+    try {
+      setFavoriteLoading((prev) => ({ ...prev, [episodeId]: true }));
+      if (isFavorite) {
+        await podcastApi.removeFavoriteEpisode(episodeId);
+        setFavoriteEpisodeIds((prev) => {
+          const next = new Set(prev);
+          next.delete(episodeId);
+          return next;
+        });
+        addToast("Removed from favorites", "info");
+      } else {
+        await podcastApi.addFavoriteEpisode(episodeId);
+        setFavoriteEpisodeIds((prev) => {
+          const next = new Set(prev);
+          next.add(episodeId);
+          return next;
+        });
+        addToast("Added to favorites", "success");
+      }
+    } catch (e: unknown) {
+      addToast("Favorite update failed: " + getErrorMessage(e), "error");
+    } finally {
+      setFavoriteLoading((prev) => ({ ...prev, [episodeId]: false }));
     }
   };
 
@@ -665,6 +715,33 @@ export default function PodcastDownloadsView() {
 
                   {/* Action buttons */}
                   <div className="flex items-center gap-1 flex-shrink-0 sm:self-center self-start">
+                    <button
+                      onClick={(e: MouseEvent<HTMLButtonElement>) => {
+                        e.stopPropagation();
+                        void handleToggleFavorite(ep.id);
+                      }}
+                      disabled={favoriteLoading[ep.id]}
+                      className={`flex-shrink-0 p-3 rounded-xl transition-colors border border-transparent ${
+                        favoriteEpisodeIds.has(ep.id)
+                          ? "text-red-400 hover:bg-red-500/10 hover:border-red-500/30"
+                          : "text-white/30 hover:text-red-400 hover:bg-red-500/10 hover:border-red-500/20"
+                      }`}
+                      title={
+                        favoriteEpisodeIds.has(ep.id)
+                          ? "Remove from favorites"
+                          : "Add to favorites"
+                      }
+                    >
+                      <Heart
+                        className="w-5 h-5"
+                        fill={
+                          favoriteEpisodeIds.has(ep.id)
+                            ? "currentColor"
+                            : "none"
+                        }
+                      />
+                    </button>
+
                     {/* Intensive Listening button - only show for completed downloads */}
                     {!isDownloading &&
                       !isError &&

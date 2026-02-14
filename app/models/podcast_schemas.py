@@ -129,6 +129,23 @@ class OPMLImportResult(BaseModel):
     errors: List[dict]
 
 
+class FavoriteToggleResponse(BaseModel):
+    success: bool
+    episode_id: int
+    is_favorite: bool
+
+
+class FavoriteEpisodeItem(BaseModel):
+    episode: Dict[str, Any]
+    feed: Dict[str, Any]
+    last_position_seconds: float = 0.0
+    favorited_at: Optional[str] = None
+
+
+class FavoriteEpisodeIdsResponse(BaseModel):
+    episode_ids: List[int]
+
+
 class TranscribeResponse(BaseModel):
     status: str
     message: str

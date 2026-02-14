@@ -301,6 +301,15 @@ Structured data from Longman LDOCE6++ dictionary.
 
 Offline playback with PWA support, audio caching via Cache API, and episode state tracking (resume position, finished status). See: [Podcast System Documentation](docs/podcast-system.md)
 
+- **Favorites (Server-backed)**:
+  - **Data Model**: `PodcastFavoriteEpisode` (`podcast_favorite_episodes`)
+  - **API**: `GET /api/podcast/favorites`, `GET /api/podcast/favorites/ids`, `POST /api/podcast/episode/{id}/favorite`, `DELETE /api/podcast/episode/{id}/favorite`
+  - **Web**: Favorites page and in-feed favorite toggle in `apps/web/src/views/podcast/PodcastFeedDetailView.tsx`
+- **Playlists (Client-only)**:
+  - Stored in browser `localStorage` via `apps/web/src/utils/podcastPlaylists.ts`
+  - Web routes: `/podcast/playlists` and `/podcast/playlist/:playlistId`
+  - Add-to-playlist action available per episode in feed detail view
+
 #### AI Transcription (Intensive Listening Mode)
 
 Podcast episodes can be transcribed using AI to enable time-aligned subtitle display.

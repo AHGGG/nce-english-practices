@@ -142,6 +142,32 @@ class PodcastEpisode(Base):
         back_populates="episode",
         cascade="all, delete-orphan",
     )
+    favorites: Mapped[List["PodcastFavoriteEpisode"]] = relationship(
+        "PodcastFavoriteEpisode",
+        back_populates="episode",
+        cascade="all, delete-orphan",
+    )
+
+
+class PodcastFavoriteEpisode(Base):
+    """
+    User favorite relation for podcast episodes.
+    """
+
+    __tablename__ = "podcast_favorite_episodes"
+    __table_args__ = (
+        UniqueConstraint("user_id", "episode_id", name="uq_podcast_favorite_episode"),
+        Index("idx_podcast_favorite_user_created", "user_id", "created_at"),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    user_id: Mapped[str] = mapped_column(Text, index=True)
+    episode_id: Mapped[int] = mapped_column(ForeignKey("podcast_episodes.id"))
+    created_at: Mapped[datetime] = mapped_column(TIMESTAMP, server_default=func.now())
+
+    episode: Mapped["PodcastEpisode"] = relationship(
+        "PodcastEpisode", back_populates="favorites"
+    )
 
 
 class UserEpisodeState(Base):

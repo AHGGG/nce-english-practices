@@ -32,6 +32,9 @@ import PodcastLibraryView from "./views/podcast/PodcastLibraryView";
 import PodcastSearchView from "./views/podcast/PodcastSearchView";
 import PodcastFeedDetailView from "./views/podcast/PodcastFeedDetailView";
 import PodcastDownloadsView from "./views/podcast/PodcastDownloadsView";
+import PodcastFavoritesView from "./views/podcast/PodcastFavoritesView";
+import PodcastPlaylistsView from "./views/podcast/PodcastPlaylistsView";
+import PodcastPlaylistDetailView from "./views/podcast/PodcastPlaylistDetailView";
 
 // Audiobook
 import { AudiobookLibraryView, AudiobookPlayerView } from "./views/audiobook";
@@ -227,6 +230,30 @@ function AppRoutes() {
         element={
           <ProtectedRoute>
             <PodcastDownloadsView />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/podcast/favorites"
+        element={
+          <ProtectedRoute>
+            <PodcastFavoritesView />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/podcast/playlists"
+        element={
+          <ProtectedRoute>
+            <PodcastPlaylistsView />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/podcast/playlist/:playlistId"
+        element={
+          <ProtectedRoute>
+            <PodcastPlaylistDetailView />
           </ProtectedRoute>
         }
       />

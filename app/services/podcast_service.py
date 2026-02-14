@@ -29,6 +29,7 @@ from app.models.podcast_orm import (
     PodcastEpisode,
     UserEpisodeState,
     PodcastListeningSession,
+    PodcastFavoriteEpisode,
 )
 
 logger = logging.getLogger(__name__)
@@ -1436,6 +1437,132 @@ class PodcastService:
             )
 
         return recently_played
+
+    async def set_episode_favorite(
+        self, db: AsyncSession, user_id: str, episode_id: int
+    ) -> bool:
+        """
+        Mark an episode as favorite for user.
+        Returns False if episode does not exist.
+        """
+        episode_stmt = select(PodcastEpisode.id).where(PodcastEpisode.id == episode_id)
+        episode_result = await db.execute(episode_stmt)
+        if episode_result.scalar_one_or_none() is None:
+            return False
+
+        stmt = pg_insert(PodcastFavoriteEpisode).values(
+            user_id=user_id,
+            episode_id=episode_id,
+        )
+        stmt = stmt.on_conflict_do_nothing(constraint="uq_podcast_favorite_episode")
+        await db.execute(stmt)
+        await db.commit()
+        return True
+
+    async def remove_episode_favorite(
+        self, db: AsyncSession, user_id: str, episode_id: int
+    ) -> bool:
+        """
+        Remove favorite flag for user and episode.
+        Returns True when a favorite relation existed.
+        """
+        stmt = select(PodcastFavoriteEpisode).where(
+            PodcastFavoriteEpisode.user_id == user_id,
+            PodcastFavoriteEpisode.episode_id == episode_id,
+        )
+        result = await db.execute(stmt)
+        favorite = result.scalar_one_or_none()
+        if not favorite:
+            return False
+
+        await db.delete(favorite)
+        await db.commit()
+        return True
+
+    async def get_favorite_episode_ids(
+        self, db: AsyncSession, user_id: str
+    ) -> List[int]:
+        """
+        Get all favorite episode IDs for user.
+        """
+        stmt = select(PodcastFavoriteEpisode.episode_id).where(
+            PodcastFavoriteEpisode.user_id == user_id
+        )
+        result = await db.execute(stmt)
+        return list(result.scalars().all())
+
+    async def get_favorite_episodes(
+        self,
+        db: AsyncSession,
+        user_id: str,
+        limit: int = 50,
+        offset: int = 0,
+    ) -> List[Dict[str, Any]]:
+        """
+        Get favorite episodes with episode/feed details and progress.
+        """
+        stmt = (
+            select(
+                PodcastFavoriteEpisode, PodcastEpisode, PodcastFeed, UserEpisodeState
+            )
+            .join(
+                PodcastEpisode, PodcastFavoriteEpisode.episode_id == PodcastEpisode.id
+            )
+            .join(PodcastFeed, PodcastEpisode.feed_id == PodcastFeed.id)
+            .outerjoin(
+                UserEpisodeState,
+                and_(
+                    UserEpisodeState.episode_id == PodcastEpisode.id,
+                    UserEpisodeState.user_id == user_id,
+                ),
+            )
+            .where(PodcastFavoriteEpisode.user_id == user_id)
+            .order_by(PodcastFavoriteEpisode.created_at.desc())
+            .limit(limit)
+            .offset(offset)
+        )
+
+        result = await db.execute(stmt)
+        rows = result.all()
+
+        items = []
+        for favorite, episode, feed, state in rows:
+            items.append(
+                {
+                    "episode": {
+                        "id": episode.id,
+                        "guid": episode.guid,
+                        "title": episode.title,
+                        "description": episode.description,
+                        "audio_url": episode.audio_url,
+                        "file_size": episode.file_size,
+                        "duration_seconds": episode.duration_seconds,
+                        "chapters": episode.chapters,
+                        "image_url": episode.image_url,
+                        "published_at": episode.published_at.isoformat()
+                        if episode.published_at
+                        else None,
+                        "transcript_status": episode.transcript_status,
+                        "current_position": state.current_position_seconds
+                        if state
+                        else 0.0,
+                        "is_finished": state.is_finished if state else False,
+                    },
+                    "feed": {
+                        "id": feed.id,
+                        "title": feed.title,
+                        "image_url": feed.image_url,
+                    },
+                    "last_position_seconds": state.current_position_seconds
+                    if state
+                    else 0.0,
+                    "favorited_at": favorite.created_at.isoformat()
+                    if favorite.created_at
+                    else None,
+                }
+            )
+
+        return items
 
 
 # Global singleton

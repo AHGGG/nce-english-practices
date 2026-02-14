@@ -44,6 +44,27 @@ Backend download endpoint (`/api/podcast/episode/{id}/download`):
 3. **Progress Sync**: Backend tracks playback position
 4. **Remote Transcription**: Offload GPU-heavy transcription to a dedicated server
 
+## Favorites and Playlists
+
+### Favorites (Server-backed)
+
+- Model: `podcast_favorite_episodes` (`PodcastFavoriteEpisode`)
+- API:
+  - `GET /api/podcast/favorites`
+  - `GET /api/podcast/favorites/ids`
+  - `POST /api/podcast/episode/{episode_id}/favorite`
+  - `DELETE /api/podcast/episode/{episode_id}/favorite`
+- Purpose: Cross-device synced favorite episodes for each user.
+
+### Playlists (Client-only)
+
+- Storage: Browser `localStorage` (`podcast_playlists_v1`)
+- Utility: `apps/web/src/utils/podcastPlaylists.ts`
+- Routes:
+  - `GET /podcast/playlists` (Web view route)
+  - `GET /podcast/playlist/:playlistId` (Web view route)
+- Purpose: Lightweight local episode curation without backend persistence.
+
 ## Remote Transcription
 
 The system supports a Client-Server model for transcription to reduce local resource usage.

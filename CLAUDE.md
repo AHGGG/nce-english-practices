@@ -301,6 +301,15 @@ Structured data from Longman LDOCE6++ dictionary.
 
 Offline playback with PWA support, audio caching via Cache API, and episode state tracking (resume position, finished status). See: [Podcast System Documentation](docs/podcast-system.md)
 
+- **Favorites (Server-backed)**:
+  - **Data Model**: `PodcastFavoriteEpisode` (`podcast_favorite_episodes`)
+  - **API**: `GET /api/podcast/favorites`, `GET /api/podcast/favorites/ids`, `POST /api/podcast/episode/{id}/favorite`, `DELETE /api/podcast/episode/{id}/favorite`
+  - **Web**: Favorites page and in-feed favorite toggle in `apps/web/src/views/podcast/PodcastFeedDetailView.tsx`
+- **Playlists (Client-only)**:
+  - Stored in browser `localStorage` via `apps/web/src/utils/podcastPlaylists.ts`
+  - Web routes: `/podcast/playlists` and `/podcast/playlist/:playlistId`
+  - Add-to-playlist action available per episode in feed detail view
+
 #### AI Transcription (Intensive Listening Mode)
 
 Podcast episodes can be transcribed using AI to enable time-aligned subtitle display.
@@ -394,15 +403,15 @@ A centralized logging system that collects both frontend and backend logs.
   > Don't commit `logs/unified.log` to git.
 
 **Categories** (Generic, not vendor-specific):
-| Category | Description | Color |
+| Category        | Description                   | Color  |
 | --------------- | ----------------------------- | ------ |
-| `user_input` | User speech/text, STT results | Blue |
-| `agent_output` | AI responses, TTS | Green |
-| `function_call` | Tool/function executions | Violet |
-| `audio` | Audio processing, chunks | Cyan |
-| `network` | API calls, WebSocket, latency | Yellow |
-| `lifecycle` | Connect/disconnect/init | White |
-| `general` | Default | White |
+| `user_input`    | User speech/text, STT results | Blue   |
+| `agent_output`  | AI responses, TTS             | Green  |
+| `function_call` | Tool/function executions      | Violet |
+| `audio`         | Audio processing, chunks      | Cyan   |
+| `network`       | API calls, WebSocket, latency | Yellow |
+| `lifecycle`     | Connect/disconnect/init       | White  |
+| `general`       | Default                       | White  |
 
 **For AI Debugging**: Read `logs/unified.log` directly:
 
