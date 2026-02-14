@@ -70,7 +70,7 @@ Backend download endpoint (`/api/podcast/episode/{id}/download`):
 The system supports a Client-Server model for transcription to reduce local resource usage.
 
 - **Client Mode**: Configure a remote server URL and API Key in Settings. The backend sends audio to the remote server.
-- **Server Mode**: Configure `TRANSCRIPTION_SERVICE_API_KEYS` in `.env`. The instance accepts `/api/transcribe` requests.
+- **Server Mode**: Configure `TRANSCRIPTION_SERVICE_API_KEYS` in `.env`. The instance accepts `/api/transcribe` (legacy sync) and `/api/transcribe/jobs` + `/api/transcribe/jobs/{job_id}` (recommended async polling).
 
 See [Transcription Service Documentation](docs/transcription-service.md) for detailed setup.
 

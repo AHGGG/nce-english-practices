@@ -6,6 +6,7 @@ Useful for offloading heavy GPU processing to a dedicated worker.
 """
 
 import logging
+import time
 import httpx
 from typing import Optional
 from pathlib import Path
@@ -37,6 +38,8 @@ class RemoteTranscriptionEngine(BaseTranscriptionEngine):
         """
         self.remote_url = remote_url
         self.api_key = api_key
+        self._poll_interval_seconds = 3.0
+        self._max_wait_seconds = 3600.0
 
     @property
     def name(self) -> str:
@@ -56,32 +59,14 @@ class RemoteTranscriptionEngine(BaseTranscriptionEngine):
         logger.info(f"Sending audio to remote engine: {self.remote_url} ({audio_path})")
 
         try:
-            # Prepare file for upload
-            # We use a synchronous request here because transcribe() is often run in a threadpool
-            # by the caller (podcast.py _run_transcription uses run_in_threadpool).
-            # However, httpx.Client is sync, so it blocks the thread (which is fine in threadpool).
-
             headers = {}
             if self.api_key:
                 headers["x-api-key"] = self.api_key
 
             with open(audio_path, "rb") as f:
                 files = {"file": (audio_path.name, f, "audio/mpeg")}
-
-                # Use a long timeout for transcription (10 minutes)
-                with httpx.Client(timeout=600.0) as client:
-                    response = client.post(
-                        self.remote_url, files=files, headers=headers
-                    )
-
-                    if response.status_code != 200:
-                        raise TranscriptionError(
-                            f"Remote server returned {response.status_code}: {response.text}",
-                            engine=self.name,
-                        )
-
-                    data = response.json()
-                    return TranscriptionResult.from_dict(data)
+                with httpx.Client(timeout=60.0) as client:
+                    return self._transcribe_via_async_job(client, files, headers)
 
         except httpx.RequestError as e:
             raise TranscriptionError(
@@ -93,6 +78,83 @@ class RemoteTranscriptionEngine(BaseTranscriptionEngine):
             raise TranscriptionError(
                 f"Remote transcription failed: {e}", engine=self.name, cause=e
             )
+
+    def _transcribe_via_async_job(
+        self,
+        client: httpx.Client,
+        files: dict,
+        headers: dict[str, str],
+    ) -> TranscriptionResult:
+        """
+        Prefer async job endpoints to avoid long-lived HTTP connections.
+
+        Falls back to legacy sync endpoint for backward compatibility.
+        """
+        base_url = self.remote_url.rstrip("/")
+        submit_url = f"{base_url}/jobs"
+
+        submit_response = client.post(submit_url, files=files, headers=headers)
+
+        # Backward compatibility: old workers only expose POST /api/transcribe.
+        if submit_response.status_code in (404, 405):
+            file_tuple = files.get("file")
+            if isinstance(file_tuple, tuple) and len(file_tuple) > 1:
+                try:
+                    file_tuple[1].seek(0)
+                except Exception:
+                    pass
+            legacy_response = client.post(self.remote_url, files=files, headers=headers)
+            if legacy_response.status_code != 200:
+                raise TranscriptionError(
+                    f"Remote server returned {legacy_response.status_code}: {legacy_response.text}",
+                    engine=self.name,
+                )
+            return TranscriptionResult.from_dict(legacy_response.json())
+
+        if submit_response.status_code != 200:
+            raise TranscriptionError(
+                f"Remote server returned {submit_response.status_code}: {submit_response.text}",
+                engine=self.name,
+            )
+
+        submit_data = submit_response.json()
+        job_id = submit_data.get("job_id")
+        if not job_id:
+            raise TranscriptionError(
+                "Remote async job response missing job_id",
+                engine=self.name,
+            )
+
+        deadline = time.monotonic() + self._max_wait_seconds
+        status_url = f"{submit_url}/{job_id}"
+
+        while time.monotonic() < deadline:
+            poll_response = client.get(status_url, headers=headers)
+            if poll_response.status_code != 200:
+                raise TranscriptionError(
+                    f"Remote job poll failed ({poll_response.status_code}): {poll_response.text}",
+                    engine=self.name,
+                )
+
+            poll_data = poll_response.json()
+            status = poll_data.get("status")
+
+            if status == "completed":
+                result_payload = poll_data.get("result") or poll_data
+                return TranscriptionResult.from_dict(result_payload)
+
+            if status == "failed":
+                raise TranscriptionError(
+                    f"Remote job failed: {poll_data.get('error', 'unknown error')}",
+                    engine=self.name,
+                )
+
+            time.sleep(self._poll_interval_seconds)
+
+        raise TranscriptionError(
+            f"Remote job timed out after {int(self._max_wait_seconds)}s",
+            engine=self.name,
+        )
 
     def is_available(self) -> bool:
         """

@@ -74,6 +74,11 @@ To configure a client instance (e.g., your laptop) to use the remote server:
 
 ### POST `/api/transcribe`
 
+Legacy synchronous endpoint (still supported).
+
+> For production use behind Cloudflare Tunnel or other proxy timeouts,
+> prefer the async job endpoints below.
+
 **Headers**:
 
 - `x-api-key`: Required. Must match one of the keys in `TRANSCRIPTION_SERVICE_API_KEYS`.
@@ -97,5 +102,74 @@ Returns a JSON object matching the `TranscriptionResult` schema.
       "text": "Hello world."
     }
   ]
+}
+```
+
+### POST `/api/transcribe/jobs`
+
+Submit an async transcription job.
+
+**Headers**:
+
+- `x-api-key`: Required.
+
+**Body**:
+
+- `file`: The audio file to transcribe (multipart/form-data).
+
+**Response**:
+
+```json
+{
+  "job_id": "c2f9d3f9f7a84134b56a6d2bd2c41f40",
+  "status": "pending"
+}
+```
+
+### GET `/api/transcribe/jobs/{job_id}`
+
+Poll job status.
+
+**Headers**:
+
+- `x-api-key`: Required.
+
+**Response (processing)**:
+
+```json
+{
+  "job_id": "c2f9d3f9f7a84134b56a6d2bd2c41f40",
+  "status": "processing"
+}
+```
+
+**Response (completed)**:
+
+```json
+{
+  "job_id": "c2f9d3f9f7a84134b56a6d2bd2c41f40",
+  "status": "completed",
+  "result": {
+    "full_text": "Hello world.",
+    "duration": 1.5,
+    "language": "en",
+    "segments": [
+      {
+        "start_time": 0.0,
+        "end_time": 1.5,
+        "text": "Hello world."
+      }
+    ]
+  }
+}
+```
+
+**Response (failed)**:
+
+```json
+{
+  "job_id": "c2f9d3f9f7a84134b56a6d2bd2c41f40",
+  "status": "failed",
+  "error": "<error message>"
 }
 ```

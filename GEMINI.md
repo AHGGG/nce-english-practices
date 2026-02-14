@@ -320,6 +320,7 @@ Podcast episodes can be transcribed using AI to enable time-aligned subtitle dis
   - `remote.py` - HTTP Client for remote GPU worker
   - `sensevoice.py` - Local SenseVoice GPU implementation
 - **API**: `POST /api/podcast/episode/{id}/transcribe` - Trigger transcription (accepts `remote_url` & `api_key`)
+  - Remote worker endpoints: `POST /api/transcribe/jobs` + `GET /api/transcribe/jobs/{job_id}` (async submit/poll; avoids long single-request proxy timeout)
 - **Data Model**: `PodcastEpisode.transcript_segments` (JSONB) stores time-aligned segments
 - **Frontend (Web)**: "Intensive Listening" flow in `apps/web/src/views/podcast/PodcastFeedDetailView.tsx` + `apps/web/src/views/player/UnifiedPlayerView.tsx`
 - **Frontend (Mobile)**: "Intensive Listening" flow in `apps/mobile/app/podcast/intensive.tsx` (entry from `apps/mobile/src/components/podcast/PodcastDetailView.tsx`)
