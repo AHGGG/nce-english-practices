@@ -71,15 +71,15 @@ export default function PodcastLayout({
 
       {/* Header */}
       <header className="sticky top-0 z-40 bg-[#0a0f0d]/80 backdrop-blur-xl border-b border-white/5">
-        <div className="max-w-6xl mx-auto px-4 md:px-6 pt-4 pb-0">
-          <div className="flex items-center justify-between mb-4">
+        <div className="max-w-6xl mx-auto px-3 sm:px-4 md:px-6 pt-3 sm:pt-4 pb-0">
+          <div className="flex items-center justify-between mb-2 sm:mb-4">
             <div className="flex items-center gap-4">
               {showBackButton && (
                 <button
                   onClick={() => navigate("/nav")}
-                  className="w-10 h-10 rounded-full flex items-center justify-center bg-white/[0.03] border border-white/[0.08] text-white/60 hover:text-white hover:bg-white/[0.08] transition-all group"
+                  className="w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center bg-white/[0.03] border border-white/[0.08] text-white/60 hover:text-white hover:bg-white/[0.08] transition-all group"
                 >
-                  <ArrowLeft className="w-5 h-5 group-hover:-translate-x-0.5 transition-transform" />
+                  <ArrowLeft className="w-4 h-4 sm:w-5 sm:h-5 group-hover:-translate-x-0.5 transition-transform" />
                 </button>
               )}
 
@@ -88,10 +88,10 @@ export default function PodcastLayout({
                   <Headphones className="w-5 h-5 text-accent-primary" />
                 </div>
                 <div>
-                  <h1 className="text-xl font-bold font-serif text-white tracking-wide leading-tight">
+                  <h1 className="text-lg sm:text-xl font-bold font-serif text-white tracking-wide leading-tight">
                     {title || "Podcast"}
                   </h1>
-                  <p className="text-[10px] text-white/40 font-mono uppercase tracking-widest mt-0.5">
+                  <p className="hidden sm:block text-[10px] text-white/40 font-mono uppercase tracking-widest mt-0.5">
                     Audio Learning
                   </p>
                 </div>
@@ -110,40 +110,40 @@ export default function PodcastLayout({
           </div>
 
           {/* Nav tabs */}
-          <nav className="flex items-center gap-1 overflow-x-auto w-full no-scrollbar pb-0">
+          <nav className="flex items-center gap-0.5 sm:gap-1 overflow-x-auto w-full no-scrollbar pb-0">
             <button
               onClick={() => navigate("/podcast")}
-              className={`flex-shrink-0 flex items-center gap-2 px-4 py-3 border-b-2 text-xs font-bold uppercase tracking-wider transition-all whitespace-nowrap ${
+              className={`flex-shrink-0 flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2.5 sm:py-3 border-b-2 text-[11px] sm:text-xs font-bold uppercase tracking-wider transition-all whitespace-nowrap ${
                 isLibrary
                   ? "border-accent-primary text-accent-primary"
                   : "border-transparent text-white/40 hover:text-white hover:bg-white/[0.02] rounded-t-lg"
               }`}
             >
-              <Library className="w-4 h-4" />
+              <Library className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
               <span>Library</span>
             </button>
 
             <button
               onClick={() => navigate("/podcast/search")}
-              className={`flex-shrink-0 flex items-center gap-2 px-4 py-3 border-b-2 text-xs font-bold uppercase tracking-wider transition-all whitespace-nowrap ${
+              className={`flex-shrink-0 flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2.5 sm:py-3 border-b-2 text-[11px] sm:text-xs font-bold uppercase tracking-wider transition-all whitespace-nowrap ${
                 isSearch
                   ? "border-accent-primary text-accent-primary"
                   : "border-transparent text-white/40 hover:text-white hover:bg-white/[0.02] rounded-t-lg"
               }`}
             >
-              <Search className="w-4 h-4" />
+              <Search className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
               <span>Search</span>
             </button>
 
             <button
               onClick={() => navigate("/podcast/downloads")}
-              className={`flex-shrink-0 flex items-center gap-2 px-4 py-3 border-b-2 text-xs font-bold uppercase tracking-wider transition-all whitespace-nowrap ${
+              className={`flex-shrink-0 flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2.5 sm:py-3 border-b-2 text-[11px] sm:text-xs font-bold uppercase tracking-wider transition-all whitespace-nowrap ${
                 isDownloads
                   ? "border-accent-primary text-accent-primary"
                   : "border-transparent text-white/40 hover:text-white hover:bg-white/[0.02] rounded-t-lg"
               }`}
             >
-              <CloudOff className="w-4 h-4" />
+              <CloudOff className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
               <span>Downloads</span>
               {offlineCount > 0 && (
                 <span
@@ -156,25 +156,25 @@ export default function PodcastLayout({
 
             <button
               onClick={() => navigate("/podcast/favorites")}
-              className={`flex-shrink-0 flex items-center gap-2 px-4 py-3 border-b-2 text-xs font-bold uppercase tracking-wider transition-all whitespace-nowrap ${
+              className={`flex-shrink-0 flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2.5 sm:py-3 border-b-2 text-[11px] sm:text-xs font-bold uppercase tracking-wider transition-all whitespace-nowrap ${
                 isFavorites
                   ? "border-accent-primary text-accent-primary"
                   : "border-transparent text-white/40 hover:text-white hover:bg-white/[0.02] rounded-t-lg"
               }`}
             >
-              <Heart className="w-4 h-4" />
+              <Heart className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
               <span>Favorites</span>
             </button>
 
             <button
               onClick={() => navigate("/podcast/playlists")}
-              className={`flex-shrink-0 flex items-center gap-2 px-4 py-3 border-b-2 text-xs font-bold uppercase tracking-wider transition-all whitespace-nowrap ${
+              className={`flex-shrink-0 flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2.5 sm:py-3 border-b-2 text-[11px] sm:text-xs font-bold uppercase tracking-wider transition-all whitespace-nowrap ${
                 isPlaylists
                   ? "border-accent-primary text-accent-primary"
                   : "border-transparent text-white/40 hover:text-white hover:bg-white/[0.02] rounded-t-lg"
               }`}
             >
-              <ListMusic className="w-4 h-4" />
+              <ListMusic className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
               <span>Playlists</span>
             </button>
           </nav>
@@ -182,7 +182,7 @@ export default function PodcastLayout({
       </header>
 
       {/* Main content */}
-      <main className="max-w-6xl mx-auto px-6 py-8 pb-32 relative z-10">
+      <main className="max-w-6xl mx-auto px-3 sm:px-4 md:px-6 py-6 sm:py-8 pb-32 relative z-10">
         {children}
       </main>
     </div>

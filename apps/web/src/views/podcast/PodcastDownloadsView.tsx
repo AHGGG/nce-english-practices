@@ -3,7 +3,7 @@
  * Includes storage management and episode list with playback controls.
  */
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import type { MouseEvent, ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
 import {
@@ -17,6 +17,7 @@ import {
   BookOpen,
   Heart,
   ListPlus,
+  ChevronLeft,
 } from "lucide-react";
 import PodcastLayout from "../../components/podcast/PodcastLayout";
 import PodcastCoverPlayButton from "../../components/podcast/PodcastCoverPlayButton";
@@ -139,6 +140,9 @@ export default function PodcastDownloadsView() {
   >({});
   const [playlistDialogEpisode, setPlaylistDialogEpisode] =
     useState<PodcastEpisode | null>(null);
+  const [swipedEpisodeId, setSwipedEpisodeId] = useState<number | null>(null);
+  const [showSwipeHint, setShowSwipeHint] = useState(false);
+  const touchStartXRef = useRef<number | null>(null);
 
   const loadFavoriteIds = useCallback(async () => {
     try {
@@ -220,7 +224,15 @@ export default function PodcastDownloadsView() {
     void loadFavoriteIds();
   }, [loadFavoriteIds]);
 
+  useEffect(() => {
+    const seen = localStorage.getItem("podcast_downloads_swipe_hint_seen_v1");
+    if (!seen) {
+      setShowSwipeHint(true);
+    }
+  }, []);
+
   const handlePlay = (item: EpisodeBatchItem) => {
+    setSwipedEpisodeId(null);
     if (currentEpisode?.id === item.episode.id) {
       togglePlayPause();
     } else {
@@ -236,6 +248,7 @@ export default function PodcastDownloadsView() {
     if (downloadState[episodeId]?.status === "downloading") {
       cancelDownload(episodeId);
       setEpisodes((prev) => prev.filter((ep) => ep.episode.id !== episodeId));
+      setSwipedEpisodeId(null);
       return;
     }
 
@@ -247,6 +260,7 @@ export default function PodcastDownloadsView() {
         // List update is handled by useEffect on offlineEpisodes change
         // but we can optimistically filter locally to avoid flicker
         setEpisodes((prev) => prev.filter((ep) => ep.episode.id !== episodeId));
+        setSwipedEpisodeId(null);
         addToast("Episode removed", "success");
       } else {
         addToast("Failed to remove episode", "error");
@@ -279,6 +293,7 @@ export default function PodcastDownloadsView() {
         });
         addToast("Added to favorites", "success");
       }
+      setSwipedEpisodeId(null);
     } catch (e: unknown) {
       addToast("Favorite update failed: " + getErrorMessage(e), "error");
     } finally {
@@ -288,6 +303,27 @@ export default function PodcastDownloadsView() {
 
   const handleClearAll = () => {
     setShowClearConfirm(true);
+  };
+
+  const handleCardTouchStart = (clientX: number) => {
+    touchStartXRef.current = clientX;
+  };
+
+  const handleCardTouchEnd = (episodeId: number, clientX: number) => {
+    if (touchStartXRef.current === null) return;
+    const deltaX = clientX - touchStartXRef.current;
+    touchStartXRef.current = null;
+
+    if (deltaX < -36) {
+      setSwipedEpisodeId(episodeId);
+      setShowSwipeHint(false);
+      localStorage.setItem("podcast_downloads_swipe_hint_seen_v1", "1");
+      return;
+    }
+
+    if (deltaX > 28 && swipedEpisodeId === episodeId) {
+      setSwipedEpisodeId(null);
+    }
   };
 
   const performClearAll = async () => {
@@ -423,10 +459,10 @@ export default function PodcastDownloadsView() {
             e.stopPropagation();
             handleIntensiveListening(episode, true);
           }}
-          className="flex-shrink-0 p-3 text-amber-400 hover:bg-amber-500/10 rounded-xl transition-colors border border-transparent hover:border-amber-500/30"
+          className="flex-shrink-0 p-2 sm:p-3 text-amber-400 hover:bg-amber-500/10 rounded-lg sm:rounded-xl transition-colors border border-transparent hover:border-amber-500/30"
           title="Generating transcript... Click to restart if stuck"
         >
-          <Loader2 className="w-5 h-5 animate-spin" />
+          <Loader2 className="w-4 h-4 sm:w-5 sm:h-5 animate-spin" />
         </button>
       );
     }
@@ -438,10 +474,10 @@ export default function PodcastDownloadsView() {
             e.stopPropagation();
             handleIntensiveListening(episode);
           }}
-          className="flex-shrink-0 p-3 text-accent-primary hover:bg-accent-primary/10 rounded-xl transition-colors border border-transparent hover:border-accent-primary/30"
+          className="flex-shrink-0 p-2 sm:p-3 text-accent-primary hover:bg-accent-primary/10 rounded-lg sm:rounded-xl transition-colors border border-transparent hover:border-accent-primary/30"
           title="Enter intensive listening mode"
         >
-          <BookOpen className="w-5 h-5" />
+          <BookOpen className="w-4 h-4 sm:w-5 sm:h-5" />
         </button>
       );
     }
@@ -453,10 +489,10 @@ export default function PodcastDownloadsView() {
           e.stopPropagation();
           handleIntensiveListening(episode);
         }}
-        className="flex-shrink-0 p-3 text-white/40 hover:text-accent-primary hover:bg-accent-primary/10 rounded-xl transition-colors border border-transparent hover:border-accent-primary/20"
+        className="flex-shrink-0 p-2 sm:p-3 text-white/40 hover:text-accent-primary hover:bg-accent-primary/10 rounded-lg sm:rounded-xl transition-colors border border-transparent hover:border-accent-primary/20"
         title="Generate transcript for intensive listening"
       >
-        <BookOpen className="w-5 h-5" />
+        <BookOpen className="w-4 h-4 sm:w-5 sm:h-5" />
       </button>
     );
   };
@@ -573,6 +609,12 @@ export default function PodcastDownloadsView() {
           </div>
         ) : (
           <div className="grid grid-cols-1 gap-4">
+            {showSwipeHint && (
+              <div className="sm:hidden flex items-center justify-center gap-1.5 text-[10px] font-mono uppercase tracking-wider text-white/45 bg-white/[0.03] border border-white/10 rounded-xl px-3 py-2">
+                <ChevronLeft className="w-3.5 h-3.5" />
+                Swipe left on an episode for quick actions
+              </div>
+            )}
             {episodes.map((item) => {
               const isCurrentEpisode = currentEpisode?.id === item.episode.id;
               const ep = item.episode;
@@ -603,7 +645,13 @@ export default function PodcastDownloadsView() {
               return (
                 <div
                   key={ep.id}
-                  className={`group relative flex items-center gap-3 sm:gap-4 p-3 sm:p-4 rounded-xl transition-all duration-300 border ${
+                  onTouchStart={(e) =>
+                    handleCardTouchStart(e.changedTouches[0].clientX)
+                  }
+                  onTouchEnd={(e) =>
+                    handleCardTouchEnd(ep.id, e.changedTouches[0].clientX)
+                  }
+                  className={`group relative rounded-xl transition-all duration-300 border overflow-hidden ${
                     isFinished
                       ? "bg-white/[0.01] border-white/5 opacity-60 hover:opacity-100"
                       : isCurrentEpisode
@@ -611,80 +659,24 @@ export default function PodcastDownloadsView() {
                         : "bg-[#0a0f0d]/40 backdrop-blur-sm border-white/5 hover:border-white/10 hover:bg-white/[0.03]"
                   }`}
                 >
-                  <PodcastCoverPlayButton
-                    imageUrl={ep.image_url || item.feed.image_url}
-                    isCurrent={isCurrentEpisode}
-                    isPlaying={isCurrentAndPlaying}
-                    isFinished={isFinished}
-                    isDownloading={isDownloading}
-                    downloadProgress={dState?.progress ?? 0}
-                    onClick={() => handlePlay(item)}
-                  />
-
-                  {/* Episode info */}
-                  <div className="flex-1 min-w-0 py-1">
-                    <h3
-                      className={`text-sm sm:text-base font-medium line-clamp-2 mb-1.5 transition-colors leading-snug ${
-                        isFinished
-                          ? "text-white/40 line-through decoration-accent-success/40"
-                          : isCurrentEpisode
-                            ? "text-accent-primary"
-                            : "text-white group-hover:text-accent-primary/80"
-                      }`}
-                    >
-                      {ep.title}
-                    </h3>
-
-                    <div className="flex flex-wrap items-center gap-x-3 sm:gap-x-4 gap-y-1 text-[10px] font-mono text-white/40 uppercase tracking-wider">
-                      <span className="truncate max-w-[150px] text-white/60 font-bold">
-                        {item.feed.title}
-                      </span>
-
-                      {ep.duration_seconds && (
-                        <span className="flex items-center gap-1.5">
-                          <span className="w-1 h-1 rounded-full bg-white/20" />
-                          {formatDuration(ep.duration_seconds)}
-                        </span>
-                      )}
-
-                      {/* Status Badges */}
-                      {isDownloading ? (
-                        <span className="flex items-center gap-1 text-accent-primary animate-pulse bg-accent-primary/5 px-2 py-0.5 rounded-md border border-accent-primary/10">
-                          <Download className="w-3 h-3" />
-                          Downloading
-                        </span>
-                      ) : isError ? (
-                        <span className="flex items-center gap-1 text-red-400 bg-red-500/5 px-2 py-0.5 rounded-md border border-red-500/10">
-                          <AlertCircle className="w-3 h-3" />
-                          Failed
-                        </span>
-                      ) : (
-                        <span className="flex items-center gap-1.5 text-accent-success bg-accent-success/5 px-2 py-0.5 rounded-md border border-accent-success/10">
-                          <CloudOff className="w-3 h-3" />
-                          Offline
-                        </span>
-                      )}
-
-                      {!isFinished && progressPercent > 0 && (
-                        <span className="text-accent-primary ml-auto font-bold animate-in fade-in duration-500">
-                          {progressPercent}% COMPLETE
-                        </span>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Action buttons */}
-                  <div className="flex items-center gap-1 flex-shrink-0 sm:self-center self-start">
+                  {/* Mobile swipe action rail */}
+                  <div
+                    className={`sm:hidden absolute inset-y-0 right-0 z-0 flex items-center gap-1.5 pr-2 transition-transform duration-200 ${
+                      swipedEpisodeId === ep.id
+                        ? "translate-x-0"
+                        : "translate-x-full"
+                    }`}
+                  >
                     <button
                       onClick={(e: MouseEvent<HTMLButtonElement>) => {
                         e.stopPropagation();
                         void handleToggleFavorite(ep.id);
                       }}
                       disabled={favoriteLoading[ep.id]}
-                      className={`flex-shrink-0 p-3 rounded-xl transition-colors border border-transparent ${
+                      className={`w-9 h-9 rounded-lg flex items-center justify-center transition-colors border ${
                         favoriteEpisodeIds.has(ep.id)
-                          ? "text-red-400 hover:bg-red-500/10 hover:border-red-500/30"
-                          : "text-white/30 hover:text-red-400 hover:bg-red-500/10 hover:border-red-500/20"
+                          ? "text-red-400 bg-red-500/10 border-red-500/25"
+                          : "text-white/60 bg-white/5 border-white/10"
                       }`}
                       title={
                         favoriteEpisodeIds.has(ep.id)
@@ -693,7 +685,7 @@ export default function PodcastDownloadsView() {
                       }
                     >
                       <Heart
-                        className="w-5 h-5"
+                        className="w-4 h-4"
                         fill={
                           favoriteEpisodeIds.has(ep.id)
                             ? "currentColor"
@@ -706,36 +698,184 @@ export default function PodcastDownloadsView() {
                       onClick={(e: MouseEvent<HTMLButtonElement>) => {
                         e.stopPropagation();
                         setPlaylistDialogEpisode(ep);
+                        setSwipedEpisodeId(null);
                       }}
-                      className="flex-shrink-0 p-3 text-white/30 hover:text-accent-primary hover:bg-accent-primary/10 rounded-xl transition-colors border border-transparent hover:border-accent-primary/20"
+                      className="w-9 h-9 rounded-lg flex items-center justify-center text-white/70 bg-white/5 border border-white/10"
                       title="Add to playlist"
                     >
-                      <ListPlus className="w-5 h-5" />
+                      <ListPlus className="w-4 h-4" />
                     </button>
 
-                    {/* Intensive Listening button - only show for completed downloads */}
-                    {!isDownloading &&
-                      !isError &&
-                      renderIntensiveListeningButton(ep)}
+                    <button
+                      onClick={(e: MouseEvent<HTMLButtonElement>) => {
+                        e.stopPropagation();
+                        void handleIntensiveListening(ep);
+                        setSwipedEpisodeId(null);
+                      }}
+                      disabled={isDownloading}
+                      className={`w-9 h-9 rounded-lg flex items-center justify-center border ${
+                        isDownloading
+                          ? "text-white/20 bg-white/5 border-white/5"
+                          : "text-accent-primary bg-accent-primary/10 border-accent-primary/25"
+                      }`}
+                      title="Intensive listening"
+                    >
+                      <BookOpen className="w-4 h-4" />
+                    </button>
 
-                    {/* Delete/Cancel button */}
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
-                        handleDelete(item);
+                        void handleDelete(item);
                       }}
                       disabled={deleting[ep.id]}
-                      className="flex-shrink-0 p-3 text-white/20 hover:text-red-400 hover:bg-red-500/10 rounded-xl transition-colors relative z-10"
+                      className="w-9 h-9 rounded-lg flex items-center justify-center text-red-300 bg-red-500/10 border border-red-500/25"
                       title={
                         isDownloading ? "Cancel download" : "Remove download"
                       }
                     >
                       {deleting[ep.id] ? (
-                        <Loader2 className="w-5 h-5 animate-spin" />
+                        <Loader2 className="w-4 h-4 animate-spin" />
                       ) : (
-                        <Trash2 className="w-5 h-5" />
+                        <Trash2 className="w-4 h-4" />
                       )}
                     </button>
+                  </div>
+
+                  <div
+                    className={`relative z-10 flex items-start sm:items-center gap-2.5 sm:gap-4 p-3 sm:p-4 transition-transform duration-200 ${
+                      swipedEpisodeId === ep.id
+                        ? "-translate-x-[172px]"
+                        : "translate-x-0"
+                    }`}
+                  >
+                    <PodcastCoverPlayButton
+                      imageUrl={ep.image_url || item.feed.image_url}
+                      isCurrent={isCurrentEpisode}
+                      isPlaying={isCurrentAndPlaying}
+                      isFinished={isFinished}
+                      isDownloading={isDownloading}
+                      downloadProgress={dState?.progress ?? 0}
+                      onClick={() => handlePlay(item)}
+                    />
+
+                    {/* Episode info */}
+                    <div className="flex-1 min-w-0 py-1">
+                      <h3
+                        className={`text-sm sm:text-base font-medium line-clamp-2 mb-1.5 transition-colors leading-snug ${
+                          isFinished
+                            ? "text-white/40 line-through decoration-accent-success/40"
+                            : isCurrentEpisode
+                              ? "text-accent-primary"
+                              : "text-white group-hover:text-accent-primary/80"
+                        }`}
+                      >
+                        {ep.title}
+                      </h3>
+
+                      <div className="flex flex-wrap items-center gap-x-3 sm:gap-x-4 gap-y-1 text-[10px] font-mono text-white/40 uppercase tracking-wider">
+                        <span className="truncate max-w-[150px] text-white/60 font-bold">
+                          {item.feed.title}
+                        </span>
+
+                        {ep.duration_seconds && (
+                          <span className="flex items-center gap-1.5">
+                            <span className="w-1 h-1 rounded-full bg-white/20" />
+                            {formatDuration(ep.duration_seconds)}
+                          </span>
+                        )}
+
+                        {/* Status Badges */}
+                        {isDownloading ? (
+                          <span className="flex items-center gap-1 text-accent-primary animate-pulse bg-accent-primary/5 px-2 py-0.5 rounded-md border border-accent-primary/10">
+                            <Download className="w-3 h-3" />
+                            Downloading
+                          </span>
+                        ) : isError ? (
+                          <span className="flex items-center gap-1 text-red-400 bg-red-500/5 px-2 py-0.5 rounded-md border border-red-500/10">
+                            <AlertCircle className="w-3 h-3" />
+                            Failed
+                          </span>
+                        ) : (
+                          <span className="flex items-center gap-1.5 text-accent-success bg-accent-success/5 px-2 py-0.5 rounded-md border border-accent-success/10">
+                            <CloudOff className="w-3 h-3" />
+                            Offline
+                          </span>
+                        )}
+
+                        {!isFinished && progressPercent > 0 && (
+                          <span className="text-accent-primary ml-auto font-bold animate-in fade-in duration-500">
+                            {progressPercent}% COMPLETE
+                          </span>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Action buttons */}
+                    {/* Desktop/tablet actions */}
+                    <div className="hidden sm:flex items-center gap-1.5">
+                      <button
+                        onClick={(e: MouseEvent<HTMLButtonElement>) => {
+                          e.stopPropagation();
+                          void handleToggleFavorite(ep.id);
+                        }}
+                        disabled={favoriteLoading[ep.id]}
+                        className={`flex-shrink-0 p-3 rounded-xl transition-colors border border-transparent ${
+                          favoriteEpisodeIds.has(ep.id)
+                            ? "text-red-400 hover:bg-red-500/10 hover:border-red-500/30"
+                            : "text-white/30 hover:text-red-400 hover:bg-red-500/10 hover:border-red-500/20"
+                        }`}
+                        title={
+                          favoriteEpisodeIds.has(ep.id)
+                            ? "Remove from favorites"
+                            : "Add to favorites"
+                        }
+                      >
+                        <Heart
+                          className="w-5 h-5"
+                          fill={
+                            favoriteEpisodeIds.has(ep.id)
+                              ? "currentColor"
+                              : "none"
+                          }
+                        />
+                      </button>
+
+                      <button
+                        onClick={(e: MouseEvent<HTMLButtonElement>) => {
+                          e.stopPropagation();
+                          setPlaylistDialogEpisode(ep);
+                        }}
+                        className="flex-shrink-0 p-3 text-white/30 hover:text-accent-primary hover:bg-accent-primary/10 rounded-xl transition-colors border border-transparent hover:border-accent-primary/20"
+                        title="Add to playlist"
+                      >
+                        <ListPlus className="w-5 h-5" />
+                      </button>
+
+                      {/* Intensive Listening button - only show for completed downloads */}
+                      {!isDownloading &&
+                        !isError &&
+                        renderIntensiveListeningButton(ep)}
+
+                      {/* Delete/Cancel button */}
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDelete(item);
+                        }}
+                        disabled={deleting[ep.id]}
+                        className="flex-shrink-0 p-3 text-white/20 hover:text-red-400 hover:bg-red-500/10 rounded-xl transition-colors relative z-10"
+                        title={
+                          isDownloading ? "Cancel download" : "Remove download"
+                        }
+                      >
+                        {deleting[ep.id] ? (
+                          <Loader2 className="w-5 h-5 animate-spin" />
+                        ) : (
+                          <Trash2 className="w-5 h-5" />
+                        )}
+                      </button>
+                    </div>
                   </div>
 
                   {/* Progress bar (thin line at the bottom of the card) */}
