@@ -22,6 +22,7 @@ import ReviewQueue from "./views/ReviewQueue";
 import ReviewDebug from "./views/ReviewDebug";
 import MemoryCurveDebug from "./views/MemoryCurveDebug";
 import SettingsPage from "./views/SettingsPage";
+import WeakPointsView from "./views/WeakPointsView";
 
 // Podcast
 import { PodcastProvider } from "./context/PodcastContext";
@@ -185,6 +186,14 @@ function AppRoutes() {
         element={
           <ProtectedRoute>
             <SettingsPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/weak-points"
+        element={
+          <ProtectedRoute>
+            <WeakPointsView />
           </ProtectedRoute>
         }
       />

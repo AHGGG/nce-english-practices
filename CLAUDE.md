@@ -269,7 +269,15 @@ The application supports loading multiple MDX dictionaries simultaneously.
 - **Asset Serving**:
   - Definitions are rewritten to use absolute proxy paths (`/dict-assets/{subdir}/...`) for CSS/JS.
   - Binary assets (images/audio) are served via `/dict-assets/{path}` tunnel.
-  - Falls back to MDD cache if file not found on disk.
+- Falls back to MDD cache if file not found on disk.
+
+### Weak Points Dashboard
+
+- **Web Route**: `/weak-points` (entry added in `/nav`).
+- **API**: `GET /api/vocabulary/unfamiliar-items`
+  - Query params: `item_type=all|word|phrase`, `sort=recent|count|difficulty`, `q`, `limit`, `offset`
+- **Data Sources**: Aggregates from `SentenceLearningRecord.word_clicks/phrase_clicks`, `VocabLearningLog`, `ReviewItem.highlighted_items`, and `WordProficiency`.
+- **Purpose**: Unified view for unfamiliar words/collocations with context samples, review queue status, and difficulty signals.
 
 ### Collins Dictionary Parser
 

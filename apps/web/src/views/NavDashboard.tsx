@@ -18,6 +18,7 @@ import {
   Brain,
   Play,
   Compass,
+  BookMarked,
 } from "lucide-react";
 
 import { useAuth } from "../context/AuthContext";
@@ -199,6 +200,13 @@ const NavDashboard = () => {
       path: "/audiobook",
       icon: BookOpen,
       description: "Listen to audiobooks with synchronized subtitles.",
+    },
+    {
+      title: "Weak Points",
+      path: "/weak-points",
+      icon: BookMarked,
+      description:
+        "Review your unfamiliar words and collocations in one place.",
     },
     {
       title: "System Settings",

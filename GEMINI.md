@@ -269,7 +269,15 @@ The application supports loading multiple MDX dictionaries simultaneously.
 - **Asset Serving**:
   - Definitions are rewritten to use absolute proxy paths (`/dict-assets/{subdir}/...`) for CSS/JS.
   - Binary assets (images/audio) are served via `/dict-assets/{path}` tunnel.
-  - Falls back to MDD cache if file not found on disk.
+- Falls back to MDD cache if file not found on disk.
+
+### Weak Points Dashboard
+
+- **Web Route**: `/weak-points` (entry added in `/nav`).
+- **API**: `GET /api/vocabulary/unfamiliar-items`
+  - Query params: `item_type=all|word|phrase`, `sort=recent|count|difficulty`, `q`, `limit`, `offset`
+- **Data Sources**: Aggregates from `SentenceLearningRecord.word_clicks/phrase_clicks`, `VocabLearningLog`, `ReviewItem.highlighted_items`, and `WordProficiency`.
+- **Purpose**: Unified view for unfamiliar words/collocations with context samples, review queue status, and difficulty signals.
 
 ### Collins Dictionary Parser
 
@@ -304,7 +312,8 @@ Podcast episodes can be transcribed using AI to enable time-aligned subtitle dis
   - `sensevoice.py` - Local SenseVoice GPU implementation
 - **API**: `POST /api/podcast/episode/{id}/transcribe` - Trigger transcription (accepts `remote_url` & `api_key`)
 - **Data Model**: `PodcastEpisode.transcript_segments` (JSONB) stores time-aligned segments
-- **Frontend**: "Intensive Listening" button in `PodcastFeedDetailView.jsx`
+- **Frontend (Web)**: "Intensive Listening" flow in `apps/web/src/views/podcast/PodcastFeedDetailView.tsx` + `apps/web/src/views/player/UnifiedPlayerView.tsx`
+- **Frontend (Mobile)**: "Intensive Listening" flow in `apps/mobile/app/podcast/intensive.tsx` (entry from `apps/mobile/src/components/podcast/PodcastDetailView.tsx`)
 
 **Audio Format Support**:
 
@@ -333,9 +342,11 @@ Local audiobook playback with synchronized subtitle highlighting.
   - `GET /api/content/audiobook/` - List all audiobooks
   - `GET /api/content/audiobook/{book_id}` - Get audiobook content with subtitle segments
   - `GET /api/content/audiobook/{book_id}/audio` - Stream audio file
+- **Shared API Client**: `packages/api/src/endpoints/audiobook.ts`
 - **Frontend Hook**: `packages/shared/src/hooks/useAudioPlayer.ts` - Audio playback state management
 - **Frontend Renderer**: `apps/web/src/components/content/renderers/AudioContentRenderer.tsx`
 - **Views**: `apps/web/src/views/audiobook/` - Library and Player views
+- **Mobile Views**: `apps/mobile/app/(tabs)/audiobook.tsx` and `apps/mobile/app/audiobook/[bookId].tsx`
 - **Subtitle Formats**: SRT, VTT, LRC
 - **Directory Structure**: `resources/audiobooks/{book_id}/` containing `audio.mp3` + `subtitles.srt` + optional `metadata.json`
 
