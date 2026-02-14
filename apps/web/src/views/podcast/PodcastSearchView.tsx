@@ -238,47 +238,49 @@ export default function PodcastSearchView() {
                     : "Trending Podcasts"
                   : "Search Results"}
               </h2>
-              <div className="grid grid-cols-1 gap-4">
+              <div className="grid grid-cols-1 gap-3">
                 {displayList.map((podcast) => (
                   <div
                     key={podcast.itunes_id}
                     onClick={() => handlePreview(podcast)}
-                    className="group relative flex items-center gap-5 p-5 bg-[#0a0f0d]/40 backdrop-blur-sm border border-white/5 hover:border-accent-primary/30 rounded-2xl hover:bg-white/[0.02] transition-all cursor-pointer hover:shadow-xl hover:shadow-black/50 hover:-translate-y-0.5"
+                    className="group relative flex items-start gap-4 p-4 bg-[#0a0f0d]/40 backdrop-blur-sm border border-white/5 hover:border-accent-primary/30 rounded-xl hover:bg-white/[0.02] transition-all cursor-pointer"
                   >
-                    <div className="absolute inset-0 bg-gradient-to-r from-accent-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity rounded-2xl pointer-events-none" />
+                    <div className="absolute inset-0 bg-gradient-to-r from-accent-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity rounded-xl pointer-events-none" />
 
                     {podcast.artwork_url ? (
                       <div className="relative flex-shrink-0">
-                        <div className="absolute inset-0 bg-accent-primary/20 blur-md opacity-0 group-hover:opacity-100 transition-opacity rounded-xl" />
+                        <div className="absolute inset-0 bg-accent-primary/20 blur-md opacity-0 group-hover:opacity-100 transition-opacity rounded-lg" />
                         <img
                           src={podcast.artwork_url}
                           alt=""
                           referrerPolicy="no-referrer"
-                          className="w-20 h-20 sm:w-24 sm:h-24 rounded-xl object-cover border border-white/10 relative z-10 shadow-lg"
+                          className="w-16 h-16 rounded-lg object-cover border border-white/10 relative z-10 shadow-md"
                         />
                       </div>
                     ) : (
-                      <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-xl bg-white/5 flex items-center justify-center flex-shrink-0 border border-white/10">
-                        <Headphones className="w-8 h-8 text-white/20" />
+                      <div className="w-16 h-16 rounded-lg bg-white/5 flex items-center justify-center flex-shrink-0 border border-white/10">
+                        <Headphones className="w-6 h-6 text-white/20" />
                       </div>
                     )}
 
-                    <div className="flex-1 min-w-0 z-10">
+                    <div className="flex-1 min-w-0">
                       <h3
-                        className="text-lg font-bold font-serif text-white line-clamp-1 leading-tight mb-1 group-hover:text-accent-primary transition-colors"
+                        className="text-base font-semibold text-white/90 group-hover:text-accent-primary transition-colors line-clamp-2 leading-snug"
                         title={podcast.title}
                       >
                         {podcast.title}
                       </h3>
-                      <p className="text-sm text-white/50 truncate font-mono uppercase tracking-wide">
+                      <p className="text-sm text-white/50 truncate mt-1 font-medium">
                         {podcast.author}
                       </p>
-                      <div className="flex items-center gap-4 mt-3">
-                        <span className="text-[10px] text-accent-primary bg-accent-primary/10 px-2 py-1 rounded border border-accent-primary/20 font-bold uppercase tracking-wider">
-                          {podcast.genre}
-                        </span>
+                      <div className="flex items-center gap-3 mt-2">
+                        {podcast.genre && (
+                          <span className="text-[10px] text-accent-primary bg-accent-primary/10 px-1.5 py-0.5 rounded border border-accent-primary/20 font-medium uppercase tracking-wide">
+                            {podcast.genre}
+                          </span>
+                        )}
                         {podcast.episode_count > 0 && (
-                          <span className="text-[10px] text-white/40 font-mono uppercase tracking-wider">
+                          <span className="text-[10px] text-white/30 font-mono uppercase tracking-wide">
                             {podcast.episode_count} Episodes
                           </span>
                         )}
@@ -293,24 +295,24 @@ export default function PodcastSearchView() {
                         subscribed[podcast.itunes_id] ||
                         podcast.is_subscribed
                       }
-                      className={`relative z-10 flex items-center justify-center gap-2 px-5 py-3 rounded-xl text-xs font-bold uppercase tracking-wider transition-all shrink-0 border ${
+                      className={`relative z-10 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all shrink-0 border ${
                         subscribed[podcast.itunes_id] || podcast.is_subscribed
                           ? "bg-accent-success/10 text-accent-success border-accent-success/20 cursor-default"
-                          : "bg-white/5 text-white border-white/10 hover:bg-accent-primary hover:text-black hover:border-accent-primary hover:shadow-lg hover:shadow-accent-primary/20"
+                          : "bg-white/5 text-white/60 border-white/10 hover:bg-accent-primary hover:text-black hover:border-accent-primary"
                       } disabled:opacity-50`}
                     >
                       {subscribing[podcast.itunes_id] ||
                       previewing === podcast.itunes_id ? (
-                        <Loader2 className="w-4 h-4 animate-spin" />
+                        <Loader2 className="w-3 h-3 animate-spin" />
                       ) : subscribed[podcast.itunes_id] ||
                         podcast.is_subscribed ? (
                         <>
-                          <Check className="w-4 h-4" />
+                          <Check className="w-3 h-3" />
                           Added
                         </>
                       ) : (
                         <>
-                          <Plus className="w-4 h-4" />
+                          <Plus className="w-3 h-3" />
                           Add
                         </>
                       )}
