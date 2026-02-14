@@ -43,6 +43,26 @@ export interface FeedDetailResponse {
   total_episodes: number;
 }
 
+export interface PodcastPlayerSegment {
+  text: string;
+  start_time: number;
+  end_time: number;
+  sentences?: string[];
+}
+
+export interface PodcastPlayerBundle {
+  id: string;
+  source_type: string;
+  title: string;
+  audio_url?: string;
+  blocks: PodcastPlayerSegment[];
+  metadata?: {
+    feed_title?: string;
+    current_position?: number;
+    [key: string]: unknown;
+  };
+}
+
 export const podcastApi = {
   async search(query: string, limit = 20) {
     return apiGet(
@@ -99,6 +119,18 @@ export const podcastApi = {
 
   async getRecentlyPlayed() {
     return apiGet("/api/podcast/recently-played") as Promise<PodcastEpisode[]>;
+  },
+
+  async getPlayerContent(episodeId: number) {
+    return apiGet(
+      `/api/content/player/podcast/${episodeId}`,
+    ) as Promise<PodcastPlayerBundle>;
+  },
+
+  async transcribeEpisode(episodeId: number, force = false) {
+    return apiPost(`/api/podcast/episode/${episodeId}/transcribe`, {
+      force,
+    });
   },
 
   async syncPosition(

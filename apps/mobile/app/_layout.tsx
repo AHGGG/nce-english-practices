@@ -122,6 +122,8 @@ function RootContent() {
         <Stack.Screen name="study/[id]" />
         <Stack.Screen name="books" />
         <Stack.Screen name="books/[filename]" />
+        <Stack.Screen name="audiobook/[bookId]" />
+        <Stack.Screen name="podcast/intensive" />
       </Stack>
       <PlayerBar />
     </View>

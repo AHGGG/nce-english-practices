@@ -25,6 +25,7 @@ interface Props {
   onUnsubscribe?: () => void;
   isSubscribing?: boolean;
   onPlayEpisode: (episode: PodcastEpisode) => void;
+  onIntensiveEpisode?: (episode: PodcastEpisode) => void;
 }
 
 const DownloadButton = ({ episode }: { episode: PodcastEpisode }) => {
@@ -69,6 +70,7 @@ export const PodcastDetailView = ({
   onUnsubscribe,
   isSubscribing,
   onPlayEpisode,
+  onIntensiveEpisode,
 }: Props) => {
   const { feed, episodes, is_subscribed } = data;
 
@@ -169,6 +171,20 @@ export const PodcastDetailView = ({
               <Text className="text-accent-primary text-xs font-bold">
                 PLAY
               </Text>
+
+              {onIntensiveEpisode && (
+                <TouchableOpacity
+                  className="ml-3 px-2 py-1 border border-accent-info/40 rounded"
+                  onPress={(e) => {
+                    e.stopPropagation();
+                    onIntensiveEpisode(item);
+                  }}
+                >
+                  <Text className="text-accent-info text-[10px] font-bold">
+                    INTENSIVE
+                  </Text>
+                </TouchableOpacity>
+              )}
 
               {item.current_position > 0 && (
                 <View className="ml-4 flex-row items-center">

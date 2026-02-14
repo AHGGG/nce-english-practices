@@ -16,7 +16,9 @@ export default function PlayerBar() {
 
   // Hide on player screen and auth screens
   const isHidden =
-    pathname.includes("/podcast/player") || pathname.includes("/auth/");
+    pathname.includes("/podcast/player") ||
+    pathname.includes("/podcast/intensive") ||
+    pathname.includes("/auth/");
 
   if (!currentEpisode || isHidden) return null;
 
@@ -47,8 +49,15 @@ export default function PlayerBar() {
   // Note: pathname often doesn't include group name in Expo Router v3, check your version behavior
   // Assuming standard tabs are: /library, /podcast, /, /voice, /stats
   const isTabScreen =
-    ["/library", "/podcast", "/", "/voice", "/stats"].includes(pathname) ||
-    pathname.startsWith("/(tabs)");
+    [
+      "/library",
+      "/dictionary",
+      "/podcast",
+      "/audiobook",
+      "/",
+      "/voice",
+      "/stats",
+    ].includes(pathname) || pathname.startsWith("/(tabs)");
 
   const bottomClass = isTabScreen ? "bottom-[85px]" : "bottom-6";
 

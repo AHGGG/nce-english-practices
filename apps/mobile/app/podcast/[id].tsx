@@ -83,6 +83,12 @@ export default function PodcastDetailScreen() {
             params: { episodeId: episode.id },
           });
         }}
+        onIntensiveEpisode={(episode) => {
+          router.push({
+            pathname: "/podcast/intensive",
+            params: { episodeId: episode.id },
+          });
+        }}
       />
     </SafeAreaView>
   );
