@@ -136,6 +136,11 @@ export function PodcastProvider({ children }: { children: ReactNode }) {
   const currentEpisodeRef = useRef<PodcastEpisode | null>(null);
   const listenedSecondsRef = useRef(0);
   const isFinishingRef = useRef(false);
+  const playbackRateRef = useRef(playbackRate);
+  const finalizedEpisodeIdRef = useRef<number | null>(null);
+  const finalizeEpisodePlaybackRef = useRef<
+    ((reason: "ended" | "near-end") => Promise<void>) | null
+  >(null);
 
   // Download state
   // { [episodeId]: { status: 'idle'|'downloading'|'done'|'error', progress: 0-100, error?: string } }
@@ -166,8 +171,79 @@ export function PodcastProvider({ children }: { children: ReactNode }) {
     listenedSecondsRef.current = listenedSeconds;
   }, [listenedSeconds]);
 
+  useEffect(() => {
+    playbackRateRef.current = playbackRate;
+  }, [playbackRate]);
+
   // Audio element ref
   const audioRef = useRef<HTMLAudioElement | null>(null);
+
+  const finalizeEpisodePlayback = useCallback(
+    async (reason: "ended" | "near-end") => {
+      const audio = audioRef.current;
+      const episode = currentEpisodeRef.current;
+      if (!audio || !episode) return;
+
+      // Prevent double-finalize (e.g. near-end fallback + ended event)
+      if (finalizedEpisodeIdRef.current === episode.id) return;
+      finalizedEpisodeIdRef.current = episode.id;
+
+      isFinishingRef.current = true;
+
+      const dur = Number.isFinite(audio.duration) ? audio.duration : 0;
+      const finalPosition = dur > 0 ? dur : audio.currentTime || 0;
+
+      // Ensure UI is consistent at finish
+      setCurrentTime(finalPosition);
+      if (dur > 0) setDuration(dur);
+
+      // Real-time UI update for lists
+      setFinishedEpisodes((prev) => new Set([...prev, episode.id]));
+
+      // Persist local completion state
+      await savePositionLocal(
+        episode.id,
+        finalPosition,
+        playbackRateRef.current,
+        true,
+      ).catch(console.error);
+
+      // Best-effort server updates (may fail offline)
+      const activeSessionId = sessionIdRef.current;
+      if (activeSessionId) {
+        podcastApi
+          .endListeningSession(
+            activeSessionId,
+            listenedSecondsRef.current,
+            finalPosition,
+            true,
+          )
+          .then(() => {
+            console.log(`[Podcast] Episode marked completed (${reason})`);
+          })
+          .catch((error) => {
+            console.error("Failed to mark episode finished:", error);
+          });
+      }
+
+      const localPos = await getLocalPosition(episode.id);
+      if (localPos) {
+        podcastApi
+          .syncPosition(episode.id, {
+            ...localPos,
+            duration: Math.round(dur || finalPosition),
+          })
+          .catch((error) =>
+            console.warn("Failed to sync final position/duration:", error),
+          );
+      }
+    },
+    [],
+  );
+
+  useEffect(() => {
+    finalizeEpisodePlaybackRef.current = finalizeEpisodePlayback;
+  }, [finalizeEpisodePlayback]);
 
   // Initialize audio element
   useEffect(() => {
@@ -186,7 +262,6 @@ export function PodcastProvider({ children }: { children: ReactNode }) {
         void (async () => {
           const audio = audioRef.current;
           const episode = currentEpisodeRef.current;
-          const activeSessionId = sessionIdRef.current;
           if (!audio || !episode) return;
 
           const time = audio.currentTime;
@@ -198,56 +273,18 @@ export function PodcastProvider({ children }: { children: ReactNode }) {
             lastUpdateRef.current = time;
           }
 
-          if (
-            dur > 0 &&
-            time >= dur - 3 &&
-            !isFinishingRef.current &&
-            activeSessionId
-          ) {
+          // Fallback completion detection:
+          // Some browsers/devices can miss 'ended' in edge cases.
+          // Do NOT pause early; only finalize very close to the end.
+          if (dur > 0 && time >= dur - 0.5 && !isFinishingRef.current) {
             console.log(
               "[Podcast] Near end detected (time:",
               time,
               ", duration:",
               dur,
-              "), marking as finished",
+              "), finalizing (no auto-pause)",
             );
-            isFinishingRef.current = true;
-            setIsPlaying(false);
-            audio.pause();
-
-            await savePositionLocal(episode.id, dur, playbackRate, true).catch(
-              console.error,
-            );
-
-            setFinishedEpisodes((prev) => new Set([...prev, episode.id]));
-
-            podcastApi
-              .endListeningSession(
-                activeSessionId,
-                listenedSecondsRef.current,
-                dur,
-                true,
-              )
-              .then(() => {
-                console.log(
-                  "[Podcast] Episode marked completed (near-end detection)",
-                );
-              })
-              .catch((error) => {
-                console.error("Failed to mark episode finished:", error);
-              });
-
-            const localPos = await getLocalPosition(episode.id);
-            if (localPos) {
-              podcastApi
-                .syncPosition(episode.id, {
-                  ...localPos,
-                  duration: Math.round(dur),
-                })
-                .catch((error) =>
-                  console.warn("Failed to sync actual duration:", error),
-                );
-            }
+            await finalizeEpisodePlaybackRef.current?.("near-end");
           }
         })();
       });
@@ -255,52 +292,9 @@ export function PodcastProvider({ children }: { children: ReactNode }) {
       audioRef.current.addEventListener("ended", () => {
         void (async () => {
           console.log("[Podcast] Ended event fired");
-          isFinishingRef.current = true;
           setIsPlaying(false);
 
-          const audio = audioRef.current;
-          const episode = currentEpisodeRef.current;
-          if (!episode) return;
-
-          try {
-            const finalPosition = audio?.duration || 0;
-
-            setFinishedEpisodes((prev) => new Set([...prev, episode.id]));
-
-            savePositionLocal(
-              episode.id,
-              finalPosition,
-              playbackRate,
-              true,
-            ).catch(console.error);
-
-            if (sessionIdRef.current) {
-              await podcastApi.endListeningSession(
-                sessionIdRef.current,
-                listenedSecondsRef.current,
-                finalPosition,
-                true,
-              );
-              console.log("[Podcast] Episode finished, marked completed");
-            }
-
-            const localPos = await getLocalPosition(episode.id);
-            if (localPos) {
-              podcastApi
-                .syncPosition(episode.id, {
-                  ...localPos,
-                  duration: Math.round(audio?.duration || 0),
-                })
-                .catch((error) =>
-                  console.warn(
-                    "Failed to sync final position/duration:",
-                    error,
-                  ),
-                );
-            }
-          } catch (error) {
-            console.error("Failed to mark episode finished:", error);
-          }
+          await finalizeEpisodePlaybackRef.current?.("ended");
         })();
       });
 
@@ -589,6 +583,7 @@ export function PodcastProvider({ children }: { children: ReactNode }) {
 
       setIsLoading(true);
       isFinishingRef.current = false; // Reset finishing flag
+      finalizedEpisodeIdRef.current = null;
 
       // End previous session if exists
       if (sessionId && currentEpisode) {
@@ -608,6 +603,7 @@ export function PodcastProvider({ children }: { children: ReactNode }) {
       setCurrentFeed(feed);
       setListenedSeconds(0);
       lastUpdateRef.current = 0;
+      finalizedEpisodeIdRef.current = null;
 
       // Get resume position (use provided startPosition or fetch from API)
       let resumePosition = startPosition;

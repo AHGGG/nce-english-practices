@@ -544,15 +544,16 @@ export default function PodcastDownloadsView() {
                 item.is_finished ||
                 ep.is_finished ||
                 (position > 0 && progressPercent >= 99);
+              const isCurrentAndPlaying = isCurrentEpisode && isPlaying;
 
               return (
                 <div
                   key={ep.id}
                   className={`group relative flex items-center gap-3 sm:gap-4 p-3 sm:p-4 rounded-xl transition-all duration-300 border ${
-                    isCurrentEpisode
-                      ? "bg-accent-primary/10 border-accent-primary/30 shadow-[0_0_30px_rgba(var(--color-accent-primary-rgb),0.1)]"
-                      : isFinished
-                        ? "bg-white/[0.01] border-white/5 opacity-60 hover:opacity-100"
+                    isFinished
+                      ? "bg-white/[0.01] border-white/5 opacity-60 hover:opacity-100"
+                      : isCurrentEpisode
+                        ? "bg-accent-primary/10 border-accent-primary/30 shadow-[0_0_30px_rgba(var(--color-accent-primary-rgb),0.1)]"
                         : "bg-[#0a0f0d]/40 backdrop-blur-sm border-white/5 hover:border-white/10 hover:bg-white/[0.03]"
                   }`}
                 >
@@ -592,16 +593,16 @@ export default function PodcastDownloadsView() {
                       <button
                         onClick={() => handlePlay(item)}
                         className={`w-10 h-10 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center transition-all duration-300 ${
-                          isCurrentEpisode
-                            ? "bg-accent-primary text-black shadow-lg shadow-accent-primary/30 scale-105"
-                            : isFinished
-                              ? "bg-transparent border border-accent-success/30 text-accent-success hover:bg-accent-success/10"
+                          isFinished
+                            ? "bg-transparent border border-accent-success/30 text-accent-success hover:bg-accent-success/10"
+                            : isCurrentEpisode
+                              ? "bg-accent-primary text-black shadow-lg shadow-accent-primary/30 scale-105"
                               : "bg-white/5 border border-white/10 text-white hover:bg-white/10 hover:border-white/20 hover:scale-105 shadow-lg shadow-black/20"
                         }`}
                       >
-                        {isCurrentEpisode && isPlaying ? (
+                        {isCurrentAndPlaying ? (
                           <Pause className="w-4 h-4 sm:w-5 sm:h-5 fill-current" />
-                        ) : isFinished && !isCurrentEpisode ? (
+                        ) : isFinished ? (
                           <Check className="w-4 h-4 sm:w-5 sm:h-5 stroke-[3]" />
                         ) : (
                           <Play className="w-4 h-4 sm:w-5 sm:h-5 ml-0.5 fill-current" />
@@ -614,10 +615,10 @@ export default function PodcastDownloadsView() {
                   <div className="flex-1 min-w-0 py-1">
                     <h3
                       className={`text-sm sm:text-base font-medium line-clamp-2 mb-1.5 transition-colors leading-snug ${
-                        isCurrentEpisode
-                          ? "text-accent-primary"
-                          : isFinished
-                            ? "text-white/40 line-through decoration-accent-success/40"
+                        isFinished
+                          ? "text-white/40 line-through decoration-accent-success/40"
+                          : isCurrentEpisode
+                            ? "text-accent-primary"
                             : "text-white group-hover:text-accent-primary/80"
                       }`}
                     >
