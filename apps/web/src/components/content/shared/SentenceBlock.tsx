@@ -259,8 +259,8 @@ export const SentenceBlock = memo(function SentenceBlock({
 
   // 句子容器样式
   const sentenceClass = unclearInfo
-    ? `mb-6 cursor-pointer hover:bg-opacity-20 ${getUnclearSentenceClass(unclearInfo.unclear_choice)}`
-    : "mb-6";
+    ? `mb-6 cursor-pointer hover:bg-opacity-20 break-words [overflow-wrap:anywhere] ${getUnclearSentenceClass(unclearInfo.unclear_choice)}`
+    : "mb-6 break-words [overflow-wrap:anywhere]";
 
   return (
     <p

@@ -258,30 +258,30 @@ export default function UnifiedPlayerView() {
   }
 
   return (
-    <div className="h-screen bg-[#0a0f0d] flex flex-col overflow-hidden">
+    <div className="h-dvh min-h-screen bg-[#0a0f0d] flex flex-col overflow-hidden">
       {/* Header */}
-      <header className="shrink-0 bg-[#0a0f0d]/80 backdrop-blur-xl border-b border-white/5">
-        <div className="max-w-4xl mx-auto px-4 py-3">
-          <div className="flex items-center gap-4">
+      <header className="shrink-0 sticky top-0 z-20 bg-[#0a0f0d]/80 backdrop-blur-xl border-b border-white/5">
+        <div className="max-w-4xl mx-auto px-3 sm:px-4 py-2.5 sm:py-3">
+          <div className="flex items-center gap-2.5 sm:gap-4">
             <button
               onClick={() => navigate(-1)}
-              className="w-10 h-10 rounded-full flex items-center justify-center bg-white/[0.03] border border-white/[0.08] text-white/60 hover:text-white hover:bg-white/[0.08] transition-all group"
+              className="w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center bg-white/[0.03] border border-white/[0.08] text-white/60 hover:text-white hover:bg-white/[0.08] transition-all group"
             >
-              <ArrowLeft className="w-5 h-5 group-hover:-translate-x-0.5 transition-transform" />
+              <ArrowLeft className="w-4 h-4 sm:w-5 sm:h-5 group-hover:-translate-x-0.5 transition-transform" />
             </button>
 
             <div className="flex-1 min-w-0">
-              <h1 className="text-lg font-medium text-white truncate">
+              <h1 className="text-base sm:text-lg font-medium text-white truncate">
                 {bundle?.title || "Audio Player"}
               </h1>
               {bundle?.metadata?.feed_title && (
-                <p className="text-xs text-white/40 truncate">
+                <p className="text-[11px] sm:text-xs text-white/40 truncate">
                   {bundle.metadata.feed_title}
                 </p>
               )}
             </div>
 
-            <div className="text-xs font-mono text-white/40 uppercase tracking-wider px-2 py-1 bg-white/5 rounded border border-white/10">
+            <div className="hidden sm:block text-xs font-mono text-white/40 uppercase tracking-wider px-2 py-1 bg-white/5 rounded border border-white/10">
               {sourceType === "podcast" ? "Intensive Listening" : "Audiobook"}
             </div>
           </div>
@@ -295,9 +295,17 @@ export default function UnifiedPlayerView() {
           {rendererProps && <AudioPlayerUI {...rendererProps} />}
         </main>
 
+        {selectedWord && (
+          <button
+            onClick={closeInspector}
+            className="md:hidden absolute inset-0 z-20 bg-black/45"
+            aria-label="Close word inspector"
+          />
+        )}
+
         {/* Word Inspector Sidebar */}
         {selectedWord && (
-          <div className="w-96 border-l border-white/10 overflow-y-auto bg-bg-surface shrink-0 absolute inset-y-0 right-0 z-20 shadow-2xl">
+          <div className="w-full md:w-96 border-t md:border-t-0 md:border-l border-white/10 overflow-y-auto bg-bg-surface shrink-0 absolute inset-x-0 bottom-0 top-20 md:inset-y-0 md:right-0 md:left-auto z-30 shadow-2xl rounded-t-2xl md:rounded-none">
             <WordInspectorPanel
               selectedWord={selectedWord}
               isPhrase={isPhrase}
