@@ -14,7 +14,7 @@ import { Inter_400Regular, Inter_700Bold } from "@expo-google-fonts/inter";
 import * as SplashScreen from "expo-splash-screen";
 import { useEffect } from "react";
 import { View, ActivityIndicator, AppState } from "react-native";
-import { useAuthStore, useCurrentUser } from "@nce/store";
+import { useAuthStore, useCurrentUser, useSettingsStore } from "@nce/store";
 import {
   initializePlatformAdapters,
   setApiBaseUrl,
@@ -22,10 +22,7 @@ import {
 import PlayerBar from "../src/components/PlayerBar";
 import { audioService } from "../src/services/AudioService";
 import { downloadService } from "../src/services/DownloadService";
-// NOTE: expo-notifications removed from Expo Go in SDK 53+
-// Uncomment when using Development Build
-// import { notificationService } from "../src/services/NotificationService";
-// import { useSettingsStore } from "@nce/store";
+import { notificationService } from "../src/services/NotificationService";
 
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
@@ -44,6 +41,10 @@ function RootContent() {
   const isInitialized = useAuthStore((state) => state.isInitialized);
   const initializeAuth = useAuthStore((state) => state._initialize);
   const user = useCurrentUser();
+  const notificationsEnabled = useSettingsStore(
+    (state) => state.notificationsEnabled,
+  );
+  const reminderTime = useSettingsStore((state) => state.reminderTime);
   const segments = useSegments();
   const router = useRouter();
 
@@ -73,15 +74,14 @@ function RootContent() {
     return () => {
       subscription.remove();
     };
-    // Init Notifications if enabled
-    // NOTE: Disabled - expo-notifications not available in Expo Go SDK 53+
-    // Uncomment when using Development Build
-    // const { notificationsEnabled, reminderTime } = useSettingsStore.getState();
-    // if (notificationsEnabled) {
-    //   const [h, m] = reminderTime.split(":").map(Number);
-    //   notificationService.scheduleDailyReminder(h, m, true);
-    // }
   }, []);
+
+  useEffect(() => {
+    void notificationService.syncDailyReminder(
+      reminderTime,
+      notificationsEnabled,
+    );
+  }, [reminderTime, notificationsEnabled]);
 
   // Auth Guard
   useEffect(() => {

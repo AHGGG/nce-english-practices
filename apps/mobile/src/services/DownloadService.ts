@@ -66,6 +66,11 @@ class DownloadService {
 
   async downloadEpisode(episode: PodcastEpisode) {
     const store = useDownloadStore.getState();
+
+    if (store.downloads[episode.id] || store.activeDownloads[episode.id]) {
+      return;
+    }
+
     const localPath = PODCAST_DIR + `${episode.id}.mp3`;
 
     // Initialize active download with episode data for display
@@ -76,9 +81,12 @@ class DownloadService {
     });
 
     const callback = (downloadProgress: DownloadProgressData) => {
-      const progress =
-        downloadProgress.totalBytesWritten /
-        downloadProgress.totalBytesExpectedToWrite;
+      const expected = downloadProgress.totalBytesExpectedToWrite;
+      if (!expected || expected <= 0) {
+        return;
+      }
+
+      const progress = downloadProgress.totalBytesWritten / expected;
       store.updateActiveDownload(episode.id, { progress });
     };
 
@@ -118,6 +126,7 @@ class DownloadService {
         status: "error",
         error: "Download failed",
       });
+      delete this.downloadResumables[episode.id];
     }
   }
 
@@ -138,7 +147,10 @@ class DownloadService {
       useDownloadStore
         .getState()
         .updateActiveDownload(episodeId, { status: "downloading" });
+      return;
     }
+
+    await this.retryDownload(episodeId);
   }
 
   async cancelDownload(episodeId: number) {

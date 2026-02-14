@@ -10,8 +10,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useAuthStore, useSettingsStore } from "@nce/store";
-// NOTE: expo-notifications removed from Expo Go in SDK 53+
-// import { notificationService } from "../src/services/NotificationService";
+import { notificationService } from "../src/services/NotificationService";
 import {
   LogOut,
   ChevronRight,
@@ -78,13 +77,21 @@ export default function SettingsScreen() {
   };
 
   const toggleNotifications = async (value: boolean) => {
-    // NOTE: expo-notifications not available in Expo Go SDK 53+
-    // Re-enable when using Development Build
-    Alert.alert(
-      "Not Available",
-      "Push notifications require a Development Build. This feature is disabled in Expo Go.",
+    const success = await notificationService.syncDailyReminder(
+      reminderTime,
+      value,
     );
-    setNotificationsEnabled(false);
+
+    if (!success && value) {
+      Alert.alert(
+        "Notification Unavailable",
+        "Notifications are not supported in this runtime or permissions were denied.",
+      );
+      setNotificationsEnabled(false);
+      return;
+    }
+
+    setNotificationsEnabled(value);
   };
 
   const cycleSpeed = () => {

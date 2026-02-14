@@ -115,6 +115,13 @@ export class MobileVoiceClient {
   }
 
   disconnect() {
+    if (this.recording) {
+      void this.recording.stopAndUnloadAsync().catch(() => {
+        // ignore cleanup failures during disconnect
+      });
+      this.recording = null;
+    }
+
     if (this.ws) {
       this.ws.close();
       this.ws = null;
@@ -125,6 +132,8 @@ export class MobileVoiceClient {
 
   async startRecording() {
     if (!this.isConnected) return;
+    if (this.recording) return;
+
     try {
       // Stop playback if any (interrupt)
       this.stopPlayback();
@@ -176,7 +185,9 @@ export class MobileVoiceClient {
   }
 
   private sendInterrupt() {
-    this.ws?.send(JSON.stringify({ type: "interrupted" })); // Backend logic needed? Or just client side silence.
+    if (this.ws?.readyState === WebSocket.OPEN) {
+      this.ws.send(JSON.stringify({ type: "interrupted" }));
+    }
     // The current backend might not handle client-side "interrupted" message explicitly in receive_loop,
     // but sending audio usually interrupts the model anyway.
   }
@@ -262,8 +273,12 @@ export class MobileVoiceClient {
   stopPlayback() {
     this.audioQueue = [];
     if (this.currentSound) {
-      this.currentSound.stopAsync();
-      this.currentSound.unloadAsync();
+      void this.currentSound.stopAsync().catch(() => {
+        // ignore stop race while tearing down playback
+      });
+      void this.currentSound.unloadAsync().catch(() => {
+        // ignore unload race while tearing down playback
+      });
       this.currentSound = null;
     }
     this.isPlaying = false;
