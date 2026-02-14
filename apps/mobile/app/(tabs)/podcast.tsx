@@ -4,14 +4,8 @@ import { useSubscriptions, useTrendingPodcasts, usePodcastSearch } from "@nce/sh
 import { Search, Mic, ChevronRight, Download } from "lucide-react-native";
 import { useState } from "react";
 import { useRouter } from "expo-router";
-import { getApiBaseUrl } from "../../src/lib/platform-init";
 
 const PodcastCard = ({ item, onPress, horizontal = false }: any) => {
-  const baseUrl = getApiBaseUrl();
-  // Proxy image through backend if needed, or use direct URL if valid
-  // Backend provides a proxy endpoint: /api/podcast/proxy/image?token=...
-  // But here we might just use the image_url directly if it works, or use a placeholder
-  
   return (
     <TouchableOpacity 
       onPress={onPress}
@@ -89,7 +83,13 @@ export default function PodcastScreen() {
         {isSearching ? (
             <FlatList
                 data={searchResults}
-                keyExtractor={(item) => item.rss_url || Math.random().toString()}
+                keyExtractor={(item, index) =>
+                  item.rss_url
+                    ? `rss-${item.rss_url}`
+                    : item.itunes_id
+                      ? `itunes-${item.itunes_id}`
+                      : `search-${item.title || "unknown"}-${index}`
+                }
                 renderItem={({ item }) => <PodcastCard item={item} onPress={() => handlePress(item)} />}
                 ListEmptyComponent={
                     searchLoading ? (
@@ -121,8 +121,12 @@ export default function PodcastScreen() {
                     {trendingLoading ? (
                         <ActivityIndicator color="#00FF94" />
                     ) : (
-                        trending.map((item, idx) => (
-                            <PodcastCard key={item.rss_url || idx} item={item} onPress={() => handlePress(item)} />
+                        trending.map((item) => (
+                            <PodcastCard
+                              key={item.rss_url || `trend-${item.itunes_id || item.title}`}
+                              item={item}
+                              onPress={() => handlePress(item)}
+                            />
                         ))
                     )}
                 </View>

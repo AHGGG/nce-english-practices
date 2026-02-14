@@ -133,7 +133,12 @@ class AudioService {
 
   async seek(millis: number) {
     if (this.sound && this.isLoaded) {
-      await this.sound.setPositionAsync(millis);
+      const status = await this.sound.getStatusAsync();
+      if (status.isLoaded) {
+        const durationMillis = status.durationMillis || millis;
+        const safeMillis = Math.max(0, Math.min(millis, durationMillis));
+        await this.sound.setPositionAsync(safeMillis);
+      }
       // Sync after seek? Maybe not strictly necessary, update interval will catch it
     }
   }

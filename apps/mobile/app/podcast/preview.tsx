@@ -12,18 +12,18 @@ export default function PodcastPreviewScreen() {
   const { data, isLoading, error } = usePodcastPreview(rss_url as string);
   const { subscribe, isSubscribing } = usePodcastMutations();
 
-  if (isLoading || !data) {
-    return (
-      <View className="flex-1 justify-center items-center bg-bg-base">
-        <ActivityIndicator color="#00FF94" size="large" />
-      </View>
-    );
-  }
-
   if (error) {
     return (
       <View className="flex-1 justify-center items-center bg-bg-base">
         <Text className="text-accent-danger">{error}</Text>
+      </View>
+    );
+  }
+
+  if (isLoading || !data) {
+    return (
+      <View className="flex-1 justify-center items-center bg-bg-base">
+        <ActivityIndicator color="#00FF94" size="large" />
       </View>
     );
   }

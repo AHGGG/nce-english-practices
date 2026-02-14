@@ -4,6 +4,7 @@ import {
   TouchableOpacity,
   ScrollView,
   ActivityIndicator,
+  Alert,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import {
@@ -12,6 +13,7 @@ import {
   usePathname,
   Stack,
 } from "expo-router";
+import { proficiencyApi } from "@nce/api";
 import { useSentenceStudy } from "@nce/shared";
 import { useWordExplainer } from "../../src/hooks/useWordExplainer"; // Use mobile-specific version
 import {
@@ -783,6 +785,17 @@ export default function StudyScreen() {
     explainer.closeInspector();
   };
 
+  const handleMarkAsKnown = useCallback(async (word: string) => {
+    const lowerWord = word.toLowerCase();
+    try {
+      await proficiencyApi.updateWordStatus(lowerWord, "mastered");
+      handleCloseModal();
+    } catch (e) {
+      console.error("Failed to mark as known", e);
+      Alert.alert("Error", "Failed to mark word as known");
+    }
+  }, []);
+
   const handleUnclear = useCallback(() => {
     if (!currentSentence) return;
 
@@ -919,9 +932,9 @@ export default function StudyScreen() {
         imagePrompt={explainer.imagePrompt}
         onExplainStyle={explainer.changeExplainStyle}
         onGenerateImage={explainer.generateImage}
-        onMarkAsKnown={explainer.closeInspector}
+        onMarkAsKnown={handleMarkAsKnown}
         onPlayAudio={() => {}}
-        currentSentenceContext={""}
+        currentSentenceContext={explainer.currentSentenceContext}
       />
     </SafeAreaView>
   );

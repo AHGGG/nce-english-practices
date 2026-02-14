@@ -69,8 +69,15 @@ export function setApiBaseUrl(url: string) {
 }
 
 function detectApiUrl() {
-  // 1. Check for manual override (uncomment to force specific IP)
-  // return "http://192.168.0.100:8000";
+  // 1. Use explicit env override when provided
+  const configuredUrl =
+    process.env.EXPO_PUBLIC_API_BASE_URL ||
+    (Constants.expoConfig?.extra?.apiBaseUrl as string | undefined);
+  if (configuredUrl) {
+    const normalized = configuredUrl.replace(/\/$/, "");
+    console.log(`[Platform] Using configured API URL: ${normalized}`);
+    return normalized;
+  }
 
   // 2. Use Expo's auto-detected host
   if (Constants.expoConfig?.hostUri) {
@@ -82,8 +89,8 @@ function detectApiUrl() {
     return url;
   }
 
-  // 3. Fallback for physical device on same network (hardcoded based on dev machine)
-  const fallbackUrl = "http://192.168.0.100:8000";
+  // 3. Fallback for simulators and local web
+  const fallbackUrl = "http://localhost:8000";
   console.log(`[Platform] Using fallback URL: ${fallbackUrl}`);
   return fallbackUrl;
 }

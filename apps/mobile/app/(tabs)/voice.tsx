@@ -25,6 +25,15 @@ interface TranscriptItem {
   isUser: boolean;
 }
 
+const GEMINI_VOICES = new Set(["Puck", "Charon", "Kore", "Fenrir", "Aoede"]);
+
+function getGeminiVoiceName(voiceId: string) {
+  if (GEMINI_VOICES.has(voiceId)) {
+    return voiceId;
+  }
+  return "Puck";
+}
+
 export default function VoiceLabScreen() {
   const [status, setStatus] = useState<
     "disconnected" | "connecting" | "ready" | "listening" | "speaking"
@@ -88,8 +97,9 @@ export default function VoiceLabScreen() {
   const toggleSession = () => {
     if (status === "disconnected") {
       setStatus("connecting");
+      const voiceName = getGeminiVoiceName(voiceId);
       mobileVoiceClient.connect({
-        voiceName: "Puck", // Default, could use voiceId mapping
+        voiceName,
         systemInstruction: "You are a friendly English tutor. Keep responses concise.",
       });
     } else {

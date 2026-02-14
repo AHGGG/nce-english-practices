@@ -26,6 +26,7 @@ interface DictionaryModalProps {
   onExplainStyle: (style: string) => void;
   onGenerateImage: () => void;
   onMarkAsKnown: (word: string) => void;
+  onAddToReview?: (word: string) => void;
   onPlayAudio: (text: string) => void;
   currentSentenceContext: string;
 }
@@ -46,6 +47,7 @@ export function DictionaryModal({
   onExplainStyle,
   onGenerateImage,
   onMarkAsKnown,
+  onAddToReview,
   onPlayAudio,
   currentSentenceContext,
 }: DictionaryModalProps) {
@@ -315,7 +317,14 @@ export function DictionaryModal({
                 Mark Known
               </Text>
             </TouchableOpacity>
-            <TouchableOpacity className="flex-[2] bg-text-primary py-3 rounded-xl flex-row items-center justify-center gap-2">
+            <TouchableOpacity
+              onPress={() => {
+                if (!selectedWord) return;
+                const addToReview = onAddToReview || onMarkAsKnown;
+                addToReview(selectedWord);
+              }}
+              className="flex-[2] bg-text-primary py-3 rounded-xl flex-row items-center justify-center gap-2"
+            >
               <Bookmark size={16} color="#000" />
               <Text className="text-text-inverse text-center text-xs font-bold uppercase tracking-wider">
                 Add to Review

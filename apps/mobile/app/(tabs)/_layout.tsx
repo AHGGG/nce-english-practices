@@ -27,6 +27,13 @@ export default function TabsLayout() {
         }}
       />
       <Tabs.Screen
+        name="dictionary"
+        options={{
+          title: "Dictionary",
+          tabBarIcon: ({ color }) => <Search size={24} color={color} />,
+        }}
+      />
+      <Tabs.Screen
         name="podcast"
         options={{
           title: "Podcast",

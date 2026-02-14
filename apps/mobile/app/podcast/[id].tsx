@@ -20,20 +20,6 @@ export default function PodcastDetailScreen() {
   console.log("[PodcastDetail] Error:", error);
   console.log("[PodcastDetail] Data:", data ? "Loaded" : "No data");
 
-  if (isLoading || !data) {
-    return (
-      <View className="flex-1 justify-center items-center bg-bg-base">
-        <ActivityIndicator color="#00FF94" size="large" />
-        <Text className="text-text-muted mt-4">Loading feed {feedId}...</Text>
-        {error && (
-          <Text className="text-accent-danger mt-2 px-4 text-center">
-            {error}
-          </Text>
-        )}
-      </View>
-    );
-  }
-
   if (error) {
     return (
       <View className="flex-1 justify-center items-center bg-bg-base px-4">
@@ -44,6 +30,15 @@ export default function PodcastDetailScreen() {
         >
           <Text className="text-text-primary">Go Back</Text>
         </TouchableOpacity>
+      </View>
+    );
+  }
+
+  if (isLoading || !data) {
+    return (
+      <View className="flex-1 justify-center items-center bg-bg-base">
+        <ActivityIndicator color="#00FF94" size="large" />
+        <Text className="text-text-muted mt-4">Loading feed {feedId}...</Text>
       </View>
     );
   }
