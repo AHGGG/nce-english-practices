@@ -8,8 +8,6 @@ import type { MouseEvent, ReactNode } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import {
   ArrowLeft,
-  Play,
-  Pause,
   RefreshCw,
   Trash2,
   Loader2,
@@ -23,7 +21,6 @@ import {
   CloudOff,
   HardDrive,
   Info,
-  Check,
   Plus,
   BookOpen,
   Heart,
@@ -33,11 +30,8 @@ import * as podcastApi from "../../api/podcast";
 import { usePodcast } from "../../context/PodcastContext";
 import { useGlobalState } from "../../context/GlobalContext";
 import { useToast, Dialog, DialogButton } from "../../components/ui";
-import {
-  addEpisodeToPlaylist,
-  createPlaylist,
-  getPlaylists,
-} from "../../utils/podcastPlaylists";
+import PodcastCoverPlayButton from "../../components/podcast/PodcastCoverPlayButton";
+import PlaylistPickerDialog from "../../components/podcast/PlaylistPickerDialog";
 
 interface PodcastFeed {
   id: number;
@@ -53,6 +47,7 @@ interface PodcastEpisode {
   id: number;
   title: string;
   audio_url: string;
+  image_url?: string | null;
   published_at?: string | null;
   duration_seconds?: number;
   file_size?: number;
@@ -213,6 +208,8 @@ export default function PodcastFeedDetailView() {
   const [favoriteLoading, setFavoriteLoading] = useState<
     Record<number, boolean>
   >({});
+  const [playlistDialogEpisode, setPlaylistDialogEpisode] =
+    useState<PodcastEpisode | null>(null);
 
   // Pagination
   const PAGE_SIZE = 50;
@@ -484,45 +481,6 @@ export default function PodcastFeedDetailView() {
       addToast("Favorite update failed: " + getErrorMessage(e), "error");
     } finally {
       setFavoriteLoading((prev) => ({ ...prev, [episodeId]: false }));
-    }
-  }
-
-  function handleAddToPlaylist(episodeId: number) {
-    const playlists = getPlaylists();
-    if (playlists.length === 0) {
-      const name = window.prompt("No playlist yet. Create playlist name:");
-      if (!name) return;
-      try {
-        const created = createPlaylist(name);
-        addEpisodeToPlaylist(created.id, episodeId);
-        addToast(`Added to ${created.name}`, "success");
-      } catch (e: unknown) {
-        addToast("Failed to add playlist: " + getErrorMessage(e), "error");
-      }
-      return;
-    }
-
-    const options = playlists
-      .map((pl, idx) => `${idx + 1}. ${pl.name}`)
-      .join("\n");
-    const input = window.prompt(
-      `Choose playlist number:\n${options}\n\nOr type a new playlist name.`,
-    );
-    if (!input) return;
-
-    const pick = Number.parseInt(input, 10);
-    try {
-      if (!Number.isNaN(pick) && pick >= 1 && pick <= playlists.length) {
-        const selected = playlists[pick - 1];
-        addEpisodeToPlaylist(selected.id, episodeId);
-        addToast(`Added to ${selected.name}`, "success");
-      } else {
-        const created = createPlaylist(input);
-        addEpisodeToPlaylist(created.id, episodeId);
-        addToast(`Added to ${created.name}`, "success");
-      }
-    } catch (e: unknown) {
-      addToast("Failed to add playlist: " + getErrorMessage(e), "error");
     }
   }
 
@@ -1093,24 +1051,16 @@ export default function PodcastFeedDetailView() {
                         : "bg-[#0a0f0d]/40 backdrop-blur-sm border-white/5 hover:border-white/10 hover:bg-white/[0.03]"
                   }`}
                 >
-                  <button
+                  <PodcastCoverPlayButton
+                    imageUrl={episode.image_url || feed.image_url}
+                    isCurrent={isCurrentEpisode}
+                    isPlaying={isCurrentEpisode && isPlaying}
+                    isFinished={isFinished}
                     onClick={() => handlePlayEpisode(episode)}
-                    className={`flex-shrink-0 w-10 h-10 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center transition-all duration-300 ${
-                      isCurrentEpisode
-                        ? "bg-accent-primary text-black shadow-lg shadow-accent-primary/30 scale-105"
-                        : isFinished
-                          ? "bg-transparent border border-accent-success/30 text-accent-success hover:bg-accent-success/10"
-                          : "bg-white/5 border border-white/10 text-white hover:bg-white/10 hover:border-white/20 hover:scale-105"
-                    }`}
-                  >
-                    {isCurrentEpisode && isPlaying ? (
-                      <Pause className="w-4 h-4 sm:w-5 sm:h-5 fill-current" />
-                    ) : isFinished && !isCurrentEpisode ? (
-                      <Check className="w-4 h-4 sm:w-5 sm:h-5 stroke-[3]" />
-                    ) : (
-                      <Play className="w-4 h-4 sm:w-5 sm:h-5 ml-0.5 fill-current" />
-                    )}
-                  </button>
+                    sizeClassName="w-10 h-10 sm:w-12 sm:h-12"
+                    iconClassName="w-4 h-4 sm:w-5 sm:h-5"
+                    fallbackIconClassName="w-4 h-4"
+                  />
 
                   <div className="flex-1 min-w-0 py-1">
                     <h3
@@ -1201,7 +1151,7 @@ export default function PodcastFeedDetailView() {
                     <button
                       onClick={(e: MouseEvent<HTMLButtonElement>) => {
                         e.stopPropagation();
-                        handleAddToPlaylist(episode.id);
+                        setPlaylistDialogEpisode(episode);
                       }}
                       className="flex-shrink-0 p-2 sm:p-3 text-white/40 hover:text-accent-primary hover:bg-accent-primary/10 rounded-lg transition-colors border border-transparent hover:border-accent-primary/20"
                       title="Add to playlist"
@@ -1267,6 +1217,13 @@ export default function PodcastFeedDetailView() {
       >
         <p>{confirmAction?.message}</p>
       </Dialog>
+
+      <PlaylistPickerDialog
+        isOpen={playlistDialogEpisode !== null}
+        onClose={() => setPlaylistDialogEpisode(null)}
+        episodeId={playlistDialogEpisode?.id ?? null}
+        episodeTitle={playlistDialogEpisode?.title}
+      />
     </div>
   );
 }

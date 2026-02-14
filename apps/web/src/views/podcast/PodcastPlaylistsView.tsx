@@ -8,7 +8,7 @@ import {
   getPlaylists,
   type PodcastPlaylist,
 } from "../../utils/podcastPlaylists";
-import { useToast } from "../../components/ui";
+import { Dialog, DialogButton, Input, useToast } from "../../components/ui";
 
 const getErrorMessage = (error: unknown): string => {
   if (error instanceof Error) return error.message;
@@ -19,6 +19,11 @@ export default function PodcastPlaylistsView() {
   const navigate = useNavigate();
   const { addToast } = useToast();
   const [version, setVersion] = useState(0);
+  const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [newPlaylistName, setNewPlaylistName] = useState("");
+  const [deleteTarget, setDeleteTarget] = useState<PodcastPlaylist | null>(
+    null,
+  );
 
   const playlists = useMemo(() => {
     void version;
@@ -26,24 +31,25 @@ export default function PodcastPlaylistsView() {
   }, [version]);
 
   function handleCreate() {
-    const name = window.prompt("Playlist name");
+    const name = newPlaylistName.trim();
     if (!name) return;
     try {
       const playlist = createPlaylist(name);
       setVersion((v) => v + 1);
       addToast("Playlist created", "success");
+      setIsCreateOpen(false);
+      setNewPlaylistName("");
       navigate(`/podcast/playlist/${playlist.id}`);
     } catch (error: unknown) {
       addToast("Failed to create playlist: " + getErrorMessage(error), "error");
     }
   }
 
-  function handleDelete(playlist: PodcastPlaylist) {
-    if (!window.confirm(`Delete playlist \"${playlist.name}\"?`)) {
-      return;
-    }
-    deletePlaylist(playlist.id);
+  function handleDeleteConfirmed() {
+    if (!deleteTarget) return;
+    deletePlaylist(deleteTarget.id);
     setVersion((v) => v + 1);
+    setDeleteTarget(null);
     addToast("Playlist deleted", "info");
   }
 
@@ -52,7 +58,7 @@ export default function PodcastPlaylistsView() {
       <div className="flex items-center justify-between mb-6">
         <p className="text-white/50 text-sm">{playlists.length} playlists</p>
         <button
-          onClick={handleCreate}
+          onClick={() => setIsCreateOpen(true)}
           className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-accent-primary text-black font-semibold"
         >
           <Plus className="w-4 h-4" />
@@ -88,7 +94,7 @@ export default function PodcastPlaylistsView() {
               </button>
 
               <button
-                onClick={() => handleDelete(playlist)}
+                onClick={() => setDeleteTarget(playlist)}
                 className="p-2 rounded-lg text-red-400 hover:bg-red-500/10"
                 title="Delete playlist"
               >
@@ -98,6 +104,63 @@ export default function PodcastPlaylistsView() {
           ))}
         </div>
       )}
+
+      <Dialog
+        isOpen={isCreateOpen}
+        onClose={() => setIsCreateOpen(false)}
+        title="Create Playlist"
+        footer={
+          <>
+            <DialogButton
+              variant="ghost"
+              onClick={() => setIsCreateOpen(false)}
+            >
+              Cancel
+            </DialogButton>
+            <DialogButton
+              variant="primary"
+              onClick={handleCreate}
+              disabled={!newPlaylistName.trim()}
+            >
+              Create
+            </DialogButton>
+          </>
+        }
+      >
+        <Input
+          placeholder="Playlist name"
+          value={newPlaylistName}
+          onChange={(e) => setNewPlaylistName(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
+              e.preventDefault();
+              handleCreate();
+            }
+          }}
+        />
+      </Dialog>
+
+      <Dialog
+        isOpen={deleteTarget !== null}
+        onClose={() => setDeleteTarget(null)}
+        title="Delete Playlist"
+        footer={
+          <>
+            <DialogButton variant="ghost" onClick={() => setDeleteTarget(null)}>
+              Cancel
+            </DialogButton>
+            <DialogButton variant="danger" onClick={handleDeleteConfirmed}>
+              Delete
+            </DialogButton>
+          </>
+        }
+      >
+        <p>
+          Delete playlist{" "}
+          <span className="text-white">{deleteTarget?.name}</span>? This only
+          removes the local playlist and does not affect downloaded audio.
+        </p>
+      </Dialog>
     </PodcastLayout>
   );
 }

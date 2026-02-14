@@ -7,20 +7,20 @@ import { useState, useEffect, useCallback } from "react";
 import type { MouseEvent, ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
 import {
-  Play,
-  Pause,
   Trash2,
   Loader2,
   CloudOff,
   AlertCircle,
   Music,
   RefreshCw,
-  Check,
   Download,
   BookOpen,
   Heart,
+  ListPlus,
 } from "lucide-react";
 import PodcastLayout from "../../components/podcast/PodcastLayout";
+import PodcastCoverPlayButton from "../../components/podcast/PodcastCoverPlayButton";
+import PlaylistPickerDialog from "../../components/podcast/PlaylistPickerDialog";
 import { usePodcast } from "../../context/PodcastContext";
 import { useGlobalState } from "../../context/GlobalContext";
 import * as podcastApi from "../../api/podcast";
@@ -29,12 +29,14 @@ import { useToast, Dialog, DialogButton } from "../../components/ui";
 interface PodcastFeed {
   id: number;
   title: string;
+  image_url?: string | null;
 }
 
 interface PodcastEpisode {
   id: number;
   title: string;
   audio_url: string;
+  image_url?: string | null;
   duration_seconds?: number;
   current_position?: number;
   is_finished?: boolean;
@@ -135,6 +137,8 @@ export default function PodcastDownloadsView() {
   const [favoriteLoading, setFavoriteLoading] = useState<
     Record<number, boolean>
   >({});
+  const [playlistDialogEpisode, setPlaylistDialogEpisode] =
+    useState<PodcastEpisode | null>(null);
 
   const loadFavoriteIds = useCallback(async () => {
     try {
@@ -607,59 +611,15 @@ export default function PodcastDownloadsView() {
                         : "bg-[#0a0f0d]/40 backdrop-blur-sm border-white/5 hover:border-white/10 hover:bg-white/[0.03]"
                   }`}
                 >
-                  {/* Play button or Download Spinner */}
-                  <div className="flex-shrink-0 pt-0">
-                    {isDownloading ? (
-                      <div className="w-10 h-10 sm:w-12 sm:h-12 flex items-center justify-center bg-white/5 rounded-xl border border-white/10">
-                        <div className="relative w-6 h-6 sm:w-8 sm:h-8">
-                          <svg className="w-6 h-6 sm:w-8 sm:h-8 -rotate-90">
-                            <circle
-                              cx="50%"
-                              cy="50%"
-                              r="45%"
-                              strokeWidth="3"
-                              stroke="currentColor"
-                              fill="none"
-                              className="text-white/10"
-                            />
-                            <circle
-                              cx="50%"
-                              cy="50%"
-                              r="45%"
-                              strokeWidth="3"
-                              stroke="currentColor"
-                              fill="none"
-                              className="text-accent-primary"
-                              strokeDasharray={`${dState.progress} 100`}
-                              strokeLinecap="round"
-                            />
-                          </svg>
-                          <span className="absolute inset-0 flex items-center justify-center text-[7px] font-mono text-accent-primary font-bold">
-                            {dState.progress}%
-                          </span>
-                        </div>
-                      </div>
-                    ) : (
-                      <button
-                        onClick={() => handlePlay(item)}
-                        className={`w-10 h-10 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center transition-all duration-300 ${
-                          isFinished
-                            ? "bg-transparent border border-accent-success/30 text-accent-success hover:bg-accent-success/10"
-                            : isCurrentEpisode
-                              ? "bg-accent-primary text-black shadow-lg shadow-accent-primary/30 scale-105"
-                              : "bg-white/5 border border-white/10 text-white hover:bg-white/10 hover:border-white/20 hover:scale-105 shadow-lg shadow-black/20"
-                        }`}
-                      >
-                        {isCurrentAndPlaying ? (
-                          <Pause className="w-4 h-4 sm:w-5 sm:h-5 fill-current" />
-                        ) : isFinished ? (
-                          <Check className="w-4 h-4 sm:w-5 sm:h-5 stroke-[3]" />
-                        ) : (
-                          <Play className="w-4 h-4 sm:w-5 sm:h-5 ml-0.5 fill-current" />
-                        )}
-                      </button>
-                    )}
-                  </div>
+                  <PodcastCoverPlayButton
+                    imageUrl={ep.image_url || item.feed.image_url}
+                    isCurrent={isCurrentEpisode}
+                    isPlaying={isCurrentAndPlaying}
+                    isFinished={isFinished}
+                    isDownloading={isDownloading}
+                    downloadProgress={dState?.progress ?? 0}
+                    onClick={() => handlePlay(item)}
+                  />
 
                   {/* Episode info */}
                   <div className="flex-1 min-w-0 py-1">
@@ -742,6 +702,17 @@ export default function PodcastDownloadsView() {
                       />
                     </button>
 
+                    <button
+                      onClick={(e: MouseEvent<HTMLButtonElement>) => {
+                        e.stopPropagation();
+                        setPlaylistDialogEpisode(ep);
+                      }}
+                      className="flex-shrink-0 p-3 text-white/30 hover:text-accent-primary hover:bg-accent-primary/10 rounded-xl transition-colors border border-transparent hover:border-accent-primary/20"
+                      title="Add to playlist"
+                    >
+                      <ListPlus className="w-5 h-5" />
+                    </button>
+
                     {/* Intensive Listening button - only show for completed downloads */}
                     {!isDownloading &&
                       !isError &&
@@ -805,6 +776,13 @@ export default function PodcastDownloadsView() {
             be undone.
           </p>
         </Dialog>
+
+        <PlaylistPickerDialog
+          isOpen={playlistDialogEpisode !== null}
+          onClose={() => setPlaylistDialogEpisode(null)}
+          episodeId={playlistDialogEpisode?.id ?? null}
+          episodeTitle={playlistDialogEpisode?.title}
+        />
       </div>
     </PodcastLayout>
   );

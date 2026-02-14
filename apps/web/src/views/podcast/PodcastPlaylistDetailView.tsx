@@ -4,13 +4,14 @@ import {
   ArrowLeft,
   ArrowDown,
   ArrowUp,
+  Check,
   Pencil,
-  Play,
   Trash2,
 } from "lucide-react";
 import PodcastLayout from "../../components/podcast/PodcastLayout";
+import PodcastCoverPlayButton from "../../components/podcast/PodcastCoverPlayButton";
 import * as podcastApi from "../../api/podcast";
-import { useToast } from "../../components/ui";
+import { Dialog, DialogButton, Input, useToast } from "../../components/ui";
 import { usePodcast } from "../../context/PodcastContext";
 import {
   getPlaylistById,
@@ -45,10 +46,12 @@ export default function PodcastPlaylistDetailView() {
   const { playlistId = "" } = useParams();
   const navigate = useNavigate();
   const { addToast } = useToast();
-  const { playEpisode } = usePodcast();
+  const { playEpisode, currentEpisode, isPlaying } = usePodcast();
   const [playlist, setPlaylist] = useState<PodcastPlaylist | null>(null);
   const [items, setItems] = useState<EpisodeBatchItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isRenameOpen, setIsRenameOpen] = useState(false);
+  const [renameValue, setRenameValue] = useState("");
 
   const episodeIds = useMemo(
     () => playlist?.items.map((item) => item.episodeId) ?? [],
@@ -100,12 +103,11 @@ export default function PodcastPlaylistDetailView() {
   }
 
   function handleRename() {
-    if (!playlist) return;
-    const name = window.prompt("Rename playlist", playlist.name);
-    if (!name) return;
+    if (!playlist || !renameValue.trim()) return;
     try {
-      renamePlaylist(playlist.id, name);
+      renamePlaylist(playlist.id, renameValue.trim());
       refreshPlaylist();
+      setIsRenameOpen(false);
       addToast("Playlist renamed", "success");
     } catch (error: unknown) {
       addToast("Rename failed: " + getErrorMessage(error), "error");
@@ -154,7 +156,10 @@ export default function PodcastPlaylistDetailView() {
         </button>
 
         <button
-          onClick={handleRename}
+          onClick={() => {
+            setRenameValue(playlist.name);
+            setIsRenameOpen(true);
+          }}
           className="inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-white/10 text-white/70 hover:text-white"
         >
           <Pencil className="w-4 h-4" />
@@ -170,69 +175,107 @@ export default function PodcastPlaylistDetailView() {
         </div>
       ) : (
         <div className="space-y-3">
-          {items.map((item, index) => (
-            <div
-              key={item.episode.id}
-              className="flex items-center gap-3 p-3 rounded-xl bg-white/[0.02] border border-white/10"
-            >
-              <span className="w-6 text-center text-white/40 text-xs">
-                {index + 1}
-              </span>
-              <div className="w-12 h-12 rounded-lg bg-white/5 overflow-hidden shrink-0">
-                {item.episode.image_url || item.feed.image_url ? (
-                  <img
-                    src={item.episode.image_url || item.feed.image_url || ""}
-                    alt=""
-                    className="w-full h-full object-cover"
-                    referrerPolicy="no-referrer"
-                  />
-                ) : null}
+          {items.map((item, index) => {
+            const isCurrent = currentEpisode?.id === item.episode.id;
+            const isCurrentAndPlaying = isCurrent && isPlaying;
+
+            return (
+              <div
+                key={item.episode.id}
+                className="flex items-center gap-3 p-3 rounded-xl bg-white/[0.02] border border-white/10"
+              >
+                <span className="w-6 text-center text-white/40 text-xs">
+                  {index + 1}
+                </span>
+                <PodcastCoverPlayButton
+                  imageUrl={item.episode.image_url || item.feed.image_url}
+                  isCurrent={isCurrent}
+                  isPlaying={isCurrentAndPlaying}
+                  onClick={() => playEpisode(item.episode, item.feed, null)}
+                  sizeClassName="w-12 h-12"
+                  iconClassName="w-3.5 h-3.5"
+                  fallbackIconClassName="w-4 h-4"
+                />
+
+                <div className="flex-1 min-w-0">
+                  <p className="text-white text-sm truncate">
+                    {item.episode.title}
+                  </p>
+                  <p className="text-white/50 text-xs truncate">
+                    {item.feed.title}
+                  </p>
+                </div>
+
+                {isCurrent && (
+                  <span className="px-2 py-1 rounded-md text-[10px] font-mono text-accent-primary border border-accent-primary/30 bg-accent-primary/10">
+                    <Check className="w-3 h-3 inline mr-1" />
+                    NOW
+                  </span>
+                )}
+
+                <button
+                  onClick={() => handleMove(item.episode.id, "up")}
+                  className="p-2 rounded-lg text-white/60 hover:text-white hover:bg-white/10"
+                  title="Move up"
+                >
+                  <ArrowUp className="w-4 h-4" />
+                </button>
+
+                <button
+                  onClick={() => handleMove(item.episode.id, "down")}
+                  className="p-2 rounded-lg text-white/60 hover:text-white hover:bg-white/10"
+                  title="Move down"
+                >
+                  <ArrowDown className="w-4 h-4" />
+                </button>
+
+                <button
+                  onClick={() => handleRemoveEpisode(item.episode.id)}
+                  className="p-2 rounded-lg text-red-400 hover:bg-red-500/10"
+                  title="Remove"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
               </div>
-
-              <div className="flex-1 min-w-0">
-                <p className="text-white text-sm truncate">
-                  {item.episode.title}
-                </p>
-                <p className="text-white/50 text-xs truncate">
-                  {item.feed.title}
-                </p>
-              </div>
-
-              <button
-                onClick={() => playEpisode(item.episode, item.feed, null)}
-                className="p-2 rounded-lg text-accent-primary hover:bg-accent-primary/10"
-                title="Play"
-              >
-                <Play className="w-4 h-4" />
-              </button>
-
-              <button
-                onClick={() => handleMove(item.episode.id, "up")}
-                className="p-2 rounded-lg text-white/60 hover:text-white hover:bg-white/10"
-                title="Move up"
-              >
-                <ArrowUp className="w-4 h-4" />
-              </button>
-
-              <button
-                onClick={() => handleMove(item.episode.id, "down")}
-                className="p-2 rounded-lg text-white/60 hover:text-white hover:bg-white/10"
-                title="Move down"
-              >
-                <ArrowDown className="w-4 h-4" />
-              </button>
-
-              <button
-                onClick={() => handleRemoveEpisode(item.episode.id)}
-                className="p-2 rounded-lg text-red-400 hover:bg-red-500/10"
-                title="Remove"
-              >
-                <Trash2 className="w-4 h-4" />
-              </button>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
+
+      <Dialog
+        isOpen={isRenameOpen}
+        onClose={() => setIsRenameOpen(false)}
+        title="Rename Playlist"
+        footer={
+          <>
+            <DialogButton
+              variant="ghost"
+              onClick={() => setIsRenameOpen(false)}
+            >
+              Cancel
+            </DialogButton>
+            <DialogButton
+              variant="primary"
+              onClick={handleRename}
+              disabled={!renameValue.trim()}
+            >
+              Save
+            </DialogButton>
+          </>
+        }
+      >
+        <Input
+          placeholder="Playlist name"
+          value={renameValue}
+          onChange={(e) => setRenameValue(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
+              e.preventDefault();
+              handleRename();
+            }
+          }}
+        />
+      </Dialog>
     </PodcastLayout>
   );
 }
