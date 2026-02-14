@@ -1,7 +1,7 @@
 import { View, Text, FlatList, TouchableOpacity, Image, TextInput, ActivityIndicator, ScrollView } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useSubscriptions, useTrendingPodcasts, usePodcastSearch } from "@nce/shared";
-import { Search, Mic, ChevronRight, Download } from "lucide-react-native";
+import { Search, Mic, Download } from "lucide-react-native";
 import { useState } from "react";
 import { useRouter } from "expo-router";
 
@@ -62,7 +62,10 @@ export default function PodcastScreen() {
               >
                   <Download size={20} color="#00FF94" />
               </TouchableOpacity>
-              <TouchableOpacity className="bg-bg-surface p-2 rounded-full border border-border-default">
+              <TouchableOpacity
+                onPress={() => router.push("/(tabs)/voice")}
+                className="bg-bg-surface p-2 rounded-full border border-border-default"
+              >
                   <Mic size={20} color="#00FF94" />
               </TouchableOpacity>
             </View>

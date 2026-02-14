@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from "react";
+import React, { useState, useMemo } from "react";
 import {
   View,
   Text,
@@ -67,22 +67,6 @@ export function DictionaryModal({
       return "Collins";
     return defaultTab;
   }, [activeTab, inspectorData, defaultTab]);
-
-  // Debug logging
-  useMemo(() => {
-    if (inspectorData) {
-      console.log(
-        "[DictionaryModal] inspectorData:",
-        JSON.stringify({
-          found: inspectorData.found,
-          ldoceFound: inspectorData.ldoce?.found,
-          collinsFound: inspectorData.collins?.found,
-          contextExplanation: contextExplanation?.substring(0, 50),
-          isExplaining,
-        }),
-      );
-    }
-  }, [inspectorData, contextExplanation, isExplaining]);
 
   return (
     <Modal

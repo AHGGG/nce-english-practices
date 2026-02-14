@@ -2,15 +2,12 @@ import {
   View,
   Text,
   TouchableOpacity,
-  ActivityIndicator,
   ScrollView,
-  Platform,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useState, useRef, useEffect } from "react";
 import {
   Mic,
-  MicOff,
   Volume2,
   X,
   MessageSquare,
@@ -39,7 +36,6 @@ export default function VoiceLabScreen() {
     "disconnected" | "connecting" | "ready" | "listening" | "speaking"
   >("disconnected");
   const [transcripts, setTranscripts] = useState<TranscriptItem[]>([]);
-  const [currentText, setCurrentText] = useState("");
   const scrollViewRef = useRef<ScrollView>(null);
   
   // Settings

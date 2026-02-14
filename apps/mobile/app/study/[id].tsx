@@ -455,7 +455,6 @@ function useStreamingSimplify() {
       setSimplifyStage(params.stage);
 
       const url = `${getApiBaseUrl()}/api/sentence-study/simplify`;
-      console.log("[streaming-simplify] Creating SSE for:", url);
 
       const es = new EventSource(url, {
         method: "POST",
@@ -469,10 +468,6 @@ function useStreamingSimplify() {
 
       eventSourceRef.current = es;
 
-      es.addEventListener("open", () => {
-        console.log("[streaming-simplify] Connection opened");
-      });
-
       es.addEventListener("message", (event) => {
         const data = event.data;
         if (!data) return;
@@ -480,16 +475,11 @@ function useStreamingSimplify() {
         try {
           const parsed = JSON.parse(data);
           if (parsed.type === "chunk") {
-            console.log(
-              "[streaming-simplify] Received chunk:",
-              parsed.content?.substring(0, 50),
-            );
             const newText = (simplifiedTextRef.current || "") + parsed.content;
             simplifiedTextRef.current = newText;
             setSimplifiedText(newText);
             onUpdate(newText, params.stage, false);
           } else if (parsed.type === "done") {
-            console.log("[streaming-simplify] Done, stage:", parsed.stage);
             const finalStage = parsed.stage || params.stage;
             setSimplifyStage(finalStage);
             setIsSimplifying(false);
@@ -506,7 +496,6 @@ function useStreamingSimplify() {
       });
 
       es.addEventListener("close" as any, () => {
-        console.log("[streaming-simplify] Connection closed");
         setIsSimplifying(false);
       });
     },
@@ -561,7 +550,6 @@ function useStreamingOverview() {
       setOverview(null);
 
       const url = `${getApiBaseUrl()}/api/sentence-study/overview`;
-      console.log("[streaming-overview] Creating SSE for:", url);
 
       const es = new EventSource(url, {
         method: "POST",
@@ -579,17 +567,12 @@ function useStreamingOverview() {
 
       eventSourceRef.current = es;
 
-      es.addEventListener("open", () => {
-        console.log("[streaming-overview] Connection opened");
-      });
-
       es.addEventListener("message", (event) => {
         const data = event.data;
         if (!data) return;
 
         try {
           const parsed = JSON.parse(data);
-          console.log("[streaming-overview] Message type:", parsed.type);
 
           if (parsed.type === "chunk") {
             const newText = (overviewRef.current || "") + parsed.content;
@@ -597,12 +580,6 @@ function useStreamingOverview() {
             setOverviewStream(newText);
             onUpdate(newText, false);
           } else if (parsed.type === "done") {
-            console.log(
-              "[streaming-overview] Done, has overview:",
-              !!parsed.overview,
-              "cached:",
-              parsed.cached,
-            );
             // parsed.overview is the full object {summary_en, summary_zh, ...}
             if (parsed.overview) {
               setOverview({ overview: parsed.overview });
@@ -629,7 +606,6 @@ function useStreamingOverview() {
       });
 
       es.addEventListener("close" as any, () => {
-        console.log("[streaming-overview] Connection closed");
         setIsLoading(false);
       });
     },
@@ -662,9 +638,6 @@ export default function StudyScreen() {
   const router = useRouter();
   const pathname = usePathname();
 
-  console.log("[StudyScreen] Local params:", JSON.stringify(params));
-  console.log("[StudyScreen] Pathname:", pathname);
-
   let sourceId: string | undefined;
 
   if (params.id && params.id !== "undefined") {
@@ -673,11 +646,8 @@ export default function StudyScreen() {
     const match = pathname.match(/^\/study\/(.+)$/);
     if (match && match[1]) {
       sourceId = decodeURIComponent(match[1]);
-      console.log("[StudyScreen] Extracted sourceId from path:", sourceId);
     }
   }
-
-  console.log("[StudyScreen] Final sourceId:", sourceId);
 
   if (!sourceId) {
     return (
@@ -735,27 +705,14 @@ export default function StudyScreen() {
   // Fetch overview when entering OVERVIEW view
   const overviewRequested = useRef(false);
   useEffect(() => {
-    console.log(
-      "[StudyScreen] useEffect Overview: view=",
-      view,
-      "article=",
-      article?.title?.substring(0, 30),
-    );
-
     if (view === "OVERVIEW" && article?.title && article?.full_text) {
       if (!overviewRequested.current) {
         overviewRequested.current = true;
-        console.log("[StudyScreen] Triggering streamOverview...");
         streamOverview(
           article.title,
           article.full_text,
           totalSentences || 0,
-          (stream, done) => {
-            console.log(
-              "[StudyScreen] Overview stream:",
-              done ? "done" : "streaming...",
-            );
-          },
+          () => {},
         );
       }
     } else if (view !== "OVERVIEW") {
@@ -770,12 +727,6 @@ export default function StudyScreen() {
   ]);
 
   const onWordClickWrapper = (word: string) => {
-    console.log(
-      "[StudyScreen] onWordClickWrapper:",
-      word,
-      "sentence:",
-      currentSentence?.text,
-    );
     explainer.handleWordClick(word, currentSentence?.text || "");
     setModalVisible(true);
   };
@@ -796,18 +747,23 @@ export default function StudyScreen() {
     }
   }, []);
 
+  const handleAddToReview = useCallback(async (word: string) => {
+    const lowerWord = word.toLowerCase();
+    try {
+      await proficiencyApi.updateWordStatus(lowerWord, "learning");
+      handleCloseModal();
+    } catch (e) {
+      console.error("Failed to add word to review", e);
+      Alert.alert("Error", "Failed to add word to review");
+    }
+  }, []);
+
   const handleUnclear = useCallback(() => {
     if (!currentSentence) return;
 
     // If no simplification yet (stage 0), start at stage 1
     // Otherwise, go to next stage
     const nextStage = simplifyStage === 0 ? 1 : Math.min(simplifyStage + 1, 4);
-    console.log(
-      "[StudyScreen] handleUnclear: currentStage=",
-      simplifyStage,
-      "nextStage=",
-      nextStage,
-    );
 
     const params = {
       sentence: currentSentence.text,
@@ -817,16 +773,7 @@ export default function StudyScreen() {
       next_sentence: null,
     };
 
-    streamSimplify(params, (text, stage, done) => {
-      console.log(
-        "[StudyScreen] Simplify update: text.length=",
-        text.length,
-        "stage=",
-        stage,
-        "done=",
-        done,
-      );
-    });
+    streamSimplify(params, () => {});
   }, [currentSentence, simplifyStage, streamSimplify]);
 
   // Wrapped handleClear to reset simplification state
@@ -841,15 +788,7 @@ export default function StudyScreen() {
 
   const handleUnclearResponse = useCallback(
     async (gotIt: boolean) => {
-      console.log(
-        "[StudyScreen] handleUnclearResponse: gotIt=",
-        gotIt,
-        "simplifyStage=",
-        simplifyStage,
-      );
-
       if (gotIt) {
-        console.log("[StudyScreen] Recording clear and advancing...");
         try {
           await handleClear();
           // Reset simplification state when moving to next sentence
@@ -858,11 +797,10 @@ export default function StudyScreen() {
           console.error("[StudyScreen] handleClear failed:", e);
         }
       } else {
-        console.log("[StudyScreen] Going to next stage...");
         handleUnclear();
       }
     },
-    [handleClear, handleUnclear, simplifyStage, resetSimplify],
+    [handleClear, handleUnclear, resetSimplify],
   );
 
   return (
@@ -933,6 +871,7 @@ export default function StudyScreen() {
         onExplainStyle={explainer.changeExplainStyle}
         onGenerateImage={explainer.generateImage}
         onMarkAsKnown={handleMarkAsKnown}
+        onAddToReview={handleAddToReview}
         onPlayAudio={() => {}}
         currentSentenceContext={explainer.currentSentenceContext}
       />

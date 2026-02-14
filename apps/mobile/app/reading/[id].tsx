@@ -44,25 +44,6 @@ function ReadingScreen() {
   // Hooks
   const { article, isLoading, tracker, refetch } = useArticleReader(id);
 
-  // Debug: log article structure
-  useEffect(() => {
-    if (article) {
-      console.log(
-        "[ReadingScreen] Article loaded:",
-        JSON.stringify(
-          {
-            id: article.id,
-            title: article.title,
-            source_id: article.source_id,
-            metadata: article.metadata,
-          },
-          null,
-          2,
-        ),
-      );
-    }
-  }, [article]);
-
   const explainer = useWordExplainer();
   const settings = useSettingsStore();
 
@@ -179,6 +160,17 @@ function ReadingScreen() {
     }
   }, []);
 
+  const handleAddToReview = useCallback(async (word: string) => {
+    const lowerWord = word.toLowerCase();
+    try {
+      await proficiencyApi.updateWordStatus(lowerWord, "learning");
+      handleCloseModal();
+    } catch (e) {
+      console.error("Failed to add word to review", e);
+      Alert.alert("Error", "Failed to add word to review");
+    }
+  }, []);
+
   const handleCloseModal = () => {
     setModalVisible(false);
     explainer.closeInspector();
@@ -252,8 +244,6 @@ function ReadingScreen() {
           <TouchableOpacity
             className="p-2 mr-1"
             onPress={() => {
-              console.log("[ReadingScreen] STUDY button clicked");
-
               // Construct source_id from article or URL params
               let studySourceId: string;
 
@@ -275,10 +265,6 @@ function ReadingScreen() {
                 return;
               }
 
-              console.log(
-                "[ReadingScreen] Navigating to study with sourceId:",
-                studySourceId,
-              );
               router.push(`/study/${encodeURIComponent(studySourceId)}`);
             }}
           >
@@ -404,6 +390,7 @@ function ReadingScreen() {
         onExplainStyle={explainer.changeExplainStyle}
         onGenerateImage={explainer.generateImage}
         onMarkAsKnown={handleMarkAsKnown}
+        onAddToReview={handleAddToReview}
         onPlayAudio={playTtsAudio}
         currentSentenceContext={explainer.currentSentenceContext}
       />

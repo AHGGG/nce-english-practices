@@ -14,12 +14,6 @@ export default function PodcastDetailScreen() {
   const { data, isLoading, error } = usePodcastFeed(feedId);
   const { subscribe, unsubscribe, isSubscribing } = usePodcastMutations();
 
-  // Debug logging
-  console.log("[PodcastDetail] Feed ID:", feedId);
-  console.log("[PodcastDetail] Loading:", isLoading);
-  console.log("[PodcastDetail] Error:", error);
-  console.log("[PodcastDetail] Data:", data ? "Loaded" : "No data");
-
   if (error) {
     return (
       <View className="flex-1 justify-center items-center bg-bg-base px-4">
