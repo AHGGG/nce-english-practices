@@ -621,6 +621,8 @@ export default function PodcastDownloadsView() {
               const dState = downloadState[ep.id];
               const isDownloading = dState?.status === "downloading";
               const isError = dState?.status === "error";
+              const mobileTranscriptStatus =
+                ep.transcript_status || transcriptStatus[ep.id] || "none";
 
               // Calculate completion status
               const isCurrentEp = currentEpisode?.id === ep.id;
@@ -712,15 +714,31 @@ export default function PodcastDownloadsView() {
                         void handleIntensiveListening(ep);
                         setSwipedEpisodeId(null);
                       }}
-                      disabled={isDownloading}
+                      disabled={
+                        isDownloading || mobileTranscriptStatus === "processing"
+                      }
                       className={`w-9 h-9 rounded-lg flex items-center justify-center border ${
                         isDownloading
                           ? "text-white/20 bg-white/5 border-white/5"
-                          : "text-accent-primary bg-accent-primary/10 border-accent-primary/25"
+                          : mobileTranscriptStatus === "completed"
+                            ? "text-accent-primary bg-accent-primary/10 border-accent-primary/25"
+                            : mobileTranscriptStatus === "pending" ||
+                                mobileTranscriptStatus === "processing"
+                              ? "text-amber-300 bg-amber-500/10 border-amber-500/25"
+                              : "text-white/35 bg-white/5 border-white/10"
                       }`}
-                      title="Intensive listening"
+                      title={
+                        mobileTranscriptStatus === "completed"
+                          ? "Enter intensive listening"
+                          : "Generate transcript"
+                      }
                     >
-                      <BookOpen className="w-4 h-4" />
+                      {mobileTranscriptStatus === "pending" ||
+                      mobileTranscriptStatus === "processing" ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <BookOpen className="w-4 h-4" />
+                      )}
                     </button>
 
                     <button
