@@ -421,7 +421,7 @@ const ReaderView = ({
         </div>
 
         {/* Action Group */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 shrink-0">
           {/* Sweep Button */}
           <button
             onClick={onSweep}

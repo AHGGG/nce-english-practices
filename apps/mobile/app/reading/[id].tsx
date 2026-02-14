@@ -240,7 +240,7 @@ function ReadingScreen() {
           {article.title}
         </Text>
 
-        <View className="flex-row items-center">
+        <View className="flex-row items-center shrink-0">
           <TouchableOpacity
             className="p-2 mr-1"
             onPress={() => {
@@ -272,7 +272,7 @@ function ReadingScreen() {
           </TouchableOpacity>
 
           <TouchableOpacity
-            className="p-2 -mr-2"
+            className="p-2"
             onPress={() => setSettingsVisible(true)}
           >
             <Settings color="#E0E0E0" size={24} />
