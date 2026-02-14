@@ -68,11 +68,7 @@ export const useDownloadStore = create<DownloadState>()(
           activeDownloads: {
             ...state.activeDownloads,
             [episodeId]: {
-              ...(state.activeDownloads[episodeId] || {
-                episodeId,
-                progress: 0,
-                status: "pending",
-              }),
+              ...state.activeDownloads[episodeId],
               ...update,
             },
           },

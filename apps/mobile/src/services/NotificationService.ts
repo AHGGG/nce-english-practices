@@ -7,6 +7,9 @@ import { useSettingsStore } from "@nce/store";
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
     shouldShowAlert: true,
+    // Expo SDK 54 NotificationBehavior includes banner/list flags
+    shouldShowBanner: true,
+    shouldShowList: true,
     shouldPlaySound: true,
     shouldSetBadge: false,
   }),
