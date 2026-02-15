@@ -40,6 +40,9 @@ const WeakPointsView = () => {
   const [debouncedQuery, setDebouncedQuery] = useState("");
   const [openMenu, setOpenMenu] = useState<"type" | "sort" | null>(null);
   const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set());
+  const [expandedContexts, setExpandedContexts] = useState<Set<string>>(
+    new Set(),
+  );
 
   const filterMenuRef = useRef<HTMLDivElement | null>(null);
 
@@ -110,6 +113,7 @@ const WeakPointsView = () => {
   useEffect(() => {
     loadItems({ append: false });
     setExpandedItems(new Set());
+    setExpandedContexts(new Set());
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [typeFilter, sort, debouncedQuery]);
 
@@ -437,28 +441,56 @@ const WeakPointsView = () => {
 
                     {item.sample_contexts.length > 0 && (
                       <div className="mt-2 space-y-1.5">
-                        {item.sample_contexts.map((ctx, idx) => (
-                          <div
-                            key={`${item.text}:ctx:${idx}`}
-                            className="rounded-lg border border-white/10 bg-black/20 p-2.5"
-                          >
-                            <div className="text-[10px] uppercase tracking-widest text-white/40 mb-1 flex items-center gap-1.5">
-                              <BookOpen className="w-3 h-3" />
-                              {ctx.source_type}
-                              {ctx.source_id && (
-                                <span className="inline-flex items-center gap-1">
-                                  <Link2 className="w-3 h-3" />
-                                  <span className="truncate max-w-[240px]">
-                                    {ctx.source_id}
+                        {item.sample_contexts.map((ctx, idx) => {
+                          const contextKey = `${item.text}:ctx:${idx}`;
+                          const isExpanded = expandedContexts.has(contextKey);
+                          const needsTruncation =
+                            ctx.context_sentence.length > 200;
+                          return (
+                            <div
+                              key={contextKey}
+                              className="rounded-lg border border-white/10 bg-black/20 p-2.5"
+                            >
+                              <div className="text-[10px] uppercase tracking-widest text-white/40 mb-1 flex items-center gap-1.5 flex-wrap">
+                                <BookOpen className="w-3 h-3" />
+                                {ctx.source_type}
+                                {ctx.source_id && (
+                                  <span className="inline-flex items-center gap-1">
+                                    <Link2 className="w-3 h-3" />
+                                    <span className="truncate max-w-[240px]">
+                                      {ctx.source_id}
+                                    </span>
                                   </span>
-                                </span>
-                              )}
+                                )}
+                              </div>
+                              <p className="text-[13px] md:text-sm text-white/75 leading-relaxed">
+                                {!isExpanded && needsTruncation
+                                  ? ctx.context_sentence.slice(0, 200) + "..."
+                                  : ctx.context_sentence}
+                                {needsTruncation && (
+                                  <button
+                                    type="button"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setExpandedContexts((prev) => {
+                                        const next = new Set(prev);
+                                        if (next.has(contextKey)) {
+                                          next.delete(contextKey);
+                                        } else {
+                                          next.add(contextKey);
+                                        }
+                                        return next;
+                                      });
+                                    }}
+                                    className="ml-1 text-accent-primary hover:underline text-xs"
+                                  >
+                                    {isExpanded ? "收起" : "展开"}
+                                  </button>
+                                )}
+                              </p>
                             </div>
-                            <p className="text-[13px] md:text-sm text-white/75 leading-relaxed line-clamp-2 md:line-clamp-3">
-                              {ctx.context_sentence}
-                            </p>
-                          </div>
-                        ))}
+                          );
+                        })}
                       </div>
                     )}
                   </>
