@@ -758,7 +758,7 @@ const ReviewQueue = () => {
         </div>
 
         {/* Glass Card */}
-        <div className="relative bg-[#0a0f0d]/80 backdrop-blur-2xl border border-white/10 rounded-2xl md:rounded-3xl overflow-hidden shadow-2xl flex flex-col min-h-0 flex-1">
+        <div className="relative bg-[#0a0f0d]/80 backdrop-blur-2xl border border-white/10 rounded-2xl md:rounded-3xl overflow-hidden shadow-2xl flex flex-col min-h-[42vh] md:min-h-[360px] flex-1">
           {/* Top Glow */}
           <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-accent-primary/0 via-accent-primary/50 to-accent-primary/0 opacity-30" />
 
@@ -882,16 +882,18 @@ const ReviewQueue = () => {
 
         {/* Action Area */}
         {showHelpPanel ? (
-          <div className="mt-2 md:mt-8 animate-in slide-in-from-bottom-5 duration-500 pb-4 md:pb-8">
-            <ExplanationCard
-              simplifiedText={helpContent}
-              simplifyStage={helpStage}
-              isSimplifying={isLoadingHelp}
-              onSimplifiedResponse={handleHelpResponse}
-              onRetry={handleRetryHelp}
-            />
+          <div className="mt-2 md:mt-6 animate-in slide-in-from-bottom-5 duration-500 pb-2 md:pb-4 flex shrink-0 min-h-0 flex-col">
+            <div className="max-h-[34vh] md:max-h-[36vh] overflow-y-auto custom-scrollbar pr-1">
+              <ExplanationCard
+                simplifiedText={helpContent}
+                simplifyStage={helpStage}
+                isSimplifying={isLoadingHelp}
+                onSimplifiedResponse={handleHelpResponse}
+                onRetry={handleRetryHelp}
+              />
+            </div>
 
-            <div className="mt-6 flex justify-center">
+            <div className="mt-3 md:mt-4 flex justify-center">
               <button
                 onClick={handleSkipHelp}
                 disabled={isSubmitting}
@@ -904,7 +906,7 @@ const ReviewQueue = () => {
           </div>
         ) : (
           /* Rating Buttons */
-          <div className="mt-3 md:mt-8 grid grid-cols-3 gap-3 md:gap-6 pb-4 md:pb-8">
+          <div className="mt-3 md:mt-8 grid grid-cols-3 gap-3 md:gap-6 pb-4 md:pb-8 shrink-0">
             {RATING_OPTIONS.map((option) => {
               const Icon = option.icon;
               const handleClick =
