@@ -14,7 +14,15 @@ from pathlib import Path
 from typing import Annotated, Any, Optional
 from uuid import uuid4
 
-from fastapi import APIRouter, Header, HTTPException, UploadFile, File, Depends
+from fastapi import (
+    APIRouter,
+    Header,
+    HTTPException,
+    UploadFile,
+    File,
+    Depends,
+    Form,
+)
 from fastapi.concurrency import run_in_threadpool
 
 from app.config import settings
@@ -45,11 +53,13 @@ _jobs_lock = asyncio.Lock()
 async def _cleanup_expired_jobs() -> None:
     cutoff = datetime.now(timezone.utc) - JOB_TTL
     async with _jobs_lock:
-        expired_job_ids = [
-            job_id
-            for job_id, payload in _jobs.items()
-            if payload.get("updated_at", payload.get("created_at")) < cutoff
-        ]
+        expired_job_ids: list[str] = []
+        for job_id, payload in _jobs.items():
+            timestamp = payload.get("updated_at", payload.get("created_at"))
+            if not isinstance(timestamp, datetime):
+                continue
+            if timestamp < cutoff:
+                expired_job_ids.append(job_id)
         for job_id in expired_job_ids:
             _jobs.pop(job_id, None)
 
@@ -62,7 +72,7 @@ async def _set_job_state(job_id: str, **updates: Any) -> None:
         _jobs[job_id]["updated_at"] = datetime.now(timezone.utc)
 
 
-async def _run_job(job_id: str, audio_path: Path, temp_dir: Path) -> None:
+async def _run_job(job_id: str, audio_input: AudioInput) -> None:
     await _set_job_state(job_id, status=_JobStatus.PROCESSING)
 
     try:
@@ -76,7 +86,6 @@ async def _run_job(job_id: str, audio_path: Path, temp_dir: Path) -> None:
                     "Transcription service unavailable on this host (missing dependencies?)"
                 )
 
-            audio_input = AudioInput.from_file(audio_path)
             result = engine.transcribe(audio_input)
             return result.to_dict()
 
@@ -93,12 +102,7 @@ async def _run_job(job_id: str, audio_path: Path, temp_dir: Path) -> None:
             error=str(e),
         )
     finally:
-        try:
-            if audio_path.exists():
-                audio_path.unlink()
-            temp_dir.rmdir()
-        except Exception:
-            pass
+        audio_input.cleanup()
 
 
 async def verify_api_key(x_api_key: Annotated[Optional[str], Header()] = None) -> str:
@@ -126,7 +130,8 @@ async def verify_api_key(x_api_key: Annotated[Optional[str], Header()] = None) -
 
 @router.post("", response_model=None)
 async def transcribe_audio(
-    file: UploadFile = File(...),
+    file: UploadFile | None = File(None),
+    audio_url: Annotated[Optional[str], Form()] = None,
     api_key: str = Depends(verify_api_key),
 ):
     """
@@ -135,18 +140,53 @@ async def transcribe_audio(
     This endpoint is designed to be called by other instances of this application
     configured with RemoteTranscriptionEngine.
     """
-    # Create temp file
-    temp_dir = Path(tempfile.mkdtemp(prefix="remote_transcribe_"))
-    safe_name = Path(file.filename or "audio.bin").name
-    audio_path = temp_dir / safe_name
+    requested_audio_url = audio_url
+
+    if file and requested_audio_url:
+        raise HTTPException(
+            status_code=400,
+            detail="Provide exactly one input: file or audio_url",
+        )
+    if not file and not requested_audio_url:
+        raise HTTPException(
+            status_code=400,
+            detail="Missing input. Provide file (multipart) or audio_url",
+        )
+
+    source_label = "audio_url"
+    if file:
+        temp_dir = Path(tempfile.mkdtemp(prefix="remote_transcribe_"))
+        safe_name = Path(file.filename or "audio.bin").name
+        audio_path = temp_dir / safe_name
+
+        try:
+            with open(audio_path, "wb") as buffer:
+                shutil.copyfileobj(file.file, buffer)
+            audio_input = AudioInput(_local_path=audio_path, _is_temp=True)
+            source_label = safe_name
+        except Exception:
+            try:
+                if audio_path.exists():
+                    audio_path.unlink()
+                temp_dir.rmdir()
+            except Exception:
+                pass
+            raise HTTPException(status_code=500, detail="Failed to save uploaded audio")
+    else:
+        try:
+            source_audio_url = requested_audio_url
+            if source_audio_url is None:
+                raise ValueError("Missing audio_url")
+            audio_input = AudioInput.from_url(source_audio_url)
+            source_label = source_audio_url
+        except ValueError as e:
+            raise HTTPException(status_code=400, detail=str(e))
 
     try:
-        # Save uploaded file
-        with open(audio_path, "wb") as buffer:
-            shutil.copyfileobj(file.file, buffer)
-
         logger.info(
-            f"Received remote transcription request: {safe_name} (Key: {api_key[:4]}...)"
+            "Received remote transcription request: %s (Key: %s...)",
+            source_label,
+            api_key[:4],
         )
 
         # Run transcription in thread pool (CPU/GPU bound)
@@ -162,7 +202,6 @@ async def transcribe_audio(
                     detail="Transcription service unavailable on this host (missing dependencies?)",
                 )
 
-            audio_input = AudioInput.from_file(audio_path)
             result = engine.transcribe(audio_input)
             return result.to_dict()
 
@@ -176,18 +215,13 @@ async def transcribe_audio(
         raise HTTPException(status_code=500, detail=str(e))
 
     finally:
-        # Cleanup
-        try:
-            if audio_path.exists():
-                audio_path.unlink()
-            temp_dir.rmdir()
-        except Exception:
-            pass
+        audio_input.cleanup()
 
 
 @router.post("/jobs", response_model=None)
 async def submit_transcription_job(
-    file: UploadFile = File(...),
+    file: UploadFile | None = File(None),
+    audio_url: Annotated[Optional[str], Form()] = None,
     api_key: str = Depends(verify_api_key),
 ):
     """
@@ -197,21 +231,46 @@ async def submit_transcription_job(
     """
     await _cleanup_expired_jobs()
 
-    temp_dir = Path(tempfile.mkdtemp(prefix="remote_transcribe_job_"))
-    safe_name = Path(file.filename or "audio.bin").name
-    audio_path = temp_dir / safe_name
+    requested_audio_url = audio_url
 
-    try:
-        with open(audio_path, "wb") as buffer:
-            shutil.copyfileobj(file.file, buffer)
-    except Exception:
+    if file and requested_audio_url:
+        raise HTTPException(
+            status_code=400,
+            detail="Provide exactly one input: file or audio_url",
+        )
+    if not file and not requested_audio_url:
+        raise HTTPException(
+            status_code=400,
+            detail="Missing input. Provide file (multipart) or audio_url",
+        )
+
+    source_label = "audio_url"
+    if file:
+        temp_dir = Path(tempfile.mkdtemp(prefix="remote_transcribe_job_"))
+        safe_name = Path(file.filename or "audio.bin").name
+        audio_path = temp_dir / safe_name
         try:
-            if audio_path.exists():
-                audio_path.unlink()
-            temp_dir.rmdir()
+            with open(audio_path, "wb") as buffer:
+                shutil.copyfileobj(file.file, buffer)
+            audio_input = AudioInput(_local_path=audio_path, _is_temp=True)
+            source_label = safe_name
         except Exception:
-            pass
-        raise HTTPException(status_code=500, detail="Failed to save uploaded audio")
+            try:
+                if audio_path.exists():
+                    audio_path.unlink()
+                temp_dir.rmdir()
+            except Exception:
+                pass
+            raise HTTPException(status_code=500, detail="Failed to save uploaded audio")
+    else:
+        try:
+            source_audio_url = requested_audio_url
+            if source_audio_url is None:
+                raise ValueError("Missing audio_url")
+            audio_input = AudioInput.from_url(source_audio_url)
+            source_label = source_audio_url
+        except ValueError as e:
+            raise HTTPException(status_code=400, detail=str(e))
 
     job_id = uuid4().hex
     now = datetime.now(timezone.utc)
@@ -229,10 +288,10 @@ async def submit_transcription_job(
     logger.info(
         "Accepted async transcription job %s: %s (Key: %s...)",
         job_id,
-        safe_name,
+        source_label,
         api_key[:4],
     )
-    asyncio.create_task(_run_job(job_id, audio_path, temp_dir))
+    asyncio.create_task(_run_job(job_id, audio_input))
 
     return {"job_id": job_id, "status": _JobStatus.PENDING}
 

@@ -17,6 +17,7 @@ from app.config import settings
 from app.core.db import get_db, AsyncSessionLocal
 
 from app.services.podcast_service import podcast_service
+from app.services.transcription import AudioInput
 
 import logging
 
@@ -1234,40 +1235,47 @@ async def _run_transcription(
             )
             await db.commit()
 
-        # Download audio to temp file
-        temp_dir = Path(tempfile.mkdtemp(prefix="podcast_transcribe_"))
+        # For remote transcription workers, pass URL directly and let worker fetch.
+        if remote_url:
+            logger.info("Using remote URL mode for episode %s", episode_id)
+            audio_input = AudioInput.from_url(audio_url)
+            temp_dir = None
+            audio_path = None
+        else:
+            # Local engine mode: download audio to temp file first.
+            temp_dir = Path(tempfile.mkdtemp(prefix="podcast_transcribe_"))
 
-        # Preserve original extension from URL
-        from urllib.parse import urlparse
+            # Preserve original extension from URL
+            from urllib.parse import urlparse
 
-        parsed_url = urlparse(audio_url)
-        original_ext = Path(parsed_url.path).suffix or ".mp3"
-        audio_path = temp_dir / f"audio{original_ext}"
+            parsed_url = urlparse(audio_url)
+            original_ext = Path(parsed_url.path).suffix or ".mp3"
+            audio_path = temp_dir / f"audio{original_ext}"
 
-        logger.info(f"Downloading audio from {audio_url}")
+            logger.info(f"Downloading audio from {audio_url}")
 
-        proxies = settings.PROXY_URL if settings.PROXY_URL else None
-        async with httpx.AsyncClient(
-            timeout=300.0,  # 5 minutes for large files
-            follow_redirects=True,
-            proxy=proxies,
-            headers={"User-Agent": BROWSER_USER_AGENT},
-        ) as client:
-            response = await client.get(audio_url)
-            response.raise_for_status()
+            proxies = settings.PROXY_URL if settings.PROXY_URL else None
+            async with httpx.AsyncClient(
+                timeout=300.0,  # 5 minutes for large files
+                follow_redirects=True,
+                proxy=proxies,
+                headers={"User-Agent": BROWSER_USER_AGENT},
+            ) as client:
+                response = await client.get(audio_url)
+                response.raise_for_status()
 
-            with open(audio_path, "wb") as f:
-                f.write(response.content)
+                with open(audio_path, "wb") as f:
+                    f.write(response.content)
 
-        logger.info(f"Audio downloaded to {audio_path}")
+            logger.info(f"Audio downloaded to {audio_path}")
+            audio_input = AudioInput.from_file(audio_path)
 
         # Run transcription in thread pool (CPU-bound)
         # Note: utils._load_audio_flexible handles format conversion internally
         def do_transcription():
-            from app.services.transcription import AudioInput, get_default_engine
+            from app.services.transcription import get_default_engine
 
             engine = get_default_engine(remote_url=remote_url, api_key=api_key)
-            audio_input = AudioInput.from_file(audio_path)
             result = engine.transcribe(audio_input)
             return result
 
@@ -1292,10 +1300,11 @@ async def _run_transcription(
 
         logger.info(f"Transcription saved for episode {episode_id}")
 
-        # Cleanup temp files
+        # Cleanup temp/local files
         try:
-            audio_path.unlink()
-            temp_dir.rmdir()
+            audio_input.cleanup()
+            if temp_dir and temp_dir.exists():
+                temp_dir.rmdir()
         except Exception as e:
             logger.warning(f"Failed to cleanup temp files: {e}")
 

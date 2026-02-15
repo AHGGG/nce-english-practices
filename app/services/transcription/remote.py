@@ -24,7 +24,7 @@ class RemoteTranscriptionEngine(BaseTranscriptionEngine):
     Sends audio file to a remote server and parses the JSON response.
     Expected Remote API:
     - POST /transcribe (or the configured URL)
-    - Body: multipart/form-data with 'file' field
+    - Body: multipart/form-data with 'file' or 'audio_url' field
     - Response: JSON matching TranscriptionResult.to_dict() structure
     """
 
@@ -55,18 +55,42 @@ class RemoteTranscriptionEngine(BaseTranscriptionEngine):
         Returns:
             TranscriptionResult from remote server
         """
-        audio_path = audio.to_local_path()
-        logger.info(f"Sending audio to remote engine: {self.remote_url} ({audio_path})")
+        source_url = audio.source_url
+        if source_url:
+            logger.info(
+                "Sending audio URL to remote engine: %s (%s)",
+                self.remote_url,
+                source_url,
+            )
+        else:
+            audio_path = audio.to_local_path()
+            logger.info(
+                "Sending audio file to remote engine: %s (%s)",
+                self.remote_url,
+                audio_path,
+            )
 
         try:
             headers = {}
             if self.api_key:
                 headers["x-api-key"] = self.api_key
 
-            with open(audio_path, "rb") as f:
-                files = {"file": (audio_path.name, f, "audio/mpeg")}
-                with httpx.Client(timeout=60.0) as client:
-                    return self._transcribe_via_async_job(client, files, headers)
+            with httpx.Client(timeout=60.0) as client:
+                if source_url:
+                    return self._transcribe_via_async_job(
+                        client,
+                        headers,
+                        payload={"audio_url": source_url},
+                    )
+
+                audio_path = audio.to_local_path()
+                with open(audio_path, "rb") as f:
+                    files = {"file": (audio_path.name, f, "audio/mpeg")}
+                    return self._transcribe_via_async_job(
+                        client,
+                        headers,
+                        files=files,
+                    )
 
         except httpx.RequestError as e:
             raise TranscriptionError(
@@ -82,8 +106,9 @@ class RemoteTranscriptionEngine(BaseTranscriptionEngine):
     def _transcribe_via_async_job(
         self,
         client: httpx.Client,
-        files: dict,
         headers: dict[str, str],
+        files: Optional[dict] = None,
+        payload: Optional[dict[str, str]] = None,
     ) -> TranscriptionResult:
         """
         Prefer async job endpoints to avoid long-lived HTTP connections.
@@ -93,17 +118,31 @@ class RemoteTranscriptionEngine(BaseTranscriptionEngine):
         base_url = self.remote_url.rstrip("/")
         submit_url = f"{base_url}/jobs"
 
-        submit_response = client.post(submit_url, files=files, headers=headers)
+        if payload:
+            submit_response = client.post(submit_url, data=payload, headers=headers)
+        else:
+            submit_response = client.post(submit_url, files=files, headers=headers)
 
         # Backward compatibility: old workers only expose POST /api/transcribe.
         if submit_response.status_code in (404, 405):
-            file_tuple = files.get("file")
-            if isinstance(file_tuple, tuple) and len(file_tuple) > 1:
-                try:
-                    file_tuple[1].seek(0)
-                except Exception:
-                    pass
-            legacy_response = client.post(self.remote_url, files=files, headers=headers)
+            if payload:
+                legacy_response = client.post(
+                    self.remote_url,
+                    data=payload,
+                    headers=headers,
+                )
+            else:
+                file_tuple = files.get("file") if files else None
+                if isinstance(file_tuple, tuple) and len(file_tuple) > 1:
+                    try:
+                        file_tuple[1].seek(0)
+                    except Exception:
+                        pass
+                legacy_response = client.post(
+                    self.remote_url,
+                    files=files,
+                    headers=headers,
+                )
             if legacy_response.status_code != 200:
                 raise TranscriptionError(
                     f"Remote server returned {legacy_response.status_code}: {legacy_response.text}",

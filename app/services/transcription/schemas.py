@@ -8,6 +8,11 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Optional
 import tempfile
+from urllib.parse import urlparse
+
+import httpx
+
+from app.config import settings
 
 
 @dataclass
@@ -98,10 +103,11 @@ class AudioInput:
     """
     Audio input abstraction supporting multiple sources.
 
-    Currently supports local files. URL and bytes support planned for future.
+    Supports local files and remote URLs.
     """
 
-    _local_path: Path
+    _local_path: Optional[Path] = None
+    _source_url: Optional[str] = None
     _is_temp: bool = field(default=False, repr=False)
 
     @staticmethod
@@ -126,7 +132,7 @@ class AudioInput:
     @staticmethod
     def from_url(url: str) -> "AudioInput":
         """
-        Create AudioInput from a URL (downloads to temp directory).
+        Create AudioInput from a URL.
 
         Args:
             url: URL to the audio file
@@ -134,13 +140,13 @@ class AudioInput:
         Returns:
             AudioInput instance
 
-        Raises:
-            NotImplementedError: Not yet implemented
+        The URL is fetched lazily when `to_local_path()` is called.
         """
-        # TODO: Implement URL download
-        # 1. Download to temp directory
-        # 2. Return AudioInput with _is_temp=True
-        raise NotImplementedError("URL input not yet supported")
+        parsed = urlparse(url)
+        if parsed.scheme not in ("http", "https") or not parsed.netloc:
+            raise ValueError(f"Invalid audio URL: {url}")
+
+        return AudioInput(_source_url=url, _is_temp=True)
 
     @staticmethod
     def from_bytes(data: bytes, suffix: str = ".wav") -> "AudioInput":
@@ -169,7 +175,35 @@ class AudioInput:
         Returns:
             Path to the local audio file
         """
-        return self._local_path
+        if self._local_path:
+            return self._local_path
+
+        if not self._source_url:
+            raise ValueError("AudioInput has neither local path nor source URL")
+
+        parsed = urlparse(self._source_url)
+        ext = Path(parsed.path).suffix or ".mp3"
+
+        temp_dir = Path(tempfile.mkdtemp(prefix="audio_input_url_"))
+        local_path = temp_dir / f"audio{ext}"
+
+        proxies = settings.PROXY_URL if settings.PROXY_URL else None
+        with httpx.Client(
+            timeout=300.0,
+            follow_redirects=True,
+            proxy=proxies,
+        ) as client:
+            response = client.get(self._source_url)
+            response.raise_for_status()
+            local_path.write_bytes(response.content)
+
+        self._local_path = local_path
+        self._is_temp = True
+        return local_path
+
+    @property
+    def source_url(self) -> Optional[str]:
+        return self._source_url
 
     def cleanup(self) -> None:
         """
@@ -177,8 +211,17 @@ class AudioInput:
 
         Should be called when done with the audio input.
         """
-        if self._is_temp and self._local_path.exists():
-            self._local_path.unlink()
+        if not self._is_temp or not self._local_path:
+            return
+
+        try:
+            if self._local_path.exists():
+                self._local_path.unlink()
+            parent = self._local_path.parent
+            if parent.exists():
+                parent.rmdir()
+        except Exception:
+            pass
 
     def __enter__(self) -> "AudioInput":
         return self

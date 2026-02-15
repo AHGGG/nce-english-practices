@@ -321,6 +321,7 @@ Podcast episodes can be transcribed using AI to enable time-aligned subtitle dis
   - `sensevoice.py` - Local SenseVoice GPU implementation
 - **API**: `POST /api/podcast/episode/{id}/transcribe` - Trigger transcription (accepts `remote_url` & `api_key`)
   - Remote worker endpoints: `POST /api/transcribe/jobs` + `GET /api/transcribe/jobs/{job_id}` (async submit/poll; avoids long single-request proxy timeout)
+  - Remote mode supports `audio_url` input so the worker can fetch audio directly (avoids uploading full podcast bytes from caller)
 - **Data Model**: `PodcastEpisode.transcript_segments` (JSONB) stores time-aligned segments
 - **Frontend (Web)**: "Intensive Listening" flow in `apps/web/src/views/podcast/PodcastFeedDetailView.tsx` + `apps/web/src/views/player/UnifiedPlayerView.tsx`
 - **Frontend (Mobile)**: "Intensive Listening" flow in `apps/mobile/app/podcast/intensive.tsx` (entry from `apps/mobile/src/components/podcast/PodcastDetailView.tsx`)
@@ -404,15 +405,15 @@ A centralized logging system that collects both frontend and backend logs.
   > Don't commit `logs/unified.log` to git.
 
 **Categories** (Generic, not vendor-specific):
-| Category        | Description                   | Color  |
+| Category | Description | Color |
 | --------------- | ----------------------------- | ------ |
-| `user_input`    | User speech/text, STT results | Blue   |
-| `agent_output`  | AI responses, TTS             | Green  |
-| `function_call` | Tool/function executions      | Violet |
-| `audio`         | Audio processing, chunks      | Cyan   |
-| `network`       | API calls, WebSocket, latency | Yellow |
-| `lifecycle`     | Connect/disconnect/init       | White  |
-| `general`       | Default                       | White  |
+| `user_input` | User speech/text, STT results | Blue |
+| `agent_output` | AI responses, TTS | Green |
+| `function_call` | Tool/function executions | Violet |
+| `audio` | Audio processing, chunks | Cyan |
+| `network` | API calls, WebSocket, latency | Yellow |
+| `lifecycle` | Connect/disconnect/init | White |
+| `general` | Default | White |
 
 **For AI Debugging**: Read `logs/unified.log` directly:
 

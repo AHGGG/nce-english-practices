@@ -85,7 +85,8 @@ Legacy synchronous endpoint (still supported).
 
 **Body**:
 
-- `file`: The audio file to transcribe (multipart/form-data).
+- `file`: The audio file to transcribe (multipart/form-data), or
+- `audio_url`: Remote audio URL for server-side fetch (multipart form field).
 
 **Response**:
 Returns a JSON object matching the `TranscriptionResult` schema.
@@ -115,7 +116,8 @@ Submit an async transcription job.
 
 **Body**:
 
-- `file`: The audio file to transcribe (multipart/form-data).
+- `file`: The audio file to transcribe (multipart/form-data), or
+- `audio_url`: Remote audio URL for server-side fetch (multipart form field).
 
 **Response**:
 
