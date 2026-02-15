@@ -16,9 +16,9 @@ import {
 import DictionaryResults from "../aui/DictionaryResults";
 import ReactMarkdown from "react-markdown";
 import DangerousHtml from "../Dictionary/DangerousHtml";
-import { getWordContexts } from "../../api/client";
+import { getWordContexts, getWordUsages } from "../../api/client";
 
-type ActiveTab = "LDOCE" | "Collins" | "HISTORY";
+type ActiveTab = "LDOCE" | "Collins" | "USAGES" | "HISTORY";
 
 interface DictionarySourcePayload {
   found?: boolean;
@@ -34,6 +34,9 @@ interface InspectorData {
 
 interface HistoryItem {
   source_type: string;
+  source_id?: string | null;
+  source_title?: string | null;
+  source_label?: string | null;
   created_at: string;
   context_sentence: string;
 }
@@ -106,7 +109,7 @@ const WordInspector = ({
   onPlayAudio,
   onMarkAsKnown,
   // Context for history updates
-  currentSentenceContext: _currentSentenceContext,
+  currentSentenceContext,
   // New props for streaming context explanation
   contextExplanation = "",
   isExplaining = false,
@@ -131,23 +134,97 @@ const WordInspector = ({
     defaultTab as ActiveTab,
   );
   const [history, setHistory] = useState<HistoryItem[]>([]);
+  const [usages, setUsages] = useState<HistoryItem[]>([]);
   const [now] = useState(() => Date.now());
+
+  const sourceBuckets = useMemo(() => {
+    const buckets = new Map<string, { label: string; count: number }>();
+
+    for (const item of usages) {
+      const label =
+        item.source_label ||
+        item.source_title ||
+        item.source_id ||
+        item.source_type.replace(/_/g, " ");
+      const key = `${item.source_type}::${item.source_id || label}`;
+      const current = buckets.get(key);
+      if (current) {
+        current.count += 1;
+      } else {
+        buckets.set(key, { label, count: 1 });
+      }
+    }
+
+    return Array.from(buckets.values()).sort((a, b) => b.count - a.count);
+  }, [usages]);
+
+  const groupedUsages = useMemo(() => {
+    const groups = new Map<
+      string,
+      {
+        sourceLabel: string;
+        sourceType: string;
+        createdAt: string;
+        items: HistoryItem[];
+      }
+    >();
+
+    for (const item of usages) {
+      const sourceLabel =
+        item.source_title ||
+        item.source_label ||
+        item.source_id ||
+        item.source_type.replace(/_/g, " ");
+      const groupKey = `${item.source_type}::${item.source_id || sourceLabel}`;
+      const existing = groups.get(groupKey);
+      if (existing) {
+        existing.items.push(item);
+        if (new Date(item.created_at) > new Date(existing.createdAt)) {
+          existing.createdAt = item.created_at;
+        }
+      } else {
+        groups.set(groupKey, {
+          sourceLabel,
+          sourceType: item.source_type,
+          createdAt: item.created_at,
+          items: [item],
+        });
+      }
+    }
+
+    return Array.from(groups.values()).sort(
+      (a, b) =>
+        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+    );
+  }, [usages]);
 
   useEffect(() => {
     if (selectedWord) {
-      getWordContexts(selectedWord)
+      getWordContexts(selectedWord, { limit: 30 })
         .then((res) => {
           if (Array.isArray(res)) {
             setHistory(res as HistoryItem[]);
           }
         })
         .catch(console.error);
+
+      getWordUsages(selectedWord, {
+        limit: 10,
+        excludeSentence: currentSentenceContext || undefined,
+      })
+        .then((res) => {
+          if (Array.isArray(res)) {
+            setUsages(res as HistoryItem[]);
+          }
+        })
+        .catch(console.error);
     }
-  }, [selectedWord]);
+  }, [selectedWord, currentSentenceContext]);
 
   // Update tab when data changes (but only if current tab is invalid)
   const effectiveTab = useMemo(() => {
-    if (activeTab === "HISTORY" && history.length > 0) return "HISTORY";
+    if (activeTab === "HISTORY") return "HISTORY";
+    if (activeTab === "USAGES") return "USAGES";
     if (activeTab === "LDOCE" && typedInspectorData?.ldoce?.found)
       return "LDOCE";
     if (activeTab === "Collins" && typedInspectorData?.collins?.found)
@@ -292,11 +369,13 @@ const WordInspector = ({
                   Retrieving Data...
                 </span>
               </div>
-            ) : typedInspectorData?.found ? (
+            ) : typedInspectorData?.found ||
+              history.length > 0 ||
+              usages.length > 0 ? (
               <div className="flex flex-col h-full">
                 {/* Dictionary Tabs */}
                 <div className="flex px-4 pt-2 gap-2 shrink-0 z-10 sticky top-0 bg-bg-base/95 backdrop-blur-xl">
-                  {typedInspectorData.ldoce?.found && (
+                  {typedInspectorData?.ldoce?.found && (
                     <button
                       onClick={() => setActiveTab("LDOCE")}
                       className={`flex-1 py-2 text-[10px] font-bold uppercase tracking-widest transition-all rounded-t-lg border-b-2 ${
@@ -308,7 +387,7 @@ const WordInspector = ({
                       Longman
                     </button>
                   )}
-                  {typedInspectorData.collins?.found && (
+                  {typedInspectorData?.collins?.found && (
                     <button
                       onClick={() => setActiveTab("Collins")}
                       className={`flex-1 py-2 text-[10px] font-bold uppercase tracking-widest transition-all rounded-t-lg border-b-2 ${
@@ -320,36 +399,116 @@ const WordInspector = ({
                       Collins
                     </button>
                   )}
-                  {history.length > 0 && (
-                    <button
-                      onClick={() => setActiveTab("HISTORY")}
-                      className={`flex-1 py-2 text-[10px] font-bold uppercase tracking-widest transition-all rounded-t-lg border-b-2 ${
-                        effectiveTab === "HISTORY"
-                          ? "text-accent-info border-accent-info bg-accent-info/5"
-                          : "text-white/40 border-transparent hover:text-white hover:bg-white/5"
-                      }`}
-                    >
-                      History ({history.length})
-                    </button>
-                  )}
+                  <button
+                    onClick={() => setActiveTab("USAGES")}
+                    className={`flex-1 py-2 text-[9px] font-bold uppercase tracking-wider whitespace-nowrap transition-all rounded-t-lg border-b-2 ${
+                      effectiveTab === "USAGES"
+                        ? "text-accent-info border-accent-info bg-accent-info/5"
+                        : "text-white/40 border-transparent hover:text-white hover:bg-white/5"
+                    }`}
+                  >
+                    Usages ({usages.length})
+                  </button>
+                  <button
+                    onClick={() => setActiveTab("HISTORY")}
+                    className={`flex-1 py-2 text-[9px] font-bold uppercase tracking-wider whitespace-nowrap transition-all rounded-t-lg border-b-2 ${
+                      effectiveTab === "HISTORY"
+                        ? "text-accent-info border-accent-info bg-accent-info/5"
+                        : "text-white/40 border-transparent hover:text-white hover:bg-white/5"
+                    }`}
+                  >
+                    History ({history.length})
+                  </button>
                 </div>
 
                 {/* Results */}
                 <div className="flex-1 p-4 mt-2">
-                  {effectiveTab === "HISTORY" && (
+                  {(effectiveTab === "USAGES" ||
+                    effectiveTab === "HISTORY") && (
                     <div className="space-y-4 animate-in slide-in-from-right-4 duration-300 px-2">
                       <div className="flex items-center justify-between mb-4">
                         <div className="text-[10px] font-mono text-accent-info uppercase tracking-widest flex items-center gap-2">
                           <Brain className="w-3 h-3" />
-                          <span>Context Memory</span>
+                          <span>
+                            {effectiveTab === "USAGES"
+                              ? "Other Usages"
+                              : "Lookup History"}
+                          </span>
                         </div>
                         <span className="text-[9px] text-white/20 font-mono">
-                          {history.length} ENCOUNTERS
+                          {effectiveTab === "USAGES"
+                            ? `${usages.length} / 10 CONTEXTS`
+                            : `${history.length} ENCOUNTERS`}
                         </span>
                       </div>
 
+                      {effectiveTab === "USAGES" &&
+                        sourceBuckets.length > 0 && (
+                          <div className="mb-4 rounded-xl border border-white/10 bg-bg-elevated/30 p-3">
+                            <div className="text-[9px] font-mono text-white/40 uppercase tracking-widest mb-2">
+                              Sources ({sourceBuckets.length})
+                            </div>
+                            <div className="flex flex-wrap gap-2">
+                              {sourceBuckets.map((bucket, idx) => (
+                                <span
+                                  key={`${bucket.label}-${idx}`}
+                                  className="inline-flex items-center gap-1 rounded-full border border-accent-info/30 bg-accent-info/10 px-2 py-1 text-[10px] text-accent-info"
+                                  title={bucket.label}
+                                >
+                                  <span className="max-w-[220px] truncate">
+                                    {bucket.label}
+                                  </span>
+                                  <span className="opacity-70">
+                                    x{bucket.count}
+                                  </span>
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                      {effectiveTab === "USAGES" && usages.length === 0 && (
+                        <div className="rounded-xl border border-white/10 bg-bg-elevated/20 p-4 text-xs text-white/60">
+                          No other usages found yet. Keep reading more articles
+                          to build context coverage.
+                        </div>
+                      )}
+
+                      {effectiveTab === "HISTORY" && history.length === 0 && (
+                        <div className="rounded-xl border border-white/10 bg-bg-elevated/20 p-4 text-xs text-white/60">
+                          No history yet. Click words/collocations while
+                          reading, then reopen this tab.
+                        </div>
+                      )}
+
                       <div className="space-y-3">
-                        {history.map((item, idx) => {
+                        {(effectiveTab === "USAGES"
+                          ? groupedUsages.map((group, groupIdx) => ({
+                              source_type: group.sourceType,
+                              source_title: group.sourceLabel,
+                              source_label: group.sourceLabel,
+                              source_id: null,
+                              created_at: group.createdAt,
+                              context_sentence: "",
+                              __group: group,
+                              __idx: groupIdx,
+                            }))
+                          : history
+                        ).map((item, idx) => {
+                          const usageGroup =
+                            effectiveTab === "USAGES"
+                              ? (
+                                  item as HistoryItem & {
+                                    __group: {
+                                      sourceLabel: string;
+                                      sourceType: string;
+                                      createdAt: string;
+                                      items: HistoryItem[];
+                                    };
+                                    __idx: number;
+                                  }
+                                ).__group
+                              : null;
                           const date = new Date(item.created_at);
                           const isRecent = now - date.getTime() < 86400000; // 24h
 
@@ -397,20 +556,39 @@ const WordInspector = ({
                                   </div>
                                 </div>
 
+                                <div className="mb-3 text-xs text-white/70 font-medium truncate">
+                                  {item.source_title ||
+                                    item.source_label ||
+                                    item.source_id ||
+                                    "Unknown Source"}
+                                  {usageGroup ? (
+                                    <span className="ml-2 text-[10px] text-white/40">
+                                      ({usageGroup.items.length} contexts)
+                                    </span>
+                                  ) : null}
+                                </div>
+
                                 {/* Content */}
-                                <div className="relative">
-                                  <div className="text-sm text-text-secondary leading-relaxed font-serif pl-2 border-l border-white/10 group-hover:border-accent-info/20 transition-colors">
-                                    <DangerousHtml
-                                      html={item.context_sentence.replace(
-                                        new RegExp(
-                                          `\\b${selectedWord}\\b`,
-                                          "gi",
-                                        ),
-                                        (match) =>
-                                          `<strong class="text-accent-info font-bold drop-shadow-[0_0_8px_rgba(var(--color-accent-info-rgb),0.3)]">${match}</strong>`,
-                                      )}
-                                    />
-                                  </div>
+                                <div className="relative space-y-2">
+                                  {(usageGroup ? usageGroup.items : [item]).map(
+                                    (usageItem, usageIdx) => (
+                                      <div
+                                        key={`${idx}-${usageIdx}`}
+                                        className="text-sm text-text-secondary leading-relaxed font-serif pl-2 border-l border-white/10 group-hover:border-accent-info/20 transition-colors"
+                                      >
+                                        <DangerousHtml
+                                          html={usageItem.context_sentence.replace(
+                                            new RegExp(
+                                              `\\b${selectedWord}\\b`,
+                                              "gi",
+                                            ),
+                                            (match) =>
+                                              `<strong class="text-accent-info font-bold drop-shadow-[0_0_8px_rgba(var(--color-accent-info-rgb),0.3)]">${match}</strong>`,
+                                          )}
+                                        />
+                                      </div>
+                                    ),
+                                  )}
                                 </div>
                               </div>
                             </div>
@@ -421,23 +599,23 @@ const WordInspector = ({
                   )}
 
                   {effectiveTab === "LDOCE" &&
-                    typedInspectorData.ldoce?.found && (
+                    typedInspectorData?.ldoce?.found && (
                       <DictionaryResults
                         word={selectedWord}
                         source="LDOCE"
                         entries={
-                          (typedInspectorData.ldoce.entries || []) as never[]
+                          (typedInspectorData?.ldoce?.entries || []) as never[]
                         }
                       />
                     )}
                   {effectiveTab === "Collins" &&
-                    typedInspectorData.collins?.found && (
+                    typedInspectorData?.collins?.found && (
                       <DictionaryResults
                         word={selectedWord}
                         source="Collins"
                         entries={
-                          typedInspectorData.collins.entry
-                            ? ([typedInspectorData.collins.entry] as never[])
+                          typedInspectorData?.collins?.entry
+                            ? ([typedInspectorData?.collins?.entry] as never[])
                             : ([] as never[])
                         }
                       />

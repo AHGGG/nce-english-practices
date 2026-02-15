@@ -1,9 +1,10 @@
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, or_, func, desc
-from typing import Dict, List, Literal, Optional, Set
+from typing import Any, Dict, List, Literal, Optional, Set
 from pydantic import BaseModel
 from datetime import datetime
+import re
 
 from app.core.db import get_db
 from app.models.orm import (
@@ -11,16 +12,82 @@ from app.models.orm import (
     ReviewItem,
     WordProficiency,
     SentenceLearningRecord,
+    ReadingSession,
     User,
 )
+from app.models.podcast_orm import PodcastEpisode
+from app.services.content_service import content_service
+from app.models.content_schemas import SourceType
 from app.api.routers.auth import get_current_user
 
 router = APIRouter(prefix="/api/vocabulary", tags=["vocabulary"])
 
 
+def _extract_podcast_episode_id(source_id: Optional[str]) -> Optional[int]:
+    if not source_id:
+        return None
+    candidate = source_id.strip()
+    if not candidate:
+        return None
+
+    if candidate.startswith("podcast:"):
+        candidate = candidate.split(":", 1)[1]
+
+    if candidate.isdigit():
+        return int(candidate)
+    return None
+
+
+def _derive_source_title(source_type: str, source_id: Optional[str]) -> Optional[str]:
+    if not source_id:
+        return None
+
+    parts = source_id.split(":")
+    if source_type == "epub" and len(parts) >= 3:
+        return parts[1].replace("_", " ").replace("-", " ")
+    if source_type == "audiobook" and len(parts) >= 3:
+        return f"{parts[1].replace('_', ' ')} (Track {parts[2]})"
+    if source_type == "podcast" and len(parts) >= 2:
+        return f"Episode {parts[-1]}"
+
+    return source_id
+
+
+def _sentence_contains_item(sentence: str, item: str) -> bool:
+    normalized_sentence = (sentence or "").strip()
+    normalized_item = (item or "").strip()
+    if not normalized_sentence or not normalized_item:
+        return False
+
+    if " " in normalized_item:
+        return normalized_item.lower() in normalized_sentence.lower()
+
+    pattern = re.compile(rf"\b{re.escape(normalized_item)}\b", re.IGNORECASE)
+    return bool(pattern.search(normalized_sentence))
+
+
+def _split_text_to_sentences(text: str) -> List[str]:
+    normalized = re.sub(r"\s+", " ", (text or "")).strip()
+    if not normalized:
+        return []
+    return [s.strip() for s in re.split(r"(?<=[.!?])\s+", normalized) if s.strip()]
+
+
+def _parse_epub_source_id(source_id: str) -> Optional[tuple[str, int]]:
+    parts = (source_id or "").split(":")
+    if len(parts) < 3 or parts[0] != "epub":
+        return None
+    try:
+        return parts[1], int(parts[2])
+    except (TypeError, ValueError):
+        return None
+
+
 class VocabularyContext(BaseModel):
     source_type: str
     source_id: Optional[str] = None
+    source_title: Optional[str] = None
+    source_label: Optional[str] = None
     context_sentence: str
     created_at: datetime
     word: str
@@ -114,24 +181,19 @@ async def log_vocabulary_lookup(
 @router.get("/contexts", response_model=List[VocabularyContext])
 async def get_word_contexts(
     word: str,
-    limit: int = 50,  # Default to 50 to show more history
+    limit: int = 50,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
     """
-    Get context history for a specific word.
-    Searches VocabLearningLog for where the user encountered this word.
-    Returns unique contexts (de-duplicated by sentence).
+    Lookup history for a specific item.
+    This endpoint is dedicated to explicit user lookups (VocabLearningLog).
     """
     if not word:
         return []
 
-    # Normalize word (lowercase)
     word_lower = word.lower().strip()
-
-    # Query logs
-    # Fetch more than limit to allow for de-duplication
-    fetch_limit = limit * 5
+    fetch_limit = max(limit * 4, 80)
 
     stmt = (
         select(VocabLearningLog)
@@ -142,37 +204,415 @@ async def get_word_contexts(
         .order_by(desc(VocabLearningLog.created_at))
         .limit(fetch_limit)
     )
-
     result = await db.execute(stmt)
     logs = result.scalars().all()
 
-    # Post-process for uniqueness based on context_sentence
+    source_keys = {(log.source_type, log.source_id) for log in logs if log.source_id}
+    source_title_map: Dict[tuple[str, str], str] = {}
+
+    reading_source_types = {
+        source_type for source_type, _ in source_keys if source_type in {"epub", "rss"}
+    }
+    reading_source_ids = [
+        source_id
+        for source_type, source_id in source_keys
+        if source_type in {"epub", "rss"} and source_id
+    ]
+
+    if reading_source_types and reading_source_ids:
+        reading_stmt = (
+            select(
+                ReadingSession.source_type,
+                ReadingSession.source_id,
+                ReadingSession.article_title,
+                ReadingSession.started_at,
+            )
+            .where(
+                ReadingSession.user_id == current_user.user_id_str,
+                ReadingSession.source_type.in_(reading_source_types),
+                ReadingSession.source_id.in_(reading_source_ids),
+                ReadingSession.article_title.isnot(None),
+                ReadingSession.article_title != "",
+            )
+            .order_by(desc(ReadingSession.started_at))
+        )
+        reading_result = await db.execute(reading_stmt)
+        for row in reading_result.all():
+            key = (row.source_type, row.source_id)
+            if key not in source_title_map:
+                source_title_map[key] = row.article_title
+
+    podcast_episode_ids: List[int] = []
+    for source_type, source_id in source_keys:
+        if source_type != "podcast":
+            continue
+        episode_id = _extract_podcast_episode_id(source_id)
+        if episode_id is not None:
+            podcast_episode_ids.append(episode_id)
+
+    podcast_title_map: Dict[int, str] = {}
+    if podcast_episode_ids:
+        podcast_stmt = select(PodcastEpisode.id, PodcastEpisode.title).where(
+            PodcastEpisode.id.in_(set(podcast_episode_ids))
+        )
+        podcast_result = await db.execute(podcast_stmt)
+        podcast_title_map = {
+            episode_id: title for episode_id, title in podcast_result.all()
+        }
+
     seen_contexts = set()
     unique_contexts = []
 
     for log in logs:
-        if not log.context_sentence:
+        source_type = log.source_type or "unknown"
+        source_id = log.source_id
+        context_sentence = (log.context_sentence or "").strip()
+        if not context_sentence:
             continue
 
-        # Normalize context for comparison (ignore whitespace differences)
-        normalized_context = " ".join(log.context_sentence.split()).lower()
+        normalized_context = " ".join(context_sentence.split()).lower()
+        normalized_key = (
+            source_type.lower(),
+            (source_id or "").strip(),
+            normalized_context,
+        )
+        if normalized_key in seen_contexts:
+            continue
+        seen_contexts.add(normalized_key)
 
-        if normalized_context not in seen_contexts:
-            seen_contexts.add(normalized_context)
-            unique_contexts.append(
-                VocabularyContext(
-                    source_type=log.source_type,
-                    source_id=log.source_id,
-                    context_sentence=log.context_sentence,
-                    created_at=log.created_at,
-                    word=log.word,
-                )
+        source_title: Optional[str] = None
+        if source_id:
+            source_title = source_title_map.get((source_type, source_id))
+
+        if source_type == "podcast":
+            episode_id = _extract_podcast_episode_id(source_id)
+            if episode_id is not None:
+                source_title = source_title or podcast_title_map.get(episode_id)
+
+        if not source_title:
+            source_title = _derive_source_title(source_type, source_id)
+
+        source_label = source_title or source_id or source_type
+
+        unique_contexts.append(
+            VocabularyContext(
+                source_type=source_type,
+                source_id=source_id,
+                source_title=source_title,
+                source_label=source_label,
+                context_sentence=context_sentence,
+                created_at=log.created_at or datetime.utcnow(),
+                word=log.word or word_lower,
             )
+        )
 
         if len(unique_contexts) >= limit:
             break
 
     return unique_contexts
+
+
+@router.get("/usages", response_model=List[VocabularyContext])
+async def get_word_usages(
+    word: str,
+    limit: int = 10,
+    exclude_sentence: Optional[str] = Query(default=None),
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Explore other usages for a word/collocation, regardless of prior lookup history.
+    """
+    if not word:
+        return []
+
+    word_lower = word.lower().strip()
+    fetch_limit = max(limit * 10, 200)
+    user_id = current_user.user_id_str
+    excluded_context = " ".join((exclude_sentence or "").split()).lower()
+
+    usage_rows: List[Dict[str, Any]] = []
+
+    # 1) Explicit lookup logs
+    log_stmt = (
+        select(
+            VocabLearningLog.source_type,
+            VocabLearningLog.source_id,
+            VocabLearningLog.context_sentence,
+            VocabLearningLog.created_at,
+        )
+        .where(
+            VocabLearningLog.user_id == user_id,
+            func.lower(VocabLearningLog.word) == word_lower,
+            VocabLearningLog.context_sentence.isnot(None),
+        )
+        .order_by(desc(VocabLearningLog.created_at))
+        .limit(fetch_limit)
+    )
+    log_result = await db.execute(log_stmt)
+    for row in log_result.all():
+        sentence = (row.context_sentence or "").strip()
+        if not sentence:
+            continue
+        if excluded_context and " ".join(sentence.split()).lower() == excluded_context:
+            continue
+        usage_rows.append(
+            {
+                "source_type": row.source_type,
+                "source_id": row.source_id,
+                "context_sentence": sentence,
+                "created_at": row.created_at,
+                "word": word_lower,
+            }
+        )
+
+    # 2) Sentence-study records with sentence-level matching
+    contains_pattern = f"%{word_lower}%"
+    slr_stmt = (
+        select(
+            SentenceLearningRecord.source_type,
+            SentenceLearningRecord.source_id,
+            SentenceLearningRecord.sentence_text,
+            SentenceLearningRecord.updated_at,
+        )
+        .where(
+            SentenceLearningRecord.user_id == user_id,
+            SentenceLearningRecord.sentence_text.isnot(None),
+            func.lower(SentenceLearningRecord.sentence_text).like(contains_pattern),
+        )
+        .order_by(desc(SentenceLearningRecord.updated_at))
+        .limit(fetch_limit * 2)
+    )
+    slr_result = await db.execute(slr_stmt)
+    for row in slr_result.all():
+        sentence = (row.sentence_text or "").strip()
+        if not sentence:
+            continue
+        if not _sentence_contains_item(sentence, word_lower):
+            continue
+        if excluded_context and " ".join(sentence.split()).lower() == excluded_context:
+            continue
+        usage_rows.append(
+            {
+                "source_type": row.source_type,
+                "source_id": row.source_id,
+                "context_sentence": sentence,
+                "created_at": row.updated_at,
+                "word": word_lower,
+            }
+        )
+
+    # 3) Review queue sentence contexts
+    review_stmt = (
+        select(
+            ReviewItem.source_id,
+            ReviewItem.sentence_text,
+            ReviewItem.created_at,
+        )
+        .where(
+            ReviewItem.user_id == user_id,
+            ReviewItem.sentence_text.isnot(None),
+            func.lower(ReviewItem.sentence_text).like(contains_pattern),
+        )
+        .order_by(desc(ReviewItem.created_at))
+        .limit(fetch_limit)
+    )
+    review_result = await db.execute(review_stmt)
+    for row in review_result.all():
+        sentence = (row.sentence_text or "").strip()
+        if not sentence:
+            continue
+        if not _sentence_contains_item(sentence, word_lower):
+            continue
+        if excluded_context and " ".join(sentence.split()).lower() == excluded_context:
+            continue
+        source_type = "unknown"
+        if row.source_id and ":" in row.source_id:
+            source_type = row.source_id.split(":", 1)[0]
+        usage_rows.append(
+            {
+                "source_type": source_type,
+                "source_id": row.source_id,
+                "context_sentence": sentence,
+                "created_at": row.created_at,
+                "word": word_lower,
+            }
+        )
+
+    # 4) Expand by searching full EPUB texts from recently read/studied sources
+    recent_sources_stmt = (
+        select(
+            ReadingSession.source_type,
+            ReadingSession.source_id,
+            ReadingSession.started_at,
+            ReadingSession.article_title,
+        )
+        .where(
+            ReadingSession.user_id == user_id,
+            ReadingSession.source_type == "epub",
+        )
+        .order_by(desc(ReadingSession.started_at))
+        .limit(180)
+    )
+    recent_sources_result = await db.execute(recent_sources_stmt)
+
+    recent_epub_sources: List[tuple[str, Optional[datetime], Optional[str]]] = []
+    seen_source_ids: Set[str] = set()
+    for row in recent_sources_result.all():
+        source_id = row.source_id
+        if not source_id or source_id in seen_source_ids:
+            continue
+        seen_source_ids.add(source_id)
+        recent_epub_sources.append((source_id, row.started_at, row.article_title))
+
+    for source_id, started_at, article_title in recent_epub_sources:
+        parsed = _parse_epub_source_id(source_id)
+        if not parsed:
+            continue
+        filename, chapter_index = parsed
+        try:
+            bundle = await content_service.get_content(
+                SourceType.EPUB,
+                filename=filename,
+                chapter_index=chapter_index,
+            )
+        except Exception:
+            continue
+
+        for sentence in _split_text_to_sentences(bundle.full_text or ""):
+            if not _sentence_contains_item(sentence, word_lower):
+                continue
+            normalized_sentence = " ".join(sentence.split()).lower()
+            if excluded_context and normalized_sentence == excluded_context:
+                continue
+            usage_rows.append(
+                {
+                    "source_type": "epub",
+                    "source_id": source_id,
+                    "context_sentence": sentence,
+                    "created_at": started_at,
+                    "word": word_lower,
+                    "source_title_hint": article_title or bundle.title,
+                }
+            )
+            if len(usage_rows) >= fetch_limit * 3:
+                break
+        if len(usage_rows) >= fetch_limit * 3:
+            break
+
+    usage_rows.sort(
+        key=lambda r: r.get("created_at") or datetime.min,
+        reverse=True,
+    )
+
+    source_keys = {
+        (row["source_type"], row["source_id"])
+        for row in usage_rows
+        if row.get("source_id")
+    }
+    source_title_map: Dict[tuple[str, str], str] = {}
+
+    reading_source_types = {
+        source_type for source_type, _ in source_keys if source_type in {"epub", "rss"}
+    }
+    reading_source_ids = [
+        source_id
+        for source_type, source_id in source_keys
+        if source_type in {"epub", "rss"} and source_id
+    ]
+
+    if reading_source_types and reading_source_ids:
+        reading_title_stmt = (
+            select(
+                ReadingSession.source_type,
+                ReadingSession.source_id,
+                ReadingSession.article_title,
+                ReadingSession.started_at,
+            )
+            .where(
+                ReadingSession.user_id == user_id,
+                ReadingSession.source_type.in_(reading_source_types),
+                ReadingSession.source_id.in_(reading_source_ids),
+                ReadingSession.article_title.isnot(None),
+                ReadingSession.article_title != "",
+            )
+            .order_by(desc(ReadingSession.started_at))
+        )
+        reading_title_result = await db.execute(reading_title_stmt)
+        for row in reading_title_result.all():
+            key = (row.source_type, row.source_id)
+            if key not in source_title_map:
+                source_title_map[key] = row.article_title
+
+    podcast_episode_ids: List[int] = []
+    for source_type, source_id in source_keys:
+        if source_type != "podcast":
+            continue
+        episode_id = _extract_podcast_episode_id(source_id)
+        if episode_id is not None:
+            podcast_episode_ids.append(episode_id)
+
+    podcast_title_map: Dict[int, str] = {}
+    if podcast_episode_ids:
+        podcast_stmt = select(PodcastEpisode.id, PodcastEpisode.title).where(
+            PodcastEpisode.id.in_(set(podcast_episode_ids))
+        )
+        podcast_result = await db.execute(podcast_stmt)
+        podcast_title_map = {
+            episode_id: title for episode_id, title in podcast_result.all()
+        }
+
+    seen_contexts = set()
+    usage_contexts: List[VocabularyContext] = []
+
+    for row in usage_rows:
+        source_type = row.get("source_type") or "unknown"
+        source_id = row.get("source_id")
+        sentence = row.get("context_sentence")
+        if not sentence:
+            continue
+
+        normalized_key = (
+            source_type.lower(),
+            (source_id or "").strip(),
+            " ".join(sentence.split()).lower(),
+        )
+        if normalized_key in seen_contexts:
+            continue
+        seen_contexts.add(normalized_key)
+
+        source_title = None
+        if source_id:
+            source_title = source_title_map.get((source_type, source_id))
+
+        if source_type == "podcast":
+            episode_id = _extract_podcast_episode_id(source_id)
+            if episode_id is not None:
+                source_title = source_title or podcast_title_map.get(episode_id)
+
+        source_title = (
+            source_title
+            or row.get("source_title_hint")
+            or _derive_source_title(source_type, source_id)
+        )
+        source_label = source_title or source_id or source_type
+
+        usage_contexts.append(
+            VocabularyContext(
+                source_type=source_type,
+                source_id=source_id,
+                source_title=source_title,
+                source_label=source_label,
+                context_sentence=sentence,
+                created_at=row.get("created_at") or datetime.utcnow(),
+                word=row.get("word") or word_lower,
+            )
+        )
+
+        if len(usage_contexts) >= limit:
+            break
+
+    return usage_contexts
 
 
 @router.get("/difficult-words", response_model=DifficultWordsResponse)

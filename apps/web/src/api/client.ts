@@ -10,8 +10,37 @@ export const explainInContext = async (word: string, sentence: string) => {
 };
 
 // Vocabulary
-export const getWordContexts = async (word: string) => {
-  return apiGet(`/api/vocabulary/contexts?word=${encodeURIComponent(word)}`);
+export interface GetWordContextsOptions {
+  limit?: number;
+  excludeSentence?: string;
+}
+
+export const getWordContexts = async (
+  word: string,
+  options: GetWordContextsOptions = {},
+) => {
+  const params = new URLSearchParams({ word });
+  if (options.limit && options.limit > 0) {
+    params.set("limit", String(options.limit));
+  }
+  if (options.excludeSentence && options.excludeSentence.trim()) {
+    params.set("exclude_sentence", options.excludeSentence.trim());
+  }
+  return apiGet(`/api/vocabulary/contexts?${params.toString()}`);
+};
+
+export const getWordUsages = async (
+  word: string,
+  options: GetWordContextsOptions = {},
+) => {
+  const params = new URLSearchParams({ word });
+  if (options.limit && options.limit > 0) {
+    params.set("limit", String(options.limit));
+  }
+  if (options.excludeSentence && options.excludeSentence.trim()) {
+    params.set("exclude_sentence", options.excludeSentence.trim());
+  }
+  return apiGet(`/api/vocabulary/usages?${params.toString()}`);
 };
 
 export const getDifficultWords = async () => {

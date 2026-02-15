@@ -283,6 +283,13 @@ The application supports loading multiple MDX dictionaries simultaneously.
 - **Data Sources**: Aggregates from `SentenceLearningRecord.word_clicks/phrase_clicks`, `VocabLearningLog`, `ReviewItem.highlighted_items`, and `WordProficiency`.
 - **Purpose**: Unified view for unfamiliar words/collocations with context samples, review queue status, and difficulty signals.
 
+### Vocabulary Context History
+
+- **API**: `GET /api/vocabulary/contexts?word=...`
+- **Behavior**: Returns explicit lookup history from `VocabLearningLog` only (for "我查过什么").
+- **Metadata**: Includes `source_title` / `source_label` for source-aware display in WordInspector (uses `ReadingSession.article_title` and podcast episode titles when available).
+- **Usage Exploration API**: `GET /api/vocabulary/usages?word=...&limit=10&exclude_sentence=...` aggregates from `SentenceLearningRecord`, `ReviewItem`, lookup logs, and recent EPUB source text search for cross-article "other usages".
+
 ### Collins Dictionary Parser
 
 High-quality structured data from Collins COBUILD dictionary.
@@ -409,15 +416,15 @@ A centralized logging system that collects both frontend and backend logs.
   > Don't commit `logs/unified.log` to git.
 
 **Categories** (Generic, not vendor-specific):
-| Category        | Description                   | Color  |
+| Category | Description | Color |
 | --------------- | ----------------------------- | ------ |
-| `user_input`    | User speech/text, STT results | Blue   |
-| `agent_output`  | AI responses, TTS             | Green  |
-| `function_call` | Tool/function executions      | Violet |
-| `audio`         | Audio processing, chunks      | Cyan   |
-| `network`       | API calls, WebSocket, latency | Yellow |
-| `lifecycle`     | Connect/disconnect/init       | White  |
-| `general`       | Default                       | White  |
+| `user_input` | User speech/text, STT results | Blue |
+| `agent_output` | AI responses, TTS | Green |
+| `function_call` | Tool/function executions | Violet |
+| `audio` | Audio processing, chunks | Cyan |
+| `network` | API calls, WebSocket, latency | Yellow |
+| `lifecycle` | Connect/disconnect/init | White |
+| `general` | Default | White |
 
 **For AI Debugging**: Read `logs/unified.log` directly:
 

@@ -283,6 +283,13 @@ The application supports loading multiple MDX dictionaries simultaneously.
 - **Data Sources**: Aggregates from `SentenceLearningRecord.word_clicks/phrase_clicks`, `VocabLearningLog`, `ReviewItem.highlighted_items`, and `WordProficiency`.
 - **Purpose**: Unified view for unfamiliar words/collocations with context samples, review queue status, and difficulty signals.
 
+### Vocabulary Context History
+
+- **API**: `GET /api/vocabulary/contexts?word=...`
+- **Behavior**: Returns explicit lookup history from `VocabLearningLog` only (for "我查过什么").
+- **Metadata**: Includes `source_title` / `source_label` for source-aware display in WordInspector (uses `ReadingSession.article_title` and podcast episode titles when available).
+- **Usage Exploration API**: `GET /api/vocabulary/usages?word=...&limit=10&exclude_sentence=...` aggregates from `SentenceLearningRecord`, `ReviewItem`, lookup logs, and recent EPUB source text search for cross-article "other usages".
+
 ### Collins Dictionary Parser
 
 High-quality structured data from Collins COBUILD dictionary.
