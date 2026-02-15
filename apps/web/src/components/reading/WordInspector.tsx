@@ -634,6 +634,16 @@ const WordInspector = ({
                   "{selectedWord}" is not in our dictionaries.
                 </p>
               </div>
+            ) : typedInspectorData == null ? (
+              <div className="flex flex-col items-center justify-center p-12 text-white/30 space-y-4">
+                <div className="relative">
+                  <div className="absolute inset-0 bg-accent-primary/20 blur-xl rounded-full animate-pulse" />
+                  <Loader2 className="relative w-8 h-8 animate-spin text-accent-primary" />
+                </div>
+                <span className="text-[10px] uppercase tracking-[0.2em] font-mono">
+                  Preparing Lookup...
+                </span>
+              </div>
             ) : (
               <div className="flex flex-col items-center justify-center p-12 text-accent-danger/70">
                 <AlertTriangle className="w-8 h-8 mb-4 opacity-50" />
