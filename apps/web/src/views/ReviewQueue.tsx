@@ -240,6 +240,26 @@ const ReviewQueue = () => {
   );
   const [isRandomMode, setIsRandomMode] = useState(false);
 
+  useEffect(() => {
+    const html = document.documentElement;
+    const prevHtmlOverflow = html.style.overflow;
+    const prevHtmlOverscroll = html.style.overscrollBehavior;
+    const prevBodyOverflow = document.body.style.overflow;
+    const prevBodyOverscroll = document.body.style.overscrollBehavior;
+
+    html.style.overflow = "hidden";
+    html.style.overscrollBehavior = "none";
+    document.body.style.overflow = "hidden";
+    document.body.style.overscrollBehavior = "none";
+
+    return () => {
+      html.style.overflow = prevHtmlOverflow;
+      html.style.overscrollBehavior = prevHtmlOverscroll;
+      document.body.style.overflow = prevBodyOverflow;
+      document.body.style.overscrollBehavior = prevBodyOverscroll;
+    };
+  }, []);
+
   // Context state
   const [contextData, setContextData] = useState<ReviewContextData | null>(
     null,
@@ -973,7 +993,7 @@ const ReviewQueue = () => {
   };
 
   return (
-    <div className="relative flex h-[100svh] min-h-screen flex-col overflow-x-hidden overflow-y-hidden bg-[#0a0f0d] font-sans md:h-[100dvh]">
+    <div className="relative flex h-[100svh] max-h-[100svh] w-full flex-col overflow-hidden bg-[#0a0f0d] font-sans md:h-[100dvh] md:max-h-[100dvh]">
       {/* Background Ambience */}
       <div className="absolute inset-0 bg-gradient-to-b from-[#0a1418] via-[#0c1815] to-[#0a0f0d] pointer-events-none" />
       <div className="absolute inset-0 opacity-30 pointer-events-none">
