@@ -1,5 +1,11 @@
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import type { ReactNode } from "react";
+import {
+  BrowserRouter,
+  Routes,
+  Route,
+  Navigate,
+  useLocation,
+} from "react-router-dom";
+import { useEffect, type ReactNode } from "react";
 import { GlobalProvider } from "./context/GlobalContext";
 import { DictionaryProvider } from "./context/DictionaryContext";
 import { AuthProvider, useAuth } from "./context/AuthContext";
@@ -67,6 +73,12 @@ function PublicRoute({ children }: { children: ReactNode }) {
 }
 
 function AppRoutes() {
+  const { pathname } = useLocation();
+
+  useEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: "auto" });
+  }, [pathname]);
+
   return (
     <Routes>
       {/* Auth routes (public only) */}
