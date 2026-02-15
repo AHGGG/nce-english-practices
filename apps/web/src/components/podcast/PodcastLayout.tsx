@@ -8,6 +8,7 @@ import { useState, useEffect, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import {
   ArrowLeft,
+  ChevronRight,
   Headphones,
   Search,
   Library,
@@ -29,6 +30,8 @@ interface StorageInfo {
   quotaMB: string;
 }
 
+const PODCAST_TAB_SCROLL_KEY = "podcast:tabs:scrollLeft";
+
 export default function PodcastLayout({
   children,
   title,
@@ -45,6 +48,7 @@ export default function PodcastLayout({
   const downloadsTabRef = useRef<HTMLButtonElement | null>(null);
   const favoritesTabRef = useRef<HTMLButtonElement | null>(null);
   const playlistsTabRef = useRef<HTMLButtonElement | null>(null);
+  const hasInitializedTabPositionRef = useRef(false);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(false);
 
@@ -75,10 +79,24 @@ export default function PodcastLayout({
     const nav = navRef.current;
     if (!nav) return;
 
+    const savedScrollLeft = window.sessionStorage.getItem(
+      PODCAST_TAB_SCROLL_KEY,
+    );
+    if (savedScrollLeft) {
+      const parsedScrollLeft = Number(savedScrollLeft);
+      if (Number.isFinite(parsedScrollLeft)) {
+        nav.scrollLeft = parsedScrollLeft;
+      }
+    }
+
     const updateScrollState = () => {
       const maxScroll = nav.scrollWidth - nav.clientWidth;
       setCanScrollLeft(nav.scrollLeft > 4);
       setCanScrollRight(maxScroll - nav.scrollLeft > 4);
+      window.sessionStorage.setItem(
+        PODCAST_TAB_SCROLL_KEY,
+        String(nav.scrollLeft),
+      );
     };
 
     updateScrollState();
@@ -86,17 +104,42 @@ export default function PodcastLayout({
     window.addEventListener("resize", updateScrollState);
 
     return () => {
+      window.sessionStorage.setItem(
+        PODCAST_TAB_SCROLL_KEY,
+        String(nav.scrollLeft),
+      );
       nav.removeEventListener("scroll", updateScrollState);
       window.removeEventListener("resize", updateScrollState);
     };
   }, []);
 
   useEffect(() => {
-    activeTabRef.current?.scrollIntoView({
-      behavior: "smooth",
-      inline: "center",
-      block: "nearest",
-    });
+    const nav = navRef.current;
+    const activeTab = activeTabRef.current;
+    if (!nav || !activeTab) return;
+
+    if (!hasInitializedTabPositionRef.current) {
+      activeTab.scrollIntoView({
+        behavior: "auto",
+        inline: "center",
+        block: "nearest",
+      });
+      hasInitializedTabPositionRef.current = true;
+      return;
+    }
+
+    const navRect = nav.getBoundingClientRect();
+    const tabRect = activeTab.getBoundingClientRect();
+    const isTabOutOfView =
+      tabRect.left < navRect.left || tabRect.right > navRect.right;
+
+    if (isTabOutOfView) {
+      activeTab.scrollIntoView({
+        behavior: "auto",
+        inline: "nearest",
+        block: "nearest",
+      });
+    }
   }, [location.pathname, activeTabRef]);
 
   return (
@@ -238,10 +281,11 @@ export default function PodcastLayout({
               <div className="pointer-events-none absolute left-0 top-0 h-full w-7 bg-gradient-to-r from-[#0a0f0d] via-[#0a0f0d]/85 to-transparent sm:hidden" />
             )}
             {canScrollRight && (
-              <div className="pointer-events-none absolute right-0 top-0 h-full w-9 bg-gradient-to-l from-[#0a0f0d] via-[#0a0f0d]/90 to-transparent sm:hidden flex items-center justify-end pr-1 text-white/45">
-                <span className="text-[10px] font-mono uppercase tracking-wide">
-                  more
-                </span>
+              <div className="pointer-events-none absolute right-0 top-0 h-full w-10 bg-gradient-to-l from-[#0a0f0d] via-[#0a0f0d]/90 to-transparent sm:hidden flex items-center justify-end pr-1.5">
+                <div className="flex items-center gap-1 text-white/45">
+                  <span className="h-1 w-1 rounded-full bg-white/45" />
+                  <ChevronRight className="w-3.5 h-3.5" />
+                </div>
               </div>
             )}
           </div>
