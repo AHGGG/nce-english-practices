@@ -1,15 +1,19 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with this repository.
+This file provides guidance to Coding agent when working with this repository.
 
 ## Project Overview
 
-This is a comprehensive English learning platform that combines:
+This is a comprehensive AI-powered English learning platform that combines:
 
-1. **Tense Practice**: Interactive exercises across 16 tense variations using LLM generation.
-2. **Hybrid Dictionary**: Multi-dictionary support (MDX format) with rich definitions, audio, and images.
-3. **Scenario Roleplay**: Real-time AI chat for practicing specific grammar points in realistic contexts.
-4. **Voice Practice**: Real-time voice conversation using Gemini Native Audio API.
+1. **Hybrid Dictionary** - Collins COBUILD + Longman LDOCE with AI context explanations
+2. **Sentence Study** - Progressive i+1 learning with 4-stage scaffolding
+3. **Voice Practice** - Real-time AI conversation with Gemini/Deepgram
+4. **Scenario Roleplay** - Contextual dialogue with specified topics & tenses
+5. **Podcast System** - Subscription, offline playback & AI transcription
+6. **Audiobook Player** - Synchronized subtitles (SRT/VTT/LRC)
+7. **SM-2 Review** - Spaced repetition with memory curve visualization
+8. **Weak Points Tracking** - Unified view of difficult vocabulary & phrases
 
 The backend is built with **FastAPI** and the frontend is a **React** Single Page Application (SPA) built with **Vite**.
 

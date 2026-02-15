@@ -151,68 +151,75 @@ const NavDashboard = () => {
       title: "Voice Mode",
       path: "/voice",
       icon: Mic,
-      description: "Real-time voice conversation practice with AI tutors.",
+      description:
+        "Real-time AI voice conversation with Gemini. Practice speaking with instant feedback.",
     },
     {
-      title: "Reading Mode",
+      title: "Reading",
       path: "/reading",
       icon: BookOpen,
-      description: "Immersive reading with instant dictionary lookups.",
+      description:
+        "Immersive reading with AI-powered word lookup & context explanations.",
     },
     {
       title: "Sentence Study",
       path: "/sentence-study",
       icon: Target,
-      description: "Study articles sentence by sentence with feedback.",
+      description:
+        "Progressive sentence learning with i+1 theory. 4-stage scaffolding from original to mastery.",
     },
     {
       title: "Performance",
       path: "/performance",
       icon: BarChart2,
-      description: "Detailed analytics and progress tracking.",
+      description: "Memory curve visualization & detailed learning analytics.",
     },
     {
       title: "Review Queue",
       path: "/review-queue",
       icon: Brain,
-      description: "Spaced repetition for optimal retention.",
+      description:
+        "SM-2 spaced repetition algorithm. Optimal retention with memory curve tracking.",
     },
     {
       title: "Proficiency Lab",
       path: "/lab/calibration",
       icon: Activity,
-      description: "Diagnostic mission to calibrate your profile.",
+      description: "Diagnostic missions to calibrate your proficiency profile.",
     },
     {
       title: "Voice Lab",
       path: "/voice-lab",
       icon: Radio,
-      description: "Test various voice synthesis providers.",
+      description:
+        "Test Deepgram, ElevenLabs & Edge-TTS. Voice agent experiments.",
     },
     {
       title: "Podcast",
       path: "/podcast",
       icon: Headphones,
-      description: "Listen and study with transcription mode.",
+      description:
+        "Subscribe, download & study with AI transcription. Cross-device sync.",
     },
     {
       title: "Audiobook",
       path: "/audiobook",
       icon: BookOpen,
-      description: "Listen to audiobooks with synchronized subtitles.",
+      description:
+        "Audiobooks with synchronized subtitles. SRT/VTT/LRC format support.",
     },
     {
       title: "Weak Points",
       path: "/weak-points",
       icon: BookMarked,
       description:
-        "Review your unfamiliar words and collocations in one place.",
+        "Track unfamiliar words & phrases. Aggregated from learning sessions with difficulty scores.",
     },
     {
-      title: "System Settings",
+      title: "Settings",
       path: "/settings",
       icon: Settings,
-      description: "Configure application preferences.",
+      description: "Configure preferences, themes & API keys.",
     },
   ];
 
@@ -289,27 +296,28 @@ const NavDashboard = () => {
           <div className="inline-flex items-center gap-2 px-4 py-2 bg-accent-primary/10 border border-accent-primary/20 rounded-full mb-8 backdrop-blur-md shadow-[0_0_15px_rgba(var(--color-accent-primary-rgb),0.1)] animate-fade-in">
             <Sparkles className="w-4 h-4 text-accent-primary animate-pulse-slow" />
             <span className="text-sm font-medium text-accent-primary/90 tracking-wide">
-              AI-Powered Learning Platform
+              Your Personal English Coach
             </span>
           </div>
 
           {/* Main headline */}
           <h1 className="text-4xl sm:text-5xl md:text-7xl font-serif font-bold text-white leading-[1.1] tracking-tight mb-8 drop-shadow-2xl">
-            Grammar Training
+            AI-Powered
             <br />
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-accent-primary via-accent-secondary to-accent-primary bg-[length:200%_auto] animate-gradient">
-              Through the Dark
+              English Mastery
             </span>
           </h1>
 
           {/* Subtitle */}
           <p className="text-base sm:text-lg md:text-xl text-white/60 max-w-2xl mx-auto mb-10 leading-relaxed px-4">
-            Master English with intelligent AI tutors that guide your journey
+            Master English with intelligent AI tutors. Dictionary lookup, voice
+            practice,
             <span className="text-accent-primary/80 font-medium">
               {" "}
-              through the complexities
+              spaced repetition
             </span>{" "}
-            of grammar.
+            & personalized learning.
           </p>
 
           {/* CTA Buttons */}
@@ -347,7 +355,7 @@ const NavDashboard = () => {
                 <Compass className="w-5 h-5 text-accent-primary" />
               </div>
               <h2 className="text-lg font-bold text-white uppercase tracking-widest">
-                Training Modules
+                Learning Modules
               </h2>
             </div>
             <div className="flex-1 h-px bg-gradient-to-r from-white/[0.1] to-transparent" />
