@@ -13,7 +13,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, case
 from datetime import datetime
 
-from app.core.db import get_db
+from app.core.db import get_db, AsyncSessionLocal
 from app.models.orm import (
     SentenceLearningRecord,
     UserComprehensionProfile,
@@ -485,7 +485,7 @@ async def prefetch_collocations(req: PrefetchCollocationsRequest):
     "/detect-collocations-batch", response_model=DetectCollocationsBatchResponse
 )
 async def detect_collocations_batch(
-    req: DetectCollocationsBatchRequest, db: AsyncSession = Depends(get_db)
+    req: DetectCollocationsBatchRequest,
 ):
     """
     Detect collocations for multiple sentences at once (max 10).
@@ -498,9 +498,12 @@ async def detect_collocations_batch(
 
     async def detect_one(sentence: str):
         try:
-            collocations = await sentence_study_service.get_or_detect_collocations(
-                db=db, sentence=sentence
-            )
+            # Use an isolated DB session per task to avoid concurrent transaction
+            # state conflicts when batch detection runs in parallel.
+            async with AsyncSessionLocal() as isolated_db:
+                collocations = await sentence_study_service.get_or_detect_collocations(
+                    db=isolated_db, sentence=sentence
+                )
             # Convert dict to CollocationItem
             return sentence, [CollocationItem(**c) for c in collocations]
         except Exception as e:

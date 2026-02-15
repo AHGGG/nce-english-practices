@@ -8,6 +8,7 @@ Contains LLM streaming, caching, and diagnosis utilities.
 import hashlib
 import json
 import logging
+import re
 from typing import Dict, List, Optional, Any
 from datetime import timedelta
 
@@ -913,7 +914,18 @@ class SentenceStudyService:
             if content.startswith("```"):
                 content = content.split("\n", 1)[1].rsplit("```", 1)[0]
 
-            collocations = json.loads(content)
+            try:
+                collocations = json.loads(content)
+            except json.JSONDecodeError:
+                # Fallback: extract first JSON array block from noisy model output.
+                match = re.search(r"\[[\s\S]*\]", content)
+                if not match:
+                    logger.warning(
+                        "Collocation JSON parse failed (no array found), sentence preview: %s",
+                        sentence[:80],
+                    )
+                    return []
+                collocations = json.loads(match.group(0))
 
             # Validation
             valid_collocations = []
