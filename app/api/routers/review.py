@@ -8,103 +8,31 @@ from typing import List, Optional, Dict, Any
 import math
 
 from fastapi import APIRouter, Depends, HTTPException
-from pydantic import BaseModel
 from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.db import get_db
 from app.models.orm import ReviewItem, ReviewLog
+from app.models.review_schemas import (
+    CompleteReviewRequest,
+    CompleteReviewResponse,
+    CreateReviewRequest,
+    CreateReviewResponse,
+    MemoryCurveDebugBucket,
+    MemoryCurveDebugLog,
+    MemoryCurveDebugResponse,
+    MemoryCurvePoint,
+    MemoryCurveResponse,
+    ReviewContextResponse,
+    ReviewQueueItem,
+    ReviewQueueResponse,
+    ReviewScheduleItem,
+    ReviewScheduleResponse,
+)
 from app.api.deps.auth import get_current_user_id
 from app.services.log_collector import log_collector, LogLevel, LogCategory
 
 router = APIRouter(prefix="/api/review", tags=["review"])
-
-
-# ============================================================
-# Request/Response Models
-# ============================================================
-
-
-class ReviewQueueItem(BaseModel):
-    """Item in the review queue."""
-
-    id: int
-    source_id: str
-    sentence_index: int
-    sentence_text: str
-    highlighted_items: List[str]
-    difficulty_type: str
-    interval_days: float
-    repetition: int
-    next_review_at: str
-    created_at: str
-
-
-class ReviewQueueResponse(BaseModel):
-    """Response with review queue items."""
-
-    items: List[ReviewQueueItem]
-    count: int
-
-
-class CompleteReviewRequest(BaseModel):
-    """Request to complete a review."""
-
-    item_id: int
-    quality: int  # 1=forgot, 2=remembered after help, 3=remembered, 5=easy
-    duration_ms: int = 0
-
-
-class CompleteReviewResponse(BaseModel):
-    """Response after completing a review."""
-
-    next_review_at: str
-    new_interval: float
-    new_ef: float
-    repetition: int
-
-
-class CreateReviewRequest(BaseModel):
-    """Request to create a review item."""
-
-    source_id: str
-    sentence_index: int
-    sentence_text: str
-    highlighted_items: List[str] = []
-    difficulty_type: str = "vocabulary"
-
-
-class CreateReviewResponse(BaseModel):
-    """Response after creating review item."""
-
-    id: int
-    next_review_at: str
-
-
-class MemoryCurvePoint(BaseModel):
-    """A point on the memory curve."""
-
-    days_since_first_review: int
-    retention_rate: float
-
-
-class MemoryCurveResponse(BaseModel):
-    """Memory curve statistics."""
-
-    theoretical: List[MemoryCurvePoint]
-    actual: List[MemoryCurvePoint]
-    total_reviews: int
-    successful_reviews: int
-
-
-class ReviewContextResponse(BaseModel):
-    """Context for a review item."""
-
-    previous_sentence: Optional[str] = None
-    target_sentence: str
-    next_sentence: Optional[str] = None
-    source_title: Optional[str] = None
-    chapter_title: Optional[str] = None
 
 
 # ============================================================
@@ -175,20 +103,6 @@ def calculate_theoretical_retention(days: int, stability: float = 10.0) -> float
 # ============================================================
 # API Endpoints
 # ============================================================
-
-
-class ReviewScheduleItem(BaseModel):
-    id: int
-    text: str
-    next_review_at: datetime
-    ef: float
-    interval: float
-    repetition: int
-    last_review: Optional[Dict[str, Any]] = None
-
-
-class ReviewScheduleResponse(BaseModel):
-    schedule: Dict[str, List[ReviewScheduleItem]]
 
 
 @router.get("/debug/schedule", response_model=ReviewScheduleResponse)
@@ -280,38 +194,6 @@ async def get_review_schedule_debug(
         )
 
     return ReviewScheduleResponse(schedule=schedule)
-
-
-class MemoryCurveDebugBucket(BaseModel):
-    """Debug info for a memory curve bucket."""
-
-    day: int
-    interval_range: str
-    sample_size: int
-    success_count: int
-    retention_rate: Optional[float]
-
-
-class MemoryCurveDebugLog(BaseModel):
-    """Debug info for a single review log."""
-
-    id: int
-    review_item_id: int
-    interval_at_review: float
-    quality: int
-    reviewed_at: str
-    duration_ms: int
-    sentence_preview: Optional[str] = None
-
-
-class MemoryCurveDebugResponse(BaseModel):
-    """Debug response for memory curve analysis."""
-
-    total_logs: int
-    interval_distribution: Dict[str, int]  # interval range -> count
-    buckets: List[MemoryCurveDebugBucket]
-    recent_logs: List[MemoryCurveDebugLog]
-    summary: Dict[str, Any]
 
 
 @router.get("/debug/memory-curve", response_model=MemoryCurveDebugResponse)
