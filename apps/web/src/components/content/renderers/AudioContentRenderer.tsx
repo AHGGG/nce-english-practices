@@ -85,7 +85,9 @@ function AudioSegmentBlock({
       const word = target.dataset?.word;
       const sentence = target.dataset?.sentence;
 
-      if (word && onWordClick) {
+      // Only allow word/collocation lookup on the currently active subtitle.
+      // For non-active lines, any click should jump playback to that line.
+      if (isActive && word && onWordClick) {
         e.stopPropagation();
         onWordClick(word.toLowerCase(), sentence || "");
       } else {
@@ -93,7 +95,7 @@ function AudioSegmentBlock({
         onClick?.();
       }
     },
-    [onClick, onWordClick],
+    [isActive, onClick, onWordClick],
   );
 
   return (

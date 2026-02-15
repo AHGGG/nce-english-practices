@@ -54,6 +54,7 @@ export default function UnifiedPlayerView() {
   // Audio Player State Tracking
   const wasPlayingRef = useRef(false);
   const prevSelectedWordRef = useRef<string | null>(null);
+  const lastCollocationBucketRef = useRef<number | null>(null);
 
   // Collocation loader for phrase highlighting
   const { getCollocations, loadCollocations } = useCollocationLoader({
@@ -126,26 +127,6 @@ export default function UnifiedPlayerView() {
     }
   }
 
-  // Load collocations when bundle is ready
-  useEffect(() => {
-    if (!bundle?.blocks) return;
-
-    // Extract all sentences from audio segments
-    const allSentences: string[] = [];
-    bundle.blocks.forEach((block: ContentBlock) => {
-      if (block.type === "audio_segment" && block.sentences) {
-        allSentences.push(...block.sentences);
-      } else if (block.type === "audio_segment" && block.text) {
-        allSentences.push(block.text);
-      }
-    });
-
-    if (allSentences.length > 0) {
-      // Load collocations for first batch
-      loadCollocations(allSentences.slice(0, 20));
-    }
-  }, [bundle, loadCollocations]);
-
   // Handle word click
   const handleWordClick = useCallback(
     (word: string, sentence: string) => {
@@ -173,6 +154,43 @@ export default function UnifiedPlayerView() {
     audioUrl: bundle?.audio_url || "",
     segments,
   });
+
+  useEffect(() => {
+    lastCollocationBucketRef.current = null;
+  }, [bundle?.id]);
+
+  // Continuously load collocations around current playback position.
+  // This ensures later subtitles are recognized, not only the first screen.
+  useEffect(() => {
+    if (!segments.length) return;
+
+    const activeIndex = Math.max(0, audioState.activeSegmentIndex);
+    const bucketSize = 8;
+    const currentBucket = Math.floor(activeIndex / bucketSize);
+
+    // Avoid reloading on every single subtitle tick.
+    if (lastCollocationBucketRef.current === currentBucket) return;
+    lastCollocationBucketRef.current = currentBucket;
+
+    const start = Math.max(0, currentBucket * bucketSize - 8);
+    const end = Math.min(
+      segments.length,
+      (currentBucket + 1) * bucketSize + 40,
+    );
+
+    const sentences = segments
+      .slice(start, end)
+      .flatMap((segment) =>
+        segment.sentences.length > 0 ? segment.sentences : [segment.text],
+      )
+      .filter((sentence) => Boolean(sentence && sentence.trim()));
+
+    const uniqueSentences = Array.from(new Set(sentences));
+
+    if (uniqueSentences.length > 0) {
+      void loadCollocations(uniqueSentences);
+    }
+  }, [segments, audioState.activeSegmentIndex, loadCollocations]);
 
   // Handle auto-pause/resume on word lookup
   useEffect(() => {

@@ -148,27 +148,32 @@ export function useCollocationLoader(
       toLoad.forEach((s) => pendingRef.current.add(hashSentence(s)));
 
       try {
-        // Use batch API for efficiency (handles up to 10 sentences)
-        const batchResult =
-          await sentenceStudyApi.detectCollocationsBatch(toLoad);
+        // Backend batch endpoint accepts max 10 sentences.
+        // Split client-side to avoid silent truncation and stale empty-cache writes.
+        const chunkSize = 10;
+        for (let i = 0; i < toLoad.length; i += chunkSize) {
+          const chunk = toLoad.slice(i, i + chunkSize);
+          const batchResult =
+            await sentenceStudyApi.detectCollocationsBatch(chunk);
 
-        // Update cache with results
-        Object.entries(batchResult.results || {}).forEach(
-          ([sentence, collocations]) => {
+          // Update cache with results
+          Object.entries(batchResult.results || {}).forEach(
+            ([sentence, collocations]) => {
+              const hash = hashSentence(sentence);
+              cacheRef.current.set(hash, collocations as Collocation[]);
+              pendingRef.current.delete(hash);
+            },
+          );
+
+          // Mark missing sentences in this chunk as empty (API omission fallback)
+          chunk.forEach((sentence) => {
             const hash = hashSentence(sentence);
-            cacheRef.current.set(hash, collocations as Collocation[]);
+            if (!cacheRef.current.has(hash)) {
+              cacheRef.current.set(hash, []);
+            }
             pendingRef.current.delete(hash);
-          },
-        );
-
-        // Mark any missing sentences as empty (in case API didn't return them)
-        toLoad.forEach((sentence) => {
-          const hash = hashSentence(sentence);
-          if (!cacheRef.current.has(hash)) {
-            cacheRef.current.set(hash, []);
-            pendingRef.current.delete(hash);
-          }
-        });
+          });
+        }
 
         console.log(
           "[useCollocationLoader] Cache updated, triggering re-render. Cache size:",
