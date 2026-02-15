@@ -92,6 +92,52 @@ interface OverviewData {
   difficulty_hint?: string;
 }
 
+const buildOverviewFallback = (errorMessage?: string): OverviewData => {
+  const isContentRisk = /content exists risk/i.test(errorMessage || "");
+
+  if (isContentRisk) {
+    return {
+      summary_en:
+        "Overview is unavailable because this article was flagged by content safety checks. You can still start sentence study now.",
+      summary_zh:
+        "Content safety blocked overview generation. You can still start sentence-by-sentence study.",
+      key_topics: [],
+      difficulty_hint:
+        "Overview skipped due to content risk. Continue with sentence-by-sentence practice.",
+    };
+  }
+
+  return {
+    summary_en:
+      "Overview is temporarily unavailable. You can still start sentence study and learn from each sentence directly.",
+    summary_zh:
+      "Overview is temporarily unavailable. You can still start sentence-by-sentence study.",
+    key_topics: [],
+    difficulty_hint:
+      "Overview failed to generate. Continue with sentence-by-sentence practice.",
+  };
+};
+
+const tryParseOverviewJSON = (raw: string): OverviewData | null => {
+  if (!raw) return null;
+  try {
+    const data = JSON.parse(raw);
+    if (!data || typeof data !== "object") return null;
+    const hasSummary =
+      typeof data.summary_en === "string" ||
+      typeof data.summary_zh === "string";
+    if (!hasSummary) return null;
+    return {
+      summary_en: data.summary_en,
+      summary_zh: data.summary_zh,
+      key_topics: Array.isArray(data.key_topics) ? data.key_topics : [],
+      difficulty_hint: data.difficulty_hint,
+    };
+  } catch {
+    return null;
+  }
+};
+
 interface LastSession {
   source_id?: string;
 }
@@ -468,24 +514,89 @@ const SentenceStudy = () => {
           totalSentences,
         );
 
+        if (!res.ok && !isSSEResponse(res)) {
+          let errorMessage = "";
+          try {
+            const errorData = await res.json();
+            errorMessage =
+              errorData?.error?.message ||
+              errorData?.detail ||
+              errorData?.message ||
+              "";
+          } catch {
+            try {
+              errorMessage = await res.text();
+            } catch {
+              errorMessage = "";
+            }
+          }
+
+          setOverview(buildOverviewFallback(errorMessage));
+          addToast(
+            /content exists risk/i.test(errorMessage)
+              ? "Article overview blocked by content risk. You can start study directly."
+              : "Failed to generate article overview. You can start study directly.",
+            "warning",
+          );
+          return;
+        }
+
         if (isSSEResponse(res)) {
+          let streamContent = "";
+          let hasDoneOverview = false;
+          let streamErrorMessage = "";
+
           await parseJSONSSEStream(res, {
-            onChunk: (content) =>
-              setOverviewStreamContent((prev) => prev + content),
-            onDone: (data) =>
-              setOverview((data.overview || null) as OverviewData),
+            onChunk: (content) => {
+              streamContent += content;
+              setOverviewStreamContent((prev) => prev + content);
+            },
+            onDone: (data) => {
+              if (data?.overview) {
+                hasDoneOverview = true;
+                setOverview((data.overview || null) as OverviewData);
+              }
+            },
+            onError: (error) => {
+              streamErrorMessage = error.message || "";
+              setOverview(buildOverviewFallback(streamErrorMessage));
+              addToast(
+                /content exists risk/i.test(streamErrorMessage)
+                  ? "Article overview blocked by content risk. You can start study directly."
+                  : "Failed to generate article overview. You can start study directly.",
+                "warning",
+              );
+            },
           });
+
+          if (!hasDoneOverview && !streamErrorMessage) {
+            const parsedOverview = tryParseOverviewJSON(streamContent);
+            setOverview(parsedOverview || buildOverviewFallback());
+          }
         } else {
-          setOverview((await res.json()) as OverviewData);
+          const data = await res.json();
+          if (data?.summary_en || data?.summary_zh) {
+            setOverview(data as OverviewData);
+          } else {
+            const errorMessage =
+              data?.error?.message || data?.detail || data?.message || "";
+            setOverview(buildOverviewFallback(errorMessage));
+            addToast(
+              /content exists risk/i.test(errorMessage)
+                ? "Article overview blocked by content risk. You can start study directly."
+                : "Failed to generate article overview. You can start study directly.",
+              "warning",
+            );
+          }
         }
       } catch (e) {
         console.error("Failed to load article:", e);
+        setOverview(buildOverviewFallback(String(e)));
       } finally {
-        setLoading(false);
         setLoading(false);
       }
     },
-    [highlightOptionIndex],
+    [highlightOptionIndex, addToast],
   );
 
   const startSentenceStudy = useCallback(() => {
