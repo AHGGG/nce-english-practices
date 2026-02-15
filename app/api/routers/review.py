@@ -14,7 +14,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.db import get_db
 from app.models.orm import ReviewItem, ReviewLog
-from app.api.routers.auth import get_current_user_id
+from app.api.deps.auth import get_current_user_id
 from app.services.log_collector import log_collector, LogLevel, LogCategory
 
 router = APIRouter(prefix="/api/review", tags=["review"])

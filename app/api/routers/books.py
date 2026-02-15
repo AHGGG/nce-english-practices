@@ -5,7 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.db import get_db
 from app.services.word_list_service import word_list_service
-from app.api.routers.auth import get_current_user_id
+from app.api.deps.auth import get_current_user_id
 
 router = APIRouter(prefix="/books", tags=["books"])
 

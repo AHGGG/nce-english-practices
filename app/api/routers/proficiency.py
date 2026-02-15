@@ -3,7 +3,7 @@ from pydantic import BaseModel
 from typing import List, Optional
 
 from app.services.proficiency_service import proficiency_service
-from app.api.routers.auth import get_current_user_id
+from app.api.deps.auth import get_current_user_id
 
 router = APIRouter(tags=["Proficiency"])
 
@@ -20,7 +20,9 @@ class SweepPayload(BaseModel):
 
 
 @router.put("/api/proficiency/word")
-async def update_word_proficiency(payload: WordUpdatePayload, user_id: str = Depends(get_current_user_id)):
+async def update_word_proficiency(
+    payload: WordUpdatePayload, user_id: str = Depends(get_current_user_id)
+):
     """
     Explicitly update a word's status (e.g., Mark as Known).
     """
@@ -36,7 +38,9 @@ async def update_word_proficiency(payload: WordUpdatePayload, user_id: str = Dep
 
 
 @router.post("/api/proficiency/sweep")
-async def sweep_words(payload: SweepPayload, user_id: str = Depends(get_current_user_id)):
+async def sweep_words(
+    payload: SweepPayload, user_id: str = Depends(get_current_user_id)
+):
     """
     Batch mark words as known (Sweep) and analyze frequency bands.
     """
@@ -62,7 +66,9 @@ class CalibrationPayload(BaseModel):
 
 
 @router.post("/api/proficiency/calibrate")
-async def calibrate_proficiency(payload: CalibrationPayload, user_id: str = Depends(get_current_user_id)):
+async def calibrate_proficiency(
+    payload: CalibrationPayload, user_id: str = Depends(get_current_user_id)
+):
     """
     Process a calibration session to update proficiency and diagnose syntax gaps.
     """
@@ -100,7 +106,9 @@ class CalibrationLevelPayload(BaseModel):
 
 
 @router.put("/api/proficiency/calibration/level")
-async def save_calibration_level(payload: CalibrationLevelPayload, user_id: str = Depends(get_current_user_id)):
+async def save_calibration_level(
+    payload: CalibrationLevelPayload, user_id: str = Depends(get_current_user_id)
+):
     """
     Save user's calibration level.
     Called after calibration is complete.

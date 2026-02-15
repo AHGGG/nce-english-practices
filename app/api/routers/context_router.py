@@ -18,7 +18,7 @@ from app.models.context_schemas import (
     UpdateLearningStatusRequest,
 )
 from app.services.context_service import context_service
-from app.api.routers.auth import get_current_user_id
+from app.api.deps.auth import get_current_user_id
 
 
 router = APIRouter(prefix="/api/context", tags=["Context Resources"])

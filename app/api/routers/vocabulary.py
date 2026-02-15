@@ -18,7 +18,7 @@ from app.models.orm import (
 from app.models.podcast_orm import PodcastEpisode
 from app.services.content_service import content_service
 from app.models.content_schemas import SourceType
-from app.api.routers.auth import get_current_user
+from app.api.deps.auth import get_current_user
 
 router = APIRouter(prefix="/api/vocabulary", tags=["vocabulary"])
 

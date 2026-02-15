@@ -15,7 +15,7 @@ from app.services.dictionary import dict_manager
 from app.services.collins_parser import collins_parser
 from app.services.ldoce_parser import ldoce_parser
 from app.models.orm import VocabLearningLog
-from app.api.routers.auth import get_current_user_id
+from app.api.deps.auth import get_current_user_id
 
 router = APIRouter(prefix="/api", tags=["inspect"])
 
@@ -139,7 +139,9 @@ async def inspect_word(
 
 @router.get("/inspect/history")
 async def get_word_history(
-    word: str, user_id: str = Depends(get_current_user_id), db: AsyncSession = Depends(get_db)
+    word: str,
+    user_id: str = Depends(get_current_user_id),
+    db: AsyncSession = Depends(get_db),
 ):
     """
     Get learning history for a word: all contexts where it was encountered.

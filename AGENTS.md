@@ -240,6 +240,8 @@ app/
 
 Multi-user authentication with JWT tokens, token refresh strategy, and data migration tools. See: [Auth System Documentation](docs/auth-system.md)
 
+- **Router dependency entrypoint**: `app/api/deps/auth.py` re-exports auth dependencies (`get_current_user`, `require_current_user`, `get_current_user_id`) so business routers do not import from `app/api/routers/auth.py` directly.
+
 ### Database Layer
 
 - **Engine**: PostgreSQL with async support (`asyncpg`).

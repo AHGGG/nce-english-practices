@@ -4,7 +4,7 @@ from bs4 import BeautifulSoup
 from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.routers.auth import get_current_user_id
+from app.api.deps.auth import get_current_user_id
 from app.core.db import get_db
 from app.services.content_service import content_service
 from app.models.content_schemas import SourceType

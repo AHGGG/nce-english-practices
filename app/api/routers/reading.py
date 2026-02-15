@@ -13,7 +13,7 @@ from app.database import (
     end_reading_session,
     get_reading_stats_v2,
 )
-from app.api.routers.auth import get_current_user_id
+from app.api.deps.auth import get_current_user_id
 
 router = APIRouter(prefix="/api/reading", tags=["reading"])
 
@@ -77,7 +77,9 @@ class WordClickRequest(BaseModel):
 
 
 @router.post("/start")
-async def api_start_reading(body: StartSessionRequest, user_id: str = Depends(get_current_user_id)):
+async def api_start_reading(
+    body: StartSessionRequest, user_id: str = Depends(get_current_user_id)
+):
     """Start a new reading session."""
     session_id = await start_reading_session(
         user_id=user_id,

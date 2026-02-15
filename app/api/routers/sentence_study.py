@@ -41,7 +41,7 @@ from app.models.sentence_study_schemas import (
     ProfileResponse,
     CollocationItem,
 )
-from app.api.routers.auth import get_current_user_id
+from app.api.deps.auth import get_current_user_id
 from app.services.log_collector import log_collector, LogLevel, LogCategory
 
 router = APIRouter(prefix="/api/sentence-study", tags=["sentence-study"])

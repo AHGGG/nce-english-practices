@@ -11,7 +11,7 @@ from pydantic import BaseModel
 import logging
 from pathlib import Path
 
-from app.api.routers.auth import get_current_user_id
+from app.api.deps.auth import get_current_user_id
 from app.services.content_service import content_service
 from app.services.content_providers.audiobook_provider import AudiobookProvider
 from app.models.content_schemas import SourceType
