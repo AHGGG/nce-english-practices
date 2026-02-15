@@ -552,6 +552,36 @@ class PodcastService:
 
         return subscriptions
 
+    async def get_feed_episode_count(self, db: AsyncSession, feed_id: int) -> int:
+        """Get total episode count for a feed."""
+        stmt = select(func.count(PodcastEpisode.id)).where(
+            PodcastEpisode.feed_id == feed_id
+        )
+        result = await db.execute(stmt)
+        return int(result.scalar_one() or 0)
+
+    async def get_feed_image_url(self, db: AsyncSession, feed_id: int) -> Optional[str]:
+        """Get feed image URL by feed id."""
+        stmt = select(PodcastFeed.image_url).where(PodcastFeed.id == feed_id)
+        result = await db.execute(stmt)
+        return result.scalar_one_or_none()
+
+    async def get_episode_image_url(
+        self, db: AsyncSession, episode_id: int
+    ) -> Optional[str]:
+        """Get episode image URL by episode id."""
+        stmt = select(PodcastEpisode.image_url).where(PodcastEpisode.id == episode_id)
+        result = await db.execute(stmt)
+        return result.scalar_one_or_none()
+
+    async def get_episode_audio_url(
+        self, db: AsyncSession, episode_id: int
+    ) -> Optional[str]:
+        """Get episode audio URL by episode id."""
+        stmt = select(PodcastEpisode.audio_url).where(PodcastEpisode.id == episode_id)
+        result = await db.execute(stmt)
+        return result.scalar_one_or_none()
+
     async def get_episodes_batch(
         self, db: AsyncSession, user_id: str, episode_ids: List[int]
     ) -> List[Dict[str, Any]]:

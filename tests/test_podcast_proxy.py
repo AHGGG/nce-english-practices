@@ -17,7 +17,7 @@ def clean_cache():
     # might not work if it's accessed via the instance.
     # Instead, we patch the 'settings' object in app.api.routers.podcast directly.
 
-    with patch("app.api.routers.podcast.settings") as mock_settings:
+    with patch("app.api.routers.podcast_common.settings") as mock_settings:
         mock_settings.podcast_cache_dir = TEST_CACHE_DIR
         # Also need to mock other settings accessed
         mock_settings.PROXY_URL = None
