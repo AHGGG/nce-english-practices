@@ -2,7 +2,6 @@ from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, or_, func, desc
 from typing import Any, Dict, List, Literal, Optional, Set
-from pydantic import BaseModel
 from datetime import datetime
 import re
 
@@ -18,6 +17,14 @@ from app.models.orm import (
 from app.models.podcast_orm import PodcastEpisode
 from app.services.content_service import content_service
 from app.models.content_schemas import SourceType
+from app.models.vocabulary_schemas import (
+    DifficultWordsResponse,
+    UnfamiliarItem,
+    UnfamiliarItemContext,
+    UnfamiliarItemsResponse,
+    VocabularyContext,
+    VocabularyLogRequest,
+)
 from app.api.deps.auth import get_current_user
 
 router = APIRouter(prefix="/api/vocabulary", tags=["vocabulary"])
@@ -81,57 +88,6 @@ def _parse_epub_source_id(source_id: str) -> Optional[tuple[str, int]]:
         return parts[1], int(parts[2])
     except (TypeError, ValueError):
         return None
-
-
-class VocabularyContext(BaseModel):
-    source_type: str
-    source_id: Optional[str] = None
-    source_title: Optional[str] = None
-    source_label: Optional[str] = None
-    context_sentence: str
-    created_at: datetime
-    word: str
-
-
-class VocabularyLogRequest(BaseModel):
-    word: str
-    source_type: str = "sentence_study"
-    source_id: Optional[str] = None
-    context_sentence: Optional[str] = None
-
-
-class DifficultWordsResponse(BaseModel):
-    words: List[str]
-
-
-class UnfamiliarItemContext(BaseModel):
-    source_type: str
-    source_id: Optional[str] = None
-    context_sentence: str
-    seen_at: datetime
-
-
-class UnfamiliarItem(BaseModel):
-    text: str
-    item_type: Literal["word", "phrase"]
-    encounter_count: int
-    last_seen_at: Optional[datetime] = None
-    source_types: List[str]
-    in_review_queue: bool
-    next_review_at: Optional[datetime] = None
-    review_repetition: int = 0
-    difficulty_score: Optional[float] = None
-    proficiency_status: Optional[str] = None
-    exposure_count: int = 0
-    huh_count: int = 0
-    sample_contexts: List[UnfamiliarItemContext]
-
-
-class UnfamiliarItemsResponse(BaseModel):
-    items: List[UnfamiliarItem]
-    total: int
-    limit: int
-    offset: int
 
 
 @router.post("/log", status_code=201)
