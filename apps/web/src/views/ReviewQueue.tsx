@@ -731,7 +731,7 @@ const ReviewQueue = () => {
     const bookName = sourceInfo[1] || "Unknown";
 
     return (
-      <div className="flex-1 flex flex-col w-full max-w-4xl mx-auto px-4 relative z-10 pb-2 md:pb-4">
+      <div className="flex-1 min-h-0 flex flex-col w-full max-w-4xl mx-auto px-4 relative z-10 pb-2 md:pb-4">
         {/* Progress Header */}
         <div className="flex justify-center mb-2 md:mb-4 w-full">
           {renderStats()}
@@ -812,7 +812,7 @@ const ReviewQueue = () => {
           </div>
 
           {/* Main Sentence View */}
-          <div className="flex-1 flex flex-col items-center justify-center p-4 md:p-12 relative group min-h-[25vh] md:min-h-[400px]">
+          <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar flex flex-col items-center justify-center p-4 md:p-12 relative group min-h-[25vh] md:min-h-[400px]">
             {/* Background Decoration */}
             <div className="absolute inset-0 bg-gradient-radial from-white/[0.03] to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-1000" />
 
@@ -973,15 +973,15 @@ const ReviewQueue = () => {
   };
 
   return (
-    <div className="h-screen h-[100dvh] bg-[#0a0f0d] relative overflow-hidden font-sans flex flex-col">
+    <div className="relative flex h-[100svh] min-h-screen flex-col overflow-x-hidden overflow-y-hidden bg-[#0a0f0d] font-sans md:h-[100dvh]">
       {/* Background Ambience */}
-      <div className="fixed inset-0 bg-gradient-to-b from-[#0a1418] via-[#0c1815] to-[#0a0f0d] pointer-events-none" />
-      <div className="fixed inset-0 opacity-30 pointer-events-none">
+      <div className="absolute inset-0 bg-gradient-to-b from-[#0a1418] via-[#0c1815] to-[#0a0f0d] pointer-events-none" />
+      <div className="absolute inset-0 opacity-30 pointer-events-none">
         <div className="absolute top-0 left-1/4 w-[600px] h-[600px] bg-gradient-radial from-emerald-900/20 via-transparent to-transparent blur-3xl" />
         <div className="absolute bottom-0 right-1/4 w-[800px] h-[800px] bg-gradient-radial from-teal-900/10 via-transparent to-transparent blur-3xl" />
       </div>
       <div
-        className="fixed inset-0 opacity-[0.02] pointer-events-none"
+        className="absolute inset-0 opacity-[0.02] pointer-events-none"
         style={{
           backgroundImage: `linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px)`,
           backgroundSize: "80px 80px",
@@ -989,7 +989,13 @@ const ReviewQueue = () => {
       />
 
       {/* Header */}
-      <header className="relative z-20 px-4 py-3 flex items-center justify-between border-b border-white/[0.05] backdrop-blur-md bg-[#0a0f0d]/50 h-14 shrink-0">
+      <header
+        className="relative z-20 flex items-center justify-between border-b border-white/[0.05] bg-[#0a0f0d]/50 px-4 py-3 backdrop-blur-md shrink-0"
+        style={{
+          paddingTop: "env(safe-area-inset-top)",
+          minHeight: "calc(3.5rem + env(safe-area-inset-top))",
+        }}
+      >
         <div className="flex items-center gap-3">
           <button
             onClick={() => navigate("/nav")}
@@ -1038,7 +1044,10 @@ const ReviewQueue = () => {
 
       {/* Main content */}
       <main
-        className={`flex-1 flex flex-col relative z-10 overflow-y-auto overscroll-none custom-scrollbar pt-2 md:pt-4 ${currentEpisode ? "pb-24" : "pb-2 md:pb-4"}`}
+        className={`flex-1 min-h-0 flex flex-col relative z-10 overflow-hidden pt-2 md:pt-4 ${currentEpisode ? "pb-24" : "pb-2 md:pb-4"}`}
+        style={{
+          WebkitOverflowScrolling: "touch",
+        }}
       >
         {loading ? (
           <div className="flex-1 flex flex-col items-center justify-center">
