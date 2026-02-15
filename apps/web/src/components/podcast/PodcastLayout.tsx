@@ -4,7 +4,7 @@
  */
 
 import type { ReactNode } from "react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import {
   ArrowLeft,
@@ -39,6 +39,14 @@ export default function PodcastLayout({
 
   const [storageInfo, setStorageInfo] = useState<StorageInfo | null>(null);
   const [offlineCount] = useState(() => getOfflineEpisodeIds().length);
+  const navRef = useRef<HTMLElement | null>(null);
+  const libraryTabRef = useRef<HTMLButtonElement | null>(null);
+  const searchTabRef = useRef<HTMLButtonElement | null>(null);
+  const downloadsTabRef = useRef<HTMLButtonElement | null>(null);
+  const favoritesTabRef = useRef<HTMLButtonElement | null>(null);
+  const playlistsTabRef = useRef<HTMLButtonElement | null>(null);
+  const [canScrollLeft, setCanScrollLeft] = useState(false);
+  const [canScrollRight, setCanScrollRight] = useState(false);
 
   const isLibrary = location.pathname === "/podcast";
   const isSearch = location.pathname === "/podcast/search";
@@ -48,10 +56,48 @@ export default function PodcastLayout({
     location.pathname === "/podcast/playlists" ||
     location.pathname.startsWith("/podcast/playlist/");
 
+  const activeTabRef = isLibrary
+    ? libraryTabRef
+    : isSearch
+      ? searchTabRef
+      : isDownloads
+        ? downloadsTabRef
+        : isFavorites
+          ? favoritesTabRef
+          : playlistsTabRef;
+
   // Load storage info on mount
   useEffect(() => {
     getStorageEstimate().then(setStorageInfo);
   }, []);
+
+  useEffect(() => {
+    const nav = navRef.current;
+    if (!nav) return;
+
+    const updateScrollState = () => {
+      const maxScroll = nav.scrollWidth - nav.clientWidth;
+      setCanScrollLeft(nav.scrollLeft > 4);
+      setCanScrollRight(maxScroll - nav.scrollLeft > 4);
+    };
+
+    updateScrollState();
+    nav.addEventListener("scroll", updateScrollState, { passive: true });
+    window.addEventListener("resize", updateScrollState);
+
+    return () => {
+      nav.removeEventListener("scroll", updateScrollState);
+      window.removeEventListener("resize", updateScrollState);
+    };
+  }, []);
+
+  useEffect(() => {
+    activeTabRef.current?.scrollIntoView({
+      behavior: "smooth",
+      inline: "center",
+      block: "nearest",
+    });
+  }, [location.pathname, activeTabRef]);
 
   return (
     <div className="min-h-screen bg-[#0a0f0d] text-white font-sans relative overflow-hidden">
@@ -110,74 +156,95 @@ export default function PodcastLayout({
           </div>
 
           {/* Nav tabs */}
-          <nav className="flex items-center gap-0.5 sm:gap-1 overflow-x-auto w-full no-scrollbar pb-0">
-            <button
-              onClick={() => navigate("/podcast")}
-              className={`flex-shrink-0 flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2.5 sm:py-3 border-b-2 text-[11px] sm:text-xs font-bold uppercase tracking-wider transition-all whitespace-nowrap ${
-                isLibrary
-                  ? "border-accent-primary text-accent-primary"
-                  : "border-transparent text-white/40 hover:text-white hover:bg-white/[0.02] rounded-t-lg"
-              }`}
+          <div className="relative">
+            <nav
+              ref={navRef}
+              className="flex items-center gap-0.5 sm:gap-1 overflow-x-auto w-full no-scrollbar pb-0"
             >
-              <Library className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-              <span>Library</span>
-            </button>
+              <button
+                ref={libraryTabRef}
+                onClick={() => navigate("/podcast")}
+                className={`flex-shrink-0 flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2.5 sm:py-3 border-b-2 text-[11px] sm:text-xs font-bold uppercase tracking-wider transition-all whitespace-nowrap ${
+                  isLibrary
+                    ? "border-accent-primary text-accent-primary"
+                    : "border-transparent text-white/40 hover:text-white hover:bg-white/[0.02] rounded-t-lg"
+                }`}
+              >
+                <Library className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                <span>Library</span>
+              </button>
 
-            <button
-              onClick={() => navigate("/podcast/search")}
-              className={`flex-shrink-0 flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2.5 sm:py-3 border-b-2 text-[11px] sm:text-xs font-bold uppercase tracking-wider transition-all whitespace-nowrap ${
-                isSearch
-                  ? "border-accent-primary text-accent-primary"
-                  : "border-transparent text-white/40 hover:text-white hover:bg-white/[0.02] rounded-t-lg"
-              }`}
-            >
-              <Search className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-              <span>Search</span>
-            </button>
+              <button
+                ref={searchTabRef}
+                onClick={() => navigate("/podcast/search")}
+                className={`flex-shrink-0 flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2.5 sm:py-3 border-b-2 text-[11px] sm:text-xs font-bold uppercase tracking-wider transition-all whitespace-nowrap ${
+                  isSearch
+                    ? "border-accent-primary text-accent-primary"
+                    : "border-transparent text-white/40 hover:text-white hover:bg-white/[0.02] rounded-t-lg"
+                }`}
+              >
+                <Search className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                <span>Search</span>
+              </button>
 
-            <button
-              onClick={() => navigate("/podcast/downloads")}
-              className={`flex-shrink-0 flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2.5 sm:py-3 border-b-2 text-[11px] sm:text-xs font-bold uppercase tracking-wider transition-all whitespace-nowrap ${
-                isDownloads
-                  ? "border-accent-primary text-accent-primary"
-                  : "border-transparent text-white/40 hover:text-white hover:bg-white/[0.02] rounded-t-lg"
-              }`}
-            >
-              <CloudOff className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-              <span>Downloads</span>
-              {offlineCount > 0 && (
-                <span
-                  className={`ml-1 px-1.5 py-0.5 text-[9px] rounded-full font-mono ${isDownloads ? "bg-accent-primary/20 text-accent-primary border border-accent-primary/20" : "bg-white/10 text-white/60 border border-white/10"}`}
-                >
-                  {offlineCount}
+              <button
+                ref={downloadsTabRef}
+                onClick={() => navigate("/podcast/downloads")}
+                className={`flex-shrink-0 flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2.5 sm:py-3 border-b-2 text-[11px] sm:text-xs font-bold uppercase tracking-wider transition-all whitespace-nowrap ${
+                  isDownloads
+                    ? "border-accent-primary text-accent-primary"
+                    : "border-transparent text-white/40 hover:text-white hover:bg-white/[0.02] rounded-t-lg"
+                }`}
+              >
+                <CloudOff className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                <span>Downloads</span>
+                {offlineCount > 0 && (
+                  <span
+                    className={`ml-1 px-1.5 py-0.5 text-[9px] rounded-full font-mono ${isDownloads ? "bg-accent-primary/20 text-accent-primary border border-accent-primary/20" : "bg-white/10 text-white/60 border border-white/10"}`}
+                  >
+                    {offlineCount}
+                  </span>
+                )}
+              </button>
+
+              <button
+                ref={favoritesTabRef}
+                onClick={() => navigate("/podcast/favorites")}
+                className={`flex-shrink-0 flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2.5 sm:py-3 border-b-2 text-[11px] sm:text-xs font-bold uppercase tracking-wider transition-all whitespace-nowrap ${
+                  isFavorites
+                    ? "border-accent-primary text-accent-primary"
+                    : "border-transparent text-white/40 hover:text-white hover:bg-white/[0.02] rounded-t-lg"
+                }`}
+              >
+                <Heart className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                <span>Favorites</span>
+              </button>
+
+              <button
+                ref={playlistsTabRef}
+                onClick={() => navigate("/podcast/playlists")}
+                className={`flex-shrink-0 flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2.5 sm:py-3 border-b-2 text-[11px] sm:text-xs font-bold uppercase tracking-wider transition-all whitespace-nowrap ${
+                  isPlaylists
+                    ? "border-accent-primary text-accent-primary"
+                    : "border-transparent text-white/40 hover:text-white hover:bg-white/[0.02] rounded-t-lg"
+                }`}
+              >
+                <ListMusic className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                <span>Playlists</span>
+              </button>
+            </nav>
+
+            {canScrollLeft && (
+              <div className="pointer-events-none absolute left-0 top-0 h-full w-7 bg-gradient-to-r from-[#0a0f0d] via-[#0a0f0d]/85 to-transparent sm:hidden" />
+            )}
+            {canScrollRight && (
+              <div className="pointer-events-none absolute right-0 top-0 h-full w-9 bg-gradient-to-l from-[#0a0f0d] via-[#0a0f0d]/90 to-transparent sm:hidden flex items-center justify-end pr-1 text-white/45">
+                <span className="text-[10px] font-mono uppercase tracking-wide">
+                  more
                 </span>
-              )}
-            </button>
-
-            <button
-              onClick={() => navigate("/podcast/favorites")}
-              className={`flex-shrink-0 flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2.5 sm:py-3 border-b-2 text-[11px] sm:text-xs font-bold uppercase tracking-wider transition-all whitespace-nowrap ${
-                isFavorites
-                  ? "border-accent-primary text-accent-primary"
-                  : "border-transparent text-white/40 hover:text-white hover:bg-white/[0.02] rounded-t-lg"
-              }`}
-            >
-              <Heart className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-              <span>Favorites</span>
-            </button>
-
-            <button
-              onClick={() => navigate("/podcast/playlists")}
-              className={`flex-shrink-0 flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2.5 sm:py-3 border-b-2 text-[11px] sm:text-xs font-bold uppercase tracking-wider transition-all whitespace-nowrap ${
-                isPlaylists
-                  ? "border-accent-primary text-accent-primary"
-                  : "border-transparent text-white/40 hover:text-white hover:bg-white/[0.02] rounded-t-lg"
-              }`}
-            >
-              <ListMusic className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-              <span>Playlists</span>
-            </button>
-          </nav>
+              </div>
+            )}
+          </div>
         </div>
       </header>
 
