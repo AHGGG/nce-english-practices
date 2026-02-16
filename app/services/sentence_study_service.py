@@ -8,7 +8,6 @@ Contains LLM streaming, caching, and diagnosis utilities.
 import hashlib
 import json
 import logging
-import re
 from typing import Dict, List, Optional, Any
 from datetime import timedelta
 
@@ -186,25 +185,74 @@ Keep English simple and clear.""",
 }
 
 
-COLLOCATION_PROMPT = """Analyze this sentence and identify ALL common English collocations, phrasal verbs, and fixed expressions.
+COLLOCATION_PROMPT = """Analyze this sentence and identify useful English collocations, phrasal verbs, and fixed expressions for learners.
 
 Sentence: "{sentence}"
 
 Word list with indices:
 {word_list}
 
-Return a JSON array of detected collocations. For each, provide:
+Return a JSON object with this exact shape:
+{{
+  "collocations": [
+    {{
+      "reasoning": "...",
+      "text": "...",
+      "key_word": "...",
+      "start_word_idx": 0,
+      "end_word_idx": 1,
+      "difficulty": 2,
+      "confidence": 0.8
+    }}
+  ]
+}}
+
+For each collocation item, provide:
+- "reasoning": concise natural English rationale (ONE sentence, max 16 words)
 - "text": the exact collocation text
+- "key_word": key dictionary word for lookup (single token from the collocation, optional)
 - "start_word_idx": starting word index
 - "end_word_idx": ending word index (inclusive)
+- "difficulty": integer level using this rubric:
+  - 1 = very common and transparent chunk (easy to infer from words)
+  - 2 = fixed or semi-fixed expression with moderate learning value
+  - 3 = idiomatic/formal/abstract expression likely hard for B1-B2 learners
+- "confidence": float between 0 and 1
 
-Examples of collocations to detect:
-- Phrasal verbs: "sit down", "give up", "look forward to"
-- Fixed expressions: "in terms of", "as a result", "take advantage of"
-- Common combinations: "make a decision", "pay attention", "climate change"
+Selection constraints:
+- Keep only phrase-level units with learning value.
+- Skip trivial transparent chunks unless very common and pedagogically useful.
+- Prefer 2-8 items per sentence.
 
 Only include genuine multi-word expressions that act as a unit.
-Return ONLY valid JSON array, no explanation."""
+Reasoning must be natural English (no score codes, no symbols-only labels).
+Return ONLY valid JSON object, no markdown fences, no explanation."""
+
+
+COLLOCATION_RETRY_PROMPT = """Return STRICT JSON object only:
+{{
+  "collocations": [
+    {{
+      "reasoning": "<=12 words, one sentence",
+      "text": "...",
+      "key_word": "...",
+      "start_word_idx": 0,
+      "end_word_idx": 1,
+      "difficulty": 1,
+      "confidence": 0.8
+    }}
+  ]
+}}
+
+Sentence: "{sentence}"
+Word list:
+{word_list}
+
+Rules:
+- max 6 collocations
+- no markdown, no commentary
+- reasoning must be short plain English
+"""
 
 
 OVERVIEW_PROMPT = """Analyze this article and provide a brief overview to help a learner understand the context before studying it sentence by sentence.
@@ -286,6 +334,247 @@ class SentenceStudyService:
 
     def get_image_suitability_cache_key(self, word: str, sentence: str) -> str:
         return hashlib.md5(f"{word}|{sentence}|image_check".encode()).hexdigest()
+
+    def _estimate_difficulty_from_phrase(self, phrase_text: str) -> int:
+        phrase = (phrase_text or "").strip().lower()
+        tokens = [t for t in phrase.replace("-", " ").split() if t]
+        if not tokens:
+            return 2
+
+        advanced_phrases = {
+            "at the expense of",
+            "on the verge of",
+            "in light of",
+            "fall short of",
+            "be tantamount to",
+            "be subject to",
+            "in the wake of",
+        }
+        core_phrases = {
+            "look forward to",
+            "take advantage of",
+            "pay attention to",
+            "in terms of",
+            "as a result",
+            "be likely to",
+        }
+        basic_particles = {
+            "up",
+            "down",
+            "in",
+            "out",
+            "on",
+            "off",
+            "back",
+            "over",
+            "away",
+            "around",
+        }
+        basic_verbs = {
+            "sit",
+            "stand",
+            "get",
+            "go",
+            "come",
+            "look",
+            "turn",
+            "wake",
+            "pick",
+            "move",
+        }
+
+        if phrase in advanced_phrases:
+            return 3
+        if phrase in core_phrases:
+            return 2
+
+        if (
+            len(tokens) == 2
+            and tokens[1] in basic_particles
+            and tokens[0] in basic_verbs
+        ):
+            return 1
+
+        if len(tokens) >= 4:
+            return 3
+        if len(tokens) == 3:
+            return 2
+        return 2
+
+    def _normalize_collocation_item(
+        self, item: Dict[str, Any], words: List[str]
+    ) -> Optional[Dict[str, Any]]:
+        if not isinstance(item, dict):
+            return None
+
+        text = str(item.get("text") or "").strip()
+        if not text:
+            return None
+
+        start_raw = item.get("start_word_idx")
+        end_raw = item.get("end_word_idx")
+        if start_raw is None or end_raw is None:
+            return None
+
+        try:
+            start_idx = int(start_raw)
+            end_idx = int(end_raw)
+        except (TypeError, ValueError):
+            return None
+
+        if not words:
+            return None
+        if start_idx < 0 or end_idx < start_idx or end_idx >= len(words):
+            return None
+
+        reasoning = " ".join(str(item.get("reasoning") or "").strip().split())
+        if not reasoning:
+            reasoning = (
+                "This expression behaves as a multi-word unit in this sentence and "
+                "requires phrase-level understanding."
+            )
+        if len(reasoning) > 220:
+            reasoning = reasoning[:217].rstrip() + "..."
+
+        raw_key_word = item.get("key_word")
+        key_word = str(raw_key_word).strip() if raw_key_word is not None else ""
+        if not key_word:
+            phrase_words = [
+                w.strip(".,!?;:\"'()[]{}").lower()
+                for w in words[start_idx : end_idx + 1]
+            ]
+            phrase_words = [w for w in phrase_words if w]
+            key_word = phrase_words[0] if phrase_words else ""
+
+        difficulty_raw = item.get("difficulty", 2)
+        try:
+            difficulty = int(difficulty_raw)
+        except (TypeError, ValueError):
+            difficulty = 2
+        if difficulty < 1 or difficulty > 3:
+            difficulty = 2
+
+        estimated_difficulty = self._estimate_difficulty_from_phrase(text)
+        if difficulty == 2 and estimated_difficulty != 2:
+            difficulty = estimated_difficulty
+
+        confidence = item.get("confidence")
+        if confidence is not None:
+            try:
+                confidence = float(confidence)
+            except (TypeError, ValueError):
+                confidence = None
+            if confidence is not None:
+                confidence = max(0.0, min(1.0, confidence))
+
+        normalized: Dict[str, Any] = {
+            "reasoning": reasoning,
+            "text": text,
+            "key_word": key_word or None,
+            "start_word_idx": start_idx,
+            "end_word_idx": end_idx,
+            "difficulty": difficulty,
+            "confidence": confidence,
+        }
+        return normalized
+
+    def _normalize_collocation_list(
+        self, items: Any, words: List[str]
+    ) -> List[Dict[str, Any]]:
+        if not isinstance(items, list):
+            return []
+
+        normalized: List[Dict[str, Any]] = []
+        for item in items:
+            fixed = self._normalize_collocation_item(item, words)
+            if fixed:
+                normalized.append(fixed)
+        return normalized
+
+    def _extract_first_json_block(self, text: str) -> Optional[str]:
+        """Extract first balanced JSON object/array block from text."""
+        if not text:
+            return None
+
+        start = -1
+        opening = ""
+        for i, ch in enumerate(text):
+            if ch in "[{":
+                start = i
+                opening = ch
+                break
+        if start < 0:
+            return None
+
+        closing = "]" if opening == "[" else "}"
+        depth = 0
+        in_string = False
+        escape = False
+
+        for i in range(start, len(text)):
+            ch = text[i]
+
+            if in_string:
+                if escape:
+                    escape = False
+                elif ch == "\\":
+                    escape = True
+                elif ch == '"':
+                    in_string = False
+                continue
+
+            if ch == '"':
+                in_string = True
+                continue
+
+            if ch == opening:
+                depth += 1
+            elif ch == closing:
+                depth -= 1
+                if depth == 0:
+                    return text[start : i + 1]
+
+        return None
+
+    def _parse_collocation_payload(self, content: str) -> List[Dict[str, Any]]:
+        """Parse model payload into list-like collocation items."""
+        if not content:
+            return []
+
+        raw = content.strip()
+        if raw.startswith("```"):
+            raw = raw.split("\n", 1)[1].rsplit("```", 1)[0].strip()
+
+        candidate: Any = None
+
+        # 1) Direct JSON parse
+        try:
+            candidate = json.loads(raw)
+        except json.JSONDecodeError:
+            candidate = None
+
+        # 2) Extract first JSON block and parse
+        if candidate is None:
+            block = self._extract_first_json_block(raw)
+            if block:
+                try:
+                    candidate = json.loads(block)
+                except json.JSONDecodeError:
+                    candidate = None
+
+        if candidate is None:
+            return []
+
+        if isinstance(candidate, list):
+            return candidate
+
+        if isinstance(candidate, dict):
+            for key in ("collocations", "items", "results", "data"):
+                value = candidate.get(key)
+                if isinstance(value, list):
+                    return value
+
+        return []
 
     # -------------------------------------------------------------------------
     # Simplify Streaming
@@ -881,10 +1170,15 @@ class SentenceStudyService:
         Detect collocations with caching (Memory -> DB -> LLM).
         """
         cache_key = self.get_collocation_cache_key(sentence)
+        words = sentence.split()
 
         # 1. Check in-memory
         if cache_key in _collocation_cache:
-            return _collocation_cache[cache_key]
+            normalized = self._normalize_collocation_list(
+                _collocation_cache[cache_key], words
+            )
+            _collocation_cache[cache_key] = normalized
+            return normalized
 
         # 2. Check DB
         db_result = await db.execute(
@@ -894,44 +1188,64 @@ class SentenceStudyService:
         )
         db_cache = db_result.scalar_one_or_none()
         if db_cache:
-            _collocation_cache[cache_key] = db_cache.collocations
-            return db_cache.collocations
+            normalized = self._normalize_collocation_list(db_cache.collocations, words)
+            _collocation_cache[cache_key] = normalized
+
+            # Lazy backfill old cache payloads so future reads are schema-complete.
+            if db_cache.collocations != normalized:
+                try:
+                    db_cache.collocations = normalized
+                    await db.commit()
+                except Exception:
+                    await db.rollback()
+
+            return normalized
 
         # 3. Generate
-        words = sentence.split()
         word_list_str = "\n".join([f"{i}: {w}" for i, w in enumerate(words)])
         prompt = COLLOCATION_PROMPT.format(sentence=sentence, word_list=word_list_str)
+        retry_prompt = COLLOCATION_RETRY_PROMPT.format(
+            sentence=sentence, word_list=word_list_str
+        )
 
         try:
-            response = await self.llm.async_client.chat.completions.create(
-                model=self.llm.model_name,
-                messages=[{"role": "user", "content": prompt}],
-                max_tokens=300,
-                temperature=0.1,
-            )
-            content = response.choices[0].message.content.strip()
 
-            if content.startswith("```"):
-                content = content.split("\n", 1)[1].rsplit("```", 1)[0]
-
-            try:
-                collocations = json.loads(content)
-            except json.JSONDecodeError:
-                # Fallback: extract first JSON array block from noisy model output.
-                match = re.search(r"\[[\s\S]*\]", content)
-                if not match:
-                    logger.warning(
-                        "Collocation JSON parse failed (no array found), sentence preview: %s",
-                        sentence[:80],
+            async def _request(prompt_text: str, max_tokens: int) -> str:
+                try:
+                    response = await self.llm.async_client.chat.completions.create(
+                        model=self.llm.model_name,
+                        messages=[{"role": "user", "content": prompt_text}],
+                        max_tokens=max_tokens,
+                        temperature=0.1,
+                        response_format={"type": "json_object"},
                     )
-                    return []
-                collocations = json.loads(match.group(0))
+                except TypeError:
+                    # Backward compatibility for providers/SDK versions without response_format.
+                    response = await self.llm.async_client.chat.completions.create(
+                        model=self.llm.model_name,
+                        messages=[{"role": "user", "content": prompt_text}],
+                        max_tokens=max_tokens,
+                        temperature=0.1,
+                    )
+                return (response.choices[0].message.content or "").strip()
 
-            # Validation
-            valid_collocations = []
-            for c in collocations:
-                if all(k in c for k in ["text", "start_word_idx", "end_word_idx"]):
-                    valid_collocations.append(c)
+            content = await _request(prompt, 600)
+
+            collocations = self._parse_collocation_payload(content)
+            if not collocations:
+                retry_content = await _request(retry_prompt, 320)
+                collocations = self._parse_collocation_payload(retry_content)
+
+            if not collocations:
+                logger.warning(
+                    "Collocation JSON parse failed (empty/invalid), sentence preview: %s; response preview: %s",
+                    sentence[:80],
+                    content[:180].replace("\n", " "),
+                )
+                return []
+
+            # Validation and normalization
+            valid_collocations = self._normalize_collocation_list(collocations, words)
 
             # Cache
             _collocation_cache[cache_key] = valid_collocations

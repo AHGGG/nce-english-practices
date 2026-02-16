@@ -150,12 +150,15 @@ class DetectCollocationsRequest(BaseModel):
 class CollocationItem(BaseModel):
     """A detected collocation/phrase."""
 
+    reasoning: str  # Brief English rationale for difficulty assignment
     text: str  # The collocation text, e.g. "sit down"
     key_word: Optional[str] = (
         None  # The key word of the phrase for dictionary lookup, e.g. "sit"
     )
     start_word_idx: int  # Start word index (0-based)
     end_word_idx: int  # End word index (inclusive)
+    difficulty: int = 2  # 1=basic, 2=core, 3=advanced
+    confidence: Optional[float] = None  # Model confidence, 0.0-1.0
 
 
 class DetectCollocationsResponse(BaseModel):

@@ -15,6 +15,7 @@ import {
 } from "expo-router";
 import { proficiencyApi } from "@nce/api";
 import { useSentenceStudy } from "@nce/shared";
+import { useSettingsStore } from "@nce/store";
 import { useWordExplainer } from "../../src/hooks/useWordExplainer"; // Use mobile-specific version
 import {
   ChevronLeft,
@@ -28,7 +29,7 @@ import {
 } from "lucide-react-native";
 import { DictionaryModal } from "../../src/components/DictionaryModal";
 import { SimpleMarkdown } from "../../src/components/SimpleMarkdown";
-import { useState, useRef, useCallback, useEffect } from "react";
+import { useState, useRef, useCallback, useEffect, useMemo } from "react";
 import EventSource from "react-native-sse";
 import { getApiBaseUrl } from "../../src/lib/platform-init";
 
@@ -312,6 +313,8 @@ const StudyingView = ({
   simplifyStage,
   onUnclearResponse,
   collocations, // Add prop
+  collocationDisplayLevel,
+  onChangeCollocationDisplayLevel,
 }: any) => {
   const scrollViewRef = useRef<ScrollView>(null);
 
@@ -333,6 +336,31 @@ const StudyingView = ({
             className="h-full bg-accent-primary"
             style={{ width: `${(index / Math.max(total, 1)) * 100}%` }}
           />
+        </View>
+      </View>
+
+      <View className="px-6 py-2 border-b border-white/5">
+        <View className="self-start flex-row rounded-lg border border-white/10 bg-bg-surface overflow-hidden">
+          {[
+            { key: "basic", label: "Basic" },
+            { key: "core", label: "Core" },
+            { key: "full", label: "Full" },
+          ].map((option) => {
+            const active = collocationDisplayLevel === option.key;
+            return (
+              <TouchableOpacity
+                key={option.key}
+                onPress={() => onChangeCollocationDisplayLevel(option.key)}
+                className={`px-3 py-1.5 ${active ? "bg-accent-primary/20" : "bg-transparent"}`}
+              >
+                <Text
+                  className={`text-[10px] font-bold uppercase ${active ? "text-accent-primary" : "text-text-muted"}`}
+                >
+                  {option.label}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
         </View>
       </View>
 
@@ -682,6 +710,26 @@ export default function StudyScreen() {
     collocations,
   } = useSentenceStudy(sourceId);
 
+  const collocationDisplayLevel = useSettingsStore(
+    (state) => state.collocationDisplayLevel,
+  );
+  const setCollocationDisplayLevel = useSettingsStore(
+    (state) => state.setCollocationDisplayLevel,
+  );
+
+  const filteredCollocations = useMemo(() => {
+    const minDifficulty =
+      collocationDisplayLevel === "basic"
+        ? 3
+        : collocationDisplayLevel === "core"
+          ? 2
+          : 1;
+    return (collocations || []).filter((item: any) => {
+      const difficulty = Number(item?.difficulty || 2);
+      return difficulty >= minDifficulty;
+    });
+  }, [collocations, collocationDisplayLevel]);
+
   // Use mobile-specific word explainer
   const explainer = useWordExplainer();
 
@@ -843,7 +891,9 @@ export default function StudyScreen() {
             simplifiedText={simplifiedText}
             simplifyStage={simplifyStage}
             onUnclearResponse={handleUnclearResponse}
-            collocations={collocations}
+            collocations={filteredCollocations}
+            collocationDisplayLevel={collocationDisplayLevel}
+            onChangeCollocationDisplayLevel={setCollocationDisplayLevel}
           />
         )}
 

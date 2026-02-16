@@ -12,6 +12,7 @@ export const useSettingsStore = create<SettingsState>()(
       notificationsEnabled: false,
       reminderTime: "20:00",
       autoPronounce: true,
+      collocationDisplayLevel: "core",
       setTheme: (theme) => set({ theme }),
       setTtsRate: (ttsRate) => set({ ttsRate }),
       setVoiceId: (voiceId) => set({ voiceId }),
@@ -19,6 +20,8 @@ export const useSettingsStore = create<SettingsState>()(
         set({ notificationsEnabled }),
       setReminderTime: (reminderTime) => set({ reminderTime }),
       setAutoPronounce: (autoPronounce) => set({ autoPronounce }),
+      setCollocationDisplayLevel: (collocationDisplayLevel) =>
+        set({ collocationDisplayLevel }),
     }),
     {
       name: "nce-settings",

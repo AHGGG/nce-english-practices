@@ -152,6 +152,16 @@ config.headers.Authorization = `Bearer ${token}`;
 
 Pure logic hooks (no UI). Example: `useWordExplainer` returns `{ data, actions }`.
 
+### 4. Collocation Cache Reset Script
+
+When collocation prompt/schema changes and you need full re-detection, use:
+
+```bash
+uv run python scripts/clear_collocation_cache.py --yes
+```
+
+This clears DB cache table `sentence_collocation_cache`; restart backend to clear in-memory cache too.
+
 ## Shortcuts (Windows)
 
 ```powershell
@@ -389,6 +399,7 @@ Unified rendering system for different content types (epub, podcast, audiobook).
 - Use `studyWordSet` + `studyPhraseSet` (NOT `studyHighlightSet`) - split for different rendering styles
 - Use `getCollocations` callback (NOT static collocations array) - each sentence needs its own collocations
 - `MemoizedSentence.jsx` re-exports `SentenceBlock` - always use `SentenceBlock` for new code
+- Collocation detection now outputs `reasoning` (English rationale) + `difficulty` (1/2/3) + optional `confidence`; frontend/mobile apply global real-time filtering via `collocationDisplayLevel` (`basic|core|full`) across reading/sentence-study/podcast/audiobook/review flows
 
 ### Coach Service (Agentic)
 

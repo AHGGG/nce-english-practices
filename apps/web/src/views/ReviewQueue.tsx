@@ -18,8 +18,11 @@ import {
 
 import ExplanationCard from "../components/sentence-study/views/ExplanationCard";
 import { getGapTypeInfo } from "../components/sentence-study/constants";
-import { useWordExplainer } from "@nce/shared";
+import { useCollocationLoader, useWordExplainer } from "@nce/shared";
 import WordInspector from "../components/reading/WordInspector";
+import { SentenceBlock } from "../components/content/shared";
+import CollocationDifficultySwitch from "../components/content/shared/CollocationDifficultySwitch";
+import { filterCollocationsByLevel } from "../components/content/shared/collocationDifficulty";
 import { authFetch, apiGet, apiPost, ApiError } from "../api/auth";
 import { useToast } from "../components/ui";
 import { useGlobalState } from "../context/GlobalContext";
@@ -224,7 +227,14 @@ const ReviewQueue = () => {
   const navigate = useNavigate();
   const {
     state: { settings },
-  } = useGlobalState() as { state: { settings: { autoPronounce?: boolean } } };
+  } = useGlobalState() as {
+    state: {
+      settings: {
+        autoPronounce?: boolean;
+        collocationDisplayLevel?: "basic" | "core" | "full";
+      };
+    };
+  };
   const { currentEpisode } = usePodcast() as { currentEpisode: unknown | null };
   const [queue, setQueue] = useState<ReviewQueueItem[]>([]);
   const [stats, setStats] = useState<ReviewStats>({
@@ -239,6 +249,10 @@ const ReviewQueue = () => {
     null,
   );
   const [isRandomMode, setIsRandomMode] = useState(false);
+
+  const { getCollocations, loadCollocations } = useCollocationLoader({
+    prefetchAhead: 3,
+  });
 
   useEffect(() => {
     const html = document.documentElement;
@@ -326,6 +340,32 @@ const ReviewQueue = () => {
 
   // Current item
   const currentItem = queue[currentIndex];
+
+  const filteredCollocations = filterCollocationsByLevel(
+    getCollocations(currentItem?.sentence_text || "") || [],
+    settings.collocationDisplayLevel || "core",
+  ).map((item) => ({
+    reasoning: item.reasoning,
+    text: item.text,
+    key_word: item.key_word || "",
+    start_word_idx: item.start_word_idx,
+    end_word_idx: item.end_word_idx,
+    difficulty: item.difficulty,
+    confidence: item.confidence,
+  }));
+
+  useEffect(() => {
+    if (!currentItem?.sentence_text) return;
+    const contextSentences = [
+      currentItem.sentence_text,
+      contextData?.previous_sentence,
+      contextData?.target_sentence,
+      contextData?.next_sentence,
+    ].filter((s): s is string => Boolean(s && s.trim()));
+    if (contextSentences.length > 0) {
+      void loadCollocations(contextSentences);
+    }
+  }, [currentItem?.sentence_text, contextData, loadCollocations]);
 
   // Play TTS
   const playAudio = useCallback((text: string) => {
@@ -846,17 +886,32 @@ const ReviewQueue = () => {
                 </div>
               )}
 
-              <p
+              <div
                 className={`font-serif text-xl sm:text-2xl md:text-4xl text-white leading-relaxed md:leading-tight text-left transition-opacity duration-300 ${showContext ? "opacity-70" : "opacity-100"}`}
+                onClick={(e: MouseEvent<HTMLElement>) => {
+                  const target = e.target as HTMLElement;
+                  const word = target.dataset?.word;
+                  const sentence = target.dataset?.sentence;
+                  if (!word) return;
+                  handleWordClick(
+                    word.toLowerCase(),
+                    sentence || currentItem.sentence_text,
+                  );
+                }}
               >
-                <HighlightedSentence
+                <SentenceBlock
                   text={currentItem.sentence_text}
-                  highlights={currentItem.highlighted_items || []}
-                  clickable={true}
-                  onWordClick={handleWordClick}
-                  sentence={currentItem.sentence_text}
+                  showHighlights={true}
+                  highlightSet={
+                    new Set(
+                      (currentItem.highlighted_items || []).map((item) =>
+                        item.toLowerCase(),
+                      ),
+                    )
+                  }
+                  collocations={filteredCollocations}
                 />
-              </p>
+              </div>
             </div>
           </div>
 
@@ -1034,6 +1089,9 @@ const ReviewQueue = () => {
         </div>
 
         <div className="flex items-center gap-2">
+          <div>
+            <CollocationDifficultySwitch compact />
+          </div>
           {!isRandomMode && undoState && (
             <button
               onClick={handleUndoRedo}

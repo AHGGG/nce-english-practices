@@ -6,6 +6,7 @@ import { ToastProvider } from "../components/ui/Toast";
 export interface GlobalSettings {
   autoPronounce: boolean;
   podcastSpeed: number;
+  collocationDisplayLevel: "basic" | "core" | "full";
   transcriptionRemoteEnabled: boolean;
   transcriptionRemoteUrl: string;
   transcriptionRemoteApiKey?: string;
@@ -28,6 +29,7 @@ const GlobalContext = createContext<GlobalContextValue | null>(null);
 const DEFAULT_SETTINGS = {
   autoPronounce: true,
   podcastSpeed: 1.0,
+  collocationDisplayLevel: "core" as const,
   transcriptionRemoteEnabled: false,
   transcriptionRemoteUrl: "",
 };

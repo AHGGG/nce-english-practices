@@ -152,10 +152,13 @@ export interface ContentRendererProps {
 // ============================================================
 
 export interface Collocation {
+  reasoning?: string;
   text: string;
   key_word: string;
   start_word_idx: number;
   end_word_idx: number;
+  difficulty?: 1 | 2 | 3;
+  confidence?: number;
 }
 
 // ============================================================

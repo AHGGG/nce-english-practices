@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import MemoizedSentence from "./MemoizedSentence";
 import MemoizedImage from "./MemoizedImage";
+import CollocationDifficultySwitch from "../content/shared/CollocationDifficultySwitch";
 import { HIGHLIGHT_OPTIONS, BATCH_SIZE } from "./constants";
 import { rendererRegistry } from "../content";
 import type { Collocation, ContentBundle, ReadingTrackerRef } from "../content";
@@ -449,6 +450,13 @@ const ReaderView = ({
           </button>
         </div>
       </header>
+
+      <div className="shrink-0 border-b border-white/[0.05] bg-bg-base/70 backdrop-blur-xl px-4 md:px-8 py-2 flex items-center justify-end">
+        <div className="flex items-center gap-2 text-[10px] uppercase tracking-wider text-text-muted">
+          <span>Collocations</span>
+          <CollocationDifficultySwitch compact />
+        </div>
+      </div>
 
       <div className="flex-1 flex overflow-hidden relative">
         {/* Article Text */}

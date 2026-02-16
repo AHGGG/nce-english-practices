@@ -17,11 +17,14 @@ import { useParams, useNavigate } from "react-router-dom";
 import { ArrowLeft, Loader2, AlertCircle } from "lucide-react";
 import { apiGet } from "../../api/auth";
 import { getCachedAudioUrl } from "../../utils/offline";
+import { useGlobalState } from "../../context/GlobalContext";
 import {
   useAudioPlayer,
   useCollocationLoader,
   useWordExplainer,
 } from "@nce/shared";
+import CollocationDifficultySwitch from "../../components/content/shared/CollocationDifficultySwitch";
+import { filterCollocationsByLevel } from "../../components/content/shared/collocationDifficulty";
 import type {
   Collocation,
   ContentBlock,
@@ -50,6 +53,9 @@ export default function UnifiedPlayerView() {
   const [bundle, setBundle] = useState<ContentBundle | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const {
+    state: { settings },
+  } = useGlobalState();
 
   // Audio Player State Tracking
   const wasPlayingRef = useRef(false);
@@ -226,12 +232,18 @@ export default function UnifiedPlayerView() {
       knownWords: new Set<string>(),
       showHighlights: true,
       getCollocations: (sentence: string): Collocation[] =>
-        (getCollocations(sentence) ?? []).map((item) => ({
-          text: item.text,
-          key_word: item.key_word ?? "",
-          start_word_idx: item.start_word_idx,
-          end_word_idx: item.end_word_idx,
-        })),
+        filterCollocationsByLevel(
+          (getCollocations(sentence) ?? []).map((item) => ({
+            reasoning: item.reasoning,
+            text: item.text,
+            key_word: item.key_word ?? "",
+            start_word_idx: item.start_word_idx,
+            end_word_idx: item.end_word_idx,
+            difficulty: item.difficulty,
+            confidence: item.confidence,
+          })),
+          settings.collocationDisplayLevel || "core",
+        ),
       onWordClick: handleWordClick,
       // Pass player state/actions/segments
       segments,
@@ -241,6 +253,7 @@ export default function UnifiedPlayerView() {
   }, [
     bundle,
     getCollocations,
+    settings.collocationDisplayLevel,
     handleWordClick,
     segments,
     audioState,
@@ -302,6 +315,13 @@ export default function UnifiedPlayerView() {
             <div className="hidden sm:block text-xs font-mono text-white/40 uppercase tracking-wider px-2 py-1 bg-white/5 rounded border border-white/10">
               {sourceType === "podcast" ? "Intensive Listening" : "Audiobook"}
             </div>
+          </div>
+        </div>
+
+        <div className="max-w-4xl mx-auto px-3 sm:px-4 pb-2 sm:pb-3 flex items-center justify-end">
+          <div className="flex items-center gap-2 text-[10px] uppercase tracking-wider text-white/45">
+            <span>Collocations</span>
+            <CollocationDifficultySwitch compact />
           </div>
         </div>
       </header>

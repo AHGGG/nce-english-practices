@@ -11,7 +11,7 @@ import { useLocalSearchParams, useRouter, Stack } from "expo-router";
 import { useQuery } from "@tanstack/react-query";
 import { useQueryClient } from "@tanstack/react-query";
 import { Audio } from "expo-av";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ChevronLeft,
   Play,
@@ -19,8 +19,12 @@ import {
   SkipBack,
   SkipForward,
 } from "lucide-react-native";
-import { audiobookApi, type AudiobookBundle } from "@nce/api";
+import { audiobookApi, proficiencyApi, type AudiobookBundle } from "@nce/api";
+import { useCollocationLoader } from "@nce/shared";
+import { useSettingsStore } from "@nce/store";
 import { getApiBaseUrl } from "../../src/lib/platform-init";
+import { useWordExplainer } from "../../src/hooks/useWordExplainer";
+import { DictionaryModal } from "../../src/components/DictionaryModal";
 
 type SubtitleSegment = {
   text: string;
@@ -58,6 +62,34 @@ export default function AudiobookPlayerScreen() {
   const [durationMillis, setDurationMillis] = useState(1);
   const soundRef = useRef<Audio.Sound | null>(null);
 
+  const collocationDisplayLevel = useSettingsStore(
+    (state) => state.collocationDisplayLevel,
+  );
+  const setCollocationDisplayLevel = useSettingsStore(
+    (state) => state.setCollocationDisplayLevel,
+  );
+
+  const { getCollocations, loadCollocations, prefetchCollocations } =
+    useCollocationLoader({ prefetchAhead: 8 });
+
+  const {
+    selectedWord,
+    inspectorData,
+    isInspecting,
+    isExplaining,
+    contextExplanation,
+    currentSentenceContext,
+    isPhrase,
+    explainStyle,
+    generatedImage,
+    isGeneratingImage,
+    imagePrompt,
+    handleWordClick,
+    closeInspector,
+    changeExplainStyle,
+    generateImage,
+  } = useWordExplainer();
+
   const { data, isLoading, error } = useQuery({
     queryKey: ["audiobook", "detail", bookId, track],
     queryFn: () => audiobookApi.getBook(bookId || "", track),
@@ -89,6 +121,134 @@ export default function AudiobookPlayerScreen() {
       (seg) => currentTime >= seg.startTime && currentTime <= seg.endTime + 0.2,
     );
   }, [segments, currentTime]);
+
+  useEffect(() => {
+    if (!segments.length) return;
+    const center = activeSegmentIndex >= 0 ? activeSegmentIndex : 0;
+
+    const visible = segments
+      .slice(Math.max(0, center - 2), Math.min(segments.length, center + 4))
+      .map((s) => s.text)
+      .filter((s) => s && s.trim().length > 0);
+    const ahead = segments
+      .slice(Math.max(0, center + 4), Math.min(segments.length, center + 12))
+      .map((s) => s.text)
+      .filter((s) => s && s.trim().length > 0);
+
+    if (visible.length) {
+      void loadCollocations(visible);
+    }
+    if (ahead.length) {
+      prefetchCollocations(ahead);
+    }
+  }, [segments, activeSegmentIndex, loadCollocations, prefetchCollocations]);
+
+  const filterByDifficulty = useCallback(
+    (items: any[]) => {
+      const minDifficulty =
+        collocationDisplayLevel === "basic"
+          ? 3
+          : collocationDisplayLevel === "core"
+            ? 2
+            : 1;
+      return (items || []).filter((item) => {
+        const d = Number(item?.difficulty || 2);
+        return d >= minDifficulty;
+      });
+    },
+    [collocationDisplayLevel],
+  );
+
+  const renderSegmentText = useCallback(
+    (segmentText: string, active: boolean) => {
+      const words = segmentText.split(/\s+/).filter((w) => w.length > 0);
+      const raw = getCollocations(segmentText) || [];
+      const collocations = filterByDifficulty(raw);
+
+      const wordCollocationMap: any[] = new Array(words.length).fill(null);
+      const usedIndices = new Set<number>();
+
+      collocations.forEach((col: any) => {
+        let overlap = false;
+        for (let i = col.start_word_idx; i <= col.end_word_idx; i++) {
+          if (usedIndices.has(i)) {
+            overlap = true;
+            break;
+          }
+        }
+        if (overlap) return;
+        for (let i = col.start_word_idx; i <= col.end_word_idx; i++) {
+          if (i >= 0 && i < words.length) {
+            wordCollocationMap[i] = col;
+            usedIndices.add(i);
+          }
+        }
+      });
+
+      const nodes: any[] = [];
+      let i = 0;
+      while (i < words.length) {
+        const col = wordCollocationMap[i];
+        if (col && i === col.start_word_idx) {
+          const phraseTokens = words.slice(
+            col.start_word_idx,
+            col.end_word_idx + 1,
+          );
+          const phrase = phraseTokens.join(" ");
+          nodes.push(
+            <Text
+              key={`c-${i}`}
+              onPress={() =>
+                handleWordClick((col.text || phrase).toLowerCase(), segmentText)
+              }
+              className={
+                active
+                  ? "text-accent-warning underline"
+                  : "text-accent-warning/90 underline"
+              }
+            >
+              {phrase}
+            </Text>,
+          );
+          nodes.push(<Text key={`sp-${i}`}> </Text>);
+          i = col.end_word_idx + 1;
+          continue;
+        }
+
+        const token = words[i];
+        const pureWord = token.replace(/[^a-zA-Z'-]/g, "");
+        const isWord = pureWord.length > 1;
+        if (isWord) {
+          nodes.push(
+            <Text
+              key={`w-${i}`}
+              onPress={() =>
+                handleWordClick(pureWord.toLowerCase(), segmentText)
+              }
+              className={
+                active
+                  ? "text-accent-primary underline"
+                  : "text-text-secondary underline"
+              }
+            >
+              {token}
+            </Text>,
+          );
+        } else {
+          nodes.push(
+            <Text key={`p-${i}`} className="text-text-secondary">
+              {token}
+            </Text>,
+          );
+        }
+        nodes.push(<Text key={`s-${i}`}> </Text>);
+        i += 1;
+      }
+
+      return nodes;
+    },
+    [getCollocations, filterByDifficulty, handleWordClick],
+  );
 
   useEffect(() => {
     const setup = async () => {
@@ -166,6 +326,30 @@ export default function AudiobookPlayerScreen() {
   const progress =
     durationMillis > 0 ? (positionMillis / durationMillis) * 100 : 0;
 
+  const onMarkAsKnown = useCallback(
+    async (word: string) => {
+      try {
+        await proficiencyApi.updateWordStatus(word.toLowerCase(), "mastered");
+        closeInspector();
+      } catch {
+        Alert.alert("Error", "Failed to mark word as known");
+      }
+    },
+    [closeInspector],
+  );
+
+  const onAddToReview = useCallback(
+    async (word: string) => {
+      try {
+        await proficiencyApi.updateWordStatus(word.toLowerCase(), "learning");
+        closeInspector();
+      } catch {
+        Alert.alert("Error", "Failed to add word to review");
+      }
+    },
+    [closeInspector],
+  );
+
   if (!bookId) {
     return null;
   }
@@ -210,6 +394,35 @@ export default function AudiobookPlayerScreen() {
         >
           {data.title}
         </Text>
+      </View>
+
+      <View className="px-4 py-2 border-b border-border-default">
+        <View className="self-start flex-row rounded-lg border border-border-default bg-bg-surface overflow-hidden">
+          {[
+            { key: "basic", label: "Basic" },
+            { key: "core", label: "Core" },
+            { key: "full", label: "Full" },
+          ].map((option) => {
+            const active = collocationDisplayLevel === option.key;
+            return (
+              <TouchableOpacity
+                key={option.key}
+                onPress={() =>
+                  setCollocationDisplayLevel(
+                    option.key as "basic" | "core" | "full",
+                  )
+                }
+                className={`px-3 py-1.5 ${active ? "bg-accent-primary/20" : "bg-transparent"}`}
+              >
+                <Text
+                  className={`text-[10px] font-bold uppercase ${active ? "text-accent-primary" : "text-text-muted"}`}
+                >
+                  {option.label}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+        </View>
       </View>
 
       {tracks.length > 1 && (
@@ -327,12 +540,33 @@ export default function AudiobookPlayerScreen() {
                     : "text-text-secondary"
                 }
               >
-                {segment.text}
+                {renderSegmentText(segment.text, index === activeSegmentIndex)}
               </Text>
             </TouchableOpacity>
           ))
         )}
       </ScrollView>
+
+      <DictionaryModal
+        visible={!!selectedWord}
+        onClose={closeInspector}
+        inspectorData={inspectorData}
+        contextExplanation={contextExplanation}
+        isInspecting={isInspecting}
+        isExplaining={isExplaining}
+        selectedWord={selectedWord}
+        isPhrase={isPhrase}
+        explainStyle={explainStyle}
+        generatedImage={generatedImage}
+        isGeneratingImage={isGeneratingImage}
+        imagePrompt={imagePrompt}
+        onExplainStyle={changeExplainStyle}
+        onGenerateImage={generateImage}
+        onMarkAsKnown={onMarkAsKnown}
+        onAddToReview={onAddToReview}
+        onPlayAudio={() => {}}
+        currentSentenceContext={currentSentenceContext}
+      />
     </SafeAreaView>
   );
 }

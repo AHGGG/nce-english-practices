@@ -5,10 +5,13 @@ import { sentenceStudyApi } from "@nce/api";
  * Collocation data structure returned by the API
  */
 export interface Collocation {
+  reasoning?: string;
   text: string;
   start_word_idx: number;
   end_word_idx: number;
   key_word?: string;
+  difficulty?: 1 | 2 | 3;
+  confidence?: number;
 }
 
 /**
@@ -173,14 +176,15 @@ export function useCollocationLoader(
             }
             pendingRef.current.delete(hash);
           });
+
+          // Incremental render: publish each finished chunk immediately
+          setVersion((v) => v + 1);
         }
 
         console.log(
           "[useCollocationLoader] Cache updated, triggering re-render. Cache size:",
           cacheRef.current.size,
         );
-        // Trigger re-render
-        setVersion((v) => v + 1);
       } catch (e) {
         console.error("[useCollocationLoader] Batch load failed:", e);
         // Clear pending on error

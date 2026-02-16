@@ -15,6 +15,7 @@ import {
 import { useGlobalState } from "../../context/GlobalContext";
 import { apiGet, apiPost, apiPut } from "../../api/auth";
 import { useCollocationLoader, useWordExplainer } from "@nce/shared";
+import { filterCollocationsByLevel } from "../content/shared/collocationDifficulty";
 
 import { useToast, Dialog, DialogButton } from "../ui";
 
@@ -528,12 +529,18 @@ const ReadingMode = () => {
         }
         calibrationBanner={calibrationBanner}
         getCollocations={(sentence) =>
-          (getCollocations(sentence) || []).map((item) => ({
-            text: item.text,
-            key_word: item.key_word || "",
-            start_word_idx: item.start_word_idx,
-            end_word_idx: item.end_word_idx,
-          }))
+          filterCollocationsByLevel(
+            (getCollocations(sentence) || []).map((item) => ({
+              reasoning: item.reasoning,
+              text: item.text,
+              key_word: item.key_word || "",
+              start_word_idx: item.start_word_idx,
+              end_word_idx: item.end_word_idx,
+              difficulty: item.difficulty,
+              confidence: item.confidence,
+            })),
+            settings.collocationDisplayLevel || "core",
+          )
         }
         loadCollocations={loadCollocations}
         prefetchCollocations={prefetchCollocations}

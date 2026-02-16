@@ -2,7 +2,7 @@
  * StudyingView - Main sentence-by-sentence study interface
  * Shows current sentence with Clear/Unclear buttons and simplification flow
  */
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import type { RefObject } from "react";
 import {
   ChevronLeft,
@@ -14,6 +14,9 @@ import {
 import MemoizedSentence from "../../reading/MemoizedSentence";
 import ExplanationCard from "./ExplanationCard";
 import { usePodcast } from "../../../context/PodcastContext";
+import { useGlobalState } from "../../../context/GlobalContext";
+import CollocationDifficultySwitch from "../../content/shared/CollocationDifficultySwitch";
+import { filterCollocationsByLevel } from "../../content/shared/collocationDifficulty";
 import type { Collocation } from "../../content/types";
 
 interface SentenceItem {
@@ -68,7 +71,19 @@ const StudyingView = ({
   onUndo,
 }: StudyingViewProps) => {
   const { currentEpisode } = usePodcast();
+  const {
+    state: { settings },
+  } = useGlobalState();
   const [showContext, setShowContext] = useState(false);
+
+  const visibleCollocations = useMemo(
+    () =>
+      filterCollocationsByLevel(
+        collocations,
+        settings.collocationDisplayLevel || "core",
+      ),
+    [collocations, settings.collocationDisplayLevel],
+  );
 
   const progressPercent =
     totalSentences > 0 ? (currentIndex / totalSentences) * 100 : 0;
@@ -158,6 +173,8 @@ const StudyingView = ({
                     <span>Context</span>
                   </button>
                 )}
+
+                <CollocationDifficultySwitch compact />
               </div>
             </div>
 
@@ -197,7 +214,7 @@ const StudyingView = ({
                   studyPhraseSet={new Set()} // No phrase highlights in sentence study mode
                   knownWords={knownWords}
                   showHighlights={true}
-                  collocations={collocations}
+                  collocations={visibleCollocations}
                 />
               ) : (
                 <span className="text-white/20 italic">
