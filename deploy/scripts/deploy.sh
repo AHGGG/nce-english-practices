@@ -39,6 +39,10 @@ echo -e "${YELLOW}Starting Deployment (${MODE} mode)...${NC}"
 # 1. Prerequisites Check (Common)
 echo -e "\n${YELLOW}1. Checking prerequisites...${NC}"
 
+# Enable BuildKit for better caching
+export DOCKER_BUILDKIT=1
+export COMPOSE_DOCKER_CLI_BUILD=1
+
 if ! command -v docker &> /dev/null; then
     echo -e "${RED}Error: docker is not installed.${NC}"
     exit 1
@@ -48,6 +52,19 @@ if [ ! -f .env ]; then
     echo -e "${RED}Error: .env file not found. Please copy .env.example to .env and configure it.${NC}"
     exit 1
 fi
+
+# Load environment variables and validate required values
+set -a
+source .env
+set +a
+
+required_vars=(DB_USER DB_PASSWORD DB_NAME SECRET_KEY)
+for var in "${required_vars[@]}"; do
+    if [ -z "${!var}" ]; then
+        echo -e "${RED}Error: required env var '$var' is missing or empty in .env.${NC}"
+        exit 1
+    fi
+done
 
 if [ ! -f nginx/ssl/cert.pem ] || [ ! -f nginx/ssl/key.pem ]; then
     echo -e "${RED}Error: SSL certificates not found in nginx/ssl/. Please run generate_cert.py first.${NC}"
@@ -83,7 +100,7 @@ docker compose up -d --remove-orphans
 # 4. Wait for Database
 echo -e "\n${YELLOW}4. Waiting for database...${NC}"
 echo "Waiting for postgres to be healthy..."
-until docker compose exec postgres pg_isready -U postgres; do
+until docker compose exec postgres pg_isready -U "$DB_USER"; do
   echo "..."
   sleep 2
 done

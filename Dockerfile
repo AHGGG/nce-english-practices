@@ -1,3 +1,4 @@
+# syntax=docker/dockerfile:1
 # Stage 1: Build Web App
 FROM node:20-slim AS builder
 ENV PNPM_HOME="/pnpm"
@@ -23,14 +24,15 @@ COPY packages/ui-tokens/package.json ./packages/ui-tokens/package.json
 COPY patches ./patches
 
 # Install dependencies (frozen lockfile for reproducibility)
-RUN pnpm install --frozen-lockfile
+# This layer will be cached unless pnpm-lock.yaml or package.json files change
+RUN --mount=type=cache,target=/pnpm/store pnpm install --frozen-lockfile
 
 # Copy source code
 COPY apps/web ./apps/web
 COPY packages ./packages
 
-# Build the web application
-RUN pnpm turbo build --filter=@nce/web
+# Build the web application with parallelism
+RUN --mount=type=cache,target=/pnpm/store pnpm turbo build --filter=@nce/web --concurrency=4
 
 # Stage 2: Python Backend
 FROM python:3.11-slim
@@ -47,15 +49,14 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy backend dependency files
-COPY pyproject.toml .
-COPY uv.lock .
+COPY pyproject.toml uv.lock .
 
 # Install uv (Python package manager)
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /bin/uv
 
-# Install Python dependencies
-# We install the 'dictionary' extra to ensure all features are available
-RUN uv sync --extra dictionary
+# Install Python dependencies with caching
+# This layer will be cached unless pyproject.toml or uv.lock changes
+RUN --mount=type=cache,target=/root/.cache/uv uv sync --frozen --extra dictionary --no-install-project
 
 # Copy application code (backend logic in root and app folder)
 COPY app ./app
