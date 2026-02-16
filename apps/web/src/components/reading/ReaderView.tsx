@@ -376,24 +376,24 @@ const ReaderView = ({
       )}
 
       {/* Toolbar - Industrial Style */}
-      <header className="relative z-[60] h-16 border-b border-white/[0.05] flex items-center justify-between px-6 md:px-8 bg-bg-base/80 backdrop-blur-xl shrink-0">
+      <header className="relative z-[60] min-h-16 border-b border-white/[0.05] flex items-center justify-between px-2 sm:px-4 md:px-8 bg-bg-base/80 backdrop-blur-xl shrink-0">
         <button
           onClick={onBackToLibrary}
           className="flex items-center gap-2 text-text-secondary hover:text-white transition-colors group px-3 py-1.5 rounded-lg hover:bg-white/5"
         >
           <ChevronLeft className="w-4 h-4 transition-transform group-hover:-translate-x-1" />
-          <span className="text-xs font-bold uppercase tracking-widest">
+          <span className="hidden sm:inline text-xs font-bold uppercase tracking-widest">
             Library
           </span>
         </button>
 
         {/* Highlight Controls */}
-        <div className="flex items-center gap-2 md:gap-3 bg-white/[0.03] p-1 rounded-xl border border-white/10">
+        <div className="flex items-center gap-1 sm:gap-2 md:gap-3 bg-white/[0.03] p-1 rounded-xl border border-white/10 min-w-0 mx-2">
           <div className="relative group">
             <select
               value={selectedOptionIndex}
               onChange={(e) => setSelectedOptionIndex(Number(e.target.value))}
-              className="bg-transparent text-text-primary text-xs font-mono font-bold uppercase py-1.5 pl-3 pr-8 focus:outline-none cursor-pointer transition-colors hover:text-white appearance-none relative z-10"
+              className="bg-transparent w-24 sm:w-auto text-text-primary text-xs font-mono font-bold uppercase py-1.5 pl-2 sm:pl-3 pr-7 sm:pr-8 focus:outline-none cursor-pointer transition-colors hover:text-white appearance-none relative z-10"
             >
               {HIGHLIGHT_OPTIONS.map((opt, i) => (
                 <option key={i} value={i} className="bg-[#0c1418] text-white">
@@ -422,7 +422,7 @@ const ReaderView = ({
         </div>
 
         {/* Action Group */}
-        <div className="flex items-center gap-2 shrink-0">
+        <div className="flex items-center gap-1 sm:gap-2 shrink-0">
           {/* Sweep Button */}
           <button
             onClick={onSweep}
@@ -440,11 +440,11 @@ const ReaderView = ({
             onClick={() => {
               window.location.href = `/sentence-study?source_id=${encodeURIComponent(article.id)}`;
             }}
-            className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-accent-primary text-black font-medium hover:bg-accent-primary/90 shadow-lg shadow-accent-primary/20 transition-all active:scale-95"
+            className="flex items-center gap-1.5 sm:gap-2 px-2 sm:px-3 py-1.5 rounded-lg bg-accent-primary text-black font-medium hover:bg-accent-primary/90 shadow-lg shadow-accent-primary/20 transition-all active:scale-95"
             title="Study this article sentence by sentence"
           >
             <GraduationCap className="w-3.5 h-3.5" />
-            <span className="text-[10px] font-bold uppercase tracking-wider">
+            <span className="hidden sm:inline text-[10px] font-bold uppercase tracking-wider">
               Study
             </span>
           </button>

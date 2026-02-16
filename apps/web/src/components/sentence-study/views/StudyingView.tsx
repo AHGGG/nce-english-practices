@@ -131,7 +131,7 @@ const StudyingView = ({
 
           <div className="max-w-3xl w-full bg-white/[0.02] backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl shadow-black/20 overflow-hidden ring-1 ring-white/5">
             {/* Card Header (Review Mode Style) */}
-            <div className="px-4 md:px-6 py-3 md:py-4 border-b border-white/5 flex items-center justify-between bg-white/[0.01]">
+            <div className="px-4 md:px-6 py-3 md:py-4 border-b border-white/5 flex items-center justify-between bg-white/[0.01] gap-2">
               {/* Left: Progress/Label */}
               <div className="flex items-center gap-3">
                 <span className="text-[10px] font-bold text-accent-primary uppercase tracking-widest font-mono">
@@ -146,7 +146,7 @@ const StudyingView = ({
               </div>
 
               {/* Right: Actions */}
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center justify-end gap-1 sm:gap-2 min-w-0">
                 {/* Undo Button */}
                 {currentIndex > 0 && (
                   <button
@@ -170,7 +170,7 @@ const StudyingView = ({
                     }`}
                   >
                     <BookOpen className="w-3 h-3" />
-                    <span>Context</span>
+                    <span className="hidden sm:inline">Context</span>
                   </button>
                 )}
 

@@ -24,7 +24,7 @@ export default function CollocationDifficultySwitch({
 
   return (
     <div
-      className={`inline-flex items-center rounded-xl border border-white/10 bg-white/[0.03] p-1 ${compact ? "gap-1" : "gap-1.5"}`}
+      className={`inline-flex max-w-full items-center rounded-xl border border-white/10 bg-white/[0.03] p-1 ${compact ? "gap-0.5 sm:gap-1" : "gap-1.5"}`}
       title="Global collocation complexity level"
     >
       {OPTIONS.map((opt) => {
@@ -34,7 +34,7 @@ export default function CollocationDifficultySwitch({
             key={opt.value}
             type="button"
             onClick={() => updateSetting("collocationDisplayLevel", opt.value)}
-            className={`rounded-lg px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider transition-all ${
+            className={`rounded-lg px-1.5 sm:px-2.5 py-1 text-[9px] sm:text-[10px] font-bold uppercase tracking-wide sm:tracking-wider transition-all ${
               isActive
                 ? "bg-accent-primary/20 text-accent-primary border border-accent-primary/40"
                 : "text-white/55 hover:text-white hover:bg-white/8 border border-transparent"
