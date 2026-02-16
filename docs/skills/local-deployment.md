@@ -31,13 +31,43 @@ cd deploy
 
 ## Maintenance Scripts
 
-| 脚本 | 用途 |
-|------|------|
-| `./scripts/backup.sh` | 数据库备份到 `deploy/backups/` |
-| `./scripts/restore.sh list` | 列出所有备份 |
-| `./scripts/restore.sh <backup_file>` | 恢复指定备份 |
-| `./scripts/logs.sh` | 查看容器日志 |
-| `./scripts/health-check.sh` | 系统诊断 |
+| 脚本                                 | 用途                           |
+| ------------------------------------ | ------------------------------ |
+| `./scripts/backup.sh`                | 数据库备份到 `deploy/backups/` |
+| `./scripts/restore.sh list`          | 列出所有备份                   |
+| `./scripts/restore.sh <backup_file>` | 恢复指定备份                   |
+| `./scripts/logs.sh`                  | 查看容器日志                   |
+| `./scripts/health-check.sh`          | 系统诊断                       |
+
+## Production Operation: Clear Collocation Cache
+
+当 collocation prompt/schema 升级后，需要清理历史识别缓存，触发全量重识别。
+
+### Docker deployment (recommended)
+
+```bash
+# 1) 确认 app 容器名称
+docker ps
+
+# 2) 先 dry-run 查看将删除的行数
+docker exec -it deploy-app-1 sh -lc 'cd /app && uv run python scripts/clear_collocation_cache.py --dry-run'
+
+# 3) 正式清理
+docker exec -it deploy-app-1 sh -lc 'cd /app && uv run python scripts/clear_collocation_cache.py --yes'
+
+# 4) 重启 app 容器，清理进程内内存缓存
+docker restart deploy-app-1
+
+# 5) 观察日志确认恢复正常
+docker logs -f --tail=200 deploy-app-1
+```
+
+### Notes
+
+- 若容器内没有 `uv`，使用 `python` 直接运行脚本：
+  `docker exec -it deploy-app-1 sh -lc 'cd /app && python scripts/clear_collocation_cache.py --yes'`
+- 若项目目录不是 `/app`，请替换为容器内实际代码目录。
+- 建议在低峰期执行，避免短时 LLM 重识别请求高峰。
 
 ## Prerequisites
 

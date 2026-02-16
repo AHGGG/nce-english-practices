@@ -108,7 +108,22 @@ useEffect(() => {
 
 - `packages/shared/src/hooks/useCollocationLoader.ts` - Frontend hook
 - `app/api/routers/sentence_study.py` - `/detect-collocations-batch` endpoint
-- `app/services/learning/sentence_study_service.py` - Collocation detection logic
+- `app/services/sentence_study_service.py` - Collocation detection logic
+
+### Cache Reset After Prompt/Schema Changes
+
+When collocation prompt/schema changes, clear historical cache to force re-detection.
+
+```bash
+uv run python scripts/clear_collocation_cache.py --yes
+```
+
+If running in Docker production:
+
+```bash
+docker exec -it deploy-app-1 sh -lc 'cd /app && uv run python scripts/clear_collocation_cache.py --yes'
+docker restart deploy-app-1
+```
 
 ## Common Pitfalls
 
