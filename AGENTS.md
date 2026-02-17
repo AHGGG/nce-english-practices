@@ -238,6 +238,7 @@ The system uses **Edge-TTS** for audio.
 ```
 app/
 ├── main.py, config.py          # Entry & Config
+├── app_factory.py              # FastAPI assembly (lifespan, routers, middleware, SPA mount)
 ├── core/db.py                  # SQLAlchemy async session
 ├── services/                   # Business Logic
 │   ├── llm.py                  # DeepSeek + Gemini Client
