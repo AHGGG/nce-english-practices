@@ -1,5 +1,4 @@
 from fastapi import APIRouter, Response, HTTPException, Query
-from fastapi.concurrency import run_in_threadpool
 from pydantic import BaseModel
 import os
 from pathlib import Path
@@ -96,10 +95,10 @@ async def api_dict_lookup(payload: DictionaryLookupRequest):
 @router.post("/api/dictionary/context")
 async def api_dict_context(payload: DictionaryContextRequest):
     try:
-        from fastapi.concurrency import run_in_threadpool
-
-        if not llm_service.sync_client:
+        client = llm_service.async_client
+        if not client:
             return {"explanation": "AI client is not configured (API Key missing)."}
+        assert client is not None
 
         prompt = f"""
         You are an English tutor. Analyze the following word/phrase in the context of the sentence.
@@ -121,15 +120,11 @@ async def api_dict_context(payload: DictionaryContextRequest):
         }}
         """
 
-        response = await run_in_threadpool(
-            lambda: llm_service.sync_client.chat.completions.create(
-                model=settings.MODEL_NAME,
-                messages=[{"role": "user", "content": prompt}],
-                temperature=0.3,
-                response_format={
-                    "type": "json_object"
-                },  # Force JSON if supported by model
-            )
+        response = await client.chat.completions.create(
+            model=settings.MODEL_NAME,
+            messages=[{"role": "user", "content": prompt}],
+            temperature=0.3,
+            response_format={"type": "json_object"},  # Force JSON if supported by model
         )
         content = (
             response.choices[0].message.content.strip() if response.choices else ""

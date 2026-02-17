@@ -1,6 +1,6 @@
 import pytest
 from httpx import AsyncClient
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch, MagicMock, AsyncMock
 
 
 @pytest.mark.asyncio
@@ -33,15 +33,12 @@ async def test_api_dictionary_lookup(client: AsyncClient):
 
 @pytest.mark.asyncio
 async def test_api_dictionary_context_success(client: AsyncClient):
-    # Mock llm_service.sync_client
+    # Mock llm_service.async_client
     mock_response = MagicMock()
     mock_response.choices[0].message.content = "It means a greeting."
 
-    # We need to patch llm_service.sync_client.chat.completions.create
-    # Because `api_dict_context` uses `run_in_threadpool(lambda: client.chat.completions.create(...))`
-
-    with patch("app.services.llm.llm_service.sync_client") as mock_client:
-        mock_client.chat.completions.create.return_value = mock_response
+    with patch("app.services.llm.llm_service.async_client") as mock_client:
+        mock_client.chat.completions.create = AsyncMock(return_value=mock_response)
 
         response = await client.post(
             "/api/dictionary/context", json={"word": "hello", "sentence": "Hello world"}
@@ -53,7 +50,7 @@ async def test_api_dictionary_context_success(client: AsyncClient):
 
 @pytest.mark.asyncio
 async def test_api_dictionary_context_no_client(client: AsyncClient):
-    with patch("app.services.llm.llm_service.sync_client", None):
+    with patch("app.services.llm.llm_service.async_client", None):
         response = await client.post(
             "/api/dictionary/context", json={"word": "hello", "sentence": "Hello world"}
         )

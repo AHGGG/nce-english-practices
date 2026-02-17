@@ -5,6 +5,7 @@ import logging
 import json
 import asyncio
 import websockets
+from typing import Any, cast
 
 logger = logging.getLogger(__name__)
 
@@ -47,7 +48,9 @@ async def deepgram_voice_agent_websocket(
                 {"type": "ready", "stt_model": stt_model, "tts_voice": tts_voice}
             )
 
-            conversation_history = [{"role": "system", "content": system_prompt}]
+            conversation_history: list[dict[str, Any]] = [
+                {"role": "system", "content": system_prompt}
+            ]
             tts_header_sent = False
 
             async def handle_llm_and_tts(user_text):
@@ -57,7 +60,7 @@ async def deepgram_voice_agent_websocket(
 
                     conversation_history.append({"role": "user", "content": user_text})
 
-                    response_text = ""
+                    response_text: str = ""
                     if llm_provider == "dashscope":
                         client = llm_service.get_dashscope_client()
                         if not client:
@@ -65,26 +68,26 @@ async def deepgram_voice_agent_websocket(
                         else:
                             response = await client.chat.completions.create(
                                 model=settings.DASHSCOPE_MODEL_NAME,
-                                messages=conversation_history,
+                                messages=cast(Any, conversation_history),
                                 extra_body={"enable_thinking": False},
                             )
-                            response_text = response.choices[0].message.content
+                            response_text = response.choices[0].message.content or ""
                     elif llm_provider == "gemini":
                         response_text = (
                             "Gemini provider not implemented in raw mode yet."
                         )
                     else:
-                        llm_client = llm_service.sync_client
-                        loop = asyncio.get_event_loop()
-                        response = await loop.run_in_executor(
-                            None,
-                            lambda: llm_client.chat.completions.create(
+                        llm_client = llm_service.get_async_client()
+                        if not llm_client:
+                            response_text = "DeepSeek client not configured."
+                        else:
+                            assert llm_client is not None
+                            response = await llm_client.chat.completions.create(
                                 model=settings.MODEL_NAME,
-                                messages=conversation_history,
+                                messages=cast(Any, conversation_history),
                                 max_tokens=150,
-                            ),
-                        )
-                        response_text = response.choices[0].message.content
+                            )
+                            response_text = response.choices[0].message.content or ""
 
                     conversation_history.append(
                         {"role": "assistant", "content": response_text}

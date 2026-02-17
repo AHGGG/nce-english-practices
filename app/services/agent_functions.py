@@ -7,7 +7,6 @@ Functions are executed on the backend when the LLM decides to call them.
 Reference: docs/voice/deepgram/examples/common/agent_functions.py
 """
 
-import asyncio
 import logging
 from typing import Dict, Any, Optional, Callable, Awaitable
 from bs4 import BeautifulSoup
@@ -187,29 +186,24 @@ Example format:
 ..."""
 
         # Call LLM
-        client = llm_service.sync_client
+        client = llm_service.async_client
         if not client:
             return {"word": word, "examples": [], "error": "LLM client not configured"}
 
-        # Run in executor to avoid blocking
-        loop = asyncio.get_event_loop()
-        response = await loop.run_in_executor(
-            None,
-            lambda: client.chat.completions.create(
-                model=settings.MODEL_NAME,
-                messages=[
-                    {"role": "system", "content": "You are a helpful English teacher."},
-                    {"role": "user", "content": prompt},
-                ],
-                max_tokens=300,
-                temperature=0.7,
-            ),
+        response = await client.chat.completions.create(
+            model=settings.MODEL_NAME,
+            messages=[
+                {"role": "system", "content": "You are a helpful English teacher."},
+                {"role": "user", "content": prompt},
+            ],
+            max_tokens=300,
+            temperature=0.7,
         )
 
-        content = response.choices[0].message.content
+        content = response.choices[0].message.content or ""
 
         # Parse sentences from response
-        lines = content.strip().split("\n")
+        lines: list[str] = str(content).strip().split("\n")
         examples = []
         for line in lines:
             # Remove numbering and clean up
