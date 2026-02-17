@@ -45,5 +45,13 @@ async def test_api_get_performance(client: AsyncClient):
         assert "reading_stats" in data
         assert data["reading_stats"]["total_words"] == 5000
         assert "memory_curve" in data
-        mock_perf.assert_called_once_with(days=30, user_id="default_user")
-        mock_curve.assert_called_once_with(user_id="default_user")
+        mock_perf.assert_called_once()
+        mock_curve.assert_called_once()
+
+        perf_kwargs = mock_perf.call_args.kwargs
+        curve_kwargs = mock_curve.call_args.kwargs
+        assert perf_kwargs["days"] == 30
+        assert perf_kwargs["user_id"] == "default_user"
+        assert "db" in perf_kwargs
+        assert curve_kwargs["user_id"] == "default_user"
+        assert "db" in curve_kwargs

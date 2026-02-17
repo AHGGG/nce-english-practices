@@ -478,6 +478,7 @@ Get-Content logs/unified.log -Tail 50   # Last 50 lines
 - **API Routes**: Use `async def` and run blocking LLM calls in thread pools via `run_in_threadpool`.
 - **CRITICAL RULE**: Do NOT use `async def` for CPU-bound or blocking I/O operations (like `time.sleep`, heavy file parsing) unless you `await` them. If you can't await them, use `def` (sync) so FastAPI runs them in a thread pool. Mixing blocking code in `async def` will freeze the entire event loop.
 - **Database**: All DB operations are async using `AsyncSessionLocal`.
+- **Concurrent DB Tasks**: Never share one `AsyncSession` across `asyncio.gather` tasks; create isolated sessions per concurrent task (same pattern as collocation batch detection and stats aggregation).
 - **Tests**: Use `pytest-asyncio` with function-scoped fixtures for isolation.
 
 ### 6. Stateful Chat Sessions

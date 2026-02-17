@@ -2,6 +2,8 @@ from typing import Dict, Any, Optional
 from datetime import datetime
 import logging
 from sqlalchemy import select, func
+from sqlalchemy.ext.asyncio import AsyncSession
+from contextlib import asynccontextmanager
 
 from app.database.core import AsyncSessionLocal, ReadingSession, VocabLearningLog
 
@@ -13,12 +15,24 @@ WPM_NON_NATIVE = 150  # Words per minute for non-native reader
 JUMP_THRESHOLD = 5  # Sentences jumped = considered skip
 
 
-async def get_reading_stats(user_id: str) -> Dict[str, Any]:
+@asynccontextmanager
+async def _get_session(db: Optional[AsyncSession] = None):
+    if db is not None:
+        yield db
+        return
+
+    async with AsyncSessionLocal() as session:
+        yield session
+
+
+async def get_reading_stats(
+    user_id: str, db: Optional[AsyncSession] = None
+) -> Dict[str, Any]:
     """
     Calculate reading statistics.
     Uses context_sentence word count as proxy for words read.
     """
-    async with AsyncSessionLocal() as session:
+    async with _get_session(db) as session:
         try:
             # Get all learning logs with context sentences
             stmt = select(VocabLearningLog).where(
@@ -80,9 +94,10 @@ async def start_reading_session(
     article_title: str,
     total_word_count: int,
     total_sentences: int,
+    db: Optional[AsyncSession] = None,
 ) -> Optional[int]:
     """Start a new reading session, return session_id."""
-    async with AsyncSessionLocal() as session:
+    async with _get_session(db) as session:
         try:
             new_session = ReadingSession(
                 user_id=user_id,
@@ -109,9 +124,10 @@ async def update_reading_session(
     total_active_seconds: int,
     total_idle_seconds: int,
     scroll_jump_count: int,
+    db: Optional[AsyncSession] = None,
 ) -> bool:
     """Update reading session progress (heartbeat)."""
-    async with AsyncSessionLocal() as session:
+    async with _get_session(db) as session:
         try:
             stmt = select(ReadingSession).where(
                 ReadingSession.id == session_id, ReadingSession.user_id == user_id
@@ -136,9 +152,11 @@ async def update_reading_session(
             return False
 
 
-async def increment_word_click(session_id: int, user_id: str) -> bool:
+async def increment_word_click(
+    session_id: int, user_id: str, db: Optional[AsyncSession] = None
+) -> bool:
     """Increment word click count for a reading session."""
-    async with AsyncSessionLocal() as session:
+    async with _get_session(db) as session:
         try:
             stmt = select(ReadingSession).where(
                 ReadingSession.id == session_id, ReadingSession.user_id == user_id
@@ -217,10 +235,13 @@ def calculate_reading_quality(rs: ReadingSession) -> tuple:
 
 
 async def end_reading_session(
-    session_id: int, user_id: str, final_data: Dict[str, Any] = None
+    session_id: int,
+    user_id: str,
+    final_data: Optional[Dict[str, Any]] = None,
+    db: Optional[AsyncSession] = None,
 ) -> Dict[str, Any]:
     """End reading session, calculate quality and validated word count."""
-    async with AsyncSessionLocal() as session:
+    async with _get_session(db) as session:
         try:
             stmt = select(ReadingSession).where(
                 ReadingSession.id == session_id, ReadingSession.user_id == user_id
@@ -270,12 +291,14 @@ async def end_reading_session(
             return {"success": False, "error": str(e)}
 
 
-async def get_reading_stats_v2(user_id: str) -> Dict[str, Any]:
+async def get_reading_stats_v2(
+    user_id: str, db: Optional[AsyncSession] = None
+) -> Dict[str, Any]:
     """
     Get reading statistics using validated ReadingSession data.
     Falls back to legacy VocabLearningLog if no sessions exist.
     """
-    async with AsyncSessionLocal() as session:
+    async with _get_session(db) as session:
         try:
             # Get stats from ReadingSession (validated data)
             stmt = select(
@@ -288,14 +311,15 @@ async def get_reading_stats_v2(user_id: str) -> Dict[str, Any]:
             )
             result = await session.execute(stmt)
             row = result.first()
+            row_values = row if row is not None else (0, 0, 0)
 
-            validated_words = row[0] or 0
-            session_count = row[1] or 0
-            articles_count = row[2] or 0
+            validated_words = row_values[0] or 0
+            session_count = row_values[1] or 0
+            articles_count = row_values[2] or 0
 
             # If no session data, fall back to legacy method
             if session_count == 0:
-                legacy_stats = await get_reading_stats(user_id)
+                legacy_stats = await get_reading_stats(user_id=user_id, db=session)
                 return {
                     **legacy_stats,
                     "data_source": "legacy",
