@@ -244,7 +244,10 @@ class PodcastService:
             try:
                 # Use 45s timeout (safe margin below Nginx default 60s)
                 async with httpx.AsyncClient(
-                    timeout=45.0, follow_redirects=True, proxy=proxies
+                    timeout=45.0,
+                    follow_redirects=True,
+                    proxy=proxies,
+                    verify=settings.OUTBOUND_SSL_VERIFY,
                 ) as client:
                     response = await client.get(rss_url, headers=headers)
                     response.raise_for_status()
@@ -264,20 +267,18 @@ class PodcastService:
                     ),
                 )
 
-                # If using proxy, network errors are common, so we retry with verify=False might not help for network,
-                # but sometimes it helps if the proxy itself has issues with strict SSL upstream.
-                # However, usually verify=False is for the target server.
+                # If using proxy, network errors are common, so we retry once.
 
                 if is_ssl_error or is_conn_error:
                     logger.warning(
-                        f"Standard fetch failed for {rss_url}: {e}. Retrying with verify=False."
+                        f"Standard fetch failed for {rss_url}: {e}. Retrying feed fetch."
                     )
                     try:
                         # Attempt 2: Relaxed Security
                         async with httpx.AsyncClient(
                             timeout=45.0,
                             follow_redirects=True,
-                            verify=False,
+                            verify=settings.OUTBOUND_SSL_VERIFY,
                             proxy=proxies,
                         ) as client:
                             response = await client.get(rss_url, headers=headers)
@@ -804,7 +805,10 @@ class PodcastService:
                 url = f"https://itunes.apple.com/us/rss/toppodcasts/limit={limit}/genre={category_id}/json"
 
                 async with httpx.AsyncClient(
-                    timeout=15.0, proxy=proxies, follow_redirects=True, verify=False
+                    timeout=15.0,
+                    proxy=proxies,
+                    follow_redirects=True,
+                    verify=settings.OUTBOUND_SSL_VERIFY,
                 ) as client:
                     response = await client.get(url)
                     response.raise_for_status()
@@ -876,7 +880,10 @@ class PodcastService:
                 url = f"https://rss.applemarketingtools.com/api/v2/us/podcasts/top/{limit}/podcasts.json"
 
                 async with httpx.AsyncClient(
-                    timeout=10.0, proxy=proxies, follow_redirects=True, verify=False
+                    timeout=10.0,
+                    proxy=proxies,
+                    follow_redirects=True,
+                    verify=settings.OUTBOUND_SSL_VERIFY,
                 ) as client:
                     response = await client.get(url)
                     response.raise_for_status()
@@ -916,7 +923,9 @@ class PodcastService:
 
                         try:
                             async with httpx.AsyncClient(
-                                timeout=20.0, proxy=proxies, verify=False
+                                timeout=20.0,
+                                proxy=proxies,
+                                verify=settings.OUTBOUND_SSL_VERIFY,
                             ) as client:
                                 l_res = await client.get(lookup_url)
                                 if l_res.status_code == 200:

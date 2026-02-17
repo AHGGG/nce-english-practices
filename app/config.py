@@ -80,6 +80,8 @@ class Settings(BaseSettings):
     # Optional proxy for outbound requests (RSS, Audio download)
     # Format: http://user:pass@host:port or http://host:port
     PROXY_URL: str = ""
+    # Outbound TLS verification for HTTP clients (set false only for trusted local dev proxies)
+    OUTBOUND_SSL_VERIFY: bool = True
 
     # CORS Settings
     # WARNING: Setting to true is insecure for production!

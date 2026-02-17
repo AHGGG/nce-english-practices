@@ -122,7 +122,7 @@ async def proxy_image(url: str, filename: str = "image.jpg"):
             timeout=10.0,
             follow_redirects=True,
             proxy=proxies,
-            verify=False,
+            verify=settings.OUTBOUND_SSL_VERIFY,
             headers=headers,
         ) as client:
             response = await client.get(url)

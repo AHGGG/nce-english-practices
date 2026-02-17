@@ -210,6 +210,9 @@ DASHSCOPE_API_KEY=your_key # Alibaba Cloud Dashscope (Qwen)
 # Database (defaults to local postgres)
 DATABASE_URL=postgresql+asyncpg://postgres:postgres@localhost:5432/nce_practice
 
+# Network / TLS
+OUTBOUND_SSL_VERIFY=true  # Keep true in production; set false only for trusted local proxy debugging
+
 # Authentication (IMPORTANT: Change SECRET_KEY in production!)
 # Generate with: openssl rand -hex 32
 SECRET_KEY=your-32-byte-hex-secret-key
