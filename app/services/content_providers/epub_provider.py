@@ -91,6 +91,67 @@ class EpubProvider(BaseContentProvider):
         self._cached_articles: List[Dict] = []
         self._cached_images: Dict[str, bytes] = {}  # {image_path: bytes}
 
+    def list_books(self) -> List[Dict[str, Any]]:
+        """List available EPUB files in the resources directory."""
+        books: List[Dict[str, Any]] = []
+        epub_dir = self.EPUB_DIR
+
+        if not epub_dir.exists():
+            return books
+
+        for f in epub_dir.glob("*.epub"):
+            books.append(
+                {
+                    "filename": f.name,
+                    "title": f.stem.replace(".", " ")
+                    .replace("_", " ")
+                    .replace("-", " ")
+                    .title(),
+                    "size_bytes": f.stat().st_size,
+                }
+            )
+
+        return books
+
+    def get_articles(self, filename: str) -> List[Dict[str, Any]]:
+        """
+        Get extracted article payloads for a specific EPUB.
+
+        Returns empty list if the EPUB cannot be loaded.
+        """
+        if not self._load_epub(filename):
+            return []
+
+        return list(self._cached_articles)
+
+    def get_block_sentence_count(self, article: Dict[str, Any]) -> int:
+        """
+        Get sentence count from structured blocks (paragraphs only).
+
+        Uses cached value from EPUB loading for performance and falls back
+        to on-demand parsing for backward compatibility.
+        """
+        if "block_sentence_count" in article:
+            return article["block_sentence_count"]
+
+        raw_html = article.get("raw_html", "")
+        if not raw_html:
+            return len(self._split_sentences_lenient(article.get("full_text", "")))
+
+        soup = BeautifulSoup(raw_html, "lxml-xml")
+        blocks = self._extract_structured_blocks(soup)
+
+        sentence_count = 0
+        for block in blocks:
+            if block.type.value == "paragraph" and block.sentences:
+                sentence_count += len(block.sentences)
+
+        return sentence_count
+
+    def split_sentences(self, text: str) -> List[str]:
+        """Public sentence splitter used by routers/services."""
+        return self._split_sentences_lenient(text)
+
     def _load_epub(self, filename: str) -> bool:
         """Load EPUB file, using module-level cache if available."""
         # Check if already loaded in this instance

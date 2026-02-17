@@ -1,6 +1,5 @@
 from fastapi import APIRouter, HTTPException, Response, Depends
 from typing import Optional, Dict, Any
-from bs4 import BeautifulSoup
 from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -20,33 +19,6 @@ router = APIRouter()
 # ============================================================
 
 
-def _get_block_sentence_count(article: Dict[str, Any], provider) -> int:
-    """
-    Get sentence count from structured blocks (paragraphs only).
-    Uses cached value from EPUB loading for performance.
-    Falls back to computation if cache is missing (for backwards compatibility).
-    """
-    # Use cached value if available (set during EPUB loading)
-    if "block_sentence_count" in article:
-        return article["block_sentence_count"]
-
-    # Fallback: compute from raw_html
-    raw_html = article.get("raw_html", "")
-    if not raw_html:
-        # Final fallback to lenient splitting if no HTML available
-        return len(provider._split_sentences_lenient(article.get("full_text", "")))
-
-    soup = BeautifulSoup(raw_html, "lxml-xml")
-    blocks = provider._extract_structured_blocks(soup)
-
-    sentence_count = 0
-    for block in blocks:
-        if block.type.value == "paragraph" and block.sentences:
-            sentence_count += len(block.sentences)
-
-    return sentence_count
-
-
 @router.get("/api/reading/epub/books")
 def list_epub_books():
     """
@@ -55,23 +27,8 @@ def list_epub_books():
     try:
         from app.services.content_providers.epub_provider import EpubProvider
 
-        books = []
-        epub_dir = EpubProvider.EPUB_DIR
-
-        if epub_dir.exists():
-            for f in epub_dir.glob("*.epub"):
-                books.append(
-                    {
-                        "filename": f.name,
-                        "title": f.stem.replace(".", " ")
-                        .replace("_", " ")
-                        .replace("-", " ")
-                        .title(),
-                        "size_bytes": f.stat().st_size,
-                    }
-                )
-
-        return {"books": books}
+        provider = EpubProvider()
+        return {"books": provider.list_books()}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -94,23 +51,21 @@ def list_epub_articles(filename: Optional[str] = None):
 
         # If no filename provided, use first available EPUB
         if not filename:
-            epub_dir = EpubProvider.EPUB_DIR
-            if epub_dir.exists():
-                epub_files = list(epub_dir.glob("*.epub"))
-                if epub_files:
-                    filename = epub_files[0].name
-                else:
-                    return {"filename": None, "total_articles": 0, "articles": []}
+            books = provider.list_books()
+            if books:
+                filename = books[0]["filename"]
             else:
                 return {"filename": None, "total_articles": 0, "articles": []}
+        assert filename is not None
 
         # Load the EPUB
-        if not provider._load_epub(filename):
+        articles_payload = provider.get_articles(filename)
+        if not articles_payload:
             raise HTTPException(status_code=404, detail=f"EPUB not found: {filename}")
 
         # Return article list with metadata
         articles = []
-        for i, article in enumerate(provider._cached_articles):
+        for i, article in enumerate(articles_payload):
             full_text = article.get("full_text", "")
 
             # Filter out Section TOC pages (Calibre Generated)
@@ -118,13 +73,13 @@ def list_epub_articles(filename: Optional[str] = None):
                 continue
 
             # Use block-based sentence count to match how article content works
-            sentence_count = _get_block_sentence_count(article, provider)
+            sentence_count = provider.get_block_sentence_count(article)
 
             if sentence_count < 3:
                 continue
 
             # Get preview from first sentences of full_text
-            preview_sentences = provider._split_sentences_lenient(full_text)
+            preview_sentences = provider.split_sentences(full_text)
             preview = (
                 preview_sentences[0] if preview_sentences else full_text[:200] + "..."
             )
@@ -167,31 +122,29 @@ async def list_epub_articles_with_status(
 
         # If no filename provided, use first available EPUB
         if not filename:
-            epub_dir = EpubProvider.EPUB_DIR
-            if epub_dir.exists():
-                epub_files = list(epub_dir.glob("*.epub"))
-                if epub_files:
-                    filename = epub_files[0].name
-                else:
-                    return {"filename": None, "total_articles": 0, "articles": []}
+            books = provider.list_books()
+            if books:
+                filename = books[0]["filename"]
             else:
                 return {"filename": None, "total_articles": 0, "articles": []}
+        assert filename is not None
 
         # Load the EPUB
-        if not provider._load_epub(filename):
+        articles_payload = provider.get_articles(filename)
+        if not articles_payload:
             raise HTTPException(status_code=404, detail=f"EPUB not found: {filename}")
 
         # Build valid articles list
         valid_articles = []
-        for i, article in enumerate(provider._cached_articles):
+        for i, article in enumerate(articles_payload):
             if article.get("is_toc"):
                 continue
-            sentence_count = _get_block_sentence_count(article, provider)
+            sentence_count = provider.get_block_sentence_count(article)
             if sentence_count < 3:
                 continue
 
             full_text = article.get("full_text", "")
-            preview_sentences = provider._split_sentences_lenient(full_text)
+            preview_sentences = provider.split_sentences(full_text)
             preview = (
                 preview_sentences[0] if preview_sentences else full_text[:200] + "..."
             )
@@ -621,15 +574,16 @@ async def get_article_status(
         provider = EpubProvider()
 
         # Load the EPUB to get articles
-        if not provider._load_epub(filename):
+        articles_payload = provider.get_articles(filename)
+        if not articles_payload:
             raise HTTPException(status_code=404, detail=f"EPUB not found: {filename}")
 
         # Build list of valid articles and their source_ids
         valid_articles = []
-        for i, article in enumerate(provider._cached_articles):
+        for i, article in enumerate(articles_payload):
             if article.get("is_toc"):
                 continue
-            sentence_count = _get_block_sentence_count(article, provider)
+            sentence_count = provider.get_block_sentence_count(article)
             if sentence_count < 3:
                 continue
             source_id = f"epub:{filename}:{i}"

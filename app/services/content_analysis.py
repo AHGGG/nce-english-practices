@@ -302,10 +302,11 @@ Respond in this exact JSON format (no markdown, no code blocks):
             provider = EpubProvider()
 
             for epub_file in epub_dir.glob("*.epub"):
-                if not provider._load_epub(epub_file.name):
+                articles_payload = provider.get_articles(epub_file.name)
+                if not articles_payload:
                     continue
 
-                for i, article in enumerate(provider._cached_articles):
+                for i, article in enumerate(articles_payload):
                     if article.get("is_toc"):
                         continue
 
