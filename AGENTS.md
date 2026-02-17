@@ -400,6 +400,11 @@ Local audiobook playback with synchronized subtitle highlighting.
 - **Public methods for routers/services**: `list_books()`, `get_articles(filename)`, `get_block_sentence_count(article)`, `split_sentences(text)`
 - **Rule**: callers should not access private EPUB internals (`_load_epub`, `_cached_articles`, `_split_sentences_lenient`, `_extract_structured_blocks`) outside the provider
 
+### Source ID Parsing
+
+- **Utility**: `app/services/source_id.py` provides shared parsing helpers (currently `parse_epub_source_id`)
+- **Rule**: routers/services should reuse this helper for `epub:{filename}:{index}` parsing instead of ad-hoc `split(":")` logic
+
 ### Content Renderer System
 
 Unified rendering system for different content types (epub, podcast, audiobook). See: [Content Renderer Skill](docs/skills/content-renderer.md)

@@ -6,6 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.api.deps.auth import get_current_user_id
 from app.core.db import get_db
 from app.services.content_service import content_service
+from app.services.source_id import parse_epub_source_id
 from app.models.content_schemas import SourceType
 from app.models.orm import ReadingSession, SentenceLearningRecord, ReviewItem
 
@@ -322,15 +323,14 @@ async def get_article_content(
     """
     try:
         # Parse source_id
-        parts = source_id.split(":")
-        if len(parts) < 3 or parts[0] != "epub":
+        parsed = parse_epub_source_id(source_id)
+        if not parsed:
             raise HTTPException(
                 status_code=400,
                 detail="Invalid source_id format. Expected: epub:{filename}:{index}",
             )
 
-        filename = parts[1]
-        chapter_index = int(parts[2])
+        filename, chapter_index = parsed
 
         # Use ContentService to fetch
         bundle = await content_service.get_content(

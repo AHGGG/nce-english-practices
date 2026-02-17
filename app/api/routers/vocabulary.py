@@ -16,6 +16,7 @@ from app.models.orm import (
 )
 from app.models.podcast_orm import PodcastEpisode
 from app.services.content_service import content_service
+from app.services.source_id import parse_epub_source_id
 from app.models.content_schemas import SourceType
 from app.models.vocabulary_schemas import (
     DifficultWordsResponse,
@@ -78,16 +79,6 @@ def _split_text_to_sentences(text: str) -> List[str]:
     if not normalized:
         return []
     return [s.strip() for s in re.split(r"(?<=[.!?])\s+", normalized) if s.strip()]
-
-
-def _parse_epub_source_id(source_id: str) -> Optional[tuple[str, int]]:
-    parts = (source_id or "").split(":")
-    if len(parts) < 3 or parts[0] != "epub":
-        return None
-    try:
-        return parts[1], int(parts[2])
-    except (TypeError, ValueError):
-        return None
 
 
 @router.post("/log", status_code=201)
@@ -422,7 +413,7 @@ async def get_word_usages(
         recent_epub_sources.append((source_id, row.started_at, row.article_title))
 
     for source_id, started_at, article_title in recent_epub_sources:
-        parsed = _parse_epub_source_id(source_id)
+        parsed = parse_epub_source_id(source_id)
         if not parsed:
             continue
         filename, chapter_index = parsed

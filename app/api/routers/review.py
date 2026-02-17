@@ -31,6 +31,7 @@ from app.models.review_schemas import (
 )
 from app.api.deps.auth import get_current_user_id
 from app.services.log_collector import log_collector, LogLevel, LogCategory
+from app.services.source_id import parse_epub_source_id
 
 router = APIRouter(prefix="/api/review", tags=["review"])
 
@@ -374,43 +375,27 @@ async def get_review_context(
     if not item:
         raise HTTPException(status_code=404, detail="Review item not found")
 
-    # 2. Parse Source ID
-    # Format: "type:id_part1:id_part2..."
-    parts = item.source_id.split(":")
-    if len(parts) < 2:
+    parsed_epub = parse_epub_source_id(item.source_id)
+    if not parsed_epub:
         return ReviewContextResponse(target_sentence=item.sentence_text)
-
-    source_type = parts[0]
 
     try:
         from app.services.content_service import content_service
         from app.models.content_schemas import BlockType, SourceType
 
-        # 3. Fetch Content Bundle
-        if source_type == "epub":
-            if len(parts) < 3:
-                return ReviewContextResponse(target_sentence=item.sentence_text)
-            filename = parts[1]
-            chapter_index = int(parts[2])
+        filename, chapter_index = parsed_epub
 
-            bundle = await content_service.get_content(
-                source_type=SourceType.EPUB,
-                filename=filename,
-                chapter_index=chapter_index,
-            )
+        bundle = await content_service.get_content(
+            source_type=SourceType.EPUB,
+            filename=filename,
+            chapter_index=chapter_index,
+        )
 
-            # Flatten sentences from blocks
-            all_sentences = []
-            for block in bundle.blocks:
-                if block.type == BlockType.PARAGRAPH:
-                    all_sentences.extend(block.sentences)
-
-        else:
-            # RSS, Podcast, PlainText - usually flat lists or handle differently
-            # For now, best effort parsing based on source_id conventions in those providers
-            # Assuming they implement fetch() similar to standard interface
-            # This part might need adjustment based on specific provider implementations
-            return ReviewContextResponse(target_sentence=item.sentence_text)
+        # Flatten sentences from blocks
+        all_sentences = []
+        for block in bundle.blocks:
+            if block.type == BlockType.PARAGRAPH:
+                all_sentences.extend(block.sentences)
 
         # 4. Find Target and Neighbors
         # Use stored index if valid
@@ -442,7 +427,7 @@ async def get_review_context(
             previous_sentence=prev_sent,
             target_sentence=item.sentence_text,
             next_sentence=next_sent,
-            source_title=bundle.metadata.get("filename", source_type),
+            source_title=bundle.metadata.get("filename", "epub"),
             chapter_title=bundle.title,
         )
 
