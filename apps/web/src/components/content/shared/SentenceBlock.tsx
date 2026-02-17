@@ -1,6 +1,45 @@
 import React, { memo, useMemo } from "react";
 import type { SentenceBlockProps, Collocation } from "../types";
 
+interface RenderCollocation extends Collocation {
+  isStudiedPhrase: boolean;
+}
+
+const normalizePhrase = (text: string): string =>
+  text
+    .toLowerCase()
+    .trim()
+    .replace(/\s+/g, " ")
+    .replace(/^[^a-zA-Z']+|[^a-zA-Z']+$/g, "");
+
+const tokenizePhrase = (text: string): string[] => {
+  const matches = text.toLowerCase().match(/[a-zA-Z'-]+/g);
+  return matches || [];
+};
+
+const areTokenArraysEqual = (a: string[], b: string[]): boolean => {
+  if (a.length !== b.length) return false;
+  for (let i = 0; i < a.length; i++) {
+    if (a[i] !== b[i]) return false;
+  }
+  return true;
+};
+
+const isContiguousSubsequence = (small: string[], large: string[]): boolean => {
+  if (!small.length || small.length > large.length) return false;
+  for (let i = 0; i <= large.length - small.length; i++) {
+    let matched = true;
+    for (let j = 0; j < small.length; j++) {
+      if (large[i + j] !== small[j]) {
+        matched = false;
+        break;
+      }
+    }
+    if (matched) return true;
+  }
+  return false;
+};
+
 /**
  * 句子渲染组件
  *
@@ -68,6 +107,34 @@ export const SentenceBlock = memo(function SentenceBlock({
 }: SentenceBlockProps) {
   if (!text) return null;
 
+  const studiedPhraseMeta = useMemo(
+    () =>
+      Array.from(studyPhraseSet || [])
+        .map((phrase) => ({
+          normalized: normalizePhrase(phrase),
+          tokens: tokenizePhrase(phrase),
+        }))
+        .filter((item) => item.tokens.length > 1),
+    [studyPhraseSet],
+  );
+
+  const isStudiedCollocation = (collocationText: string): boolean => {
+    if (!showHighlights || !studiedPhraseMeta.length) return false;
+
+    const normalized = normalizePhrase(collocationText);
+    const tokens = tokenizePhrase(collocationText);
+    if (!normalized || tokens.length < 2) return false;
+
+    for (const studied of studiedPhraseMeta) {
+      if (studied.normalized === normalized) return true;
+      if (areTokenArraysEqual(studied.tokens, tokens)) return true;
+      if (isContiguousSubsequence(tokens, studied.tokens)) return true;
+      if (isContiguousSubsequence(studied.tokens, tokens)) return true;
+    }
+
+    return false;
+  };
+
   // 解析 tokens
   const tokens = text.split(/(\s+)/);
 
@@ -89,9 +156,30 @@ export const SentenceBlock = memo(function SentenceBlock({
   // 过滤重叠的搭配词组
   const filteredCollocations = useMemo(() => {
     const usedIndices = new Set<number>();
-    const result: Collocation[] = [];
+    const result: RenderCollocation[] = [];
 
-    for (const coll of collocations) {
+    const sorted = (collocations || [])
+      .map((coll) => ({
+        ...coll,
+        isStudiedPhrase: isStudiedCollocation(coll.text),
+      }))
+      .sort((a, b) => {
+        if (a.isStudiedPhrase !== b.isStudiedPhrase) {
+          return a.isStudiedPhrase ? -1 : 1;
+        }
+
+        const aLen = a.end_word_idx - a.start_word_idx;
+        const bLen = b.end_word_idx - b.start_word_idx;
+        if (aLen !== bLen) return bLen - aLen;
+
+        const aConfidence = a.confidence ?? 0;
+        const bConfidence = b.confidence ?? 0;
+        if (aConfidence !== bConfidence) return bConfidence - aConfidence;
+
+        return a.start_word_idx - b.start_word_idx;
+      });
+
+    for (const coll of sorted) {
       let hasOverlap = false;
       for (let i = coll.start_word_idx; i <= coll.end_word_idx; i++) {
         if (usedIndices.has(i)) {
@@ -109,11 +197,11 @@ export const SentenceBlock = memo(function SentenceBlock({
     }
 
     return result;
-  }, [collocations]);
+  }, [collocations, showHighlights, studiedPhraseMeta]);
 
   // 构建词汇到搭配的映射
   const wordToCollocation = useMemo(() => {
-    const map: Record<number, Collocation> = {};
+    const map: Record<number, RenderCollocation> = {};
     filteredCollocations.forEach((coll) => {
       for (let i = coll.start_word_idx; i <= coll.end_word_idx; i++) {
         map[i] = coll;
@@ -161,12 +249,11 @@ export const SentenceBlock = memo(function SentenceBlock({
 
         const collocationText = collocationTokens.join("");
         const phraseText = collocInfo.text.toLowerCase();
-        const isStudiedPhrase =
-          showHighlights && studyPhraseSet?.has(phraseText);
+        const isStudiedPhrase = showHighlights && collocInfo.isStudiedPhrase;
 
-        // Amber background for studied phrases, golden dashed border for detected but not studied
+        // Studied phrases keep amber background and also preserve detected-collocation dashed cue.
         const phraseClassName = isStudiedPhrase
-          ? "reading-word cursor-pointer px-1 py-0.5 rounded text-category-amber bg-category-amber/15 border border-category-amber/50"
+          ? "reading-word cursor-pointer px-1 py-0.5 rounded text-category-amber bg-category-amber/15 border border-category-amber/50 border-b-2 border-dashed border-neon-gold"
           : "reading-word cursor-pointer px-0.5 border-b-2 border-dashed border-neon-gold hover:bg-neon-gold/10 hover:text-neon-gold";
 
         result.push(
@@ -179,7 +266,7 @@ export const SentenceBlock = memo(function SentenceBlock({
             className={phraseClassName}
             title={
               isStudiedPhrase
-                ? `📚 You looked this up: ${collocInfo.text}`
+                ? `📚 Studying + detected collocation: ${collocInfo.text}`
                 : `Phrase: ${collocInfo.text}`
             }
           >
