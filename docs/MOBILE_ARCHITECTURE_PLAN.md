@@ -351,12 +351,14 @@ import { authFetch } from "../client";
 
 export const readingApi = {
   async getArticles() {
-    const res = await authFetch("/api/reading/epub/list-with-status");
+    const res = await authFetch(
+      "/api/content/units/epub/{item_id}/with-status",
+    );
     return res.json();
   },
 
   async getArticleDetail(id: string) {
-    const res = await authFetch(`/api/reading/article?id=${id}`);
+    const res = await authFetch(`/api/content/bundle?source_id=${id}`);
     return res.json();
   },
 

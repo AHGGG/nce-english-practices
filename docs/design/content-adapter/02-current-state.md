@@ -286,8 +286,8 @@ const renderContent = () => {
 ┌─────────────────────────────────────────────────────────────────────────┐
 │                           API ROUTES                                     │
 │                                                                          │
-│   GET /api/reading/article?source_id=epub:filename:0                    │
-│   GET /api/reading/epub/image?filename=...&image_path=...               │
+│   GET /api/content/bundle?source_id=epub:item_id:0                      │
+│   GET /api/content/asset?source_id=epub:item_id:0&path=...              │
 │                                                                          │
 └──────────────────────────────┬──────────────────────────────────────────┘
                                │

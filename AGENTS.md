@@ -397,13 +397,21 @@ Local audiobook playback with synchronized subtitle highlighting.
 ### EPUB Provider Boundaries
 
 - **Provider**: `app/services/content_providers/epub_provider.py`
-- **Public methods for routers/services**: `list_books()`, `get_articles(filename)`, `get_block_sentence_count(article)`, `split_sentences(text)`
+- **Public methods for routers/services**: `list_books()`, `resolve_filename(filename_or_id)`, `get_articles(filename_or_id)`, `get_block_sentence_count(article)`, `split_sentences(text)`
 - **Rule**: callers should not access private EPUB internals (`_load_epub`, `_cached_articles`, `_split_sentences_lenient`, `_extract_structured_blocks`) outside the provider
 
 ### Source ID Parsing
 
-- **Utility**: `app/services/source_id.py` provides shared parsing helpers (currently `parse_epub_source_id`)
-- **Rule**: routers/services should reuse this helper for `epub:{filename}:{index}` parsing instead of ad-hoc `split(":")` logic
+- **Utility**: `app/services/source_id.py` provides shared helpers (`parse_source_id`, `parse_epub_source_id`)
+- **Rule**: routers/services should reuse these helpers for `{source_type}:{item_id}:{index}` parsing instead of ad-hoc `split(":")` logic
+
+### Unified Content Protocol
+
+- **Catalog API**: `GET /api/content/catalog/{source_type}` returns provider items (for EPUB includes stable `id` + `filename`)
+- **Units API**: `GET /api/content/units/{source_type}/{item_id}` and `/with-status` return chapter/unit lists keyed by stable item id
+- **Bundle API**: `GET /api/content/bundle?source_id=...` is the unified read endpoint for reading/sentence-study overlays
+- **Asset API**: `GET /api/content/asset?source_id=...&path=...` serves provider assets (EPUB images currently)
+- **Capabilities Contract**: providers expose `get_capabilities()` and include flags under `ContentBundle.metadata.capabilities`
 
 ### Content Renderer System
 

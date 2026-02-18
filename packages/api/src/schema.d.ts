@@ -354,7 +354,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/reading/epub/books": {
+    "/api/content/catalog/{source_type}": {
         parameters: {
             query?: never;
             header?: never;
@@ -362,10 +362,10 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * List Epub Books
-         * @description List all available EPUB books in the resources directory.
+         * Get Content Catalog
+         * @description Return provider catalog for a source type.
          */
-        get: operations["list_epub_books_api_reading_epub_books_get"];
+        get: operations["get_content_catalog_api_content_catalog__source_type__get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -374,7 +374,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/reading/epub/list": {
+    "/api/content/units/{source_type}/{item_id}": {
         parameters: {
             query?: never;
             header?: never;
@@ -382,121 +382,101 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * List Epub Articles
-         * @description List all articles/chapters in an EPUB file.
+         * Get Content Units
+         * @description Return units (chapters/articles/tracks) for a catalog item.
+         */
+        get: operations["get_content_units_api_content_units__source_type___item_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/content/units/{source_type}/{item_id}/with-status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Content Units With Status
+         * @description Return units plus reading/study status for a catalog item.
+         */
+        get: operations["get_content_units_with_status_api_content_units__source_type___item_id__with_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/content/bundle": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Content Bundle
+         * @description Return normalized content bundle with learning overlays.
+         */
+        get: operations["get_content_bundle_api_content_bundle_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/content/asset": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Content Asset
+         * @description Return asset bytes for a source item (image/audio dependent on provider).
+         */
+        get: operations["get_content_asset_api_content_asset_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/content/player/{source_type}/{content_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Player Content
+         * @description Get unified content bundle for audio player.
+         *
+         *     Supports both podcast episodes (with transcription) and audiobooks.
+         *     Returns ContentBundle format compatible with AudioContentRenderer.
          *
          *     Args:
-         *         filename: EPUB filename. If not provided, uses the first available EPUB.
+         *         source_type: "podcast" or "audiobook"
+         *         content_id: Episode ID (podcast) or book ID (audiobook)
+         *         track: Track index for audiobooks (default 0)
          *
-         *     Returns: List of articles with titles and metadata.
+         *     Returns:
+         *         ContentBundle with audio_url and time-aligned segments
          */
-        get: operations["list_epub_articles_api_reading_epub_list_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/reading/epub/list-with-status": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * List Epub Articles With Status
-         * @description List all articles with their reading/study status in a SINGLE request.
-         *     Combines /api/reading/epub/list and /api/content/article-status for better performance.
-         */
-        get: operations["list_epub_articles_with_status_api_reading_epub_list_with_status_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/reading/article": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Get Article Content
-         * @description Get full article content by source_id.
-         *
-         *     Args:
-         *         source_id: Format "epub:{filename}:{chapter_index}"
-         *         include_sentences: Whether to include sentence segmentation
-         *         book_code: Optional word book code (e.g., 'coca20000', 'cet4')
-         *         min_sequence: Optional min sequence for highlights
-         *         max_sequence: Optional max sequence for highlights
-         *         user_id: User ID for fetching study-based highlights
-         *
-         *     Returns: Article with title, full_text, sentences, highlights, study_highlights, and images.
-         */
-        get: operations["get_article_content_api_reading_article_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/reading/epub/image": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Get Epub Image
-         * @description Serve an image from an EPUB file.
-         *
-         *     Args:
-         *         filename: EPUB filename (e.g., 'TheEconomist.2025.12.27.epub')
-         *         image_path: Path to image within the EPUB
-         *
-         *     Returns: Binary image data with appropriate Content-Type
-         */
-        get: operations["get_epub_image_api_reading_epub_image_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/content/article-status": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Get Article Status
-         * @description Get combined reading and study status for all articles in an EPUB.
-         *
-         *     Optimized with batch queries (O(1) instead of O(N) per article).
-         *
-         *     Returns unified status for each article:
-         *     - reading_sessions: number of reading sessions
-         *     - last_read: timestamp of last reading session
-         *     - study_progress: { current_index, total, clear_count, unclear_count }
-         *     - has_review_items: whether article has active review items
-         *     - status: "new" | "read" | "in_progress" | "completed"
-         */
-        get: operations["get_article_status_api_content_article_status_get"];
+        get: operations["get_player_content_api_content_player__source_type___content_id__get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1427,6 +1407,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/sentence-study/explain-word-sync": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Explain Word Sync
+         * @description Non-streaming version for React Native mobile app.
+         *     Returns complete JSON response with explanation.
+         */
+        post: operations["explain_word_sync_api_sentence_study_explain_word_sync_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/sentence-study/detect-collocations": {
         parameters: {
             query?: never;
@@ -1461,6 +1462,28 @@ export interface paths {
          * @description Background prefetch collocations for upcoming sentences (lookahead).
          */
         post: operations["prefetch_collocations_api_sentence_study_prefetch_collocations_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/sentence-study/detect-collocations-batch": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Detect Collocations Batch
+         * @description Detect collocations for multiple sentences at once (max 10).
+         *     Useful for batch loading when scrolling through content.
+         *     Backend has 3-layer cache (Memory -> DB -> LLM), so cached sentences return instantly.
+         */
+        post: operations["detect_collocations_batch_api_sentence_study_detect_collocations_batch_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1861,12 +1884,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /**
-         * Proxy External Image
-         * @description Proxy an arbitrary external image URL using a signed token.
-         *     This allows frontend to load images from third-party domains (iTunes, etc)
-         *     without CORS/Mixed Content issues, while preventing open relay abuse.
-         */
+        /** Proxy External Image */
         get: operations["proxy_external_image_api_podcast_proxy_image_get"];
         put?: never;
         post?: never;
@@ -1883,10 +1901,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /**
-         * Get Feed Image
-         * @description Proxy feed image.
-         */
+        /** Get Feed Image */
         get: operations["get_feed_image_api_podcast_feed__feed_id__image_get"];
         put?: never;
         post?: never;
@@ -1903,10 +1918,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /**
-         * Get Episode Image
-         * @description Proxy episode image.
-         */
+        /** Get Episode Image */
         get: operations["get_episode_image_api_podcast_episode__episode_id__image_get"];
         put?: never;
         post?: never;
@@ -1923,11 +1935,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /**
-         * Search Podcasts
-         * @description Search podcasts via iTunes.
-         *     Includes subscription status for the current user.
-         */
+        /** Search Podcasts */
         get: operations["search_podcasts_api_podcast_search_get"];
         put?: never;
         post?: never;
@@ -1944,10 +1952,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /**
-         * Get Categories
-         * @description Get list of iTunes podcast categories for exploration.
-         */
+        /** Get Categories */
         get: operations["get_categories_api_podcast_categories_get"];
         put?: never;
         post?: never;
@@ -1966,13 +1971,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /**
-         * Preview Podcast
-         * @description Preview a podcast by RSS URL.
-         *     Fetches and parses the feed, stores it in DB (for caching/proxy),
-         *     and returns full details including episodes.
-         *     Does NOT subscribe the user.
-         */
+        /** Preview Podcast */
         post: operations["preview_podcast_api_podcast_preview_post"];
         delete?: never;
         options?: never;
@@ -1987,11 +1986,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /**
-         * Get Trending Podcasts
-         * @description Get trending podcasts from iTunes Top Charts.
-         *     Includes subscription status for the current user.
-         */
+        /** Get Trending Podcasts */
         get: operations["get_trending_podcasts_api_podcast_trending_get"];
         put?: never;
         post?: never;
@@ -2010,10 +2005,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /**
-         * Subscribe To Podcast
-         * @description Subscribe to a podcast by RSS URL.
-         */
+        /** Subscribe To Podcast */
         post: operations["subscribe_to_podcast_api_podcast_subscribe_post"];
         delete?: never;
         options?: never;
@@ -2028,17 +2020,11 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /**
-         * Get Feed Detail
-         * @description Get feed details with episodes (includes user state for resume).
-         */
+        /** Get Feed Detail */
         get: operations["get_feed_detail_api_podcast_feed__feed_id__get"];
         put?: never;
         post?: never;
-        /**
-         * Unsubscribe From Podcast
-         * @description Unsubscribe from a podcast.
-         */
+        /** Unsubscribe From Podcast */
         delete: operations["unsubscribe_from_podcast_api_podcast_feed__feed_id__delete"];
         options?: never;
         head?: never;
@@ -2052,11 +2038,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /**
-         * Get Subscriptions
-         * @description Get all subscribed podcasts.
-         *     Optimized to fetch episode counts in a single query.
-         */
+        /** Get Subscriptions */
         get: operations["get_subscriptions_api_podcast_feeds_get"];
         put?: never;
         post?: never;
@@ -2075,11 +2057,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /**
-         * Get Episodes Batch
-         * @description Get details for multiple episodes by ID.
-         *     Used for efficient bulk loading (e.g., downloads page).
-         */
+        /** Get Episodes Batch */
         post: operations["get_episodes_batch_api_podcast_episodes_batch_post"];
         delete?: never;
         options?: never;
@@ -2096,11 +2074,25 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /**
-         * Refresh Feed
-         * @description Refresh a feed to check for new episodes.
-         */
+        /** Refresh Feed */
         post: operations["refresh_feed_api_podcast_feed__feed_id__refresh_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/podcast/episodes/check-size": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Check Episode Sizes */
+        post: operations["check_episode_sizes_api_podcast_episodes_check_size_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -2116,10 +2108,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /**
-         * Import Opml
-         * @description Import podcasts from OPML file.
-         */
+        /** Import Opml */
         post: operations["import_opml_api_podcast_opml_import_post"];
         delete?: never;
         options?: never;
@@ -2136,16 +2125,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /**
-         * Import Opml Streaming
-         * @description Import podcasts from OPML file with SSE streaming progress.
-         *
-         *     Yields JSON events:
-         *     - {"type": "start", "total": N} - Import started with N feeds
-         *     - {"type": "progress", "current": i, "total": N, "title": "...", "rss_url": "..."} - Processing feed i
-         *     - {"type": "result", "success": true/false, "title": "...", "error": "...", "status": "imported|skipped"} - Feed result
-         *     - {"type": "complete", "imported": X, "skipped": Y, "total": N} - Import complete
-         */
+        /** Import Opml Streaming */
         post: operations["import_opml_streaming_api_podcast_opml_import_stream_post"];
         delete?: never;
         options?: never;
@@ -2160,14 +2140,80 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /**
-         * Export Opml
-         * @description Export subscriptions as OPML file.
-         */
+        /** Export Opml */
         get: operations["export_opml_api_podcast_opml_export_get"];
         put?: never;
         post?: never;
         delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/podcast/recently-played": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Recently Played */
+        get: operations["get_recently_played_api_podcast_recently_played_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/podcast/favorites": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Favorites */
+        get: operations["get_favorites_api_podcast_favorites_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/podcast/favorites/ids": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Favorite Ids */
+        get: operations["get_favorite_ids_api_podcast_favorites_ids_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/podcast/episode/{episode_id}/favorite": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Add Episode Favorite */
+        post: operations["add_episode_favorite_api_podcast_episode__episode_id__favorite_post"];
+        /** Remove Episode Favorite */
+        delete: operations["remove_episode_favorite_api_podcast_episode__episode_id__favorite_delete"];
         options?: never;
         head?: never;
         patch?: never;
@@ -2182,10 +2228,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /**
-         * Start Session
-         * @description Start a listening session.
-         */
+        /** Start Session */
         post: operations["start_session_api_podcast_session_start_post"];
         delete?: never;
         options?: never;
@@ -2202,10 +2245,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /**
-         * Update Session
-         * @description Update listening progress.
-         */
+        /** Update Session */
         post: operations["update_session_api_podcast_session_update_post"];
         delete?: never;
         options?: never;
@@ -2222,12 +2262,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /**
-         * Update Session Beacon
-         * @description Update listening progress via navigator.sendBeacon.
-         *     This endpoint accepts text/plain JSON from sendBeacon for reliable save on page unload.
-         *     Note: No auth since sendBeacon can't set headers - we rely on session_id validation.
-         */
+        /** Update Session Beacon */
         post: operations["update_session_beacon_api_podcast_session_update_beacon_post"];
         delete?: never;
         options?: never;
@@ -2244,10 +2279,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /**
-         * End Session
-         * @description End a listening session.
-         */
+        /** End Session */
         post: operations["end_session_api_podcast_session_end_post"];
         delete?: never;
         options?: never;
@@ -2262,10 +2294,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /**
-         * Get Episode Position
-         * @description Get last playback position for resume.
-         */
+        /** Get Episode Position */
         get: operations["get_episode_position_api_podcast_episode__episode_id__position_get"];
         put?: never;
         post?: never;
@@ -2275,20 +2304,51 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/podcast/recently-played": {
+    "/api/podcast/episode/{episode_id}/position/sync": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        /**
-         * Get Recently Played
-         * @description Get recently played episodes with resume positions.
-         */
-        get: operations["get_recently_played_api_podcast_recently_played_get"];
+        get?: never;
+        put?: never;
+        /** Sync Position */
+        post: operations["sync_position_api_podcast_episode__episode_id__position_sync_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/podcast/devices": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Devices */
+        get: operations["list_devices_api_podcast_devices_get"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/podcast/episode/{episode_id}/position/resolve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Resolve Position */
+        post: operations["resolve_position_api_podcast_episode__episode_id__position_resolve_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -2302,23 +2362,317 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /**
-         * Download Episode
-         * @description Proxy download for an episode audio file.
-         *     Streams the audio through the server for offline storage.
-         *     Supports Range requests for resumable downloads.
-         */
+        /** Download Episode */
         get: operations["download_episode_api_podcast_episode__episode_id__download_get"];
         put?: never;
         post?: never;
         delete?: never;
         options?: never;
-        /**
-         * Download Episode Head
-         * @description HEAD request to get Content-Length for progress tracking.
-         *     Returns headers only, no body.
-         */
+        /** Download Episode Head */
         head: operations["download_episode_head_api_podcast_episode__episode_id__download_head"];
+        patch?: never;
+        trace?: never;
+    };
+    "/api/podcast/episode/{episode_id}/transcribe": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Transcribe Episode */
+        post: operations["transcribe_episode_api_podcast_episode__episode_id__transcribe_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/vocabulary/log": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Log Vocabulary Lookup
+         * @description Log a vocabulary lookup event.
+         *     Prevents duplicate logs for the same word AND same sentence within a short window (1 minute).
+         *     Different sentences with the same word are always logged.
+         */
+        post: operations["log_vocabulary_lookup_api_vocabulary_log_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/vocabulary/contexts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Word Contexts
+         * @description Lookup history for a specific item.
+         *     This endpoint is dedicated to explicit user lookups (VocabLearningLog).
+         */
+        get: operations["get_word_contexts_api_vocabulary_contexts_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/vocabulary/usages": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Word Usages
+         * @description Explore other usages for a word/collocation, regardless of prior lookup history.
+         */
+        get: operations["get_word_usages_api_vocabulary_usages_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/vocabulary/difficult-words": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Difficult Words
+         * @description Get a list of words/phrases the user has struggled with.
+         *     Combines:
+         *     1. Active Review Items (where difficulty_type='vocabulary' or 'both')
+         *     2. WordProficiency entries with high difficulty score or 'learning' status
+         *
+         *     Excludes words marked as 'mastered' in WordProficiency.
+         */
+        get: operations["get_difficult_words_api_vocabulary_difficult_words_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/vocabulary/unfamiliar-items": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Unfamiliar Items
+         * @description Get user's unfamiliar items (words + collocations/phrases) with related signals.
+         *
+         *     Aggregates from:
+         *     1. SentenceLearningRecord.word_clicks / phrase_clicks
+         *     2. VocabLearningLog lookup history
+         *     3. ReviewItem queue metadata
+         *     4. WordProficiency difficulty signals
+         */
+        get: operations["get_unfamiliar_items_api_vocabulary_unfamiliar_items_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/content/audiobook/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Audiobooks
+         * @description List all available audiobooks.
+         */
+        get: operations["list_audiobooks_api_content_audiobook__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/content/audiobook/{book_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Audiobook
+         * @description Get audiobook content with subtitle segments for a specific track.
+         */
+        get: operations["get_audiobook_api_content_audiobook__book_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/content/audiobook/{book_id}/tracks": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Tracks
+         * @description Get list of tracks for an audiobook.
+         */
+        get: operations["get_tracks_api_content_audiobook__book_id__tracks_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/content/audiobook/{book_id}/audio": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Audio
+         * @description Stream the audio file for a specific track.
+         */
+        get: operations["get_audio_api_content_audiobook__book_id__audio_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        /**
+         * Head Audio
+         * @description HEAD request for audio file (for range request support).
+         */
+        head: operations["head_audio_api_content_audiobook__book_id__audio_head"];
+        patch?: never;
+        trace?: never;
+    };
+    "/api/content/audiobook/{book_id}/transcribe": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Transcribe Audiobook
+         * @description Trigger AI transcription for an audiobook track.
+         *     Generates an SRT subtitle file in the book's directory.
+         */
+        post: operations["transcribe_audiobook_api_content_audiobook__book_id__transcribe_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/transcribe": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Transcribe Audio
+         * @description Accept an audio file and return transcription results.
+         *
+         *     This endpoint is designed to be called by other instances of this application
+         *     configured with RemoteTranscriptionEngine.
+         */
+        post: operations["transcribe_audio_api_transcribe_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/transcribe/jobs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Submit Transcription Job
+         * @description Submit an async transcription job.
+         *
+         *     Returns quickly with a job_id. Clients should poll GET /api/transcribe/jobs/{job_id}.
+         */
+        post: operations["submit_transcription_job_api_transcribe_jobs_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/transcribe/jobs/{job_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Transcription Job Status
+         * @description Poll an async transcription job status.
+         *
+         *     Returns one of: pending, processing, completed, failed.
+         */
+        get: operations["get_transcription_job_status_api_transcribe_jobs__job_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
         patch?: never;
         trace?: never;
     };
@@ -2331,10 +2685,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /**
-         * Receive Remote Log
-         * @description Receive logs from frontend and add to unified log collector.
-         */
+        /** Receive Remote Log */
         post: operations["receive_remote_log_api_logs_post"];
         delete?: never;
         options?: never;
@@ -2349,10 +2700,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /**
-         * Serve Spa
-         * @description SPA fallback: serve index.html for all non-API routes.
-         */
+        /** Serve Spa */
         get: operations["serve_spa__full_path__get"];
         put?: never;
         post?: never;
@@ -2504,6 +2852,20 @@ export interface components {
              */
             file: string;
         };
+        /** Body_submit_transcription_job_api_transcribe_jobs_post */
+        Body_submit_transcription_job_api_transcribe_jobs_post: {
+            /** File */
+            file?: string | null;
+            /** Audio Url */
+            audio_url?: string | null;
+        };
+        /** Body_transcribe_audio_api_transcribe_post */
+        Body_transcribe_audio_api_transcribe_post: {
+            /** File */
+            file?: string | null;
+            /** Audio Url */
+            audio_url?: string | null;
+        };
         /** Body_tts_endpoint_api_voice_lab_tts_post */
         Body_tts_endpoint_api_voice_lab_tts_post: {
             /** Provider */
@@ -2546,6 +2908,11 @@ export interface components {
             id: string;
             /** Name */
             name: string;
+        };
+        /** CheckSizeRequest */
+        CheckSizeRequest: {
+            /** Episode Ids */
+            episode_ids: number[];
         };
         /**
          * CollinsAudio
@@ -2758,6 +3125,8 @@ export interface components {
          * @description A detected collocation/phrase.
          */
         CollocationItem: {
+            /** Reasoning */
+            reasoning: string;
             /** Text */
             text: string;
             /** Key Word */
@@ -2766,11 +3135,15 @@ export interface components {
             start_word_idx: number;
             /** End Word Idx */
             end_word_idx: number;
+            /**
+             * Difficulty
+             * @default 2
+             */
+            difficulty: number;
+            /** Confidence */
+            confidence?: number | null;
         };
-        /**
-         * CompleteReviewRequest
-         * @description Request to complete a review.
-         */
+        /** CompleteReviewRequest */
         CompleteReviewRequest: {
             /** Item Id */
             item_id: number;
@@ -2782,10 +3155,7 @@ export interface components {
              */
             duration_ms: number;
         };
-        /**
-         * CompleteReviewResponse
-         * @description Response after completing a review.
-         */
+        /** CompleteReviewResponse */
         CompleteReviewResponse: {
             /** Next Review At */
             next_review_at: string;
@@ -2836,11 +3206,6 @@ export interface components {
              */
             source: string;
             /**
-             * Story Id
-             * @description 如果是Story类型，关联Story表
-             */
-            story_id?: number | null;
-            /**
              * Audio Url
              * @description 语音URL (如果预生成)
              */
@@ -2878,11 +3243,6 @@ export interface components {
              */
             source: string;
             /**
-             * Story Id
-             * @description 如果是Story类型，关联Story表
-             */
-            story_id?: number | null;
-            /**
              * Audio Url
              * @description 语音URL (如果预生成)
              */
@@ -2913,10 +3273,7 @@ export interface components {
          * @enum {string}
          */
         ContextType: "dictionary_example" | "story" | "audio_clip" | "video_clip" | "custom";
-        /**
-         * CreateReviewRequest
-         * @description Request to create a review item.
-         */
+        /** CreateReviewRequest */
         CreateReviewRequest: {
             /** Source Id */
             source_id: string;
@@ -2935,10 +3292,7 @@ export interface components {
              */
             difficulty_type: string;
         };
-        /**
-         * CreateReviewResponse
-         * @description Response after creating review item.
-         */
+        /** CreateReviewResponse */
         CreateReviewResponse: {
             /** Id */
             id: number;
@@ -2958,6 +3312,24 @@ export interface components {
              * @default 1
              */
             user_level: number;
+        };
+        /**
+         * DetectCollocationsBatchRequest
+         * @description Request to detect collocations for multiple sentences at once.
+         */
+        DetectCollocationsBatchRequest: {
+            /** Sentences */
+            sentences: string[];
+        };
+        /**
+         * DetectCollocationsBatchResponse
+         * @description Response with collocations for multiple sentences.
+         */
+        DetectCollocationsBatchResponse: {
+            /** Results */
+            results: {
+                [key: string]: components["schemas"]["CollocationItem"][];
+            };
         };
         /**
          * DetectCollocationsRequest
@@ -2987,6 +3359,11 @@ export interface components {
             /** Word */
             word: string;
         };
+        /** DifficultWordsResponse */
+        DifficultWordsResponse: {
+            /** Words */
+            words: string[];
+        };
         /** EpisodeResponse */
         EpisodeResponse: {
             /** Id */
@@ -2999,14 +3376,24 @@ export interface components {
             description: string | null;
             /** Audio Url */
             audio_url: string;
+            /** File Size */
+            file_size: number | null;
             /** Duration Seconds */
             duration_seconds: number | null;
+            /** Chapters */
+            chapters?: {
+                [key: string]: unknown;
+            }[] | null;
             /** Image Url */
             image_url: string | null;
             /** Published At */
             published_at: string | null;
             /** Transcript Status */
             transcript_status: string;
+            /** Transcript Segments */
+            transcript_segments?: {
+                [key: string]: unknown;
+            }[] | null;
             /**
              * Current Position
              * @default 0
@@ -3038,6 +3425,38 @@ export interface components {
              * @default default
              */
             style: string;
+        };
+        /** FavoriteEpisodeIdsResponse */
+        FavoriteEpisodeIdsResponse: {
+            /** Episode Ids */
+            episode_ids: number[];
+        };
+        /** FavoriteEpisodeItem */
+        FavoriteEpisodeItem: {
+            /** Episode */
+            episode: {
+                [key: string]: unknown;
+            };
+            /** Feed */
+            feed: {
+                [key: string]: unknown;
+            };
+            /**
+             * Last Position Seconds
+             * @default 0
+             */
+            last_position_seconds: number;
+            /** Favorited At */
+            favorited_at?: string | null;
+        };
+        /** FavoriteToggleResponse */
+        FavoriteToggleResponse: {
+            /** Success */
+            success: boolean;
+            /** Episode Id */
+            episode_id: number;
+            /** Is Favorite */
+            is_favorite: boolean;
         };
         /**
          * FeedContent
@@ -3719,10 +4138,7 @@ export interface components {
             /** Data */
             data?: string | null;
         };
-        /**
-         * MemoryCurveDebugBucket
-         * @description Debug info for a memory curve bucket.
-         */
+        /** MemoryCurveDebugBucket */
         MemoryCurveDebugBucket: {
             /** Day */
             day: number;
@@ -3735,10 +4151,7 @@ export interface components {
             /** Retention Rate */
             retention_rate: number | null;
         };
-        /**
-         * MemoryCurveDebugLog
-         * @description Debug info for a single review log.
-         */
+        /** MemoryCurveDebugLog */
         MemoryCurveDebugLog: {
             /** Id */
             id: number;
@@ -3755,10 +4168,7 @@ export interface components {
             /** Sentence Preview */
             sentence_preview?: string | null;
         };
-        /**
-         * MemoryCurveDebugResponse
-         * @description Debug response for memory curve analysis.
-         */
+        /** MemoryCurveDebugResponse */
         MemoryCurveDebugResponse: {
             /** Total Logs */
             total_logs: number;
@@ -3775,20 +4185,14 @@ export interface components {
                 [key: string]: unknown;
             };
         };
-        /**
-         * MemoryCurvePoint
-         * @description A point on the memory curve.
-         */
+        /** MemoryCurvePoint */
         MemoryCurvePoint: {
             /** Days Since First Review */
             days_since_first_review: number;
             /** Retention Rate */
             retention_rate: number;
         };
-        /**
-         * MemoryCurveResponse
-         * @description Memory curve statistics.
-         */
+        /** MemoryCurveResponse */
         MemoryCurveResponse: {
             /** Theoretical */
             theoretical: components["schemas"]["MemoryCurvePoint"][];
@@ -3923,6 +4327,32 @@ export interface components {
             /** New Password */
             new_password: string;
         };
+        /** PositionSyncRequest */
+        PositionSyncRequest: {
+            /** Position */
+            position: number;
+            /**
+             * Is Finished
+             * @default false
+             */
+            is_finished: boolean;
+            /** Duration */
+            duration?: number | null;
+            /** Timestamp */
+            timestamp: number;
+            /** Device Id */
+            device_id: string;
+            /**
+             * Device Type
+             * @default web
+             */
+            device_type: string | null;
+            /**
+             * Playback Rate
+             * @default 1
+             */
+            playback_rate: number;
+        };
         /**
          * PrefetchCollocationsRequest
          * @description Request to prefetch collocations for upcoming sentences.
@@ -4043,10 +4473,7 @@ export interface components {
             /** Category */
             category?: string | null;
         };
-        /**
-         * ReviewContextResponse
-         * @description Context for a review item.
-         */
+        /** ReviewContextResponse */
         ReviewContextResponse: {
             /** Previous Sentence */
             previous_sentence?: string | null;
@@ -4059,13 +4486,10 @@ export interface components {
             /** Chapter Title */
             chapter_title?: string | null;
         };
-        /**
-         * ReviewQueueResponse
-         * @description Response with review queue items.
-         */
+        /** ReviewQueueResponse */
         ReviewQueueResponse: {
             /** Items */
-            items: components["schemas"]["app__api__routers__review__ReviewQueueItem"][];
+            items: components["schemas"]["app__models__review_schemas__ReviewQueueItem"][];
             /** Count */
             count: number;
         };
@@ -4196,6 +4620,13 @@ export interface components {
             /** Expires In */
             expires_in: number;
         };
+        /** TranscribeResponse */
+        TranscribeResponse: {
+            /** Status */
+            status: string;
+            /** Message */
+            message: string;
+        };
         /**
          * UnclearSentenceInfo
          * @description Info about an unclear sentence for highlighting.
@@ -4210,6 +4641,72 @@ export interface components {
              * @default 0
              */
             max_simplify_stage: number;
+        };
+        /** UnfamiliarItem */
+        UnfamiliarItem: {
+            /** Text */
+            text: string;
+            /**
+             * Item Type
+             * @enum {string}
+             */
+            item_type: "word" | "phrase";
+            /** Encounter Count */
+            encounter_count: number;
+            /** Last Seen At */
+            last_seen_at?: string | null;
+            /** Source Types */
+            source_types: string[];
+            /** In Review Queue */
+            in_review_queue: boolean;
+            /** Next Review At */
+            next_review_at?: string | null;
+            /**
+             * Review Repetition
+             * @default 0
+             */
+            review_repetition: number;
+            /** Difficulty Score */
+            difficulty_score?: number | null;
+            /** Proficiency Status */
+            proficiency_status?: string | null;
+            /**
+             * Exposure Count
+             * @default 0
+             */
+            exposure_count: number;
+            /**
+             * Huh Count
+             * @default 0
+             */
+            huh_count: number;
+            /** Sample Contexts */
+            sample_contexts: components["schemas"]["UnfamiliarItemContext"][];
+        };
+        /** UnfamiliarItemContext */
+        UnfamiliarItemContext: {
+            /** Source Type */
+            source_type: string;
+            /** Source Id */
+            source_id?: string | null;
+            /** Context Sentence */
+            context_sentence: string;
+            /**
+             * Seen At
+             * Format: date-time
+             */
+            seen_at: string;
+        };
+        /** UnfamiliarItemsResponse */
+        UnfamiliarItemsResponse: {
+            /** Items */
+            items: components["schemas"]["UnfamiliarItem"][];
+            /** Total */
+            total: number;
+            /** Limit */
+            limit: number;
+            /** Offset */
+            offset: number;
         };
         /**
          * UpdateLearningStatusRequest
@@ -4318,6 +4815,40 @@ export interface components {
             /** Error Type */
             type: string;
         };
+        /** VocabularyContext */
+        VocabularyContext: {
+            /** Source Type */
+            source_type: string;
+            /** Source Id */
+            source_id?: string | null;
+            /** Source Title */
+            source_title?: string | null;
+            /** Source Label */
+            source_label?: string | null;
+            /** Context Sentence */
+            context_sentence: string;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Word */
+            word: string;
+        };
+        /** VocabularyLogRequest */
+        VocabularyLogRequest: {
+            /** Word */
+            word: string;
+            /**
+             * Source Type
+             * @default sentence_study
+             */
+            source_type: string;
+            /** Source Id */
+            source_id?: string | null;
+            /** Context Sentence */
+            context_sentence?: string | null;
+        };
         /** VoiceTokenRequest */
         VoiceTokenRequest: {
             /** Topic */
@@ -4408,6 +4939,18 @@ export interface components {
              */
             status: string;
         };
+        /** TranscribeRequest */
+        app__api__routers__audiobook__TranscribeRequest: {
+            /**
+             * Force
+             * @default false
+             */
+            force: boolean;
+            /** Remote Url */
+            remote_url?: string | null;
+            /** Api Key */
+            api_key?: string | null;
+        };
         /** EndSessionRequest */
         app__api__routers__reading__EndSessionRequest: {
             /** Session Id */
@@ -4446,11 +4989,22 @@ export interface components {
             /** Total Sentences */
             total_sentences: number;
         };
-        /**
-         * ReviewQueueItem
-         * @description Item in the review queue.
-         */
-        app__api__routers__review__ReviewQueueItem: {
+        /** EndSessionRequest */
+        app__api__routers__voice_session__EndSessionRequest: {
+            /** Session Id */
+            session_id: number;
+            /** Total Active Seconds */
+            total_active_seconds: number;
+        };
+        /** StartSessionRequest */
+        app__api__routers__voice_session__StartSessionRequest: {
+            /** Source Type */
+            source_type?: string | null;
+            /** Source Id */
+            source_id?: string | null;
+        };
+        /** ReviewQueueItem */
+        app__models__review_schemas__ReviewQueueItem: {
             /** Id */
             id: number;
             /** Source Id */
@@ -4471,20 +5025,6 @@ export interface components {
             next_review_at: string;
             /** Created At */
             created_at: string;
-        };
-        /** EndSessionRequest */
-        app__api__routers__voice_session__EndSessionRequest: {
-            /** Session Id */
-            session_id: number;
-            /** Total Active Seconds */
-            total_active_seconds: number;
-        };
-        /** StartSessionRequest */
-        app__api__routers__voice_session__StartSessionRequest: {
-            /** Source Type */
-            source_type?: string | null;
-            /** Source Id */
-            source_id?: string | null;
         };
         /**
          * ReviewQueueItem
@@ -5047,33 +5587,13 @@ export interface operations {
             };
         };
     };
-    list_epub_books_api_reading_epub_books_get: {
+    get_content_catalog_api_content_catalog__source_type__get: {
         parameters: {
             query?: never;
             header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": unknown;
-                };
+            path: {
+                source_type: string;
             };
-        };
-    };
-    list_epub_articles_api_reading_epub_list_get: {
-        parameters: {
-            query?: {
-                filename?: string | null;
-            };
-            header?: never;
-            path?: never;
             cookie?: never;
         };
         requestBody?: never;
@@ -5098,13 +5618,14 @@ export interface operations {
             };
         };
     };
-    list_epub_articles_with_status_api_reading_epub_list_with_status_get: {
+    get_content_units_api_content_units__source_type___item_id__get: {
         parameters: {
-            query?: {
-                filename?: string | null;
-            };
+            query?: never;
             header?: never;
-            path?: never;
+            path: {
+                source_type: string;
+                item_id: string;
+            };
             cookie?: never;
         };
         requestBody?: never;
@@ -5129,7 +5650,39 @@ export interface operations {
             };
         };
     };
-    get_article_content_api_reading_article_get: {
+    get_content_units_with_status_api_content_units__source_type___item_id__with_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                source_type: string;
+                item_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_content_bundle_api_content_bundle_get: {
         parameters: {
             query: {
                 source_id: string;
@@ -5164,11 +5717,11 @@ export interface operations {
             };
         };
     };
-    get_epub_image_api_reading_epub_image_get: {
+    get_content_asset_api_content_asset_get: {
         parameters: {
             query: {
-                filename: string;
-                image_path: string;
+                source_id: string;
+                path: string;
             };
             header?: never;
             path?: never;
@@ -5196,13 +5749,16 @@ export interface operations {
             };
         };
     };
-    get_article_status_api_content_article_status_get: {
+    get_player_content_api_content_player__source_type___content_id__get: {
         parameters: {
-            query: {
-                filename: string;
+            query?: {
+                track?: number;
             };
             header?: never;
-            path?: never;
+            path: {
+                source_type: string;
+                content_id: string;
+            };
             cookie?: never;
         };
         requestBody?: never;
@@ -6611,6 +7167,39 @@ export interface operations {
             };
         };
     };
+    explain_word_sync_api_sentence_study_explain_word_sync_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ExplainWordRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     detect_collocations_api_sentence_study_detect_collocations_post: {
         parameters: {
             query?: never;
@@ -6664,6 +7253,39 @@ export interface operations {
                 };
                 content: {
                     "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    detect_collocations_batch_api_sentence_study_detect_collocations_batch_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DetectCollocationsBatchRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DetectCollocationsBatchResponse"];
                 };
             };
             /** @description Validation Error */
@@ -7019,7 +7641,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["app__api__routers__review__ReviewQueueItem"];
+                    "application/json": components["schemas"]["app__models__review_schemas__ReviewQueueItem"];
                 };
             };
         };
@@ -7610,6 +8232,39 @@ export interface operations {
             };
         };
     };
+    check_episode_sizes_api_podcast_episodes_check_size_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CheckSizeRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     import_opml_api_podcast_opml_import_post: {
         parameters: {
             query?: never;
@@ -7692,6 +8347,151 @@ export interface operations {
                 };
                 content: {
                     "application/json": unknown;
+                };
+            };
+        };
+    };
+    get_recently_played_api_podcast_recently_played_get: {
+        parameters: {
+            query?: {
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_favorites_api_podcast_favorites_get: {
+        parameters: {
+            query?: {
+                limit?: number;
+                offset?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FavoriteEpisodeItem"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_favorite_ids_api_podcast_favorites_ids_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FavoriteEpisodeIdsResponse"];
+                };
+            };
+        };
+    };
+    add_episode_favorite_api_podcast_episode__episode_id__favorite_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                episode_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FavoriteToggleResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    remove_episode_favorite_api_podcast_episode__episode_id__favorite_delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                episode_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FavoriteToggleResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };
@@ -7846,16 +8646,75 @@ export interface operations {
             };
         };
     };
-    get_recently_played_api_podcast_recently_played_get: {
+    sync_position_api_podcast_episode__episode_id__position_sync_post: {
         parameters: {
-            query?: {
-                limit?: number;
+            query?: never;
+            header?: never;
+            path: {
+                episode_id: number;
             };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PositionSyncRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_devices_api_podcast_devices_get: {
+        parameters: {
+            query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
         requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    resolve_position_api_podcast_episode__episode_id__position_resolve_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                episode_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PositionSyncRequest"];
+            };
+        };
         responses: {
             /** @description Successful Response */
             200: {
@@ -7914,6 +8773,486 @@ export interface operations {
             header?: never;
             path: {
                 episode_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    transcribe_episode_api_podcast_episode__episode_id__transcribe_post: {
+        parameters: {
+            query?: {
+                force?: boolean;
+            };
+            header?: never;
+            path: {
+                episode_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["app__api__routers__audiobook__TranscribeRequest"] | null;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TranscribeResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    log_vocabulary_lookup_api_vocabulary_log_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["VocabularyLogRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_word_contexts_api_vocabulary_contexts_get: {
+        parameters: {
+            query: {
+                word: string;
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VocabularyContext"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_word_usages_api_vocabulary_usages_get: {
+        parameters: {
+            query: {
+                word: string;
+                limit?: number;
+                exclude_sentence?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VocabularyContext"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_difficult_words_api_vocabulary_difficult_words_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DifficultWordsResponse"];
+                };
+            };
+        };
+    };
+    get_unfamiliar_items_api_vocabulary_unfamiliar_items_get: {
+        parameters: {
+            query?: {
+                limit?: number;
+                offset?: number;
+                item_type?: "all" | "word" | "phrase";
+                sort?: "recent" | "count" | "difficulty";
+                q?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UnfamiliarItemsResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_audiobooks_api_content_audiobook__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    get_audiobook_api_content_audiobook__book_id__get: {
+        parameters: {
+            query?: {
+                track?: number;
+            };
+            header?: never;
+            path: {
+                book_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_tracks_api_content_audiobook__book_id__tracks_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                book_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_audio_api_content_audiobook__book_id__audio_get: {
+        parameters: {
+            query?: {
+                track?: number;
+            };
+            header?: never;
+            path: {
+                book_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    head_audio_api_content_audiobook__book_id__audio_head: {
+        parameters: {
+            query?: {
+                track?: number;
+            };
+            header?: never;
+            path: {
+                book_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    transcribe_audiobook_api_content_audiobook__book_id__transcribe_post: {
+        parameters: {
+            query?: {
+                track?: number;
+            };
+            header?: never;
+            path: {
+                book_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["app__api__routers__audiobook__TranscribeRequest"] | null;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    transcribe_audio_api_transcribe_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "x-api-key"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "multipart/form-data": components["schemas"]["Body_transcribe_audio_api_transcribe_post"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    submit_transcription_job_api_transcribe_jobs_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "x-api-key"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "multipart/form-data": components["schemas"]["Body_submit_transcription_job_api_transcribe_jobs_post"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_transcription_job_status_api_transcribe_jobs__job_id__get: {
+        parameters: {
+            query?: never;
+            header?: {
+                "x-api-key"?: string | null;
+            };
+            path: {
+                job_id: string;
             };
             cookie?: never;
         };

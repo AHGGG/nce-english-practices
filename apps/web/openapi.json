@@ -727,43 +727,19 @@
         }
       }
     },
-    "/api/reading/epub/books": {
+    "/api/content/catalog/{source_type}": {
       "get": {
-        "summary": "List Epub Books",
-        "description": "List all available EPUB books in the resources directory.",
-        "operationId": "list_epub_books_api_reading_epub_books_get",
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {}
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/reading/epub/list": {
-      "get": {
-        "summary": "List Epub Articles",
-        "description": "List all articles/chapters in an EPUB file.\n\nArgs:\n    filename: EPUB filename. If not provided, uses the first available EPUB.\n\nReturns: List of articles with titles and metadata.",
-        "operationId": "list_epub_articles_api_reading_epub_list_get",
+        "summary": "Get Content Catalog",
+        "description": "Return provider catalog for a source type.",
+        "operationId": "get_content_catalog_api_content_catalog__source_type__get",
         "parameters": [
           {
-            "name": "filename",
-            "in": "query",
-            "required": false,
+            "name": "source_type",
+            "in": "path",
+            "required": true,
             "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Filename"
+              "type": "string",
+              "title": "Source Type"
             }
           }
         ],
@@ -789,11 +765,58 @@
         }
       }
     },
-    "/api/reading/epub/list-with-status": {
+    "/api/content/units/{source_type}/{item_id}": {
       "get": {
-        "summary": "List Epub Articles With Status",
-        "description": "List all articles with their reading/study status in a SINGLE request.\nCombines /api/reading/epub/list and /api/content/article-status for better performance.",
-        "operationId": "list_epub_articles_with_status_api_reading_epub_list_with_status_get",
+        "summary": "Get Content Units",
+        "description": "Return units (chapters/articles/tracks) for a catalog item.",
+        "operationId": "get_content_units_api_content_units__source_type___item_id__get",
+        "parameters": [
+          {
+            "name": "source_type",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Source Type"
+            }
+          },
+          {
+            "name": "item_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Item Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/content/units/{source_type}/{item_id}/with-status": {
+      "get": {
+        "summary": "Get Content Units With Status",
+        "description": "Return units plus reading/study status for a catalog item.",
+        "operationId": "get_content_units_with_status_api_content_units__source_type___item_id__with_status_get",
         "security": [
           {
             "OAuth2PasswordBearer": []
@@ -801,19 +824,21 @@
         ],
         "parameters": [
           {
-            "name": "filename",
-            "in": "query",
-            "required": false,
+            "name": "source_type",
+            "in": "path",
+            "required": true,
             "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Filename"
+              "type": "string",
+              "title": "Source Type"
+            }
+          },
+          {
+            "name": "item_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Item Id"
             }
           }
         ],
@@ -839,11 +864,11 @@
         }
       }
     },
-    "/api/reading/article": {
+    "/api/content/bundle": {
       "get": {
-        "summary": "Get Article Content",
-        "description": "Get full article content by source_id.\n\nArgs:\n    source_id: Format \"epub:{filename}:{chapter_index}\"\n    include_sentences: Whether to include sentence segmentation\n    book_code: Optional word book code (e.g., 'coca20000', 'cet4')\n    min_sequence: Optional min sequence for highlights\n    max_sequence: Optional max sequence for highlights\n    user_id: User ID for fetching study-based highlights\n\nReturns: Article with title, full_text, sentences, highlights, study_highlights, and images.",
-        "operationId": "get_article_content_api_reading_article_get",
+        "summary": "Get Content Bundle",
+        "description": "Return normalized content bundle with learning overlays.",
+        "operationId": "get_content_bundle_api_content_bundle_get",
         "security": [
           {
             "OAuth2PasswordBearer": []
@@ -940,28 +965,28 @@
         }
       }
     },
-    "/api/reading/epub/image": {
+    "/api/content/asset": {
       "get": {
-        "summary": "Get Epub Image",
-        "description": "Serve an image from an EPUB file.\n\nArgs:\n    filename: EPUB filename (e.g., 'TheEconomist.2025.12.27.epub')\n    image_path: Path to image within the EPUB\n\nReturns: Binary image data with appropriate Content-Type",
-        "operationId": "get_epub_image_api_reading_epub_image_get",
+        "summary": "Get Content Asset",
+        "description": "Return asset bytes for a source item (image/audio dependent on provider).",
+        "operationId": "get_content_asset_api_content_asset_get",
         "parameters": [
           {
-            "name": "filename",
+            "name": "source_id",
             "in": "query",
             "required": true,
             "schema": {
               "type": "string",
-              "title": "Filename"
+              "title": "Source Id"
             }
           },
           {
-            "name": "image_path",
+            "name": "path",
             "in": "query",
             "required": true,
             "schema": {
               "type": "string",
-              "title": "Image Path"
+              "title": "Path"
             }
           }
         ],
@@ -987,11 +1012,11 @@
         }
       }
     },
-    "/api/content/article-status": {
+    "/api/content/player/{source_type}/{content_id}": {
       "get": {
-        "summary": "Get Article Status",
-        "description": "Get combined reading and study status for all articles in an EPUB.\n\nOptimized with batch queries (O(1) instead of O(N) per article).\n\nReturns unified status for each article:\n- reading_sessions: number of reading sessions\n- last_read: timestamp of last reading session\n- study_progress: { current_index, total, clear_count, unclear_count }\n- has_review_items: whether article has active review items\n- status: \"new\" | \"read\" | \"in_progress\" | \"completed\"",
-        "operationId": "get_article_status_api_content_article_status_get",
+        "summary": "Get Player Content",
+        "description": "Get unified content bundle for audio player.\n\nSupports both podcast episodes (with transcription) and audiobooks.\nReturns ContentBundle format compatible with AudioContentRenderer.\n\nArgs:\n    source_type: \"podcast\" or \"audiobook\"\n    content_id: Episode ID (podcast) or book ID (audiobook)\n    track: Track index for audiobooks (default 0)\n\nReturns:\n    ContentBundle with audio_url and time-aligned segments",
+        "operationId": "get_player_content_api_content_player__source_type___content_id__get",
         "security": [
           {
             "OAuth2PasswordBearer": []
@@ -999,12 +1024,31 @@
         ],
         "parameters": [
           {
-            "name": "filename",
-            "in": "query",
+            "name": "source_type",
+            "in": "path",
             "required": true,
             "schema": {
               "type": "string",
-              "title": "Filename"
+              "title": "Source Type"
+            }
+          },
+          {
+            "name": "content_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Content Id"
+            }
+          },
+          {
+            "name": "track",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 0,
+              "title": "Track"
             }
           }
         ],
@@ -3130,6 +3174,46 @@
         }
       }
     },
+    "/api/sentence-study/explain-word-sync": {
+      "post": {
+        "tags": [
+          "sentence-study"
+        ],
+        "summary": "Explain Word Sync",
+        "description": "Non-streaming version for React Native mobile app.\nReturns complete JSON response with explanation.",
+        "operationId": "explain_word_sync_api_sentence_study_explain_word_sync_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ExplainWordRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/sentence-study/detect-collocations": {
       "post": {
         "tags": [
@@ -3196,6 +3280,48 @@
             "content": {
               "application/json": {
                 "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/sentence-study/detect-collocations-batch": {
+      "post": {
+        "tags": [
+          "sentence-study"
+        ],
+        "summary": "Detect Collocations Batch",
+        "description": "Detect collocations for multiple sentences at once (max 10).\nUseful for batch loading when scrolling through content.\nBackend has 3-layer cache (Memory -> DB -> LLM), so cached sentences return instantly.",
+        "operationId": "detect_collocations_batch_api_sentence_study_detect_collocations_batch_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DetectCollocationsBatchRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DetectCollocationsBatchResponse"
+                }
               }
             }
           },
@@ -3709,7 +3835,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/app__api__routers__review__ReviewQueueItem"
+                  "$ref": "#/components/schemas/app__models__review_schemas__ReviewQueueItem"
                 }
               }
             }
@@ -3988,7 +4114,6 @@
           "podcast"
         ],
         "summary": "Proxy External Image",
-        "description": "Proxy an arbitrary external image URL using a signed token.\nThis allows frontend to load images from third-party domains (iTunes, etc)\nwithout CORS/Mixed Content issues, while preventing open relay abuse.",
         "operationId": "proxy_external_image_api_podcast_proxy_image_get",
         "parameters": [
           {
@@ -4029,7 +4154,6 @@
           "podcast"
         ],
         "summary": "Get Feed Image",
-        "description": "Proxy feed image.",
         "operationId": "get_feed_image_api_podcast_feed__feed_id__image_get",
         "parameters": [
           {
@@ -4070,7 +4194,6 @@
           "podcast"
         ],
         "summary": "Get Episode Image",
-        "description": "Proxy episode image.",
         "operationId": "get_episode_image_api_podcast_episode__episode_id__image_get",
         "parameters": [
           {
@@ -4111,7 +4234,6 @@
           "podcast"
         ],
         "summary": "Search Podcasts",
-        "description": "Search podcasts via iTunes.\nIncludes subscription status for the current user.",
         "operationId": "search_podcasts_api_podcast_search_get",
         "security": [
           {
@@ -4183,7 +4305,6 @@
           "podcast"
         ],
         "summary": "Get Categories",
-        "description": "Get list of iTunes podcast categories for exploration.",
         "operationId": "get_categories_api_podcast_categories_get",
         "responses": {
           "200": {
@@ -4209,7 +4330,6 @@
           "podcast"
         ],
         "summary": "Preview Podcast",
-        "description": "Preview a podcast by RSS URL.\nFetches and parses the feed, stores it in DB (for caching/proxy),\nand returns full details including episodes.\nDoes NOT subscribe the user.",
         "operationId": "preview_podcast_api_podcast_preview_post",
         "requestBody": {
           "content": {
@@ -4256,7 +4376,6 @@
           "podcast"
         ],
         "summary": "Get Trending Podcasts",
-        "description": "Get trending podcasts from iTunes Top Charts.\nIncludes subscription status for the current user.",
         "operationId": "get_trending_podcasts_api_podcast_trending_get",
         "security": [
           {
@@ -4325,7 +4444,6 @@
           "podcast"
         ],
         "summary": "Subscribe To Podcast",
-        "description": "Subscribe to a podcast by RSS URL.",
         "operationId": "subscribe_to_podcast_api_podcast_subscribe_post",
         "requestBody": {
           "content": {
@@ -4372,7 +4490,6 @@
           "podcast"
         ],
         "summary": "Unsubscribe From Podcast",
-        "description": "Unsubscribe from a podcast.",
         "operationId": "unsubscribe_from_podcast_api_podcast_feed__feed_id__delete",
         "security": [
           {
@@ -4416,7 +4533,6 @@
           "podcast"
         ],
         "summary": "Get Feed Detail",
-        "description": "Get feed details with episodes (includes user state for resume).",
         "operationId": "get_feed_detail_api_podcast_feed__feed_id__get",
         "security": [
           {
@@ -4484,7 +4600,6 @@
           "podcast"
         ],
         "summary": "Get Subscriptions",
-        "description": "Get all subscribed podcasts.\nOptimized to fetch episode counts in a single query.",
         "operationId": "get_subscriptions_api_podcast_feeds_get",
         "responses": {
           "200": {
@@ -4515,7 +4630,6 @@
           "podcast"
         ],
         "summary": "Get Episodes Batch",
-        "description": "Get details for multiple episodes by ID.\nUsed for efficient bulk loading (e.g., downloads page).",
         "operationId": "get_episodes_batch_api_podcast_episodes_batch_post",
         "requestBody": {
           "content": {
@@ -4560,7 +4674,6 @@
           "podcast"
         ],
         "summary": "Refresh Feed",
-        "description": "Refresh a feed to check for new episodes.",
         "operationId": "refresh_feed_api_podcast_feed__feed_id__refresh_post",
         "security": [
           {
@@ -4600,13 +4713,56 @@
         }
       }
     },
+    "/api/podcast/episodes/check-size": {
+      "post": {
+        "tags": [
+          "podcast"
+        ],
+        "summary": "Check Episode Sizes",
+        "operationId": "check_episode_sizes_api_podcast_episodes_check_size_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CheckSizeRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ]
+      }
+    },
     "/api/podcast/opml/import": {
       "post": {
         "tags": [
           "podcast"
         ],
         "summary": "Import Opml",
-        "description": "Import podcasts from OPML file.",
         "operationId": "import_opml_api_podcast_opml_import_post",
         "requestBody": {
           "content": {
@@ -4653,7 +4809,6 @@
           "podcast"
         ],
         "summary": "Import Opml Streaming",
-        "description": "Import podcasts from OPML file with SSE streaming progress.\n\nYields JSON events:\n- {\"type\": \"start\", \"total\": N} - Import started with N feeds\n- {\"type\": \"progress\", \"current\": i, \"total\": N, \"title\": \"...\", \"rss_url\": \"...\"} - Processing feed i\n- {\"type\": \"result\", \"success\": true/false, \"title\": \"...\", \"error\": \"...\", \"status\": \"imported|skipped\"} - Feed result\n- {\"type\": \"complete\", \"imported\": X, \"skipped\": Y, \"total\": N} - Import complete",
         "operationId": "import_opml_streaming_api_podcast_opml_import_stream_post",
         "requestBody": {
           "content": {
@@ -4698,7 +4853,6 @@
           "podcast"
         ],
         "summary": "Export Opml",
-        "description": "Export subscriptions as OPML file.",
         "operationId": "export_opml_api_podcast_opml_export_get",
         "responses": {
           "200": {
@@ -4717,13 +4871,238 @@
         ]
       }
     },
+    "/api/podcast/recently-played": {
+      "get": {
+        "tags": [
+          "podcast"
+        ],
+        "summary": "Get Recently Played",
+        "operationId": "get_recently_played_api_podcast_recently_played_get",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 10,
+              "title": "Limit"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/podcast/favorites": {
+      "get": {
+        "tags": [
+          "podcast"
+        ],
+        "summary": "Get Favorites",
+        "operationId": "get_favorites_api_podcast_favorites_get",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 50,
+              "title": "Limit"
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 0,
+              "title": "Offset"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/FavoriteEpisodeItem"
+                  },
+                  "title": "Response Get Favorites Api Podcast Favorites Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/podcast/favorites/ids": {
+      "get": {
+        "tags": [
+          "podcast"
+        ],
+        "summary": "Get Favorite Ids",
+        "operationId": "get_favorite_ids_api_podcast_favorites_ids_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FavoriteEpisodeIdsResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ]
+      }
+    },
+    "/api/podcast/episode/{episode_id}/favorite": {
+      "post": {
+        "tags": [
+          "podcast"
+        ],
+        "summary": "Add Episode Favorite",
+        "operationId": "add_episode_favorite_api_podcast_episode__episode_id__favorite_post",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "episode_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Episode Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FavoriteToggleResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "podcast"
+        ],
+        "summary": "Remove Episode Favorite",
+        "operationId": "remove_episode_favorite_api_podcast_episode__episode_id__favorite_delete",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "episode_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Episode Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FavoriteToggleResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/podcast/session/start": {
       "post": {
         "tags": [
           "podcast"
         ],
         "summary": "Start Session",
-        "description": "Start a listening session.",
         "operationId": "start_session_api_podcast_session_start_post",
         "requestBody": {
           "content": {
@@ -4768,7 +5147,6 @@
           "podcast"
         ],
         "summary": "Update Session",
-        "description": "Update listening progress.",
         "operationId": "update_session_api_podcast_session_update_post",
         "requestBody": {
           "content": {
@@ -4813,7 +5191,6 @@
           "podcast"
         ],
         "summary": "Update Session Beacon",
-        "description": "Update listening progress via navigator.sendBeacon.\nThis endpoint accepts text/plain JSON from sendBeacon for reliable save on page unload.\nNote: No auth since sendBeacon can't set headers - we rely on session_id validation.",
         "operationId": "update_session_beacon_api_podcast_session_update_beacon_post",
         "responses": {
           "200": {
@@ -4833,7 +5210,6 @@
           "podcast"
         ],
         "summary": "End Session",
-        "description": "End a listening session.",
         "operationId": "end_session_api_podcast_session_end_post",
         "requestBody": {
           "content": {
@@ -4878,7 +5254,6 @@
           "podcast"
         ],
         "summary": "Get Episode Position",
-        "description": "Get last playback position for resume.",
         "operationId": "get_episode_position_api_podcast_episode__episode_id__position_get",
         "security": [
           {
@@ -4918,14 +5293,13 @@
         }
       }
     },
-    "/api/podcast/recently-played": {
-      "get": {
+    "/api/podcast/episode/{episode_id}/position/sync": {
+      "post": {
         "tags": [
           "podcast"
         ],
-        "summary": "Get Recently Played",
-        "description": "Get recently played episodes with resume positions.",
-        "operationId": "get_recently_played_api_podcast_recently_played_get",
+        "summary": "Sync Position",
+        "operationId": "sync_position_api_podcast_episode__episode_id__position_sync_post",
         "security": [
           {
             "OAuth2PasswordBearer": []
@@ -4933,16 +5307,104 @@
         ],
         "parameters": [
           {
-            "name": "limit",
-            "in": "query",
-            "required": false,
+            "name": "episode_id",
+            "in": "path",
+            "required": true,
             "schema": {
               "type": "integer",
-              "default": 10,
-              "title": "Limit"
+              "title": "Episode Id"
             }
           }
         ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PositionSyncRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/podcast/devices": {
+      "get": {
+        "tags": [
+          "podcast"
+        ],
+        "summary": "List Devices",
+        "operationId": "list_devices_api_podcast_devices_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ]
+      }
+    },
+    "/api/podcast/episode/{episode_id}/position/resolve": {
+      "post": {
+        "tags": [
+          "podcast"
+        ],
+        "summary": "Resolve Position",
+        "operationId": "resolve_position_api_podcast_episode__episode_id__position_resolve_post",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "episode_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Episode Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PositionSyncRequest"
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
             "description": "Successful Response",
@@ -4971,7 +5433,6 @@
           "podcast"
         ],
         "summary": "Download Episode Head",
-        "description": "HEAD request to get Content-Length for progress tracking.\nReturns headers only, no body.",
         "operationId": "download_episode_head_api_podcast_episode__episode_id__download_head",
         "security": [
           {
@@ -5015,7 +5476,6 @@
           "podcast"
         ],
         "summary": "Download Episode",
-        "description": "Proxy download for an episode audio file.\nStreams the audio through the server for offline storage.\nSupports Range requests for resumable downloads.",
         "operationId": "download_episode_api_podcast_episode__episode_id__download_get",
         "security": [
           {
@@ -5055,10 +5515,864 @@
         }
       }
     },
+    "/api/podcast/episode/{episode_id}/transcribe": {
+      "post": {
+        "tags": [
+          "podcast"
+        ],
+        "summary": "Transcribe Episode",
+        "operationId": "transcribe_episode_api_podcast_episode__episode_id__transcribe_post",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "episode_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Episode Id"
+            }
+          },
+          {
+            "name": "force",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": false,
+              "title": "Force"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/app__api__routers__audiobook__TranscribeRequest"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Req"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TranscribeResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/vocabulary/log": {
+      "post": {
+        "tags": [
+          "vocabulary"
+        ],
+        "summary": "Log Vocabulary Lookup",
+        "description": "Log a vocabulary lookup event.\nPrevents duplicate logs for the same word AND same sentence within a short window (1 minute).\nDifferent sentences with the same word are always logged.",
+        "operationId": "log_vocabulary_lookup_api_vocabulary_log_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VocabularyLogRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ]
+      }
+    },
+    "/api/vocabulary/contexts": {
+      "get": {
+        "tags": [
+          "vocabulary"
+        ],
+        "summary": "Get Word Contexts",
+        "description": "Lookup history for a specific item.\nThis endpoint is dedicated to explicit user lookups (VocabLearningLog).",
+        "operationId": "get_word_contexts_api_vocabulary_contexts_get",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "word",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Word"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 50,
+              "title": "Limit"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/VocabularyContext"
+                  },
+                  "title": "Response Get Word Contexts Api Vocabulary Contexts Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/vocabulary/usages": {
+      "get": {
+        "tags": [
+          "vocabulary"
+        ],
+        "summary": "Get Word Usages",
+        "description": "Explore other usages for a word/collocation, regardless of prior lookup history.",
+        "operationId": "get_word_usages_api_vocabulary_usages_get",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "word",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Word"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 10,
+              "title": "Limit"
+            }
+          },
+          {
+            "name": "exclude_sentence",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Exclude Sentence"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/VocabularyContext"
+                  },
+                  "title": "Response Get Word Usages Api Vocabulary Usages Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/vocabulary/difficult-words": {
+      "get": {
+        "tags": [
+          "vocabulary"
+        ],
+        "summary": "Get Difficult Words",
+        "description": "Get a list of words/phrases the user has struggled with.\nCombines:\n1. Active Review Items (where difficulty_type='vocabulary' or 'both')\n2. WordProficiency entries with high difficulty score or 'learning' status\n\nExcludes words marked as 'mastered' in WordProficiency.",
+        "operationId": "get_difficult_words_api_vocabulary_difficult_words_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DifficultWordsResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ]
+      }
+    },
+    "/api/vocabulary/unfamiliar-items": {
+      "get": {
+        "tags": [
+          "vocabulary"
+        ],
+        "summary": "Get Unfamiliar Items",
+        "description": "Get user's unfamiliar items (words + collocations/phrases) with related signals.\n\nAggregates from:\n1. SentenceLearningRecord.word_clicks / phrase_clicks\n2. VocabLearningLog lookup history\n3. ReviewItem queue metadata\n4. WordProficiency difficulty signals",
+        "operationId": "get_unfamiliar_items_api_vocabulary_unfamiliar_items_get",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 500,
+              "minimum": 1,
+              "default": 100,
+              "title": "Limit"
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0,
+              "title": "Offset"
+            }
+          },
+          {
+            "name": "item_type",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "enum": [
+                "all",
+                "word",
+                "phrase"
+              ],
+              "type": "string",
+              "default": "all",
+              "title": "Item Type"
+            }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "enum": [
+                "recent",
+                "count",
+                "difficulty"
+              ],
+              "type": "string",
+              "default": "recent",
+              "title": "Sort"
+            }
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 120
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Q"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnfamiliarItemsResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/content/audiobook/": {
+      "get": {
+        "tags": [
+          "audiobook"
+        ],
+        "summary": "List Audiobooks",
+        "description": "List all available audiobooks.",
+        "operationId": "list_audiobooks_api_content_audiobook__get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/content/audiobook/{book_id}": {
+      "get": {
+        "tags": [
+          "audiobook"
+        ],
+        "summary": "Get Audiobook",
+        "description": "Get audiobook content with subtitle segments for a specific track.",
+        "operationId": "get_audiobook_api_content_audiobook__book_id__get",
+        "parameters": [
+          {
+            "name": "book_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Book Id"
+            }
+          },
+          {
+            "name": "track",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0,
+              "title": "Track"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/content/audiobook/{book_id}/tracks": {
+      "get": {
+        "tags": [
+          "audiobook"
+        ],
+        "summary": "Get Tracks",
+        "description": "Get list of tracks for an audiobook.",
+        "operationId": "get_tracks_api_content_audiobook__book_id__tracks_get",
+        "parameters": [
+          {
+            "name": "book_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Book Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/content/audiobook/{book_id}/audio": {
+      "get": {
+        "tags": [
+          "audiobook"
+        ],
+        "summary": "Get Audio",
+        "description": "Stream the audio file for a specific track.",
+        "operationId": "get_audio_api_content_audiobook__book_id__audio_get",
+        "parameters": [
+          {
+            "name": "book_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Book Id"
+            }
+          },
+          {
+            "name": "track",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0,
+              "title": "Track"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "head": {
+        "tags": [
+          "audiobook"
+        ],
+        "summary": "Head Audio",
+        "description": "HEAD request for audio file (for range request support).",
+        "operationId": "head_audio_api_content_audiobook__book_id__audio_head",
+        "parameters": [
+          {
+            "name": "book_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Book Id"
+            }
+          },
+          {
+            "name": "track",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0,
+              "title": "Track"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/content/audiobook/{book_id}/transcribe": {
+      "post": {
+        "tags": [
+          "audiobook"
+        ],
+        "summary": "Transcribe Audiobook",
+        "description": "Trigger AI transcription for an audiobook track.\nGenerates an SRT subtitle file in the book's directory.",
+        "operationId": "transcribe_audiobook_api_content_audiobook__book_id__transcribe_post",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "book_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Book Id"
+            }
+          },
+          {
+            "name": "track",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0,
+              "title": "Track"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/app__api__routers__audiobook__TranscribeRequest"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Req"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/transcribe": {
+      "post": {
+        "tags": [
+          "transcription"
+        ],
+        "summary": "Transcribe Audio",
+        "description": "Accept an audio file and return transcription results.\n\nThis endpoint is designed to be called by other instances of this application\nconfigured with RemoteTranscriptionEngine.",
+        "operationId": "transcribe_audio_api_transcribe_post",
+        "parameters": [
+          {
+            "name": "x-api-key",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Api-Key"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_transcribe_audio_api_transcribe_post"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/transcribe/jobs": {
+      "post": {
+        "tags": [
+          "transcription"
+        ],
+        "summary": "Submit Transcription Job",
+        "description": "Submit an async transcription job.\n\nReturns quickly with a job_id. Clients should poll GET /api/transcribe/jobs/{job_id}.",
+        "operationId": "submit_transcription_job_api_transcribe_jobs_post",
+        "parameters": [
+          {
+            "name": "x-api-key",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Api-Key"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_submit_transcription_job_api_transcribe_jobs_post"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/transcribe/jobs/{job_id}": {
+      "get": {
+        "tags": [
+          "transcription"
+        ],
+        "summary": "Get Transcription Job Status",
+        "description": "Poll an async transcription job status.\n\nReturns one of: pending, processing, completed, failed.",
+        "operationId": "get_transcription_job_status_api_transcribe_jobs__job_id__get",
+        "parameters": [
+          {
+            "name": "job_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Job Id"
+            }
+          },
+          {
+            "name": "x-api-key",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Api-Key"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/logs": {
       "post": {
         "summary": "Receive Remote Log",
-        "description": "Receive logs from frontend and add to unified log collector.",
         "operationId": "receive_remote_log_api_logs_post",
         "requestBody": {
           "content": {
@@ -5095,7 +6409,6 @@
     "/{full_path}": {
       "get": {
         "summary": "Serve Spa",
-        "description": "SPA fallback: serve index.html for all non-API routes.",
         "operationId": "serve_spa__full_path__get",
         "parameters": [
           {
@@ -5398,6 +6711,64 @@
         ],
         "title": "Body_stt_endpoint_api_voice_lab_stt_post"
       },
+      "Body_submit_transcription_job_api_transcribe_jobs_post": {
+        "properties": {
+          "file": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "binary"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "File"
+          },
+          "audio_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Audio Url"
+          }
+        },
+        "type": "object",
+        "title": "Body_submit_transcription_job_api_transcribe_jobs_post"
+      },
+      "Body_transcribe_audio_api_transcribe_post": {
+        "properties": {
+          "file": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "binary"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "File"
+          },
+          "audio_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Audio Url"
+          }
+        },
+        "type": "object",
+        "title": "Body_transcribe_audio_api_transcribe_post"
+      },
       "Body_tts_endpoint_api_voice_lab_tts_post": {
         "properties": {
           "provider": {
@@ -5498,6 +6869,22 @@
           "name"
         ],
         "title": "Category"
+      },
+      "CheckSizeRequest": {
+        "properties": {
+          "episode_ids": {
+            "items": {
+              "type": "integer"
+            },
+            "type": "array",
+            "title": "Episode Ids"
+          }
+        },
+        "type": "object",
+        "required": [
+          "episode_ids"
+        ],
+        "title": "CheckSizeRequest"
       },
       "CollinsAudio": {
         "properties": {
@@ -5861,6 +7248,10 @@
       },
       "CollocationItem": {
         "properties": {
+          "reasoning": {
+            "type": "string",
+            "title": "Reasoning"
+          },
           "text": {
             "type": "string",
             "title": "Text"
@@ -5883,10 +7274,27 @@
           "end_word_idx": {
             "type": "integer",
             "title": "End Word Idx"
+          },
+          "difficulty": {
+            "type": "integer",
+            "title": "Difficulty",
+            "default": 2
+          },
+          "confidence": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Confidence"
           }
         },
         "type": "object",
         "required": [
+          "reasoning",
           "text",
           "start_word_idx",
           "end_word_idx"
@@ -5915,8 +7323,7 @@
           "item_id",
           "quality"
         ],
-        "title": "CompleteReviewRequest",
-        "description": "Request to complete a review."
+        "title": "CompleteReviewRequest"
       },
       "CompleteReviewResponse": {
         "properties": {
@@ -5944,8 +7351,7 @@
           "new_ef",
           "repetition"
         ],
-        "title": "CompleteReviewResponse",
-        "description": "Response after completing a review."
+        "title": "CompleteReviewResponse"
       },
       "ContextRequest": {
         "properties": {
@@ -6003,18 +7409,6 @@
             "type": "string",
             "title": "Source",
             "description": "\u6765\u6e90 (dictionary name / 'ai_generated' / URL)"
-          },
-          "story_id": {
-            "anyOf": [
-              {
-                "type": "integer"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Story Id",
-            "description": "\u5982\u679c\u662fStory\u7c7b\u578b\uff0c\u5173\u8054Story\u8868"
           },
           "audio_url": {
             "anyOf": [
@@ -6088,18 +7482,6 @@
             "type": "string",
             "title": "Source",
             "description": "\u6765\u6e90 (dictionary name / 'ai_generated' / URL)"
-          },
-          "story_id": {
-            "anyOf": [
-              {
-                "type": "integer"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Story Id",
-            "description": "\u5982\u679c\u662fStory\u7c7b\u578b\uff0c\u5173\u8054Story\u8868"
           },
           "audio_url": {
             "anyOf": [
@@ -6217,8 +7599,7 @@
           "sentence_index",
           "sentence_text"
         ],
-        "title": "CreateReviewRequest",
-        "description": "Request to create a review item."
+        "title": "CreateReviewRequest"
       },
       "CreateReviewResponse": {
         "properties": {
@@ -6236,8 +7617,7 @@
           "id",
           "next_review_at"
         ],
-        "title": "CreateReviewResponse",
-        "description": "Response after creating review item."
+        "title": "CreateReviewResponse"
       },
       "DebugRenderRequest": {
         "properties": {
@@ -6262,6 +7642,43 @@
           "data"
         ],
         "title": "DebugRenderRequest"
+      },
+      "DetectCollocationsBatchRequest": {
+        "properties": {
+          "sentences": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Sentences"
+          }
+        },
+        "type": "object",
+        "required": [
+          "sentences"
+        ],
+        "title": "DetectCollocationsBatchRequest",
+        "description": "Request to detect collocations for multiple sentences at once."
+      },
+      "DetectCollocationsBatchResponse": {
+        "properties": {
+          "results": {
+            "additionalProperties": {
+              "items": {
+                "$ref": "#/components/schemas/CollocationItem"
+              },
+              "type": "array"
+            },
+            "type": "object",
+            "title": "Results"
+          }
+        },
+        "type": "object",
+        "required": [
+          "results"
+        ],
+        "title": "DetectCollocationsBatchResponse",
+        "description": "Response with collocations for multiple sentences."
       },
       "DetectCollocationsRequest": {
         "properties": {
@@ -6325,6 +7742,22 @@
         ],
         "title": "DictionaryLookupRequest"
       },
+      "DifficultWordsResponse": {
+        "properties": {
+          "words": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Words"
+          }
+        },
+        "type": "object",
+        "required": [
+          "words"
+        ],
+        "title": "DifficultWordsResponse"
+      },
       "EpisodeResponse": {
         "properties": {
           "id": {
@@ -6354,6 +7787,17 @@
             "type": "string",
             "title": "Audio Url"
           },
+          "file_size": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "File Size"
+          },
           "duration_seconds": {
             "anyOf": [
               {
@@ -6364,6 +7808,21 @@
               }
             ],
             "title": "Duration Seconds"
+          },
+          "chapters": {
+            "anyOf": [
+              {
+                "items": {
+                  "additionalProperties": true,
+                  "type": "object"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Chapters"
           },
           "image_url": {
             "anyOf": [
@@ -6391,6 +7850,21 @@
             "type": "string",
             "title": "Transcript Status"
           },
+          "transcript_segments": {
+            "anyOf": [
+              {
+                "items": {
+                  "additionalProperties": true,
+                  "type": "object"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Transcript Segments"
+          },
           "current_position": {
             "type": "number",
             "title": "Current Position",
@@ -6409,6 +7883,7 @@
           "title",
           "description",
           "audio_url",
+          "file_size",
           "duration_seconds",
           "image_url",
           "published_at",
@@ -6478,6 +7953,81 @@
         ],
         "title": "ExplainWordRequest",
         "description": "Request to explain a word or phrase in its sentence context via streaming LLM."
+      },
+      "FavoriteEpisodeIdsResponse": {
+        "properties": {
+          "episode_ids": {
+            "items": {
+              "type": "integer"
+            },
+            "type": "array",
+            "title": "Episode Ids"
+          }
+        },
+        "type": "object",
+        "required": [
+          "episode_ids"
+        ],
+        "title": "FavoriteEpisodeIdsResponse"
+      },
+      "FavoriteEpisodeItem": {
+        "properties": {
+          "episode": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Episode"
+          },
+          "feed": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Feed"
+          },
+          "last_position_seconds": {
+            "type": "number",
+            "title": "Last Position Seconds",
+            "default": 0.0
+          },
+          "favorited_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Favorited At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "episode",
+          "feed"
+        ],
+        "title": "FavoriteEpisodeItem"
+      },
+      "FavoriteToggleResponse": {
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "title": "Success"
+          },
+          "episode_id": {
+            "type": "integer",
+            "title": "Episode Id"
+          },
+          "is_favorite": {
+            "type": "boolean",
+            "title": "Is Favorite"
+          }
+        },
+        "type": "object",
+        "required": [
+          "success",
+          "episode_id",
+          "is_favorite"
+        ],
+        "title": "FavoriteToggleResponse"
       },
       "FeedContent": {
         "properties": {
@@ -7841,8 +9391,7 @@
           "success_count",
           "retention_rate"
         ],
-        "title": "MemoryCurveDebugBucket",
-        "description": "Debug info for a memory curve bucket."
+        "title": "MemoryCurveDebugBucket"
       },
       "MemoryCurveDebugLog": {
         "properties": {
@@ -7891,8 +9440,7 @@
           "reviewed_at",
           "duration_ms"
         ],
-        "title": "MemoryCurveDebugLog",
-        "description": "Debug info for a single review log."
+        "title": "MemoryCurveDebugLog"
       },
       "MemoryCurveDebugResponse": {
         "properties": {
@@ -7935,8 +9483,7 @@
           "recent_logs",
           "summary"
         ],
-        "title": "MemoryCurveDebugResponse",
-        "description": "Debug response for memory curve analysis."
+        "title": "MemoryCurveDebugResponse"
       },
       "MemoryCurvePoint": {
         "properties": {
@@ -7954,8 +9501,7 @@
           "days_since_first_review",
           "retention_rate"
         ],
-        "title": "MemoryCurvePoint",
-        "description": "A point on the memory curve."
+        "title": "MemoryCurvePoint"
       },
       "MemoryCurveResponse": {
         "properties": {
@@ -7989,8 +9535,7 @@
           "total_reviews",
           "successful_reviews"
         ],
-        "title": "MemoryCurveResponse",
-        "description": "Memory curve statistics."
+        "title": "MemoryCurveResponse"
       },
       "NegotiationContext": {
         "properties": {
@@ -8234,6 +9779,62 @@
         ],
         "title": "PasswordChange",
         "description": "Change password while logged in."
+      },
+      "PositionSyncRequest": {
+        "properties": {
+          "position": {
+            "type": "number",
+            "title": "Position"
+          },
+          "is_finished": {
+            "type": "boolean",
+            "title": "Is Finished",
+            "default": false
+          },
+          "duration": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Duration"
+          },
+          "timestamp": {
+            "type": "number",
+            "title": "Timestamp"
+          },
+          "device_id": {
+            "type": "string",
+            "title": "Device Id"
+          },
+          "device_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Device Type",
+            "default": "web"
+          },
+          "playback_rate": {
+            "type": "number",
+            "title": "Playback Rate",
+            "default": 1.0
+          }
+        },
+        "type": "object",
+        "required": [
+          "position",
+          "timestamp",
+          "device_id"
+        ],
+        "title": "PositionSyncRequest"
       },
       "PrefetchCollocationsRequest": {
         "properties": {
@@ -8580,14 +10181,13 @@
         "required": [
           "target_sentence"
         ],
-        "title": "ReviewContextResponse",
-        "description": "Context for a review item."
+        "title": "ReviewContextResponse"
       },
       "ReviewQueueResponse": {
         "properties": {
           "items": {
             "items": {
-              "$ref": "#/components/schemas/app__api__routers__review__ReviewQueueItem"
+              "$ref": "#/components/schemas/app__models__review_schemas__ReviewQueueItem"
             },
             "type": "array",
             "title": "Items"
@@ -8602,8 +10202,7 @@
           "items",
           "count"
         ],
-        "title": "ReviewQueueResponse",
-        "description": "Response with review queue items."
+        "title": "ReviewQueueResponse"
       },
       "ReviewRequest": {
         "properties": {
@@ -8915,6 +10514,24 @@
         "title": "TokenResponse",
         "description": "JWT token pair response."
       },
+      "TranscribeResponse": {
+        "properties": {
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "message": {
+            "type": "string",
+            "title": "Message"
+          }
+        },
+        "type": "object",
+        "required": [
+          "status",
+          "message"
+        ],
+        "title": "TranscribeResponse"
+      },
       "UnclearSentenceInfo": {
         "properties": {
           "sentence_index": {
@@ -8944,6 +10561,181 @@
         ],
         "title": "UnclearSentenceInfo",
         "description": "Info about an unclear sentence for highlighting."
+      },
+      "UnfamiliarItem": {
+        "properties": {
+          "text": {
+            "type": "string",
+            "title": "Text"
+          },
+          "item_type": {
+            "type": "string",
+            "enum": [
+              "word",
+              "phrase"
+            ],
+            "title": "Item Type"
+          },
+          "encounter_count": {
+            "type": "integer",
+            "title": "Encounter Count"
+          },
+          "last_seen_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Seen At"
+          },
+          "source_types": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Source Types"
+          },
+          "in_review_queue": {
+            "type": "boolean",
+            "title": "In Review Queue"
+          },
+          "next_review_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Review At"
+          },
+          "review_repetition": {
+            "type": "integer",
+            "title": "Review Repetition",
+            "default": 0
+          },
+          "difficulty_score": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Difficulty Score"
+          },
+          "proficiency_status": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Proficiency Status"
+          },
+          "exposure_count": {
+            "type": "integer",
+            "title": "Exposure Count",
+            "default": 0
+          },
+          "huh_count": {
+            "type": "integer",
+            "title": "Huh Count",
+            "default": 0
+          },
+          "sample_contexts": {
+            "items": {
+              "$ref": "#/components/schemas/UnfamiliarItemContext"
+            },
+            "type": "array",
+            "title": "Sample Contexts"
+          }
+        },
+        "type": "object",
+        "required": [
+          "text",
+          "item_type",
+          "encounter_count",
+          "source_types",
+          "in_review_queue",
+          "sample_contexts"
+        ],
+        "title": "UnfamiliarItem"
+      },
+      "UnfamiliarItemContext": {
+        "properties": {
+          "source_type": {
+            "type": "string",
+            "title": "Source Type"
+          },
+          "source_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Id"
+          },
+          "context_sentence": {
+            "type": "string",
+            "title": "Context Sentence"
+          },
+          "seen_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Seen At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "source_type",
+          "context_sentence",
+          "seen_at"
+        ],
+        "title": "UnfamiliarItemContext"
+      },
+      "UnfamiliarItemsResponse": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/UnfamiliarItem"
+            },
+            "type": "array",
+            "title": "Items"
+          },
+          "total": {
+            "type": "integer",
+            "title": "Total"
+          },
+          "limit": {
+            "type": "integer",
+            "title": "Limit"
+          },
+          "offset": {
+            "type": "integer",
+            "title": "Offset"
+          }
+        },
+        "type": "object",
+        "required": [
+          "items",
+          "total",
+          "limit",
+          "offset"
+        ],
+        "title": "UnfamiliarItemsResponse"
       },
       "UpdateLearningStatusRequest": {
         "properties": {
@@ -9209,6 +11001,108 @@
         ],
         "title": "ValidationError"
       },
+      "VocabularyContext": {
+        "properties": {
+          "source_type": {
+            "type": "string",
+            "title": "Source Type"
+          },
+          "source_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Id"
+          },
+          "source_title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Title"
+          },
+          "source_label": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Label"
+          },
+          "context_sentence": {
+            "type": "string",
+            "title": "Context Sentence"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "word": {
+            "type": "string",
+            "title": "Word"
+          }
+        },
+        "type": "object",
+        "required": [
+          "source_type",
+          "context_sentence",
+          "created_at",
+          "word"
+        ],
+        "title": "VocabularyContext"
+      },
+      "VocabularyLogRequest": {
+        "properties": {
+          "word": {
+            "type": "string",
+            "title": "Word"
+          },
+          "source_type": {
+            "type": "string",
+            "title": "Source Type",
+            "default": "sentence_study"
+          },
+          "source_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Id"
+          },
+          "context_sentence": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Context Sentence"
+          }
+        },
+        "type": "object",
+        "required": [
+          "word"
+        ],
+        "title": "VocabularyLogRequest"
+      },
       "VoiceTokenRequest": {
         "properties": {
           "topic": {
@@ -9396,6 +11290,39 @@
         ],
         "title": "WordUpdatePayload"
       },
+      "app__api__routers__audiobook__TranscribeRequest": {
+        "properties": {
+          "force": {
+            "type": "boolean",
+            "title": "Force",
+            "default": false
+          },
+          "remote_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Remote Url"
+          },
+          "api_key": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Api Key"
+          }
+        },
+        "type": "object",
+        "title": "TranscribeRequest"
+      },
       "app__api__routers__reading__EndSessionRequest": {
         "properties": {
           "session_id": {
@@ -9496,7 +11423,53 @@
         ],
         "title": "StartSessionRequest"
       },
-      "app__api__routers__review__ReviewQueueItem": {
+      "app__api__routers__voice_session__EndSessionRequest": {
+        "properties": {
+          "session_id": {
+            "type": "integer",
+            "title": "Session Id"
+          },
+          "total_active_seconds": {
+            "type": "integer",
+            "title": "Total Active Seconds"
+          }
+        },
+        "type": "object",
+        "required": [
+          "session_id",
+          "total_active_seconds"
+        ],
+        "title": "EndSessionRequest"
+      },
+      "app__api__routers__voice_session__StartSessionRequest": {
+        "properties": {
+          "source_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Type"
+          },
+          "source_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Id"
+          }
+        },
+        "type": "object",
+        "title": "StartSessionRequest"
+      },
+      "app__models__review_schemas__ReviewQueueItem": {
         "properties": {
           "id": {
             "type": "integer",
@@ -9555,54 +11528,7 @@
           "next_review_at",
           "created_at"
         ],
-        "title": "ReviewQueueItem",
-        "description": "Item in the review queue."
-      },
-      "app__api__routers__voice_session__EndSessionRequest": {
-        "properties": {
-          "session_id": {
-            "type": "integer",
-            "title": "Session Id"
-          },
-          "total_active_seconds": {
-            "type": "integer",
-            "title": "Total Active Seconds"
-          }
-        },
-        "type": "object",
-        "required": [
-          "session_id",
-          "total_active_seconds"
-        ],
-        "title": "EndSessionRequest"
-      },
-      "app__api__routers__voice_session__StartSessionRequest": {
-        "properties": {
-          "source_type": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Source Type"
-          },
-          "source_id": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Source Id"
-          }
-        },
-        "type": "object",
-        "title": "StartSessionRequest"
+        "title": "ReviewQueueItem"
       },
       "app__models__sentence_study_schemas__ReviewQueueItem": {
         "properties": {

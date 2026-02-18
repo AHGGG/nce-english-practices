@@ -1,6 +1,7 @@
 import re
 import ebooklib
 import time
+import hashlib
 from pathlib import Path
 from typing import Optional, List, Dict, Any, Tuple
 from bs4 import BeautifulSoup
@@ -28,6 +29,7 @@ logger = logging.getLogger(__name__)
 _epub_cache: Dict[str, Dict[str, Any]] = {}
 _CACHE_MAX_ENTRIES = 5
 _CACHE_TTL_SECONDS = 300  # 5 minutes
+_book_id_cache: Dict[str, Dict[str, Any]] = {}
 
 
 def _get_cached_epub(filename: str, epub_dir: Path) -> Optional[Dict[str, Any]]:
@@ -72,6 +74,24 @@ def _set_cached_epub(filename: str, data: Dict[str, Any], mtime: float) -> None:
     }
 
 
+def _compute_book_id(filepath: Path) -> str:
+    """Compute stable ID for an EPUB file based on its bytes."""
+    cache_key = str(filepath.resolve())
+    mtime = filepath.stat().st_mtime
+    cached = _book_id_cache.get(cache_key)
+    if cached and cached.get("mtime") == mtime:
+        return cached["id"]
+
+    hasher = hashlib.sha1()
+    with filepath.open("rb") as f:
+        for chunk in iter(lambda: f.read(1024 * 1024), b""):
+            hasher.update(chunk)
+
+    book_id = hasher.hexdigest()[:16]
+    _book_id_cache[cache_key] = {"mtime": mtime, "id": book_id}
+    return book_id
+
+
 class EpubProvider(BaseContentProvider):
     """
     Provider for local EPUB files.
@@ -84,6 +104,21 @@ class EpubProvider(BaseContentProvider):
     @property
     def source_type(self) -> SourceType:
         return SourceType.EPUB
+
+    def get_capabilities(self) -> dict[str, bool]:
+        return {
+            "has_catalog": True,
+            "has_units": True,
+            "has_text": True,
+            "has_segments": True,
+            "has_audio": False,
+            "has_images": True,
+            "has_timeline": False,
+            "has_region_alignment": False,
+            "supports_tts_fallback": True,
+            "supports_highlight": True,
+            "supports_sentence_study": True,
+        }
 
     def __init__(self):
         self._current_book: Optional[epub.EpubBook] = None
@@ -100,8 +135,10 @@ class EpubProvider(BaseContentProvider):
             return books
 
         for f in epub_dir.glob("*.epub"):
+            book_id = _compute_book_id(f)
             books.append(
                 {
+                    "id": book_id,
                     "filename": f.name,
                     "title": f.stem.replace(".", " ")
                     .replace("_", " ")
@@ -113,13 +150,42 @@ class EpubProvider(BaseContentProvider):
 
         return books
 
-    def get_articles(self, filename: str) -> List[Dict[str, Any]]:
+    def resolve_filename(self, filename_or_id: str) -> Optional[str]:
+        """Resolve file reference (filename or stable id) to filename."""
+        if not filename_or_id:
+            return None
+
+        filepath = (self.EPUB_DIR / filename_or_id).resolve()
+        try:
+            if filepath.is_relative_to(self.EPUB_DIR.resolve()) and filepath.exists():
+                return filename_or_id
+        except (ValueError, RuntimeError):
+            pass
+
+        for book in self.list_books():
+            if book.get("id") == filename_or_id:
+                return book.get("filename")
+
+        return None
+
+    def get_book_id(self, filename_or_id: str) -> Optional[str]:
+        """Resolve file reference to stable EPUB item id."""
+        filename = self.resolve_filename(filename_or_id)
+        if not filename:
+            return None
+
+        filepath = self.EPUB_DIR / filename
+        if not filepath.exists():
+            return None
+        return _compute_book_id(filepath)
+
+    def get_articles(self, filename_or_id: str) -> List[Dict[str, Any]]:
         """
         Get extracted article payloads for a specific EPUB.
 
         Returns empty list if the EPUB cannot be loaded.
         """
-        if not self._load_epub(filename):
+        if not self._load_epub(filename_or_id):
             return []
 
         return list(self._cached_articles)
@@ -152,8 +218,12 @@ class EpubProvider(BaseContentProvider):
         """Public sentence splitter used by routers/services."""
         return self._split_sentences_lenient(text)
 
-    def _load_epub(self, filename: str) -> bool:
+    def _load_epub(self, filename_or_id: str) -> bool:
         """Load EPUB file, using module-level cache if available."""
+        filename = self.resolve_filename(filename_or_id)
+        if not filename:
+            return False
+
         # Check if already loaded in this instance
         if self._current_filename == filename and self._current_book:
             return True
@@ -213,7 +283,9 @@ class EpubProvider(BaseContentProvider):
                 images[item.get_name()] = item.get_content()
         return images
 
-    def get_image(self, filename: str, image_path: str) -> Optional[Tuple[bytes, str]]:
+    def get_image(
+        self, filename_or_id: str, image_path: str
+    ) -> Optional[Tuple[bytes, str]]:
         """
         Get image binary data and content type.
 
@@ -224,7 +296,7 @@ class EpubProvider(BaseContentProvider):
         Returns:
             Tuple of (bytes, content_type) or None if not found
         """
-        if not self._load_epub(filename):
+        if not self._load_epub(filename_or_id):
             return None
 
         # Normalize path - images might be referenced with or without directory prefix
@@ -475,9 +547,7 @@ class EpubProvider(BaseContentProvider):
         # Only filter trivially invalid content
         return [s.strip() for s in sentences if len(s.strip()) >= 5]
 
-    async def fetch(
-        self, filename: str, chapter_index: int = 0, **kwargs: Any
-    ) -> ContentBundle:
+    async def fetch(self, **kwargs: Any) -> ContentBundle:
         """
         Fetch a specific chapter from an EPUB.
 
@@ -485,8 +555,15 @@ class EpubProvider(BaseContentProvider):
             filename: EPUB filename in resources/epub/
             chapter_index: Index of the chapter to load (0-based)
         """
-        if not self._load_epub(filename):
-            raise FileNotFoundError(f"EPUB file not found: {filename}")
+        filename = kwargs.get("filename")
+        chapter_index = kwargs.get("chapter_index", 0)
+        source_item_id = kwargs.get("source_item_id")
+        file_ref = source_item_id or filename
+        if not file_ref:
+            raise ValueError("filename or source_item_id is required")
+
+        if not self._load_epub(file_ref):
+            raise FileNotFoundError(f"EPUB file not found: {file_ref}")
 
         if not self._cached_articles:
             raise ValueError(f"No valid articles found in {filename}")
@@ -507,7 +584,10 @@ class EpubProvider(BaseContentProvider):
             blocks = []
 
         # Construct ID: filename:chapter_index
-        bundle_id = f"epub:{filename}:{chapter_index}"
+        stable_id = self.get_book_id(file_ref)
+        if not stable_id:
+            raise FileNotFoundError(f"Unable to resolve EPUB id: {file_ref}")
+        bundle_id = f"epub:{stable_id}:{chapter_index}"
 
         return ContentBundle(
             id=bundle_id,
@@ -516,8 +596,10 @@ class EpubProvider(BaseContentProvider):
             full_text=article["full_text"],
             blocks=blocks,
             metadata={
-                "filename": filename,
+                "filename": self._current_filename,
+                "source_item_id": stable_id,
                 "chapter_index": chapter_index,
                 "total_chapters": len(self._cached_articles),
+                "capabilities": self.get_capabilities(),
             },
         )

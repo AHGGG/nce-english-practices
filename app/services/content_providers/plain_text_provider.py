@@ -14,17 +14,33 @@ class PlainTextProvider(BaseContentProvider):
     def source_type(self) -> SourceType:
         return SourceType.PLAIN_TEXT
 
+    def get_capabilities(self) -> dict[str, bool]:
+        return {
+            "has_catalog": False,
+            "has_units": False,
+            "has_text": True,
+            "has_segments": True,
+            "has_audio": False,
+            "has_images": False,
+            "has_timeline": False,
+            "has_region_alignment": False,
+            "supports_tts_fallback": True,
+            "supports_highlight": True,
+            "supports_sentence_study": True,
+        }
+
     def _extract_sentences(self, text: str) -> List[str]:
         text = re.sub(r"\s+", " ", text)
         raw_sentences = re.split(r"(?<=[.!?])\s+", text)
         return [s.strip() for s in raw_sentences if s.strip()]
 
-    async def fetch(
-        self, text: str, title: str = "Untitled Text", **kwargs: Any
-    ) -> ContentBundle:
+    async def fetch(self, **kwargs: Any) -> ContentBundle:
         """
         Process raw text.
         """
+        text = kwargs.get("text", "")
+        title = kwargs.get("title", "Untitled Text")
+
         sentences = self._extract_sentences(text)
         content_sentences = [ContentSentence(text=s) for s in sentences]
 
@@ -37,4 +53,5 @@ class PlainTextProvider(BaseContentProvider):
             title=title,
             sentences=content_sentences,
             full_text=text,
+            metadata={"capabilities": self.get_capabilities()},
         )

@@ -72,6 +72,20 @@ class ContentSentence(BaseModel):
     end_time: Optional[float] = None  # 音频结束时间戳
 
 
+class ContentCapabilities(BaseModel):
+    has_catalog: bool = False
+    has_units: bool = False
+    has_text: bool = False
+    has_segments: bool = False
+    has_audio: bool = False
+    has_images: bool = False
+    has_timeline: bool = False
+    has_region_alignment: bool = False
+    supports_tts_fallback: bool = False
+    supports_highlight: bool = False
+    supports_sentence_study: bool = False
+
+
 class ContentBundle(BaseModel):
     """
     统一内容包 - 所有 Content Provider 的标准输出格式。

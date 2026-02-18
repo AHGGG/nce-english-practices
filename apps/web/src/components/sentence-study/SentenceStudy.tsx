@@ -37,7 +37,7 @@ import {
 } from "./views";
 
 interface BookItem {
-  filename: string;
+  filename?: string;
   id?: string;
   title: string;
   size_bytes: number;
@@ -261,25 +261,29 @@ const SentenceStudy = () => {
     });
   };
 
-  const fetchStatusAndSort = async (bookFilename: string) => {
-    const data = await sentenceStudyApi.getArticles(bookFilename);
-    const refreshed = ((data.articles || []) as ArticleItem[]).filter(
+  const fetchStatusAndSort = async (bookId: string) => {
+    const data = await sentenceStudyApi.getArticles(bookId);
+    const refreshed = ((data.units || []) as ArticleItem[]).filter(
       (article) => article.sentence_count > 0,
     );
     return sortArticlesByActivity(refreshed);
   };
 
   // === Book Selection ===
-  const selectBook = async (bookFilename: string) => {
+  const selectBook = async (bookId: string) => {
     setLoading(true);
-    // Find full book object from filename
-    const book = books.find((b) => b.filename === bookFilename);
-    if (!book) return;
+    // Find full book object from id/filename
+    const book = books.find((b) => b.id === bookId || b.filename === bookId);
+    if (!book) {
+      setLoading(false);
+      return;
+    }
 
     setSelectedBook(book);
     try {
-      const data = await sentenceStudyApi.getArticles(book.filename);
-      const articlesList = ((data.articles || []) as ArticleItem[]).filter(
+      const itemId = book.id || book.filename || bookId;
+      const data = await sentenceStudyApi.getArticles(itemId);
+      const articlesList = ((data.units || []) as ArticleItem[]).filter(
         (article) => article.sentence_count > 0,
       );
       const sorted = sortArticlesByActivity(articlesList);
@@ -314,26 +318,27 @@ const SentenceStudy = () => {
           sentenceStudyApi.getCalibration(),
           sentenceStudyApi.getLastSession(),
         ])) as [
-          { books?: BookItem[] },
+          { items?: BookItem[] },
           { level?: number } | null,
           LastSession | null,
         ];
 
-        setBooks((booksData.books || []) as BookItem[]);
+        const booksList = (booksData.items || []) as BookItem[];
+        setBooks(booksList);
 
         // Auto-select first book if available and no URL params
-        if (!urlSourceId && booksData.books && booksData.books.length > 0) {
+        if (!urlSourceId && booksList.length > 0) {
           // We need to call selectBook, but we're inside useEffect.
           // We can set selectedBook directly and load articles, OR just call selectBook logic.
-          const defaultBook = booksData.books[0];
+          const defaultBook = booksList[0];
           setSelectedBook(defaultBook);
           // Load articles for default book immediately
-          const articlesData = await sentenceStudyApi.getArticles(
-            defaultBook.filename,
+          const defaultBookId = defaultBook.id || defaultBook.filename || "";
+          const articlesData =
+            await sentenceStudyApi.getArticles(defaultBookId);
+          const filtered = ((articlesData.units || []) as ArticleItem[]).filter(
+            (article) => article.sentence_count > 0,
           );
-          const filtered = (
-            (articlesData.articles || []) as ArticleItem[]
-          ).filter((article) => article.sentence_count > 0);
           const sorted = sortArticlesByActivity(filtered);
           setArticles(sorted);
           setView(VIEW_STATES.ARTICLE_LIST);
@@ -347,17 +352,17 @@ const SentenceStudy = () => {
         if (urlSourceId && urlSourceId.startsWith("epub:")) {
           const parts = urlSourceId.split(":");
           if (parts.length >= 3) {
-            const filename = parts[1];
-            const book = (booksData.books || []).find(
-              (b) => b.filename === filename,
+            const itemId = parts[1];
+            const book = booksList.find(
+              (b) => b.id === itemId || b.filename === itemId,
             );
             setSelectedBook(
-              book || { filename, title: filename, size_bytes: 0 },
+              book || { id: itemId, title: itemId, size_bytes: 0 },
             );
 
-            const articlesData = await sentenceStudyApi.getArticles(filename);
+            const articlesData = await sentenceStudyApi.getArticles(itemId);
             const filtered = (
-              (articlesData.articles || []) as ArticleItem[]
+              (articlesData.units || []) as ArticleItem[]
             ).filter((article) => article.sentence_count > 0);
             const sorted = sortArticlesByActivity(filtered);
             setArticles(sorted);
@@ -378,17 +383,17 @@ const SentenceStudy = () => {
         if (lastSession?.source_id?.startsWith("epub:")) {
           const parts = lastSession.source_id.split(":");
           if (parts.length >= 3) {
-            const filename = parts[1];
-            const book = (booksData.books || []).find(
-              (b) => b.filename === filename,
+            const itemId = parts[1];
+            const book = booksList.find(
+              (b) => b.id === itemId || b.filename === itemId,
             );
             setSelectedBook(
-              book || { filename, title: filename, size_bytes: 0 },
+              book || { id: itemId, title: itemId, size_bytes: 0 },
             );
 
-            const articlesData = await sentenceStudyApi.getArticles(filename);
+            const articlesData = await sentenceStudyApi.getArticles(itemId);
             const filtered = (
-              (articlesData.articles || []) as ArticleItem[]
+              (articlesData.units || []) as ArticleItem[]
             ).filter((article) => article.sentence_count > 0);
             const sorted = sortArticlesByActivity(filtered);
             setArticles(sorted);
@@ -845,8 +850,9 @@ const SentenceStudy = () => {
         unclear_sentences: [],
       });
       // Refresh article status to update completed status
-      if (selectedBook?.filename) {
-        const sorted = await fetchStatusAndSort(selectedBook.filename);
+      if (selectedBook?.id || selectedBook?.filename) {
+        const bookId = selectedBook.id || selectedBook.filename || "";
+        const sorted = await fetchStatusAndSort(bookId);
         setArticles(sorted);
       }
     } else if (view === VIEW_STATES.ARTICLE_LIST) {

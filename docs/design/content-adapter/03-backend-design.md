@@ -400,12 +400,14 @@ class ContentService:
 
 ## 7. API Routes
 
-### 7.1 Existing Routes (No Change)
+### 7.1 Unified Routes
 
 ```python
-# 现有路由保持不变
-GET /api/reading/article?source_id={id}
-GET /api/reading/epub/image?filename={}&image_path={}
+GET /api/content/catalog/{source_type}
+GET /api/content/units/{source_type}/{item_id}
+GET /api/content/units/{source_type}/{item_id}/with-status
+GET /api/content/bundle?source_id={id}
+GET /api/content/asset?source_id={id}&path={asset_path}
 ```
 
 ### 7.2 New Routes (Phase 2+)

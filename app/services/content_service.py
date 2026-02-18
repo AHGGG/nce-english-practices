@@ -30,6 +30,19 @@ class ContentService:
         """注册一个新的 Content Provider"""
         self._providers[provider.source_type] = provider
 
+    def get_provider(self, source_type: SourceType | str) -> BaseContentProvider:
+        """Get provider instance by source type."""
+        if isinstance(source_type, str):
+            try:
+                source_type = SourceType(source_type)
+            except ValueError as exc:
+                raise ValueError(f"Invalid source_type: {source_type}") from exc
+
+        provider = self._providers.get(source_type)
+        if not provider:
+            raise ValueError(f"No provider registered for source type: {source_type}")
+        return provider
+
     async def get_content(
         self, source_type: SourceType, **params: Any
     ) -> ContentBundle:
@@ -44,10 +57,7 @@ class ContentService:
             except ValueError:
                 raise ValueError(f"Invalid source_type: {source_type}")
 
-        provider = self._providers.get(source_type)
-        if not provider:
-            raise ValueError(f"No provider registered for source type: {source_type}")
-
+        provider = self.get_provider(source_type)
         return await provider.fetch(**params)
 
 

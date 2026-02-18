@@ -256,10 +256,9 @@ function TextContentRendererComponent({
   // 构建图片 URL
   const buildImageUrl = useCallback(
     (imagePath: string) => {
-      const filename = metadata?.filename || "";
-      return `/api/reading/epub/image?filename=${encodeURIComponent(filename)}&image_path=${encodeURIComponent(imagePath)}`;
+      return `/api/content/asset?source_id=${encodeURIComponent(bundle.id)}&path=${encodeURIComponent(imagePath)}`;
     },
-    [metadata],
+    [bundle.id],
   );
 
   // 渲染内容

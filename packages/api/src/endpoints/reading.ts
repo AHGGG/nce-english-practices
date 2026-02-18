@@ -46,11 +46,10 @@ export const readingApi = {
    * Get list of articles with reading status
    */
   async getArticlesWithStatus(filename?: string) {
-    let url = "/api/reading/epub/list-with-status";
-    if (filename) {
-      url += `?filename=${encodeURIComponent(filename)}`;
-    }
-    return apiGet(url);
+    const itemId = filename || "";
+    return apiGet(
+      `/api/content/units/epub/${encodeURIComponent(itemId)}/with-status`,
+    );
   },
 
   /**
@@ -60,7 +59,7 @@ export const readingApi = {
     console.log("[readingApi.getArticleDetail] Requesting source_id:", id);
     try {
       const data = await apiGet(
-        `/api/reading/article?source_id=${encodeURIComponent(id)}`,
+        `/api/content/bundle?source_id=${encodeURIComponent(id)}`,
       );
       console.log(
         "[readingApi.getArticleDetail] Response preview:",

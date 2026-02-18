@@ -20,6 +20,21 @@ class RssProvider(BaseContentProvider):
     def source_type(self) -> SourceType:
         return SourceType.RSS
 
+    def get_capabilities(self) -> dict[str, bool]:
+        return {
+            "has_catalog": False,
+            "has_units": True,
+            "has_text": True,
+            "has_segments": True,
+            "has_audio": False,
+            "has_images": False,
+            "has_timeline": False,
+            "has_region_alignment": False,
+            "supports_tts_fallback": True,
+            "supports_highlight": True,
+            "supports_sentence_study": True,
+        }
+
     def _extract_sentences(self, text: str) -> List[str]:
         """Simple text segmentation."""
         text = re.sub(r"<[^>]+>", "", text)  # Remove HTML
@@ -109,16 +124,12 @@ class RssProvider(BaseContentProvider):
             # But mostly we want to raise the error to know what happened
             raise ValueError(f"Failed to fetch RSS feed {url}: {str(e)}")
 
-    async def fetch(
-        self, url: str, article_index: int = 0, **kwargs: Any
-    ) -> ContentBundle:
-        """
-        Fetch a specific article from an RSS Feed.
+    async def fetch(self, **kwargs: Any) -> ContentBundle:
+        url = kwargs.get("url")
+        article_index = kwargs.get("article_index", 0)
+        if not url:
+            raise ValueError("url is required")
 
-        Args:
-            url: RSS Feed URL
-            article_index: Index of the article to load (0-based)
-        """
         feed = await self._get_feed(url)
 
         if not feed.entries:
@@ -156,5 +167,6 @@ class RssProvider(BaseContentProvider):
                 "feed_title": feed.feed.get("title", ""),
                 "article_index": article_index,
                 "total_articles": len(feed.entries),
+                "capabilities": self.get_capabilities(),
             },
         )

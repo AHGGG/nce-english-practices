@@ -19,6 +19,20 @@ export type BlockType =
   | "subtitle"
   | "audio_segment"; // Phase 2
 
+export interface ContentCapabilities {
+  has_catalog?: boolean;
+  has_units?: boolean;
+  has_text?: boolean;
+  has_segments?: boolean;
+  has_audio?: boolean;
+  has_images?: boolean;
+  has_timeline?: boolean;
+  has_region_alignment?: boolean;
+  supports_tts_fallback?: boolean;
+  supports_highlight?: boolean;
+  supports_sentence_study?: boolean;
+}
+
 // ============================================================
 // Content Block
 // ============================================================
@@ -63,7 +77,7 @@ export interface ContentBundle {
   published_at?: string;
   full_text?: string;
   source_url?: string;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, any> & { capabilities?: ContentCapabilities };
 
   // Frontend-enriched fields (added by hooks)
   highlightSet?: Set<string>;

@@ -6,7 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.api.deps.auth import get_current_user_id
 from app.core.db import get_db
 from app.services.content_service import content_service
-from app.services.source_id import parse_epub_source_id
+from app.services.source_id import parse_epub_source_id, parse_source_id
 from app.models.content_schemas import SourceType
 from app.models.orm import ReadingSession, SentenceLearningRecord, ReviewItem
 
@@ -15,12 +15,123 @@ from app.services.log_collector import log_collector, LogLevel, LogCategory
 router = APIRouter()
 
 
+@router.get("/api/content/catalog/{source_type}")
+def get_content_catalog(source_type: str):
+    """Return provider catalog for a source type."""
+    if source_type != SourceType.EPUB.value:
+        raise HTTPException(
+            status_code=400, detail=f"Unsupported source_type: {source_type}"
+        )
+
+    data = list_epub_books()
+    return {
+        "source_type": source_type,
+        "items": data.get("books", []),
+    }
+
+
+@router.get("/api/content/units/{source_type}/{item_id}")
+def get_content_units(source_type: str, item_id: str):
+    """Return units (chapters/articles/tracks) for a catalog item."""
+    if source_type != SourceType.EPUB.value:
+        raise HTTPException(
+            status_code=400, detail=f"Unsupported source_type: {source_type}"
+        )
+
+    data = list_epub_articles(filename=item_id)
+    return {
+        "source_type": source_type,
+        "item_id": item_id,
+        "title": next(
+            (
+                item.get("title")
+                for item in list_epub_books().get("books", [])
+                if item.get("id") == item_id or item.get("filename") == item_id
+            ),
+            None,
+        ),
+        "total_units": data.get("total_articles", 0),
+        "units": data.get("articles", []),
+    }
+
+
+@router.get("/api/content/units/{source_type}/{item_id}/with-status")
+async def get_content_units_with_status(
+    source_type: str,
+    item_id: str,
+    user_id: str = Depends(get_current_user_id),
+    db: AsyncSession = Depends(get_db),
+):
+    """Return units plus reading/study status for a catalog item."""
+    if source_type != SourceType.EPUB.value:
+        raise HTTPException(
+            status_code=400, detail=f"Unsupported source_type: {source_type}"
+        )
+
+    data = await list_epub_articles_with_status(
+        filename=item_id, user_id=user_id, db=db
+    )
+    return {
+        "source_type": source_type,
+        "item_id": item_id,
+        "total_units": data.get("total_articles", 0),
+        "units": data.get("articles", []),
+    }
+
+
+@router.get("/api/content/bundle")
+async def get_content_bundle(
+    source_id: str,
+    include_sentences: bool = True,
+    book_code: Optional[str] = None,
+    min_sequence: Optional[int] = None,
+    max_sequence: Optional[int] = None,
+    user_id: str = Depends(get_current_user_id),
+    db: AsyncSession = Depends(get_db),
+):
+    """Return normalized content bundle with learning overlays."""
+    parsed = parse_source_id(source_id)
+    if not parsed:
+        raise HTTPException(status_code=400, detail="Invalid source_id format")
+
+    if parsed.source_type != SourceType.EPUB.value:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Unsupported source_type for bundle endpoint: {parsed.source_type}",
+        )
+
+    return await get_article_content(
+        source_id=source_id,
+        include_sentences=include_sentences,
+        book_code=book_code,
+        min_sequence=min_sequence,
+        max_sequence=max_sequence,
+        user_id=user_id,
+        db=db,
+    )
+
+
+@router.get("/api/content/asset")
+def get_content_asset(source_id: str, path: str):
+    """Return asset bytes for a source item (image/audio dependent on provider)."""
+    parsed = parse_source_id(source_id)
+    if not parsed:
+        raise HTTPException(status_code=400, detail="Invalid source_id format")
+
+    if parsed.source_type != SourceType.EPUB.value:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Unsupported source_type for asset endpoint: {parsed.source_type}",
+        )
+
+    return get_epub_image(filename=parsed.item_id, image_path=path)
+
+
 # ============================================================
 # Reading Mode API Endpoints (Phase 2)
 # ============================================================
 
 
-@router.get("/api/reading/epub/books")
 def list_epub_books():
     """
     List all available EPUB books in the resources directory.
@@ -34,7 +145,6 @@ def list_epub_books():
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.get("/api/reading/epub/list")
 def list_epub_articles(filename: Optional[str] = None):
     """
     List all articles/chapters in an EPUB file.
@@ -54,13 +164,14 @@ def list_epub_articles(filename: Optional[str] = None):
         if not filename:
             books = provider.list_books()
             if books:
-                filename = books[0]["filename"]
+                filename = books[0].get("id") or books[0]["filename"]
             else:
                 return {"filename": None, "total_articles": 0, "articles": []}
         assert filename is not None
 
         # Load the EPUB
         articles_payload = provider.get_articles(filename)
+        source_item_id = provider.get_book_id(filename) or filename
         if not articles_payload:
             raise HTTPException(status_code=404, detail=f"EPUB not found: {filename}")
 
@@ -90,7 +201,7 @@ def list_epub_articles(filename: Optional[str] = None):
                     "index": i,
                     "title": article.get("title", f"Chapter {i + 1}"),
                     "preview": preview,
-                    "source_id": f"epub:{filename}:{i}",
+                    "source_id": f"epub:{source_item_id}:{i}",
                     "sentence_count": sentence_count,
                 }
             )
@@ -106,15 +217,13 @@ def list_epub_articles(filename: Optional[str] = None):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.get("/api/reading/epub/list-with-status")
 async def list_epub_articles_with_status(
     filename: Optional[str] = None,
     user_id: str = Depends(get_current_user_id),
     db: AsyncSession = Depends(get_db),
 ):
     """
-    List all articles with their reading/study status in a SINGLE request.
-    Combines /api/reading/epub/list and /api/content/article-status for better performance.
+    List all units with their reading/study status in a SINGLE request.
     """
     try:
         from app.services.content_providers.epub_provider import EpubProvider
@@ -125,13 +234,14 @@ async def list_epub_articles_with_status(
         if not filename:
             books = provider.list_books()
             if books:
-                filename = books[0]["filename"]
+                filename = books[0].get("id") or books[0]["filename"]
             else:
                 return {"filename": None, "total_articles": 0, "articles": []}
         assert filename is not None
 
         # Load the EPUB
         articles_payload = provider.get_articles(filename)
+        source_item_id = provider.get_book_id(filename) or filename
         if not articles_payload:
             raise HTTPException(status_code=404, detail=f"EPUB not found: {filename}")
 
@@ -155,7 +265,7 @@ async def list_epub_articles_with_status(
                     "index": i,
                     "title": article.get("title", f"Chapter {i + 1}"),
                     "preview": preview,
-                    "source_id": f"epub:{filename}:{i}",
+                    "source_id": f"epub:{source_item_id}:{i}",
                     "sentence_count": sentence_count,
                 }
             )
@@ -298,7 +408,6 @@ async def list_epub_articles_with_status(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.get("/api/reading/article")
 async def get_article_content(
     source_id: str,
     include_sentences: bool = True,
@@ -327,7 +436,7 @@ async def get_article_content(
         if not parsed:
             raise HTTPException(
                 status_code=400,
-                detail="Invalid source_id format. Expected: epub:{filename}:{index}",
+                detail="Invalid source_id format. Expected: epub:{item_id}:{index}",
             )
 
         filename, chapter_index = parsed
@@ -509,7 +618,6 @@ async def get_article_content(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.get("/api/reading/epub/image")
 def get_epub_image(filename: str, image_path: str):
     """
     Serve an image from an EPUB file.
@@ -550,7 +658,6 @@ def get_epub_image(filename: str, image_path: str):
 # ============================================================
 
 
-@router.get("/api/content/article-status")
 async def get_article_status(
     filename: str,
     user_id: str = Depends(get_current_user_id),
@@ -846,6 +953,9 @@ async def _get_podcast_player_content(episode_id: int, user_id: str, db: AsyncSe
             if user_state
             else 0.0,
             "is_finished": user_state.is_finished if user_state else False,
+            "capabilities": content_service.get_provider(
+                SourceType.PODCAST
+            ).get_capabilities(),
         },
     )
 

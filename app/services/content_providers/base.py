@@ -16,7 +16,7 @@ class BaseContentProvider(ABC):
         pass
 
     @abstractmethod
-    async def fetch(self, **kwargs: Any) -> ContentBundle:
+    async def fetch(self, *args: Any, **kwargs: Any) -> ContentBundle:
         """
         核心获取方法。
         Fetches content from the source and returns a standardized ContentBundle.
@@ -29,3 +29,19 @@ class BaseContentProvider(ABC):
             ContentBundle: The standardized content object.
         """
         pass
+
+    def get_capabilities(self) -> dict[str, bool]:
+        """Return provider capability flags for frontend rendering decisions."""
+        return {
+            "has_catalog": False,
+            "has_units": False,
+            "has_text": False,
+            "has_segments": False,
+            "has_audio": False,
+            "has_images": False,
+            "has_timeline": False,
+            "has_region_alignment": False,
+            "supports_tts_fallback": False,
+            "supports_highlight": False,
+            "supports_sentence_study": False,
+        }

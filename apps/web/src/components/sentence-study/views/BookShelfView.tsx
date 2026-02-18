@@ -16,7 +16,7 @@ interface BookItem {
 interface BookShelfViewProps {
   books?: BookItem[];
   loading?: boolean;
-  onSelectBook: (bookFilename: string) => void;
+  onSelectBook: (bookId: string) => void;
 }
 
 const BookShelfView = ({
@@ -83,9 +83,9 @@ const BookShelfView = ({
               {books.map((book, i) => (
                 <button
                   key={i}
-                  onClick={() => onSelectBook(book.filename || "")}
+                  onClick={() => onSelectBook(book.id || book.filename || "")}
                   className="group relative text-left p-6 border border-white/10 bg-white/[0.02] hover:bg-white/[0.05] hover:border-accent-primary/30 transition-all rounded-2xl flex flex-col h-full overflow-hidden hover:shadow-2xl hover:shadow-black/50 hover:-translate-y-1"
-                  disabled={!book.filename}
+                  disabled={!book.id && !book.filename}
                 >
                   <div className="absolute inset-0 bg-gradient-to-br from-accent-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
 

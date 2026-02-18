@@ -1,4 +1,4 @@
-from typing import Any
+from typing import Any, Optional
 from app.models.content_schemas import ContentBundle, ContentSentence, SourceType
 from app.services.content_providers.rss_provider import RssProvider
 
@@ -13,7 +13,22 @@ class PodcastProvider(RssProvider):
     def source_type(self) -> SourceType:
         return SourceType.PODCAST
 
-    def _extract_audio_url(self, entry: Any) -> str:
+    def get_capabilities(self) -> dict[str, bool]:
+        return {
+            "has_catalog": False,
+            "has_units": True,
+            "has_text": False,
+            "has_segments": True,
+            "has_audio": True,
+            "has_images": False,
+            "has_timeline": True,
+            "has_region_alignment": False,
+            "supports_tts_fallback": False,
+            "supports_highlight": False,
+            "supports_sentence_study": True,
+        }
+
+    def _extract_audio_url(self, entry: Any) -> Optional[str]:
         """Find the first audio enclosure."""
         for link in entry.get("links", []):
             if (
@@ -23,12 +38,15 @@ class PodcastProvider(RssProvider):
                 return link.get("href")
         return None
 
-    async def fetch(
-        self, feed_url: str, episode_index: int = 0, **kwargs: Any
-    ) -> ContentBundle:
+    async def fetch(self, **kwargs: Any) -> ContentBundle:
         """
         Fetch a specific podcast episode.
         """
+        feed_url = kwargs.get("feed_url") or kwargs.get("url")
+        episode_index = kwargs.get("episode_index", kwargs.get("article_index", 0))
+        if not feed_url:
+            raise ValueError("feed_url is required")
+
         # Use inherited cached fetcher
         feed = await self._get_feed(feed_url)
 
@@ -75,5 +93,6 @@ class PodcastProvider(RssProvider):
                 "episode_index": episode_index,
                 "total_episodes": len(feed.entries),
                 "duration": entry.get("itunes_duration", "unknown"),
+                "capabilities": self.get_capabilities(),
             },
         )

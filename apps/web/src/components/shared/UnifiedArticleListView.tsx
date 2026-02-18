@@ -407,9 +407,9 @@ const UnifiedArticleListView = ({
                   <div className="max-h-[60vh] overflow-y-auto custom-scrollbar p-2">
                     {books.map((book) => (
                       <button
-                        key={book.filename || book.id}
+                        key={book.id || book.filename}
                         onClick={() => {
-                          const bookId = book.filename || book.id;
+                          const bookId = book.id || book.filename;
                           if (bookId) {
                             onBookSelect(bookId);
                           }

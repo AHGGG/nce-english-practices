@@ -29,7 +29,7 @@ interface ArticleListViewProps {
   isLoading?: boolean;
   books?: BookItem[];
   selectedBookFilename?: string;
-  onBookSelect: (filename: string) => void;
+  onBookSelect: (bookId: string) => void;
   onArticleClick: (sourceId: string) => void;
 }
 

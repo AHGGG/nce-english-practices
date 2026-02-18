@@ -53,6 +53,21 @@ class AudiobookProvider(BaseContentProvider):
     def source_type(self) -> SourceType:
         return SourceType.AUDIOBOOK
 
+    def get_capabilities(self) -> dict[str, bool]:
+        return {
+            "has_catalog": True,
+            "has_units": True,
+            "has_text": False,
+            "has_segments": True,
+            "has_audio": True,
+            "has_images": False,
+            "has_timeline": True,
+            "has_region_alignment": False,
+            "supports_tts_fallback": False,
+            "supports_highlight": True,
+            "supports_sentence_study": True,
+        }
+
     def _extract_chapters(self, file_path: Path) -> List[Dict[str, Any]]:
         """Extract chapters from M4B/M4A files using manual atom parsing."""
         try:
@@ -390,6 +405,7 @@ class AudiobookProvider(BaseContentProvider):
                 "tracks": [{"index": t["index"], "title": t["title"]} for t in tracks],
                 "start_time": start_time,
                 "end_time": end_time,
+                "capabilities": self.get_capabilities(),
                 **metadata,
             },
         )

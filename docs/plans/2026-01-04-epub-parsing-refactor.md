@@ -13,6 +13,7 @@
 ## Task 1: Add BlockType and ContentBlock Models
 
 **Files:**
+
 - Modify: `app/models/content_schemas.py`
 
 **Step 1: Add new models after imports**
@@ -33,16 +34,16 @@ class ContentBlock(BaseModel):
     Preserves DOM order for accurate rendering.
     """
     type: BlockType
-    
+
     # For PARAGRAPH/HEADING/SUBTITLE
     text: Optional[str] = None
     sentences: List[str] = []  # Paragraph split into sentences
-    
+
     # For IMAGE
     image_path: Optional[str] = None
     alt: Optional[str] = None
     caption: Optional[str] = None
-    
+
     # For HEADING (1=h1, 2=h2, etc.)
     level: Optional[int] = None
 ```
@@ -50,6 +51,7 @@ class ContentBlock(BaseModel):
 **Step 2: Update ContentBundle to add blocks field**
 
 Add after line 54 (images field):
+
 ```python
     blocks: List["ContentBlock"] = []   # Ordered content blocks (new structure)
 ```
@@ -71,16 +73,19 @@ git commit -m "feat(models): add ContentBlock and BlockType for structured EPUB 
 ## Task 2: Implement DOM Traversal in EpubProvider
 
 **Files:**
+
 - Modify: `app/services/content_providers/epub_provider.py`
 
 **Step 1: Add new import and extraction method**
 
 Add after line 12 (logger definition):
+
 ```python
 from app.models.content_schemas import BlockType, ContentBlock
 ```
 
 Add new method after `_find_caption` (around line 165):
+
 ```python
     def _extract_structured_blocks(self, soup: BeautifulSoup) -> List[ContentBlock]:
         """
@@ -89,7 +94,7 @@ Add new method after `_find_caption` (around line 165):
         """
         blocks = []
         body = soup.find('body') or soup
-        
+
         # Get direct children and nested content
         for element in body.descendants:
             if element.name in ['h1', 'h2', 'h3', 'h4']:
@@ -140,9 +145,9 @@ Add new method after `_find_caption` (around line 165):
                             alt=img.get('alt', ''),
                             caption=self._find_caption(element)
                         ))
-        
+
         return blocks
-    
+
     def _split_sentences_lenient(self, text: str) -> List[str]:
         """Split text into sentences with minimal filtering."""
         text = re.sub(r'\s+', ' ', text).strip()
@@ -154,44 +159,45 @@ Add new method after `_find_caption` (around line 165):
 **Step 2: Update fetch method to use blocks**
 
 Replace the `fetch` method (starting around line 219) with:
+
 ```python
     async def fetch(self, filename: str, chapter_index: int = 0, **kwargs: Any) -> ContentBundle:
         """
         Fetch a specific chapter from an EPUB.
-        
+
         Args:
             filename: EPUB filename in resources/epub/
             chapter_index: Index of the chapter to load (0-based)
         """
         if not self._load_epub(filename):
             raise FileNotFoundError(f"EPUB file not found: {filename}")
-            
+
         if not self._cached_articles:
             raise ValueError(f"No valid articles found in {filename}")
-            
+
         if chapter_index < 0 or chapter_index >= len(self._cached_articles):
             raise IndexError(f"Chapter index {chapter_index} out of range (Total: {len(self._cached_articles)})")
-            
+
         article = self._cached_articles[chapter_index]
-        
+
         # Parse HTML to extract structured blocks
         soup = BeautifulSoup(article.get('raw_html', ''), 'html.parser')
         blocks = self._extract_structured_blocks(soup)
-        
+
         # For backward compatibility, also extract flat sentences
         clean_sentences = self._extract_sentences(article['full_text'])
         content_sentences = [
             ContentSentence(text=s) for s in clean_sentences
         ]
-        
+
         # Legacy image mapping (will be deprecated)
         content_images = self._map_images_to_sentences(
             clean_sentences,
             article.get('raw_images', [])
         )
-        
+
         bundle_id = f"epub:{filename}:{chapter_index}"
-        
+
         return ContentBundle(
             id=bundle_id,
             source_type=SourceType.EPUB,
@@ -208,11 +214,12 @@ Replace the `fetch` method (starting around line 219) with:
         )
 ```
 
-**Step 3: Store raw HTML in _extract_articles**
+**Step 3: Store raw HTML in \_extract_articles**
 
 Update `_extract_articles` method (around line 97) to store raw HTML:
 
 Replace line 138-143:
+
 ```python
                     articles.append({
                         'title': title,
@@ -240,6 +247,7 @@ git commit -m "feat(epub): implement DOM traversal for structured content extrac
 ## Task 3: Update API Router to Return Blocks
 
 **Files:**
+
 - Modify: `app/api/routers/content.py`
 
 **Step 1: Find and update the article response**
@@ -265,107 +273,110 @@ git commit -m "feat(api): include blocks in article response"
 ## Task 4: Update ReaderView.jsx to Render Blocks
 
 **Files:**
+
 - Modify: `frontend/src/components/reading/ReaderView.jsx`
 
 **Step 1: Replace renderContent function (lines 94-138)**
 
 ```jsx
-    // Build elements for rendering - now uses blocks for proper ordering
-    const renderContent = () => {
-        const filename = article.metadata?.filename || '';
-        
-        // Use new blocks structure if available, fall back to legacy
-        if (article.blocks && article.blocks.length > 0) {
-            return article.blocks.map((block, blockIdx) => {
-                switch (block.type) {
-                    case 'heading':
-                        const HeadingTag = `h${block.level || 2}`;
-                        return (
-                            <HeadingTag 
-                                key={`h-${blockIdx}`} 
-                                className="text-2xl font-serif text-text-primary mt-8 mb-4"
-                            >
-                                {block.text}
-                            </HeadingTag>
-                        );
-                    
-                    case 'image':
-                        const imgUrl = `/api/reading/epub/image?filename=${encodeURIComponent(filename)}&image_path=${encodeURIComponent(block.image_path)}`;
-                        return (
-                            <MemoizedImage
-                                key={`i-${blockIdx}`}
-                                src={imgUrl}
-                                alt={block.alt}
-                                caption={block.caption}
-                                onImageClick={onImageClick}
-                            />
-                        );
-                    
-                    case 'paragraph':
-                        return (
-                            <div key={`p-${blockIdx}`} className="mb-4">
-                                {block.sentences.map((sentence, sentIdx) => (
-                                    <span key={`${blockIdx}-${sentIdx}`} data-sentence-idx={`${blockIdx}-${sentIdx}`}>
-                                        <MemoizedSentence
-                                            text={sentence}
-                                            highlightSet={article.highlightSet}
-                                            studyHighlightSet={article.studyHighlightSet}
-                                            showHighlights={showHighlights}
-                                        />
-                                        {' '}
-                                    </span>
-                                ))}
-                            </div>
-                        );
-                    
-                    default:
-                        return null;
-                }
-            });
-        }
-        
-        // Legacy fallback for old data
-        const elements = [];
-        const images = article.images || [];
-        const imagesByIndex = {};
+// Build elements for rendering - now uses blocks for proper ordering
+const renderContent = () => {
+  const filename = article.metadata?.filename || "";
 
-        images.forEach(img => {
-            if (!imagesByIndex[img.sentence_index]) {
-                imagesByIndex[img.sentence_index] = [];
-            }
-            imagesByIndex[img.sentence_index].push(img);
-        });
+  // Use new blocks structure if available, fall back to legacy
+  if (article.blocks && article.blocks.length > 0) {
+    return article.blocks.map((block, blockIdx) => {
+      switch (block.type) {
+        case "heading":
+          const HeadingTag = `h${block.level || 2}`;
+          return (
+            <HeadingTag
+              key={`h-${blockIdx}`}
+              className="text-2xl font-serif text-text-primary mt-8 mb-4"
+            >
+              {block.text}
+            </HeadingTag>
+          );
 
-        article.sentences?.slice(0, visibleCount).forEach((sentence, idx) => {
-            elements.push(
-                <div key={`s-${idx}`} data-sentence-idx={idx}>
-                    <MemoizedSentence
-                        text={sentence.text}
-                        highlightSet={article.highlightSet}
-                        studyHighlightSet={article.studyHighlightSet}
-                        showHighlights={showHighlights}
-                    />
-                </div>
-            );
+        case "image":
+          const imgUrl = `/api/content/asset?source_id=${encodeURIComponent(article.id)}&path=${encodeURIComponent(block.image_path)}`;
+          return (
+            <MemoizedImage
+              key={`i-${blockIdx}`}
+              src={imgUrl}
+              alt={block.alt}
+              caption={block.caption}
+              onImageClick={onImageClick}
+            />
+          );
 
-            if (imagesByIndex[idx]) {
-                imagesByIndex[idx].forEach((img, imgIdx) => {
-                    const imgUrl = `/api/reading/epub/image?filename=${encodeURIComponent(filename)}&image_path=${encodeURIComponent(img.path)}`;
-                    elements.push(
-                        <MemoizedImage
-                            key={`i-${idx}-${imgIdx}`}
-                            src={imgUrl}
-                            alt={img.alt}
-                            caption={img.caption}
-                            onImageClick={onImageClick}
-                        />
-                    );
-                });
-            }
-        });
+        case "paragraph":
+          return (
+            <div key={`p-${blockIdx}`} className="mb-4">
+              {block.sentences.map((sentence, sentIdx) => (
+                <span
+                  key={`${blockIdx}-${sentIdx}`}
+                  data-sentence-idx={`${blockIdx}-${sentIdx}`}
+                >
+                  <MemoizedSentence
+                    text={sentence}
+                    highlightSet={article.highlightSet}
+                    studyHighlightSet={article.studyHighlightSet}
+                    showHighlights={showHighlights}
+                  />{" "}
+                </span>
+              ))}
+            </div>
+          );
 
-        return elements;
-    };
+        default:
+          return null;
+      }
+    });
+  }
+
+  // Legacy fallback for old data
+  const elements = [];
+  const images = article.images || [];
+  const imagesByIndex = {};
+
+  images.forEach((img) => {
+    if (!imagesByIndex[img.sentence_index]) {
+      imagesByIndex[img.sentence_index] = [];
+    }
+    imagesByIndex[img.sentence_index].push(img);
+  });
+
+  article.sentences?.slice(0, visibleCount).forEach((sentence, idx) => {
+    elements.push(
+      <div key={`s-${idx}`} data-sentence-idx={idx}>
+        <MemoizedSentence
+          text={sentence.text}
+          highlightSet={article.highlightSet}
+          studyHighlightSet={article.studyHighlightSet}
+          showHighlights={showHighlights}
+        />
+      </div>,
+    );
+
+    if (imagesByIndex[idx]) {
+      imagesByIndex[idx].forEach((img, imgIdx) => {
+        const imgUrl = `/api/content/asset?source_id=${encodeURIComponent(article.id)}&path=${encodeURIComponent(img.path)}`;
+        elements.push(
+          <MemoizedImage
+            key={`i-${idx}-${imgIdx}`}
+            src={imgUrl}
+            alt={img.alt}
+            caption={img.caption}
+            onImageClick={onImageClick}
+          />,
+        );
+      });
+    }
+  });
+
+  return elements;
+};
 ```
 
 **Step 2: Commit**
@@ -380,28 +391,30 @@ git commit -m "feat(reading): render content using blocks for correct image/text
 ## Task 5: Update SentenceStudy.jsx for 2D Navigation
 
 **Files:**
+
 - Modify: `frontend/src/components/sentence-study/SentenceStudy.jsx`
 
 **Step 1: Add helper to extract flat sentences from blocks**
 
 Add near top of file (after VIEW_STATES definition, around line 106):
+
 ```jsx
 // Helper: Extract flat list of sentences from blocks
 const extractSentencesFromBlocks = (blocks) => {
-    if (!blocks || blocks.length === 0) return [];
-    const sentences = [];
-    blocks.forEach((block, blockIdx) => {
-        if (block.type === 'paragraph' && block.sentences) {
-            block.sentences.forEach((sentence, sentIdx) => {
-                sentences.push({
-                    text: sentence,
-                    blockIndex: blockIdx,
-                    sentenceIndex: sentIdx
-                });
-            });
-        }
-    });
-    return sentences;
+  if (!blocks || blocks.length === 0) return [];
+  const sentences = [];
+  blocks.forEach((block, blockIdx) => {
+    if (block.type === "paragraph" && block.sentences) {
+      block.sentences.forEach((sentence, sentIdx) => {
+        sentences.push({
+          text: sentence,
+          blockIndex: blockIdx,
+          sentenceIndex: sentIdx,
+        });
+      });
+    }
+  });
+  return sentences;
 };
 ```
 
@@ -410,28 +423,31 @@ const extractSentencesFromBlocks = (blocks) => {
 Where `currentArticle.sentences[currentIndex]` is used, update to support both formats:
 
 Add inside SentenceStudy component (around line 125, after state declarations):
+
 ```jsx
-    // Compute flat sentence list from blocks or legacy sentences
-    const flatSentences = useMemo(() => {
-        if (currentArticle?.blocks?.length > 0) {
-            return extractSentencesFromBlocks(currentArticle.blocks);
-        }
-        // Legacy: wrap in same shape
-        return (currentArticle?.sentences || []).map((s, idx) => ({
-            text: s.text || s,
-            blockIndex: 0,
-            sentenceIndex: idx
-        }));
-    }, [currentArticle]);
+// Compute flat sentence list from blocks or legacy sentences
+const flatSentences = useMemo(() => {
+  if (currentArticle?.blocks?.length > 0) {
+    return extractSentencesFromBlocks(currentArticle.blocks);
+  }
+  // Legacy: wrap in same shape
+  return (currentArticle?.sentences || []).map((s, idx) => ({
+    text: s.text || s,
+    blockIndex: 0,
+    sentenceIndex: idx,
+  }));
+}, [currentArticle]);
 ```
 
 **Step 3: Update references to use flatSentences**
 
 In `handleClear`, `handleDifficultyChoice`, etc., replace:
+
 - `currentArticle.sentences[currentIndex]` → `flatSentences[currentIndex]`
 - `currentArticle.sentences.length` → `flatSentences.length`
 
 This is a larger refactor. Key changes:
+
 - Line 332-334: Update context sentences
 - Line 408-409: Update collocation fetch
 - Line 608-610: Update handleClear
@@ -451,6 +467,7 @@ git commit -m "feat(sentence-study): support block-based navigation with flat se
 ## Task 6: Write Integration Test
 
 **Files:**
+
 - Create: `tests/test_epub_blocks.py`
 
 **Step 1: Write the test**
@@ -464,34 +481,34 @@ from pathlib import Path
 async def test_epub_blocks_extraction():
     """Test that blocks are extracted with correct ordering."""
     from app.services.content_providers.epub_provider import EpubProvider
-    
+
     provider = EpubProvider()
-    
+
     # Check if test EPUB exists
     epub_dir = Path("resources/epub")
     if not epub_dir.exists():
         pytest.skip("No EPUB directory")
-    
+
     epubs = list(epub_dir.glob("*.epub"))
     if not epubs:
         pytest.skip("No EPUB files found")
-    
+
     # Load first EPUB
     filename = epubs[0].name
     bundle = await provider.fetch(filename, chapter_index=0)
-    
+
     # Verify blocks exist
     assert bundle.blocks is not None, "Blocks should be populated"
     assert len(bundle.blocks) > 0, "Should have at least one block"
-    
+
     # Verify first paragraph contains expected content
     paragraph_blocks = [b for b in bundle.blocks if b.type.value == 'paragraph']
     assert len(paragraph_blocks) > 0, "Should have paragraph blocks"
-    
+
     # First paragraph should have at least one sentence
     first_para = paragraph_blocks[0]
     assert len(first_para.sentences) > 0, "First paragraph should have sentences"
-    
+
     # Verify images appear before paragraphs if present in original
     image_blocks = [b for b in bundle.blocks if b.type.value == 'image']
     if image_blocks:
@@ -501,17 +518,17 @@ async def test_epub_blocks_extraction():
         # Just verify both exist - exact ordering depends on content
         assert first_image_idx >= 0
 
-@pytest.mark.asyncio  
+@pytest.mark.asyncio
 async def test_lenient_sentence_splitting():
     """Test that sentences are not over-filtered."""
     from app.services.content_providers.epub_provider import EpubProvider
-    
+
     provider = EpubProvider()
-    
+
     # Test with sample text
     text = "THE BIG noise in 2025 has been President Donald Trump. Launching a barrage."
     sentences = provider._split_sentences_lenient(text)
-    
+
     assert len(sentences) == 2
     assert sentences[0] == "THE BIG noise in 2025 has been President Donald Trump."
     assert sentences[1] == "Launching a barrage."
@@ -536,15 +553,19 @@ git commit -m "test: add integration tests for block-based EPUB extraction"
 ### Automated Tests
 
 1. **Unit Test (Sentence Splitting)**
+
    ```bash
    uv run pytest tests/test_epub_blocks.py::test_lenient_sentence_splitting -v
    ```
+
    Expected: PASS - Verifies lenient splitting doesn't drop first sentence
 
 2. **Integration Test (Block Extraction)**
+
    ```bash
    uv run pytest tests/test_epub_blocks.py::test_epub_blocks_extraction -v
    ```
+
    Expected: PASS - Verifies blocks are populated correctly
 
 3. **Existing Tests (Regression)**
@@ -556,6 +577,7 @@ git commit -m "test: add integration tests for block-based EPUB extraction"
 ### Manual Browser Verification
 
 1. **Start the dev server**
+
    ```bash
    ./scripts/dev.ps1
    ```

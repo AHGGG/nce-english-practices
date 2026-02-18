@@ -21,13 +21,13 @@ Two issues were identified in the current EPUB parsing implementation:
 
 ## Design Decisions
 
-| Decision | Choice | Rationale |
-|----------|--------|-----------|
-| Scope | Structured Refactor | Fix root cause, not just patch symptoms |
-| Data Model | Unified ContentBlock | Naturally represents mixed content |
-| Sentence Filtering | Lenient Mode | Preserve all meaningful sentences |
-| Backward Compatibility | One-time Migration | Clean break, update all consumers |
-| Sentence Indexing | 2D Index (block, sentence) | Preserves structural awareness |
+| Decision               | Choice                     | Rationale                               |
+| ---------------------- | -------------------------- | --------------------------------------- |
+| Scope                  | Structured Refactor        | Fix root cause, not just patch symptoms |
+| Data Model             | Unified ContentBlock       | Naturally represents mixed content      |
+| Sentence Filtering     | Lenient Mode               | Preserve all meaningful sentences       |
+| Backward Compatibility | One-time Migration         | Clean break, update all consumers       |
+| Sentence Indexing      | 2D Index (block, sentence) | Preserves structural awareness          |
 
 ---
 
@@ -48,16 +48,16 @@ class BlockType(str, Enum):
 ```python
 class ContentBlock(BaseModel):
     type: BlockType
-    
+
     # For PARAGRAPH/HEADING/SUBTITLE
     text: Optional[str] = None
     sentences: List[str] = []  # Split sentences for paragraphs
-    
+
     # For IMAGE
     image_path: Optional[str] = None
     alt: Optional[str] = None
     caption: Optional[str] = None
-    
+
     # For HEADING (1=h1, 2=h2, etc.)
     level: Optional[int] = None
 ```
@@ -69,13 +69,13 @@ class ContentBundle(BaseModel):
     id: str
     source_type: SourceType
     title: str
-    
+
     # NEW: Ordered content blocks (replaces sentences + images)
     blocks: List[ContentBlock] = []
-    
+
     # Keep for compatibility/convenience
     full_text: Optional[str] = None
-    
+
     # REMOVED:
     # sentences: List[ContentSentence]  # Replaced by blocks
     # images: List[ContentImage] = []   # Replaced by blocks
@@ -94,7 +94,7 @@ def _extract_structured_content(self, soup: BeautifulSoup) -> List[ContentBlock]
     """Traverse DOM in order, preserving content structure."""
     blocks = []
     body = soup.find('body') or soup
-    
+
     for element in body.find_all(['p', 'h1', 'h2', 'h3', 'h4', 'img', 'figure'], recursive=False):
         if element.name in ['h1', 'h2', 'h3', 'h4']:
             blocks.append(ContentBlock(
@@ -120,7 +120,7 @@ def _extract_structured_content(self, soup: BeautifulSoup) -> List[ContentBlock]
                     alt=element.get('alt', ''),
                     caption=self._find_caption(element)
                 ))
-    
+
     return blocks
 ```
 
@@ -131,10 +131,10 @@ def _split_sentences(self, text: str) -> List[str]:
     """Split text into sentences with minimal filtering."""
     text = re.sub(r'\s+', ' ', text).strip()
     sentences = re.split(r'(?<=[.!?])\s+', text)
-    
+
     # Only filter obviously invalid content
     return [
-        s.strip() for s in sentences 
+        s.strip() for s in sentences
         if len(s.strip()) >= 5 and not s.strip().startswith('•')
     ]
 ```
@@ -148,39 +148,41 @@ def _split_sentences(self, text: str) -> List[str]:
 Render blocks in order:
 
 ```jsx
-{article.blocks.map((block, blockIdx) => {
-  switch (block.type) {
-    case 'heading':
-      const HeadingTag = `h${block.level || 2}`;
-      return <HeadingTag key={blockIdx}>{block.text}</HeadingTag>;
-      
-    case 'image':
-      return (
-        <ArticleImage 
-          key={blockIdx} 
-          src={`/api/reading/epub/image?filename=${filename}&path=${block.image_path}`}
-          alt={block.alt}
-          caption={block.caption}
-        />
-      );
-      
-    case 'paragraph':
-      return (
-        <p key={blockIdx}>
-          {block.sentences.map((sentence, sentIdx) => (
-            <MemoizedSentence 
-              key={`${blockIdx}-${sentIdx}`}
-              text={sentence}
-              sentenceIndex={[blockIdx, sentIdx]}
-            />
-          ))}
-        </p>
-      );
-      
-    default:
-      return null;
-  }
-})}
+{
+  article.blocks.map((block, blockIdx) => {
+    switch (block.type) {
+      case "heading":
+        const HeadingTag = `h${block.level || 2}`;
+        return <HeadingTag key={blockIdx}>{block.text}</HeadingTag>;
+
+      case "image":
+        return (
+          <ArticleImage
+            key={blockIdx}
+            src={`/api/content/asset?source_id=${article.id}&path=${block.image_path}`}
+            alt={block.alt}
+            caption={block.caption}
+          />
+        );
+
+      case "paragraph":
+        return (
+          <p key={blockIdx}>
+            {block.sentences.map((sentence, sentIdx) => (
+              <MemoizedSentence
+                key={`${blockIdx}-${sentIdx}`}
+                text={sentence}
+                sentenceIndex={[blockIdx, sentIdx]}
+              />
+            ))}
+          </p>
+        );
+
+      default:
+        return null;
+    }
+  });
+}
 ```
 
 ### Sentence Study (SentenceStudy.jsx)
@@ -192,25 +194,26 @@ Use 2D indexing for navigation:
 const [currentPosition, setCurrentPosition] = useState([0, 0]);
 
 // Get only paragraph blocks for studying
-const paragraphBlocks = useMemo(() => 
-  article.blocks
-    .map((block, idx) => ({ ...block, blockIndex: idx }))
-    .filter(b => b.type === 'paragraph'),
-  [article.blocks]
+const paragraphBlocks = useMemo(
+  () =>
+    article.blocks
+      .map((block, idx) => ({ ...block, blockIndex: idx }))
+      .filter((b) => b.type === "paragraph"),
+  [article.blocks],
 );
 
 // Navigation
 const nextSentence = () => {
   const [blockIdx, sentIdx] = currentPosition;
   const currentBlock = article.blocks[blockIdx];
-  
+
   if (sentIdx < currentBlock.sentences.length - 1) {
     // Next sentence in same paragraph
     setCurrentPosition([blockIdx, sentIdx + 1]);
   } else {
     // Find next paragraph block
     const nextParagraphIdx = article.blocks.findIndex(
-      (b, i) => i > blockIdx && b.type === 'paragraph'
+      (b, i) => i > blockIdx && b.type === "paragraph",
     );
     if (nextParagraphIdx !== -1) {
       setCurrentPosition([nextParagraphIdx, 0]);
@@ -224,11 +227,13 @@ const nextSentence = () => {
 ## Files to Modify
 
 ### Backend
+
 - `app/models/content_schemas.py` - Add `BlockType`, `ContentBlock`; update `ContentBundle`
 - `app/services/content_providers/epub_provider.py` - Implement DOM traversal extraction
 - `app/api/routers/content.py` - Update API responses to use new structure
 
 ### Frontend
+
 - `frontend/src/components/reading/ReaderView.jsx` - Render by block type
 - `frontend/src/components/sentence-study/SentenceStudy.jsx` - 2D index navigation
 

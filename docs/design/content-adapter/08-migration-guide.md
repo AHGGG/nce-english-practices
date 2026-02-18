@@ -150,11 +150,12 @@ const renderContent = (bundle: ContentBundle) => {
 ### 4.2 API 兼容
 
 ```python
-# 保持现有 API 不变
-GET /api/reading/article?source_id=...
-
-# 新增 API（可选）
-GET /api/content/{source_type}/{source_id}
+# 统一内容协议 API
+GET /api/content/catalog/{source_type}
+GET /api/content/units/{source_type}/{item_id}
+GET /api/content/units/{source_type}/{item_id}/with-status
+GET /api/content/bundle?source_id=...
+GET /api/content/asset?source_id=...&path=...
 ```
 
 ### 4.3 组件兼容

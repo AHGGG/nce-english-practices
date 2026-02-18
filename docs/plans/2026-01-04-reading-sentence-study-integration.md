@@ -7,12 +7,12 @@
 
 当前 **Reading Mode** (`/reading`) 和 **Sentence Study** (`/sentence-study`) 是两个完全独立的页面，存在以下脱节：
 
-| 问题 | 影响 |
-|------|------|
-| **无跨模式导航** | 用户无法在阅读时切换到深度学习，需要手动重新选择文章 |
-| **独立的文章列表** | 两个模式共享文章状态，列表显示综合进度 (Fixed) |
-| **数据不共享** | Reading Mode 的词汇点击不计入 SM-2 复习系统 |
-| **进度不互通** | 已实现统一进度显示 |
+| 问题               | 影响                                                 |
+| ------------------ | ---------------------------------------------------- |
+| **无跨模式导航**   | 用户无法在阅读时切换到深度学习，需要手动重新选择文章 |
+| **独立的文章列表** | 两个模式共享文章状态，列表显示综合进度 (Fixed)       |
+| **数据不共享**     | Reading Mode 的词汇点击不计入 SM-2 复习系统          |
+| **进度不互通**     | 已实现统一进度显示                                   |
 
 ## 设计目标
 
@@ -94,9 +94,9 @@
 新增后端端点获取文章综合状态：
 
 ```
-GET /api/content/article-status?user_id=xxx
+GET /api/content/units/epub/{item_id}/with-status
 Response: {
-  "articles": [
+  "units": [
     {
       "source_id": "epub:NCE-Book4:15",
       "title": "The Universe",
@@ -114,6 +114,7 @@ Response: {
 ### 2.2 统一文章卡片
 
 已更新 `ArticleListView.jsx` 以显示综合状态：
+
 - **Completed**: 绿色边框 + 绿色徽章 + 勾选图标
 - **In Progress**: 黄色边框 + 黄色徽章 + 时钟图标
 - **Read**: 灰色边框 + 灰色徽章 + 图书图标
@@ -124,11 +125,13 @@ Response: {
 ### Proposed Changes (Phase 2)
 
 #### [NEW] `frontend/src/components/shared/ArticleCard.jsx`
+
 - 统一的文章卡片组件，显示综合状态
 - 提供 Read/Study 双入口按钮
 
 #### [NEW] `app/api/routers/content.py` 新增端点
-- `GET /api/content/article-status`: 返回文章综合状态
+
+- `GET /api/content/units/{source_type}/{item_id}/with-status`: 返回内容单元综合状态
 
 ---
 
@@ -137,12 +140,14 @@ Response: {
 ### 3.1 Reading Mode 词汇追踪
 
 当用户在 Reading Mode 点击高亮词汇时：
+
 - 记录到 `word_proficiency` 表
 - 如果同一词被点击 2+ 次，自动创建 `ReviewItem`
 
 ### 3.2 学习历史共享
 
 Sentence Study 开始前显示：
+
 - "You read this article 3 times (last: 2 days ago)"
 - 基于阅读历史调整推荐难度
 
@@ -187,10 +192,10 @@ uv run pytest tests/test_books_api.py -v
 
 ## Implementation Priority
 
-| Phase | 内容 | 工作量 | 价值 |
-|-------|------|--------|------|
-| **1** | URL 参数 + 跨模式按钮 | 2-3h | ⭐⭐⭐⭐ |
-| **2** | 统一文章库 + 状态 API | 4-6h | ⭐⭐⭐ |
-| **3** | 深度数据整合 | 8-12h | ⭐⭐ |
+| Phase | 内容                  | 工作量 | 价值     |
+| ----- | --------------------- | ------ | -------- |
+| **1** | URL 参数 + 跨模式按钮 | 2-3h   | ⭐⭐⭐⭐ |
+| **2** | 统一文章库 + 状态 API | 4-6h   | ⭐⭐⭐   |
+| **3** | 深度数据整合          | 8-12h  | ⭐⭐     |
 
 > **建议**: 先实现 Phase 1，立即提供跨模式导航能力，后续根据使用反馈决定是否实现 Phase 2/3。

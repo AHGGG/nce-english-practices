@@ -31,7 +31,7 @@ interface ArticleListViewProps {
   onBack?: () => void;
   onSelectArticle: (sourceId: string) => void;
   books?: BookItem[];
-  onSelectBook: (bookFilename: string) => void;
+  onSelectBook: (bookId: string) => void;
 }
 
 const ArticleListView = (props: ArticleListViewProps) => {

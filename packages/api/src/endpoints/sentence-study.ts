@@ -3,13 +3,15 @@ import { apiGet, apiPost, authFetch } from "../auth";
 export const sentenceStudyApi = {
   // Get books for sentence study
   async getBooks() {
-    return apiGet("/api/reading/epub/books");
+    return apiGet("/api/content/catalog/epub");
   },
 
   // Get articles for a book (with status)
-  async getArticles(filename?: string) {
-    const params = filename ? `?filename=${encodeURIComponent(filename)}` : "";
-    return apiGet(`/api/reading/epub/list-with-status${params}`);
+  async getArticles(itemId?: string) {
+    const targetId = itemId || "";
+    return apiGet(
+      `/api/content/units/epub/${encodeURIComponent(targetId)}/with-status`,
+    );
   },
 
   // Get study progress

@@ -6,7 +6,11 @@ import ReaderView from "./ReaderView";
 import WordInspector from "./WordInspector";
 import SentenceInspector from "./SentenceInspector";
 import Lightbox from "./Lightbox";
-import type { ContentBlock, UnclearSentenceInfo } from "../content/types";
+import type {
+  ContentBlock,
+  UnclearSentenceInfo,
+  SourceType,
+} from "../content/types";
 import {
   HIGHLIGHT_OPTIONS,
   BATCH_SIZE,
@@ -26,7 +30,7 @@ const api = {
 };
 
 interface BookItem {
-  filename: string;
+  filename?: string;
   id?: string;
   title: string;
   size_bytes: number;
@@ -47,8 +51,11 @@ interface ArticleSentence {
 interface ReadingArticleData {
   id: string;
   title: string;
-  source_type: "epub";
-  metadata?: Record<string, unknown> & { filename?: string };
+  source_type: SourceType;
+  metadata?: Record<string, unknown> & {
+    filename?: string;
+    source_item_id?: string;
+  };
   sentence_count?: number;
   sentences?: Array<string | ArticleSentence>;
   blocks: ContentBlock[];
@@ -192,12 +199,13 @@ const ReadingMode = () => {
   // Fetch available books
   const fetchBooks = async () => {
     try {
-      const data = await apiGet("/api/reading/epub/books");
-      setBooks((data.books || []) as BookItem[]);
-      if (data.books && data.books.length > 0) {
+      const data = await apiGet("/api/content/catalog/epub");
+      const items = (data.items || []) as BookItem[];
+      setBooks(items);
+      if (items.length > 0) {
         // Default to first book if no selection
         // Or could be persistent in localStorage later
-        setSelectedBookFilename(data.books[0].filename);
+        setSelectedBookFilename(items[0].id || items[0].filename);
       }
     } catch (e) {
       console.error("Failed to fetch books:", e);
@@ -242,9 +250,9 @@ const ReadingMode = () => {
     try {
       // Use merged endpoint for better performance (single request instead of two)
       const data = await apiGet(
-        `/api/reading/epub/list-with-status?filename=${encodeURIComponent(filename)}`,
+        `/api/content/units/epub/${encodeURIComponent(filename)}/with-status`,
       );
-      const articlesData = (data.articles || []) as ArticleListItem[];
+      const articlesData = (data.units || []) as ArticleListItem[];
 
       setArticles(
         articlesData.sort((a, b) => {
@@ -274,7 +282,7 @@ const ReadingMode = () => {
       const idx = optIndex !== null ? optIndex : selectedOptionIndex;
       const option = HIGHLIGHT_OPTIONS[idx];
 
-      let url = `/api/reading/article?source_id=${encodeURIComponent(sourceId)}`;
+      let url = `/api/content/bundle?source_id=${encodeURIComponent(sourceId)}`;
 
       if (option) {
         url += `&book_code=${option.value}`;
@@ -319,7 +327,7 @@ const ReadingMode = () => {
       trackerRef.current = new ReadingTracker(
         {
           id: sourceId,
-          source_type: "epub",
+          source_type: data.source_type,
           title: data.title,
           sentences:
             data.sentences?.map((sentence) =>

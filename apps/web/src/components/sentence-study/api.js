@@ -23,19 +23,14 @@ export const sentenceStudyApi = {
   },
 
   async getBooks() {
-    return apiGet(`${BASE_URL}/api/reading/epub/books`);
+    return apiGet(`${BASE_URL}/api/content/catalog/epub`);
   },
 
-  async getArticles(filename) {
-    // Use merged endpoint that includes status data (single request instead of two)
-    const url = new URL(
-      "/api/reading/epub/list-with-status",
-      window.location.origin,
+  async getArticles(itemId) {
+    const targetId = itemId || "";
+    return apiGet(
+      `${BASE_URL}/api/content/units/epub/${encodeURIComponent(targetId)}/with-status`,
     );
-    if (filename) {
-      url.searchParams.append("filename", filename);
-    }
-    return apiGet(url.toString());
   },
 
   async getArticle(sourceId, optionIndex) {
@@ -46,7 +41,7 @@ export const sentenceStudyApi = {
       min_sequence: opt.minSeq || 0,
       max_sequence: opt.maxSeq || 99999,
     });
-    return apiGet(`${BASE_URL}/api/reading/article?${params}`);
+    return apiGet(`${BASE_URL}/api/content/bundle?${params}`);
   },
 
   async getCalibration() {

@@ -271,8 +271,6 @@ const ReaderView = ({
 
   // Build elements for rendering - now uses blocks for proper ordering
   const renderContent = () => {
-    const filename = article.metadata?.filename || "";
-
     // Use new blocks structure if available (preserves DOM order)
     if (article.blocks && article.blocks.length > 0) {
       let globalSentenceIndex = 0; // Track global sentence index for reading tracker
@@ -297,7 +295,7 @@ const ReaderView = ({
 
           case "image": {
             if (!block.image_path) return null;
-            const imgUrl = `/api/reading/epub/image?filename=${encodeURIComponent(filename)}&image_path=${encodeURIComponent(block.image_path)}`;
+            const imgUrl = `/api/content/asset?source_id=${encodeURIComponent(article.id)}&path=${encodeURIComponent(block.image_path)}`;
             return (
               <MemoizedImage
                 key={`i-${blockIdx}`}

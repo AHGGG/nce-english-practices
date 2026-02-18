@@ -256,8 +256,7 @@ export function generateArticleHTML(
             .join(" ");
           return `<p>${sentencesHtml}</p>`;
         case "image":
-          // Construct Image URL: /api/reading/epub/image?filename=...
-          const imageUrl = `${baseUrl}/api/reading/epub/image?filename=${encodeURIComponent(article.metadata?.filename || "")}&image_path=${encodeURIComponent(block.image_path || "")}`;
+          const imageUrl = `${baseUrl}/api/content/asset?source_id=${encodeURIComponent(article.id || "")}&path=${encodeURIComponent(block.image_path || "")}`;
           return `
                     <div class="image-container">
                         <img src="${imageUrl}" alt="${block.alt || "Article Image"}" loading="lazy" />
