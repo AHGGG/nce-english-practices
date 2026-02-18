@@ -16,7 +16,6 @@ import { LoginPage, RegisterPage } from "./views/auth";
 
 // Main Pages
 import PerformanceReport from "./views/PerformanceReport";
-import StudyTimeDetail from "./views/StudyTimeDetail";
 import VoiceLab from "./views/VoiceLab";
 import AUIStreamingDemo from "./views/AUIStreamingDemo";
 import VoiceMode from "./views/VoiceMode";
@@ -158,11 +157,7 @@ function AppRoutes() {
       />
       <Route
         path="/performance/time"
-        element={
-          <ProtectedRoute>
-            <StudyTimeDetail />
-          </ProtectedRoute>
-        }
+        element={<Navigate to="/performance" replace />}
       />
       <Route
         path="/aui-stream-demo"

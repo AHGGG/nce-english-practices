@@ -5,6 +5,7 @@ import {
   BookOpen,
   FileText,
   Brain,
+  BarChart2,
   ChevronLeft,
   Lightbulb,
   AlertTriangle,
@@ -13,12 +14,27 @@ import {
 } from "lucide-react";
 import Card from "./cards/Card";
 import MemoryCurveChart from "./widgets/MemoryCurveChart";
+import StudyTimeChart from "./widgets/StudyTimeChart";
 import { formatDuration, formatWordCount } from "./utils";
 
 import { apiGet } from "../../api/auth";
 
 interface StudyTimeSummary {
   total_minutes: number;
+}
+
+interface DailyStudyEntry {
+  date: string;
+  total: number;
+  reading: number;
+  sentence_study: number;
+  voice: number;
+  review?: number;
+  podcast?: number;
+}
+
+interface StudyTimeDetailData {
+  daily: DailyStudyEntry[];
 }
 
 interface ReadingStats {
@@ -37,12 +53,6 @@ interface MemoryCurve {
   total_words_analyzed: number;
 }
 
-interface WordReviewItem {
-  word: string;
-  difficulty_score: number;
-  exposure_count: number;
-}
-
 interface SentenceProfile {
   recommendation?: string;
   clear_rate?: number;
@@ -53,8 +63,6 @@ interface SentenceProfile {
   collocation_gap_count: number;
   total_sentences_studied: number;
   clear_count: number;
-  insights?: string[];
-  words_to_review?: WordReviewItem[];
 }
 
 interface PerformanceData {
@@ -71,25 +79,32 @@ const PerformanceReport = () => {
   const navigate = useNavigate();
   const [data, setData] = useState<PerformanceData | null>(null);
   const [profile, setProfile] = useState<SentenceProfile | null>(null);
+  const [studyTimeDetail, setStudyTimeDetail] =
+    useState<StudyTimeDetailData | null>(null);
   const [loading, setLoading] = useState(true);
   const [days, setDays] = useState(30);
+  const userTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
 
   useEffect(() => {
     // Don't setLoading(true) here - it's either initial true or set by onClick
     Promise.all([
       apiGet(`/api/performance?days=${days}`),
       apiGet("/api/sentence-study/profile"),
+      apiGet(
+        `/api/performance/study-time?days=${days}&tz=${encodeURIComponent(userTimezone)}`,
+      ),
     ])
-      .then(([performanceData, profileData]) => {
+      .then(([performanceData, profileData, studyTimeData]) => {
         setData(performanceData as PerformanceData);
         setProfile(profileData as SentenceProfile);
+        setStudyTimeDetail(studyTimeData as StudyTimeDetailData);
         setLoading(false);
       })
       .catch((err: unknown) => {
         console.error("Fetch error:", err);
         setLoading(false);
       });
-  }, [days]);
+  }, [days, userTimezone]);
 
   if (loading) {
     return (
@@ -222,13 +237,7 @@ const PerformanceReport = () => {
         {/* KPI Cards Row */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-12">
           {/* Study Time Card */}
-          <div
-            onClick={() => navigate("/performance/time")}
-            className="relative group bg-white/5 border border-white/10 p-6 rounded-2xl backdrop-blur-sm hover:border-accent-primary/50 transition-all cursor-pointer overflow-hidden"
-          >
-            <div className="absolute top-0 right-0 p-3 opacity-0 group-hover:opacity-100 transition-opacity">
-              <ChevronLeft className="w-4 h-4 text-accent-primary rotate-180" />
-            </div>
+          <div className="relative group bg-white/5 border border-white/10 p-6 rounded-2xl backdrop-blur-sm hover:border-accent-primary/50 transition-all overflow-hidden">
             <Clock
               className="text-accent-primary mb-4 w-8 h-8 opacity-80"
               strokeWidth={1.5}
@@ -238,6 +247,9 @@ const PerformanceReport = () => {
             </div>
             <div className="text-xs font-bold text-white/40 uppercase tracking-widest">
               Total Time
+            </div>
+            <div className="text-[10px] mt-2 text-accent-primary/70 uppercase tracking-wider font-mono">
+              Last {days} days
             </div>
 
             {/* Background Glow */}
@@ -288,6 +300,14 @@ const PerformanceReport = () => {
             </div>
             <div className="absolute -bottom-10 -right-10 w-24 h-24 bg-accent-warning/20 blur-2xl rounded-full opacity-0 group-hover:opacity-100 transition-opacity" />
           </div>
+        </div>
+
+        <div className="mb-12">
+          <Card title="Daily Trends" icon={BarChart2}>
+            <div className="pt-6">
+              <StudyTimeChart dailyData={studyTimeDetail?.daily || []} />
+            </div>
+          </Card>
         </div>
 
         {/* Gap Breakdown Section */}
@@ -369,9 +389,7 @@ const PerformanceReport = () => {
           </Card>
         )}
 
-        {/* Two-Column Grid for Memory Curve and Insights */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
-          {/* Memory Curve Section */}
+        <div className="mt-6">
           <Card title="Memory Curve" icon={Brain}>
             {memory_curve && memory_curve.total_words_analyzed > 0 ? (
               <MemoryCurveChart data={memory_curve} />
@@ -385,54 +403,7 @@ const PerformanceReport = () => {
               </div>
             )}
           </Card>
-
-          {/* Insights */}
-          <Card title="AI Insights" icon={Lightbulb}>
-            {profile?.insights && profile.insights.length > 0 ? (
-              <div className="space-y-4">
-                {profile.insights.map((insight, idx) => (
-                  <div
-                    key={idx}
-                    className="flex items-start gap-3 text-sm text-white/80 bg-white/5 p-3 rounded-lg border border-white/5"
-                  >
-                    <AlertTriangle className="w-4 h-4 text-accent-warning flex-shrink-0 mt-0.5" />
-                    <span className="leading-relaxed">{insight}</span>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="text-center py-12 text-white/20 font-mono">
-                <Lightbulb className="mx-auto mb-4 opacity-20" size={48} />
-                <div className="text-sm">ANALYZING PATTERNS</div>
-                <div className="text-[10px] mt-2 tracking-wider">
-                  CONTINUE STUDYING TO UNLOCK INSIGHTS
-                </div>
-              </div>
-            )}
-          </Card>
         </div>
-
-        {/* Words to Review */}
-        {profile?.words_to_review && profile.words_to_review.length > 0 && (
-          <div className="mt-6">
-            <Card title="Focus Vocabulary" icon={Target}>
-              <p className="text-xs text-white/40 mb-6 uppercase tracking-widest font-mono">
-                High frequency lookup candidates
-              </p>
-              <div className="flex flex-wrap gap-2">
-                {profile.words_to_review.slice(0, 20).map((w, idx) => (
-                  <span
-                    key={idx}
-                    className="px-3 py-1.5 bg-accent-primary/5 border border-accent-primary/20 text-accent-primary text-xs font-mono font-bold rounded hover:bg-accent-primary/10 transition-colors cursor-help"
-                    title={`Difficulty: ${w.difficulty_score}, Lookups: ${w.exposure_count}`}
-                  >
-                    {w.word}
-                  </span>
-                ))}
-              </div>
-            </Card>
-          </div>
-        )}
       </div>
     </section>
   );
