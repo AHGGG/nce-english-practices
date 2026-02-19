@@ -332,6 +332,7 @@ Offline playback with PWA support, audio caching via Cache API, and episode stat
   - **Data Model**: `PodcastFavoriteEpisode` (`podcast_favorite_episodes`)
   - **API**: `GET /api/podcast/favorites`, `GET /api/podcast/favorites/ids`, `POST /api/podcast/episode/{id}/favorite`, `DELETE /api/podcast/episode/{id}/favorite`
   - **Web**: Favorites page and in-feed favorite toggle in `apps/web/src/views/podcast/PodcastFeedDetailView.tsx`
+  - **Mobile**: Favorites list route `apps/mobile/app/podcast/favorites.tsx`, entry button in `apps/mobile/app/(tabs)/podcast.tsx`, and in-feed favorite toggle in `apps/mobile/src/components/podcast/PodcastDetailView.tsx`
 - **Router Composition (Backend)**:
   - `app/api/routers/podcast.py` is the composition entry (`/api/podcast` prefix)
   - Feed/favorites/opml/image endpoints: `app/api/routers/podcast_feed_routes.py`

@@ -70,6 +70,34 @@ export function usePodcastFeed(feedId: number, limit = 20) {
   };
 }
 
+export function useFavoriteEpisodeIds() {
+  const q = useQuery({
+    queryKey: ["podcast", "favorites", "ids"],
+    queryFn: () => podcastApi.getFavoriteEpisodeIds(),
+  });
+
+  return {
+    ids: q.data || [],
+    isLoading: q.isLoading,
+    error: q.error ? (q.error as Error).message : null,
+    refetch: q.refetch,
+  };
+}
+
+export function usePodcastFavorites(limit = 100, offset = 0) {
+  const q = useQuery({
+    queryKey: ["podcast", "favorites", limit, offset],
+    queryFn: () => podcastApi.getFavorites(limit, offset),
+  });
+
+  return {
+    items: q.data || [],
+    isLoading: q.isLoading,
+    error: q.error ? (q.error as Error).message : null,
+    refetch: q.refetch,
+  };
+}
+
 export function usePodcastPreview(rssUrl: string) {
   const q = useQuery({
     queryKey: ["podcast", "preview", rssUrl],
@@ -101,9 +129,28 @@ export function usePodcastMutations() {
     },
   });
 
+  const addFavoriteMutation = useMutation({
+    mutationFn: (episodeId: number) => podcastApi.addFavoriteEpisode(episodeId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["podcast", "favorites"] });
+    },
+  });
+
+  const removeFavoriteMutation = useMutation({
+    mutationFn: (episodeId: number) =>
+      podcastApi.removeFavoriteEpisode(episodeId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["podcast", "favorites"] });
+    },
+  });
+
   return {
     subscribe: subscribeMutation.mutateAsync,
     unsubscribe: unsubscribeMutation.mutateAsync,
+    addFavorite: addFavoriteMutation.mutateAsync,
+    removeFavorite: removeFavoriteMutation.mutateAsync,
     isSubscribing: subscribeMutation.isPending,
+    isAddingFavorite: addFavoriteMutation.isPending,
+    isRemovingFavorite: removeFavoriteMutation.isPending,
   };
 }

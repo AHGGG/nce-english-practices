@@ -63,6 +63,16 @@ export interface PodcastPlayerBundle {
   };
 }
 
+export interface PodcastFavoriteItem {
+  episode: PodcastEpisode;
+  feed: {
+    id: number;
+    title: string;
+    image_url?: string | null;
+  };
+  favorited_at?: string;
+}
+
 export const podcastApi = {
   async search(query: string, limit = 20) {
     return apiGet(
@@ -119,6 +129,24 @@ export const podcastApi = {
 
   async getRecentlyPlayed() {
     return apiGet("/api/podcast/recently-played") as Promise<PodcastEpisode[]>;
+  },
+
+  async getFavoriteEpisodeIds() {
+    return apiGet("/api/podcast/favorites/ids") as Promise<number[]>;
+  },
+
+  async getFavorites(limit = 100, offset = 0) {
+    return apiGet(
+      `/api/podcast/favorites?limit=${limit}&offset=${offset}`,
+    ) as Promise<PodcastFavoriteItem[]>;
+  },
+
+  async addFavoriteEpisode(episodeId: number) {
+    return apiPost(`/api/podcast/episode/${episodeId}/favorite`, {});
+  },
+
+  async removeFavoriteEpisode(episodeId: number) {
+    return apiDelete(`/api/podcast/episode/${episodeId}/favorite`);
   },
 
   async getPlayerContent(episodeId: number) {

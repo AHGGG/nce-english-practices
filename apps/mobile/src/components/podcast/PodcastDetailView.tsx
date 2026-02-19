@@ -14,6 +14,7 @@ import {
   Clock,
   Download,
   CheckCircle,
+  Heart,
 } from "lucide-react-native";
 import { formatDuration } from "@nce/shared";
 import { useDownloadStore } from "@nce/store";
@@ -26,6 +27,9 @@ interface Props {
   isSubscribing?: boolean;
   onPlayEpisode: (episode: PodcastEpisode) => void;
   onIntensiveEpisode?: (episode: PodcastEpisode) => void;
+  favoriteEpisodeIds?: Set<number>;
+  favoriteLoading?: Record<number, boolean>;
+  onToggleFavorite?: (episodeId: number, nextFavorite: boolean) => void;
 }
 
 const DownloadButton = ({ episode }: { episode: PodcastEpisode }) => {
@@ -71,6 +75,9 @@ export const PodcastDetailView = ({
   isSubscribing,
   onPlayEpisode,
   onIntensiveEpisode,
+  favoriteEpisodeIds,
+  favoriteLoading,
+  onToggleFavorite,
 }: Props) => {
   const { feed, episodes, is_subscribed } = data;
 
@@ -183,6 +190,26 @@ export const PodcastDetailView = ({
                   <Text className="text-accent-info text-[10px] font-bold">
                     INTENSIVE
                   </Text>
+                </TouchableOpacity>
+              )}
+
+              {onToggleFavorite && (
+                <TouchableOpacity
+                  className="ml-3"
+                  onPress={(e) => {
+                    e.stopPropagation();
+                    const nextFavorite = !favoriteEpisodeIds?.has(item.id);
+                    onToggleFavorite(item.id, nextFavorite);
+                  }}
+                  disabled={!!favoriteLoading?.[item.id]}
+                >
+                  <Heart
+                    size={16}
+                    color={
+                      favoriteEpisodeIds?.has(item.id) ? "#FF5A7A" : "#8A8A8A"
+                    }
+                    fill={favoriteEpisodeIds?.has(item.id) ? "#FF5A7A" : "none"}
+                  />
                 </TouchableOpacity>
               )}
 

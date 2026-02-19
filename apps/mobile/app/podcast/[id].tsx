@@ -1,10 +1,15 @@
 import { View, ActivityIndicator, Text } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useLocalSearchParams, useRouter, Stack } from "expo-router";
-import { usePodcastFeed, usePodcastMutations } from "@nce/shared";
+import {
+  usePodcastFeed,
+  usePodcastMutations,
+  useFavoriteEpisodeIds,
+} from "@nce/shared";
 import { PodcastDetailView } from "../../src/components/podcast/PodcastDetailView";
 import { ChevronLeft } from "lucide-react-native";
 import { TouchableOpacity } from "react-native";
+import { useState } from "react";
 
 export default function PodcastDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -12,7 +17,12 @@ export default function PodcastDetailScreen() {
   const feedId = parseInt(id, 10);
 
   const { data, isLoading, error } = usePodcastFeed(feedId);
-  const { subscribe, unsubscribe, isSubscribing } = usePodcastMutations();
+  const { subscribe, unsubscribe, addFavorite, removeFavorite, isSubscribing } =
+    usePodcastMutations();
+  const [favoriteLoading, setFavoriteLoading] = useState<
+    Record<number, boolean>
+  >({});
+  const { ids: favoriteIds } = useFavoriteEpisodeIds();
 
   if (error) {
     return (
@@ -54,6 +64,26 @@ export default function PodcastDetailScreen() {
     }
   };
 
+  const favoriteIdSet = new Set(favoriteIds || []);
+
+  const handleToggleFavorite = async (
+    episodeId: number,
+    nextFavorite: boolean,
+  ) => {
+    try {
+      setFavoriteLoading((prev) => ({ ...prev, [episodeId]: true }));
+      if (nextFavorite) {
+        await addFavorite(episodeId);
+      } else {
+        await removeFavorite(episodeId);
+      }
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setFavoriteLoading((prev) => ({ ...prev, [episodeId]: false }));
+    }
+  };
+
   return (
     <SafeAreaView className="flex-1 bg-bg-base">
       <Stack.Screen options={{ headerShown: false }} />
@@ -89,6 +119,9 @@ export default function PodcastDetailScreen() {
             params: { episodeId: episode.id },
           });
         }}
+        favoriteEpisodeIds={favoriteIdSet}
+        favoriteLoading={favoriteLoading}
+        onToggleFavorite={handleToggleFavorite}
       />
     </SafeAreaView>
   );
