@@ -545,6 +545,7 @@ React Native + Expo + NativeWind architecture. Covers audio background tasks, We
 - **Reading Collocations (Mobile)**: `apps/mobile/app/reading/[id].tsx` loads sentence collocations via shared `useCollocationLoader`, and `apps/mobile/src/utils/htmlGenerator.ts` renders phrase-level dashed collocation highlights in the WebView (filtered by global `collocationDisplayLevel`).
 - **Shared Collocation Logic**: use `packages/shared/src/utils/collocationHighlight.ts` (`filterCollocationsByLevel`, `normalizeStudyHighlights`, `normalizePhrase`) as the single source of truth for Reading/Sentence Study collocation filtering and study-highlight normalization.
 - **Shared Collocation Level Switch (Mobile)**: `apps/mobile/src/components/content/CollocationLevelSwitch.tsx` is the shared UI control for `collocationDisplayLevel`; Reading, Sentence Study, Podcast Intensive, and Audiobook should reuse this component to avoid UI drift.
+- **Settings Contract Parity**: `packages/store/src/modules/settings` should keep `podcastSpeed` and `transcriptionRemote*` keys aligned with web `GlobalSettings`; mobile podcast intensive transcription should pass optional `remote_url` and `api_key` through `podcastApi.transcribeEpisode` when remote mode is enabled.
 
 ## Skills (Detailed Tool Guides)
 

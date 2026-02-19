@@ -59,6 +59,15 @@ export default function PodcastIntensiveScreen() {
   const setCollocationDisplayLevel = useSettingsStore(
     (state) => state.setCollocationDisplayLevel,
   );
+  const transcriptionRemoteEnabled = useSettingsStore(
+    (state) => state.transcriptionRemoteEnabled,
+  );
+  const transcriptionRemoteUrl = useSettingsStore(
+    (state) => state.transcriptionRemoteUrl,
+  );
+  const transcriptionRemoteApiKey = useSettingsStore(
+    (state) => state.transcriptionRemoteApiKey,
+  );
 
   const { getCollocations, loadCollocations, prefetchCollocations } =
     useCollocationLoader({ prefetchAhead: 8 });
@@ -294,7 +303,12 @@ export default function PodcastIntensiveScreen() {
     if (!numericEpisodeId) return;
     setIsTranscribing(true);
     try {
-      await podcastApi.transcribeEpisode(numericEpisodeId, true);
+      await podcastApi.transcribeEpisode(
+        numericEpisodeId,
+        true,
+        transcriptionRemoteEnabled ? transcriptionRemoteUrl : null,
+        transcriptionRemoteEnabled ? transcriptionRemoteApiKey : null,
+      );
       Alert.alert(
         "Transcription Started",
         "AI transcription has started in background. Please refresh in a moment.",

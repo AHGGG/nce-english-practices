@@ -14,13 +14,14 @@ import { notificationService } from "../src/services/NotificationService";
 import {
   LogOut,
   ChevronRight,
-  User,
   Bell,
   Volume2,
   Moon,
   Clock,
   Key,
   X,
+  Gauge,
+  Cloud,
 } from "lucide-react-native";
 import { useRouter } from "expo-router";
 import { useState } from "react";
@@ -30,14 +31,22 @@ export default function SettingsScreen() {
   const {
     theme,
     ttsRate,
+    podcastSpeed,
     notificationsEnabled,
     reminderTime,
     autoPronounce,
+    transcriptionRemoteEnabled,
+    transcriptionRemoteUrl,
+    transcriptionRemoteApiKey,
     setTheme,
     setTtsRate,
+    setPodcastSpeed,
     setNotificationsEnabled,
     setReminderTime,
     setAutoPronounce,
+    setTranscriptionRemoteEnabled,
+    setTranscriptionRemoteUrl,
+    setTranscriptionRemoteApiKey,
   } = useSettingsStore();
   const router = useRouter();
 
@@ -98,6 +107,12 @@ export default function SettingsScreen() {
     const speeds = [0.5, 0.75, 1.0, 1.25, 1.5, 2.0];
     const nextIndex = (speeds.indexOf(ttsRate) + 1) % speeds.length;
     setTtsRate(speeds[nextIndex]);
+  };
+
+  const cyclePodcastSpeed = () => {
+    const speeds = [0.5, 0.75, 1.0, 1.25, 1.5, 1.75, 2.0];
+    const nextIndex = (speeds.indexOf(podcastSpeed) + 1) % speeds.length;
+    setPodcastSpeed(speeds[nextIndex]);
   };
 
   const Section = ({ title, children }: any) => (
@@ -207,6 +222,55 @@ export default function SettingsScreen() {
             onPress={toggleTheme}
             isLast
           />
+        </Section>
+
+        <Section title="Podcast & Transcription">
+          <Item
+            icon={Gauge}
+            label="Default Podcast Speed"
+            value={`${podcastSpeed}x`}
+            onPress={cyclePodcastSpeed}
+          />
+          <Item
+            icon={Cloud}
+            label="Remote Transcription"
+            isSwitch
+            switchValue={transcriptionRemoteEnabled}
+            onSwitch={setTranscriptionRemoteEnabled}
+            isLast={!transcriptionRemoteEnabled}
+          />
+          {transcriptionRemoteEnabled && (
+            <View className="p-4 border-t border-border-subtle gap-3">
+              <View>
+                <Text className="text-text-muted text-xs uppercase mb-2 font-bold">
+                  Server URL
+                </Text>
+                <TextInput
+                  value={transcriptionRemoteUrl}
+                  onChangeText={setTranscriptionRemoteUrl}
+                  className="bg-bg-base border border-border-default rounded-xl p-3 text-text-primary"
+                  placeholder="http://server:port/transcribe"
+                  placeholderTextColor="#666"
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                />
+              </View>
+              <View>
+                <Text className="text-text-muted text-xs uppercase mb-2 font-bold">
+                  API Key (Optional)
+                </Text>
+                <TextInput
+                  value={transcriptionRemoteApiKey || ""}
+                  onChangeText={setTranscriptionRemoteApiKey}
+                  className="bg-bg-base border border-border-default rounded-xl p-3 text-text-primary"
+                  placeholder="sk-..."
+                  placeholderTextColor="#666"
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                />
+              </View>
+            </View>
+          )}
         </Section>
 
         <TouchableOpacity

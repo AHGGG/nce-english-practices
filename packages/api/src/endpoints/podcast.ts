@@ -127,10 +127,20 @@ export const podcastApi = {
     ) as Promise<PodcastPlayerBundle>;
   },
 
-  async transcribeEpisode(episodeId: number, force = false) {
-    return apiPost(`/api/podcast/episode/${episodeId}/transcribe`, {
-      force,
-    });
+  async transcribeEpisode(
+    episodeId: number,
+    force = false,
+    remoteUrl?: string | null,
+    apiKey?: string | null,
+  ) {
+    const payload: Record<string, unknown> = { force };
+    if (remoteUrl && remoteUrl.trim().length > 0) {
+      payload.remote_url = remoteUrl.trim();
+    }
+    if (apiKey && apiKey.trim().length > 0) {
+      payload.api_key = apiKey.trim();
+    }
+    return apiPost(`/api/podcast/episode/${episodeId}/transcribe`, payload);
   },
 
   async syncPosition(
