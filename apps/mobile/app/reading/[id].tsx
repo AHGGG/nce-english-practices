@@ -9,7 +9,11 @@ import {
 } from "react-native";
 import { useLocalSearchParams, Stack, useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useArticleReader } from "@nce/shared";
+import {
+  useArticleReader,
+  useCollocationLoader,
+  filterCollocationsByLevel,
+} from "@nce/shared";
 import useWordExplainer from "../../src/hooks/useWordExplainer";
 import { proficiencyApi } from "@nce/api";
 import { useSettingsStore } from "@nce/store";
@@ -19,7 +23,7 @@ import { DictionaryModal } from "../../src/components/DictionaryModal";
 import { SentenceInspectorModal } from "../../src/components/SentenceInspectorModal";
 import ImageLightbox from "../../src/components/ImageLightbox";
 import { getApiBaseUrl } from "../../src/lib/platform-init";
-import { useRef, useState, useEffect, useCallback } from "react";
+import { useRef, useState, useEffect, useCallback, useMemo } from "react";
 import {
   ChevronLeft,
   MoreHorizontal,
@@ -37,6 +41,10 @@ const HIGHLIGHT_OPTIONS = [
   { label: "Low Freq (8k+)", min: 8000, max: 99999 },
 ];
 
+function hashSentenceForCache(sentence: string): string {
+  return `${sentence.slice(0, 50).replace(/\s+/g, "_")}_${sentence.length}`;
+}
+
 function ReadingScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
@@ -46,12 +54,19 @@ function ReadingScreen() {
 
   const explainer = useWordExplainer();
   const settings = useSettingsStore();
+  const { collocationsMap, loadCollocations } = useCollocationLoader({
+    enabled: !!article,
+  });
 
   // State
   const [showHighlights, setShowHighlights] = useState(true);
   const [highlightOptionIndex, setHighlightOptionIndex] = useState(0);
   const [modalVisible, setModalVisible] = useState(false);
   const [settingsVisible, setSettingsVisible] = useState(false);
+  const [rawCollocationsBySentence, setRawCollocationsBySentence] = useState<
+    Record<string, any[]>
+  >({});
+  const [isInitialContentReady, setIsInitialContentReady] = useState(false);
 
   // Sentence Inspector State
   const [inspectorVisible, setInspectorVisible] = useState(false);
@@ -75,17 +90,96 @@ function ReadingScreen() {
     };
   }, []);
 
-  // Generate HTML
-  const htmlSource = article
-    ? {
-        html: generateArticleHTML(
-          article,
-          showHighlights,
-          getApiBaseUrl(),
-          HIGHLIGHT_OPTIONS[highlightOptionIndex],
-        ),
+  const allSentences = useMemo(() => {
+    if (!article?.blocks) return [] as string[];
+    const sentences: string[] = [];
+    article.blocks.forEach((block) => {
+      if (block.type === "paragraph" && Array.isArray(block.sentences)) {
+        block.sentences.forEach((sentence) => {
+          if (sentence && sentence.trim()) {
+            sentences.push(sentence);
+          }
+        });
       }
-    : undefined;
+    });
+    return sentences;
+  }, [article?.blocks]);
+
+  useEffect(() => {
+    setIsInitialContentReady(false);
+    setRawCollocationsBySentence({});
+  }, [article?.source_id]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const hydrateCollocationsSnapshot = async () => {
+      if (!allSentences.length) {
+        setRawCollocationsBySentence({});
+        setIsInitialContentReady(true);
+        return;
+      }
+
+      await loadCollocations(allSentences);
+      if (cancelled) return;
+
+      const next: Record<string, any[]> = {};
+      allSentences.forEach((sentence) => {
+        const key = hashSentenceForCache(sentence);
+        next[sentence] = collocationsMap.get(key) || [];
+      });
+      setRawCollocationsBySentence(next);
+      setIsInitialContentReady(true);
+    };
+
+    const withTimeout = async () => {
+      const timeout = new Promise<void>((resolve) => {
+        setTimeout(resolve, 800);
+      });
+
+      await Promise.race([hydrateCollocationsSnapshot(), timeout]);
+
+      if (!cancelled) {
+        setIsInitialContentReady(true);
+      }
+    };
+
+    void withTimeout();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [allSentences, loadCollocations, collocationsMap]);
+
+  const collocationDisplayLevel = settings.collocationDisplayLevel || "core";
+
+  const collocationsBySentence = useMemo(() => {
+    const result: Record<string, any[]> = {};
+    Object.entries(rawCollocationsBySentence).forEach(([sentence, loaded]) => {
+      result[sentence] = filterCollocationsByLevel(
+        loaded,
+        collocationDisplayLevel,
+      );
+    });
+    return result;
+  }, [rawCollocationsBySentence, collocationDisplayLevel]);
+
+  const htmlContent = useMemo(() => {
+    if (!article) return undefined;
+    return generateArticleHTML(
+      article,
+      showHighlights,
+      getApiBaseUrl(),
+      HIGHLIGHT_OPTIONS[highlightOptionIndex],
+      collocationsBySentence,
+    );
+  }, [article, showHighlights, highlightOptionIndex, collocationsBySentence]);
+
+  // Generate HTML source with stable reference
+  const htmlSource = useMemo(
+    () => (htmlContent ? { html: htmlContent } : undefined),
+    [htmlContent],
+  );
 
   // Handle WebView Messages
   const handleMessage = (event: WebViewMessageEvent) => {
@@ -215,7 +309,7 @@ function ReadingScreen() {
     );
   };
 
-  if (isLoading || !article) {
+  if (isLoading || !article || !isInitialContentReady) {
     return (
       <View className="flex-1 justify-center items-center bg-bg-base">
         <ActivityIndicator size="large" color="#00FF94" />
@@ -236,6 +330,9 @@ function ReadingScreen() {
         <Text
           className="text-text-primary font-bold font-sans text-sm flex-1 mx-2"
           numberOfLines={1}
+          ellipsizeMode="tail"
+          allowFontScaling={false}
+          style={{ minWidth: 0 }}
         >
           {article.title}
         </Text>

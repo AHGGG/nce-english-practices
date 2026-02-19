@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { readingApi } from "@nce/api";
 import { useReadingTracker } from "./useReadingTracker";
 import { useState, useMemo } from "react";
+import { normalizeStudyHighlights } from "../utils/collocationHighlight";
 
 // Types (Mirrored from Mobile/Web)
 export interface ContentBlock {
@@ -29,6 +30,10 @@ export interface ArticleDetail {
   word_count: number;
   highlightSet?: Record<string, number>;
   studyHighlightSet?: Record<string, boolean>;
+  studyWordSet?: Set<string>;
+  studyPhraseSet?: Set<string>;
+  highlights?: string[];
+  study_highlights?: string[];
   unclearSentenceMap?: Record<number, any>;
   metadata: {
     filename: string;
@@ -41,8 +46,36 @@ export function useArticleReader(articleId: string) {
   const query = useQuery({
     queryKey: ["article", articleId],
     queryFn: async () => {
-      const data = await readingApi.getArticleDetail(articleId);
-      return data as ArticleDetail;
+      const raw = (await readingApi.getArticleDetail(articleId)) as Record<
+        string,
+        any
+      >;
+
+      const normalized = { ...raw } as ArticleDetail;
+
+      // Normalize study highlights from backend payload (legacy: study_highlights[]).
+      const studyHighlightsSource =
+        raw.studyHighlightSet || raw.study_highlights || [];
+      const { studyHighlightMap, studyWordSet, studyPhraseSet } =
+        normalizeStudyHighlights(studyHighlightsSource);
+
+      normalized.studyHighlightSet = studyHighlightMap;
+      normalized.studyWordSet = studyWordSet;
+      normalized.studyPhraseSet = studyPhraseSet;
+
+      // Normalize vocabulary highlight map if backend returns a plain string list.
+      if (!raw.highlightSet && Array.isArray(raw.highlights)) {
+        const fallbackMap: Record<string, number> = {};
+        raw.highlights.forEach((word: unknown) => {
+          if (typeof word === "string") {
+            const key = word.toLowerCase().trim();
+            if (key) fallbackMap[key] = 1;
+          }
+        });
+        normalized.highlightSet = fallbackMap;
+      }
+
+      return normalized;
     },
     enabled: !!articleId,
   });

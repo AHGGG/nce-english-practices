@@ -1,5 +1,6 @@
 // Utils
 export * from "./utils/sseParser";
+export * from "./utils/collocationHighlight";
 
 // Platform adapter
 export * from "./platform";

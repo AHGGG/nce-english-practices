@@ -540,6 +540,11 @@ See: [Content Renderer Skill](docs/skills/content-renderer.md) for detailed pitf
 
 React Native + Expo + NativeWind architecture. Covers audio background tasks, WebView bridge, voice PTT, Zustand persistence, and SSE streaming. See: [Mobile Architecture Documentation](docs/mobile-architecture.md)
 
+- **Reading/Sentence Study List Reuse (Mobile)**: `apps/mobile/src/components/UnifiedArticleListMobile.tsx` is the shared entry list UI for both `apps/mobile/app/(tabs)/library.tsx` (Reading) and `apps/mobile/app/sentence-study.tsx` (Sentence Study), mirroring Web's `UnifiedArticleListView` pattern.
+- **Unified Content Contract**: mobile book/article list loaders must support `catalog` as `items` (legacy `books`) and units as `units` (legacy `articles`) to stay compatible with `/api/content/catalog/epub` and `/api/content/units/epub/{item_id}/with-status`.
+- **Reading Collocations (Mobile)**: `apps/mobile/app/reading/[id].tsx` loads sentence collocations via shared `useCollocationLoader`, and `apps/mobile/src/utils/htmlGenerator.ts` renders phrase-level dashed collocation highlights in the WebView (filtered by global `collocationDisplayLevel`).
+- **Shared Collocation Logic**: use `packages/shared/src/utils/collocationHighlight.ts` (`filterCollocationsByLevel`, `normalizeStudyHighlights`, `normalizePhrase`) as the single source of truth for Reading/Sentence Study collocation filtering and study-highlight normalization.
+
 ## Skills (Detailed Tool Guides)
 
 以下技能模块包含详细操作指南，需要时按需加载：

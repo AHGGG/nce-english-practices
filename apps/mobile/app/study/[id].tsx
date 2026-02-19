@@ -27,6 +27,7 @@ import {
   BookOpen,
   Brain,
 } from "lucide-react-native";
+import { filterCollocationsByLevel } from "@nce/shared";
 import { DictionaryModal } from "../../src/components/DictionaryModal";
 import { SimpleMarkdown } from "../../src/components/SimpleMarkdown";
 import { useState, useRef, useCallback, useEffect, useMemo } from "react";
@@ -718,16 +719,10 @@ export default function StudyScreen() {
   );
 
   const filteredCollocations = useMemo(() => {
-    const minDifficulty =
-      collocationDisplayLevel === "basic"
-        ? 3
-        : collocationDisplayLevel === "core"
-          ? 2
-          : 1;
-    return (collocations || []).filter((item: any) => {
-      const difficulty = Number(item?.difficulty || 2);
-      return difficulty >= minDifficulty;
-    });
+    return filterCollocationsByLevel(
+      collocations || [],
+      collocationDisplayLevel,
+    );
   }, [collocations, collocationDisplayLevel]);
 
   // Use mobile-specific word explainer

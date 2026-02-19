@@ -94,7 +94,7 @@ function RootContent() {
       router.replace("/auth/login");
     } else if (user && inAuthGroup) {
       // Redirect to the home screen
-      router.replace("/(tabs)");
+      router.replace("/nav");
     }
   }, [user, segments, isInitialized, fontsLoaded]);
 
@@ -115,7 +115,17 @@ function RootContent() {
   return (
     <View style={{ flex: 1 }}>
       <Stack screenOptions={{ headerShown: false }}>
+        <Stack.Screen name="nav" />
         <Stack.Screen name="(tabs)" />
+        <Stack.Screen name="voice" />
+        <Stack.Screen name="voice-lab" />
+        <Stack.Screen name="reading/index" />
+        <Stack.Screen name="sentence-study" />
+        <Stack.Screen name="performance" />
+        <Stack.Screen name="review-queue" />
+        <Stack.Screen name="podcast/index" />
+        <Stack.Screen name="audiobook/index" />
+        <Stack.Screen name="weak-points" />
         <Stack.Screen name="auth/login" />
         <Stack.Screen name="auth/register" />
         <Stack.Screen name="reading/[id]" />

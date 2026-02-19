@@ -1,4 +1,16 @@
 import { ContentBlock, ArticleDetail } from "@nce/shared";
+import { normalizePhrase } from "@nce/shared";
+
+interface CollocationItem {
+  text: string;
+  start_word_idx: number;
+  end_word_idx: number;
+  difficulty?: number;
+  confidence?: number;
+  isStudiedPhrase?: boolean;
+}
+
+type CollocationMap = Record<string, CollocationItem[]>;
 
 const CSS_STYLES = `
 :root {
@@ -15,7 +27,7 @@ const CSS_STYLES = `
 body {
   background-color: var(--color-bg-base);
   color: var(--color-text-primary);
-  font-family: 'Merriweather', serif;
+  font-family: 'Charter', 'Georgia', 'Times New Roman', serif;
   margin: 0;
   padding: 24px;
   padding-bottom: 100px;
@@ -57,7 +69,7 @@ h3 { font-size: 20px; color: var(--color-text-secondary); }
 }
 
 .image-caption {
-  font-family: 'JetBrains Mono', monospace;
+  font-family: 'Menlo', 'Consolas', monospace;
   font-size: 12px;
   color: var(--color-text-muted);
   padding: 8px;
@@ -89,6 +101,12 @@ h3 { font-size: 20px; color: var(--color-text-secondary); }
   color: rgb(var(--color-accent-info));
 }
 
+.highlight-collocation {
+  border-bottom: 2px dashed rgb(var(--color-accent-warning));
+  color: rgb(var(--color-accent-warning));
+  background-color: rgba(var(--color-accent-warning), 0.08);
+}
+
 /* Unclear Sentence (Dashed Underline) */
 .sentence[data-unclear="true"] {
   border-bottom: 1px dashed rgb(var(--color-accent-warning));
@@ -101,7 +119,7 @@ h3 { font-size: 20px; color: var(--color-text-secondary); }
     padding: 2px 8px;
     background: rgb(var(--color-accent-primary));
     color: black;
-    font-family: 'JetBrains Mono', monospace;
+    font-family: 'Menlo', 'Consolas', monospace;
     font-size: 10px;
     font-weight: bold;
     text-transform: uppercase;
@@ -111,7 +129,7 @@ h3 { font-size: 20px; color: var(--color-text-secondary); }
 }
 
 .meta-info {
-    font-family: 'JetBrains Mono', monospace;
+    font-family: 'Menlo', 'Consolas', monospace;
     font-size: 12px;
     color: var(--color-text-muted);
     margin-bottom: 2rem;
@@ -196,38 +214,136 @@ function renderSentence(
   text: string,
   highlightSet?: Record<string, number>, // rank
   studyHighlightSet?: Record<string, boolean>,
+  studyPhraseSet?: Set<string>,
   highlightFilter: { min: number; max: number } = { min: 0, max: 99999 },
+  collocations: CollocationItem[] = [],
 ) {
-  // Split by regex capturing delimiters
-  const parts = text.split(/(\s+|[.,!?;:"'()])/);
+  const words = text.split(" ");
+  const collocationByWordIndex: Array<CollocationItem | null> = new Array(
+    words.length,
+  ).fill(null);
+  const usedIndices = new Set<number>();
 
-  return parts
-    .map((part) => {
-      const isWord = /^[a-zA-Z\u00C0-\u00FF]+$/.test(part);
-      if (!isWord) return `<span>${part}</span>`;
+  const hasStudiedPhrase = (phraseText: string) => {
+    const normalized = normalizePhrase(phraseText);
+    if (!normalized) return false;
+    if (studyPhraseSet?.has(normalized)) return true;
+    if (!studyHighlightSet) return false;
+    if (Object.prototype.hasOwnProperty.call(studyHighlightSet, normalized)) {
+      return true;
+    }
+    return Object.keys(studyHighlightSet).some(
+      (candidate) => normalizePhrase(candidate) === normalized,
+    );
+  };
 
-      const cleanWord = part.toLowerCase();
-      let classes = "word";
-
-      if (
-        studyHighlightSet &&
-        Object.prototype.hasOwnProperty.call(studyHighlightSet, cleanWord)
-      ) {
-        classes += " highlight-studying";
-      } else if (
-        highlightSet &&
-        Object.prototype.hasOwnProperty.call(highlightSet, cleanWord)
-      ) {
-        // Apply filter based on rank
-        const rank = highlightSet[cleanWord];
-        if (rank >= highlightFilter.min && rank < highlightFilter.max) {
-          classes += " highlight-new";
-        }
+  const sortedCollocations = [...(collocations || [])]
+    .map((item) => ({ ...item, isStudiedPhrase: hasStudiedPhrase(item.text) }))
+    .sort((a, b) => {
+      if (a.isStudiedPhrase !== b.isStudiedPhrase) {
+        return a.isStudiedPhrase ? -1 : 1;
       }
+      const aLen = a.end_word_idx - a.start_word_idx;
+      const bLen = b.end_word_idx - b.start_word_idx;
+      if (aLen !== bLen) return bLen - aLen;
+      const aConfidence = Number(a.confidence || 0);
+      const bConfidence = Number(b.confidence || 0);
+      return bConfidence - aConfidence;
+    });
 
-      return `<span class="${classes}">${part}</span>`;
-    })
-    .join("");
+  sortedCollocations.forEach((collocation) => {
+    if (
+      typeof collocation.start_word_idx !== "number" ||
+      typeof collocation.end_word_idx !== "number"
+    ) {
+      return;
+    }
+
+    let overlap = false;
+    for (
+      let i = collocation.start_word_idx;
+      i <= collocation.end_word_idx;
+      i += 1
+    ) {
+      if (usedIndices.has(i)) {
+        overlap = true;
+        break;
+      }
+    }
+    if (overlap) return;
+
+    for (
+      let i = collocation.start_word_idx;
+      i <= collocation.end_word_idx;
+      i += 1
+    ) {
+      if (i >= 0 && i < words.length) {
+        collocationByWordIndex[i] = collocation;
+        usedIndices.add(i);
+      }
+    }
+  });
+
+  const rendered: string[] = [];
+  let i = 0;
+
+  while (i < words.length) {
+    const collocation = collocationByWordIndex[i];
+
+    if (collocation && i === collocation.start_word_idx) {
+      const phraseWords = words.slice(
+        collocation.start_word_idx,
+        collocation.end_word_idx + 1,
+      );
+      const phraseText = phraseWords.join(" ");
+      const studiedClass = collocation.isStudiedPhrase
+        ? " highlight-studying"
+        : "";
+      rendered.push(
+        `<span class="word highlight-collocation${studiedClass}" data-collocation="true">${phraseText}</span>`,
+      );
+      i = collocation.end_word_idx + 1;
+      continue;
+    }
+
+    if (collocation) {
+      i += 1;
+      continue;
+    }
+
+    const part = words[i];
+    const cleanWord = part
+      .toLowerCase()
+      .replace(/^[^a-zA-Z']+|[^a-zA-Z']+$/g, "");
+    const isWord = /^[a-zA-Z\u00C0-\u00FF'-]+$/.test(cleanWord);
+
+    if (!isWord) {
+      rendered.push(`<span>${part}</span>`);
+      i += 1;
+      continue;
+    }
+
+    let classes = "word";
+    if (
+      studyHighlightSet &&
+      Object.prototype.hasOwnProperty.call(studyHighlightSet, cleanWord)
+    ) {
+      classes += " highlight-studying";
+    } else if (
+      highlightSet &&
+      Object.prototype.hasOwnProperty.call(highlightSet, cleanWord)
+    ) {
+      const rank = highlightSet[cleanWord];
+      if (rank >= highlightFilter.min && rank < highlightFilter.max) {
+        classes += " highlight-new";
+      }
+    }
+
+    rendered.push(`<span class="${classes}">${part}</span>`);
+    i += 1;
+  }
+
+  return rendered.join(" ");
 }
 
 export function generateArticleHTML(
@@ -235,6 +351,7 @@ export function generateArticleHTML(
   showHighlights: boolean,
   baseUrl: string = "",
   highlightFilter: { min: number; max: number } = { min: 0, max: 99999 },
+  collocationsBySentence: CollocationMap = {},
 ) {
   let globalSentenceIndex = 0;
 
@@ -250,8 +367,9 @@ export function generateArticleHTML(
             ?.map((s) => {
               const idx = globalSentenceIndex++;
               const isUnclear = article.unclearSentenceMap?.[idx];
+              const sentenceCollocations = collocationsBySentence[s] || [];
               // Use data-unclear attribute for detection
-              return `<span class="sentence" data-index="${idx}" data-unclear="${!!isUnclear}">${renderSentence(s, article.highlightSet, article.studyHighlightSet, highlightFilter)}</span>`;
+              return `<span class="sentence" data-index="${idx}" data-unclear="${!!isUnclear}">${renderSentence(s, article.highlightSet, article.studyHighlightSet, article.studyPhraseSet, highlightFilter, sentenceCollocations)}</span>`;
             })
             .join(" ");
           return `<p>${sentencesHtml}</p>`;
@@ -274,7 +392,6 @@ export function generateArticleHTML(
 <html>
 <head>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <link href="https://fonts.googleapis.com/css2?family=Merriweather:ital,wght@0,300;0,400;0,700;1,400&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
     <style>
         ${CSS_STYLES}
         ${showHighlights ? "" : ".highlight-studying, .highlight-new { color: inherit; background-color: transparent; font-weight: normal; }"}

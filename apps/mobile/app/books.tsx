@@ -12,6 +12,7 @@ import { useState, useEffect } from "react";
 import { sentenceStudyApi } from "@nce/api";
 
 interface Book {
+  id?: string;
   filename: string;
   title: string;
   author?: string;
@@ -28,7 +29,7 @@ export default function BooksScreen() {
     const loadBooks = async () => {
       try {
         const data = await sentenceStudyApi.getBooks();
-        setBooks(data.books || []);
+        setBooks((data.items || data.books || []) as Book[]);
       } catch (e) {
         console.error("Failed to load books:", e);
       } finally {
@@ -41,7 +42,9 @@ export default function BooksScreen() {
   const renderBook = ({ item }: { item: Book }) => (
     <TouchableOpacity
       className="bg-bg-surface p-4 rounded-xl border border-border-default mb-3 active:bg-bg-elevated"
-      onPress={() => router.push(`/books/${encodeURIComponent(item.filename)}`)}
+      onPress={() =>
+        router.push(`/books/${encodeURIComponent(item.id || item.filename)}`)
+      }
     >
       <View className="flex-row justify-between items-center">
         <View className="flex-1 mr-4">
@@ -93,7 +96,7 @@ export default function BooksScreen() {
         <FlatList
           data={books}
           renderItem={renderBook}
-          keyExtractor={(item) => item.filename}
+          keyExtractor={(item) => item.id || item.filename}
           showsVerticalScrollIndicator={false}
           contentContainerStyle={{ paddingBottom: 100 }}
           ListEmptyComponent={

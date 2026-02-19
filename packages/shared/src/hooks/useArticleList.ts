@@ -33,7 +33,7 @@ export function useArticleList(options: UseArticleListOptions = {}) {
       // Handle both array and object wrapper
       let articles: Article[] = Array.isArray(data)
         ? data
-        : (data as any).articles || [];
+        : (data as any).units || (data as any).articles || [];
 
       const filename = (data as any).filename;
       if (filename) {
@@ -51,9 +51,9 @@ export function useArticleList(options: UseArticleListOptions = {}) {
         }));
       }
 
-      if (options.bookId) {
-        articles = articles.filter((a) => a.book_id === options.bookId);
-      }
+      // Endpoint /units/epub/{item_id}/with-status is already scoped by item_id.
+      // Avoid over-filtering here because backend may return filename as book_id
+      // while caller passes stable item id.
 
       if (options.searchQuery) {
         const q = options.searchQuery.toLowerCase();

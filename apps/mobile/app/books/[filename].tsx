@@ -37,7 +37,7 @@ export default function ArticlesScreen() {
         const data = await sentenceStudyApi.getArticles(
           decodeURIComponent(filename),
         );
-        setArticles(data.articles || []);
+        setArticles(data.units || data.articles || []);
       } catch (e) {
         console.error("Failed to load articles:", e);
       } finally {
@@ -77,7 +77,8 @@ export default function ArticlesScreen() {
       typeof item.index === "number"
         ? item.index
         : parseInt(item.index, 10) || 0;
-    const sourceId = `epub:${decodedFilename}:${articleIndex}`;
+    const sourceId =
+      item.source_id || `epub:${decodedFilename}:${articleIndex}`;
     const displayTitle = item.title || `Article ${articleIndex + 1}`;
 
     return (
@@ -161,7 +162,8 @@ export default function ArticlesScreen() {
                 typeof item.index === "number"
                   ? item.index
                   : parseInt(item.index, 10) || 0;
-              const sourceId = `epub:${decodedFilename}:${articleIndex}`;
+              const sourceId =
+                item.source_id || `epub:${decodedFilename}:${articleIndex}`;
               router.push(`/study/${encodeURIComponent(sourceId)}`);
             }}
           >
