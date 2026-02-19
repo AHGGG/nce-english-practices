@@ -119,7 +119,13 @@ export default function EpisodeSwipeCard({
   return (
     <div
       className={`group relative rounded-xl transition-all duration-300 overflow-hidden ${className}`}
-      onTouchStart={(e) => handleCardTouchStart(e.changedTouches[0].clientX)}
+      onTouchStart={(e) => {
+        if (isExpanded) {
+          // 如果已展开，点击内容区域应该收起
+          setExpanded(null);
+        }
+        handleCardTouchStart(e.changedTouches[0].clientX);
+      }}
       onTouchEnd={(e) => handleCardTouchEnd(e.changedTouches[0].clientX)}
     >
       {/* Mobile swipe action rail - 滑出按钮区域 */}
@@ -128,14 +134,14 @@ export default function EpisodeSwipeCard({
           isExpanded ? "translate-x-0" : "translate-x-full"
         }`}
         style={{ width: swipeRailWidth + 36 }}
+        onTouchStart={(e) => e.stopPropagation()}
+        onTouchEnd={(e) => e.stopPropagation()}
       >
         {/* Close button */}
         <button
-          onClick={(e) => {
-            e.stopPropagation();
-            setExpanded(null);
-          }}
-          className="w-9 h-9 rounded-lg flex items-center justify-center text-white/40 bg-white/5 border border-white/10 hover:text-white hover:bg-white/10"
+          type="button"
+          onClick={() => setExpanded(null)}
+          className="w-9 h-9 rounded-lg flex items-center justify-center text-white/40 bg-white/5 border border-white/10 hover:text-white hover:bg-white/10 active:scale-95"
           title="Close"
         >
           <svg
@@ -154,15 +160,11 @@ export default function EpisodeSwipeCard({
         </button>
         {visibleActions.map((action, index) => (
           <button
+            type="button"
             key={index}
-            onClick={(e) => {
-              e.stopPropagation();
-              action.onClick();
-              // 不自动收起，允许连续点击多个按钮
-              // 用户可通过点击 X 按钮或右滑关闭
-            }}
+            onClick={() => action.onClick()}
             disabled={action.disabled}
-            className={`w-9 h-9 rounded-lg flex items-center justify-center transition-colors ${
+            className={`w-9 h-9 rounded-lg flex items-center justify-center transition-colors active:scale-95 ${
               action.className || ""
             } ${action.disabled ? "opacity-50 cursor-not-allowed" : ""}`}
             title={action.title}

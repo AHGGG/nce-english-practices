@@ -698,7 +698,7 @@ export default function PodcastDownloadsView() {
                           ? "text-amber-300 bg-amber-500/10 border-amber-500/25"
                           : "text-white/35 bg-white/5 border-white/10"
                   } border`,
-                  show: !isDownloading && !isError,
+                  // 移动端始终显示转录按钮，允许用户在下载时继续操作
                   title:
                     mobileTranscriptStatus === "completed"
                       ? "Enter intensive listening"
