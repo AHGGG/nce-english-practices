@@ -544,6 +544,7 @@ React Native + Expo + NativeWind architecture. Covers audio background tasks, We
 - **Unified Content Contract**: mobile book/article list loaders must support `catalog` as `items` (legacy `books`) and units as `units` (legacy `articles`) to stay compatible with `/api/content/catalog/epub` and `/api/content/units/epub/{item_id}/with-status`.
 - **Reading Collocations (Mobile)**: `apps/mobile/app/reading/[id].tsx` loads sentence collocations via shared `useCollocationLoader`, and `apps/mobile/src/utils/htmlGenerator.ts` renders phrase-level dashed collocation highlights in the WebView (filtered by global `collocationDisplayLevel`).
 - **Shared Collocation Logic**: use `packages/shared/src/utils/collocationHighlight.ts` (`filterCollocationsByLevel`, `normalizeStudyHighlights`, `normalizePhrase`) as the single source of truth for Reading/Sentence Study collocation filtering and study-highlight normalization.
+- **Shared Collocation Level Switch (Mobile)**: `apps/mobile/src/components/content/CollocationLevelSwitch.tsx` is the shared UI control for `collocationDisplayLevel`; Reading, Sentence Study, Podcast Intensive, and Audiobook should reuse this component to avoid UI drift.
 
 ## Skills (Detailed Tool Guides)
 

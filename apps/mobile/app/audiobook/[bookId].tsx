@@ -25,6 +25,7 @@ import { useSettingsStore } from "@nce/store";
 import { getApiBaseUrl } from "../../src/lib/platform-init";
 import { useWordExplainer } from "../../src/hooks/useWordExplainer";
 import { DictionaryModal } from "../../src/components/DictionaryModal";
+import CollocationLevelSwitch from "../../src/components/content/CollocationLevelSwitch";
 
 type SubtitleSegment = {
   text: string;
@@ -397,32 +398,10 @@ export default function AudiobookPlayerScreen() {
       </View>
 
       <View className="px-4 py-2 border-b border-border-default">
-        <View className="self-start flex-row rounded-lg border border-border-default bg-bg-surface overflow-hidden">
-          {[
-            { key: "basic", label: "Basic" },
-            { key: "core", label: "Core" },
-            { key: "full", label: "Full" },
-          ].map((option) => {
-            const active = collocationDisplayLevel === option.key;
-            return (
-              <TouchableOpacity
-                key={option.key}
-                onPress={() =>
-                  setCollocationDisplayLevel(
-                    option.key as "basic" | "core" | "full",
-                  )
-                }
-                className={`px-3 py-1.5 ${active ? "bg-accent-primary/20" : "bg-transparent"}`}
-              >
-                <Text
-                  className={`text-[10px] font-bold uppercase ${active ? "text-accent-primary" : "text-text-muted"}`}
-                >
-                  {option.label}
-                </Text>
-              </TouchableOpacity>
-            );
-          })}
-        </View>
+        <CollocationLevelSwitch
+          value={collocationDisplayLevel}
+          onChange={setCollocationDisplayLevel}
+        />
       </View>
 
       {tracks.length > 1 && (

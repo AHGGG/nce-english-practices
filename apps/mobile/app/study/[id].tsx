@@ -30,6 +30,7 @@ import {
 import { filterCollocationsByLevel } from "@nce/shared";
 import { DictionaryModal } from "../../src/components/DictionaryModal";
 import { SimpleMarkdown } from "../../src/components/SimpleMarkdown";
+import CollocationLevelSwitch from "../../src/components/content/CollocationLevelSwitch";
 import { useState, useRef, useCallback, useEffect, useMemo } from "react";
 import EventSource from "react-native-sse";
 import { getApiBaseUrl } from "../../src/lib/platform-init";
@@ -341,28 +342,10 @@ const StudyingView = ({
       </View>
 
       <View className="px-6 py-2 border-b border-white/5">
-        <View className="self-start flex-row rounded-lg border border-white/10 bg-bg-surface overflow-hidden">
-          {[
-            { key: "basic", label: "Basic" },
-            { key: "core", label: "Core" },
-            { key: "full", label: "Full" },
-          ].map((option) => {
-            const active = collocationDisplayLevel === option.key;
-            return (
-              <TouchableOpacity
-                key={option.key}
-                onPress={() => onChangeCollocationDisplayLevel(option.key)}
-                className={`px-3 py-1.5 ${active ? "bg-accent-primary/20" : "bg-transparent"}`}
-              >
-                <Text
-                  className={`text-[10px] font-bold uppercase ${active ? "text-accent-primary" : "text-text-muted"}`}
-                >
-                  {option.label}
-                </Text>
-              </TouchableOpacity>
-            );
-          })}
-        </View>
+        <CollocationLevelSwitch
+          value={collocationDisplayLevel}
+          onChange={onChangeCollocationDisplayLevel}
+        />
       </View>
 
       <ScrollView

@@ -31,6 +31,7 @@ import {
   selectProgress,
 } from "@nce/store";
 import { audioService } from "../../src/services/AudioService";
+import CollocationLevelSwitch from "../../src/components/content/CollocationLevelSwitch";
 
 type PlayerSegment = {
   text: string;
@@ -400,32 +401,10 @@ export default function PodcastIntensiveScreen() {
       </View>
 
       <View className="px-4 py-2 border-b border-border-default">
-        <View className="self-start flex-row rounded-lg border border-border-default bg-bg-surface overflow-hidden">
-          {[
-            { key: "basic", label: "Basic" },
-            { key: "core", label: "Core" },
-            { key: "full", label: "Full" },
-          ].map((option) => {
-            const active = collocationDisplayLevel === option.key;
-            return (
-              <TouchableOpacity
-                key={option.key}
-                onPress={() =>
-                  setCollocationDisplayLevel(
-                    option.key as "basic" | "core" | "full",
-                  )
-                }
-                className={`px-3 py-1.5 ${active ? "bg-accent-primary/20" : "bg-transparent"}`}
-              >
-                <Text
-                  className={`text-[10px] font-bold uppercase ${active ? "text-accent-primary" : "text-text-muted"}`}
-                >
-                  {option.label}
-                </Text>
-              </TouchableOpacity>
-            );
-          })}
-        </View>
+        <CollocationLevelSwitch
+          value={collocationDisplayLevel}
+          onChange={setCollocationDisplayLevel}
+        />
       </View>
 
       <View className="px-4 py-4 border-b border-border-default">

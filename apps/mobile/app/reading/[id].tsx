@@ -22,6 +22,7 @@ import { generateArticleHTML } from "../../src/utils/htmlGenerator";
 import { DictionaryModal } from "../../src/components/DictionaryModal";
 import { SentenceInspectorModal } from "../../src/components/SentenceInspectorModal";
 import ImageLightbox from "../../src/components/ImageLightbox";
+import CollocationLevelSwitch from "../../src/components/content/CollocationLevelSwitch";
 import { getApiBaseUrl } from "../../src/lib/platform-init";
 import { useRef, useState, useEffect, useCallback, useMemo } from "react";
 import {
@@ -152,6 +153,7 @@ function ReadingScreen() {
   }, [allSentences, loadCollocations, collocationsMap]);
 
   const collocationDisplayLevel = settings.collocationDisplayLevel || "core";
+  const setCollocationDisplayLevel = settings.setCollocationDisplayLevel;
 
   const collocationsBySentence = useMemo(() => {
     const result: Record<string, any[]> = {};
@@ -422,6 +424,16 @@ function ReadingScreen() {
                   className={`w-5 h-5 rounded-full bg-white shadow-sm ${showHighlights ? "self-end" : "self-start"}`}
                 />
               </TouchableOpacity>
+            </View>
+
+            <Text className="text-text-muted text-xs font-bold uppercase mb-3">
+              Collocations
+            </Text>
+            <View className="mb-6">
+              <CollocationLevelSwitch
+                value={collocationDisplayLevel}
+                onChange={setCollocationDisplayLevel}
+              />
             </View>
 
             {/* Filter Options */}
