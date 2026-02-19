@@ -22,6 +22,10 @@ import {
 import PodcastLayout from "../../components/podcast/PodcastLayout";
 import PodcastCoverPlayButton from "../../components/podcast/PodcastCoverPlayButton";
 import PlaylistPickerDialog from "../../components/podcast/PlaylistPickerDialog";
+import EpisodeSwipeCard, {
+  shouldShowSwipeHint,
+  type SwipeAction,
+} from "../../components/podcast/EpisodeSwipeCard";
 import { usePodcast } from "../../context/PodcastContext";
 import { useGlobalState } from "../../context/GlobalContext";
 import * as podcastApi from "../../api/podcast";
@@ -140,8 +144,10 @@ export default function PodcastDownloadsView() {
   >({});
   const [playlistDialogEpisode, setPlaylistDialogEpisode] =
     useState<PodcastEpisode | null>(null);
-  const [swipedEpisodeId, setSwipedEpisodeId] = useState<number | null>(null);
-  const [showSwipeHint, setShowSwipeHint] = useState(false);
+  const [swipedEpisodeId, setSwipedEpisodeId] = useState<
+    number | string | null
+  >(null);
+  const [showSwipeHint, setShowSwipeHint] = useState(shouldShowSwipeHint);
   const touchStartXRef = useRef<number | null>(null);
 
   const loadFavoriteIds = useCallback(async () => {
@@ -644,129 +650,91 @@ export default function PodcastDownloadsView() {
                 (position > 0 && progressPercent >= 99);
               const isCurrentAndPlaying = isCurrentEpisode && isPlaying;
 
+              const mobileActions: SwipeAction[] = [
+                {
+                  icon: (
+                    <Heart
+                      className="w-4 h-4"
+                      fill={
+                        favoriteEpisodeIds.has(ep.id) ? "currentColor" : "none"
+                      }
+                    />
+                  ),
+                  onClick: () => void handleToggleFavorite(ep.id),
+                  disabled: favoriteLoading[ep.id],
+                  className: `${
+                    favoriteEpisodeIds.has(ep.id)
+                      ? "text-red-400 bg-red-500/10 border-red-500/25"
+                      : "text-white/60 bg-white/5 border-white/10"
+                  } border`,
+                  title: favoriteEpisodeIds.has(ep.id)
+                    ? "Remove from favorites"
+                    : "Add to favorites",
+                },
+                {
+                  icon: <ListPlus className="w-4 h-4" />,
+                  onClick: () => setPlaylistDialogEpisode(ep),
+                  className: "text-white/70 bg-white/5 border-white/10 border",
+                  title: "Add to playlist",
+                },
+                {
+                  icon:
+                    mobileTranscriptStatus === "pending" ||
+                    mobileTranscriptStatus === "processing" ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <BookOpen className="w-4 h-4" />
+                    ),
+                  onClick: () => void handleIntensiveListening(ep),
+                  disabled:
+                    isDownloading || mobileTranscriptStatus === "processing",
+                  className: `${
+                    isDownloading
+                      ? "text-white/20 bg-white/5 border-white/5"
+                      : mobileTranscriptStatus === "completed"
+                        ? "text-accent-primary bg-accent-primary/10 border-accent-primary/25"
+                        : mobileTranscriptStatus === "pending" ||
+                            mobileTranscriptStatus === "processing"
+                          ? "text-amber-300 bg-amber-500/10 border-amber-500/25"
+                          : "text-white/35 bg-white/5 border-white/10"
+                  } border`,
+                  show: !isDownloading && !isError,
+                  title:
+                    mobileTranscriptStatus === "completed"
+                      ? "Enter intensive listening"
+                      : "Generate transcript",
+                },
+                {
+                  icon: deleting[ep.id] ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <Trash2 className="w-4 h-4" />
+                  ),
+                  onClick: () => void handleDelete(item),
+                  disabled: deleting[ep.id],
+                  className:
+                    "text-red-300 bg-red-500/10 border-red-500/25 border",
+                  title: isDownloading ? "Cancel download" : "Remove download",
+                },
+              ];
+
               return (
-                <div
+                <EpisodeSwipeCard
                   key={ep.id}
-                  onTouchStart={(e) =>
-                    handleCardTouchStart(e.changedTouches[0].clientX)
-                  }
-                  onTouchEnd={(e) =>
-                    handleCardTouchEnd(ep.id, e.changedTouches[0].clientX)
-                  }
-                  className={`group relative rounded-xl transition-all duration-300 border overflow-hidden ${
+                  episodeId={ep.id}
+                  actions={mobileActions}
+                  expandedId={swipedEpisodeId}
+                  onExpandedChange={setSwipedEpisodeId}
+                  showSwipeHint={showSwipeHint}
+                  className={`${
                     isFinished
                       ? "bg-white/[0.01] border-white/5 opacity-60 hover:opacity-100"
                       : isCurrentEpisode
                         ? "bg-accent-primary/10 border-accent-primary/30 shadow-[0_0_30px_rgba(var(--color-accent-primary-rgb),0.1)]"
                         : "bg-[#0a0f0d]/40 backdrop-blur-sm border-white/5 hover:border-white/10 hover:bg-white/[0.03]"
-                  }`}
+                  } border`}
                 >
-                  {/* Mobile swipe action rail */}
-                  <div
-                    className={`sm:hidden absolute inset-y-0 right-0 z-0 flex items-center gap-1.5 pr-2 transition-transform duration-200 ${
-                      swipedEpisodeId === ep.id
-                        ? "translate-x-0"
-                        : "translate-x-full"
-                    }`}
-                  >
-                    <button
-                      onClick={(e: MouseEvent<HTMLButtonElement>) => {
-                        e.stopPropagation();
-                        void handleToggleFavorite(ep.id);
-                      }}
-                      disabled={favoriteLoading[ep.id]}
-                      className={`w-9 h-9 rounded-lg flex items-center justify-center transition-colors border ${
-                        favoriteEpisodeIds.has(ep.id)
-                          ? "text-red-400 bg-red-500/10 border-red-500/25"
-                          : "text-white/60 bg-white/5 border-white/10"
-                      }`}
-                      title={
-                        favoriteEpisodeIds.has(ep.id)
-                          ? "Remove from favorites"
-                          : "Add to favorites"
-                      }
-                    >
-                      <Heart
-                        className="w-4 h-4"
-                        fill={
-                          favoriteEpisodeIds.has(ep.id)
-                            ? "currentColor"
-                            : "none"
-                        }
-                      />
-                    </button>
-
-                    <button
-                      onClick={(e: MouseEvent<HTMLButtonElement>) => {
-                        e.stopPropagation();
-                        setPlaylistDialogEpisode(ep);
-                        setSwipedEpisodeId(null);
-                      }}
-                      className="w-9 h-9 rounded-lg flex items-center justify-center text-white/70 bg-white/5 border border-white/10"
-                      title="Add to playlist"
-                    >
-                      <ListPlus className="w-4 h-4" />
-                    </button>
-
-                    <button
-                      onClick={(e: MouseEvent<HTMLButtonElement>) => {
-                        e.stopPropagation();
-                        void handleIntensiveListening(ep);
-                        setSwipedEpisodeId(null);
-                      }}
-                      disabled={
-                        isDownloading || mobileTranscriptStatus === "processing"
-                      }
-                      className={`w-9 h-9 rounded-lg flex items-center justify-center border ${
-                        isDownloading
-                          ? "text-white/20 bg-white/5 border-white/5"
-                          : mobileTranscriptStatus === "completed"
-                            ? "text-accent-primary bg-accent-primary/10 border-accent-primary/25"
-                            : mobileTranscriptStatus === "pending" ||
-                                mobileTranscriptStatus === "processing"
-                              ? "text-amber-300 bg-amber-500/10 border-amber-500/25"
-                              : "text-white/35 bg-white/5 border-white/10"
-                      }`}
-                      title={
-                        mobileTranscriptStatus === "completed"
-                          ? "Enter intensive listening"
-                          : "Generate transcript"
-                      }
-                    >
-                      {mobileTranscriptStatus === "pending" ||
-                      mobileTranscriptStatus === "processing" ? (
-                        <Loader2 className="w-4 h-4 animate-spin" />
-                      ) : (
-                        <BookOpen className="w-4 h-4" />
-                      )}
-                    </button>
-
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        void handleDelete(item);
-                      }}
-                      disabled={deleting[ep.id]}
-                      className="w-9 h-9 rounded-lg flex items-center justify-center text-red-300 bg-red-500/10 border border-red-500/25"
-                      title={
-                        isDownloading ? "Cancel download" : "Remove download"
-                      }
-                    >
-                      {deleting[ep.id] ? (
-                        <Loader2 className="w-4 h-4 animate-spin" />
-                      ) : (
-                        <Trash2 className="w-4 h-4" />
-                      )}
-                    </button>
-                  </div>
-
-                  <div
-                    className={`relative z-10 flex items-start sm:items-center gap-2.5 sm:gap-4 p-3 sm:p-4 transition-transform duration-200 ${
-                      swipedEpisodeId === ep.id
-                        ? "-translate-x-[172px]"
-                        : "translate-x-0"
-                    }`}
-                  >
+                  <div className="flex items-start sm:items-center gap-2.5 sm:gap-4 p-3 sm:p-4">
                     <PodcastCoverPlayButton
                       imageUrl={ep.image_url || item.feed.image_url}
                       isCurrent={isCurrentEpisode}
@@ -905,7 +873,7 @@ export default function PodcastDownloadsView() {
                       />
                     </div>
                   )}
-                </div>
+                </EpisodeSwipeCard>
               );
             })}
           </div>

@@ -457,6 +457,27 @@ class AudiobookProvider(BaseContentProvider):
                         except json.JSONDecodeError:
                             pass
 
+                    # Check transcription status for each track
+                    track_statuses = {}
+                    for t in tracks:
+                        track_idx = t.get("index", 0)
+                        subtitle_path = t.get("subtitle_path")
+                        if subtitle_path and subtitle_path.exists():
+                            # Has subtitle file - check if it's AI-generated (srt)
+                            if subtitle_path.suffix.lower() == ".srt":
+                                track_statuses[track_idx] = "completed"
+                            else:
+                                track_statuses[track_idx] = "has_original"
+                        else:
+                            track_statuses[track_idx] = "none"
+
+                    # Determine overall status
+                    overall_status = "none"
+                    if any(s == "completed" for s in track_statuses.values()):
+                        overall_status = "completed"
+                    elif any(s == "has_original" for s in track_statuses.values()):
+                        overall_status = "has_original"
+
                     books.append(
                         {
                             "id": book_path.name,
@@ -465,6 +486,8 @@ class AudiobookProvider(BaseContentProvider):
                             "description": metadata.get("description"),
                             "track_count": len(tracks),
                             "has_subtitles": any(t["subtitle_path"] for t in tracks),
+                            "transcript_status": overall_status,
+                            "track_statuses": track_statuses,
                         }
                     )
 

@@ -32,6 +32,10 @@ import { useGlobalState } from "../../context/GlobalContext";
 import { useToast, Dialog, DialogButton } from "../../components/ui";
 import PodcastCoverPlayButton from "../../components/podcast/PodcastCoverPlayButton";
 import PlaylistPickerDialog from "../../components/podcast/PlaylistPickerDialog";
+import EpisodeSwipeCard, {
+  shouldShowSwipeHint,
+  type SwipeAction,
+} from "../../components/podcast/EpisodeSwipeCard";
 
 interface PodcastFeed {
   id: number;
@@ -265,6 +269,12 @@ export default function PodcastFeedDetailView() {
   const [confirmAction, setConfirmAction] = useState<ConfirmAction | null>(
     null,
   );
+
+  // Mobile swipe state
+  const [swipedEpisodeId, setSwipedEpisodeId] = useState<
+    number | string | null
+  >(null);
+  const [showSwipeHint, setShowSwipeHint] = useState(shouldShowSwipeHint);
 
   useEffect(() => {
     loadFeed(true);
@@ -1040,128 +1050,228 @@ export default function PodcastFeedDetailView() {
               isFinished =
                 isFinished || (position > 0 && progressPercent >= 99);
 
+              const dState = downloadState[episode.id];
+              const isDownloading = dState?.status === "downloading";
+              const isError = dState?.status === "error";
+              const episodeTranscriptStatus =
+                episode.transcript_status ||
+                transcriptStatus[episode.id] ||
+                "none";
+
+              const mobileActions: SwipeAction[] = [
+                {
+                  icon: (
+                    <Heart
+                      className="w-4 h-4"
+                      fill={
+                        favoriteEpisodeIds.has(episode.id)
+                          ? "currentColor"
+                          : "none"
+                      }
+                    />
+                  ),
+                  onClick: () => void handleToggleFavorite(episode.id),
+                  disabled: favoriteLoading[episode.id],
+                  className: `${
+                    favoriteEpisodeIds.has(episode.id)
+                      ? "text-red-400 bg-red-500/10 border-red-500/25"
+                      : "text-white/60 bg-white/5 border-white/10"
+                  } border`,
+                  title: favoriteEpisodeIds.has(episode.id)
+                    ? "Remove from favorites"
+                    : "Add to favorites",
+                },
+                {
+                  icon: <ListPlus className="w-4 h-4" />,
+                  onClick: () => setPlaylistDialogEpisode(episode),
+                  className: "text-white/70 bg-white/5 border-white/10 border",
+                  title: "Add to playlist",
+                },
+                {
+                  icon:
+                    episodeTranscriptStatus === "pending" ||
+                    episodeTranscriptStatus === "processing" ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <BookOpen className="w-4 h-4" />
+                    ),
+                  onClick: () => handleIntensiveListening(episode),
+                  disabled:
+                    isDownloading || episodeTranscriptStatus === "processing",
+                  className: `${
+                    isDownloading
+                      ? "text-white/20 bg-white/5 border-white/5"
+                      : episodeTranscriptStatus === "completed"
+                        ? "text-accent-primary bg-accent-primary/10 border-accent-primary/25"
+                        : episodeTranscriptStatus === "pending" ||
+                            episodeTranscriptStatus === "processing"
+                          ? "text-amber-300 bg-amber-500/10 border-amber-500/25"
+                          : "text-white/35 bg-white/5 border-white/10"
+                  } border`,
+                  show: !isDownloading && !isError,
+                  title:
+                    episodeTranscriptStatus === "completed"
+                      ? "Enter intensive listening"
+                      : "Generate transcript",
+                },
+                {
+                  icon: isDownloading ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <Download className="w-4 h-4" />
+                  ),
+                  onClick: () => handleDownloadClick(episode),
+                  disabled: isDownloading,
+                  className: `${
+                    isError
+                      ? "text-red-400 bg-red-500/10 border-red-500/25"
+                      : isDownloading || isOffline
+                        ? "text-accent-primary bg-accent-primary/10 border-accent-primary/25"
+                        : "text-white/35 bg-white/5 border-white/10"
+                  } border`,
+                  title: isOffline
+                    ? "Downloaded. Click to remove."
+                    : isDownloading
+                      ? "Downloading..."
+                      : isError
+                        ? "Download failed. Click to retry."
+                        : "Download for offline",
+                },
+              ];
+
               return (
-                <div
+                <EpisodeSwipeCard
                   key={episode.id}
-                  className={`group relative flex items-center gap-3 sm:gap-4 p-3 sm:p-4 rounded-xl transition-all duration-300 border ${
+                  episodeId={episode.id}
+                  actions={mobileActions}
+                  expandedId={swipedEpisodeId}
+                  onExpandedChange={setSwipedEpisodeId}
+                  showSwipeHint={showSwipeHint}
+                  swipeHintText="Swipe left for quick actions"
+                  className={`${
                     isCurrentEpisode
                       ? "bg-accent-primary/10 border-accent-primary/30 shadow-[0_0_30px_rgba(var(--color-accent-primary-rgb),0.1)]"
                       : isFinished
                         ? "bg-white/[0.01] border-white/5 opacity-60 hover:opacity-100"
                         : "bg-[#0a0f0d]/40 backdrop-blur-sm border-white/5 hover:border-white/10 hover:bg-white/[0.03]"
-                  }`}
+                  } border`}
                 >
-                  <PodcastCoverPlayButton
-                    imageUrl={episode.image_url || feed.image_url}
-                    isCurrent={isCurrentEpisode}
-                    isPlaying={isCurrentEpisode && isPlaying}
-                    isFinished={isFinished}
-                    onClick={() => handlePlayEpisode(episode)}
-                    sizeClassName="w-10 h-10 sm:w-12 sm:h-12"
-                    iconClassName="w-4 h-4 sm:w-5 sm:h-5"
-                    fallbackIconClassName="w-4 h-4"
-                  />
+                  <div className="flex items-center gap-3 sm:gap-4 p-3 sm:p-4">
+                    <PodcastCoverPlayButton
+                      imageUrl={episode.image_url || feed.image_url}
+                      isCurrent={isCurrentEpisode}
+                      isPlaying={isCurrentEpisode && isPlaying}
+                      isFinished={isFinished}
+                      onClick={() => handlePlayEpisode(episode)}
+                      sizeClassName="w-10 h-10 sm:w-12 sm:h-12"
+                      iconClassName="w-4 h-4 sm:w-5 sm:h-5"
+                      fallbackIconClassName="w-4 h-4"
+                    />
 
-                  <div className="flex-1 min-w-0 py-1">
-                    <h3
-                      className={`text-sm sm:text-base font-medium line-clamp-2 mb-1.5 transition-colors leading-snug ${
-                        isCurrentEpisode
-                          ? "text-accent-primary"
-                          : isFinished
-                            ? "text-white/40 line-through decoration-accent-success/40"
-                            : "text-white group-hover:text-accent-primary/80"
-                      }`}
-                      title={episode.title}
-                    >
-                      {episode.title}
-                      {isOffline && (
-                        <CloudOff className="inline-block w-3 h-3 ml-1.5 text-accent-success" />
-                      )}
-                    </h3>
-                    <div className="flex flex-wrap items-center gap-x-3 sm:gap-x-4 gap-y-1 text-[10px] font-mono text-white/40 uppercase tracking-wider">
-                      {episode.published_at && (
-                        <span className="flex items-center gap-1.5">
-                          <Clock className="w-3 h-3 text-white/20" />
-                          {formatDate(episode.published_at)}
-                        </span>
-                      )}
-                      {episode.duration_seconds && (
-                        <span className="flex items-center gap-1.5">
-                          <span className="w-1 h-1 rounded-full bg-white/20" />
-                          {formatDuration(episode.duration_seconds)}
-                        </span>
-                      )}
-                      {(episode.file_size ?? 0) > 0 && (
-                        <span className="flex items-center gap-1.5">
-                          <span className="w-1 h-1 rounded-full bg-white/20" />
-                          {formatFileSize(episode.file_size)}
-                        </span>
-                      )}
-                      {/* Chapter Indicator */}
-                      {episode.chapters && episode.chapters.length > 0 && (
-                        <span className="text-accent-primary">
-                          {episode.chapters.length} CH
-                        </span>
-                      )}
-                      {(() => {
-                        if (isFinished) {
-                          // Badge removed in favor of Solid Green Check Button
+                    <div className="flex-1 min-w-0 py-1">
+                      <h3
+                        className={`text-sm sm:text-base font-medium line-clamp-2 mb-1.5 transition-colors leading-snug ${
+                          isCurrentEpisode
+                            ? "text-accent-primary"
+                            : isFinished
+                              ? "text-white/40 line-through decoration-accent-success/40"
+                              : "text-white group-hover:text-accent-primary/80"
+                        }`}
+                        title={episode.title}
+                      >
+                        {episode.title}
+                        {isOffline && (
+                          <CloudOff className="inline-block w-3 h-3 ml-1.5 text-accent-success" />
+                        )}
+                      </h3>
+                      <div className="flex flex-wrap items-center gap-x-3 sm:gap-x-4 gap-y-1 text-[10px] font-mono text-white/40 uppercase tracking-wider">
+                        {episode.published_at && (
+                          <span className="flex items-center gap-1.5">
+                            <Clock className="w-3 h-3 text-white/20" />
+                            {formatDate(episode.published_at)}
+                          </span>
+                        )}
+                        {episode.duration_seconds && (
+                          <span className="flex items-center gap-1.5">
+                            <span className="w-1 h-1 rounded-full bg-white/20" />
+                            {formatDuration(episode.duration_seconds)}
+                          </span>
+                        )}
+                        {(episode.file_size ?? 0) > 0 && (
+                          <span className="flex items-center gap-1.5">
+                            <span className="w-1 h-1 rounded-full bg-white/20" />
+                            {formatFileSize(episode.file_size)}
+                          </span>
+                        )}
+                        {/* Chapter Indicator */}
+                        {episode.chapters && episode.chapters.length > 0 && (
+                          <span className="text-accent-primary">
+                            {episode.chapters.length} CH
+                          </span>
+                        )}
+                        {(() => {
+                          if (isFinished) {
+                            // Badge removed in favor of Solid Green Check Button
+                            return null;
+                          }
+                          if (position > 0) {
+                            return (
+                              <span className="text-accent-primary ml-auto">
+                                {progressPercent}% COMPLETE
+                              </span>
+                            );
+                          }
                           return null;
+                        })()}
+                      </div>
+                    </div>
+
+                    {/* Desktop Action buttons - hidden on mobile */}
+                    <div className="hidden sm:flex items-center gap-1">
+                      <button
+                        onClick={(e: MouseEvent<HTMLButtonElement>) => {
+                          e.stopPropagation();
+                          void handleToggleFavorite(episode.id);
+                        }}
+                        disabled={favoriteLoading[episode.id]}
+                        className={`flex-shrink-0 p-3 rounded-xl transition-colors border border-transparent ${
+                          favoriteEpisodeIds.has(episode.id)
+                            ? "text-red-400 hover:bg-red-500/10 hover:border-red-500/30"
+                            : "text-white/30 hover:text-red-400 hover:bg-red-500/10 hover:border-red-500/20"
+                        }`}
+                        title={
+                          favoriteEpisodeIds.has(episode.id)
+                            ? "Remove from favorites"
+                            : "Add to favorites"
                         }
-                        if (position > 0) {
-                          return (
-                            <span className="text-accent-primary ml-auto">
-                              {progressPercent}% COMPLETE
-                            </span>
-                          );
-                        }
-                        return null;
-                      })()}
+                      >
+                        <Heart
+                          className="w-5 h-5"
+                          fill={
+                            favoriteEpisodeIds.has(episode.id)
+                              ? "currentColor"
+                              : "none"
+                          }
+                        />
+                      </button>
+                      <button
+                        onClick={(e: MouseEvent<HTMLButtonElement>) => {
+                          e.stopPropagation();
+                          setPlaylistDialogEpisode(episode);
+                        }}
+                        className="flex-shrink-0 p-3 text-white/30 hover:text-accent-primary hover:bg-accent-primary/10 rounded-xl transition-colors border border-transparent hover:border-accent-primary/20"
+                        title="Add to playlist"
+                      >
+                        <ListPlus className="w-5 h-5" />
+                      </button>
+                      {/* Intensive listening - only show when not downloading or error */}
+                      {!isDownloading &&
+                        !isError &&
+                        renderIntensiveListeningButton(episode)}
+                      {renderDownloadButton(episode)}
                     </div>
                   </div>
-
-                  {/* Action buttons - always visible, but styled cleanly */}
-                  <div className="flex items-center gap-1 opacity-40 group-hover:opacity-100 transition-opacity">
-                    <button
-                      onClick={(e: MouseEvent<HTMLButtonElement>) => {
-                        e.stopPropagation();
-                        void handleToggleFavorite(episode.id);
-                      }}
-                      disabled={favoriteLoading[episode.id]}
-                      className={`flex-shrink-0 p-2 sm:p-3 rounded-lg transition-colors border border-transparent ${
-                        favoriteEpisodeIds.has(episode.id)
-                          ? "text-red-400 hover:bg-red-500/10 hover:border-red-500/30"
-                          : "text-white/40 hover:text-red-400 hover:bg-red-500/10 hover:border-red-500/20"
-                      }`}
-                      title={
-                        favoriteEpisodeIds.has(episode.id)
-                          ? "Remove from favorites"
-                          : "Add to favorites"
-                      }
-                    >
-                      <Heart
-                        className="w-4 h-4 sm:w-5 sm:h-5"
-                        fill={
-                          favoriteEpisodeIds.has(episode.id)
-                            ? "currentColor"
-                            : "none"
-                        }
-                      />
-                    </button>
-                    <button
-                      onClick={(e: MouseEvent<HTMLButtonElement>) => {
-                        e.stopPropagation();
-                        setPlaylistDialogEpisode(episode);
-                      }}
-                      className="flex-shrink-0 p-2 sm:p-3 text-white/40 hover:text-accent-primary hover:bg-accent-primary/10 rounded-lg transition-colors border border-transparent hover:border-accent-primary/20"
-                      title="Add to playlist"
-                    >
-                      <ListPlus className="w-4 h-4 sm:w-5 sm:h-5" />
-                    </button>
-                    {renderIntensiveListeningButton(episode)}
-                    {renderDownloadButton(episode)}
-                  </div>
-                </div>
+                </EpisodeSwipeCard>
               );
             })}
           </div>
