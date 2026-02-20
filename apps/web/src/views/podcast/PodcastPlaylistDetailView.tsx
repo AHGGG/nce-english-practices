@@ -58,6 +58,10 @@ export default function PodcastPlaylistDetailView() {
     [playlist],
   );
   const episodeIdsKey = useMemo(() => episodeIds.join(","), [episodeIds]);
+  const playbackQueue = useMemo(
+    () => items.map((item) => ({ episode: item.episode, feed: item.feed })),
+    [items],
+  );
 
   useEffect(() => {
     const current = getPlaylistById(playlistId);
@@ -191,7 +195,9 @@ export default function PodcastPlaylistDetailView() {
                   imageUrl={item.episode.image_url || item.feed.image_url}
                   isCurrent={isCurrent}
                   isPlaying={isCurrentAndPlaying}
-                  onClick={() => playEpisode(item.episode, item.feed, null)}
+                  onClick={() =>
+                    playEpisode(item.episode, item.feed, null, playbackQueue)
+                  }
                   sizeClassName="w-12 h-12"
                   iconClassName="w-3.5 h-3.5"
                   fallbackIconClassName="w-4 h-4"

@@ -343,6 +343,7 @@ Offline playback with PWA support, audio caching via Cache API, and episode stat
   - Stored in browser `localStorage` via `apps/web/src/utils/podcastPlaylists.ts`
   - Web routes: `/podcast/playlists` and `/podcast/playlist/:playlistId`
   - Add-to-playlist action available per episode in feed detail view
+  - Web playlist detail playback now seeds a queue in `apps/web/src/context/PodcastContext.tsx` so when an episode ends it auto-continues to the next item in that playlist
 
 #### AI Transcription (Intensive Listening Mode)
 

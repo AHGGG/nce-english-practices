@@ -56,6 +56,11 @@ interface StorageInfo {
   quotaMB: string;
 }
 
+interface PlaybackQueueItem {
+  episode: PodcastEpisode;
+  feed: PodcastFeed;
+}
+
 interface PodcastContextValue {
   currentEpisode: PodcastEpisode | null;
   currentFeed: PodcastFeed | null;
@@ -73,6 +78,7 @@ interface PodcastContextValue {
     episode: PodcastEpisode,
     feed: PodcastFeed,
     startPosition?: number | null,
+    queue?: PlaybackQueueItem[] | null,
   ) => Promise<void>;
   togglePlayPause: () => void;
   seek: (seconds: number) => void;
@@ -141,6 +147,9 @@ export function PodcastProvider({ children }: { children: ReactNode }) {
   const finalizeEpisodePlaybackRef = useRef<
     ((reason: "ended" | "near-end") => Promise<void>) | null
   >(null);
+  const playbackQueueRef = useRef<PlaybackQueueItem[] | null>(null);
+  const queueIndexRef = useRef(-1);
+  const playNextInQueueRef = useRef<(() => Promise<void>) | null>(null);
 
   // Download state
   // { [episodeId]: { status: 'idle'|'downloading'|'done'|'error', progress: 0-100, error?: string } }
@@ -295,6 +304,7 @@ export function PodcastProvider({ children }: { children: ReactNode }) {
           setIsPlaying(false);
 
           await finalizeEpisodePlaybackRef.current?.("ended");
+          await playNextInQueueRef.current?.();
         })();
       });
 
@@ -578,6 +588,7 @@ export function PodcastProvider({ children }: { children: ReactNode }) {
       episode: PodcastEpisode,
       feed: PodcastFeed,
       startPosition: number | null = null,
+      queue: PlaybackQueueItem[] | null = null,
     ) => {
       if (!episode?.audio_url) return;
 
@@ -604,6 +615,17 @@ export function PodcastProvider({ children }: { children: ReactNode }) {
       setListenedSeconds(0);
       lastUpdateRef.current = 0;
       finalizedEpisodeIdRef.current = null;
+
+      if (queue && queue.length > 0) {
+        const currentIndex = queue.findIndex(
+          (item) => item.episode.id === episode.id,
+        );
+        playbackQueueRef.current = queue;
+        queueIndexRef.current = currentIndex;
+      } else {
+        playbackQueueRef.current = null;
+        queueIndexRef.current = -1;
+      }
 
       // Get resume position (use provided startPosition or fetch from API)
       let resumePosition = startPosition;
@@ -693,6 +715,27 @@ export function PodcastProvider({ children }: { children: ReactNode }) {
     [sessionId, currentEpisode, listenedSeconds],
   );
 
+  const playNextInQueue = useCallback(async () => {
+    const queue = playbackQueueRef.current;
+    const currentIndex = queueIndexRef.current;
+
+    if (!queue || currentIndex < 0) return;
+
+    const nextIndex = currentIndex + 1;
+    if (nextIndex >= queue.length) {
+      playbackQueueRef.current = null;
+      queueIndexRef.current = -1;
+      return;
+    }
+
+    const nextItem = queue[nextIndex];
+    await playEpisode(nextItem.episode, nextItem.feed, 0, queue);
+  }, [playEpisode]);
+
+  useEffect(() => {
+    playNextInQueueRef.current = playNextInQueue;
+  }, [playNextInQueue]);
+
   // Toggle play/pause
   const togglePlayPause = useCallback(() => {
     if (!audioRef.current) return;
@@ -765,6 +808,8 @@ export function PodcastProvider({ children }: { children: ReactNode }) {
     setIsPlaying(false);
     setSessionId(null);
     setListenedSeconds(0);
+    playbackQueueRef.current = null;
+    queueIndexRef.current = -1;
   }, [sessionId, listenedSeconds]);
 
   const value: PodcastContextValue = {
@@ -817,6 +862,7 @@ export default PodcastContext;
 export type {
   PodcastEpisode,
   PodcastFeed,
+  PlaybackQueueItem,
   DownloadItemState,
   StorageInfo,
   PodcastContextValue,
