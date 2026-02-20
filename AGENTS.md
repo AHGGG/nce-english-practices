@@ -339,6 +339,8 @@ Offline playback with PWA support, audio caching via Cache API, and episode stat
   - Session/sync/device endpoints: `app/api/routers/podcast_session_routes.py`
   - Download proxy endpoints: `app/api/routers/podcast_download_routes.py`
   - Transcription trigger/background task endpoints: `app/api/routers/podcast_transcription_routes.py`
+- **Performance Ranking**:
+  - `GET /api/performance/study-time` now includes `podcast_channels` (Top 10 channels by listened seconds in selected time range, including channel cover `image_url`), aggregated from `podcast_listening_sessions` -> `podcast_episodes` -> `podcast_feeds`
 - **Playlists (Client-only)**:
   - Stored in browser `localStorage` via `apps/web/src/utils/podcastPlaylists.ts`
   - Web routes: `/podcast/playlists` and `/podcast/playlist/:playlistId`

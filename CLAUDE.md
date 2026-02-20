@@ -152,6 +152,16 @@ config.headers.Authorization = `Bearer ${token}`;
 
 Pure logic hooks (no UI). Example: `useWordExplainer` returns `{ data, actions }`.
 
+### 4. Collocation Cache Reset Script
+
+When collocation prompt/schema changes and you need full re-detection, use:
+
+```bash
+uv run python scripts/clear_collocation_cache.py --yes
+```
+
+This clears DB cache table `sentence_collocation_cache`; restart backend to clear in-memory cache too.
+
 ## Shortcuts (Windows)
 
 ```powershell
@@ -200,6 +210,9 @@ DASHSCOPE_API_KEY=your_key # Alibaba Cloud Dashscope (Qwen)
 # Database (defaults to local postgres)
 DATABASE_URL=postgresql+asyncpg://postgres:postgres@localhost:5432/nce_practice
 
+# Network / TLS
+OUTBOUND_SSL_VERIFY=true  # Keep true in production; set false only for trusted local proxy debugging
+
 # Authentication (IMPORTANT: Change SECRET_KEY in production!)
 # Generate with: openssl rand -hex 32
 SECRET_KEY=your-32-byte-hex-secret-key
@@ -225,6 +238,7 @@ The system uses **Edge-TTS** for audio.
 ```
 app/
 ├── main.py, config.py          # Entry & Config
+├── app_factory.py              # FastAPI assembly (lifespan, routers, middleware, SPA mount)
 ├── core/db.py                  # SQLAlchemy async session
 ├── services/                   # Business Logic
 │   ├── llm.py                  # DeepSeek + Gemini Client
@@ -239,6 +253,8 @@ app/
 ### Authentication System
 
 Multi-user authentication with JWT tokens, token refresh strategy, and data migration tools. See: [Auth System Documentation](docs/auth-system.md)
+
+- **Router dependency entrypoint**: `app/api/deps/auth.py` re-exports auth dependencies (`get_current_user`, `require_current_user`, `get_current_user_id`) so business routers do not import from `app/api/routers/auth.py` directly.
 
 ### Database Layer
 
@@ -316,10 +332,20 @@ Offline playback with PWA support, audio caching via Cache API, and episode stat
   - **Data Model**: `PodcastFavoriteEpisode` (`podcast_favorite_episodes`)
   - **API**: `GET /api/podcast/favorites`, `GET /api/podcast/favorites/ids`, `POST /api/podcast/episode/{id}/favorite`, `DELETE /api/podcast/episode/{id}/favorite`
   - **Web**: Favorites page and in-feed favorite toggle in `apps/web/src/views/podcast/PodcastFeedDetailView.tsx`
+  - **Mobile**: Favorites list route `apps/mobile/app/podcast/favorites.tsx`, entry button in `apps/mobile/app/(tabs)/podcast.tsx`, and in-feed favorite toggle in `apps/mobile/src/components/podcast/PodcastDetailView.tsx`
+- **Router Composition (Backend)**:
+  - `app/api/routers/podcast.py` is the composition entry (`/api/podcast` prefix)
+  - Feed/favorites/opml/image endpoints: `app/api/routers/podcast_feed_routes.py`
+  - Session/sync/device endpoints: `app/api/routers/podcast_session_routes.py`
+  - Download proxy endpoints: `app/api/routers/podcast_download_routes.py`
+  - Transcription trigger/background task endpoints: `app/api/routers/podcast_transcription_routes.py`
+- **Performance Ranking**:
+  - `GET /api/performance/study-time` now includes `podcast_channels` (Top 10 channels by listened seconds in selected time range, including channel cover `image_url`), aggregated from `podcast_listening_sessions` -> `podcast_episodes` -> `podcast_feeds`
 - **Playlists (Client-only)**:
   - Stored in browser `localStorage` via `apps/web/src/utils/podcastPlaylists.ts`
   - Web routes: `/podcast/playlists` and `/podcast/playlist/:playlistId`
   - Add-to-playlist action available per episode in feed detail view
+  - Web playlist detail playback now seeds a queue in `apps/web/src/context/PodcastContext.tsx` so when an episode ends it auto-continues to the next item in that playlist
 
 #### AI Transcription (Intensive Listening Mode)
 
@@ -372,6 +398,25 @@ Local audiobook playback with synchronized subtitle highlighting.
 - **Subtitle Formats**: SRT, VTT, LRC
 - **Directory Structure**: `resources/audiobooks/{book_id}/` containing `audio.mp3` + `subtitles.srt` + optional `metadata.json`
 
+### EPUB Provider Boundaries
+
+- **Provider**: `app/services/content_providers/epub_provider.py`
+- **Public methods for routers/services**: `list_books()`, `resolve_filename(filename_or_id)`, `get_articles(filename_or_id)`, `get_block_sentence_count(article)`, `split_sentences(text)`
+- **Rule**: callers should not access private EPUB internals (`_load_epub`, `_cached_articles`, `_split_sentences_lenient`, `_extract_structured_blocks`) outside the provider
+
+### Source ID Parsing
+
+- **Utility**: `app/services/source_id.py` provides shared helpers (`parse_source_id`, `parse_epub_source_id`)
+- **Rule**: routers/services should reuse these helpers for `{source_type}:{item_id}:{index}` parsing instead of ad-hoc `split(":")` logic
+
+### Unified Content Protocol
+
+- **Catalog API**: `GET /api/content/catalog/{source_type}` returns provider items (for EPUB includes stable `id` + `filename`)
+- **Units API**: `GET /api/content/units/{source_type}/{item_id}` and `/with-status` return chapter/unit lists keyed by stable item id
+- **Bundle API**: `GET /api/content/bundle?source_id=...` is the unified read endpoint for reading/sentence-study overlays
+- **Asset API**: `GET /api/content/asset?source_id=...&path=...` serves provider assets (EPUB images currently)
+- **Capabilities Contract**: providers expose `get_capabilities()` and include flags under `ContentBundle.metadata.capabilities`
+
 ### Content Renderer System
 
 Unified rendering system for different content types (epub, podcast, audiobook). See: [Content Renderer Skill](docs/skills/content-renderer.md)
@@ -381,6 +426,7 @@ Unified rendering system for different content types (epub, podcast, audiobook).
 - Use `studyWordSet` + `studyPhraseSet` (NOT `studyHighlightSet`) - split for different rendering styles
 - Use `getCollocations` callback (NOT static collocations array) - each sentence needs its own collocations
 - `MemoizedSentence.jsx` re-exports `SentenceBlock` - always use `SentenceBlock` for new code
+- Collocation detection now outputs `reasoning` (English rationale) + `difficulty` (1/2/3) + optional `confidence`; frontend/mobile apply global real-time filtering via `collocationDisplayLevel` (`basic|core|full`) across reading/sentence-study/podcast/audiobook/review flows
 
 ### Coach Service (Agentic)
 
@@ -453,6 +499,7 @@ Get-Content logs/unified.log -Tail 50   # Last 50 lines
 - **API Routes**: Use `async def` and run blocking LLM calls in thread pools via `run_in_threadpool`.
 - **CRITICAL RULE**: Do NOT use `async def` for CPU-bound or blocking I/O operations (like `time.sleep`, heavy file parsing) unless you `await` them. If you can't await them, use `def` (sync) so FastAPI runs them in a thread pool. Mixing blocking code in `async def` will freeze the entire event loop.
 - **Database**: All DB operations are async using `AsyncSessionLocal`.
+- **Concurrent DB Tasks**: Never share one `AsyncSession` across `asyncio.gather` tasks; create isolated sessions per concurrent task (same pattern as collocation batch detection and stats aggregation).
 - **Tests**: Use `pytest-asyncio` with function-scoped fixtures for isolation.
 
 ### 6. Stateful Chat Sessions
@@ -496,6 +543,16 @@ See: [Content Renderer Skill](docs/skills/content-renderer.md) for detailed pitf
 ## Mobile Architecture & Guidelines
 
 React Native + Expo + NativeWind architecture. Covers audio background tasks, WebView bridge, voice PTT, Zustand persistence, and SSE streaming. See: [Mobile Architecture Documentation](docs/mobile-architecture.md)
+
+- **Reading/Sentence Study List Reuse (Mobile)**: `apps/mobile/src/components/UnifiedArticleListMobile.tsx` is the shared entry list UI for both `apps/mobile/app/(tabs)/library.tsx` (Reading) and `apps/mobile/app/sentence-study.tsx` (Sentence Study), mirroring Web's `UnifiedArticleListView` pattern.
+- **Unified Content Contract**: mobile book/article list loaders must support `catalog` as `items` (legacy `books`) and units as `units` (legacy `articles`) to stay compatible with `/api/content/catalog/epub` and `/api/content/units/epub/{item_id}/with-status`.
+- **Reading Collocations (Mobile)**: `apps/mobile/app/reading/[id].tsx` loads sentence collocations via shared `useCollocationLoader`, and `apps/mobile/src/utils/htmlGenerator.ts` renders phrase-level dashed collocation highlights in the WebView (filtered by global `collocationDisplayLevel`).
+- **Shared Collocation Logic**: use `packages/shared/src/utils/collocationHighlight.ts` (`filterCollocationsByLevel`, `normalizeStudyHighlights`, `normalizePhrase`) as the single source of truth for Reading/Sentence Study collocation filtering and study-highlight normalization.
+- **Shared Collocation Level Switch (Mobile)**: `apps/mobile/src/components/content/CollocationLevelSwitch.tsx` is the shared UI control for `collocationDisplayLevel`; Reading, Sentence Study, Podcast Intensive, and Audiobook should reuse this component to avoid UI drift.
+- **Settings Contract Parity**: `packages/store/src/modules/settings` should keep `podcastSpeed` and `transcriptionRemote*` keys aligned with web `GlobalSettings`; mobile podcast intensive transcription should pass optional `remote_url` and `api_key` through `podcastApi.transcribeEpisode` when remote mode is enabled.
+- **Podcast Playlists + OPML (Mobile)**: mobile supports local playlist management at `apps/mobile/app/podcast/playlists.tsx` and `apps/mobile/app/podcast/playlist/[playlistId].tsx` (storage utility: `apps/mobile/src/utils/podcastPlaylists.ts`), and OPML import/export tools at `apps/mobile/app/podcast/opml.tsx`.
+- **Unified Player Route (Mobile)**: mobile exposes `/player/[sourceType]/[contentId]` via `apps/mobile/app/player/[sourceType]/[contentId].tsx` to align deep-link shape with web unified player paths while delegating to platform-specific screens.
+- **Mobile Debug Route Parity**: mobile exposes review debug routes `apps/mobile/app/performance/debug.tsx` and `apps/mobile/app/performance/memory-debug.tsx` with access from `apps/mobile/app/(tabs)/stats.tsx`.
 
 ## Skills (Detailed Tool Guides)
 

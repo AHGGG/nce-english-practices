@@ -18,7 +18,7 @@ from app.database.core import (
     SentenceLearningRecord,
 )
 from app.models.orm import VoiceSession, ReviewLog, ReviewItem
-from app.models.podcast_orm import PodcastListeningSession
+from app.models.podcast_orm import PodcastListeningSession, PodcastEpisode, PodcastFeed
 
 logger = logging.getLogger(__name__)
 
@@ -372,6 +372,44 @@ async def get_daily_study_time(
                 row[0].date().isoformat(): row[1] or 0 for row in podcast_res
             }
 
+            podcast_channel_stmt = (
+                select(
+                    PodcastFeed.id.label("feed_id"),
+                    PodcastFeed.title.label("feed_title"),
+                    PodcastFeed.image_url.label("feed_image_url"),
+                    func.sum(PodcastListeningSession.total_listened_seconds).label(
+                        "total_seconds"
+                    ),
+                )
+                .join(
+                    PodcastEpisode,
+                    PodcastListeningSession.episode_id == PodcastEpisode.id,
+                )
+                .join(PodcastFeed, PodcastEpisode.feed_id == PodcastFeed.id)
+                .where(
+                    and_(
+                        PodcastListeningSession.started_at >= cutoff,
+                        PodcastListeningSession.user_id == user_id,
+                    )
+                )
+                .group_by(PodcastFeed.id, PodcastFeed.title)
+                .order_by(
+                    func.sum(PodcastListeningSession.total_listened_seconds).desc()
+                )
+                .limit(10)
+            )
+            podcast_channel_res = await session.execute(podcast_channel_stmt)
+            podcast_channels = [
+                {
+                    "feed_id": row.feed_id,
+                    "title": row.feed_title or f"Podcast {row.feed_id}",
+                    "image_url": row.feed_image_url,
+                    "total_seconds": row.total_seconds or 0,
+                    "total_minutes": round((row.total_seconds or 0) / 60),
+                }
+                for row in podcast_channel_res
+            ]
+
             # Merge all days
             all_dates = sorted(
                 list(
@@ -407,11 +445,12 @@ async def get_daily_study_time(
             return {
                 "daily": daily_data,
                 "total_seconds": sum(d["total"] for d in daily_data),
+                "podcast_channels": podcast_channels,
             }
 
         except Exception:
             logger.exception("DB Error get_daily_study_time")
-            return {"daily": [], "total_seconds": 0}
+            return {"daily": [], "total_seconds": 0, "podcast_channels": []}
 
 
 async def get_memory_curve_data(

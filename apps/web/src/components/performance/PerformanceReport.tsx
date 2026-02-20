@@ -16,6 +16,7 @@ import {
 import Card from "./cards/Card";
 import MemoryCurveChart from "./widgets/MemoryCurveChart";
 import StudyTimeChart from "./widgets/StudyTimeChart";
+import PodcastChannelRanking from "./widgets/PodcastChannelRanking";
 import { formatDuration, formatWordCount } from "./utils";
 
 import { apiGet } from "../../api/auth";
@@ -36,6 +37,15 @@ interface DailyStudyEntry {
 
 interface StudyTimeDetailData {
   daily: DailyStudyEntry[];
+  podcast_channels: PodcastChannelEntry[];
+}
+
+interface PodcastChannelEntry {
+  feed_id: number;
+  title: string;
+  image_url?: string | null;
+  total_seconds: number;
+  total_minutes: number;
 }
 
 interface ReadingStats {
@@ -351,6 +361,14 @@ const PerformanceReport = () => {
             <div className="pt-2">
               <StudyTimeChart dailyData={studyTimeDetail?.daily || []} />
             </div>
+          </Card>
+        </div>
+
+        <div className="mb-12">
+          <Card title="Podcast Listening Ranking" icon={BarChart2}>
+            <PodcastChannelRanking
+              channels={studyTimeDetail?.podcast_channels || []}
+            />
           </Card>
         </div>
 
