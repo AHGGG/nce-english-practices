@@ -124,6 +124,9 @@ function RootContent() {
         <Stack.Screen name="performance" />
         <Stack.Screen name="review-queue" />
         <Stack.Screen name="podcast/index" />
+        <Stack.Screen name="podcast/opml" />
+        <Stack.Screen name="podcast/playlists" />
+        <Stack.Screen name="podcast/playlist/[playlistId]" />
         <Stack.Screen name="audiobook/index" />
         <Stack.Screen name="weak-points" />
         <Stack.Screen name="auth/login" />
@@ -134,6 +137,7 @@ function RootContent() {
         <Stack.Screen name="books/[filename]" />
         <Stack.Screen name="audiobook/[bookId]" />
         <Stack.Screen name="podcast/intensive" />
+        <Stack.Screen name="player/[sourceType]/[contentId]" />
       </Stack>
       <PlayerBar />
     </View>

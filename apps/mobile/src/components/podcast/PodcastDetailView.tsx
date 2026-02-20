@@ -15,6 +15,7 @@ import {
   Download,
   CheckCircle,
   Heart,
+  ListPlus,
 } from "lucide-react-native";
 import { formatDuration } from "@nce/shared";
 import { useDownloadStore } from "@nce/store";
@@ -30,6 +31,7 @@ interface Props {
   favoriteEpisodeIds?: Set<number>;
   favoriteLoading?: Record<number, boolean>;
   onToggleFavorite?: (episodeId: number, nextFavorite: boolean) => void;
+  onAddToPlaylist?: (episodeId: number) => void;
 }
 
 const DownloadButton = ({ episode }: { episode: PodcastEpisode }) => {
@@ -78,6 +80,7 @@ export const PodcastDetailView = ({
   favoriteEpisodeIds,
   favoriteLoading,
   onToggleFavorite,
+  onAddToPlaylist,
 }: Props) => {
   const { feed, episodes, is_subscribed } = data;
 
@@ -210,6 +213,18 @@ export const PodcastDetailView = ({
                     }
                     fill={favoriteEpisodeIds?.has(item.id) ? "#FF5A7A" : "none"}
                   />
+                </TouchableOpacity>
+              )}
+
+              {onAddToPlaylist && (
+                <TouchableOpacity
+                  className="ml-3"
+                  onPress={(e) => {
+                    e.stopPropagation();
+                    onAddToPlaylist(item.id);
+                  }}
+                >
+                  <ListPlus size={16} color="#8A8A8A" />
                 </TouchableOpacity>
               )}
 

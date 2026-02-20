@@ -1,4 +1,4 @@
-import { View, ActivityIndicator, Text } from "react-native";
+import { View, ActivityIndicator, Text, Alert } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useLocalSearchParams, useRouter, Stack } from "expo-router";
 import {
@@ -10,6 +10,10 @@ import { PodcastDetailView } from "../../src/components/podcast/PodcastDetailVie
 import { ChevronLeft } from "lucide-react-native";
 import { TouchableOpacity } from "react-native";
 import { useState } from "react";
+import {
+  addEpisodeToPlaylist,
+  getPlaylists,
+} from "../../src/utils/podcastPlaylists";
 
 export default function PodcastDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -66,6 +70,32 @@ export default function PodcastDetailScreen() {
 
   const favoriteIdSet = new Set(favoriteIds || []);
 
+  const handleAddToPlaylist = async (episodeId: number) => {
+    const playlists = await getPlaylists();
+    if (playlists.length === 0) {
+      Alert.alert(
+        "No playlists",
+        "Create a playlist first from Podcast > Playlists.",
+      );
+      return;
+    }
+
+    Alert.alert(
+      "Add to playlist",
+      "Choose destination",
+      [
+        ...playlists.slice(0, 6).map((playlist) => ({
+          text: playlist.name,
+          onPress: async () => {
+            await addEpisodeToPlaylist(playlist.id, episodeId);
+          },
+        })),
+        { text: "Cancel", style: "cancel" as const },
+      ],
+      { cancelable: true },
+    );
+  };
+
   const handleToggleFavorite = async (
     episodeId: number,
     nextFavorite: boolean,
@@ -114,14 +144,12 @@ export default function PodcastDetailScreen() {
           });
         }}
         onIntensiveEpisode={(episode) => {
-          router.push({
-            pathname: "/podcast/intensive",
-            params: { episodeId: episode.id },
-          });
+          router.push(`/player/podcast/${episode.id}`);
         }}
         favoriteEpisodeIds={favoriteIdSet}
         favoriteLoading={favoriteLoading}
         onToggleFavorite={handleToggleFavorite}
+        onAddToPlaylist={handleAddToPlaylist}
       />
     </SafeAreaView>
   );

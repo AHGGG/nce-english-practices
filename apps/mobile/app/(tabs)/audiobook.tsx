@@ -60,7 +60,7 @@ export default function AudiobookTabScreen() {
             <TouchableOpacity
               className="bg-bg-surface p-4 rounded-xl border border-border-default mb-3"
               onPress={() =>
-                router.push(`/audiobook/${encodeURIComponent(item.id)}`)
+                router.push(`/player/audiobook/${encodeURIComponent(item.id)}`)
               }
             >
               <View className="flex-row items-start">

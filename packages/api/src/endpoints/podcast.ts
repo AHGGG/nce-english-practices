@@ -1,4 +1,4 @@
-import { apiGet, apiPost, apiDelete } from "../auth";
+import { apiGet, apiPost, apiDelete, authFetch } from "../auth";
 
 export interface ItunesSearchResult {
   itunes_id?: number;
@@ -73,6 +73,15 @@ export interface PodcastFavoriteItem {
   favorited_at?: string;
 }
 
+interface EpisodeBatchItem {
+  episode: PodcastEpisode;
+  feed: {
+    id: number;
+    title: string;
+    image_url?: string | null;
+  };
+}
+
 export const podcastApi = {
   async search(query: string, limit = 20) {
     return apiGet(
@@ -107,6 +116,12 @@ export const podcastApi = {
     return data[0].episode as PodcastEpisode;
   },
 
+  async getEpisodesBatch(episodeIds: number[]) {
+    return apiPost("/api/podcast/episodes/batch", {
+      episode_ids: episodeIds,
+    }) as Promise<EpisodeBatchItem[]>;
+  },
+
   async preview(rssUrl: string) {
     return apiPost("/api/podcast/preview", {
       rss_url: rssUrl,
@@ -125,6 +140,49 @@ export const podcastApi = {
 
   async refreshFeed(feedId: number) {
     return apiPost(`/api/podcast/feed/${feedId}/refresh`, {});
+  },
+
+  async importOPMLFromFile(
+    fileUri: string,
+    fileName: string = "podcasts.opml",
+  ) {
+    const formData = new FormData();
+    formData.append("file", {
+      uri: fileUri,
+      name: fileName,
+      type: "text/xml",
+    } as any);
+
+    const response = await authFetch("/api/podcast/opml/import", {
+      method: "POST",
+      headers: {
+        Accept: "application/json",
+      },
+      body: formData,
+    });
+
+    if (!response.ok) {
+      const text = await response.text();
+      throw new Error(text || "Failed to import OPML");
+    }
+
+    return response.json();
+  },
+
+  async exportOPMLText() {
+    const response = await authFetch("/api/podcast/opml/export", {
+      method: "GET",
+      headers: {
+        Accept: "application/xml,text/xml,*/*",
+      },
+    });
+
+    if (!response.ok) {
+      const text = await response.text();
+      throw new Error(text || "Failed to export OPML");
+    }
+
+    return response.text();
   },
 
   async getRecentlyPlayed() {

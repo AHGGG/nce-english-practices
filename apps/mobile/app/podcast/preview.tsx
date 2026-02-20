@@ -1,9 +1,19 @@
-import { View, ActivityIndicator, Text, TouchableOpacity } from "react-native";
+import {
+  View,
+  ActivityIndicator,
+  Text,
+  TouchableOpacity,
+  Alert,
+} from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useLocalSearchParams, useRouter, Stack } from "expo-router";
 import { usePodcastPreview, usePodcastMutations } from "@nce/shared";
 import { PodcastDetailView } from "../../src/components/podcast/PodcastDetailView";
 import { ChevronLeft } from "lucide-react-native";
+import {
+  addEpisodeToPlaylist,
+  getPlaylists,
+} from "../../src/utils/podcastPlaylists";
 
 export default function PodcastPreviewScreen() {
   const { rss_url } = useLocalSearchParams<{ rss_url: string }>();
@@ -38,6 +48,32 @@ export default function PodcastPreviewScreen() {
     }
   };
 
+  const handleAddToPlaylist = async (episodeId: number) => {
+    const playlists = await getPlaylists();
+    if (playlists.length === 0) {
+      Alert.alert(
+        "No playlists",
+        "Create a playlist first from Podcast > Playlists.",
+      );
+      return;
+    }
+
+    Alert.alert(
+      "Add to playlist",
+      "Choose destination",
+      [
+        ...playlists.slice(0, 6).map((playlist) => ({
+          text: playlist.name,
+          onPress: async () => {
+            await addEpisodeToPlaylist(playlist.id, episodeId);
+          },
+        })),
+        { text: "Cancel", style: "cancel" as const },
+      ],
+      { cancelable: true },
+    );
+  };
+
   return (
     <SafeAreaView className="flex-1 bg-bg-base">
       <Stack.Screen options={{ headerShown: false }} />
@@ -70,6 +106,7 @@ export default function PodcastPreviewScreen() {
             },
           });
         }}
+        onAddToPlaylist={handleAddToPlaylist}
       />
     </SafeAreaView>
   );
