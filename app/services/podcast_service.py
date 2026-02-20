@@ -382,6 +382,19 @@ class PodcastService:
                     or hashlib.md5(audio_url.encode("utf-8")).hexdigest()
                 )
 
+                episode_image = None
+                itunes_image = entry.get("itunes_image")
+                if isinstance(itunes_image, dict):
+                    episode_image = itunes_image.get("href")
+                elif itunes_image:
+                    episode_image = itunes_image
+                if not episode_image and hasattr(entry, "image") and entry.image:
+                    episode_image = entry.image.get("href")
+                if not episode_image:
+                    media_thumbnails = entry.get("media_thumbnail")
+                    if media_thumbnails and isinstance(media_thumbnails, list):
+                        episode_image = media_thumbnails[0].get("url")
+
                 episodes.append(
                     {
                         "guid": guid,
@@ -392,9 +405,7 @@ class PodcastService:
                         "duration_seconds": self._parse_duration(
                             entry.get("itunes_duration")
                         ),
-                        "image_url": entry.get("itunes_image", {}).get("href")
-                        if isinstance(entry.get("itunes_image"), dict)
-                        else None,
+                        "image_url": episode_image,
                         "published_at": published_at,
                         "chapters": self._parse_chapters(entry),
                     }
