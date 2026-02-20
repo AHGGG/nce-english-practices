@@ -4,7 +4,7 @@
  */
 
 import { useState, useEffect, useCallback, useRef } from "react";
-import type { FormEvent, MouseEvent, ReactNode } from "react";
+import type { MouseEvent, ReactNode } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import {
   ArrowLeft,
@@ -237,6 +237,7 @@ export default function PodcastFeedDetailView() {
   const lastTimeRef = useRef(0);
   const lastDurationRef = useRef(0);
   const checkedSizeIdsRef = useRef(new Set()); // Track episodes checked for file size
+  const episodeQueryRef = useRef("");
 
   // Update refs on every render
   lastTimeRef.current = currentTime;
@@ -293,6 +294,10 @@ export default function PodcastFeedDetailView() {
     void loadFeed(false, episodeQuery);
   }, [episodeQuery]);
 
+  useEffect(() => {
+    episodeQueryRef.current = episodeQuery;
+  }, [episodeQuery]);
+
   // Auto-refresh logic: trigger refresh once when subscribed feed is loaded (silent)
   useEffect(() => {
     if (!loading && isSubscribed && !hasAutoRefreshedRef.current) {
@@ -337,7 +342,7 @@ export default function PodcastFeedDetailView() {
     }
   }, [episodes]);
 
-  async function loadFeed(reset = false, query = episodeQuery) {
+  async function loadFeed(reset = false, query = episodeQueryRef.current) {
     try {
       if (reset) {
         window.scrollTo(0, 0);
@@ -402,18 +407,14 @@ export default function PodcastFeedDetailView() {
     }
   }
 
-  function handleEpisodeSearch(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    const nextQuery = searchInput.trim();
-    if (nextQuery === episodeQuery) return;
-    setEpisodeQuery(nextQuery);
-  }
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      const nextQuery = searchInput.trim();
+      setEpisodeQuery((prev) => (prev === nextQuery ? prev : nextQuery));
+    }, 300);
 
-  function clearEpisodeSearch() {
-    if (!searchInput && !episodeQuery) return;
-    setSearchInput("");
-    setEpisodeQuery("");
-  }
+    return () => clearTimeout(timer);
+  }, [searchInput]);
 
   async function handleRefresh(silent = false) {
     try {
@@ -422,20 +423,13 @@ export default function PodcastFeedDetailView() {
       }
       const result = await podcastApi.refreshFeed(feedId);
       if (result.new_episodes > 0) {
+        const activeQuery = episodeQueryRef.current;
         // Only reload if not silent refresh, otherwise just show toast
         if (!silent) {
-          loadFeed(true, episodeQuery); // Reset to top
+          void loadFeed(true, activeQuery); // Reset to top
         } else {
-          // Silent refresh: reload in background without showing loading
-          const data = await podcastApi.getFeedDetail(
-            feedId,
-            PAGE_SIZE,
-            0,
-            episodeQuery,
-          );
-          setEpisodes(data.episodes);
-          setTotalEpisodes(data.total_episodes || data.episodes.length);
-          setOffset(data.episodes.length);
+          // Silent refresh: reload in background without full-page loading
+          void loadFeed(false, activeQuery);
         }
       }
       if (!silent) {
@@ -1043,33 +1037,16 @@ export default function PodcastFeedDetailView() {
             </div>
           </div>
 
-          <form onSubmit={handleEpisodeSearch} className="flex gap-2">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/40" />
-              <input
-                type="search"
-                value={searchInput}
-                onChange={(e) => setSearchInput(e.target.value)}
-                placeholder="Search episodes by keyword"
-                className="w-full pl-10 pr-3 py-2.5 bg-white/5 border border-white/10 rounded-xl text-sm text-white placeholder:text-white/35 focus:outline-none focus:border-accent-primary/50"
-              />
-            </div>
-            <button
-              type="submit"
-              className="px-4 py-2.5 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-xs font-mono uppercase tracking-wider text-white"
-            >
-              Search
-            </button>
-            {(episodeQuery || searchInput) && (
-              <button
-                type="button"
-                onClick={clearEpisodeSearch}
-                className="px-4 py-2.5 bg-transparent hover:bg-white/5 border border-white/10 rounded-xl text-xs font-mono uppercase tracking-wider text-white/70"
-              >
-                Clear
-              </button>
-            )}
-          </form>
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/40" />
+            <input
+              type="search"
+              value={searchInput}
+              onChange={(e) => setSearchInput(e.target.value)}
+              placeholder="Search episodes by keyword"
+              className="w-full pl-10 pr-3 py-2.5 bg-white/5 border border-white/10 rounded-xl text-sm text-white placeholder:text-white/35 focus:outline-none focus:border-accent-primary/50"
+            />
+          </div>
 
           {episodeQuery && (
             <p className="text-xs text-white/45 font-mono uppercase tracking-wider">
