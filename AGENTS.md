@@ -547,6 +547,9 @@ React Native + Expo + NativeWind architecture. Covers audio background tasks, We
 - **Shared Collocation Logic**: use `packages/shared/src/utils/collocationHighlight.ts` (`filterCollocationsByLevel`, `normalizeStudyHighlights`, `normalizePhrase`) as the single source of truth for Reading/Sentence Study collocation filtering and study-highlight normalization.
 - **Shared Collocation Level Switch (Mobile)**: `apps/mobile/src/components/content/CollocationLevelSwitch.tsx` is the shared UI control for `collocationDisplayLevel`; Reading, Sentence Study, Podcast Intensive, and Audiobook should reuse this component to avoid UI drift.
 - **Settings Contract Parity**: `packages/store/src/modules/settings` should keep `podcastSpeed` and `transcriptionRemote*` keys aligned with web `GlobalSettings`; mobile podcast intensive transcription should pass optional `remote_url` and `api_key` through `podcastApi.transcribeEpisode` when remote mode is enabled.
+- **Podcast Playlists + OPML (Mobile)**: mobile supports local playlist management at `apps/mobile/app/podcast/playlists.tsx` and `apps/mobile/app/podcast/playlist/[playlistId].tsx` (storage utility: `apps/mobile/src/utils/podcastPlaylists.ts`), and OPML import/export tools at `apps/mobile/app/podcast/opml.tsx`.
+- **Unified Player Route (Mobile)**: mobile exposes `/player/[sourceType]/[contentId]` via `apps/mobile/app/player/[sourceType]/[contentId].tsx` to align deep-link shape with web unified player paths while delegating to platform-specific screens.
+- **Mobile Debug Route Parity**: mobile exposes review debug routes `apps/mobile/app/performance/debug.tsx` and `apps/mobile/app/performance/memory-debug.tsx` with access from `apps/mobile/app/(tabs)/stats.tsx`.
 
 ## Skills (Detailed Tool Guides)
 
