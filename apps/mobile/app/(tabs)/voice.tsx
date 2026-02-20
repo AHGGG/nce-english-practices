@@ -36,6 +36,8 @@ export default function VoiceLabScreen() {
     "disconnected" | "connecting" | "ready" | "listening" | "speaking"
   >("disconnected");
   const [transcripts, setTranscripts] = useState<TranscriptItem[]>([]);
+  const [topic, setTopic] = useState("daily life");
+  const [tense, setTense] = useState("present");
   const scrollViewRef = useRef<ScrollView>(null);
   
   // Settings
@@ -96,7 +98,10 @@ export default function VoiceLabScreen() {
       const voiceName = getGeminiVoiceName(voiceId);
       mobileVoiceClient.connect({
         voiceName,
-        systemInstruction: "You are a friendly English tutor. Keep responses concise.",
+        systemInstruction:
+          `You are an English roleplay coach. Keep responses concise. ` +
+          `Current topic: ${topic}. Prefer ${tense} tense in your responses. ` +
+          `Ask one follow-up question after each reply.`,
       });
     } else {
       mobileVoiceClient.disconnect();
@@ -170,6 +175,72 @@ export default function VoiceLabScreen() {
 
       {/* Controls */}
       <View className="p-6 pb-8 bg-bg-surface border-t border-border-default items-center">
+        {status === "disconnected" && (
+          <View className="w-full mb-5">
+            <Text className="text-text-muted text-[10px] uppercase font-bold mb-2">
+              Scenario
+            </Text>
+            <View className="flex-row gap-2 mb-3">
+              {[
+                { key: "daily life", label: "Daily" },
+                { key: "travel", label: "Travel" },
+                { key: "work meeting", label: "Work" },
+              ].map((opt) => (
+                <TouchableOpacity
+                  key={opt.key}
+                  onPress={() => setTopic(opt.key)}
+                  className={`px-3 py-1.5 rounded-lg border ${
+                    topic === opt.key
+                      ? "bg-accent-primary/10 border-accent-primary"
+                      : "bg-bg-elevated border-border-default"
+                  }`}
+                >
+                  <Text
+                    className={`text-[10px] font-bold uppercase ${
+                      topic === opt.key
+                        ? "text-accent-primary"
+                        : "text-text-muted"
+                    }`}
+                  >
+                    {opt.label}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+
+            <Text className="text-text-muted text-[10px] uppercase font-bold mb-2">
+              Target Tense
+            </Text>
+            <View className="flex-row gap-2">
+              {[
+                { key: "present", label: "Present" },
+                { key: "past", label: "Past" },
+                { key: "future", label: "Future" },
+              ].map((opt) => (
+                <TouchableOpacity
+                  key={opt.key}
+                  onPress={() => setTense(opt.key)}
+                  className={`px-3 py-1.5 rounded-lg border ${
+                    tense === opt.key
+                      ? "bg-accent-info/10 border-accent-info"
+                      : "bg-bg-elevated border-border-default"
+                  }`}
+                >
+                  <Text
+                    className={`text-[10px] font-bold uppercase ${
+                      tense === opt.key
+                        ? "text-accent-info"
+                        : "text-text-muted"
+                    }`}
+                  >
+                    {opt.label}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </View>
+        )}
+
         {status === "disconnected" ? (
           <TouchableOpacity
             className="w-full bg-accent-primary py-4 rounded-full flex-row items-center justify-center shadow-lg shadow-accent-primary/20"
