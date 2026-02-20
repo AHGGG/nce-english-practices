@@ -224,27 +224,6 @@ const PerformanceReport = () => {
             </div>
           </div>
         </header>
-
-        {/* Recommendation Banner (from ProfileStats) */}
-        {profile?.recommendation && (
-          <div className="relative overflow-hidden bg-accent-primary/10 border border-accent-primary/30 p-6 rounded-2xl mb-12 flex items-start gap-4 shadow-[0_0_30px_rgba(var(--color-accent-primary-rgb),0.1)]">
-            <div className="absolute top-0 right-0 p-4 opacity-20">
-              <Lightbulb className="w-24 h-24 text-accent-primary -rotate-12" />
-            </div>
-            <div className="p-3 bg-accent-primary/20 rounded-xl">
-              <Lightbulb className="w-6 h-6 text-accent-primary" />
-            </div>
-            <div className="relative z-10">
-              <span className="text-xs text-accent-primary font-mono font-bold uppercase tracking-widest mb-1 block">
-                Recommended Action
-              </span>
-              <p className="text-lg md:text-xl text-white font-serif leading-relaxed">
-                {profile.recommendation}
-              </p>
-            </div>
-          </div>
-        )}
-
         {/* KPI Cards Row */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-12">
           {/* Study Time Card */}
