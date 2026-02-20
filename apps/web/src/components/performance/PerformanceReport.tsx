@@ -11,6 +11,7 @@ import {
   AlertTriangle,
   RefreshCw,
   Target,
+  Download,
 } from "lucide-react";
 import Card from "./cards/Card";
 import MemoryCurveChart from "./widgets/MemoryCurveChart";
@@ -303,8 +304,51 @@ const PerformanceReport = () => {
         </div>
 
         <div className="mb-12">
-          <Card title="Daily Trends" icon={BarChart2}>
-            <div className="pt-6">
+          <Card
+            title="Daily Trends"
+            icon={BarChart2}
+            action={
+              <button
+                onClick={() => {
+                  const data = studyTimeDetail?.daily || [];
+                  const headers = [
+                    "Date",
+                    "Total (min)",
+                    "Reading (min)",
+                    "Sentence (min)",
+                    "Voice (min)",
+                    "Review (min)",
+                    "Podcast (min)",
+                  ];
+                  const rows = data.map((d) => [
+                    d.date,
+                    Math.round(d.total / 60),
+                    Math.round(d.reading / 60),
+                    Math.round(d.sentence_study / 60),
+                    Math.round(d.voice / 60),
+                    Math.round((d.review || 0) / 60),
+                    Math.round((d.podcast || 0) / 60),
+                  ]);
+                  const csv = [
+                    headers.join(","),
+                    ...rows.map((r) => r.join(",")),
+                  ].join("\n");
+                  const blob = new Blob([csv], { type: "text/csv" });
+                  const url = URL.createObjectURL(blob);
+                  const a = document.createElement("a");
+                  a.href = url;
+                  a.download = `daily-trends-${new Date().toISOString().split("T")[0]}.csv`;
+                  a.click();
+                  URL.revokeObjectURL(url);
+                }}
+                className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-white/60 hover:text-white text-xs font-mono border border-white/10 hover:border-white/20 transition-all"
+              >
+                <Download className="w-3.5 h-3.5" />
+                Export
+              </button>
+            }
+          >
+            <div className="pt-2">
               <StudyTimeChart dailyData={studyTimeDetail?.daily || []} />
             </div>
           </Card>
