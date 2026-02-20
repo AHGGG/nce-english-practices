@@ -4,6 +4,7 @@ import { usePerformanceStats, formatDuration, formatWordCount } from "@nce/share
 import { Clock, BookOpen, FileText, Target, Brain, AlertTriangle, Lightbulb } from "lucide-react-native";
 import { useState } from "react";
 import { Svg, Path, Circle, Defs, LinearGradient, Stop } from "react-native-svg";
+import { useRouter } from "expo-router";
 
 // --- Simple Memory Curve Chart (SVG) ---
 const MemoryCurveChart = ({ data }: { data: any }) => {
@@ -92,6 +93,7 @@ const MemoryCurveChart = ({ data }: { data: any }) => {
 
 // --- Main Screen ---
 export default function StatsScreen() {
+  const router = useRouter();
   const [days, setDays] = useState(30);
   const { stats, profile, isLoading } = usePerformanceStats(days);
 
@@ -112,20 +114,37 @@ export default function StatsScreen() {
         {/* Header */}
         <View className="flex-row justify-between items-center mb-6">
             <Text className="text-text-primary text-2xl font-bold font-serif">Analytics</Text>
-            
-            {/* Date Selector */}
-            <View className="flex-row bg-bg-surface rounded-lg border border-border-default overflow-hidden">
+
+            <View className="items-end gap-2">
+              {/* Date Selector */}
+              <View className="flex-row bg-bg-surface rounded-lg border border-border-default overflow-hidden">
                 {[7, 30, 90].map((d) => (
-                    <TouchableOpacity 
-                        key={d}
-                        onPress={() => setDays(d)}
-                        className={`px-3 py-1.5 ${days === d ? 'bg-accent-primary' : 'bg-transparent'}`}
+                    <TouchableOpacity
+                      key={d}
+                      onPress={() => setDays(d)}
+                      className={`px-3 py-1.5 ${days === d ? 'bg-accent-primary' : 'bg-transparent'}`}
                     >
-                        <Text className={`text-xs font-mono font-bold ${days === d ? 'text-bg-base' : 'text-text-muted'}`}>
-                            {d}D
-                        </Text>
+                      <Text className={`text-xs font-mono font-bold ${days === d ? 'text-bg-base' : 'text-text-muted'}`}>
+                        {d}D
+                      </Text>
                     </TouchableOpacity>
                 ))}
+              </View>
+
+              <View className="flex-row gap-2">
+                <TouchableOpacity
+                  onPress={() => router.push("/performance/debug")}
+                  className="px-2 py-1 rounded border border-border-default bg-bg-surface"
+                >
+                  <Text className="text-[10px] uppercase font-bold text-text-muted">Review Debug</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  onPress={() => router.push("/performance/memory-debug")}
+                  className="px-2 py-1 rounded border border-border-default bg-bg-surface"
+                >
+                  <Text className="text-[10px] uppercase font-bold text-text-muted">Memory Debug</Text>
+                </TouchableOpacity>
+              </View>
             </View>
         </View>
 

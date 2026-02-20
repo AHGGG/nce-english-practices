@@ -122,6 +122,8 @@ function RootContent() {
         <Stack.Screen name="reading/index" />
         <Stack.Screen name="sentence-study" />
         <Stack.Screen name="performance" />
+        <Stack.Screen name="performance/debug" />
+        <Stack.Screen name="performance/memory-debug" />
         <Stack.Screen name="review-queue" />
         <Stack.Screen name="podcast/index" />
         <Stack.Screen name="podcast/opml" />
