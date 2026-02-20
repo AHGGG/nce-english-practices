@@ -99,9 +99,17 @@ export const podcastApi = {
     return apiGet("/api/podcast/feeds") as Promise<PodcastFeed[]>;
   },
 
-  async getFeed(feedId: number, limit = 50, offset = 0) {
+  async getFeed(feedId: number, limit = 50, offset = 0, query = "") {
+    const params = new URLSearchParams({
+      limit: String(limit),
+      offset: String(offset),
+    });
+    const normalizedQuery = query.trim();
+    if (normalizedQuery) {
+      params.set("q", normalizedQuery);
+    }
     return apiGet(
-      `/api/podcast/feed/${feedId}?limit=${limit}&offset=${offset}`,
+      `/api/podcast/feed/${feedId}?${params.toString()}`,
     ) as Promise<FeedDetailResponse>;
   },
 

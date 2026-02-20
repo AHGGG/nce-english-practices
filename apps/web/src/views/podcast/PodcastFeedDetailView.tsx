@@ -4,7 +4,7 @@
  */
 
 import { useState, useEffect, useCallback, useRef } from "react";
-import type { MouseEvent, ReactNode } from "react";
+import type { FormEvent, MouseEvent, ReactNode } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import {
   ArrowLeft,
@@ -25,6 +25,7 @@ import {
   BookOpen,
   Heart,
   ListPlus,
+  Search,
 } from "lucide-react";
 import * as podcastApi from "../../api/podcast";
 import { usePodcast } from "../../context/PodcastContext";
@@ -220,6 +221,8 @@ export default function PodcastFeedDetailView() {
   const [offset, setOffset] = useState(0);
   const [totalEpisodes, setTotalEpisodes] = useState(0);
   const [loadingMore, setLoadingMore] = useState(false);
+  const [searchInput, setSearchInput] = useState("");
+  const [episodeQuery, setEpisodeQuery] = useState("");
 
   // Auto-refresh state
   const hasAutoRefreshedRef = useRef(false);
@@ -277,11 +280,18 @@ export default function PodcastFeedDetailView() {
   const [showSwipeHint, setShowSwipeHint] = useState(shouldShowSwipeHint);
 
   useEffect(() => {
-    loadFeed(true);
+    setSearchInput("");
+    setEpisodeQuery("");
+    void loadFeed(true, "");
     void loadFavoriteIds();
     checkedSizeIdsRef.current.clear();
     hasAutoRefreshedRef.current = false; // Reset for new feed
   }, [feedId]);
+
+  useEffect(() => {
+    if (!feedId) return;
+    void loadFeed(false, episodeQuery);
+  }, [episodeQuery]);
 
   // Auto-refresh logic: trigger refresh once when subscribed feed is loaded (silent)
   useEffect(() => {
@@ -327,7 +337,7 @@ export default function PodcastFeedDetailView() {
     }
   }, [episodes]);
 
-  async function loadFeed(reset = false) {
+  async function loadFeed(reset = false, query = episodeQuery) {
     try {
       if (reset) {
         window.scrollTo(0, 0);
@@ -340,13 +350,14 @@ export default function PodcastFeedDetailView() {
         feedId,
         PAGE_SIZE,
         0,
+        query,
       )) as FeedDetailResponse;
 
       setFeed(result.feed);
       setEpisodes(result.episodes);
       setIsSubscribed(result.is_subscribed);
       setTotalEpisodes(result.total_episodes || result.episodes.length); // Fallback
-      setOffset(PAGE_SIZE); // Prepare next offset
+      setOffset(result.episodes.length); // Prepare next offset
 
       // Record access count for sorting in library
       incrementPodcastAccess(Number(feedId));
@@ -377,10 +388,11 @@ export default function PodcastFeedDetailView() {
         feedId,
         PAGE_SIZE,
         offset,
+        episodeQuery,
       )) as FeedDetailResponse;
 
       setEpisodes((prev) => [...prev, ...result.episodes]);
-      setOffset((prev) => prev + PAGE_SIZE);
+      setOffset((prev) => prev + result.episodes.length);
       // Optionally update total in case it changed
       if (result.total_episodes) setTotalEpisodes(result.total_episodes);
     } catch (e: unknown) {
@@ -388,6 +400,19 @@ export default function PodcastFeedDetailView() {
     } finally {
       setLoadingMore(false);
     }
+  }
+
+  function handleEpisodeSearch(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const nextQuery = searchInput.trim();
+    if (nextQuery === episodeQuery) return;
+    setEpisodeQuery(nextQuery);
+  }
+
+  function clearEpisodeSearch() {
+    if (!searchInput && !episodeQuery) return;
+    setSearchInput("");
+    setEpisodeQuery("");
   }
 
   async function handleRefresh(silent = false) {
@@ -399,12 +424,18 @@ export default function PodcastFeedDetailView() {
       if (result.new_episodes > 0) {
         // Only reload if not silent refresh, otherwise just show toast
         if (!silent) {
-          loadFeed(true); // Reset to top
+          loadFeed(true, episodeQuery); // Reset to top
         } else {
           // Silent refresh: reload in background without showing loading
-          const data = await podcastApi.getFeedDetail(feedId, PAGE_SIZE, 0);
+          const data = await podcastApi.getFeedDetail(
+            feedId,
+            PAGE_SIZE,
+            0,
+            episodeQuery,
+          );
           setEpisodes(data.episodes);
           setTotalEpisodes(data.total_episodes || data.episodes.length);
+          setOffset(data.episodes.length);
         }
       }
       if (!silent) {
@@ -1012,7 +1043,50 @@ export default function PodcastFeedDetailView() {
             </div>
           </div>
 
+          <form onSubmit={handleEpisodeSearch} className="flex gap-2">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/40" />
+              <input
+                type="search"
+                value={searchInput}
+                onChange={(e) => setSearchInput(e.target.value)}
+                placeholder="Search episodes by keyword"
+                className="w-full pl-10 pr-3 py-2.5 bg-white/5 border border-white/10 rounded-xl text-sm text-white placeholder:text-white/35 focus:outline-none focus:border-accent-primary/50"
+              />
+            </div>
+            <button
+              type="submit"
+              className="px-4 py-2.5 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-xs font-mono uppercase tracking-wider text-white"
+            >
+              Search
+            </button>
+            {(episodeQuery || searchInput) && (
+              <button
+                type="button"
+                onClick={clearEpisodeSearch}
+                className="px-4 py-2.5 bg-transparent hover:bg-white/5 border border-white/10 rounded-xl text-xs font-mono uppercase tracking-wider text-white/70"
+              >
+                Clear
+              </button>
+            )}
+          </form>
+
+          {episodeQuery && (
+            <p className="text-xs text-white/45 font-mono uppercase tracking-wider">
+              Search: "{episodeQuery}" ({episodes.length}/{totalEpisodes}{" "}
+              loaded)
+            </p>
+          )}
+
           <div className="space-y-3">
+            {episodes.length === 0 && (
+              <div className="bg-white/[0.02] border border-white/5 rounded-2xl p-8 text-center text-white/55 text-sm">
+                {episodeQuery
+                  ? "No episodes match this keyword."
+                  : "No episodes available in this feed."}
+              </div>
+            )}
+
             {episodes.map((episode) => {
               const isCurrentEpisode = currentEpisode?.id === episode.id;
               const isOffline = offlineEpisodes.has(episode.id);

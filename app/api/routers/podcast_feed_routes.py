@@ -170,6 +170,7 @@ async def get_feed_detail(
     feed_id: int,
     limit: int = 50,
     offset: int = 0,
+    q: Optional[str] = None,
     user_id: str = Depends(get_current_user_id),
     db: AsyncSession = Depends(get_db),
 ) -> FeedDetailResponse:
@@ -179,6 +180,7 @@ async def get_feed_detail(
         feed_id,
         limit=limit,
         offset=offset,
+        query=q,
     )
     if not data:
         raise HTTPException(status_code=404, detail="Feed not found")

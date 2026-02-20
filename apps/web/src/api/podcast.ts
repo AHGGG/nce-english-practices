@@ -117,8 +117,21 @@ export async function getSubscriptions() {
   return apiGet(`${BASE_URL}/feeds`);
 }
 
-export async function getFeedDetail(feedId: number, limit = 50, offset = 0) {
-  return apiGet(`${BASE_URL}/feed/${feedId}?limit=${limit}&offset=${offset}`);
+export async function getFeedDetail(
+  feedId: number,
+  limit = 50,
+  offset = 0,
+  query = "",
+) {
+  const params = new URLSearchParams({
+    limit: String(limit),
+    offset: String(offset),
+  });
+  const normalizedQuery = query.trim();
+  if (normalizedQuery) {
+    params.set("q", normalizedQuery);
+  }
+  return apiGet(`${BASE_URL}/feed/${feedId}?${params.toString()}`);
 }
 
 export async function refreshFeed(feedId: number) {

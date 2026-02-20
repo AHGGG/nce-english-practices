@@ -339,6 +339,9 @@ Offline playback with PWA support, audio caching via Cache API, and episode stat
   - Session/sync/device endpoints: `app/api/routers/podcast_session_routes.py`
   - Download proxy endpoints: `app/api/routers/podcast_download_routes.py`
   - Transcription trigger/background task endpoints: `app/api/routers/podcast_transcription_routes.py`
+- **Feed Detail Search (Backend + Web)**:
+  - `GET /api/podcast/feed/{feed_id}` now supports optional `q` for server-side episode keyword filtering (title)
+  - `apps/web/src/views/podcast/PodcastFeedDetailView.tsx` uses this query param so filtering works correctly with paginated "Load More" lists
 - **Performance Ranking**:
   - `GET /api/performance/study-time` now includes `podcast_channels` (Top 10 channels by listened seconds in selected time range, including channel cover `image_url`), aggregated from `podcast_listening_sessions` -> `podcast_episodes` -> `podcast_feeds`
 - **Playlists (Client-only)**:

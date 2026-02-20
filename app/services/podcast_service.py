@@ -663,6 +663,7 @@ class PodcastService:
         feed_id: int,
         limit: int = 50,
         offset: int = 0,
+        query: Optional[str] = None,
     ) -> Optional[Dict[str, Any]]:
         """
         Get a feed with its episodes (paginated).
@@ -684,10 +685,14 @@ class PodcastService:
         if not feed:
             return None
 
-        # Get total episode count
-        count_stmt = select(func.count(PodcastEpisode.id)).where(
-            PodcastEpisode.feed_id == feed_id
-        )
+        search_text = (query or "").strip()
+        episode_filters = [PodcastEpisode.feed_id == feed_id]
+        if search_text:
+            pattern = f"%{search_text}%"
+            episode_filters.append(PodcastEpisode.title.ilike(pattern))
+
+        # Get total episode count (filtered)
+        count_stmt = select(func.count(PodcastEpisode.id)).where(*episode_filters)
         count_result = await db.execute(count_stmt)
         total_episodes = count_result.scalar_one()
 
@@ -701,7 +706,7 @@ class PodcastService:
                     UserEpisodeState.user_id == user_id,
                 ),
             )
-            .where(PodcastEpisode.feed_id == feed_id)
+            .where(*episode_filters)
             .order_by(PodcastEpisode.published_at.desc())
             .limit(limit)
             .offset(offset)
