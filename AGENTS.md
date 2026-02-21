@@ -373,6 +373,7 @@ Podcast episodes can be transcribed using AI to enable time-aligned subtitle dis
   - Remote mode supports `audio_url` input so the worker can fetch audio directly (avoids uploading full podcast bytes from caller)
 - **Data Model**: `PodcastEpisode.transcript_segments` (JSONB) stores time-aligned segments
 - **Frontend (Web)**: "Intensive Listening" flow in `apps/web/src/views/podcast/PodcastFeedDetailView.tsx` + `apps/web/src/views/player/UnifiedPlayerView.tsx`
+  - `UnifiedPlayerView` now includes a Study Basket side panel for podcast/audiobook intensive listening: clicked word/collocation lookups and bookmarked subtitle sentences are staged locally, manageable (remove/un-bookmark), and batch-submitted to review queue via one-click add (no immediate enqueue on click)
 - **Frontend (Mobile)**: "Intensive Listening" flow in `apps/mobile/app/podcast/intensive.tsx` (entry from `apps/mobile/src/components/podcast/PodcastDetailView.tsx`)
 
 **Audio Format Support**:

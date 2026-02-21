@@ -14,8 +14,15 @@ import {
   type ComponentType,
 } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, Loader2, AlertCircle } from "lucide-react";
-import { apiGet } from "../../api/auth";
+import {
+  ArrowLeft,
+  Loader2,
+  AlertCircle,
+  ListChecks,
+  Trash2,
+  Plus,
+} from "lucide-react";
+import { apiGet, apiPost } from "../../api/auth";
 import * as podcastApi from "../../api/podcast";
 import {
   savePositionLocal,
@@ -39,6 +46,7 @@ import type {
 // Import the component directly (not the class)
 import { AudioPlayerUI } from "../../components/content/renderers/AudioContentRenderer";
 import WordInspector from "../../components/reading/WordInspector";
+import { useToast } from "../../components/ui/Toast";
 
 interface AudioSegment {
   index: number;
@@ -46,6 +54,23 @@ interface AudioSegment {
   sentences: string[];
   startTime: number;
   endTime: number;
+}
+
+interface LookupItem {
+  key: string;
+  kind: "word" | "phrase";
+  text: string;
+  sentence: string;
+  sentenceIndex: number;
+  sourceId: string;
+  count: number;
+}
+
+interface BookmarkedSentence {
+  key: string;
+  sentence: string;
+  sentenceIndex: number;
+  sourceId: string;
 }
 
 const WordInspectorPanel = WordInspector as unknown as ComponentType<
@@ -98,10 +123,77 @@ export default function UnifiedPlayerView() {
     isGeneratingImage,
     generateImage,
   } = useWordExplainer();
+  const { addToast } = useToast();
+  const [lookupItems, setLookupItems] = useState<LookupItem[]>([]);
+  const [bookmarkedSentences, setBookmarkedSentences] = useState<
+    BookmarkedSentence[]
+  >([]);
+  const [showStudySidebarMobile, setShowStudySidebarMobile] = useState(false);
+  const [isAddingToReview, setIsAddingToReview] = useState(false);
+  const [lastJumpPosition, setLastJumpPosition] = useState<{
+    time: number;
+    segmentIndex: number;
+  } | null>(null);
 
   useEffect(() => {
     loadContent();
   }, [sourceType, contentId]);
+
+  useEffect(() => {
+    setLookupItems([]);
+    setBookmarkedSentences([]);
+    setShowStudySidebarMobile(false);
+  }, [bundle?.id]);
+
+  const getSentenceText = useCallback((segment: AudioSegment) => {
+    return segment.sentences[0] || segment.text || "";
+  }, []);
+
+  const buildSourceId = useCallback(
+    (sentenceIndex: number) => {
+      const source = sourceType === "podcast" ? "podcast" : "audiobook";
+      const itemId =
+        sourceType === "podcast"
+          ? String(bundle?.metadata?.episode_id || contentId || "")
+          : String(contentId || "");
+      return `${source}:${itemId}:${sentenceIndex}`;
+    },
+    [sourceType, bundle?.metadata?.episode_id, contentId],
+  );
+
+  const getSentenceKey = useCallback(
+    (segment: AudioSegment) => {
+      return `${segment.index}:${getSentenceText(segment)}`;
+    },
+    [getSentenceText],
+  );
+
+  const handleToggleSentenceBookmark = useCallback(
+    (segment: AudioSegment) => {
+      const sentence = getSentenceText(segment).trim();
+      if (!sentence) return;
+
+      const key = getSentenceKey(segment);
+      const sourceId = buildSourceId(segment.index);
+
+      setBookmarkedSentences((prev) => {
+        const exists = prev.some((item) => item.key === key);
+        if (exists) {
+          return prev.filter((item) => item.key !== key);
+        }
+        return [
+          {
+            key,
+            sentence,
+            sentenceIndex: segment.index,
+            sourceId,
+          },
+          ...prev,
+        ];
+      });
+    },
+    [buildSourceId, getSentenceKey, getSentenceText],
+  );
 
   async function loadContent() {
     if (!sourceType || !contentId) {
@@ -173,13 +265,83 @@ export default function UnifiedPlayerView() {
     }
   }
 
-  // Handle word click
-  const handleWordClick = useCallback(
-    (word: string, sentence: string) => {
-      hookHandleWordClick(word, sentence);
-    },
-    [hookHandleWordClick],
-  );
+  const removeLookupItem = useCallback((key: string) => {
+    setLookupItems((prev) => prev.filter((item) => item.key !== key));
+  }, []);
+
+  const removeBookmarkedSentence = useCallback((key: string) => {
+    setBookmarkedSentences((prev) => prev.filter((item) => item.key !== key));
+  }, []);
+
+  const addAllToReviewQueue = useCallback(async () => {
+    if (isAddingToReview) return;
+
+    const bucket = new Map<
+      string,
+      {
+        sourceId: string;
+        sentenceIndex: number;
+        sentenceText: string;
+        highlightedItems: Set<string>;
+      }
+    >();
+
+    for (const item of bookmarkedSentences) {
+      bucket.set(item.key, {
+        sourceId: item.sourceId,
+        sentenceIndex: item.sentenceIndex,
+        sentenceText: item.sentence,
+        highlightedItems: new Set<string>(),
+      });
+    }
+
+    for (const item of lookupItems) {
+      const sentenceText = item.sentence || item.text;
+      const groupKey = `${item.sourceId}:${item.sentenceIndex}:${sentenceText}`;
+      const existing = bucket.get(groupKey);
+      if (existing) {
+        existing.highlightedItems.add(item.text);
+      } else {
+        bucket.set(groupKey, {
+          sourceId: item.sourceId,
+          sentenceIndex: item.sentenceIndex,
+          sentenceText,
+          highlightedItems: new Set([item.text]),
+        });
+      }
+    }
+
+    if (bucket.size === 0) {
+      addToast("No words/collocations or saved sentences yet.", "warning");
+      return;
+    }
+
+    setIsAddingToReview(true);
+    try {
+      for (const payload of bucket.values()) {
+        await apiPost("/api/review/create", {
+          source_id: payload.sourceId,
+          sentence_index: payload.sentenceIndex,
+          sentence_text: payload.sentenceText,
+          highlighted_items: Array.from(payload.highlightedItems),
+          difficulty_type: "vocabulary",
+        });
+      }
+
+      addToast(`Added ${bucket.size} item(s) to review queue.`, "success");
+      setLookupItems([]);
+      setBookmarkedSentences([]);
+      setShowStudySidebarMobile(false);
+    } catch (e) {
+      console.error(
+        "Failed to add podcast intensive items to review queue:",
+        e,
+      );
+      addToast("Failed to add items to review queue", "error");
+    } finally {
+      setIsAddingToReview(false);
+    }
+  }, [addToast, bookmarkedSentences, isAddingToReview, lookupItems]);
 
   // Convert ContentBlocks to AudioSegments
   const segments = useMemo(() => {
@@ -201,6 +363,86 @@ export default function UnifiedPlayerView() {
     segments,
     initialPlaybackRate: settings.podcastSpeed || 1,
   });
+
+  // Handle word click
+  const handleWordClick = useCallback(
+    (word: string, sentence: string) => {
+      const cleanWord = word.toLowerCase().trim();
+      if (!cleanWord) return;
+
+      const activeSegment =
+        segments[Math.max(0, audioState.activeSegmentIndex)] || null;
+      const sentenceIndex = activeSegment?.index ?? 0;
+      const sourceId = buildSourceId(sentenceIndex);
+      const kind: "word" | "phrase" = cleanWord.includes(" ")
+        ? "phrase"
+        : "word";
+      const key = `${kind}:${cleanWord}`;
+
+      setLookupItems((prev) => {
+        const idx = prev.findIndex((item) => item.key === key);
+        if (idx >= 0) {
+          const next = [...prev];
+          const target = next[idx];
+          next[idx] = {
+            ...target,
+            sentence: sentence || target.sentence,
+            sentenceIndex,
+            sourceId,
+            count: target.count + 1,
+          };
+          return next;
+        }
+        return [
+          {
+            key,
+            kind,
+            text: cleanWord,
+            sentence: sentence || "",
+            sentenceIndex,
+            sourceId,
+            count: 1,
+          },
+          ...prev,
+        ];
+      });
+
+      hookHandleWordClick(cleanWord, sentence, undefined, {
+        sourceType: sourceType === "podcast" ? "podcast" : "audiobook",
+        sourceId,
+      });
+    },
+    [
+      hookHandleWordClick,
+      sourceType,
+      segments,
+      audioState.activeSegmentIndex,
+      buildSourceId,
+    ],
+  );
+
+  const jumpToSentence = useCallback(
+    (sentenceIndex: number) => {
+      setLastJumpPosition({
+        time: audioState.currentTime || 0,
+        segmentIndex: Math.max(0, audioState.activeSegmentIndex),
+      });
+      audioActions.seekToSegment(Math.max(0, sentenceIndex));
+      setShowStudySidebarMobile(false);
+    },
+    [audioActions, audioState.currentTime, audioState.activeSegmentIndex],
+  );
+
+  const returnToLastJumpPosition = useCallback(() => {
+    if (!lastJumpPosition) return;
+    if (lastJumpPosition.time > 0) {
+      audioActions.seekTo(lastJumpPosition.time);
+    } else {
+      audioActions.seekToSegment(Math.max(0, lastJumpPosition.segmentIndex));
+    }
+    setLastJumpPosition(null);
+    setShowStudySidebarMobile(false);
+  }, [audioActions, lastJumpPosition]);
 
   const handlePlaybackRateChange = useCallback(
     (rate: number) => {
@@ -603,6 +845,9 @@ export default function UnifiedPlayerView() {
       onWordClick: handleWordClick,
       // Pass player state/actions/segments
       segments,
+      bookmarkedSentenceKeys: new Set(bookmarkedSentences.map((s) => s.key)),
+      getSentenceKey,
+      onToggleSentenceBookmark: handleToggleSentenceBookmark,
       state: audioState,
       actions: {
         ...audioActions,
@@ -615,6 +860,9 @@ export default function UnifiedPlayerView() {
     settings.collocationDisplayLevel,
     handleWordClick,
     segments,
+    bookmarkedSentences,
+    getSentenceKey,
+    handleToggleSentenceBookmark,
     audioState,
     audioActions,
     handlePlaybackRateChange,
@@ -675,6 +923,14 @@ export default function UnifiedPlayerView() {
             <div className="hidden sm:block text-xs font-mono text-white/40 uppercase tracking-wider px-2 py-1 bg-white/5 rounded border border-white/10">
               {sourceType === "podcast" ? "Intensive Listening" : "Audiobook"}
             </div>
+
+            <button
+              onClick={() => setShowStudySidebarMobile((prev) => !prev)}
+              className="md:hidden h-9 px-2 rounded-lg border border-white/10 bg-white/5 text-white/70 hover:text-white hover:bg-white/10 transition-colors"
+              title="Open lookup and sentence list"
+            >
+              <ListChecks className="w-4 h-4" />
+            </button>
           </div>
         </div>
 
@@ -692,6 +948,235 @@ export default function UnifiedPlayerView() {
         <main className="flex-1 flex flex-col min-h-0">
           {rendererProps && <AudioPlayerUI {...rendererProps} />}
         </main>
+
+        <aside className="hidden lg:flex w-80 border-l border-white/10 bg-bg-surface/80 backdrop-blur-xl flex-col shrink-0">
+          <div className="p-3 border-b border-white/10 flex items-center justify-between">
+            <div className="text-xs uppercase tracking-widest text-white/60 font-mono">
+              Study Basket
+            </div>
+            <button
+              onClick={addAllToReviewQueue}
+              disabled={isAddingToReview}
+              className="inline-flex items-center gap-1 px-2 py-1 rounded border border-accent-primary/40 bg-accent-primary/15 text-accent-primary text-[11px] disabled:opacity-60"
+            >
+              <Plus className="w-3 h-3" />
+              {isAddingToReview ? "Adding..." : "Add All to Review"}
+            </button>
+          </div>
+
+          <div className="p-3 overflow-y-auto space-y-4">
+            <div className="text-[11px] text-white/45 leading-relaxed">
+              Batch add collected lookups and bookmarked sentences to your
+              review queue.
+            </div>
+            {lastJumpPosition && (
+              <button
+                onClick={returnToLastJumpPosition}
+                className="w-full px-2 py-1.5 rounded border border-white/15 bg-white/5 text-xs text-white/75 hover:bg-white/10"
+              >
+                Back to Previous Position
+              </button>
+            )}
+
+            <section>
+              <div className="text-[11px] text-white/50 uppercase tracking-wider mb-2">
+                Lookups ({lookupItems.length})
+              </div>
+              <div className="space-y-2">
+                {lookupItems.map((item) => (
+                  <div
+                    key={item.key}
+                    onClick={() => jumpToSentence(item.sentenceIndex)}
+                    className="rounded-lg border border-white/10 bg-white/5 p-2 cursor-pointer hover:border-accent-primary/40"
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-sm text-white font-medium truncate">
+                        {item.text}
+                      </span>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          removeLookupItem(item.key);
+                        }}
+                        className="text-white/40 hover:text-red-300"
+                        title="Remove lookup"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                    <div className="text-[10px] text-white/40 mt-1 line-clamp-2">
+                      {item.sentence || "(No context sentence)"}
+                    </div>
+                  </div>
+                ))}
+                {lookupItems.length === 0 && (
+                  <div className="text-xs text-white/35">
+                    Click words/collocations in active subtitle lines.
+                  </div>
+                )}
+              </div>
+            </section>
+
+            <section>
+              <div className="text-[11px] text-white/50 uppercase tracking-wider mb-2">
+                Saved Sentences ({bookmarkedSentences.length})
+              </div>
+              <div className="space-y-2">
+                {bookmarkedSentences.map((item) => (
+                  <div
+                    key={item.key}
+                    onClick={() => jumpToSentence(item.sentenceIndex)}
+                    className="rounded-lg border border-white/10 bg-white/5 p-2 cursor-pointer hover:border-accent-primary/40"
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <p className="text-sm text-white/85 leading-snug">
+                        {item.sentence}
+                      </p>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          removeBookmarkedSentence(item.key);
+                        }}
+                        className="text-white/40 hover:text-red-300 mt-0.5"
+                        title="Remove sentence"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+                {bookmarkedSentences.length === 0 && (
+                  <div className="text-xs text-white/35">
+                    Bookmark useful subtitle sentences first.
+                  </div>
+                )}
+              </div>
+            </section>
+          </div>
+        </aside>
+
+        {showStudySidebarMobile && (
+          <button
+            onClick={() => setShowStudySidebarMobile(false)}
+            className="lg:hidden absolute inset-0 z-20 bg-black/55"
+            aria-label="Close study basket"
+          />
+        )}
+
+        <aside
+          className={`lg:hidden absolute right-0 top-0 bottom-0 z-30 w-[88%] max-w-sm border-l border-white/10 bg-bg-surface/95 backdrop-blur-xl transition-transform ${
+            showStudySidebarMobile ? "translate-x-0" : "translate-x-full"
+          }`}
+        >
+          <div className="p-3 border-b border-white/10 flex items-center justify-between">
+            <div className="text-xs uppercase tracking-widest text-white/60 font-mono">
+              Study Basket
+            </div>
+            <button
+              onClick={() => setShowStudySidebarMobile(false)}
+              className="text-white/60 hover:text-white"
+            >
+              <ArrowLeft className="w-4 h-4" />
+            </button>
+          </div>
+          <div className="p-3 space-y-3">
+            <button
+              onClick={addAllToReviewQueue}
+              disabled={isAddingToReview}
+              className="w-full inline-flex items-center justify-center gap-2 px-3 py-2 rounded border border-accent-primary/40 bg-accent-primary/15 text-accent-primary text-xs disabled:opacity-60"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              {isAddingToReview ? "Adding..." : "Add All to Review"}
+            </button>
+            <div className="text-xs text-white/45">
+              Lookups: {lookupItems.length} | Sentences:{" "}
+              {bookmarkedSentences.length}
+            </div>
+            <div className="text-[11px] text-white/45 leading-relaxed">
+              Batch add collected lookups and bookmarked sentences to your
+              review queue.
+            </div>
+            {lastJumpPosition && (
+              <button
+                onClick={returnToLastJumpPosition}
+                className="w-full px-2 py-1.5 rounded border border-white/15 bg-white/5 text-xs text-white/75 hover:bg-white/10"
+              >
+                Back to Previous Position
+              </button>
+            )}
+
+            <section className="space-y-2 max-h-[34vh] overflow-y-auto pr-1">
+              <div className="text-[11px] text-white/50 uppercase tracking-wider">
+                Lookups
+              </div>
+              {lookupItems.map((item) => (
+                <div
+                  key={item.key}
+                  onClick={() => jumpToSentence(item.sentenceIndex)}
+                  className="rounded-lg border border-white/10 bg-white/5 p-2 cursor-pointer hover:border-accent-primary/40"
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-sm text-white font-medium truncate">
+                      {item.text}
+                    </span>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        removeLookupItem(item.key);
+                      }}
+                      className="text-white/40 hover:text-red-300"
+                      title="Remove lookup"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                  <div className="text-[10px] text-white/40 mt-1 line-clamp-2">
+                    {item.sentence || "(No context sentence)"}
+                  </div>
+                </div>
+              ))}
+              {lookupItems.length === 0 && (
+                <div className="text-xs text-white/35">
+                  Click words/collocations in active subtitle lines.
+                </div>
+              )}
+            </section>
+
+            <section className="space-y-2 max-h-[34vh] overflow-y-auto pr-1">
+              <div className="text-[11px] text-white/50 uppercase tracking-wider">
+                Saved Sentences
+              </div>
+              {bookmarkedSentences.map((item) => (
+                <div
+                  key={item.key}
+                  onClick={() => jumpToSentence(item.sentenceIndex)}
+                  className="rounded-lg border border-white/10 bg-white/5 p-2 cursor-pointer hover:border-accent-primary/40"
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <p className="text-sm text-white/85 leading-snug">
+                      {item.sentence}
+                    </p>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        removeBookmarkedSentence(item.key);
+                      }}
+                      className="text-white/40 hover:text-red-300 mt-0.5"
+                      title="Remove sentence"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                </div>
+              ))}
+              {bookmarkedSentences.length === 0 && (
+                <div className="text-xs text-white/35">
+                  Bookmark useful subtitle sentences first.
+                </div>
+              )}
+            </section>
+          </div>
+        </aside>
 
         {selectedWord && (
           <button

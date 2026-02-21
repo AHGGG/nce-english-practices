@@ -14,6 +14,11 @@ export interface InspectorData {
   found: boolean;
 }
 
+export interface LookupSourceMeta {
+  sourceType?: string;
+  sourceId?: string | null;
+}
+
 /**
  * useWordExplainer - Shared hook for word/phrase explanation functionality
  */
@@ -27,6 +32,10 @@ export function useWordExplainer() {
   );
   const [isInspecting, setIsInspecting] = useState(false);
   const [currentSentenceContext, setCurrentSentenceContext] = useState("");
+  const [lookupSource, setLookupSource] = useState<LookupSourceMeta>({
+    sourceType: "sentence_study",
+    sourceId: null,
+  });
 
   // Extra context for enhanced explanations
   const [extraContext, setExtraContext] = useState<ExtraContext>({
@@ -83,7 +92,8 @@ export function useWordExplainer() {
           apiPost("/api/vocabulary/log", {
             word: lookupWord,
             context_sentence: currentSentenceContext,
-            source_type: "sentence_study",
+            source_type: lookupSource.sourceType || "sentence_study",
+            source_id: lookupSource.sourceId || undefined,
           }).catch((err) => console.error("Failed to log vocab lookup:", err));
         }
 
@@ -260,7 +270,7 @@ export function useWordExplainer() {
     // because we only want to log/fetch when lookupWord changes.
     // The context is captured at the time of lookup.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [lookupWord]);
+  }, [lookupWord, lookupSource]);
 
   // Stream context explanation when selectedWord changes
   useEffect(() => {
@@ -327,7 +337,12 @@ export function useWordExplainer() {
 
   // Handle word/phrase click
   const handleWordClick = useCallback(
-    (word: string, sentence: string, keyWord?: string) => {
+    (
+      word: string,
+      sentence: string,
+      keyWord?: string,
+      sourceMeta?: LookupSourceMeta,
+    ) => {
       if (!word) return;
       const cleanWord = word.toLowerCase().trim();
       if (cleanWord.length < 2) return;
@@ -342,6 +357,10 @@ export function useWordExplainer() {
       setIsGeneratingImage(false);
       setImagePrompt(null);
       setExplainStyle("default");
+      setLookupSource({
+        sourceType: sourceMeta?.sourceType || "sentence_study",
+        sourceId: sourceMeta?.sourceId || null,
+      });
 
       setSelectedWord(cleanWord);
 
@@ -361,6 +380,7 @@ export function useWordExplainer() {
     setGeneratedImage(null);
     setImagePrompt(null);
     setIsPhrase(false);
+    setLookupSource({ sourceType: "sentence_study", sourceId: null });
   }, []);
 
   // Change explanation style

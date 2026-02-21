@@ -8,6 +8,7 @@ import {
   SkipForward,
   Loader2,
   Gauge,
+  Bookmark,
 } from "lucide-react";
 import {
   useAudioPlayer,
@@ -52,6 +53,8 @@ interface AudioSegmentBlockProps {
   getCollocations?: (sentence: string) => Collocation[];
   onClick?: () => void;
   onWordClick?: (word: string, sentence: string) => void;
+  isBookmarked?: boolean;
+  onToggleBookmark?: (segment: AudioSegment) => void;
 }
 
 function AudioSegmentBlock({
@@ -65,6 +68,8 @@ function AudioSegmentBlock({
   getCollocations,
   onClick,
   onWordClick,
+  isBookmarked,
+  onToggleBookmark,
 }: AudioSegmentBlockProps) {
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -112,17 +117,37 @@ function AudioSegmentBlock({
       `}
     >
       {/* Time indicator */}
-      <div className="flex items-center gap-2 mb-0.5">
-        <span
-          className={`text-xs font-mono tracking-wide ${isActive ? "text-accent-primary font-bold" : "text-white/30 group-hover:text-white/50"}`}
-        >
-          {formatTime(segment.startTime)}
-        </span>
-        {isActive && (
-          <span className="flex h-1.5 w-1.5 relative">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-accent-primary opacity-75"></span>
-            <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-accent-primary"></span>
+      <div className="flex items-center justify-between gap-2 mb-0.5">
+        <div className="flex items-center gap-2">
+          <span
+            className={`text-xs font-mono tracking-wide ${isActive ? "text-accent-primary font-bold" : "text-white/30 group-hover:text-white/50"}`}
+          >
+            {formatTime(segment.startTime)}
           </span>
+          {isActive && (
+            <span className="flex h-1.5 w-1.5 relative">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-accent-primary opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-accent-primary"></span>
+            </span>
+          )}
+        </div>
+        {onToggleBookmark && (
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onToggleBookmark(segment);
+            }}
+            className={`rounded-md border px-2 py-1 text-[10px] transition-colors ${
+              isBookmarked
+                ? "border-accent-primary/60 bg-accent-primary/20 text-accent-primary"
+                : "border-white/10 bg-white/5 text-white/50 hover:text-white hover:bg-white/10"
+            }`}
+            title={isBookmarked ? "Remove bookmark" : "Bookmark sentence"}
+          >
+            <Bookmark
+              className={`h-3 w-3 ${isBookmarked ? "fill-current" : ""}`}
+            />
+          </button>
         )}
       </div>
 
@@ -434,6 +459,9 @@ interface AudioPlayerUIProps extends ContentRendererProps {
   actions: AudioPlayerActions;
   onTranscribe?: () => Promise<void>;
   isTranscribing?: boolean;
+  bookmarkedSentenceKeys?: Set<string>;
+  getSentenceKey?: (segment: AudioSegment) => string;
+  onToggleSentenceBookmark?: (segment: AudioSegment) => void;
 }
 
 export function AudioPlayerUI({
@@ -450,6 +478,9 @@ export function AudioPlayerUI({
   onWordClick,
   onTranscribe,
   isTranscribing,
+  bookmarkedSentenceKeys,
+  getSentenceKey,
+  onToggleSentenceBookmark,
 }: AudioPlayerUIProps) {
   const loadMoreRef = useRef<HTMLDivElement | null>(null);
   const [visibleCount, setVisibleCount] = React.useState(120);
@@ -523,21 +554,30 @@ export function AudioPlayerUI({
         <div className="max-w-3xl mx-auto space-y-1">
           {segments.length > 0 ? (
             <>
-              {visibleSegments.map((segment) => (
-                <AudioSegmentBlock
-                  key={segment.index}
-                  segment={segment}
-                  isActive={segment.index === state.activeSegmentIndex}
-                  highlightSet={highlightSet}
-                  studyWordSet={studyWordSet}
-                  studyPhraseSet={studyPhraseSet}
-                  knownWords={knownWords}
-                  showHighlights={showHighlights}
-                  getCollocations={getCollocations}
-                  onClick={() => handleSegmentClick(segment.index)}
-                  onWordClick={onWordClick}
-                />
-              ))}
+              {visibleSegments.map((segment) => {
+                const sentenceKey = getSentenceKey?.(segment);
+                const isBookmarked =
+                  sentenceKey != null &&
+                  Boolean(bookmarkedSentenceKeys?.has(sentenceKey));
+
+                return (
+                  <AudioSegmentBlock
+                    key={segment.index}
+                    segment={segment}
+                    isActive={segment.index === state.activeSegmentIndex}
+                    highlightSet={highlightSet}
+                    studyWordSet={studyWordSet}
+                    studyPhraseSet={studyPhraseSet}
+                    knownWords={knownWords}
+                    showHighlights={showHighlights}
+                    getCollocations={getCollocations}
+                    onClick={() => handleSegmentClick(segment.index)}
+                    onWordClick={onWordClick}
+                    isBookmarked={isBookmarked}
+                    onToggleBookmark={onToggleSentenceBookmark}
+                  />
+                );
+              })}
 
               {visibleCount < segments.length && (
                 <div
