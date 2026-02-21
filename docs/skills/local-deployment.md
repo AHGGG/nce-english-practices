@@ -20,6 +20,7 @@ cd deploy
 #   - 利用 Docker 缓存，仅构建变动的代码
 #   - 平滑重启变动的容器
 #   - 自动运行数据库迁移
+#   - 自动清理 dangling images，避免磁盘被 <none> 镜像占满
 ./scripts/deploy.sh
 
 # 2. 全量重置 (当遇到环境污染或需要重置数据时)
@@ -27,6 +28,9 @@ cd deploy
 #   - 清理未使用的 Docker 资源
 #   - 重新播种初始数据 (seed_word_lists)
 ./scripts/deploy.sh --full
+
+# 3. 保留 dangling images (调试构建链路时)
+./scripts/deploy.sh --no-prune
 ```
 
 ## Maintenance Scripts

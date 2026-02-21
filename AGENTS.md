@@ -170,6 +170,11 @@ This clears DB cache table `sentence_collocation_cache`; restart backend to clea
 ./scripts/test.ps1       # Run All Tests (E2E + Backend)
 ```
 
+## Deployment Script Notes
+
+- `deploy/scripts/deploy.sh` now prunes dangling images (`<none>`) after successful deploy to control disk growth on VPS.
+- Use `./scripts/deploy.sh --no-prune` when you need to keep intermediate images for debugging.
+
 ## User Administration
 
 > Detailed guide: [User Administration Skill](docs/skills/user-administration.md)

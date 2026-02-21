@@ -14,12 +14,14 @@ NC='\033[0m' # No Color
 # Parse Arguments
 MODE="quick"
 SEED_DATA=false
+PRUNE_DANGLING=true
 
 help() {
     echo "Usage: $0 [OPTIONS]"
     echo "Options:"
     echo "  --quick     (Default) Incremental update using cache. Fast."
     echo "  --full      Clean install. Removes cache, prune resources, reseeds data. Slow."
+    echo "  --no-prune  Keep dangling images after deploy (default is auto-prune)."
     echo "  --help      Show this help message."
     exit 0
 }
@@ -28,6 +30,7 @@ while [[ "$#" -gt 0 ]]; do
     case $1 in
         --full) MODE="full"; SEED_DATA=true ;;
         --quick) MODE="quick" ;;
+        --no-prune) PRUNE_DANGLING=false ;;
         --help) help ;;
         *) echo "Unknown parameter passed: $1"; help ;;
     esac
@@ -117,7 +120,15 @@ else
     echo -e "\n${YELLOW}6. Skipping data seeding (use --full to seed)...${NC}"
 fi
 
-# 7. Status
+# 7. Cleanup dangling images from repeated rebuilds
+if [ "$PRUNE_DANGLING" = true ]; then
+    echo -e "\n${YELLOW}7. Pruning dangling images...${NC}"
+    docker image prune -f --filter "dangling=true" 2>/dev/null || true
+else
+    echo -e "\n${YELLOW}7. Skipping dangling image prune (--no-prune).${NC}"
+fi
+
+# 8. Status
 echo -e "\n${GREEN}✅ Deployment complete!${NC}"
 echo -e "Access the application at: ${GREEN}https://localhost${NC} (or your server IP)"
 docker compose ps
