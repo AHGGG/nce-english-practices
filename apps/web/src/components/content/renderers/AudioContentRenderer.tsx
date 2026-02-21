@@ -217,6 +217,8 @@ interface PlayerControlsProps {
   onTogglePlay: () => void;
   onSeek: (time: number) => void;
   onSkip: (seconds: number) => void;
+  onPrevSegment: () => void;
+  onNextSegment: () => void;
   onRateChange: (rate: number) => void;
   onToggleSegmentLoop: () => void;
   onSetABStart: () => void;
@@ -238,6 +240,8 @@ function PlayerControls({
   onTogglePlay,
   onSeek,
   onSkip,
+  onPrevSegment,
+  onNextSegment,
   onRateChange,
   onToggleSegmentLoop,
   onSetABStart,
@@ -297,11 +301,20 @@ function PlayerControls({
 
         {/* Main Controls */}
         <div className="flex items-center justify-center gap-4 sm:gap-6 order-1 sm:order-none">
-          {/* Skip Back */}
+          {/* Backward 30s */}
           <button
-            onClick={() => onSkip(-10)}
+            onClick={() => onSkip(-30)}
+            className="px-2.5 py-1.5 text-xs font-mono text-white/60 hover:text-white transition-all hover:bg-white/5 rounded-full hover:scale-105 active:scale-95 border border-white/10"
+            title="Jump backward 30s"
+          >
+            -30s
+          </button>
+
+          {/* Previous Sentence */}
+          <button
+            onClick={onPrevSegment}
             className="p-2.5 text-white/40 hover:text-white transition-all hover:bg-white/5 rounded-full hover:scale-105 active:scale-95"
-            title="Skip back 10s"
+            title="Previous sentence"
           >
             <SkipBack className="w-5 h-5" />
           </button>
@@ -321,13 +334,22 @@ function PlayerControls({
             )}
           </button>
 
-          {/* Skip Forward */}
+          {/* Next Sentence */}
           <button
-            onClick={() => onSkip(10)}
+            onClick={onNextSegment}
             className="p-2.5 text-white/40 hover:text-white transition-all hover:bg-white/5 rounded-full hover:scale-105 active:scale-95"
-            title="Skip forward 10s"
+            title="Next sentence"
           >
             <SkipForward className="w-5 h-5" />
+          </button>
+
+          {/* Forward 30s */}
+          <button
+            onClick={() => onSkip(30)}
+            className="px-2.5 py-1.5 text-xs font-mono text-white/60 hover:text-white transition-all hover:bg-white/5 rounded-full hover:scale-105 active:scale-95 border border-white/10"
+            title="Jump forward 30s"
+          >
+            +30s
           </button>
         </div>
 
@@ -474,6 +496,26 @@ export function AudioPlayerUI({
     [actions, state.isPlaying],
   );
 
+  const handlePrevSegment = useCallback(() => {
+    const target =
+      state.activeSegmentIndex > 0 ? state.activeSegmentIndex - 1 : 0;
+    actions.seekToSegment(target);
+    if (!state.isPlaying) {
+      actions.play();
+    }
+  }, [actions, state.activeSegmentIndex, state.isPlaying]);
+
+  const handleNextSegment = useCallback(() => {
+    const target =
+      state.activeSegmentIndex >= 0
+        ? Math.min(segments.length - 1, state.activeSegmentIndex + 1)
+        : 0;
+    actions.seekToSegment(target);
+    if (!state.isPlaying) {
+      actions.play();
+    }
+  }, [actions, segments.length, state.activeSegmentIndex, state.isPlaying]);
+
   return (
     <div className="flex flex-col h-full">
       {/* Subtitle Area */}
@@ -562,6 +604,8 @@ export function AudioPlayerUI({
         onTogglePlay={actions.togglePlay}
         onSeek={actions.seekTo}
         onSkip={actions.skip}
+        onPrevSegment={handlePrevSegment}
+        onNextSegment={handleNextSegment}
         onRateChange={actions.setPlaybackRate}
         onToggleSegmentLoop={actions.toggleSegmentLoop}
         onSetABStart={actions.setABStart}
