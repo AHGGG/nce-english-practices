@@ -1,6 +1,15 @@
 from datetime import datetime
 from typing import List, Optional
-from sqlalchemy import Integer, Text, Float, TIMESTAMP, ForeignKey, JSON, Index
+from sqlalchemy import (
+    Integer,
+    Text,
+    Float,
+    TIMESTAMP,
+    ForeignKey,
+    JSON,
+    Index,
+    UniqueConstraint,
+)
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.sql import func
 from app.core.db import Base
@@ -16,6 +25,12 @@ class ReviewItem(Base):
     __table_args__ = (
         Index("idx_review_user_next", "user_id", "next_review_at"),
         Index("idx_review_source", "source_id", "sentence_index"),
+        UniqueConstraint(
+            "user_id",
+            "source_id",
+            "sentence_index",
+            name="uq_review_item_user_source_sentence",
+        ),
     )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)

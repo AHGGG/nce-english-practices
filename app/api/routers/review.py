@@ -10,6 +10,7 @@ import math
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.exc import IntegrityError
 
 from app.core.db import get_db
 from app.models.orm import ReviewItem, ReviewLog
@@ -31,6 +32,7 @@ from app.models.review_schemas import (
 )
 from app.api.deps.auth import get_current_user_id
 from app.services.log_collector import log_collector, LogLevel, LogCategory
+from app.services.log_collector import LogSource
 from app.services.source_id import parse_epub_source_id
 
 router = APIRouter(prefix="/api/review", tags=["review"])
@@ -436,7 +438,7 @@ async def get_review_context(
             f"Error fetching context: {e}",
             level=LogLevel.WARN,
             category=LogCategory.GENERAL,
-            source="backend",
+            source=LogSource.BACKEND,
         )
         # Graceful fallback
         return ReviewContextResponse(target_sentence=item.sentence_text)
@@ -753,7 +755,27 @@ async def create_review_item(
     )
 
     db.add(item)
-    await db.commit()
+    try:
+        await db.commit()
+    except IntegrityError:
+        # Concurrent create request may hit the unique constraint.
+        # Treat it as idempotent: load existing row and return it.
+        await db.rollback()
+        retry_stmt = (
+            select(ReviewItem)
+            .where(ReviewItem.user_id == user_id)
+            .where(ReviewItem.source_id == req.source_id)
+            .where(ReviewItem.sentence_index == req.sentence_index)
+        )
+        retry_result = await db.execute(retry_stmt)
+        existing_after_conflict = retry_result.scalar_one_or_none()
+        if existing_after_conflict:
+            return CreateReviewResponse(
+                id=existing_after_conflict.id,
+                next_review_at=existing_after_conflict.next_review_at.isoformat(),
+            )
+        raise
+
     await db.refresh(item)
 
     return CreateReviewResponse(
