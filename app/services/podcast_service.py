@@ -1365,12 +1365,17 @@ class PodcastService:
     # --- Listening Session (Analytics) ---
 
     async def start_listening_session(
-        self, db: AsyncSession, user_id: str, episode_id: int
+        self,
+        db: AsyncSession,
+        user_id: str,
+        episode_id: int,
+        listening_mode: str = "normal",
     ) -> PodcastListeningSession:
         """Start a new listening session."""
         session = PodcastListeningSession(
             user_id=user_id,
             episode_id=episode_id,
+            listening_mode=listening_mode,
         )
         db.add(session)
         await db.commit()

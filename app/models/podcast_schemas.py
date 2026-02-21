@@ -4,7 +4,7 @@ Moved from app/api/routers/podcast.py to separate concerns.
 """
 
 from pydantic import BaseModel
-from typing import List, Optional, Dict, Any
+from typing import List, Optional, Dict, Any, Literal
 from datetime import datetime
 
 
@@ -105,6 +105,7 @@ class FeedDetailResponse(BaseModel):
 
 class ListeningSessionRequest(BaseModel):
     episode_id: int
+    listening_mode: Literal["normal", "intensive"] = "normal"
 
 
 class BatchEpisodesRequest(BaseModel):

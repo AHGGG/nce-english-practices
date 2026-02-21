@@ -349,6 +349,9 @@ Offline playback with PWA support, audio caching via Cache API, and episode stat
   - `apps/web/src/views/podcast/PodcastFeedDetailView.tsx` uses this query param so filtering works correctly with paginated "Load More" lists
 - **Performance Ranking**:
   - `GET /api/performance/study-time` now includes `podcast_channels` (Top 10 channels by listened seconds in selected time range, including channel cover `image_url`), aggregated from `podcast_listening_sessions` -> `podcast_episodes` -> `podcast_feeds`
+- **Session Analytics Mode Tag**:
+  - `podcast_listening_sessions.listening_mode` distinguishes session source (`normal` feed playback vs `intensive` unified-player mode)
+  - Aggregation for `GET /api/performance/study-time` remains unified under `podcast` total for now (mode tag is for future split analytics)
 - **Playlists (Client-only)**:
   - Stored in browser `localStorage` via `apps/web/src/utils/podcastPlaylists.ts`
   - Web routes: `/podcast/playlists` and `/podcast/playlist/:playlistId`

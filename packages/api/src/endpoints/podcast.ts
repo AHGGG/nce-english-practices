@@ -269,8 +269,14 @@ export const podcastApi = {
 
   // Session Management
   session: {
-    async start(episodeId: number) {
-      return apiPost("/api/podcast/session/start", { episode_id: episodeId });
+    async start(
+      episodeId: number,
+      listeningMode: "normal" | "intensive" = "normal",
+    ) {
+      return apiPost("/api/podcast/session/start", {
+        episode_id: episodeId,
+        listening_mode: listeningMode,
+      });
     },
 
     async update(

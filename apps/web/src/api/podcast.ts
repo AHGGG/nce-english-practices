@@ -228,8 +228,14 @@ export async function exportOPML() {
   return response.blob();
 }
 
-export async function startListeningSession(episodeId: number) {
-  return apiPost(`${BASE_URL}/session/start`, { episode_id: episodeId });
+export async function startListeningSession(
+  episodeId: number,
+  listeningMode: "normal" | "intensive" = "normal",
+) {
+  return apiPost(`${BASE_URL}/session/start`, {
+    episode_id: episodeId,
+    listening_mode: listeningMode,
+  });
 }
 
 export async function updateListeningSession(

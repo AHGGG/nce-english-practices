@@ -25,7 +25,12 @@ async def start_session(
     user_id: str = Depends(get_current_user_id),
     db: AsyncSession = Depends(get_db),
 ):
-    session = await podcast_service.start_listening_session(db, user_id, req.episode_id)
+    session = await podcast_service.start_listening_session(
+        db,
+        user_id,
+        req.episode_id,
+        listening_mode=req.listening_mode,
+    )
     return {
         "session_id": session.id,
         "started_at": session.started_at.isoformat(),

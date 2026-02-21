@@ -16,6 +16,7 @@ import {
 import { useParams, useNavigate } from "react-router-dom";
 import { ArrowLeft, Loader2, AlertCircle } from "lucide-react";
 import { apiGet } from "../../api/auth";
+import * as podcastApi from "../../api/podcast";
 import { getCachedAudioUrl } from "../../utils/offline";
 import { useGlobalState } from "../../context/GlobalContext";
 import {
@@ -61,6 +62,12 @@ export default function UnifiedPlayerView() {
   const wasPlayingRef = useRef(false);
   const prevSelectedWordRef = useRef<string | null>(null);
   const lastCollocationBucketRef = useRef<number | null>(null);
+  const podcastSessionIdRef = useRef<number | null>(null);
+  const [podcastSessionId, setPodcastSessionId] = useState<number | null>(null);
+  const podcastListenedSecondsRef = useRef(0);
+  const podcastLastPositionRef = useRef<number>(0);
+  const podcastFinalizedRef = useRef(false);
+  const podcastCurrentTimeRef = useRef(0);
 
   // Collocation loader for phrase highlighting
   const { getCollocations, loadCollocations } = useCollocationLoader({
@@ -159,7 +166,203 @@ export default function UnifiedPlayerView() {
   const { state: audioState, actions: audioActions } = useAudioPlayer({
     audioUrl: bundle?.audio_url || "",
     segments,
+    initialPlaybackRate: settings.podcastSpeed || 1,
   });
+
+  const finalizePodcastSession = useCallback(
+    async (isFinished: boolean) => {
+      if (sourceType !== "podcast") return;
+
+      const sessionId = podcastSessionIdRef.current;
+      if (!sessionId) return;
+
+      const listened = Math.floor(podcastListenedSecondsRef.current);
+      const position = podcastCurrentTimeRef.current || 0;
+
+      podcastSessionIdRef.current = null;
+      setPodcastSessionId(null);
+      podcastLastPositionRef.current = 0;
+
+      try {
+        await podcastApi.endListeningSession(
+          sessionId,
+          listened,
+          position,
+          isFinished,
+        );
+      } catch (error) {
+        console.warn("[UnifiedPlayer] Failed to end podcast session:", error);
+      }
+    },
+    [sourceType],
+  );
+
+  useEffect(() => {
+    podcastCurrentTimeRef.current = audioState.currentTime || 0;
+  }, [audioState.currentTime]);
+
+  useEffect(() => {
+    if (sourceType !== "podcast" || !bundle?.metadata?.episode_id) {
+      return;
+    }
+
+    if (!audioState.isPlaying) {
+      const currentPosition = podcastCurrentTimeRef.current || 0;
+      const delta = Math.max(
+        0,
+        currentPosition - podcastLastPositionRef.current,
+      );
+      if (delta > 0) {
+        podcastListenedSecondsRef.current += delta;
+        podcastLastPositionRef.current = currentPosition;
+
+        const sessionId = podcastSessionIdRef.current;
+        if (sessionId) {
+          void podcastApi
+            .updateListeningSession(
+              sessionId,
+              Math.floor(podcastListenedSecondsRef.current),
+              podcastCurrentTimeRef.current || 0,
+            )
+            .catch((error: unknown) => {
+              console.warn("[UnifiedPlayer] Failed to flush session:", error);
+            });
+        }
+      }
+      return;
+    }
+
+    if (podcastFinalizedRef.current) return;
+
+    const canStartTracking =
+      audioState.isPlaying || (podcastCurrentTimeRef.current || 0) > 0;
+
+    if (!canStartTracking) return;
+
+    if (!podcastSessionIdRef.current) {
+      void podcastApi
+        .startListeningSession(
+          bundle.metadata.episode_id as number,
+          "intensive",
+        )
+        .then((res: { session_id: number }) => {
+          podcastSessionIdRef.current = res.session_id;
+          setPodcastSessionId(res.session_id);
+          podcastLastPositionRef.current = podcastCurrentTimeRef.current || 0;
+        })
+        .catch((error: unknown) => {
+          console.warn(
+            "[UnifiedPlayer] Failed to start podcast session:",
+            error,
+          );
+        });
+    }
+  }, [
+    sourceType,
+    bundle?.metadata?.episode_id,
+    audioState.isPlaying,
+    audioState.currentTime,
+  ]);
+
+  useEffect(() => {
+    if (sourceType !== "podcast" || !bundle?.metadata?.episode_id) {
+      return;
+    }
+
+    if (!podcastSessionId) {
+      return;
+    }
+
+    const timer = window.setInterval(() => {
+      const currentPosition = podcastCurrentTimeRef.current || 0;
+      const delta = Math.max(
+        0,
+        currentPosition - podcastLastPositionRef.current,
+      );
+      if (delta > 0) {
+        podcastListenedSecondsRef.current += delta;
+      }
+      podcastLastPositionRef.current = currentPosition;
+
+      void podcastApi
+        .updateListeningSession(
+          podcastSessionId,
+          Math.floor(podcastListenedSecondsRef.current),
+          currentPosition,
+        )
+        .catch((error: unknown) => {
+          console.warn("[UnifiedPlayer] Failed to update session:", error);
+        });
+    }, 5000);
+
+    return () => {
+      window.clearInterval(timer);
+    };
+  }, [sourceType, bundle?.metadata?.episode_id, podcastSessionId]);
+
+  useEffect(() => {
+    if (sourceType !== "podcast" || !bundle?.metadata?.episode_id) {
+      return;
+    }
+
+    const duration =
+      audioState.duration || Number(bundle.metadata?.duration_seconds || 0);
+    const reachedEnd =
+      duration > 0 &&
+      audioState.currentTime >= duration - 0.5 &&
+      !audioState.isPlaying;
+
+    if (reachedEnd && !podcastFinalizedRef.current) {
+      podcastFinalizedRef.current = true;
+      void finalizePodcastSession(true);
+    }
+  }, [
+    sourceType,
+    bundle?.metadata?.episode_id,
+    bundle?.metadata?.duration_seconds,
+    audioState.currentTime,
+    audioState.duration,
+    audioState.isPlaying,
+    finalizePodcastSession,
+  ]);
+
+  useEffect(() => {
+    podcastSessionIdRef.current = null;
+    setPodcastSessionId(null);
+    podcastListenedSecondsRef.current = 0;
+    podcastLastPositionRef.current = 0;
+    podcastFinalizedRef.current = false;
+  }, [sourceType, bundle?.id]);
+
+  useEffect(() => {
+    if (sourceType !== "podcast") return;
+
+    const handleBeforeUnload = () => {
+      const sessionId = podcastSessionIdRef.current;
+      if (!sessionId) return;
+
+      const data = JSON.stringify({
+        session_id: sessionId,
+        listened_seconds: Math.floor(podcastListenedSecondsRef.current),
+        position_seconds: podcastCurrentTimeRef.current || 0,
+        is_finished: false,
+      });
+      navigator.sendBeacon("/api/podcast/session/update-beacon", data);
+    };
+
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => {
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+    };
+  }, [sourceType]);
+
+  useEffect(() => {
+    return () => {
+      if (sourceType !== "podcast") return;
+      if (podcastFinalizedRef.current) return;
+      void finalizePodcastSession(false);
+    };
+  }, [sourceType, bundle?.id, finalizePodcastSession]);
 
   useEffect(() => {
     lastCollocationBucketRef.current = null;

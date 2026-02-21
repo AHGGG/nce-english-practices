@@ -240,6 +240,11 @@ class PodcastListeningSession(Base):
     # Playback position at end of session
     last_position_seconds: Mapped[float] = mapped_column(Float, default=0.0)
 
+    # Analytics tag: normal podcast playback vs intensive listening player
+    listening_mode: Mapped[str] = mapped_column(
+        String, default="normal", server_default="normal"
+    )
+
     # Relationships
     episode: Mapped["PodcastEpisode"] = relationship(
         "PodcastEpisode", back_populates="listening_sessions"

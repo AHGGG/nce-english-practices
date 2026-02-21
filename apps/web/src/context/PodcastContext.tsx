@@ -667,6 +667,7 @@ export function PodcastProvider({ children }: { children: ReactNode }) {
         try {
           const { session_id } = await podcastApi.startListeningSession(
             episode.id,
+            "normal",
           );
           setSessionId(session_id);
         } catch (e) {
