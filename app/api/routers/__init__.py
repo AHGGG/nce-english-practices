@@ -21,4 +21,5 @@ from . import (
     images as images,
     vocabulary as vocabulary,
     audiobook as audiobook,
+    study_basket as study_basket,
 )

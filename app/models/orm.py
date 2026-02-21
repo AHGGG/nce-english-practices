@@ -11,6 +11,7 @@ from app.models.learning_orm import (
     ReadingSession,
     UserCalibration,
     SentenceLearningRecord,
+    StudyBasketState,
 )
 from app.models.voice_orm import VoiceSession, WordProficiency
 from app.models.cache_orm import (
@@ -33,6 +34,7 @@ __all__ = [
     "ReadingSession",
     "UserCalibration",
     "SentenceLearningRecord",
+    "StudyBasketState",
     "VoiceSession",
     "WordProficiency",
     "ArticleOverviewCache",

@@ -22,7 +22,7 @@ import {
   Trash2,
   Plus,
 } from "lucide-react";
-import { apiGet, apiPost } from "../../api/auth";
+import { apiGet, apiPost, apiPut } from "../../api/auth";
 import * as podcastApi from "../../api/podcast";
 import {
   savePositionLocal,
@@ -71,6 +71,28 @@ interface BookmarkedSentence {
   sentence: string;
   sentenceIndex: number;
   sourceId: string;
+}
+
+interface StudyBasketApiResponse {
+  lookup_items: StudyBasketLookupItemWire[];
+  bookmarked_sentences: StudyBasketSentenceWire[];
+}
+
+interface StudyBasketLookupItemWire {
+  key: string;
+  kind: "word" | "phrase";
+  text: string;
+  sentence?: string;
+  sentence_index: number;
+  source_id: string;
+  count?: number;
+}
+
+interface StudyBasketSentenceWire {
+  key: string;
+  sentence: string;
+  sentence_index: number;
+  source_id: string;
 }
 
 const WordInspectorPanel = WordInspector as unknown as ComponentType<
@@ -134,16 +156,147 @@ export default function UnifiedPlayerView() {
     time: number;
     segmentIndex: number;
   } | null>(null);
+  const [studyBasketHydrated, setStudyBasketHydrated] = useState(false);
 
   useEffect(() => {
     loadContent();
   }, [sourceType, contentId]);
 
+  const studyBasketScope = useMemo(() => {
+    if (!sourceType || !contentId) return null;
+    if (sourceType !== "podcast" && sourceType !== "audiobook") return null;
+    return {
+      sourceType,
+      contentId: String(contentId),
+    };
+  }, [sourceType, contentId]);
+
+  const fromWireLookupItem = useCallback(
+    (item: StudyBasketLookupItemWire): LookupItem => ({
+      key: item.key,
+      kind: item.kind,
+      text: item.text,
+      sentence: item.sentence || "",
+      sentenceIndex: item.sentence_index,
+      sourceId: item.source_id,
+      count: item.count || 1,
+    }),
+    [],
+  );
+
+  const fromWireSentenceItem = useCallback(
+    (item: StudyBasketSentenceWire): BookmarkedSentence => ({
+      key: item.key,
+      sentence: item.sentence,
+      sentenceIndex: item.sentence_index,
+      sourceId: item.source_id,
+    }),
+    [],
+  );
+
+  const toWireLookupItem = useCallback(
+    (item: LookupItem): StudyBasketLookupItemWire => ({
+      key: item.key,
+      kind: item.kind,
+      text: item.text,
+      sentence: item.sentence,
+      sentence_index: item.sentenceIndex,
+      source_id: item.sourceId,
+      count: item.count,
+    }),
+    [],
+  );
+
+  const toWireSentenceItem = useCallback(
+    (item: BookmarkedSentence): StudyBasketSentenceWire => ({
+      key: item.key,
+      sentence: item.sentence,
+      sentence_index: item.sentenceIndex,
+      source_id: item.sourceId,
+    }),
+    [],
+  );
+
   useEffect(() => {
-    setLookupItems([]);
-    setBookmarkedSentences([]);
-    setShowStudySidebarMobile(false);
-  }, [bundle?.id]);
+    if (!studyBasketScope) {
+      setStudyBasketHydrated(false);
+      setLookupItems([]);
+      setBookmarkedSentences([]);
+      return;
+    }
+
+    let cancelled = false;
+    setStudyBasketHydrated(false);
+
+    const loadStudyBasket = async () => {
+      try {
+        const data = (await apiGet(
+          `/api/study-basket/${studyBasketScope.sourceType}/${encodeURIComponent(studyBasketScope.contentId)}`,
+        )) as Partial<StudyBasketApiResponse>;
+
+        if (cancelled) return;
+
+        setLookupItems(
+          Array.isArray(data.lookup_items)
+            ? data.lookup_items.map(fromWireLookupItem)
+            : [],
+        );
+        setBookmarkedSentences(
+          Array.isArray(data.bookmarked_sentences)
+            ? data.bookmarked_sentences.map(fromWireSentenceItem)
+            : [],
+        );
+      } catch (e) {
+        if (cancelled) return;
+        console.warn(
+          "[UnifiedPlayer] Failed to load study basket from server:",
+          e,
+        );
+        setLookupItems([]);
+        setBookmarkedSentences([]);
+      } finally {
+        if (cancelled) return;
+        setShowStudySidebarMobile(false);
+        setLastJumpPosition(null);
+        setStudyBasketHydrated(true);
+      }
+    };
+
+    void loadStudyBasket();
+    return () => {
+      cancelled = true;
+    };
+  }, [studyBasketScope, fromWireLookupItem, fromWireSentenceItem]);
+
+  useEffect(() => {
+    if (!studyBasketScope || !studyBasketHydrated) return;
+
+    const timer = window.setTimeout(() => {
+      void apiPut(
+        `/api/study-basket/${studyBasketScope.sourceType}/${encodeURIComponent(studyBasketScope.contentId)}`,
+        {
+          lookup_items: lookupItems.map(toWireLookupItem),
+          bookmarked_sentences: bookmarkedSentences.map(toWireSentenceItem),
+        },
+      ).catch((e) => {
+        console.warn(
+          "[UnifiedPlayer] Failed to sync study basket to server:",
+          e,
+        );
+      });
+    }, 450);
+
+    return () => {
+      window.clearTimeout(timer);
+    };
+  }, [
+    studyBasketScope,
+    studyBasketHydrated,
+    lookupItems,
+    bookmarkedSentences,
+    toWireLookupItem,
+    toWireSentenceItem,
+  ]);
 
   const getSentenceText = useCallback((segment: AudioSegment) => {
     return segment.sentences[0] || segment.text || "";

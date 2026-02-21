@@ -1,6 +1,14 @@
 from datetime import datetime
 from typing import Any, Dict, List, Optional
-from sqlalchemy import Integer, Text, Float, TIMESTAMP, JSON, Index
+from sqlalchemy import (
+    Integer,
+    Text,
+    Float,
+    TIMESTAMP,
+    JSON,
+    Index,
+    UniqueConstraint,
+)
 from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy.sql import func
 from app.core.db import Base
@@ -194,6 +202,35 @@ class SentenceLearningRecord(Base):
         TIMESTAMP, nullable=True
     )
     review_count: Mapped[int] = mapped_column(Integer, default=0)
+
+    created_at: Mapped[datetime] = mapped_column(TIMESTAMP, server_default=func.now())
+    updated_at: Mapped[datetime] = mapped_column(
+        TIMESTAMP, server_default=func.now(), onupdate=func.now()
+    )
+
+
+class StudyBasketState(Base):
+    """Persisted intensive listening study basket per user/content scope."""
+
+    __tablename__ = "study_basket_states"
+    __table_args__ = (
+        UniqueConstraint(
+            "user_id",
+            "source_type",
+            "content_id",
+            name="uq_study_basket_scope",
+        ),
+        Index("idx_study_basket_user_updated", "user_id", "updated_at"),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    user_id: Mapped[str] = mapped_column(Text, default="default_user", index=True)
+    source_type: Mapped[str] = mapped_column(Text)
+    content_id: Mapped[str] = mapped_column(Text)
+    lookup_items: Mapped[List[Dict[str, Any]]] = mapped_column(JSON, default=list)
+    bookmarked_sentences: Mapped[List[Dict[str, Any]]] = mapped_column(
+        JSON, default=list
+    )
 
     created_at: Mapped[datetime] = mapped_column(TIMESTAMP, server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(

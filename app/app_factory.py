@@ -41,6 +41,7 @@ from app.api.routers import (
     vocabulary,
     audiobook,
     transcription,
+    study_basket,
 )
 from app.config import settings
 from app.models.schemas import ErrorResponse, RemoteLog
@@ -256,6 +257,7 @@ def include_routers(app: FastAPI) -> None:
     app.include_router(vocabulary.router)
     app.include_router(audiobook.router)
     app.include_router(transcription.router)
+    app.include_router(study_basket.router)
 
 
 def register_remote_log_route(app: FastAPI) -> None:
