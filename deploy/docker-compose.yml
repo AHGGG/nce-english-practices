@@ -26,6 +26,8 @@ services:
       REFRESH_TOKEN_EXPIRE_DAYS: ${REFRESH_TOKEN_EXPIRE_DAYS:-7}
       ALLOW_REGISTRATION: ${ALLOW_REGISTRATION:-True}
       PROXY_URL: ${PROXY_URL:-}
+      SENSEVOICE_MODEL: ${SENSEVOICE_MODEL}
+      TRANSCRIPTION_SERVICE_API_KEYS: ${TRANSCRIPTION_SERVICE_API_KEYS}
     volumes:
       - ../resources:/app/resources:ro # Read-only mount
       - app-logs:/app/logs
