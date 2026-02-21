@@ -1,10 +1,23 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import type { MouseEvent } from "react";
 import { useNavigate } from "react-router-dom";
-import { Check, Heart, Loader2, Trash2 } from "lucide-react";
+import {
+  BookOpen,
+  Check,
+  Download,
+  Heart,
+  ListPlus,
+  Loader2,
+} from "lucide-react";
 import PodcastLayout from "../../components/podcast/PodcastLayout";
 import PodcastCoverPlayButton from "../../components/podcast/PodcastCoverPlayButton";
+import PodcastEpisodeActionButtons, {
+  type PodcastEpisodeActionItem,
+} from "../../components/podcast/PodcastEpisodeActionButtons";
+import PlaylistPickerDialog from "../../components/podcast/PlaylistPickerDialog";
 import * as podcastApi from "../../api/podcast";
 import { usePodcast } from "../../context/PodcastContext";
+import { useGlobalState } from "../../context/GlobalContext";
 import { useToast } from "../../components/ui";
 
 interface FavoriteItem {
@@ -16,6 +29,7 @@ interface FavoriteItem {
     published_at?: string | null;
     duration_seconds?: number;
     current_position?: number;
+    transcript_status?: string;
   };
   feed: {
     id: number;
@@ -23,6 +37,49 @@ interface FavoriteItem {
     image_url?: string | null;
   };
   favorited_at?: string;
+}
+
+interface PodcastFeed {
+  id: number;
+  title: string;
+  image_url?: string | null;
+}
+
+interface PodcastEpisode {
+  id: number;
+  title: string;
+  audio_url: string;
+  image_url?: string | null;
+  duration_seconds?: number;
+  current_position?: number;
+  transcript_status?: string;
+}
+
+interface DownloadItemState {
+  status: "idle" | "downloading" | "done" | "error";
+  progress: number;
+  error?: string;
+}
+
+interface PodcastContextValue {
+  playEpisode: (
+    episode: PodcastEpisode,
+    feed: PodcastFeed,
+    start: number | null,
+  ) => void;
+  currentEpisode: PodcastEpisode | null;
+  isPlaying: boolean;
+  offlineEpisodes: Set<number>;
+  downloadState: Record<number, DownloadItemState>;
+  startDownload: (episode: PodcastEpisode) => Promise<void>;
+  removeDownload: (episodeId: number, audioUrl: string) => Promise<boolean>;
+  cancelDownload: (episodeId: number) => void;
+}
+
+interface GlobalSettings {
+  transcriptionRemoteEnabled?: boolean;
+  transcriptionRemoteUrl?: string;
+  transcriptionRemoteApiKey?: string;
 }
 
 const getErrorMessage = (error: unknown): string => {
@@ -42,10 +99,32 @@ function formatDate(value?: string | null) {
 export default function PodcastFavoritesView() {
   const navigate = useNavigate();
   const { addToast } = useToast();
-  const { playEpisode, currentEpisode, isPlaying } = usePodcast();
+  const {
+    playEpisode,
+    currentEpisode,
+    isPlaying,
+    offlineEpisodes,
+    downloadState,
+    startDownload,
+    removeDownload,
+    cancelDownload,
+  } = usePodcast() as PodcastContextValue;
+  const {
+    state: { settings },
+  } = useGlobalState() as { state: { settings: GlobalSettings } };
   const [items, setItems] = useState<FavoriteItem[]>([]);
   const [loading, setLoading] = useState(true);
-  const [removing, setRemoving] = useState<Record<number, boolean>>({});
+  const [favoriteLoading, setFavoriteLoading] = useState<
+    Record<number, boolean>
+  >({});
+  const [downloadLoading, setDownloadLoading] = useState<
+    Record<number, boolean>
+  >({});
+  const [transcriptStatus, setTranscriptStatus] = useState<
+    Record<number, string>
+  >({});
+  const [playlistDialogEpisode, setPlaylistDialogEpisode] =
+    useState<PodcastEpisode | null>(null);
   const [sortMode, setSortMode] = useState<"favorite-time" | "channel-grouped">(
     "favorite-time",
   );
@@ -123,17 +202,235 @@ export default function PodcastFavoritesView() {
     void loadFavorites();
   }, [loadFavorites]);
 
-  async function handleRemove(episodeId: number) {
+  async function handleToggleFavorite(episodeId: number) {
     try {
-      setRemoving((prev) => ({ ...prev, [episodeId]: true }));
+      setFavoriteLoading((prev) => ({ ...prev, [episodeId]: true }));
       await podcastApi.removeFavoriteEpisode(episodeId);
       setItems((prev) => prev.filter((item) => item.episode.id !== episodeId));
       addToast("Removed from favorites", "info");
     } catch (error: unknown) {
       addToast("Failed to remove favorite: " + getErrorMessage(error), "error");
     } finally {
-      setRemoving((prev) => ({ ...prev, [episodeId]: false }));
+      setFavoriteLoading((prev) => ({ ...prev, [episodeId]: false }));
     }
+  }
+
+  const pollTranscriptStatus = useCallback(
+    async (episodeId: number) => {
+      const poll = async () => {
+        try {
+          const rows = (await podcastApi.getEpisodesBatch([
+            episodeId,
+          ])) as Array<{
+            episode?: { transcript_status?: string };
+            transcript_status?: string;
+          }>;
+          const status =
+            rows?.[0]?.episode?.transcript_status ||
+            rows?.[0]?.transcript_status ||
+            "none";
+
+          setTranscriptStatus((prev) => ({ ...prev, [episodeId]: status }));
+          setItems((prev) =>
+            prev.map((item) =>
+              item.episode.id === episodeId
+                ? {
+                    ...item,
+                    episode: { ...item.episode, transcript_status: status },
+                  }
+                : item,
+            ),
+          );
+
+          if (status === "completed") {
+            addToast("Transcription complete", "success");
+            return;
+          }
+          if (status === "failed") {
+            addToast("Transcription failed", "error");
+            return;
+          }
+          if (status === "pending" || status === "processing") {
+            setTimeout(poll, 5000);
+          }
+        } catch {
+          addToast("Failed to refresh transcription status", "error");
+        }
+      };
+
+      void poll();
+    },
+    [addToast],
+  );
+
+  const handleIntensiveListening = useCallback(
+    async (episode: PodcastEpisode, forceRestart = false) => {
+      const status =
+        episode.transcript_status || transcriptStatus[episode.id] || "none";
+      if (status === "completed") {
+        navigate(`/player/podcast/${episode.id}`);
+        return;
+      }
+
+      if ((status === "pending" || status === "processing") && !forceRestart) {
+        addToast("Transcription in progress", "info");
+        return;
+      }
+
+      try {
+        setTranscriptStatus((prev) => ({ ...prev, [episode.id]: "pending" }));
+        const remoteUrl = settings?.transcriptionRemoteEnabled
+          ? settings.transcriptionRemoteUrl
+          : null;
+        const apiKey = settings?.transcriptionRemoteEnabled
+          ? settings.transcriptionRemoteApiKey
+          : null;
+
+        const result = await podcastApi.transcribeEpisode(
+          episode.id,
+          forceRestart,
+          remoteUrl,
+          apiKey,
+        );
+        addToast(result.message || "Transcription started", "success");
+        void pollTranscriptStatus(episode.id);
+      } catch (error: unknown) {
+        setTranscriptStatus((prev) => ({ ...prev, [episode.id]: "failed" }));
+        addToast(
+          "Failed to start transcription: " + getErrorMessage(error),
+          "error",
+        );
+      }
+    },
+    [
+      addToast,
+      navigate,
+      pollTranscriptStatus,
+      settings?.transcriptionRemoteApiKey,
+      settings?.transcriptionRemoteEnabled,
+      settings?.transcriptionRemoteUrl,
+      transcriptStatus,
+    ],
+  );
+
+  async function handleDownloadAction(item: FavoriteItem) {
+    const episodeId = item.episode.id;
+    const dState = downloadState[episodeId];
+    if (dState?.status === "downloading") {
+      cancelDownload(episodeId);
+      addToast("Download cancelled", "info");
+      return;
+    }
+
+    try {
+      setDownloadLoading((prev) => ({ ...prev, [episodeId]: true }));
+      if (offlineEpisodes.has(episodeId)) {
+        const success = await removeDownload(episodeId, item.episode.audio_url);
+        if (success) {
+          addToast("Removed download", "info");
+        } else {
+          addToast("Failed to remove download", "error");
+        }
+        return;
+      }
+
+      await startDownload(item.episode);
+      addToast("Download started", "success");
+    } catch (error: unknown) {
+      addToast("Download action failed: " + getErrorMessage(error), "error");
+    } finally {
+      setDownloadLoading((prev) => ({ ...prev, [episodeId]: false }));
+    }
+  }
+
+  function buildEpisodeActions(item: FavoriteItem): PodcastEpisodeActionItem[] {
+    const episodeId = item.episode.id;
+    const dState = downloadState[episodeId];
+    const isDownloading = dState?.status === "downloading";
+    const isDownloaded = offlineEpisodes.has(episodeId);
+    const tStatus =
+      item.episode.transcript_status || transcriptStatus[episodeId] || "none";
+
+    return [
+      {
+        key: `favorite-${episodeId}`,
+        onClick: (e: MouseEvent<HTMLButtonElement>) => {
+          e.stopPropagation();
+          void handleToggleFavorite(episodeId);
+        },
+        disabled: favoriteLoading[episodeId],
+        className:
+          "border border-transparent text-red-400 hover:bg-red-500/10 hover:border-red-500/30",
+        title: "Remove from favorites",
+        icon: favoriteLoading[episodeId] ? (
+          <Loader2 className="w-5 h-5 animate-spin" />
+        ) : (
+          <Heart className="w-5 h-5" fill="currentColor" />
+        ),
+      },
+      {
+        key: `playlist-${episodeId}`,
+        onClick: (e: MouseEvent<HTMLButtonElement>) => {
+          e.stopPropagation();
+          setPlaylistDialogEpisode(item.episode);
+        },
+        className:
+          "border border-transparent text-white/30 hover:text-accent-primary hover:bg-accent-primary/10 hover:border-accent-primary/20",
+        title: "Add to playlist",
+        icon: <ListPlus className="w-5 h-5" />,
+      },
+      {
+        key: `intensive-${episodeId}`,
+        onClick: (e: MouseEvent<HTMLButtonElement>) => {
+          e.stopPropagation();
+          void handleIntensiveListening(
+            item.episode,
+            tStatus === "pending" || tStatus === "processing",
+          );
+        },
+        disabled: isDownloading,
+        className:
+          tStatus === "completed"
+            ? "border border-transparent text-accent-primary hover:bg-accent-primary/10 hover:border-accent-primary/20"
+            : tStatus === "pending" || tStatus === "processing"
+              ? "border border-transparent text-amber-300 hover:bg-amber-500/10 hover:border-amber-500/20"
+              : "border border-transparent text-white/30 hover:text-accent-primary hover:bg-accent-primary/10 hover:border-accent-primary/20",
+        title:
+          tStatus === "completed"
+            ? "Enter intensive listening"
+            : tStatus === "pending" || tStatus === "processing"
+              ? "Transcription in progress (click to restart)"
+              : "Generate transcript",
+        icon:
+          tStatus === "pending" || tStatus === "processing" ? (
+            <Loader2 className="w-5 h-5 animate-spin" />
+          ) : (
+            <BookOpen className="w-5 h-5" />
+          ),
+      },
+      {
+        key: `download-${episodeId}`,
+        onClick: (e: MouseEvent<HTMLButtonElement>) => {
+          e.stopPropagation();
+          void handleDownloadAction(item);
+        },
+        disabled: downloadLoading[episodeId],
+        className: isDownloaded
+          ? "border border-transparent text-accent-success hover:bg-accent-success/10 hover:border-accent-success/30"
+          : "border border-transparent text-white/30 hover:text-accent-primary hover:bg-accent-primary/10 hover:border-accent-primary/20",
+        title: isDownloading
+          ? "Cancel download"
+          : isDownloaded
+            ? "Remove download"
+            : "Download episode",
+        icon:
+          downloadLoading[episodeId] || isDownloading ? (
+            <Loader2 className="w-5 h-5 animate-spin" />
+          ) : (
+            <Download className="w-5 h-5" />
+          ),
+      },
+    ];
   }
 
   return (
@@ -220,18 +517,10 @@ export default function PodcastFavoritesView() {
                     </span>
                   )}
 
-                  <button
-                    onClick={() => handleRemove(item.episode.id)}
-                    disabled={removing[item.episode.id]}
-                    className="p-2 rounded-lg text-red-400 hover:bg-red-500/10 disabled:opacity-50"
-                    title="Remove favorite"
-                  >
-                    {removing[item.episode.id] ? (
-                      <Loader2 className="w-5 h-5 animate-spin" />
-                    ) : (
-                      <Trash2 className="w-5 h-5" />
-                    )}
-                  </button>
+                  <PodcastEpisodeActionButtons
+                    actions={buildEpisodeActions(item)}
+                    showOnMobile
+                  />
                 </div>
               );
             })}
@@ -289,18 +578,10 @@ export default function PodcastFavoritesView() {
                           </span>
                         )}
 
-                        <button
-                          onClick={() => handleRemove(item.episode.id)}
-                          disabled={removing[item.episode.id]}
-                          className="p-2 rounded-lg text-red-400 hover:bg-red-500/10 disabled:opacity-50"
-                          title="Remove favorite"
-                        >
-                          {removing[item.episode.id] ? (
-                            <Loader2 className="w-5 h-5 animate-spin" />
-                          ) : (
-                            <Trash2 className="w-5 h-5" />
-                          )}
-                        </button>
+                        <PodcastEpisodeActionButtons
+                          actions={buildEpisodeActions(item)}
+                          showOnMobile
+                        />
                       </div>
                     );
                   })}
@@ -309,6 +590,13 @@ export default function PodcastFavoritesView() {
             ))}
         </div>
       )}
+
+      <PlaylistPickerDialog
+        isOpen={playlistDialogEpisode !== null}
+        onClose={() => setPlaylistDialogEpisode(null)}
+        episodeId={playlistDialogEpisode?.id ?? null}
+        episodeTitle={playlistDialogEpisode?.title}
+      />
     </PodcastLayout>
   );
 }
