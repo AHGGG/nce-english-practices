@@ -4,7 +4,7 @@
  */
 
 import { useState, useEffect, useCallback, useRef } from "react";
-import type { MouseEvent } from "react";
+import type { MouseEvent, ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Trash2,
@@ -21,9 +21,6 @@ import {
 } from "lucide-react";
 import PodcastLayout from "../../components/podcast/PodcastLayout";
 import PodcastCoverPlayButton from "../../components/podcast/PodcastCoverPlayButton";
-import PodcastEpisodeActionButtons, {
-  type PodcastEpisodeActionItem,
-} from "../../components/podcast/PodcastEpisodeActionButtons";
 import PlaylistPickerDialog from "../../components/podcast/PlaylistPickerDialog";
 import EpisodeSwipeCard, {
   shouldShowSwipeHint,
@@ -454,6 +451,58 @@ export default function PodcastDownloadsView() {
     [addToast],
   );
 
+  // Render intensive listening button
+  const renderIntensiveListeningButton = (
+    episode: PodcastEpisode,
+  ): ReactNode => {
+    const status =
+      episode.transcript_status || transcriptStatus[episode.id] || "none";
+
+    if (status === "pending" || status === "processing") {
+      return (
+        <button
+          onClick={(e: MouseEvent<HTMLButtonElement>) => {
+            e.stopPropagation();
+            handleIntensiveListening(episode, true);
+          }}
+          className="flex-shrink-0 p-2 sm:p-3 text-amber-400 hover:bg-amber-500/10 rounded-lg sm:rounded-xl transition-colors border border-transparent hover:border-amber-500/30"
+          title="Generating transcript... Click to restart if stuck"
+        >
+          <Loader2 className="w-4 h-4 sm:w-5 sm:h-5 animate-spin" />
+        </button>
+      );
+    }
+
+    if (status === "completed") {
+      return (
+        <button
+          onClick={(e: MouseEvent<HTMLButtonElement>) => {
+            e.stopPropagation();
+            handleIntensiveListening(episode);
+          }}
+          className="flex-shrink-0 p-2 sm:p-3 text-accent-primary hover:bg-accent-primary/10 rounded-lg sm:rounded-xl transition-colors border border-transparent hover:border-accent-primary/30"
+          title="Enter intensive listening mode"
+        >
+          <BookOpen className="w-4 h-4 sm:w-5 sm:h-5" />
+        </button>
+      );
+    }
+
+    // Default: not transcribed
+    return (
+      <button
+        onClick={(e: MouseEvent<HTMLButtonElement>) => {
+          e.stopPropagation();
+          handleIntensiveListening(episode);
+        }}
+        className="flex-shrink-0 p-2 sm:p-3 text-white/40 hover:text-accent-primary hover:bg-accent-primary/10 rounded-lg sm:rounded-xl transition-colors border border-transparent hover:border-accent-primary/20"
+        title="Generate transcript for intensive listening"
+      >
+        <BookOpen className="w-4 h-4 sm:w-5 sm:h-5" />
+      </button>
+    );
+  };
+
   return (
     <PodcastLayout title="Downloads">
       <div className="space-y-8 animate-in slide-in-from-bottom-5 duration-700">
@@ -750,87 +799,69 @@ export default function PodcastDownloadsView() {
 
                     {/* Action buttons */}
                     {/* Desktop/tablet actions */}
-                    <PodcastEpisodeActionButtons
-                      actions={[
-                        {
-                          key: `favorite-${ep.id}`,
-                          onClick: (e: MouseEvent<HTMLButtonElement>) => {
-                            e.stopPropagation();
-                            void handleToggleFavorite(ep.id);
-                          },
-                          disabled: favoriteLoading[ep.id],
-                          className: favoriteEpisodeIds.has(ep.id)
-                            ? "border border-transparent text-red-400 hover:bg-red-500/10 hover:border-red-500/30"
-                            : "border border-transparent text-white/30 hover:text-red-400 hover:bg-red-500/10 hover:border-red-500/20",
-                          title: favoriteEpisodeIds.has(ep.id)
+                    <div className="hidden sm:flex items-center gap-1.5">
+                      <button
+                        onClick={(e: MouseEvent<HTMLButtonElement>) => {
+                          e.stopPropagation();
+                          void handleToggleFavorite(ep.id);
+                        }}
+                        disabled={favoriteLoading[ep.id]}
+                        className={`flex-shrink-0 p-3 rounded-xl transition-colors border border-transparent ${
+                          favoriteEpisodeIds.has(ep.id)
+                            ? "text-red-400 hover:bg-red-500/10 hover:border-red-500/30"
+                            : "text-white/30 hover:text-red-400 hover:bg-red-500/10 hover:border-red-500/20"
+                        }`}
+                        title={
+                          favoriteEpisodeIds.has(ep.id)
                             ? "Remove from favorites"
-                            : "Add to favorites",
-                          icon: (
-                            <Heart
-                              className="w-5 h-5"
-                              fill={
-                                favoriteEpisodeIds.has(ep.id)
-                                  ? "currentColor"
-                                  : "none"
-                              }
-                            />
-                          ),
-                        },
-                        {
-                          key: `playlist-${ep.id}`,
-                          onClick: (e: MouseEvent<HTMLButtonElement>) => {
-                            e.stopPropagation();
-                            setPlaylistDialogEpisode(ep);
-                          },
-                          className:
-                            "border border-transparent text-white/30 hover:text-accent-primary hover:bg-accent-primary/10 hover:border-accent-primary/20",
-                          title: "Add to playlist",
-                          icon: <ListPlus className="w-5 h-5" />,
-                        },
-                        ...(!isDownloading && !isError
-                          ? [
-                              {
-                                key: `intensive-${ep.id}`,
-                                onClick: (e: MouseEvent<HTMLButtonElement>) => {
-                                  e.stopPropagation();
-                                  void handleIntensiveListening(ep);
-                                },
-                                className:
-                                  "border border-transparent text-white/30 hover:text-accent-primary hover:bg-accent-primary/10 hover:border-accent-primary/20",
-                                title:
-                                  mobileTranscriptStatus === "completed"
-                                    ? "Enter intensive listening mode"
-                                    : "Generate transcript for intensive listening",
-                                icon:
-                                  mobileTranscriptStatus === "pending" ||
-                                  mobileTranscriptStatus === "processing" ? (
-                                    <Loader2 className="w-5 h-5 animate-spin" />
-                                  ) : (
-                                    <BookOpen className="w-5 h-5" />
-                                  ),
-                              } satisfies PodcastEpisodeActionItem,
-                            ]
-                          : []),
-                        {
-                          key: `delete-${ep.id}`,
-                          onClick: (e: MouseEvent<HTMLButtonElement>) => {
-                            e.stopPropagation();
-                            void handleDelete(item);
-                          },
-                          disabled: deleting[ep.id],
-                          className:
-                            "text-white/20 hover:text-red-400 hover:bg-red-500/10 relative z-10",
-                          title: isDownloading
-                            ? "Cancel download"
-                            : "Remove download",
-                          icon: deleting[ep.id] ? (
-                            <Loader2 className="w-5 h-5 animate-spin" />
-                          ) : (
-                            <Trash2 className="w-5 h-5" />
-                          ),
-                        },
-                      ]}
-                    />
+                            : "Add to favorites"
+                        }
+                      >
+                        <Heart
+                          className="w-5 h-5"
+                          fill={
+                            favoriteEpisodeIds.has(ep.id)
+                              ? "currentColor"
+                              : "none"
+                          }
+                        />
+                      </button>
+
+                      <button
+                        onClick={(e: MouseEvent<HTMLButtonElement>) => {
+                          e.stopPropagation();
+                          setPlaylistDialogEpisode(ep);
+                        }}
+                        className="flex-shrink-0 p-3 text-white/30 hover:text-accent-primary hover:bg-accent-primary/10 rounded-xl transition-colors border border-transparent hover:border-accent-primary/20"
+                        title="Add to playlist"
+                      >
+                        <ListPlus className="w-5 h-5" />
+                      </button>
+
+                      {/* Intensive Listening button - only show for completed downloads */}
+                      {!isDownloading &&
+                        !isError &&
+                        renderIntensiveListeningButton(ep)}
+
+                      {/* Delete/Cancel button */}
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDelete(item);
+                        }}
+                        disabled={deleting[ep.id]}
+                        className="flex-shrink-0 p-3 text-white/20 hover:text-red-400 hover:bg-red-500/10 rounded-xl transition-colors relative z-10"
+                        title={
+                          isDownloading ? "Cancel download" : "Remove download"
+                        }
+                      >
+                        {deleting[ep.id] ? (
+                          <Loader2 className="w-5 h-5 animate-spin" />
+                        ) : (
+                          <Trash2 className="w-5 h-5" />
+                        )}
+                      </button>
+                    </div>
                   </div>
 
                   {/* Progress bar (thin line at the bottom of the card) */}
