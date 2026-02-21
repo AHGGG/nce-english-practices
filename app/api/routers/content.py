@@ -917,20 +917,34 @@ async def _get_podcast_player_content(episode_id: int, user_id: str, db: AsyncSe
     state_result = await db.execute(state_stmt)
     user_state = state_result.scalar_one_or_none()
 
+    # Normalize transcript segment order/timestamps for stable subtitle navigation.
+    normalized_segments = sorted(
+        episode.transcript_segments,
+        key=lambda seg: (
+            float(seg.get("start_time", 0.0) or 0.0),
+            float(seg.get("end_time", 0.0) or 0.0),
+        ),
+    )
+
     # Convert transcript_segments to ContentBlocks
     blocks = []
-    for seg in episode.transcript_segments:
+    for seg in normalized_segments:
+        start_time = float(seg.get("start_time", 0.0) or 0.0)
+        end_time = float(seg.get("end_time", 0.0) or 0.0)
+        if end_time <= start_time:
+            end_time = start_time + 0.05
+
         block = ContentBlock(
             type=BlockType.AUDIO_SEGMENT,
             text=seg.get("text", ""),
             sentences=[seg.get("text", "")],
-            start_time=seg.get("start_time", 0.0),
-            end_time=seg.get("end_time", 0.0),
+            start_time=start_time,
+            end_time=end_time,
         )
         blocks.append(block)
 
     # Build full text
-    full_text = " ".join(seg.get("text", "") for seg in episode.transcript_segments)
+    full_text = " ".join(seg.get("text", "") for seg in normalized_segments)
 
     return ContentBundle(
         id=f"podcast:{episode_id}",

@@ -131,6 +131,17 @@ const DEFAULT_PLAYBACK_RATE = 1.0;
 const PLAYBACK_RATES = [0.5, 0.75, 1.0, 1.25, 1.5, 1.75, 2.0];
 const SEGMENT_SYNC_TOLERANCE_SECONDS = 0.35;
 
+function getSegmentBounds(segment: AudioSegment): {
+  start: number;
+  end: number;
+} {
+  const start = Number.isFinite(segment.startTime) ? segment.startTime : 0;
+  const rawEnd = Number.isFinite(segment.endTime) ? segment.endTime : start;
+  // Defensive guard for imperfect transcript timestamps.
+  const end = rawEnd > start ? rawEnd : start + 0.05;
+  return { start, end };
+}
+
 function findActiveSegmentIndex(
   time: number,
   segments: AudioSegment[],
@@ -138,46 +149,59 @@ function findActiveSegmentIndex(
 ): number {
   if (segments.length === 0) return -1;
 
-  // Binary search around current playback position.
-  let left = 0;
-  let right = segments.length - 1;
-  let candidate = -1;
-  const target = time + tolerance;
+  // Robust linear selection for overlapping / slightly unsorted timestamps.
+  // Prefer the most recently started matching segment to avoid snapping backward.
+  let activeIndex = -1;
+  let activeStart = -Infinity;
+  let activeEnd = -Infinity;
 
-  while (left <= right) {
-    const mid = (left + right) >> 1;
-    if (segments[mid].startTime <= target) {
-      candidate = mid;
-      left = mid + 1;
-    } else {
-      right = mid - 1;
+  let upcomingIndex = -1;
+  let upcomingDelta = Infinity;
+
+  let farthestEnd = -Infinity;
+  let farthestEndIndex = -1;
+
+  for (let i = 0; i < segments.length; i++) {
+    const { start, end } = getSegmentBounds(segments[i]);
+
+    if (end > farthestEnd) {
+      farthestEnd = end;
+      farthestEndIndex = i;
+    }
+
+    if (time >= start - tolerance && time < end + tolerance) {
+      if (
+        start > activeStart ||
+        (start === activeStart && end > activeEnd) ||
+        (start === activeStart && end === activeEnd && i > activeIndex)
+      ) {
+        activeIndex = i;
+        activeStart = start;
+        activeEnd = end;
+      }
+      continue;
+    }
+
+    if (start > time) {
+      const delta = start - time;
+      if (delta <= tolerance && delta < upcomingDelta) {
+        upcomingIndex = i;
+        upcomingDelta = delta;
+      }
     }
   }
 
-  // Check nearby segments to avoid missing short cues between sparse timeupdate ticks.
-  const start = Math.max(0, candidate - 2);
-  const end = Math.min(segments.length - 1, candidate + 2);
-  for (let i = start; i <= end; i++) {
-    const seg = segments[i];
-    if (time >= seg.startTime - tolerance && time < seg.endTime + tolerance) {
-      return i;
-    }
+  if (activeIndex >= 0) {
+    return activeIndex;
   }
 
-  // If in a short gap, snap to the next upcoming segment within tolerance.
-  const nextIndex = Math.min(candidate + 1, segments.length - 1);
-  const nextSeg = segments[nextIndex];
-  if (
-    nextSeg &&
-    nextSeg.startTime > time &&
-    nextSeg.startTime - time <= tolerance
-  ) {
-    return nextIndex;
+  if (upcomingIndex >= 0) {
+    return upcomingIndex;
   }
 
   // If playback is past all segments, keep the final segment active.
-  if (time >= segments[segments.length - 1].endTime) {
-    return segments.length - 1;
+  if (farthestEndIndex >= 0 && time >= farthestEnd) {
+    return farthestEndIndex;
   }
 
   return -1;
@@ -211,6 +235,7 @@ export function useAudioPlayer(
   const [loopMode, setLoopMode] = useState<"off" | "segment" | "ab">("off");
   const [loopStart, setLoopStart] = useState<number | null>(null);
   const [loopEnd, setLoopEnd] = useState<number | null>(null);
+  const [loopSegmentIndex, setLoopSegmentIndex] = useState<number | null>(null);
   const lastLoopJumpRef = useRef(0);
 
   // Computed: active segment index
@@ -348,23 +373,40 @@ export function useAudioPlayer(
     }
   }, [isPlaying, play, pause]);
 
-  const seekTo = useCallback((seconds: number) => {
-    if (!audioRef.current) return;
-    const clampedTime = Math.max(
-      0,
-      Math.min(seconds, audioRef.current.duration || 0),
-    );
-    audioRef.current.currentTime = clampedTime;
-    setCurrentTime(clampedTime);
-  }, []);
+  const seekTo = useCallback(
+    (seconds: number) => {
+      if (!audioRef.current) return;
+      const clampedTime = Math.max(
+        0,
+        Math.min(seconds, audioRef.current.duration || 0),
+      );
+      audioRef.current.currentTime = clampedTime;
+      setCurrentTime(clampedTime);
+
+      if (loopMode === "segment") {
+        const nextSegmentIndex = findActiveSegmentIndex(
+          clampedTime,
+          segments,
+          SEGMENT_SYNC_TOLERANCE_SECONDS,
+        );
+        if (nextSegmentIndex >= 0) {
+          setLoopSegmentIndex(nextSegmentIndex);
+        }
+      }
+    },
+    [loopMode, segments],
+  );
 
   const seekToSegment = useCallback(
     (index: number) => {
       if (index < 0 || index >= segments.length) return;
       const segment = segments[index];
+      if (loopMode === "segment") {
+        setLoopSegmentIndex(index);
+      }
       seekTo(segment.startTime);
     },
-    [segments, seekTo],
+    [loopMode, segments, seekTo],
   );
 
   const setPlaybackRate = useCallback((rate: number) => {
@@ -384,8 +426,26 @@ export function useAudioPlayer(
   );
 
   const toggleSegmentLoop = useCallback(() => {
-    setLoopMode((prev) => (prev === "segment" ? "off" : "segment"));
-  }, []);
+    setLoopMode((prev) => {
+      if (prev === "segment") {
+        setLoopSegmentIndex(null);
+        return "off";
+      }
+
+      const currentIndex =
+        activeSegmentIndex >= 0
+          ? activeSegmentIndex
+          : findActiveSegmentIndex(
+              currentTime,
+              segments,
+              SEGMENT_SYNC_TOLERANCE_SECONDS,
+            );
+      if (currentIndex >= 0) {
+        setLoopSegmentIndex(currentIndex);
+      }
+      return "segment";
+    });
+  }, [activeSegmentIndex, currentTime, segments]);
 
   const setABStart = useCallback(() => {
     setLoopStart(currentTime);
@@ -423,8 +483,15 @@ export function useAudioPlayer(
       return;
     }
 
-    if (loopMode === "segment" && activeSegmentIndex >= 0) {
-      const seg = segments[activeSegmentIndex];
+    if (loopMode === "segment") {
+      const targetIndex =
+        loopSegmentIndex != null && loopSegmentIndex >= 0
+          ? loopSegmentIndex
+          : activeSegmentIndex;
+      if (targetIndex < 0) {
+        return;
+      }
+      const seg = segments[targetIndex];
       if (seg && currentTime >= seg.endTime - 0.03) {
         seekTo(seg.startTime);
         lastLoopJumpRef.current = now;
@@ -444,6 +511,7 @@ export function useAudioPlayer(
     }
   }, [
     loopMode,
+    loopSegmentIndex,
     activeSegmentIndex,
     segments,
     currentTime,

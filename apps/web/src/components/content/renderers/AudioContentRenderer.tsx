@@ -519,6 +519,12 @@ export function AudioPlayerUI({
   // Handle segment click to seek
   const handleSegmentClick = useCallback(
     (index: number) => {
+      if (index === state.activeSegmentIndex) {
+        actions.seekToSegment(index);
+        void actions.play();
+        return;
+      }
+
       actions.seekToSegment(index);
       if (!state.isPlaying) {
         actions.play();
@@ -528,19 +534,47 @@ export function AudioPlayerUI({
   );
 
   const handlePrevSegment = useCallback(() => {
-    const target =
-      state.activeSegmentIndex > 0 ? state.activeSegmentIndex - 1 : 0;
+    const currentIndex = Math.max(0, state.activeSegmentIndex);
+    const current = segments[currentIndex];
+    const currentStart = current?.startTime ?? -Infinity;
+
+    let target = currentIndex > 0 ? currentIndex - 1 : 0;
+    let bestStart = -Infinity;
+    // Find the latest segment whose start is strictly earlier than current.
+    // This works even when transcript list order is imperfect.
+    for (let i = 0; i < segments.length; i++) {
+      const start = segments[i]?.startTime ?? -Infinity;
+      if (start < currentStart - 0.001 && start > bestStart) {
+        bestStart = start;
+        target = i;
+      }
+    }
+
     actions.seekToSegment(target);
     if (!state.isPlaying) {
       actions.play();
     }
-  }, [actions, state.activeSegmentIndex, state.isPlaying]);
+  }, [actions, segments, state.activeSegmentIndex, state.isPlaying]);
 
   const handleNextSegment = useCallback(() => {
-    const target =
-      state.activeSegmentIndex >= 0
-        ? Math.min(segments.length - 1, state.activeSegmentIndex + 1)
-        : 0;
+    const currentIndex =
+      state.activeSegmentIndex >= 0 ? state.activeSegmentIndex : 0;
+    const current = segments[currentIndex];
+    const currentStart = current?.startTime ?? -Infinity;
+
+    let target =
+      currentIndex >= 0 ? Math.min(segments.length - 1, currentIndex + 1) : 0;
+    let bestStart = Infinity;
+    // Find the earliest segment whose start is strictly later than current.
+    // This works even when transcript list order is imperfect.
+    for (let i = 0; i < segments.length; i++) {
+      const start = segments[i]?.startTime ?? Infinity;
+      if (start > currentStart + 0.001 && start < bestStart) {
+        bestStart = start;
+        target = i;
+      }
+    }
+
     actions.seekToSegment(target);
     if (!state.isPlaying) {
       actions.play();
