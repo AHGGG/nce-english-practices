@@ -3,6 +3,7 @@ import type { MouseEvent } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   BookOpen,
+  ChevronLeft,
   Check,
   Download,
   Heart,
@@ -14,6 +15,10 @@ import PodcastCoverPlayButton from "../../components/podcast/PodcastCoverPlayBut
 import PodcastEpisodeActionButtons, {
   type PodcastEpisodeActionItem,
 } from "../../components/podcast/PodcastEpisodeActionButtons";
+import EpisodeSwipeCard, {
+  shouldShowSwipeHint,
+  type SwipeAction,
+} from "../../components/podcast/EpisodeSwipeCard";
 import PlaylistPickerDialog from "../../components/podcast/PlaylistPickerDialog";
 import * as podcastApi from "../../api/podcast";
 import { usePodcast } from "../../context/PodcastContext";
@@ -128,6 +133,8 @@ export default function PodcastFavoritesView() {
   const [sortMode, setSortMode] = useState<"favorite-time" | "channel-grouped">(
     "favorite-time",
   );
+  const [swipedEpisodeId, setSwipedEpisodeId] = useState<number | null>(null);
+  const [showSwipeHint] = useState(shouldShowSwipeHint);
 
   const favoritesByTime = useMemo(() => {
     return [...items].sort((a, b) => {
@@ -433,6 +440,91 @@ export default function PodcastFavoritesView() {
     ];
   }
 
+  function buildMobileActions(item: FavoriteItem): SwipeAction[] {
+    const episodeId = item.episode.id;
+    const dState = downloadState[episodeId];
+    const isDownloading = dState?.status === "downloading";
+    const isDownloaded = offlineEpisodes.has(episodeId);
+    const tStatus =
+      item.episode.transcript_status || transcriptStatus[episodeId] || "none";
+
+    return [
+      {
+        icon: favoriteLoading[episodeId] ? (
+          <Loader2 className="w-4 h-4 animate-spin" />
+        ) : (
+          <Heart className="w-4 h-4" fill="currentColor" />
+        ),
+        onClick: () => {
+          setSwipedEpisodeId(null);
+          void handleToggleFavorite(episodeId);
+        },
+        disabled: favoriteLoading[episodeId],
+        className: "text-red-400 bg-red-500/10 border-red-500/25 border",
+        title: "Remove from favorites",
+      },
+      {
+        icon: <ListPlus className="w-4 h-4" />,
+        onClick: () => {
+          setSwipedEpisodeId(null);
+          setPlaylistDialogEpisode(item.episode);
+        },
+        className: "text-white/70 bg-white/5 border-white/10 border",
+        title: "Add to playlist",
+      },
+      {
+        icon:
+          tStatus === "pending" || tStatus === "processing" ? (
+            <Loader2 className="w-4 h-4 animate-spin" />
+          ) : (
+            <BookOpen className="w-4 h-4" />
+          ),
+        onClick: () => {
+          setSwipedEpisodeId(null);
+          void handleIntensiveListening(
+            item.episode,
+            tStatus === "pending" || tStatus === "processing",
+          );
+        },
+        disabled: isDownloading,
+        className: isDownloading
+          ? "text-white/20 bg-white/5 border-white/5 border"
+          : tStatus === "completed"
+            ? "text-accent-primary bg-accent-primary/10 border-accent-primary/25 border"
+            : tStatus === "pending" || tStatus === "processing"
+              ? "text-amber-300 bg-amber-500/10 border-amber-500/25 border"
+              : "text-white/35 bg-white/5 border-white/10 border",
+        title:
+          tStatus === "completed"
+            ? "Enter intensive listening"
+            : tStatus === "pending" || tStatus === "processing"
+              ? "Transcription in progress (click to restart)"
+              : "Generate transcript",
+      },
+      {
+        icon:
+          downloadLoading[episodeId] || isDownloading ? (
+            <Loader2 className="w-4 h-4 animate-spin" />
+          ) : (
+            <Download className="w-4 h-4" />
+          ),
+        onClick: () => {
+          setSwipedEpisodeId(null);
+          void handleDownloadAction(item);
+        },
+        disabled: downloadLoading[episodeId],
+        className: isDownloaded
+          ? "text-accent-success bg-accent-success/10 border-accent-success/25 border"
+          : "text-white/60 bg-white/5 border-white/10 border",
+        title: isDownloading
+          ? "Cancel download"
+          : isDownloaded
+            ? "Remove download"
+            : "Download episode",
+      },
+    ];
+  }
+
   return (
     <PodcastLayout title="Favorites">
       {loading ? (
@@ -455,6 +547,13 @@ export default function PodcastFavoritesView() {
         </div>
       ) : (
         <div className="space-y-3">
+          {showSwipeHint && (
+            <div className="sm:hidden flex items-center justify-center gap-1.5 text-[10px] font-mono uppercase tracking-wider text-white/45 bg-white/[0.03] border border-white/10 rounded-xl px-3 py-2">
+              <ChevronLeft className="w-3.5 h-3.5" />
+              Swipe left on an episode for quick actions
+            </div>
+          )}
+
           <div className="flex flex-wrap items-center gap-2">
             <button
               onClick={() => setSortMode("favorite-time")}
@@ -484,44 +583,52 @@ export default function PodcastFavoritesView() {
               const isCurrentAndPlaying = isCurrent && isPlaying;
 
               return (
-                <div
+                <EpisodeSwipeCard
                   key={item.episode.id}
-                  className="flex items-center gap-4 p-4 rounded-xl bg-white/[0.02] border border-white/10"
+                  episodeId={item.episode.id}
+                  actions={buildMobileActions(item)}
+                  expandedId={swipedEpisodeId}
+                  onExpandedChange={(id) =>
+                    setSwipedEpisodeId(typeof id === "number" ? id : null)
+                  }
+                  showSwipeHint={showSwipeHint}
+                  className="bg-white/[0.02] border border-white/10"
                 >
-                  <PodcastCoverPlayButton
-                    imageUrl={item.episode.image_url || item.feed.image_url}
-                    isCurrent={isCurrent}
-                    isPlaying={isCurrentAndPlaying}
-                    onClick={() => playEpisode(item.episode, item.feed, null)}
-                    sizeClassName="w-14 h-14"
-                    iconClassName="w-4 h-4"
-                    fallbackIconClassName="w-5 h-5"
-                  />
+                  <div className="flex items-center gap-4 p-4">
+                    <PodcastCoverPlayButton
+                      imageUrl={item.episode.image_url || item.feed.image_url}
+                      isCurrent={isCurrent}
+                      isPlaying={isCurrentAndPlaying}
+                      onClick={() => playEpisode(item.episode, item.feed, null)}
+                      sizeClassName="w-14 h-14"
+                      iconClassName="w-4 h-4"
+                      fallbackIconClassName="w-5 h-5"
+                    />
 
-                  <div className="flex-1 min-w-0">
-                    <p className="text-white text-sm font-medium truncate">
-                      {item.episode.title}
-                    </p>
-                    <p className="text-white/50 text-xs truncate">
-                      {item.feed.title}
-                    </p>
-                    <p className="text-white/40 text-[11px] mt-1">
-                      {buildMetaText(item)}
-                    </p>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-white text-sm font-medium truncate">
+                        {item.episode.title}
+                      </p>
+                      <p className="text-white/50 text-xs truncate">
+                        {item.feed.title}
+                      </p>
+                      <p className="text-white/40 text-[11px] mt-1">
+                        {buildMetaText(item)}
+                      </p>
+                    </div>
+
+                    {isCurrent && (
+                      <span className="px-2 py-1 rounded-md text-[10px] font-mono text-accent-primary border border-accent-primary/30 bg-accent-primary/10">
+                        <Check className="w-3 h-3 inline mr-1" />
+                        NOW
+                      </span>
+                    )}
+
+                    <PodcastEpisodeActionButtons
+                      actions={buildEpisodeActions(item)}
+                    />
                   </div>
-
-                  {isCurrent && (
-                    <span className="px-2 py-1 rounded-md text-[10px] font-mono text-accent-primary border border-accent-primary/30 bg-accent-primary/10">
-                      <Check className="w-3 h-3 inline mr-1" />
-                      NOW
-                    </span>
-                  )}
-
-                  <PodcastEpisodeActionButtons
-                    actions={buildEpisodeActions(item)}
-                    showOnMobile
-                  />
-                </div>
+                </EpisodeSwipeCard>
               );
             })}
 
@@ -544,45 +651,53 @@ export default function PodcastFavoritesView() {
                     const isCurrentAndPlaying = isCurrent && isPlaying;
 
                     return (
-                      <div
+                      <EpisodeSwipeCard
                         key={item.episode.id}
-                        className="flex items-center gap-4 p-3 rounded-xl bg-white/[0.02] border border-white/10"
+                        episodeId={item.episode.id}
+                        actions={buildMobileActions(item)}
+                        expandedId={swipedEpisodeId}
+                        onExpandedChange={(id) =>
+                          setSwipedEpisodeId(typeof id === "number" ? id : null)
+                        }
+                        showSwipeHint={showSwipeHint}
+                        className="bg-white/[0.02] border border-white/10"
                       >
-                        <PodcastCoverPlayButton
-                          imageUrl={
-                            item.episode.image_url || item.feed.image_url
-                          }
-                          isCurrent={isCurrent}
-                          isPlaying={isCurrentAndPlaying}
-                          onClick={() =>
-                            playEpisode(item.episode, item.feed, null)
-                          }
-                          sizeClassName="w-14 h-14"
-                          iconClassName="w-4 h-4"
-                          fallbackIconClassName="w-5 h-5"
-                        />
+                        <div className="flex items-center gap-4 p-3">
+                          <PodcastCoverPlayButton
+                            imageUrl={
+                              item.episode.image_url || item.feed.image_url
+                            }
+                            isCurrent={isCurrent}
+                            isPlaying={isCurrentAndPlaying}
+                            onClick={() =>
+                              playEpisode(item.episode, item.feed, null)
+                            }
+                            sizeClassName="w-14 h-14"
+                            iconClassName="w-4 h-4"
+                            fallbackIconClassName="w-5 h-5"
+                          />
 
-                        <div className="flex-1 min-w-0">
-                          <p className="text-white text-sm font-medium truncate">
-                            {item.episode.title}
-                          </p>
-                          <p className="text-white/40 text-[11px] mt-1">
-                            {buildMetaText(item)}
-                          </p>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-white text-sm font-medium truncate">
+                              {item.episode.title}
+                            </p>
+                            <p className="text-white/40 text-[11px] mt-1">
+                              {buildMetaText(item)}
+                            </p>
+                          </div>
+
+                          {isCurrent && (
+                            <span className="px-2 py-1 rounded-md text-[10px] font-mono text-accent-primary border border-accent-primary/30 bg-accent-primary/10">
+                              <Check className="w-3 h-3 inline mr-1" />
+                              NOW
+                            </span>
+                          )}
+
+                          <PodcastEpisodeActionButtons
+                            actions={buildEpisodeActions(item)}
+                          />
                         </div>
-
-                        {isCurrent && (
-                          <span className="px-2 py-1 rounded-md text-[10px] font-mono text-accent-primary border border-accent-primary/30 bg-accent-primary/10">
-                            <Check className="w-3 h-3 inline mr-1" />
-                            NOW
-                          </span>
-                        )}
-
-                        <PodcastEpisodeActionButtons
-                          actions={buildEpisodeActions(item)}
-                          showOnMobile
-                        />
-                      </div>
+                      </EpisodeSwipeCard>
                     );
                   })}
                 </div>
