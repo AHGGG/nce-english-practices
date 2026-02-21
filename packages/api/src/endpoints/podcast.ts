@@ -73,6 +73,12 @@ export interface PodcastFavoriteItem {
   favorited_at?: string;
 }
 
+export interface TranscriptionProbeResult {
+  ok: boolean;
+  status_code: number;
+  message: string;
+}
+
 interface EpisodeBatchItem {
   episode: PodcastEpisode;
   feed: {
@@ -235,6 +241,17 @@ export const podcastApi = {
       payload.api_key = apiKey.trim();
     }
     return apiPost(`/api/podcast/episode/${episodeId}/transcribe`, payload);
+  },
+
+  async probeTranscriptionService(remoteUrl: string, apiKey?: string | null) {
+    const payload: Record<string, unknown> = { remote_url: remoteUrl.trim() };
+    if (apiKey && apiKey.trim().length > 0) {
+      payload.api_key = apiKey.trim();
+    }
+    return apiPost(
+      "/api/podcast/transcription/probe",
+      payload,
+    ) as Promise<TranscriptionProbeResult>;
   },
 
   async syncPosition(

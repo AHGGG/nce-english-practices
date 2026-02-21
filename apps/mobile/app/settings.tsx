@@ -9,6 +9,7 @@ import {
   TextInput,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { podcastApi } from "@nce/api";
 import { useAuthStore, useSettingsStore } from "@nce/store";
 import { notificationService } from "../src/services/NotificationService";
 import {
@@ -53,6 +54,7 @@ export default function SettingsScreen() {
   const [passwordModalVisible, setPasswordModalVisible] = useState(false);
   const [oldPassword, setOldPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
+  const [probeLoading, setProbeLoading] = useState(false);
 
   const handleLogout = () => {
     logout();
@@ -113,6 +115,33 @@ export default function SettingsScreen() {
     const speeds = [0.5, 0.75, 1.0, 1.25, 1.5, 1.75, 2.0];
     const nextIndex = (speeds.indexOf(podcastSpeed) + 1) % speeds.length;
     setPodcastSpeed(speeds[nextIndex]);
+  };
+
+  const handleProbeTranscription = async () => {
+    const remoteUrl = transcriptionRemoteUrl?.trim();
+    if (!remoteUrl) {
+      Alert.alert(
+        "Missing URL",
+        "Please enter remote transcription server URL.",
+      );
+      return;
+    }
+
+    try {
+      setProbeLoading(true);
+      const result = await podcastApi.probeTranscriptionService(
+        remoteUrl,
+        transcriptionRemoteApiKey || null,
+      );
+      Alert.alert(result.ok ? "Probe Success" : "Probe Failed", result.message);
+    } catch (e: any) {
+      Alert.alert(
+        "Probe Failed",
+        e?.message || "Cannot connect to remote server.",
+      );
+    } finally {
+      setProbeLoading(false);
+    }
   };
 
   const Section = ({ title, children }: any) => (
@@ -269,6 +298,15 @@ export default function SettingsScreen() {
                   autoCorrect={false}
                 />
               </View>
+              <TouchableOpacity
+                onPress={handleProbeTranscription}
+                disabled={probeLoading}
+                className="mt-2 bg-accent-primary/20 border border-accent-primary/40 rounded-xl py-3 items-center"
+              >
+                <Text className="text-accent-primary font-bold">
+                  {probeLoading ? "Checking..." : "Check Connection"}
+                </Text>
+              </TouchableOpacity>
             </View>
           )}
         </Section>

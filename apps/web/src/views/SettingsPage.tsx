@@ -1,7 +1,9 @@
 import type { ComponentType, ReactNode } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ChevronLeft, Volume2, Gauge, Cloud } from "lucide-react";
+import { ChevronLeft, Volume2, Gauge, Cloud, Loader2 } from "lucide-react";
 import { useGlobalState } from "../context/GlobalContext";
+import { probeTranscriptionService } from "../api/podcast";
 
 // --- Reusable Components for Scalability ---
 
@@ -108,6 +110,9 @@ const Select = ({ options, value, onChange }: SelectProps) => (
 
 const SettingsPage = () => {
   const navigate = useNavigate();
+  const [probeLoading, setProbeLoading] = useState(false);
+  const [probeMessage, setProbeMessage] = useState<string>("");
+  const [probeSuccess, setProbeSuccess] = useState<boolean | null>(null);
   const {
     state: { settings },
     actions: { updateSetting },
@@ -117,6 +122,37 @@ const SettingsPage = () => {
   };
 
   const SPEED_OPTIONS: number[] = [0.5, 0.75, 1, 1.25, 1.5, 1.75, 2];
+
+  const handleProbeTranscriptionService = async () => {
+    const remoteUrl = settings.transcriptionRemoteUrl.trim();
+    if (!remoteUrl) {
+      setProbeSuccess(false);
+      setProbeMessage("Please provide a server URL first.");
+      return;
+    }
+
+    setProbeLoading(true);
+    setProbeMessage("");
+    setProbeSuccess(null);
+
+    try {
+      const result = await probeTranscriptionService(
+        remoteUrl,
+        settings.transcriptionRemoteApiKey || null,
+      );
+      setProbeSuccess(Boolean(result?.ok));
+      setProbeMessage(result?.message || "Probe finished.");
+    } catch (error: unknown) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : "Probe failed. Please check server URL and network.";
+      setProbeSuccess(false);
+      setProbeMessage(message);
+    } finally {
+      setProbeLoading(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-[#0a0f0d] relative overflow-hidden text-white font-sans">
@@ -234,6 +270,40 @@ const SettingsPage = () => {
                     className="bg-black/20 border border-white/10 rounded-lg px-4 py-2 text-sm text-white focus:outline-none focus:border-accent-primary w-full max-w-xs font-mono"
                   />
                 </SettingsRow>
+
+                <SettingsRow
+                  title="Connection Probe"
+                  description="Manually test whether the configured server URL is reachable."
+                >
+                  <button
+                    onClick={handleProbeTranscriptionService}
+                    disabled={probeLoading}
+                    className="inline-flex items-center gap-2 bg-accent-primary/20 hover:bg-accent-primary/30 disabled:opacity-60 disabled:cursor-not-allowed border border-accent-primary/40 text-accent-primary rounded-lg px-4 py-2 text-sm font-medium transition-colors"
+                  >
+                    {probeLoading ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        Checking...
+                      </>
+                    ) : (
+                      "Check Now"
+                    )}
+                  </button>
+                </SettingsRow>
+
+                {probeMessage && (
+                  <div
+                    className={`pt-2 text-sm ${
+                      probeSuccess === null
+                        ? "text-white/70"
+                        : probeSuccess
+                          ? "text-emerald-300"
+                          : "text-rose-300"
+                    }`}
+                  >
+                    {probeMessage}
+                  </div>
+                )}
               </>
             )}
           </SettingsSection>

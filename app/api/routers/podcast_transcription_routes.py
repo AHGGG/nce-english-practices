@@ -13,7 +13,12 @@ from app.api.deps.auth import get_current_user_id
 from app.config import settings
 from app.core.db import AsyncSessionLocal, get_db
 from app.models.podcast_orm import PodcastEpisode
-from app.models.podcast_schemas import TranscribeRequest, TranscribeResponse
+from app.models.podcast_schemas import (
+    TranscribeRequest,
+    TranscribeResponse,
+    TranscriptionProbeRequest,
+    TranscriptionProbeResponse,
+)
 from app.services.podcast_service import podcast_service
 from app.services.transcription import AudioInput
 
@@ -22,6 +27,96 @@ from .podcast_common import BROWSER_USER_AGENT
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
+
+
+@router.post(
+    "/transcription/probe",
+    response_model=TranscriptionProbeResponse,
+)
+async def probe_transcription_service(
+    req: TranscriptionProbeRequest,
+    user_id: str = Depends(get_current_user_id),
+):
+    import httpx
+
+    _ = user_id
+
+    remote_url = req.remote_url.strip().rstrip("/")
+    if not remote_url:
+        raise HTTPException(status_code=400, detail="remote_url is required")
+
+    if not (remote_url.startswith("http://") or remote_url.startswith("https://")):
+        raise HTTPException(
+            status_code=400,
+            detail="remote_url must start with http:// or https://",
+        )
+
+    headers = {"Accept": "application/json"}
+    if req.api_key and req.api_key.strip():
+        headers["x-api-key"] = req.api_key.strip()
+
+    probe_url = f"{remote_url}/jobs/health-check"
+
+    try:
+        async with httpx.AsyncClient(
+            timeout=10.0,
+            follow_redirects=True,
+            trust_env=False,
+        ) as client:
+            response = await client.get(probe_url, headers=headers)
+
+        if response.status_code == 404:
+            return TranscriptionProbeResponse(
+                ok=True,
+                status_code=response.status_code,
+                message="Remote transcription service reachable. URL format looks correct.",
+            )
+
+        if response.status_code in (401, 403):
+            return TranscriptionProbeResponse(
+                ok=False,
+                status_code=response.status_code,
+                message="Server reachable, but API key is missing or invalid.",
+            )
+
+        if response.status_code in (405,):
+            return TranscriptionProbeResponse(
+                ok=False,
+                status_code=response.status_code,
+                message=(
+                    "Server reachable, but endpoint method is not allowed. "
+                    "Please check remote_url path."
+                ),
+            )
+
+        if 200 <= response.status_code < 500:
+            return TranscriptionProbeResponse(
+                ok=True,
+                status_code=response.status_code,
+                message="Remote server responded. URL appears reachable.",
+            )
+
+        if response.status_code == 502:
+            return TranscriptionProbeResponse(
+                ok=False,
+                status_code=response.status_code,
+                message=(
+                    "Gateway returned 502. Usually this means the target URL is behind "
+                    "a reverse proxy with unavailable upstream, or the path is incorrect."
+                ),
+            )
+
+        return TranscriptionProbeResponse(
+            ok=False,
+            status_code=response.status_code,
+            message=f"Remote server returned {response.status_code}.",
+        )
+    except httpx.RequestError as exc:
+        return TranscriptionProbeResponse(
+            ok=False,
+            status_code=0,
+            message=f"Cannot connect to remote server: {exc}",
+        )
 
 
 @router.post("/episode/{episode_id}/transcribe", response_model=TranscribeResponse)

@@ -155,3 +155,14 @@ class TranscribeRequest(BaseModel):
     force: bool = False
     remote_url: Optional[str] = None
     api_key: Optional[str] = None
+
+
+class TranscriptionProbeRequest(BaseModel):
+    remote_url: str
+    api_key: Optional[str] = None
+
+
+class TranscriptionProbeResponse(BaseModel):
+    ok: bool
+    status_code: int
+    message: str

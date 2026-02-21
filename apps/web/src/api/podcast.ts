@@ -300,6 +300,16 @@ export async function transcribeEpisode(
   }
 }
 
+export async function probeTranscriptionService(
+  remoteUrl: string,
+  apiKey: string | null = null,
+) {
+  return apiPost(`${BASE_URL}/transcription/probe`, {
+    remote_url: remoteUrl,
+    api_key: apiKey || undefined,
+  });
+}
+
 export async function getRecentlyPlayed(limit = 10) {
   return apiGet(`${BASE_URL}/recently-played?limit=${limit}`);
 }
