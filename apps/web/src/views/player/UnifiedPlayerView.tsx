@@ -17,6 +17,10 @@ import { useParams, useNavigate } from "react-router-dom";
 import { ArrowLeft, Loader2, AlertCircle } from "lucide-react";
 import { apiGet } from "../../api/auth";
 import * as podcastApi from "../../api/podcast";
+import {
+  savePositionLocal,
+  getLatestPosition,
+} from "../../utils/localProgress";
 import { getCachedAudioUrl } from "../../utils/offline";
 import { useGlobalState } from "../../context/GlobalContext";
 import {
@@ -56,6 +60,7 @@ export default function UnifiedPlayerView() {
   const [error, setError] = useState<string | null>(null);
   const {
     state: { settings },
+    actions: { updateSetting },
   } = useGlobalState();
 
   // Audio Player State Tracking
@@ -68,6 +73,8 @@ export default function UnifiedPlayerView() {
   const podcastLastPositionRef = useRef<number>(0);
   const podcastFinalizedRef = useRef(false);
   const podcastCurrentTimeRef = useRef(0);
+  const initialSeekAppliedRef = useRef<string | null>(null);
+  const prevIsPlayingRef = useRef(false);
 
   // Collocation loader for phrase highlighting
   const { getCollocations, loadCollocations } = useCollocationLoader({
@@ -117,6 +124,32 @@ export default function UnifiedPlayerView() {
 
       const url = `/api/content/player/${sourceType}/${contentId}${params.toString() ? "?" + params.toString() : ""}`;
       const data = (await apiGet(url)) as ContentBundle;
+
+      if (sourceType === "podcast") {
+        const episodeId = Number(contentId);
+        if (Number.isFinite(episodeId) && episodeId > 0) {
+          try {
+            const latest = await getLatestPosition(episodeId);
+            const serverPosition = Number(data.metadata?.current_position || 0);
+            const mergedPosition = Math.max(
+              serverPosition,
+              latest.position || 0,
+            );
+            data.metadata = {
+              ...(data.metadata || {}),
+              current_position: mergedPosition,
+              is_finished: Boolean(
+                data.metadata?.is_finished || latest.isFinished,
+              ),
+            };
+          } catch (progressError) {
+            console.warn(
+              "[UnifiedPlayer] Failed to load latest podcast position:",
+              progressError,
+            );
+          }
+        }
+      }
 
       // For podcast, try to use cached audio from Cache API
       // This avoids re-downloading audio that was cached during transcription
@@ -168,6 +201,120 @@ export default function UnifiedPlayerView() {
     segments,
     initialPlaybackRate: settings.podcastSpeed || 1,
   });
+
+  const handlePlaybackRateChange = useCallback(
+    (rate: number) => {
+      audioActions.setPlaybackRate(rate);
+      if (sourceType === "podcast") {
+        updateSetting("podcastSpeed", rate);
+      }
+    },
+    [audioActions, sourceType, updateSetting],
+  );
+
+  useEffect(() => {
+    if (sourceType !== "podcast" || !bundle?.id) return;
+    if (initialSeekAppliedRef.current === bundle.id) return;
+    if (!audioState.duration || audioState.duration <= 0) return;
+
+    const isFinished = Boolean(bundle.metadata?.is_finished);
+    const currentPosition = Number(bundle.metadata?.current_position || 0);
+
+    if (
+      !isFinished &&
+      currentPosition > 1 &&
+      currentPosition < audioState.duration - 1
+    ) {
+      audioActions.seekTo(currentPosition);
+      podcastCurrentTimeRef.current = currentPosition;
+      podcastLastPositionRef.current = currentPosition;
+    }
+
+    initialSeekAppliedRef.current = bundle.id;
+  }, [audioActions, audioState.duration, bundle, sourceType]);
+
+  useEffect(() => {
+    const episodeId = Number(bundle?.metadata?.episode_id || 0);
+    if (sourceType !== "podcast" || !episodeId || !audioState.isPlaying) {
+      return;
+    }
+
+    const timer = window.setInterval(() => {
+      const position = podcastCurrentTimeRef.current || 0;
+      if (position <= 0) return;
+
+      void savePositionLocal(
+        episodeId,
+        position,
+        audioState.playbackRate,
+        false,
+      )
+        .then((localPos) => {
+          if (!localPos) return;
+          void podcastApi.syncPosition(episodeId, {
+            position: localPos.position,
+            timestamp: localPos.timestamp,
+            deviceId: localPos.deviceId,
+            deviceType: localPos.deviceType,
+            playbackRate: localPos.playbackRate,
+            isFinished: false,
+            duration: Math.round(audioState.duration || 0),
+          });
+        })
+        .catch((error: unknown) => {
+          console.warn("[UnifiedPlayer] Position sync failed:", error);
+        });
+    }, 5000);
+
+    return () => {
+      window.clearInterval(timer);
+    };
+  }, [
+    sourceType,
+    bundle?.metadata?.episode_id,
+    audioState.isPlaying,
+    audioState.playbackRate,
+    audioState.duration,
+  ]);
+
+  useEffect(() => {
+    const episodeId = Number(bundle?.metadata?.episode_id || 0);
+    if (sourceType !== "podcast" || !episodeId) {
+      prevIsPlayingRef.current = audioState.isPlaying;
+      return;
+    }
+
+    const justPaused = prevIsPlayingRef.current && !audioState.isPlaying;
+    prevIsPlayingRef.current = audioState.isPlaying;
+    if (!justPaused) return;
+
+    const position = podcastCurrentTimeRef.current || 0;
+    if (position <= 0) return;
+
+    void savePositionLocal(episodeId, position, audioState.playbackRate, false)
+      .then(async (localPos) => {
+        if (!localPos) return;
+        const payload = {
+          position: localPos.position,
+          timestamp: localPos.timestamp,
+          deviceId: localPos.deviceId,
+          deviceType: localPos.deviceType,
+          playbackRate: localPos.playbackRate,
+          isFinished: false,
+          duration: Math.round(audioState.duration || 0),
+        };
+        await podcastApi.syncPosition(episodeId, payload);
+      })
+      .catch((error: unknown) => {
+        console.warn("[UnifiedPlayer] Pause sync failed:", error);
+      });
+  }, [
+    sourceType,
+    bundle?.metadata?.episode_id,
+    audioState.isPlaying,
+    audioState.playbackRate,
+    audioState.duration,
+  ]);
 
   const finalizePodcastSession = useCallback(
     async (isFinished: boolean) => {
@@ -332,6 +479,7 @@ export default function UnifiedPlayerView() {
     podcastListenedSecondsRef.current = 0;
     podcastLastPositionRef.current = 0;
     podcastFinalizedRef.current = false;
+    initialSeekAppliedRef.current = null;
   }, [sourceType, bundle?.id]);
 
   useEffect(() => {
@@ -354,7 +502,12 @@ export default function UnifiedPlayerView() {
     return () => {
       window.removeEventListener("beforeunload", handleBeforeUnload);
     };
-  }, [sourceType]);
+  }, [
+    sourceType,
+    bundle?.metadata?.episode_id,
+    audioState.duration,
+    audioState.playbackRate,
+  ]);
 
   useEffect(() => {
     return () => {
@@ -451,7 +604,10 @@ export default function UnifiedPlayerView() {
       // Pass player state/actions/segments
       segments,
       state: audioState,
-      actions: audioActions,
+      actions: {
+        ...audioActions,
+        setPlaybackRate: handlePlaybackRateChange,
+      },
     };
   }, [
     bundle,
@@ -461,6 +617,7 @@ export default function UnifiedPlayerView() {
     segments,
     audioState,
     audioActions,
+    handlePlaybackRateChange,
   ]);
 
   if (loading) {

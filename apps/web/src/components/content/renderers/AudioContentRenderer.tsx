@@ -168,7 +168,7 @@ function SpeedMenu({
   onToggle,
 }: SpeedMenuProps) {
   return (
-    <div className="relative">
+    <div className="relative z-40">
       <button
         onClick={onToggle}
         className="flex items-center gap-1 px-2 py-1 text-xs bg-white/5 rounded-lg text-white hover:bg-white/10 border border-white/10"
@@ -332,7 +332,7 @@ function PlayerControls({
         </div>
 
         {/* Speed Control & Loop Actions */}
-        <div className="w-full sm:w-72 flex justify-center sm:justify-end items-center gap-2 overflow-x-auto no-scrollbar pb-1 sm:pb-0 order-3 sm:order-none">
+        <div className="w-full sm:w-72 flex justify-center sm:justify-end items-center gap-2 flex-wrap sm:flex-nowrap overflow-visible pb-1 sm:pb-0 order-3 sm:order-none">
           <button
             onClick={onToggleSegmentLoop}
             className={`shrink-0 px-2 py-1 rounded text-xs border transition-colors ${
