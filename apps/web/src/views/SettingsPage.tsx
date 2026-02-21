@@ -83,6 +83,7 @@ interface SelectProps {
 interface WebSettings {
   autoPronounce: boolean;
   podcastSpeed: number;
+  podcastKeymapMode?: "standard" | "vim";
   transcriptionRemoteEnabled: boolean;
   transcriptionRemoteUrl: string;
   transcriptionRemoteApiKey?: string;
@@ -122,6 +123,7 @@ const SettingsPage = () => {
   };
 
   const SPEED_OPTIONS: number[] = [0.5, 0.75, 1, 1.25, 1.5, 1.75, 2];
+  const KEYMAP_OPTIONS: Array<"standard" | "vim"> = ["standard", "vim"];
 
   const handleProbeTranscriptionService = async () => {
     const remoteUrl = settings.transcriptionRemoteUrl.trim();
@@ -219,6 +221,22 @@ const SettingsPage = () => {
                   updateSetting(
                     "podcastSpeed",
                     typeof val === "number" ? val : 1,
+                  )
+                }
+              />
+            </SettingsRow>
+
+            <SettingsRow
+              title="Intensive Shortcut Mode"
+              description="Choose keyboard behavior for podcast intensive listening. Standard uses common keys, Vim enables j/k movement and quick jump flow."
+            >
+              <Select
+                options={KEYMAP_OPTIONS}
+                value={settings.podcastKeymapMode || "vim"}
+                onChange={(val) =>
+                  updateSetting(
+                    "podcastKeymapMode",
+                    val === "vim" ? "vim" : "standard",
                   )
                 }
               />

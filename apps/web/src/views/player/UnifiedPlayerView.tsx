@@ -11,6 +11,7 @@ import {
   useMemo,
   useCallback,
   useRef,
+  useLayoutEffect,
   type ComponentType,
 } from "react";
 import { useParams, useNavigate } from "react-router-dom";
@@ -95,6 +96,72 @@ interface StudyBasketSentenceWire {
   source_id: string;
 }
 
+interface QuickJumpTarget {
+  id: string;
+  label: string;
+  word: string;
+  sentence: string;
+  isCollocation: boolean;
+  element: HTMLElement;
+}
+
+interface QuickJumpBadge {
+  id: string;
+  label: string;
+  x: number;
+  y: number;
+  isSelected: boolean;
+  isCollocation: boolean;
+}
+
+// Exclude "k" to avoid visual/mental conflict with Shift+K lookup shortcut.
+const QUICK_JUMP_CHARS = "asdfghjlqwertyuiopzxcvbnm";
+
+const buildQuickJumpLabels = (count: number): string[] => {
+  if (count <= 0) return [];
+  const chars = QUICK_JUMP_CHARS.split("");
+  const labels: string[] = [];
+
+  for (let i = 0; i < chars.length && labels.length < count; i++) {
+    labels.push(chars[i]);
+  }
+
+  if (labels.length >= count) {
+    return labels;
+  }
+
+  for (let i = 0; i < chars.length && labels.length < count; i++) {
+    for (let j = 0; j < chars.length && labels.length < count; j++) {
+      labels.push(`${chars[i]}${chars[j]}`);
+    }
+  }
+
+  return labels.slice(0, count);
+};
+
+const areBadgeRectsOverlapping = (
+  a: { x: number; y: number; w: number; h: number },
+  b: { x: number; y: number; w: number; h: number },
+): boolean => {
+  return !(
+    a.x + a.w <= b.x ||
+    b.x + b.w <= a.x ||
+    a.y + a.h <= b.y ||
+    b.y + b.h <= a.y
+  );
+};
+
+const isEditableTarget = (target: EventTarget | null): boolean => {
+  if (!(target instanceof HTMLElement)) return false;
+  const tag = target.tagName.toLowerCase();
+  return (
+    tag === "input" ||
+    tag === "textarea" ||
+    tag === "select" ||
+    Boolean(target.closest("[contenteditable='true']"))
+  );
+};
+
 const WordInspectorPanel = WordInspector as unknown as ComponentType<
   Record<string, unknown>
 >;
@@ -157,10 +224,28 @@ export default function UnifiedPlayerView() {
     segmentIndex: number;
   } | null>(null);
   const [studyBasketHydrated, setStudyBasketHydrated] = useState(false);
+  const [quickJumpActive, setQuickJumpActive] = useState(false);
+  const [quickJumpTargets, setQuickJumpTargets] = useState<QuickJumpTarget[]>(
+    [],
+  );
+  const [quickJumpIndex, setQuickJumpIndex] = useState(0);
+  const [quickJumpInput, setQuickJumpInput] = useState("");
+  const [quickJumpBadges, setQuickJumpBadges] = useState<QuickJumpBadge[]>([]);
+  const [showHotkeyHelp, setShowHotkeyHelp] = useState(false);
+  const playerShellRef = useRef<HTMLDivElement | null>(null);
+  const quickJumpStyledElementsRef = useRef<HTMLElement[]>([]);
+  const quickJumpResumePlaybackRef = useRef(false);
+  const sentenceNavIndexRef = useRef<number | null>(null);
+  const lastSentenceNavAtRef = useRef(0);
+  const quickJumpInputRef = useRef("");
 
   useEffect(() => {
     loadContent();
   }, [sourceType, contentId]);
+
+  useEffect(() => {
+    quickJumpInputRef.current = quickJumpInput;
+  }, [quickJumpInput]);
 
   const studyBasketScope = useMemo(() => {
     if (!sourceType || !contentId) return null;
@@ -574,6 +659,221 @@ export default function UnifiedPlayerView() {
     ],
   );
 
+  const seekPrevSentence = useCallback(() => {
+    if (!segments.length) return;
+
+    const baseIndex =
+      sentenceNavIndexRef.current != null
+        ? sentenceNavIndexRef.current
+        : audioState.activeSegmentIndex >= 0
+          ? audioState.activeSegmentIndex
+          : 0;
+    const target = Math.max(0, baseIndex - 1);
+    sentenceNavIndexRef.current = target;
+    lastSentenceNavAtRef.current = Date.now();
+
+    const shouldResume = audioState.isPlaying;
+    audioActions.seekToSegment(target);
+    if (shouldResume) {
+      void audioActions.play();
+    }
+  }, [
+    audioActions,
+    audioState.activeSegmentIndex,
+    audioState.isPlaying,
+    segments,
+  ]);
+
+  const seekNextSentence = useCallback(() => {
+    if (!segments.length) return;
+
+    const baseIndex =
+      sentenceNavIndexRef.current != null
+        ? sentenceNavIndexRef.current
+        : audioState.activeSegmentIndex >= 0
+          ? audioState.activeSegmentIndex
+          : 0;
+    const target = Math.min(segments.length - 1, baseIndex + 1);
+    sentenceNavIndexRef.current = target;
+    lastSentenceNavAtRef.current = Date.now();
+
+    const shouldResume = audioState.isPlaying;
+    audioActions.seekToSegment(target);
+    if (shouldResume) {
+      void audioActions.play();
+    }
+  }, [
+    audioActions,
+    audioState.activeSegmentIndex,
+    audioState.isPlaying,
+    segments,
+  ]);
+
+  const clearQuickJumpStyles = useCallback(() => {
+    for (const element of quickJumpStyledElementsRef.current) {
+      element.style.outline = "";
+      element.style.outlineOffset = "";
+      element.style.backgroundColor = "";
+      element.style.borderRadius = "";
+    }
+    quickJumpStyledElementsRef.current = [];
+  }, []);
+
+  const collectQuickJumpTargets = useCallback((): QuickJumpTarget[] => {
+    const root = playerShellRef.current;
+    if (!root) return [];
+
+    let activeSegment = root.querySelector<HTMLElement>(
+      '[data-audio-segment-active="true"]',
+    );
+    if (!activeSegment) {
+      const currentIdx = Math.max(0, audioState.activeSegmentIndex);
+      activeSegment = root.querySelector<HTMLElement>(
+        `[data-audio-segment-index="${currentIdx}"]`,
+      );
+    }
+    if (!activeSegment) {
+      activeSegment = root.querySelector<HTMLElement>(
+        "[data-audio-segment-index]",
+      );
+    }
+    if (!activeSegment) return [];
+
+    const clickable = Array.from(
+      activeSegment.querySelectorAll<HTMLElement>(
+        "span[data-word][data-sentence]",
+      ),
+    ).filter((el) => Boolean(el.dataset.word?.trim()));
+
+    const labels = buildQuickJumpLabels(clickable.length);
+    return clickable.map((element, idx) => ({
+      id: `jump-${idx}`,
+      label: labels[idx] || "",
+      word: (element.dataset.word || "").trim().toLowerCase(),
+      sentence: (element.dataset.sentence || "").trim(),
+      isCollocation: element.dataset.collocation === "true",
+      element,
+    }));
+  }, [audioState.activeSegmentIndex]);
+
+  const syncQuickJumpBadges = useCallback(
+    (targets: QuickJumpTarget[], selectedIndex: number) => {
+      const badges: QuickJumpBadge[] = [];
+      const placed: Array<{ x: number; y: number; w: number; h: number }> = [];
+
+      for (let i = 0; i < targets.length; i++) {
+        const target = targets[i];
+        const rect = target.element.getBoundingClientRect();
+        const estimatedWidth = Math.max(20, 10 + target.label.length * 8);
+        const estimatedHeight = 16;
+
+        let x = rect.left;
+        let y = rect.top - 22;
+
+        let guard = 0;
+        while (
+          placed.some((p) =>
+            areBadgeRectsOverlapping(p, {
+              x,
+              y,
+              w: estimatedWidth,
+              h: estimatedHeight,
+            }),
+          ) &&
+          guard < 12
+        ) {
+          // Prefer moving upward first; if too high, move slightly right.
+          if (y > 8) {
+            y -= 14;
+          } else {
+            x += 14;
+          }
+          guard += 1;
+        }
+
+        placed.push({ x, y, w: estimatedWidth, h: estimatedHeight });
+
+        badges.push({
+          id: target.id,
+          label: target.label,
+          x,
+          y,
+          isSelected: i === selectedIndex,
+          isCollocation: target.isCollocation,
+        });
+      }
+      setQuickJumpBadges(badges);
+    },
+    [],
+  );
+
+  const enterQuickJump = useCallback(() => {
+    const targets = collectQuickJumpTargets();
+    if (!targets.length) {
+      addToast(
+        "No clickable words/collocations in current subtitle.",
+        "warning",
+      );
+      return;
+    }
+
+    quickJumpResumePlaybackRef.current = audioState.isPlaying;
+    if (audioState.isPlaying) {
+      audioActions.pause();
+    }
+
+    setQuickJumpActive(true);
+    setQuickJumpTargets(targets);
+    setQuickJumpIndex(0);
+    setQuickJumpInput("");
+    quickJumpInputRef.current = "";
+    syncQuickJumpBadges(targets, 0);
+    addToast(
+      `Quick Jump active (${targets.length} targets). Type label, then Shift+K to query.`,
+      "info",
+    );
+  }, [
+    addToast,
+    collectQuickJumpTargets,
+    syncQuickJumpBadges,
+    audioState.isPlaying,
+    audioActions,
+  ]);
+
+  const exitQuickJump = useCallback(
+    (resumePlayback = true) => {
+      setQuickJumpActive(false);
+      setQuickJumpTargets([]);
+      setQuickJumpIndex(0);
+      setQuickJumpInput("");
+      quickJumpInputRef.current = "";
+      setQuickJumpBadges([]);
+      if (
+        resumePlayback &&
+        quickJumpResumePlaybackRef.current &&
+        !selectedWord
+      ) {
+        quickJumpResumePlaybackRef.current = false;
+        void audioActions.play();
+        return;
+      }
+      quickJumpResumePlaybackRef.current = false;
+    },
+    [audioActions, selectedWord],
+  );
+
+  const runQuickJumpLookup = useCallback(
+    (index: number) => {
+      const target = quickJumpTargets[index];
+      if (!target) return;
+      setQuickJumpIndex(index);
+      exitQuickJump(false);
+      target.element.scrollIntoView({ block: "center", behavior: "smooth" });
+      handleWordClick(target.word, target.sentence);
+    },
+    [exitQuickJump, handleWordClick, quickJumpTargets],
+  );
+
   const jumpToSentence = useCallback(
     (sentenceIndex: number) => {
       setLastJumpPosition({
@@ -875,7 +1175,18 @@ export default function UnifiedPlayerView() {
     podcastLastPositionRef.current = 0;
     podcastFinalizedRef.current = false;
     initialSeekAppliedRef.current = null;
+    sentenceNavIndexRef.current = null;
   }, [sourceType, bundle?.id]);
+
+  useEffect(() => {
+    if (audioState.activeSegmentIndex < 0) return;
+    if (quickJumpActive) return;
+
+    const now = Date.now();
+    if (now - lastSentenceNavAtRef.current < 320) return;
+
+    sentenceNavIndexRef.current = audioState.activeSegmentIndex;
+  }, [audioState.activeSegmentIndex, quickJumpActive]);
 
   useEffect(() => {
     if (sourceType !== "podcast") return;
@@ -1021,6 +1332,208 @@ export default function UnifiedPlayerView() {
     handlePlaybackRateChange,
   ]);
 
+  useEffect(() => {
+    clearQuickJumpStyles();
+    if (!quickJumpActive || !quickJumpTargets.length) {
+      setQuickJumpBadges([]);
+      return;
+    }
+
+    quickJumpStyledElementsRef.current = quickJumpTargets.map(
+      (item) => item.element,
+    );
+    for (let i = 0; i < quickJumpTargets.length; i++) {
+      const target = quickJumpTargets[i];
+      const selected = i === quickJumpIndex;
+      target.element.style.outline = selected
+        ? "2px solid rgba(244, 208, 63, 0.95)"
+        : "1px dashed rgba(244, 208, 63, 0.55)";
+      target.element.style.outlineOffset = "2px";
+      target.element.style.borderRadius = "0.25rem";
+      target.element.style.backgroundColor = target.isCollocation
+        ? "rgba(244, 208, 63, 0.12)"
+        : "rgba(244, 208, 63, 0.07)";
+    }
+
+    syncQuickJumpBadges(quickJumpTargets, quickJumpIndex);
+    return () => {
+      clearQuickJumpStyles();
+    };
+  }, [
+    clearQuickJumpStyles,
+    quickJumpActive,
+    quickJumpTargets,
+    quickJumpIndex,
+    syncQuickJumpBadges,
+  ]);
+
+  useLayoutEffect(() => {
+    if (!quickJumpActive || !quickJumpTargets.length) return;
+
+    const sync = () => syncQuickJumpBadges(quickJumpTargets, quickJumpIndex);
+    sync();
+
+    const timer = window.setInterval(sync, 180);
+    window.addEventListener("resize", sync);
+    window.addEventListener("scroll", sync, true);
+
+    return () => {
+      window.clearInterval(timer);
+      window.removeEventListener("resize", sync);
+      window.removeEventListener("scroll", sync, true);
+    };
+  }, [quickJumpActive, quickJumpTargets, quickJumpIndex, syncQuickJumpBadges]);
+
+  useEffect(() => {
+    if (sourceType !== "podcast") return;
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (isEditableTarget(event.target)) return;
+
+      if (event.key === "?" || (event.shiftKey && event.key === "/")) {
+        event.preventDefault();
+        setShowHotkeyHelp((prev) => !prev);
+        return;
+      }
+
+      if (event.key === "Escape" && showHotkeyHelp) {
+        event.preventDefault();
+        setShowHotkeyHelp(false);
+        return;
+      }
+
+      if (event.key === "Escape" && selectedWord) {
+        event.preventDefault();
+        closeInspector();
+        return;
+      }
+
+      if (quickJumpActive) {
+        if (event.key === "Escape") {
+          event.preventDefault();
+          exitQuickJump();
+          return;
+        }
+
+        if (event.key === ";") {
+          event.preventDefault();
+          if (!quickJumpTargets.length) return;
+          const next = (quickJumpIndex + 1) % quickJumpTargets.length;
+          setQuickJumpIndex(next);
+          setQuickJumpInput("");
+          quickJumpInputRef.current = "";
+          return;
+        }
+
+        if (event.key === ",") {
+          event.preventDefault();
+          if (!quickJumpTargets.length) return;
+          const next =
+            (quickJumpIndex - 1 + quickJumpTargets.length) %
+            quickJumpTargets.length;
+          setQuickJumpIndex(next);
+          setQuickJumpInput("");
+          quickJumpInputRef.current = "";
+          return;
+        }
+
+        if (event.key === "K" || event.key === "Enter") {
+          event.preventDefault();
+          runQuickJumpLookup(quickJumpIndex);
+          return;
+        }
+
+        if (event.key === "Backspace") {
+          event.preventDefault();
+          const next = quickJumpInputRef.current.slice(0, -1);
+          quickJumpInputRef.current = next;
+          setQuickJumpInput(next);
+          return;
+        }
+
+        if (/^[a-zA-Z]$/.test(event.key)) {
+          event.preventDefault();
+          const typed = event.key.toLowerCase();
+          const appended = (quickJumpInputRef.current + typed).slice(0, 2);
+          const fallback = typed;
+          const nextInput = quickJumpTargets.some((t) =>
+            t.label.startsWith(appended),
+          )
+            ? appended
+            : fallback;
+
+          setQuickJumpInput(nextInput);
+          quickJumpInputRef.current = nextInput;
+
+          const exact = quickJumpTargets.findIndex(
+            (t) => t.label === nextInput,
+          );
+          if (exact >= 0) {
+            setQuickJumpIndex(exact);
+            quickJumpTargets[exact].element.scrollIntoView({
+              block: "center",
+              behavior: "smooth",
+            });
+            return;
+          }
+          const prefixed = quickJumpTargets.findIndex((t) =>
+            t.label.startsWith(nextInput),
+          );
+          if (prefixed >= 0) {
+            setQuickJumpIndex(prefixed);
+          }
+        }
+
+        return;
+      }
+
+      if (event.key === " ") {
+        event.preventDefault();
+        audioActions.togglePlay();
+        return;
+      }
+
+      if (event.key === "j" || event.key === "ArrowDown") {
+        if (event.repeat) return;
+        event.preventDefault();
+        seekNextSentence();
+        return;
+      }
+
+      if (event.key === "k" || event.key === "ArrowUp") {
+        if (event.repeat) return;
+        event.preventDefault();
+        seekPrevSentence();
+        return;
+      }
+
+      if (event.key === "s" || (event.key === "Enter" && event.ctrlKey)) {
+        event.preventDefault();
+        enterQuickJump();
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown, true);
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown, true);
+    };
+  }, [
+    sourceType,
+    quickJumpActive,
+    quickJumpTargets,
+    quickJumpIndex,
+    quickJumpInput,
+    exitQuickJump,
+    runQuickJumpLookup,
+    audioActions,
+    seekNextSentence,
+    seekPrevSentence,
+    enterQuickJump,
+    selectedWord,
+    closeInspector,
+    showHotkeyHelp,
+  ]);
+
   if (loading) {
     return (
       <div className="min-h-screen bg-[#0a0f0d] flex items-center justify-center">
@@ -1088,7 +1601,43 @@ export default function UnifiedPlayerView() {
         </div>
 
         <div className="max-w-4xl mx-auto px-3 sm:px-4 pb-2 sm:pb-3 flex items-center justify-end">
-          <div className="flex items-center gap-2 text-[10px] uppercase tracking-wider text-white/45">
+          <div className="flex items-center gap-3 text-[10px] uppercase tracking-wider text-white/45">
+            <span className="hidden md:inline">
+              {(settings.podcastKeymapMode || "vim") === "vim"
+                ? "Vim: j/k s K"
+                : "Std: ↑/↓ Ctrl+Enter"}
+            </span>
+            <div className="inline-flex items-center rounded-md border border-white/15 bg-white/5 p-0.5">
+              <button
+                onClick={() => updateSetting("podcastKeymapMode", "standard")}
+                className={`px-2 py-0.5 rounded text-[10px] transition-colors ${
+                  (settings.podcastKeymapMode || "vim") === "standard"
+                    ? "bg-white/20 text-white"
+                    : "text-white/55 hover:text-white/85"
+                }`}
+                title="Use standard shortcuts"
+              >
+                Std
+              </button>
+              <button
+                onClick={() => updateSetting("podcastKeymapMode", "vim")}
+                className={`px-2 py-0.5 rounded text-[10px] transition-colors ${
+                  (settings.podcastKeymapMode || "vim") === "vim"
+                    ? "bg-white/20 text-white"
+                    : "text-white/55 hover:text-white/85"
+                }`}
+                title="Use Vim shortcuts"
+              >
+                Vim
+              </button>
+            </div>
+            <button
+              onClick={() => setShowHotkeyHelp((prev) => !prev)}
+              className="text-[10px] px-1.5 py-0.5 rounded border border-white/20 text-white/65 hover:text-white hover:border-white/35 transition-colors"
+              title="Keyboard help (?)"
+            >
+              ?
+            </button>
             <span>Collocations</span>
             <CollocationDifficultySwitch compact />
           </div>
@@ -1096,7 +1645,7 @@ export default function UnifiedPlayerView() {
       </header>
 
       {/* Content with optional sidebar */}
-      <div className="flex-1 flex min-h-0 relative">
+      <div ref={playerShellRef} className="flex-1 flex min-h-0 relative">
         {/* Main content */}
         <main className="flex-1 flex flex-col min-h-0">
           {rendererProps && <AudioPlayerUI {...rendererProps} />}
@@ -1339,6 +1888,30 @@ export default function UnifiedPlayerView() {
           />
         )}
 
+        {quickJumpActive && quickJumpBadges.length > 0 && !selectedWord && (
+          <div className="fixed inset-0 z-40 pointer-events-none">
+            {quickJumpBadges.map((badge) => (
+              <div
+                key={badge.id}
+                className={`absolute px-1.5 py-0.5 rounded border text-[10px] font-mono tracking-wide ${
+                  badge.isSelected
+                    ? "border-category-amber text-category-amber bg-black/90"
+                    : badge.isCollocation
+                      ? "border-category-amber/70 text-category-amber/90 bg-black/80"
+                      : "border-white/40 text-white/90 bg-black/75"
+                }`}
+                style={{ left: `${badge.x}px`, top: `${badge.y}px` }}
+              >
+                {badge.label}
+              </div>
+            ))}
+            <div className="absolute right-3 bottom-3 rounded-md border border-white/15 bg-black/80 px-3 py-1 text-[11px] text-white/80 font-mono">
+              Quick Jump {quickJumpInput ? `(${quickJumpInput})` : ""} | ; next
+              , prev | K query | Esc close
+            </div>
+          </div>
+        )}
+
         {/* Word Inspector Sidebar */}
         {selectedWord && (
           <div className="w-full md:w-96 border-t md:border-t-0 md:border-l border-white/10 overflow-y-auto bg-bg-surface shrink-0 absolute inset-x-0 bottom-0 top-20 md:inset-y-0 md:right-0 md:left-auto z-30 shadow-2xl rounded-t-2xl md:rounded-none">
@@ -1357,6 +1930,56 @@ export default function UnifiedPlayerView() {
               isGeneratingImage={isGeneratingImage}
               onGenerateImage={generateImage}
             />
+          </div>
+        )}
+
+        {showHotkeyHelp && (
+          <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-[1px] flex items-center justify-center p-4">
+            <div className="w-full max-w-md rounded-xl border border-white/15 bg-[#0b1110] shadow-2xl">
+              <div className="px-4 py-3 border-b border-white/10 flex items-center justify-between">
+                <div className="text-sm font-semibold text-white">
+                  Keyboard Help
+                </div>
+                <button
+                  onClick={() => setShowHotkeyHelp(false)}
+                  className="text-xs px-2 py-0.5 rounded border border-white/20 text-white/70 hover:text-white"
+                >
+                  Esc
+                </button>
+              </div>
+              <div className="p-4 space-y-3 text-xs text-white/80">
+                <div className="text-white/60">
+                  Mode:{" "}
+                  {(settings.podcastKeymapMode || "vim") === "vim"
+                    ? "Vim"
+                    : "Standard"}
+                </div>
+                <div className="grid grid-cols-[90px_1fr] gap-y-2 gap-x-3">
+                  <div className="text-white/55">Play/Pause</div>
+                  <div className="font-mono">Space</div>
+                  <div className="text-white/55">Prev/Next sentence</div>
+                  <div className="font-mono">
+                    {(settings.podcastKeymapMode || "vim") === "vim"
+                      ? "k / j"
+                      : "ArrowUp / ArrowDown"}
+                  </div>
+                  <div className="text-white/55">Quick Jump</div>
+                  <div className="font-mono">
+                    {(settings.podcastKeymapMode || "vim") === "vim"
+                      ? "s"
+                      : "Ctrl+Enter"}
+                  </div>
+                  <div className="text-white/55">Lookup selected</div>
+                  <div className="font-mono">Shift+K</div>
+                  <div className="text-white/55">Jump cycle</div>
+                  <div className="font-mono">; / ,</div>
+                  <div className="text-white/55">Close panel</div>
+                  <div className="font-mono">Esc</div>
+                  <div className="text-white/55">Help</div>
+                  <div className="font-mono">?</div>
+                </div>
+              </div>
+            </div>
           </div>
         )}
       </div>

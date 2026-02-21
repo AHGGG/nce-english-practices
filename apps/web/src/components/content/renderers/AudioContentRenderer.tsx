@@ -107,6 +107,8 @@ function AudioSegmentBlock({
     <div
       ref={containerRef}
       onClick={handleClick}
+      data-audio-segment-index={segment.index}
+      data-audio-segment-active={isActive ? "true" : undefined}
       className={`
         px-3 sm:px-6 py-2 rounded-lg cursor-pointer transition-all duration-300 group
         ${
