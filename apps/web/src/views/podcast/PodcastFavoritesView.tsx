@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Check, Heart, Loader2, Trash2 } from "lucide-react";
 import PodcastLayout from "../../components/podcast/PodcastLayout";
@@ -46,8 +46,68 @@ export default function PodcastFavoritesView() {
   const [items, setItems] = useState<FavoriteItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [removing, setRemoving] = useState<Record<number, boolean>>({});
+  const [sortMode, setSortMode] = useState<"favorite-time" | "channel-grouped">(
+    "favorite-time",
+  );
 
-  async function loadFavorites() {
+  const favoritesByTime = useMemo(() => {
+    return [...items].sort((a, b) => {
+      const left = a.favorited_at ? Date.parse(a.favorited_at) : 0;
+      const right = b.favorited_at ? Date.parse(b.favorited_at) : 0;
+      return right - left;
+    });
+  }, [items]);
+
+  const favoritesGroupedByChannel = useMemo(() => {
+    const groups = new Map<
+      number,
+      {
+        feed: FavoriteItem["feed"];
+        items: FavoriteItem[];
+        latestFavoritedAt: number;
+      }
+    >();
+
+    for (const item of favoritesByTime) {
+      const feedId = item.feed.id;
+      const favoritedAt = item.favorited_at ? Date.parse(item.favorited_at) : 0;
+      const group = groups.get(feedId);
+      if (!group) {
+        groups.set(feedId, {
+          feed: item.feed,
+          items: [item],
+          latestFavoritedAt: favoritedAt,
+        });
+        continue;
+      }
+      group.items.push(item);
+      group.latestFavoritedAt = Math.max(group.latestFavoritedAt, favoritedAt);
+    }
+
+    return [...groups.values()].sort((a, b) => {
+      if (b.latestFavoritedAt !== a.latestFavoritedAt) {
+        return b.latestFavoritedAt - a.latestFavoritedAt;
+      }
+      return a.feed.title.localeCompare(b.feed.title);
+    });
+  }, [favoritesByTime]);
+
+  function buildMetaText(item: FavoriteItem) {
+    const favoritedAt = formatDate(item.favorited_at);
+    const publishedAt = formatDate(item.episode.published_at);
+    if (favoritedAt && publishedAt) {
+      return `Favorited ${favoritedAt} · Published ${publishedAt}`;
+    }
+    if (favoritedAt) {
+      return `Favorited ${favoritedAt}`;
+    }
+    if (publishedAt) {
+      return `Published ${publishedAt}`;
+    }
+    return "";
+  }
+
+  const loadFavorites = useCallback(async () => {
     try {
       setLoading(true);
       const data = (await podcastApi.getFavorites(200, 0)) as FavoriteItem[];
@@ -57,11 +117,11 @@ export default function PodcastFavoritesView() {
     } finally {
       setLoading(false);
     }
-  }
+  }, [addToast]);
 
   useEffect(() => {
     void loadFavorites();
-  }, []);
+  }, [loadFavorites]);
 
   async function handleRemove(episodeId: number) {
     try {
@@ -98,59 +158,155 @@ export default function PodcastFavoritesView() {
         </div>
       ) : (
         <div className="space-y-3">
-          {items.map((item) => {
-            const isCurrent = currentEpisode?.id === item.episode.id;
-            const isCurrentAndPlaying = isCurrent && isPlaying;
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              onClick={() => setSortMode("favorite-time")}
+              className={`px-3 py-1.5 rounded-lg border text-xs transition ${
+                sortMode === "favorite-time"
+                  ? "border-accent-primary/50 text-accent-primary bg-accent-primary/10"
+                  : "border-white/15 text-white/70 hover:text-white hover:bg-white/5"
+              }`}
+            >
+              By favorite time
+            </button>
+            <button
+              onClick={() => setSortMode("channel-grouped")}
+              className={`px-3 py-1.5 rounded-lg border text-xs transition ${
+                sortMode === "channel-grouped"
+                  ? "border-accent-primary/50 text-accent-primary bg-accent-primary/10"
+                  : "border-white/15 text-white/70 hover:text-white hover:bg-white/5"
+              }`}
+            >
+              Group by channel
+            </button>
+          </div>
 
-            return (
+          {sortMode === "favorite-time" &&
+            favoritesByTime.map((item) => {
+              const isCurrent = currentEpisode?.id === item.episode.id;
+              const isCurrentAndPlaying = isCurrent && isPlaying;
+
+              return (
+                <div
+                  key={item.episode.id}
+                  className="flex items-center gap-4 p-4 rounded-xl bg-white/[0.02] border border-white/10"
+                >
+                  <PodcastCoverPlayButton
+                    imageUrl={item.episode.image_url || item.feed.image_url}
+                    isCurrent={isCurrent}
+                    isPlaying={isCurrentAndPlaying}
+                    onClick={() => playEpisode(item.episode, item.feed, null)}
+                    sizeClassName="w-14 h-14"
+                    iconClassName="w-4 h-4"
+                    fallbackIconClassName="w-5 h-5"
+                  />
+
+                  <div className="flex-1 min-w-0">
+                    <p className="text-white text-sm font-medium truncate">
+                      {item.episode.title}
+                    </p>
+                    <p className="text-white/50 text-xs truncate">
+                      {item.feed.title}
+                    </p>
+                    <p className="text-white/40 text-[11px] mt-1">
+                      {buildMetaText(item)}
+                    </p>
+                  </div>
+
+                  {isCurrent && (
+                    <span className="px-2 py-1 rounded-md text-[10px] font-mono text-accent-primary border border-accent-primary/30 bg-accent-primary/10">
+                      <Check className="w-3 h-3 inline mr-1" />
+                      NOW
+                    </span>
+                  )}
+
+                  <button
+                    onClick={() => handleRemove(item.episode.id)}
+                    disabled={removing[item.episode.id]}
+                    className="p-2 rounded-lg text-red-400 hover:bg-red-500/10 disabled:opacity-50"
+                    title="Remove favorite"
+                  >
+                    {removing[item.episode.id] ? (
+                      <Loader2 className="w-5 h-5 animate-spin" />
+                    ) : (
+                      <Trash2 className="w-5 h-5" />
+                    )}
+                  </button>
+                </div>
+              );
+            })}
+
+          {sortMode === "channel-grouped" &&
+            favoritesGroupedByChannel.map((group) => (
               <div
-                key={item.episode.id}
-                className="flex items-center gap-4 p-4 rounded-xl bg-white/[0.02] border border-white/10"
+                key={group.feed.id}
+                className="rounded-xl border border-white/10 bg-white/[0.02]"
               >
-                <PodcastCoverPlayButton
-                  imageUrl={item.episode.image_url || item.feed.image_url}
-                  isCurrent={isCurrent}
-                  isPlaying={isCurrentAndPlaying}
-                  onClick={() => playEpisode(item.episode, item.feed, null)}
-                  sizeClassName="w-14 h-14"
-                  iconClassName="w-4 h-4"
-                  fallbackIconClassName="w-5 h-5"
-                />
-
-                <div className="flex-1 min-w-0">
-                  <p className="text-white text-sm font-medium truncate">
-                    {item.episode.title}
-                  </p>
-                  <p className="text-white/50 text-xs truncate">
-                    {item.feed.title}
-                  </p>
-                  <p className="text-white/40 text-[11px] mt-1">
-                    {formatDate(item.episode.published_at)}
-                  </p>
+                <div className="px-4 py-3 border-b border-white/10 text-sm text-white/90 flex items-center justify-between gap-3">
+                  <span className="truncate">{group.feed.title}</span>
+                  <span className="text-xs text-white/50 shrink-0">
+                    {group.items.length} favorites
+                  </span>
                 </div>
 
-                {isCurrent && (
-                  <span className="px-2 py-1 rounded-md text-[10px] font-mono text-accent-primary border border-accent-primary/30 bg-accent-primary/10">
-                    <Check className="w-3 h-3 inline mr-1" />
-                    NOW
-                  </span>
-                )}
+                <div className="p-3 space-y-3">
+                  {group.items.map((item) => {
+                    const isCurrent = currentEpisode?.id === item.episode.id;
+                    const isCurrentAndPlaying = isCurrent && isPlaying;
 
-                <button
-                  onClick={() => handleRemove(item.episode.id)}
-                  disabled={removing[item.episode.id]}
-                  className="p-2 rounded-lg text-red-400 hover:bg-red-500/10 disabled:opacity-50"
-                  title="Remove favorite"
-                >
-                  {removing[item.episode.id] ? (
-                    <Loader2 className="w-5 h-5 animate-spin" />
-                  ) : (
-                    <Trash2 className="w-5 h-5" />
-                  )}
-                </button>
+                    return (
+                      <div
+                        key={item.episode.id}
+                        className="flex items-center gap-4 p-3 rounded-xl bg-white/[0.02] border border-white/10"
+                      >
+                        <PodcastCoverPlayButton
+                          imageUrl={
+                            item.episode.image_url || item.feed.image_url
+                          }
+                          isCurrent={isCurrent}
+                          isPlaying={isCurrentAndPlaying}
+                          onClick={() =>
+                            playEpisode(item.episode, item.feed, null)
+                          }
+                          sizeClassName="w-14 h-14"
+                          iconClassName="w-4 h-4"
+                          fallbackIconClassName="w-5 h-5"
+                        />
+
+                        <div className="flex-1 min-w-0">
+                          <p className="text-white text-sm font-medium truncate">
+                            {item.episode.title}
+                          </p>
+                          <p className="text-white/40 text-[11px] mt-1">
+                            {buildMetaText(item)}
+                          </p>
+                        </div>
+
+                        {isCurrent && (
+                          <span className="px-2 py-1 rounded-md text-[10px] font-mono text-accent-primary border border-accent-primary/30 bg-accent-primary/10">
+                            <Check className="w-3 h-3 inline mr-1" />
+                            NOW
+                          </span>
+                        )}
+
+                        <button
+                          onClick={() => handleRemove(item.episode.id)}
+                          disabled={removing[item.episode.id]}
+                          className="p-2 rounded-lg text-red-400 hover:bg-red-500/10 disabled:opacity-50"
+                          title="Remove favorite"
+                        >
+                          {removing[item.episode.id] ? (
+                            <Loader2 className="w-5 h-5 animate-spin" />
+                          ) : (
+                            <Trash2 className="w-5 h-5" />
+                          )}
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
-            );
-          })}
+            ))}
         </div>
       )}
     </PodcastLayout>
