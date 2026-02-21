@@ -10,6 +10,7 @@ import time
 import httpx
 from typing import Optional
 from pathlib import Path
+from urllib.parse import urlparse
 
 from .base import BaseTranscriptionEngine, TranscriptionError
 from .schemas import AudioInput, TranscriptionResult
@@ -75,7 +76,14 @@ class RemoteTranscriptionEngine(BaseTranscriptionEngine):
             if self.api_key:
                 headers["x-api-key"] = self.api_key
 
-            with httpx.Client(timeout=60.0) as client:
+            parsed = urlparse(self.remote_url)
+            is_local_remote = (parsed.hostname or "").lower() in {
+                "localhost",
+                "127.0.0.1",
+                "::1",
+            }
+
+            with httpx.Client(timeout=60.0, trust_env=not is_local_remote) as client:
                 if source_url:
                     return self._transcribe_via_async_job(
                         client,
