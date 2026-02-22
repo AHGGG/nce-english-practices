@@ -244,6 +244,21 @@ export default function UnifiedPlayerView() {
     loadContent();
   }, [sourceType, contentId]);
 
+  // Lock document scroll – prevents mobile browser address bar
+  // show/hide gesture from moving the entire page
+  useEffect(() => {
+    const html = document.documentElement;
+    const body = document.body;
+    const origHtml = html.style.overflow;
+    const origBody = body.style.overflow;
+    html.style.overflow = "hidden";
+    body.style.overflow = "hidden";
+    return () => {
+      html.style.overflow = origHtml;
+      body.style.overflow = origBody;
+    };
+  }, []);
+
   useEffect(() => {
     quickJumpInputRef.current = quickJumpInput;
   }, [quickJumpInput]);
@@ -1568,7 +1583,7 @@ export default function UnifiedPlayerView() {
   }
 
   return (
-    <div className="h-safe-viewport bg-[#0a0f0d] flex flex-col overflow-hidden">
+    <div className="fixed inset-0 bg-[#0a0f0d] flex flex-col overflow-hidden overscroll-none">
       {/* Header */}
       <header className="shrink-0 sticky top-0 z-20 bg-[#0a0f0d]/80 backdrop-blur-xl border-b border-white/5">
         <div className="max-w-4xl mx-auto px-3 sm:px-4 py-2.5 sm:py-3">

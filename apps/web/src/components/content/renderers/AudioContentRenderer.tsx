@@ -596,7 +596,7 @@ export function AudioPlayerUI({
   return (
     <div className="flex flex-col h-full">
       {/* Subtitle Area */}
-      <div className="flex-1 overflow-y-auto overflow-x-hidden px-3 sm:px-6 pt-6 sm:pt-12 pb-40 scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent hover:scrollbar-thumb-white/20">
+      <div className="flex-1 overflow-y-auto overflow-x-hidden overscroll-y-contain px-3 sm:px-6 pt-6 sm:pt-12 pb-40 scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent hover:scrollbar-thumb-white/20">
         <div className="max-w-3xl mx-auto space-y-1">
           {segments.length > 0 ? (
             <>
