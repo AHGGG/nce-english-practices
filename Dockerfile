@@ -31,8 +31,10 @@ RUN --mount=type=cache,target=/pnpm/store pnpm install --frozen-lockfile
 COPY apps/web ./apps/web
 COPY packages ./packages
 
-# Build the web application with parallelism
-RUN --mount=type=cache,target=/pnpm/store pnpm turbo build --filter=@nce/web --concurrency=4
+# Build the web application
+# NOTE: On low-memory VPS (2GB), Node can OOM during Vite's chunk rendering.
+# --concurrency=1 avoids parallel builds; NODE_OPTIONS caps V8 heap to ~1GB.
+RUN --mount=type=cache,target=/pnpm/store NODE_OPTIONS="--max-old-space-size=1024" pnpm turbo build --filter=@nce/web --concurrency=2
 
 # Stage 2: Python Backend
 FROM python:3.11-slim

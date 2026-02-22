@@ -89,6 +89,20 @@ fi
 # 3. Build and Start
 echo -e "\n${YELLOW}3. Building and starting services...${NC}"
 
+# Ensure swap exists for low-memory VPS (Vite build needs ~1.5GB)
+if [ "$(swapon --show | wc -l)" -le 1 ]; then
+    SWAPFILE="/swapfile"
+    if [ ! -f "$SWAPFILE" ]; then
+        echo -e "${YELLOW}Creating 2GB swap file for build safety...${NC}"
+        dd if=/dev/zero of="$SWAPFILE" bs=1M count=2048 2>/dev/null
+        chmod 600 "$SWAPFILE"
+        mkswap "$SWAPFILE" >/dev/null
+    fi
+    if ! swapon --show | grep -q "$SWAPFILE"; then
+        swapon "$SWAPFILE" 2>/dev/null && echo -e "${GREEN}Swap enabled.${NC}" || true
+    fi
+fi
+
 BUILD_ARGS=""
 if [ "$MODE" == "full" ]; then
     BUILD_ARGS="--no-cache"
