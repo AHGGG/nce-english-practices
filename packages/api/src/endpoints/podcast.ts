@@ -281,13 +281,13 @@ export const podcastApi = {
 
     async update(
       sessionId: number,
-      totalListened: number,
+      totalActive: number,
       position: number,
       isFinished = false,
     ) {
       return apiPost("/api/podcast/session/update", {
         session_id: sessionId,
-        total_listened_seconds: totalListened,
+        total_active_seconds: totalActive,
         last_position_seconds: position,
         is_finished: isFinished,
       });
@@ -295,13 +295,13 @@ export const podcastApi = {
 
     async end(
       sessionId: number,
-      totalListened: number,
+      totalActive: number,
       position: number,
       isFinished = false,
     ) {
       return apiPost("/api/podcast/session/end", {
         session_id: sessionId,
-        total_listened_seconds: totalListened,
+        total_active_seconds: totalActive,
         last_position_seconds: position,
         is_finished: isFinished,
       });

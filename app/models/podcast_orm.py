@@ -235,7 +235,6 @@ class PodcastListeningSession(Base):
     # Session timing
     started_at: Mapped[datetime] = mapped_column(TIMESTAMP, server_default=func.now())
     ended_at: Mapped[Optional[datetime]] = mapped_column(TIMESTAMP, nullable=True)
-    total_listened_seconds: Mapped[int] = mapped_column(Integer, default=0)
     total_active_seconds: Mapped[int] = mapped_column(Integer, default=0)
 
     # Playback position at end of session

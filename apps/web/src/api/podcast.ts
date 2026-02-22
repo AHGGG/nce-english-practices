@@ -240,14 +240,12 @@ export async function startListeningSession(
 
 export async function updateListeningSession(
   sessionId: number,
-  totalSeconds: number,
   activeSeconds: number,
   position: number,
   isFinished = false,
 ) {
   return apiPost(`${BASE_URL}/session/update`, {
     session_id: sessionId,
-    total_listened_seconds: Math.floor(totalSeconds),
     total_active_seconds: Math.floor(activeSeconds),
     last_position_seconds: position,
     is_finished: isFinished,
@@ -256,14 +254,12 @@ export async function updateListeningSession(
 
 export async function endListeningSession(
   sessionId: number,
-  totalSeconds: number,
   activeSeconds: number,
   position: number,
   isFinished = false,
 ) {
   return apiPost(`${BASE_URL}/session/end`, {
     session_id: sessionId,
-    total_listened_seconds: Math.floor(totalSeconds),
     total_active_seconds: Math.floor(activeSeconds),
     last_position_seconds: position,
     is_finished: isFinished,

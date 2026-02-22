@@ -174,6 +174,8 @@ This clears DB cache table `sentence_collocation_cache`; restart backend to clea
 
 - `deploy/scripts/deploy.sh` now prunes dangling images (`<none>`) after successful deploy to control disk growth on VPS.
 - Use `./scripts/deploy.sh --no-prune` when you need to keep intermediate images for debugging.
+- `deploy/scripts/prod-backup.sh` creates on-demand production SQL backups with metadata (git SHA + Alembic revision).
+- `deploy/scripts/prod-rollback.sh` restores a backup and auto-creates a `pre_rollback` safety snapshot before destructive restore.
 
 ## User Administration
 
@@ -349,7 +351,7 @@ Offline playback with PWA support, audio caching via Cache API, and episode stat
   - `apps/web/src/views/podcast/PodcastFeedDetailView.tsx` uses this query param so filtering works correctly with paginated "Load More" lists
 - **Performance Ranking**:
   - `GET /api/performance/study-time` includes `podcast_channels` (Top 10 channels by podcast study seconds in selected time range, including channel cover `image_url`), aggregated from `podcast_listening_sessions` -> `podcast_episodes` -> `podcast_feeds`
-  - Podcast totals/channels prioritize `podcast_listening_sessions.total_active_seconds` (real active study time) and fall back to `total_listened_seconds` for legacy rows
+  - Podcast totals/channels use `podcast_listening_sessions.total_active_seconds` (real active study time) as the single aggregation source
 - **Session Analytics Mode Tag**:
   - `podcast_listening_sessions.listening_mode` distinguishes session source (`normal` feed playback vs `intensive` unified-player mode)
   - Aggregation for `GET /api/performance/study-time` remains unified under `podcast` total for now (mode tag is for future split analytics)

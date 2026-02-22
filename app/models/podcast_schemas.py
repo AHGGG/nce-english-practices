@@ -114,8 +114,7 @@ class BatchEpisodesRequest(BaseModel):
 
 class ListeningSessionUpdateRequest(BaseModel):
     session_id: int
-    total_listened_seconds: int
-    total_active_seconds: int = 0
+    total_active_seconds: int
     last_position_seconds: float
     is_finished: bool = False
 

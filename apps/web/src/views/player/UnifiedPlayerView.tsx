@@ -184,7 +184,6 @@ export default function UnifiedPlayerView() {
   const lastCollocationBucketRef = useRef<number | null>(null);
   const podcastSessionIdRef = useRef<number | null>(null);
   const [podcastSessionId, setPodcastSessionId] = useState<number | null>(null);
-  const podcastListenedSecondsRef = useRef(0);
   const podcastActiveSecondsRef = useRef(0);
   const podcastActiveLastTickMsRef = useRef(0);
   const podcastActiveIdleUntilMsRef = useRef(0);
@@ -1090,7 +1089,6 @@ export default function UnifiedPlayerView() {
       if (!sessionId) return;
 
       const active = Math.floor(accumulatePodcastActiveSeconds());
-      const listened = Math.floor(podcastListenedSecondsRef.current);
       const position = podcastCurrentTimeRef.current || 0;
 
       podcastSessionIdRef.current = null;
@@ -1100,7 +1098,6 @@ export default function UnifiedPlayerView() {
       try {
         await podcastApi.endListeningSession(
           sessionId,
-          listened,
           active,
           position,
           isFinished,
@@ -1140,7 +1137,6 @@ export default function UnifiedPlayerView() {
         currentPosition - podcastLastPositionRef.current,
       );
       if (delta > 0) {
-        podcastListenedSecondsRef.current += delta;
         podcastLastPositionRef.current = currentPosition;
         const active = Math.floor(accumulatePodcastActiveSeconds());
 
@@ -1149,7 +1145,6 @@ export default function UnifiedPlayerView() {
           void podcastApi
             .updateListeningSession(
               sessionId,
-              Math.floor(podcastListenedSecondsRef.current),
               active,
               podcastCurrentTimeRef.current || 0,
             )
@@ -1211,18 +1206,12 @@ export default function UnifiedPlayerView() {
         currentPosition - podcastLastPositionRef.current,
       );
       if (delta > 0) {
-        podcastListenedSecondsRef.current += delta;
       }
       podcastLastPositionRef.current = currentPosition;
       const active = Math.floor(accumulatePodcastActiveSeconds());
 
       void podcastApi
-        .updateListeningSession(
-          podcastSessionId,
-          Math.floor(podcastListenedSecondsRef.current),
-          active,
-          currentPosition,
-        )
+        .updateListeningSession(podcastSessionId, active, currentPosition)
         .catch((error: unknown) => {
           console.warn("[UnifiedPlayer] Failed to update session:", error);
         });
@@ -1267,7 +1256,6 @@ export default function UnifiedPlayerView() {
   useEffect(() => {
     podcastSessionIdRef.current = null;
     setPodcastSessionId(null);
-    podcastListenedSecondsRef.current = 0;
     podcastActiveSecondsRef.current = 0;
     podcastActiveLastTickMsRef.current = 0;
     podcastActiveIdleUntilMsRef.current = 0;
@@ -1296,7 +1284,6 @@ export default function UnifiedPlayerView() {
 
       const data = JSON.stringify({
         session_id: sessionId,
-        listened_seconds: Math.floor(podcastListenedSecondsRef.current),
         active_seconds: Math.floor(accumulatePodcastActiveSeconds()),
         position_seconds: podcastCurrentTimeRef.current || 0,
         is_finished: false,

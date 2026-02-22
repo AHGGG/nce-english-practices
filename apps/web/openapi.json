@@ -4568,6 +4568,22 @@
               "default": 0,
               "title": "Offset"
             }
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Q"
+            }
           }
         ],
         "responses": {
@@ -5515,6 +5531,52 @@
         }
       }
     },
+    "/api/podcast/transcription/probe": {
+      "post": {
+        "tags": [
+          "podcast"
+        ],
+        "summary": "Probe Transcription Service",
+        "operationId": "probe_transcription_service_api_podcast_transcription_probe_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TranscriptionProbeRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TranscriptionProbeResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ]
+      }
+    },
     "/api/podcast/episode/{episode_id}/transcribe": {
       "post": {
         "tags": [
@@ -6354,6 +6416,134 @@
             "content": {
               "application/json": {
                 "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/study-basket/{source_type}/{content_id}": {
+      "get": {
+        "tags": [
+          "study-basket"
+        ],
+        "summary": "Get Study Basket",
+        "operationId": "get_study_basket_api_study_basket__source_type___content_id__get",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "source_type",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "enum": [
+                "podcast",
+                "audiobook"
+              ],
+              "type": "string",
+              "title": "Source Type"
+            }
+          },
+          {
+            "name": "content_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Content Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StudyBasketResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "study-basket"
+        ],
+        "summary": "Save Study Basket",
+        "operationId": "save_study_basket_api_study_basket__source_type___content_id__put",
+        "security": [
+          {
+            "OAuth2PasswordBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "source_type",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "enum": [
+                "podcast",
+                "audiobook"
+              ],
+              "type": "string",
+              "title": "Source Type"
+            }
+          },
+          {
+            "name": "content_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Content Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StudyBasketPayload"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StudyBasketResponse"
+                }
               }
             }
           },
@@ -9272,6 +9462,15 @@
           "episode_id": {
             "type": "integer",
             "title": "Episode Id"
+          },
+          "listening_mode": {
+            "type": "string",
+            "enum": [
+              "normal",
+              "intensive"
+            ],
+            "title": "Listening Mode",
+            "default": "normal"
           }
         },
         "type": "object",
@@ -9286,9 +9485,9 @@
             "type": "integer",
             "title": "Session Id"
           },
-          "total_listened_seconds": {
+          "total_active_seconds": {
             "type": "integer",
-            "title": "Total Listened Seconds"
+            "title": "Total Active Seconds"
           },
           "last_position_seconds": {
             "type": "number",
@@ -9303,7 +9502,7 @@
         "type": "object",
         "required": [
           "session_id",
-          "total_listened_seconds",
+          "total_active_seconds",
           "last_position_seconds"
         ],
         "title": "ListeningSessionUpdateRequest"
@@ -10351,6 +10550,149 @@
         ],
         "title": "StartSessionResponse"
       },
+      "StudyBasketLookupItem": {
+        "properties": {
+          "key": {
+            "type": "string",
+            "title": "Key"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "word",
+              "phrase"
+            ],
+            "title": "Kind"
+          },
+          "text": {
+            "type": "string",
+            "title": "Text"
+          },
+          "sentence": {
+            "type": "string",
+            "title": "Sentence",
+            "default": ""
+          },
+          "sentence_index": {
+            "type": "integer",
+            "title": "Sentence Index",
+            "default": 0
+          },
+          "source_id": {
+            "type": "string",
+            "title": "Source Id"
+          },
+          "count": {
+            "type": "integer",
+            "title": "Count",
+            "default": 1
+          }
+        },
+        "type": "object",
+        "required": [
+          "key",
+          "kind",
+          "text",
+          "source_id"
+        ],
+        "title": "StudyBasketLookupItem"
+      },
+      "StudyBasketPayload": {
+        "properties": {
+          "lookup_items": {
+            "items": {
+              "$ref": "#/components/schemas/StudyBasketLookupItem"
+            },
+            "type": "array",
+            "title": "Lookup Items"
+          },
+          "bookmarked_sentences": {
+            "items": {
+              "$ref": "#/components/schemas/StudyBasketSentenceItem"
+            },
+            "type": "array",
+            "title": "Bookmarked Sentences"
+          }
+        },
+        "type": "object",
+        "title": "StudyBasketPayload"
+      },
+      "StudyBasketResponse": {
+        "properties": {
+          "lookup_items": {
+            "items": {
+              "$ref": "#/components/schemas/StudyBasketLookupItem"
+            },
+            "type": "array",
+            "title": "Lookup Items"
+          },
+          "bookmarked_sentences": {
+            "items": {
+              "$ref": "#/components/schemas/StudyBasketSentenceItem"
+            },
+            "type": "array",
+            "title": "Bookmarked Sentences"
+          },
+          "source_type": {
+            "type": "string",
+            "enum": [
+              "podcast",
+              "audiobook"
+            ],
+            "title": "Source Type"
+          },
+          "content_id": {
+            "type": "string",
+            "title": "Content Id"
+          },
+          "updated_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Updated At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "source_type",
+          "content_id"
+        ],
+        "title": "StudyBasketResponse"
+      },
+      "StudyBasketSentenceItem": {
+        "properties": {
+          "key": {
+            "type": "string",
+            "title": "Key"
+          },
+          "sentence": {
+            "type": "string",
+            "title": "Sentence"
+          },
+          "sentence_index": {
+            "type": "integer",
+            "title": "Sentence Index"
+          },
+          "source_id": {
+            "type": "string",
+            "title": "Source Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "key",
+          "sentence",
+          "sentence_index",
+          "source_id"
+        ],
+        "title": "StudyBasketSentenceItem"
+      },
       "StudyHighlightsResponse": {
         "properties": {
           "source_id": {
@@ -10531,6 +10873,53 @@
           "message"
         ],
         "title": "TranscribeResponse"
+      },
+      "TranscriptionProbeRequest": {
+        "properties": {
+          "remote_url": {
+            "type": "string",
+            "title": "Remote Url"
+          },
+          "api_key": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Api Key"
+          }
+        },
+        "type": "object",
+        "required": [
+          "remote_url"
+        ],
+        "title": "TranscriptionProbeRequest"
+      },
+      "TranscriptionProbeResponse": {
+        "properties": {
+          "ok": {
+            "type": "boolean",
+            "title": "Ok"
+          },
+          "status_code": {
+            "type": "integer",
+            "title": "Status Code"
+          },
+          "message": {
+            "type": "string",
+            "title": "Message"
+          }
+        },
+        "type": "object",
+        "required": [
+          "ok",
+          "status_code",
+          "message"
+        ],
+        "title": "TranscriptionProbeResponse"
       },
       "UnclearSentenceInfo": {
         "properties": {

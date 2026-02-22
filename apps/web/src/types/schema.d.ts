@@ -2373,6 +2373,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/podcast/transcription/probe": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Probe Transcription Service */
+        post: operations["probe_transcription_service_api_podcast_transcription_probe_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/podcast/episode/{episode_id}/transcribe": {
         parameters: {
             query?: never;
@@ -2669,6 +2686,24 @@ export interface paths {
          */
         get: operations["get_transcription_job_status_api_transcribe_jobs__job_id__get"];
         put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/study-basket/{source_type}/{content_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Study Basket */
+        get: operations["get_study_basket_api_study_basket__source_type___content_id__get"];
+        /** Save Study Basket */
+        put: operations["save_study_basket_api_study_basket__source_type___content_id__put"];
         post?: never;
         delete?: never;
         options?: never;
@@ -4105,13 +4140,19 @@ export interface components {
         ListeningSessionRequest: {
             /** Episode Id */
             episode_id: number;
+            /**
+             * Listening Mode
+             * @default normal
+             * @enum {string}
+             */
+            listening_mode: "normal" | "intensive";
         };
         /** ListeningSessionUpdateRequest */
         ListeningSessionUpdateRequest: {
             /** Session Id */
             session_id: number;
-            /** Total Listened Seconds */
-            total_listened_seconds: number;
+            /** Total Active Seconds */
+            total_active_seconds: number;
             /** Last Position Seconds */
             last_position_seconds: number;
             /**
@@ -4553,6 +4594,69 @@ export interface components {
             /** Session Id */
             session_id: number;
         };
+        /** StudyBasketLookupItem */
+        StudyBasketLookupItem: {
+            /** Key */
+            key: string;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "word" | "phrase";
+            /** Text */
+            text: string;
+            /**
+             * Sentence
+             * @default
+             */
+            sentence: string;
+            /**
+             * Sentence Index
+             * @default 0
+             */
+            sentence_index: number;
+            /** Source Id */
+            source_id: string;
+            /**
+             * Count
+             * @default 1
+             */
+            count: number;
+        };
+        /** StudyBasketPayload */
+        StudyBasketPayload: {
+            /** Lookup Items */
+            lookup_items?: components["schemas"]["StudyBasketLookupItem"][];
+            /** Bookmarked Sentences */
+            bookmarked_sentences?: components["schemas"]["StudyBasketSentenceItem"][];
+        };
+        /** StudyBasketResponse */
+        StudyBasketResponse: {
+            /** Lookup Items */
+            lookup_items?: components["schemas"]["StudyBasketLookupItem"][];
+            /** Bookmarked Sentences */
+            bookmarked_sentences?: components["schemas"]["StudyBasketSentenceItem"][];
+            /**
+             * Source Type
+             * @enum {string}
+             */
+            source_type: "podcast" | "audiobook";
+            /** Content Id */
+            content_id: string;
+            /** Updated At */
+            updated_at?: string | null;
+        };
+        /** StudyBasketSentenceItem */
+        StudyBasketSentenceItem: {
+            /** Key */
+            key: string;
+            /** Sentence */
+            sentence: string;
+            /** Sentence Index */
+            sentence_index: number;
+            /** Source Id */
+            source_id: string;
+        };
         /**
          * StudyHighlightsResponse
          * @description All words/phrases looked up during study of an article.
@@ -4624,6 +4728,22 @@ export interface components {
         TranscribeResponse: {
             /** Status */
             status: string;
+            /** Message */
+            message: string;
+        };
+        /** TranscriptionProbeRequest */
+        TranscriptionProbeRequest: {
+            /** Remote Url */
+            remote_url: string;
+            /** Api Key */
+            api_key?: string | null;
+        };
+        /** TranscriptionProbeResponse */
+        TranscriptionProbeResponse: {
+            /** Ok */
+            ok: boolean;
+            /** Status Code */
+            status_code: number;
             /** Message */
             message: string;
         };
@@ -8088,6 +8208,7 @@ export interface operations {
             query?: {
                 limit?: number;
                 offset?: number;
+                q?: string | null;
             };
             header?: never;
             path: {
@@ -8798,6 +8919,39 @@ export interface operations {
             };
         };
     };
+    probe_transcription_service_api_podcast_transcription_probe_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TranscriptionProbeRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TranscriptionProbeResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     transcribe_episode_api_podcast_episode__episode_id__transcribe_post: {
         parameters: {
             query?: {
@@ -9265,6 +9419,74 @@ export interface operations {
                 };
                 content: {
                     "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_study_basket_api_study_basket__source_type___content_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                source_type: "podcast" | "audiobook";
+                content_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StudyBasketResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    save_study_basket_api_study_basket__source_type___content_id__put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                source_type: "podcast" | "audiobook";
+                content_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["StudyBasketPayload"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StudyBasketResponse"];
                 };
             };
             /** @description Validation Error */

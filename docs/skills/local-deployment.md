@@ -38,10 +38,32 @@ cd deploy
 | 脚本                                 | 用途                           |
 | ------------------------------------ | ------------------------------ |
 | `./scripts/backup.sh`                | 数据库备份到 `deploy/backups/` |
+| `./scripts/prod-backup.sh`           | 生产手动备份（含元数据）       |
 | `./scripts/restore.sh list`          | 列出所有备份                   |
 | `./scripts/restore.sh <backup_file>` | 恢复指定备份                   |
+| `./scripts/prod-rollback.sh latest`  | 生产一键回滚到最近备份         |
 | `./scripts/logs.sh`                  | 查看容器日志                   |
 | `./scripts/health-check.sh`          | 系统诊断                       |
+
+## Production Backup & Rollback
+
+```bash
+cd deploy
+
+# 1) 变更前先做生产手动备份（推荐）
+./scripts/prod-backup.sh --tag pre_migration
+
+# 2) 如果发布后异常，回滚到最近备份
+./scripts/prod-rollback.sh latest
+
+# 3) 或指定某个备份文件回滚
+./scripts/prod-rollback.sh nce_nce_practice_20260222_163000.sql.gz
+
+# 4) 非交互模式（自动确认，谨慎使用）
+./scripts/prod-rollback.sh latest --yes
+```
+
+说明：`prod-rollback.sh` 在恢复前会自动再做一次 `pre_rollback` 备份，避免二次损失。
 
 ## Production Operation: Clear Collocation Cache
 
