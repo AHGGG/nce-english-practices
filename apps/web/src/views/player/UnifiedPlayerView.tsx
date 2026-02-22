@@ -218,6 +218,7 @@ export default function UnifiedPlayerView() {
     BookmarkedSentence[]
   >([]);
   const [showStudySidebarMobile, setShowStudySidebarMobile] = useState(false);
+  const wasPlayingBeforeBasketRef = useRef(false);
   const [isAddingToReview, setIsAddingToReview] = useState(false);
   const [lastJumpPosition, setLastJumpPosition] = useState<{
     time: number;
@@ -342,6 +343,7 @@ export default function UnifiedPlayerView() {
       } finally {
         if (cancelled) return;
         setShowStudySidebarMobile(false);
+        wasPlayingBeforeBasketRef.current = false;
         setLastJumpPosition(null);
         setStudyBasketHydrated(true);
       }
@@ -570,6 +572,7 @@ export default function UnifiedPlayerView() {
       setLookupItems([]);
       setBookmarkedSentences([]);
       setShowStudySidebarMobile(false);
+      wasPlayingBeforeBasketRef.current = false;
     } catch (e) {
       console.error(
         "Failed to add podcast intensive items to review queue:",
@@ -882,6 +885,7 @@ export default function UnifiedPlayerView() {
       });
       audioActions.seekToSegment(Math.max(0, sentenceIndex));
       setShowStudySidebarMobile(false);
+      wasPlayingBeforeBasketRef.current = false;
     },
     [audioActions, audioState.currentTime, audioState.activeSegmentIndex],
   );
@@ -895,6 +899,7 @@ export default function UnifiedPlayerView() {
     }
     setLastJumpPosition(null);
     setShowStudySidebarMobile(false);
+    wasPlayingBeforeBasketRef.current = false;
   }, [audioActions, lastJumpPosition]);
 
   const handlePlaybackRateChange = useCallback(
@@ -1591,7 +1596,20 @@ export default function UnifiedPlayerView() {
             </div>
 
             <button
-              onClick={() => setShowStudySidebarMobile((prev) => !prev)}
+              onClick={() => {
+                setShowStudySidebarMobile((prev) => {
+                  if (!prev && audioState.isPlaying) {
+                    // Opening: record playing state and pause
+                    wasPlayingBeforeBasketRef.current = true;
+                    audioActions.pause();
+                  } else if (prev && wasPlayingBeforeBasketRef.current) {
+                    // Closing via toggle: resume if was playing before
+                    wasPlayingBeforeBasketRef.current = false;
+                    void audioActions.play();
+                  }
+                  return !prev;
+                });
+              }}
               className="md:hidden h-9 px-2 rounded-lg border border-white/10 bg-white/5 text-white/70 hover:text-white hover:bg-white/10 transition-colors"
               title="Open lookup and sentence list"
             >
@@ -1759,7 +1777,13 @@ export default function UnifiedPlayerView() {
 
         {showStudySidebarMobile && (
           <button
-            onClick={() => setShowStudySidebarMobile(false)}
+            onClick={() => {
+              setShowStudySidebarMobile(false);
+              if (wasPlayingBeforeBasketRef.current) {
+                wasPlayingBeforeBasketRef.current = false;
+                void audioActions.play();
+              }
+            }}
             className="lg:hidden absolute inset-0 z-20 bg-black/55"
             aria-label="Close study basket"
           />
@@ -1775,7 +1799,13 @@ export default function UnifiedPlayerView() {
               Study Basket
             </div>
             <button
-              onClick={() => setShowStudySidebarMobile(false)}
+              onClick={() => {
+                setShowStudySidebarMobile(false);
+                if (wasPlayingBeforeBasketRef.current) {
+                  wasPlayingBeforeBasketRef.current = false;
+                  void audioActions.play();
+                }
+              }}
               className="text-white/60 hover:text-white"
             >
               <ArrowLeft className="w-4 h-4" />
