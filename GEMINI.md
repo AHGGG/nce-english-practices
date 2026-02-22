@@ -170,6 +170,11 @@ This clears DB cache table `sentence_collocation_cache`; restart backend to clea
 ./scripts/test.ps1       # Run All Tests (E2E + Backend)
 ```
 
+## Deployment Script Notes
+
+- `deploy/scripts/deploy.sh` now prunes dangling images (`<none>`) after successful deploy to control disk growth on VPS.
+- Use `./scripts/deploy.sh --no-prune` when you need to keep intermediate images for debugging.
+
 ## User Administration
 
 > Detailed guide: [User Administration Skill](docs/skills/user-administration.md)
@@ -339,8 +344,14 @@ Offline playback with PWA support, audio caching via Cache API, and episode stat
   - Session/sync/device endpoints: `app/api/routers/podcast_session_routes.py`
   - Download proxy endpoints: `app/api/routers/podcast_download_routes.py`
   - Transcription trigger/background task endpoints: `app/api/routers/podcast_transcription_routes.py`
+- **Feed Detail Search (Backend + Web)**:
+  - `GET /api/podcast/feed/{feed_id}` now supports optional `q` for server-side episode keyword filtering (title)
+  - `apps/web/src/views/podcast/PodcastFeedDetailView.tsx` uses this query param so filtering works correctly with paginated "Load More" lists
 - **Performance Ranking**:
   - `GET /api/performance/study-time` now includes `podcast_channels` (Top 10 channels by listened seconds in selected time range, including channel cover `image_url`), aggregated from `podcast_listening_sessions` -> `podcast_episodes` -> `podcast_feeds`
+- **Session Analytics Mode Tag**:
+  - `podcast_listening_sessions.listening_mode` distinguishes session source (`normal` feed playback vs `intensive` unified-player mode)
+  - Aggregation for `GET /api/performance/study-time` remains unified under `podcast` total for now (mode tag is for future split analytics)
 - **Playlists (Client-only)**:
   - Stored in browser `localStorage` via `apps/web/src/utils/podcastPlaylists.ts`
   - Web routes: `/podcast/playlists` and `/podcast/playlist/:playlistId`
@@ -362,6 +373,9 @@ Podcast episodes can be transcribed using AI to enable time-aligned subtitle dis
   - Remote mode supports `audio_url` input so the worker can fetch audio directly (avoids uploading full podcast bytes from caller)
 - **Data Model**: `PodcastEpisode.transcript_segments` (JSONB) stores time-aligned segments
 - **Frontend (Web)**: "Intensive Listening" flow in `apps/web/src/views/podcast/PodcastFeedDetailView.tsx` + `apps/web/src/views/player/UnifiedPlayerView.tsx`
+  - `UnifiedPlayerView` now includes a Study Basket side panel for podcast/audiobook intensive listening: clicked word/collocation lookups and bookmarked subtitle sentences are staged in basket, manageable (remove/un-bookmark), and batch-submitted to review queue via one-click add (no immediate enqueue on click)
+  - Study Basket state is persisted server-side per user + content scope via `/api/study-basket/{source_type}/{content_id}` (web syncs basket automatically, so refresh/reopen keeps collected items)
+  - Podcast intensive keyboard controls now support `podcastKeymapMode` (`standard` / `vim`) from Settings: Vim mode provides `j/k` sentence navigation plus single-line quick jump (`s` -> label targets including multi-word collocations -> `K` query, `;`/`,` cycle, `Esc` close)
 - **Frontend (Mobile)**: "Intensive Listening" flow in `apps/mobile/app/podcast/intensive.tsx` (entry from `apps/mobile/src/components/podcast/PodcastDetailView.tsx`)
 
 **Audio Format Support**:
@@ -541,6 +555,16 @@ See: [Content Renderer Skill](docs/skills/content-renderer.md) for detailed pitf
 - `MemoizedSentence.jsx` re-exports `SentenceBlock` - always use `SentenceBlock` for new code
 - When using renderer, pass custom logic via props (renderer handles all rendering internally)
 
+### Mobile Viewport & Full-Screen Layout Pitfalls
+
+Web 全屏页面（精听播放器、Audiobook 播放器）在真机移动浏览器上的三个高频陷阱，DevTools 模拟器无法复现。See: [Mobile Viewport Pitfalls Skill](docs/skills/mobile-viewport-pitfalls.md)
+
+**Quick Reference**:
+
+- `min-h-screen` 会杀死 `h-dvh` — `min-height: 100vh` 优先级高于 `height: 100dvh`，底部被裁
+- 整页可滑动 / 地址栏手势 — 需三层防御：`fixed inset-0` + body lock + `overscroll-y-contain`
+- 移动端控件堆叠溢出 — 时间贴进度条、播放行纯居中、冗余文字隐藏
+
 ## Mobile Architecture & Guidelines
 
 React Native + Expo + NativeWind architecture. Covers audio background tasks, WebView bridge, voice PTT, Zustand persistence, and SSE streaming. See: [Mobile Architecture Documentation](docs/mobile-architecture.md)
@@ -565,6 +589,7 @@ React Native + Expo + NativeWind architecture. Covers audio background tasks, We
 | **Content Renderer**         | [docs/skills/content-renderer.md](docs/skills/content-renderer.md)                         | **内容渲染** - SentenceBlock、Collocation、Renderer 架构         |
 | **Mobile Architecture**      | [docs/MOBILE_ARCHITECTURE_PLAN.md](docs/MOBILE_ARCHITECTURE_PLAN.md)                       | **移动端开发** - 跨端复用架构与迁移计划                          |
 | **Mobile Dev Pitfalls**      | [docs/skills/mobile-dev-pitfalls.md](docs/skills/mobile-dev-pitfalls.md)                   | **移动端开发** - NativeWind 样式问题、Alpha 语法、条件 className |
+| Mobile Viewport Pitfalls     | [docs/skills/mobile-viewport-pitfalls.md](docs/skills/mobile-viewport-pitfalls.md)         | **Web 全屏页面** - dvh/vh 冲突、地址栏手势、控件紧凑化           |
 | Mobile Quick Reference       | [docs/MOBILE_QUICK_REFERENCE.md](docs/MOBILE_QUICK_REFERENCE.md)                           | **移动端开发** - 快速参考与代码模板                              |
 | Transcription Service        | [docs/transcription-service.md](docs/transcription-service.md)                             | **远程转写服务** - Client/Server 配置指南                        |
 | User Administration          | [docs/skills/user-administration.md](docs/skills/user-administration.md)                   | **管理用户** - 创建、迁移数据、重置密码                          |

@@ -555,6 +555,16 @@ See: [Content Renderer Skill](docs/skills/content-renderer.md) for detailed pitf
 - `MemoizedSentence.jsx` re-exports `SentenceBlock` - always use `SentenceBlock` for new code
 - When using renderer, pass custom logic via props (renderer handles all rendering internally)
 
+### Mobile Viewport & Full-Screen Layout Pitfalls
+
+Web 全屏页面（精听播放器、Audiobook 播放器）在真机移动浏览器上的三个高频陷阱，DevTools 模拟器无法复现。See: [Mobile Viewport Pitfalls Skill](docs/skills/mobile-viewport-pitfalls.md)
+
+**Quick Reference**:
+
+- `min-h-screen` 会杀死 `h-dvh` — `min-height: 100vh` 优先级高于 `height: 100dvh`，底部被裁
+- 整页可滑动 / 地址栏手势 — 需三层防御：`fixed inset-0` + body lock + `overscroll-y-contain`
+- 移动端控件堆叠溢出 — 时间贴进度条、播放行纯居中、冗余文字隐藏
+
 ## Mobile Architecture & Guidelines
 
 React Native + Expo + NativeWind architecture. Covers audio background tasks, WebView bridge, voice PTT, Zustand persistence, and SSE streaming. See: [Mobile Architecture Documentation](docs/mobile-architecture.md)
@@ -579,6 +589,7 @@ React Native + Expo + NativeWind architecture. Covers audio background tasks, We
 | **Content Renderer**         | [docs/skills/content-renderer.md](docs/skills/content-renderer.md)                         | **内容渲染** - SentenceBlock、Collocation、Renderer 架构         |
 | **Mobile Architecture**      | [docs/MOBILE_ARCHITECTURE_PLAN.md](docs/MOBILE_ARCHITECTURE_PLAN.md)                       | **移动端开发** - 跨端复用架构与迁移计划                          |
 | **Mobile Dev Pitfalls**      | [docs/skills/mobile-dev-pitfalls.md](docs/skills/mobile-dev-pitfalls.md)                   | **移动端开发** - NativeWind 样式问题、Alpha 语法、条件 className |
+| Mobile Viewport Pitfalls     | [docs/skills/mobile-viewport-pitfalls.md](docs/skills/mobile-viewport-pitfalls.md)         | **Web 全屏页面** - dvh/vh 冲突、地址栏手势、控件紧凑化           |
 | Mobile Quick Reference       | [docs/MOBILE_QUICK_REFERENCE.md](docs/MOBILE_QUICK_REFERENCE.md)                           | **移动端开发** - 快速参考与代码模板                              |
 | Transcription Service        | [docs/transcription-service.md](docs/transcription-service.md)                             | **远程转写服务** - Client/Server 配置指南                        |
 | User Administration          | [docs/skills/user-administration.md](docs/skills/user-administration.md)                   | **管理用户** - 创建、迁移数据、重置密码                          |
