@@ -1,5 +1,5 @@
 /* eslint-disable react-refresh/only-export-components */
-import React, { useState, useEffect } from "react";
+import React, { useCallback, useMemo, useState, useEffect } from "react";
 import type { ReactNode } from "react";
 import { X, CheckCircle, AlertTriangle, Info } from "lucide-react";
 
@@ -29,21 +29,22 @@ const ToastContext = React.createContext<ToastContextValue | null>(null);
 export const ToastProvider = ({ children }: ToastProviderProps) => {
   const [toasts, setToasts] = useState<ToastData[]>([]);
 
-  const addToast = (
-    message: string,
-    type: ToastType = "info",
-    duration = 3000,
-  ) => {
-    const id = Date.now();
-    setToasts((prev) => [...prev, { id, message, type, duration }]);
-  };
+  const addToast = useCallback(
+    (message: string, type: ToastType = "info", duration = 3000) => {
+      const id = Date.now();
+      setToasts((prev) => [...prev, { id, message, type, duration }]);
+    },
+    [],
+  );
 
-  const removeToast = (id: number) => {
+  const removeToast = useCallback((id: number) => {
     setToasts((prev) => prev.filter((t) => t.id !== id));
-  };
+  }, []);
+
+  const contextValue = useMemo(() => ({ addToast }), [addToast]);
 
   return (
-    <ToastContext.Provider value={{ addToast }}>
+    <ToastContext.Provider value={contextValue}>
       {children}
       <div
         role="region"

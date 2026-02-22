@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { MouseEvent, ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
 import {
@@ -103,6 +103,7 @@ export default function PodcastFavoritesView() {
   } = useGlobalState() as { state: { settings: GlobalSettings } };
   const [items, setItems] = useState<FavoriteItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const hasFetchedOnce = useRef(false);
   const [removing, setRemoving] = useState<Record<number, boolean>>({});
   const [transcriptStatus, setTranscriptStatus] = useState<
     Record<number, string>
@@ -177,9 +178,14 @@ export default function PodcastFavoritesView() {
 
   const loadFavorites = useCallback(async () => {
     try {
-      setLoading(true);
+      // Only show full-page spinner on initial load.
+      // Subsequent re-fetches (if any) update items silently to avoid flicker.
+      if (!hasFetchedOnce.current) {
+        setLoading(true);
+      }
       const data = (await podcastApi.getFavorites(200, 0)) as FavoriteItem[];
       setItems(data);
+      hasFetchedOnce.current = true;
     } catch (error: unknown) {
       addToast("Failed to load favorites: " + getErrorMessage(error), "error");
     } finally {
