@@ -348,7 +348,8 @@ Offline playback with PWA support, audio caching via Cache API, and episode stat
   - `GET /api/podcast/feed/{feed_id}` now supports optional `q` for server-side episode keyword filtering (title)
   - `apps/web/src/views/podcast/PodcastFeedDetailView.tsx` uses this query param so filtering works correctly with paginated "Load More" lists
 - **Performance Ranking**:
-  - `GET /api/performance/study-time` now includes `podcast_channels` (Top 10 channels by listened seconds in selected time range, including channel cover `image_url`), aggregated from `podcast_listening_sessions` -> `podcast_episodes` -> `podcast_feeds`
+  - `GET /api/performance/study-time` includes `podcast_channels` (Top 10 channels by podcast study seconds in selected time range, including channel cover `image_url`), aggregated from `podcast_listening_sessions` -> `podcast_episodes` -> `podcast_feeds`
+  - Podcast totals/channels prioritize `podcast_listening_sessions.total_active_seconds` (real active study time) and fall back to `total_listened_seconds` for legacy rows
 - **Session Analytics Mode Tag**:
   - `podcast_listening_sessions.listening_mode` distinguishes session source (`normal` feed playback vs `intensive` unified-player mode)
   - Aggregation for `GET /api/performance/study-time` remains unified under `podcast` total for now (mode tag is for future split analytics)

@@ -48,6 +48,7 @@ async def update_session(
         db,
         req.session_id,
         req.total_listened_seconds,
+        req.total_active_seconds,
         req.last_position_seconds,
         req.is_finished,
     )
@@ -71,6 +72,7 @@ async def update_session_beacon(
 
         session_id = data.get("session_id")
         listened_seconds = data.get("listened_seconds", 0)
+        active_seconds = data.get("active_seconds", listened_seconds)
         position_seconds = data.get("position_seconds", 0)
 
         if not session_id:
@@ -81,6 +83,7 @@ async def update_session_beacon(
             db,
             session_id,
             listened_seconds,
+            active_seconds,
             position_seconds,
             is_finished=is_finished,
         )
@@ -100,6 +103,7 @@ async def end_session(
         db,
         req.session_id,
         req.total_listened_seconds,
+        req.total_active_seconds,
         req.last_position_seconds,
         req.is_finished,
     )

@@ -116,6 +116,7 @@ interface QuickJumpBadge {
 
 // Exclude "k" to avoid visual/mental conflict with Shift+K lookup shortcut.
 const QUICK_JUMP_CHARS = "asdfghjlqwertyuiopzxcvbnm";
+const PODCAST_INTENSIVE_IDLE_MS = 60_000;
 
 const buildQuickJumpLabels = (count: number): string[] => {
   if (count <= 0) return [];
@@ -184,6 +185,9 @@ export default function UnifiedPlayerView() {
   const podcastSessionIdRef = useRef<number | null>(null);
   const [podcastSessionId, setPodcastSessionId] = useState<number | null>(null);
   const podcastListenedSecondsRef = useRef(0);
+  const podcastActiveSecondsRef = useRef(0);
+  const podcastActiveLastTickMsRef = useRef(0);
+  const podcastActiveIdleUntilMsRef = useRef(0);
   const podcastLastPositionRef = useRef<number>(0);
   const podcastFinalizedRef = useRef(false);
   const podcastCurrentTimeRef = useRef(0);
@@ -404,6 +408,30 @@ export default function UnifiedPlayerView() {
     return segment.sentences[0] || segment.text || "";
   }, []);
 
+  const markPodcastInteraction = useCallback(() => {
+    if (sourceType !== "podcast") return;
+    const now = Date.now();
+    podcastActiveIdleUntilMsRef.current = Math.max(
+      podcastActiveIdleUntilMsRef.current,
+      now + PODCAST_INTENSIVE_IDLE_MS,
+    );
+    if (podcastActiveLastTickMsRef.current <= 0) {
+      podcastActiveLastTickMsRef.current = now;
+    }
+  }, [sourceType]);
+
+  const accumulatePodcastActiveSeconds = useCallback((now = Date.now()) => {
+    const last = podcastActiveLastTickMsRef.current || now;
+    const elapsedMs = Math.max(0, now - last);
+    podcastActiveLastTickMsRef.current = now;
+
+    if (!document.hidden && now <= podcastActiveIdleUntilMsRef.current) {
+      podcastActiveSecondsRef.current += elapsedMs / 1000;
+    }
+
+    return podcastActiveSecondsRef.current;
+  }, []);
+
   const buildSourceId = useCallback(
     (sentenceIndex: number) => {
       const source = sourceType === "podcast" ? "podcast" : "audiobook";
@@ -425,6 +453,7 @@ export default function UnifiedPlayerView() {
 
   const handleToggleSentenceBookmark = useCallback(
     (segment: AudioSegment) => {
+      markPodcastInteraction();
       const sentence = getSentenceText(segment).trim();
       if (!sentence) return;
 
@@ -447,7 +476,7 @@ export default function UnifiedPlayerView() {
         ];
       });
     },
-    [buildSourceId, getSentenceKey, getSentenceText],
+    [buildSourceId, getSentenceKey, getSentenceText, markPodcastInteraction],
   );
 
   async function loadContent() {
@@ -623,6 +652,7 @@ export default function UnifiedPlayerView() {
   // Handle word click
   const handleWordClick = useCallback(
     (word: string, sentence: string) => {
+      markPodcastInteraction();
       const cleanWord = word.toLowerCase().trim();
       if (!cleanWord) return;
 
@@ -674,10 +704,12 @@ export default function UnifiedPlayerView() {
       segments,
       audioState.activeSegmentIndex,
       buildSourceId,
+      markPodcastInteraction,
     ],
   );
 
   const seekPrevSentence = useCallback(() => {
+    markPodcastInteraction();
     if (!segments.length) return;
 
     const baseIndex =
@@ -699,10 +731,12 @@ export default function UnifiedPlayerView() {
     audioActions,
     audioState.activeSegmentIndex,
     audioState.isPlaying,
+    markPodcastInteraction,
     segments,
   ]);
 
   const seekNextSentence = useCallback(() => {
+    markPodcastInteraction();
     if (!segments.length) return;
 
     const baseIndex =
@@ -724,6 +758,7 @@ export default function UnifiedPlayerView() {
     audioActions,
     audioState.activeSegmentIndex,
     audioState.isPlaying,
+    markPodcastInteraction,
     segments,
   ]);
 
@@ -826,6 +861,7 @@ export default function UnifiedPlayerView() {
   );
 
   const enterQuickJump = useCallback(() => {
+    markPodcastInteraction();
     const targets = collectQuickJumpTargets();
     if (!targets.length) {
       addToast(
@@ -856,6 +892,7 @@ export default function UnifiedPlayerView() {
     syncQuickJumpBadges,
     audioState.isPlaying,
     audioActions,
+    markPodcastInteraction,
   ]);
 
   const exitQuickJump = useCallback(
@@ -882,6 +919,7 @@ export default function UnifiedPlayerView() {
 
   const runQuickJumpLookup = useCallback(
     (index: number) => {
+      markPodcastInteraction();
       const target = quickJumpTargets[index];
       if (!target) return;
       setQuickJumpIndex(index);
@@ -889,11 +927,12 @@ export default function UnifiedPlayerView() {
       target.element.scrollIntoView({ block: "center", behavior: "smooth" });
       handleWordClick(target.word, target.sentence);
     },
-    [exitQuickJump, handleWordClick, quickJumpTargets],
+    [exitQuickJump, handleWordClick, markPodcastInteraction, quickJumpTargets],
   );
 
   const jumpToSentence = useCallback(
     (sentenceIndex: number) => {
+      markPodcastInteraction();
       setLastJumpPosition({
         time: audioState.currentTime || 0,
         segmentIndex: Math.max(0, audioState.activeSegmentIndex),
@@ -902,10 +941,16 @@ export default function UnifiedPlayerView() {
       setShowStudySidebarMobile(false);
       wasPlayingBeforeBasketRef.current = false;
     },
-    [audioActions, audioState.currentTime, audioState.activeSegmentIndex],
+    [
+      audioActions,
+      audioState.currentTime,
+      audioState.activeSegmentIndex,
+      markPodcastInteraction,
+    ],
   );
 
   const returnToLastJumpPosition = useCallback(() => {
+    markPodcastInteraction();
     if (!lastJumpPosition) return;
     if (lastJumpPosition.time > 0) {
       audioActions.seekTo(lastJumpPosition.time);
@@ -915,16 +960,17 @@ export default function UnifiedPlayerView() {
     setLastJumpPosition(null);
     setShowStudySidebarMobile(false);
     wasPlayingBeforeBasketRef.current = false;
-  }, [audioActions, lastJumpPosition]);
+  }, [audioActions, lastJumpPosition, markPodcastInteraction]);
 
   const handlePlaybackRateChange = useCallback(
     (rate: number) => {
+      markPodcastInteraction();
       audioActions.setPlaybackRate(rate);
       if (sourceType === "podcast") {
         updateSetting("podcastSpeed", rate);
       }
     },
-    [audioActions, sourceType, updateSetting],
+    [audioActions, sourceType, updateSetting, markPodcastInteraction],
   );
 
   useEffect(() => {
@@ -1003,6 +1049,10 @@ export default function UnifiedPlayerView() {
     prevIsPlayingRef.current = audioState.isPlaying;
     if (!justPaused) return;
 
+    const pauseAt = Date.now();
+    accumulatePodcastActiveSeconds(pauseAt);
+    podcastActiveIdleUntilMsRef.current = pauseAt;
+
     const position = podcastCurrentTimeRef.current || 0;
     if (position <= 0) return;
 
@@ -1029,6 +1079,7 @@ export default function UnifiedPlayerView() {
     audioState.isPlaying,
     audioState.playbackRate,
     audioState.duration,
+    accumulatePodcastActiveSeconds,
   ]);
 
   const finalizePodcastSession = useCallback(
@@ -1038,6 +1089,7 @@ export default function UnifiedPlayerView() {
       const sessionId = podcastSessionIdRef.current;
       if (!sessionId) return;
 
+      const active = Math.floor(accumulatePodcastActiveSeconds());
       const listened = Math.floor(podcastListenedSecondsRef.current);
       const position = podcastCurrentTimeRef.current || 0;
 
@@ -1049,6 +1101,7 @@ export default function UnifiedPlayerView() {
         await podcastApi.endListeningSession(
           sessionId,
           listened,
+          active,
           position,
           isFinished,
         );
@@ -1056,8 +1109,20 @@ export default function UnifiedPlayerView() {
         console.warn("[UnifiedPlayer] Failed to end podcast session:", error);
       }
     },
-    [sourceType],
+    [sourceType, accumulatePodcastActiveSeconds],
   );
+
+  useEffect(() => {
+    if (sourceType !== "podcast") return;
+    if (audioState.isPlaying) {
+      markPodcastInteraction();
+    }
+  }, [
+    sourceType,
+    audioState.isPlaying,
+    audioState.currentTime,
+    markPodcastInteraction,
+  ]);
 
   useEffect(() => {
     podcastCurrentTimeRef.current = audioState.currentTime || 0;
@@ -1077,6 +1142,7 @@ export default function UnifiedPlayerView() {
       if (delta > 0) {
         podcastListenedSecondsRef.current += delta;
         podcastLastPositionRef.current = currentPosition;
+        const active = Math.floor(accumulatePodcastActiveSeconds());
 
         const sessionId = podcastSessionIdRef.current;
         if (sessionId) {
@@ -1084,6 +1150,7 @@ export default function UnifiedPlayerView() {
             .updateListeningSession(
               sessionId,
               Math.floor(podcastListenedSecondsRef.current),
+              active,
               podcastCurrentTimeRef.current || 0,
             )
             .catch((error: unknown) => {
@@ -1111,6 +1178,7 @@ export default function UnifiedPlayerView() {
           podcastSessionIdRef.current = res.session_id;
           setPodcastSessionId(res.session_id);
           podcastLastPositionRef.current = podcastCurrentTimeRef.current || 0;
+          podcastActiveLastTickMsRef.current = Date.now();
         })
         .catch((error: unknown) => {
           console.warn(
@@ -1124,6 +1192,7 @@ export default function UnifiedPlayerView() {
     bundle?.metadata?.episode_id,
     audioState.isPlaying,
     audioState.currentTime,
+    accumulatePodcastActiveSeconds,
   ]);
 
   useEffect(() => {
@@ -1145,11 +1214,13 @@ export default function UnifiedPlayerView() {
         podcastListenedSecondsRef.current += delta;
       }
       podcastLastPositionRef.current = currentPosition;
+      const active = Math.floor(accumulatePodcastActiveSeconds());
 
       void podcastApi
         .updateListeningSession(
           podcastSessionId,
           Math.floor(podcastListenedSecondsRef.current),
+          active,
           currentPosition,
         )
         .catch((error: unknown) => {
@@ -1160,7 +1231,12 @@ export default function UnifiedPlayerView() {
     return () => {
       window.clearInterval(timer);
     };
-  }, [sourceType, bundle?.metadata?.episode_id, podcastSessionId]);
+  }, [
+    sourceType,
+    bundle?.metadata?.episode_id,
+    podcastSessionId,
+    accumulatePodcastActiveSeconds,
+  ]);
 
   useEffect(() => {
     if (sourceType !== "podcast" || !bundle?.metadata?.episode_id) {
@@ -1192,6 +1268,9 @@ export default function UnifiedPlayerView() {
     podcastSessionIdRef.current = null;
     setPodcastSessionId(null);
     podcastListenedSecondsRef.current = 0;
+    podcastActiveSecondsRef.current = 0;
+    podcastActiveLastTickMsRef.current = 0;
+    podcastActiveIdleUntilMsRef.current = 0;
     podcastLastPositionRef.current = 0;
     podcastFinalizedRef.current = false;
     initialSeekAppliedRef.current = null;
@@ -1218,6 +1297,7 @@ export default function UnifiedPlayerView() {
       const data = JSON.stringify({
         session_id: sessionId,
         listened_seconds: Math.floor(podcastListenedSecondsRef.current),
+        active_seconds: Math.floor(accumulatePodcastActiveSeconds()),
         position_seconds: podcastCurrentTimeRef.current || 0,
         is_finished: false,
       });
@@ -1233,6 +1313,7 @@ export default function UnifiedPlayerView() {
     bundle?.metadata?.episode_id,
     audioState.duration,
     audioState.playbackRate,
+    accumulatePodcastActiveSeconds,
   ]);
 
   useEffect(() => {
@@ -1409,6 +1490,7 @@ export default function UnifiedPlayerView() {
 
     const handleKeyDown = (event: KeyboardEvent) => {
       if (isEditableTarget(event.target)) return;
+      markPodcastInteraction();
 
       if (event.key === "?" || (event.shiftKey && event.key === "/")) {
         event.preventDefault();
@@ -1549,6 +1631,7 @@ export default function UnifiedPlayerView() {
     seekNextSentence,
     seekPrevSentence,
     enterQuickJump,
+    markPodcastInteraction,
     selectedWord,
     closeInspector,
     showHotkeyHelp,

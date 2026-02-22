@@ -224,6 +224,7 @@ export function PodcastProvider({ children }: { children: ReactNode }) {
           .endListeningSession(
             activeSessionId,
             listenedSecondsRef.current,
+            listenedSecondsRef.current,
             finalPosition,
             true,
           )
@@ -351,6 +352,7 @@ export function PodcastProvider({ children }: { children: ReactNode }) {
             .updateListeningSession(
               sessionId,
               listenedSecondsRef.current,
+              listenedSecondsRef.current,
               audioRef.current?.currentTime || 0,
             )
             .catch((e) => console.warn("[Podcast] Session update failed:", e));
@@ -415,6 +417,7 @@ export function PodcastProvider({ children }: { children: ReactNode }) {
         const data = JSON.stringify({
           session_id: sessionId,
           listened_seconds: listenedSeconds,
+          active_seconds: listenedSeconds,
           position_seconds: finalPos,
           is_finished: isFinishing,
         });
@@ -601,6 +604,7 @@ export function PodcastProvider({ children }: { children: ReactNode }) {
         try {
           await podcastApi.endListeningSession(
             sessionId,
+            listenedSeconds,
             listenedSeconds,
             audioRef.current?.currentTime || 0,
           );
@@ -791,6 +795,7 @@ export function PodcastProvider({ children }: { children: ReactNode }) {
       try {
         await podcastApi.endListeningSession(
           sessionId,
+          listenedSeconds,
           listenedSeconds,
           audioRef.current?.currentTime || 0,
         );

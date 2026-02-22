@@ -1387,6 +1387,7 @@ class PodcastService:
         db: AsyncSession,
         session_id: int,
         total_listened_seconds: int,
+        total_active_seconds: int,
         last_position_seconds: float,
         is_finished: bool = False,
     ) -> Optional[PodcastListeningSession]:
@@ -1401,6 +1402,7 @@ class PodcastService:
             return None
 
         session.total_listened_seconds = total_listened_seconds
+        session.total_active_seconds = total_active_seconds
         session.last_position_seconds = last_position_seconds
         await db.commit()
         await db.refresh(session)
@@ -1421,6 +1423,7 @@ class PodcastService:
         db: AsyncSession,
         session_id: int,
         total_listened_seconds: int,
+        total_active_seconds: int,
         last_position_seconds: float,
         is_finished: bool = False,
     ) -> Optional[PodcastListeningSession]:
@@ -1436,6 +1439,7 @@ class PodcastService:
 
         session.ended_at = datetime.utcnow()
         session.total_listened_seconds = total_listened_seconds
+        session.total_active_seconds = total_active_seconds
         session.last_position_seconds = last_position_seconds
         await db.commit()
         await db.refresh(session)

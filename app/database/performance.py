@@ -129,12 +129,17 @@ async def get_performance_data(
             )
 
             # 5. Podcast Listening Sessions Subquery
+            # Use CASE instead of COALESCE: the column is NOT NULL DEFAULT 0,
+            # so legacy rows have 0 (not NULL). COALESCE(0, X) returns 0, not X.
+            _active_or_listened = case(
+                (
+                    PodcastListeningSession.total_active_seconds > 0,
+                    PodcastListeningSession.total_active_seconds,
+                ),
+                else_=PodcastListeningSession.total_listened_seconds,
+            )
             podcast_subq = (
-                select(
-                    func.sum(PodcastListeningSession.total_listened_seconds).label(
-                        "p_time"
-                    )
-                )
+                select(func.sum(_active_or_listened).label("p_time"))
                 .where(
                     and_(
                         PodcastListeningSession.started_at >= cutoff,
@@ -353,10 +358,17 @@ async def get_daily_study_time(
             }
 
             # 5. Podcast Listening by Day
+            _podcast_active = case(
+                (
+                    PodcastListeningSession.total_active_seconds > 0,
+                    PodcastListeningSession.total_active_seconds,
+                ),
+                else_=PodcastListeningSession.total_listened_seconds,
+            )
             podcast_stmt = (
                 select(
                     day_trunc_tz(PodcastListeningSession.started_at).label("day"),
-                    func.sum(PodcastListeningSession.total_listened_seconds),
+                    func.sum(_podcast_active),
                 )
                 .where(
                     and_(
@@ -372,14 +384,19 @@ async def get_daily_study_time(
                 row[0].date().isoformat(): row[1] or 0 for row in podcast_res
             }
 
+            _ch_active = case(
+                (
+                    PodcastListeningSession.total_active_seconds > 0,
+                    PodcastListeningSession.total_active_seconds,
+                ),
+                else_=PodcastListeningSession.total_listened_seconds,
+            )
             podcast_channel_stmt = (
                 select(
                     PodcastFeed.id.label("feed_id"),
                     PodcastFeed.title.label("feed_title"),
                     PodcastFeed.image_url.label("feed_image_url"),
-                    func.sum(PodcastListeningSession.total_listened_seconds).label(
-                        "total_seconds"
-                    ),
+                    func.sum(_ch_active).label("total_seconds"),
                 )
                 .join(
                     PodcastEpisode,
@@ -393,9 +410,7 @@ async def get_daily_study_time(
                     )
                 )
                 .group_by(PodcastFeed.id, PodcastFeed.title)
-                .order_by(
-                    func.sum(PodcastListeningSession.total_listened_seconds).desc()
-                )
+                .order_by(func.sum(_ch_active).desc())
                 .limit(10)
             )
             podcast_channel_res = await session.execute(podcast_channel_stmt)
