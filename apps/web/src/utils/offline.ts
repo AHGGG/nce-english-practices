@@ -32,10 +32,15 @@ export async function getCachedAudioUrl(url: string) {
     if (!response) return null;
 
     if (response.type === "opaque") {
+      // Opaque responses (from no-cors downloads) cannot be read as Blob by JS,
+      // but the Service Worker (Workbox CacheFirst, cacheableResponse status 0)
+      // can intercept the request and return the cached opaque response directly
+      // to the browser's media pipeline. Return the original URL so the audio
+      // element fires a request that SW will serve from cache — no network needed.
       console.log(
-        "[Offline] Opaque response found, delegating to Service Worker",
+        "[Offline] Opaque response in cache, returning original URL for Service Worker to serve",
       );
-      return null;
+      return url;
     }
 
     const blob = await response.blob();

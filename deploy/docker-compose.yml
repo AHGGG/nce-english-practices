@@ -6,7 +6,8 @@ services:
       - "80:80" # Redirects to HTTPS
     volumes:
       - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
-      - ./nginx/ssl:/etc/nginx/ssl:ro
+      - ./nginx/conf.d:/etc/nginx/conf.d:ro
+      - /etc/letsencrypt:/etc/letsencrypt:ro # System certbot certs (auto-renewed by host)
     depends_on:
       - app
     restart: unless-stopped
