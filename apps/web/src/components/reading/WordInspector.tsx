@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useRef, useCallback } from "react";
 import type { ReactElement, ReactNode } from "react";
 import {
   Volume2,
@@ -122,6 +122,7 @@ const WordInspector = ({
   canGenerateImage = false,
   onGenerateImage = () => {},
 }: WordInspectorProps) => {
+  const contentScrollRef = useRef<HTMLDivElement>(null);
   const typedInspectorData = (inspectorData || null) as InspectorData | null;
   // Derive default tab from inspectorData (memoized to avoid recalculation)
   const defaultTab = useMemo(() => {
@@ -136,6 +137,10 @@ const WordInspector = ({
   const [history, setHistory] = useState<HistoryItem[]>([]);
   const [usages, setUsages] = useState<HistoryItem[]>([]);
   const [now] = useState(() => Date.now());
+
+  const scrollContentToTop = useCallback(() => {
+    contentScrollRef.current?.scrollTo({ top: 0, behavior: "smooth" });
+  }, []);
 
   const sourceBuckets = useMemo(() => {
     const buckets = new Map<string, { label: string; count: number }>();
@@ -271,7 +276,10 @@ const WordInspector = ({
         </div>
 
         {/* Content - Using DictionaryResults */}
-        <div className="flex-1 overflow-y-auto custom-scrollbar relative z-10 p-1">
+        <div
+          ref={contentScrollRef}
+          className="flex-1 overflow-y-auto custom-scrollbar relative z-10 p-1"
+        >
           {/* Streaming Context Explanation Section */}
           {(contextExplanation || isExplaining) && (
             <div className="m-4 mb-2 p-4 border border-accent-primary/20 bg-accent-primary/5 rounded-xl backdrop-blur-md shadow-inner shadow-accent-primary/5">
@@ -338,7 +346,10 @@ const WordInspector = ({
                 <div className="mt-4 flex gap-2 border-t border-white/10 pt-3">
                   {currentStyle !== "simple" && (
                     <button
-                      onClick={() => onExplainStyle("simple")}
+                      onClick={() => {
+                        onExplainStyle("simple");
+                        scrollContentToTop();
+                      }}
                       className="flex-1 py-2 text-[10px] font-bold font-mono text-white/70 border border-white/10 rounded-lg hover:bg-white/5 hover:text-white transition-colors uppercase flex items-center justify-center gap-1"
                     >
                       <span>Simpler</span>
@@ -346,7 +357,10 @@ const WordInspector = ({
                   )}
                   {currentStyle !== "chinese_deep" && (
                     <button
-                      onClick={() => onExplainStyle("chinese_deep")}
+                      onClick={() => {
+                        onExplainStyle("chinese_deep");
+                        scrollContentToTop();
+                      }}
                       className="flex-1 py-2 text-[10px] font-bold font-mono text-accent-warning border border-accent-warning/20 rounded-lg hover:bg-accent-warning/10 transition-colors uppercase flex items-center justify-center gap-1"
                     >
                       <span>Deep Dive (CN)</span>

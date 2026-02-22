@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useRef, useCallback } from "react";
 import {
   View,
   Text,
@@ -52,6 +52,11 @@ export function DictionaryModal({
   currentSentenceContext,
 }: DictionaryModalProps) {
   const [isPlaying, setIsPlaying] = useState(false);
+  const scrollViewRef = useRef<ScrollView>(null);
+
+  const scrollToTop = useCallback(() => {
+    scrollViewRef.current?.scrollTo({ y: 0, animated: true });
+  }, []);
 
   const defaultTab = useMemo(() => {
     if (inspectorData?.ldoce?.found) return "LDOCE";
@@ -102,6 +107,7 @@ export function DictionaryModal({
 
           {/* Content */}
           <ScrollView
+            ref={scrollViewRef}
             className="flex-1"
             showsVerticalScrollIndicator={false}
             contentContainerStyle={{ paddingBottom: 20 }}
@@ -171,7 +177,10 @@ export function DictionaryModal({
                   <View className="mt-3 flex-row gap-2 border-t border-accent-primary/20 pt-2">
                     {explainStyle !== "simple" && (
                       <TouchableOpacity
-                        onPress={() => onExplainStyle("simple")}
+                        onPress={() => {
+                          onExplainStyle("simple");
+                          scrollToTop();
+                        }}
                         className="flex-1 py-1.5 border border-accent-primary/30 rounded items-center"
                       >
                         <Text className="text-accent-primary text-xs font-mono uppercase">
@@ -181,7 +190,10 @@ export function DictionaryModal({
                     )}
                     {explainStyle !== "chinese_deep" && (
                       <TouchableOpacity
-                        onPress={() => onExplainStyle("chinese_deep")}
+                        onPress={() => {
+                          onExplainStyle("chinese_deep");
+                          scrollToTop();
+                        }}
                         className="flex-1 py-1.5 border border-accent-warning/30 rounded items-center"
                       >
                         <Text className="text-accent-warning text-xs font-mono uppercase">
