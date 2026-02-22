@@ -153,6 +153,14 @@
 }
 
 @layer utilities {
+  /* Safe Viewport Height – prevents mobile browser chrome (address bar, bottom toolbar)
+     from clipping content. Uses 100vh as fallback; 100dvh overrides in modern browsers.
+     NEVER pair with min-h-screen, as min-height: 100vh would override height: 100dvh. */
+  .h-safe-viewport {
+    height: 100vh;
+    height: 100dvh;
+  }
+
   /* Grid Background Pattern */
   .bg-grid {
     background-image:

@@ -318,20 +318,30 @@ function PlayerControls({
         />
       </div>
 
+      {/* Mobile: time flanking progress bar (Spotify/Apple pattern) */}
+      <div className="flex sm:hidden justify-between px-3 mt-0.5 mb-0.5">
+        <span className="text-[10px] font-mono text-white/35 tabular-nums">
+          {formatTime(currentTime)}
+        </span>
+        <span className="text-[10px] font-mono text-white/35 tabular-nums">
+          {formatTime(duration)}
+        </span>
+      </div>
+
       {/* Controls */}
-      <div className="px-3 sm:px-6 py-3 sm:py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-0 max-w-4xl mx-auto w-full">
-        {/* Time Display */}
-        <div className="w-full sm:w-24 text-center sm:text-left text-xs font-mono font-medium text-white/40 tracking-wider order-2 sm:order-none">
+      <div className="px-3 sm:px-6 py-1.5 sm:py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1.5 sm:gap-0 max-w-4xl mx-auto w-full">
+        {/* Time Display - desktop only (left column of the 3-column row) */}
+        <div className="hidden sm:block w-24 text-left text-xs font-mono font-medium text-white/40 tracking-wider">
           {formatTime(currentTime)} <span className="text-white/20">/</span>{" "}
           {formatTime(duration)}
         </div>
 
-        {/* Main Controls */}
-        <div className="flex items-center justify-center gap-4 sm:gap-6 order-1 sm:order-none">
+        {/* Main Controls - play/pause stays perfectly centered */}
+        <div className="flex items-center justify-center gap-3 sm:gap-6">
           {/* Backward 30s */}
           <button
             onClick={() => onSkip(-30)}
-            className="px-2.5 py-1.5 text-xs font-mono text-white/60 hover:text-white transition-all hover:bg-white/5 rounded-full hover:scale-105 active:scale-95 border border-white/10"
+            className="px-2 py-1 sm:px-2.5 sm:py-1.5 text-xs font-mono text-white/60 hover:text-white transition-all hover:bg-white/5 rounded-full hover:scale-105 active:scale-95 border border-white/10"
             title="Jump backward 30s"
           >
             -30s
@@ -340,51 +350,51 @@ function PlayerControls({
           {/* Previous Sentence */}
           <button
             onClick={onPrevSegment}
-            className="p-2.5 text-white/40 hover:text-white transition-all hover:bg-white/5 rounded-full hover:scale-105 active:scale-95"
+            className="p-1.5 sm:p-2.5 text-white/40 hover:text-white transition-all hover:bg-white/5 rounded-full hover:scale-105 active:scale-95"
             title="Previous sentence"
           >
-            <SkipBack className="w-5 h-5" />
+            <SkipBack className="w-4 h-4 sm:w-5 sm:h-5" />
           </button>
 
           {/* Play/Pause - Hero Button */}
           <button
             onClick={onTogglePlay}
             disabled={isLoading}
-            className="p-4 bg-accent-primary text-black rounded-full hover:bg-white hover:scale-110 active:scale-95 transition-all duration-300 shadow-[0_0_30px_rgba(var(--color-accent-primary-rgb),0.3)] disabled:opacity-50 disabled:scale-100"
+            className="p-3 sm:p-4 bg-accent-primary text-black rounded-full hover:bg-white hover:scale-110 active:scale-95 transition-all duration-300 shadow-[0_0_30px_rgba(var(--color-accent-primary-rgb),0.3)] disabled:opacity-50 disabled:scale-100"
           >
             {isLoading ? (
-              <Loader2 className="w-6 h-6 animate-spin" />
+              <Loader2 className="w-5 h-5 sm:w-6 sm:h-6 animate-spin" />
             ) : isPlaying ? (
-              <Pause className="w-6 h-6 fill-current" />
+              <Pause className="w-5 h-5 sm:w-6 sm:h-6 fill-current" />
             ) : (
-              <Play className="w-6 h-6 ml-0.5 fill-current" />
+              <Play className="w-5 h-5 sm:w-6 sm:h-6 ml-0.5 fill-current" />
             )}
           </button>
 
           {/* Next Sentence */}
           <button
             onClick={onNextSegment}
-            className="p-2.5 text-white/40 hover:text-white transition-all hover:bg-white/5 rounded-full hover:scale-105 active:scale-95"
+            className="p-1.5 sm:p-2.5 text-white/40 hover:text-white transition-all hover:bg-white/5 rounded-full hover:scale-105 active:scale-95"
             title="Next sentence"
           >
-            <SkipForward className="w-5 h-5" />
+            <SkipForward className="w-4 h-4 sm:w-5 sm:h-5" />
           </button>
 
           {/* Forward 30s */}
           <button
             onClick={() => onSkip(30)}
-            className="px-2.5 py-1.5 text-xs font-mono text-white/60 hover:text-white transition-all hover:bg-white/5 rounded-full hover:scale-105 active:scale-95 border border-white/10"
+            className="px-2 py-1 sm:px-2.5 sm:py-1.5 text-xs font-mono text-white/60 hover:text-white transition-all hover:bg-white/5 rounded-full hover:scale-105 active:scale-95 border border-white/10"
             title="Jump forward 30s"
           >
             +30s
           </button>
         </div>
 
-        {/* Speed Control & Loop Actions */}
-        <div className="w-full sm:w-72 flex justify-center sm:justify-end items-center gap-2 flex-wrap sm:flex-nowrap overflow-visible pb-1 sm:pb-0 order-3 sm:order-none">
+        {/* Loop Tools — mobile: pure centered buttons */}
+        <div className="w-full sm:w-72 flex justify-center sm:justify-end items-center gap-1.5 sm:gap-2 flex-nowrap overflow-visible">
           <button
             onClick={onToggleSegmentLoop}
-            className={`shrink-0 px-2 py-1 rounded text-xs border transition-colors ${
+            className={`shrink-0 px-2 py-0.5 sm:py-1 rounded text-xs border transition-colors ${
               loopMode === "segment"
                 ? "bg-accent-primary/15 text-accent-primary border-accent-primary/50"
                 : "bg-white/5 text-white/70 border-white/10 hover:bg-white/10"
@@ -396,7 +406,7 @@ function PlayerControls({
 
           <button
             onClick={onSetABStart}
-            className="shrink-0 px-2 py-1 rounded text-xs border border-white/10 bg-white/5 text-white/70 hover:bg-white/10"
+            className="shrink-0 px-2 py-0.5 sm:py-1 rounded text-xs border border-white/10 bg-white/5 text-white/70 hover:bg-white/10"
             title="Set A point"
           >
             A
@@ -404,7 +414,7 @@ function PlayerControls({
 
           <button
             onClick={onSetABEnd}
-            className="shrink-0 px-2 py-1 rounded text-xs border border-white/10 bg-white/5 text-white/70 hover:bg-white/10"
+            className="shrink-0 px-2 py-0.5 sm:py-1 rounded text-xs border border-white/10 bg-white/5 text-white/70 hover:bg-white/10"
             title="Set B point"
           >
             B
@@ -415,7 +425,7 @@ function PlayerControls({
             disabled={
               loopStart == null || loopEnd == null || loopEnd <= loopStart
             }
-            className={`shrink-0 px-2 py-1 rounded text-xs border transition-colors disabled:opacity-40 ${
+            className={`shrink-0 px-2 py-0.5 sm:py-1 rounded text-xs border transition-colors disabled:opacity-40 ${
               loopMode === "ab"
                 ? "bg-accent-primary/15 text-accent-primary border-accent-primary/50"
                 : "bg-white/5 text-white/70 border-white/10 hover:bg-white/10"
@@ -427,7 +437,7 @@ function PlayerControls({
 
           <button
             onClick={onClearABLoop}
-            className="shrink-0 px-2 py-1 rounded text-xs border border-white/10 bg-white/5 text-white/70 hover:bg-white/10"
+            className="shrink-0 px-2 py-0.5 sm:py-1 rounded text-xs border border-white/10 bg-white/5 text-white/70 hover:bg-white/10"
             title="Clear A-B points"
           >
             CLR
@@ -442,7 +452,7 @@ function PlayerControls({
         </div>
       </div>
 
-      <div className="px-3 sm:px-6 pb-3 -mt-1 text-[10px] font-mono text-white/35 max-w-4xl mx-auto w-full text-center sm:text-right">
+      <div className="hidden sm:block px-3 sm:px-6 pb-1.5 sm:pb-3 -mt-0.5 sm:-mt-1 text-[10px] font-mono text-white/35 max-w-4xl mx-auto w-full text-center sm:text-right">
         Loop: {loopMode.toUpperCase()}
         {loopStart != null && ` | A ${formatTime(loopStart)}`}
         {loopEnd != null && ` | B ${formatTime(loopEnd)}`}
