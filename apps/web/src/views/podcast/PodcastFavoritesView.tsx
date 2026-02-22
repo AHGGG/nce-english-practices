@@ -59,6 +59,9 @@ interface GlobalSettings {
 interface PodcastContextValue {
   currentEpisode: FavoriteItem["episode"] | null;
   isPlaying: boolean;
+  currentTime: number;
+  duration: number;
+  finishedEpisodes: Set<number>;
   playEpisode: (
     episode: FavoriteItem["episode"],
     feed: FavoriteItem["feed"],
@@ -92,6 +95,9 @@ export default function PodcastFavoritesView() {
     playEpisode,
     currentEpisode,
     isPlaying,
+    currentTime,
+    duration,
+    finishedEpisodes,
     startDownload,
     cancelDownload,
     removeDownload,
@@ -473,6 +479,28 @@ export default function PodcastFavoritesView() {
     const episode = item.episode;
     const isCurrent = currentEpisode?.id === episode.id;
     const isCurrentAndPlaying = isCurrent && isPlaying;
+
+    // --- Progress / finished state (mirrors PodcastFeedDetailView logic) ---
+    const episodeDuration =
+      isCurrent && duration > 0 ? duration : episode.duration_seconds || 1;
+
+    let position = episode.current_position ?? 0;
+    let isFinished =
+      finishedEpisodes.has(episode.id) || Boolean(episode.is_finished);
+
+    if (isCurrent) {
+      position = currentTime;
+      isFinished = isFinished || (duration > 0 && currentTime >= duration - 2);
+    }
+
+    const progressPercent = Math.min(
+      100,
+      Math.round((position / episodeDuration) * 100),
+    );
+    // 99% rule — treat as finished once nearly complete
+    isFinished = isFinished || (position > 0 && progressPercent >= 99);
+    // -----------------------------------------------------------------------
+
     const dState = downloadState[episode.id];
     const isDownloading = dState?.status === "downloading";
     const isError = dState?.status === "error";
@@ -558,13 +586,20 @@ export default function PodcastFavoritesView() {
         expandedId={swipedEpisodeId}
         onExpandedChange={handleExpandedChange}
         showSwipeHint={showSwipeHint}
-        className="bg-[#0a0f0d]/40 backdrop-blur-sm border border-white/10"
+        className={`${
+          isCurrent
+            ? "bg-accent-primary/10 border-accent-primary/30"
+            : isFinished
+              ? "bg-white/[0.01] border-white/5 opacity-60 hover:opacity-100"
+              : "bg-[#0a0f0d]/40 backdrop-blur-sm border-white/10"
+        } border`}
       >
         <div className="flex items-start sm:items-center gap-2.5 sm:gap-4 p-3 sm:p-4">
           <PodcastCoverPlayButton
             imageUrl={episode.image_url || item.feed.image_url}
             isCurrent={isCurrent}
             isPlaying={isCurrentAndPlaying}
+            isFinished={isFinished}
             onClick={() => playEpisode(episode, item.feed, null)}
             sizeClassName="w-12 h-12 sm:w-14 sm:h-14"
             iconClassName="w-4 h-4"
@@ -572,7 +607,15 @@ export default function PodcastFavoritesView() {
           />
 
           <div className="flex-1 min-w-0 py-1">
-            <p className="text-white text-sm font-medium line-clamp-2 leading-snug">
+            <p
+              className={`text-sm font-medium line-clamp-2 leading-snug transition-colors ${
+                isCurrent
+                  ? "text-accent-primary"
+                  : isFinished
+                    ? "text-white/40 line-through decoration-accent-success/40"
+                    : "text-white"
+              }`}
+            >
               {episode.title}
             </p>
             {showFeedTitle && (
@@ -580,8 +623,13 @@ export default function PodcastFavoritesView() {
                 {item.feed.title}
               </p>
             )}
-            <p className="text-white/40 text-[11px] mt-1">
-              {buildMetaText(item)}
+            <p className="text-white/40 text-[11px] mt-1 flex items-center gap-2 flex-wrap">
+              <span>{buildMetaText(item)}</span>
+              {!isFinished && position > 0 && (
+                <span className="text-accent-primary font-mono">
+                  {progressPercent}% COMPLETE
+                </span>
+              )}
             </p>
           </div>
 
